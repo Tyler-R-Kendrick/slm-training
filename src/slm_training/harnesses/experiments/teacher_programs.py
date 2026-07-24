@@ -483,6 +483,120 @@ class OpenAICompatibleTeacherTransport:
         }
 
 
+class LocalTransformersTeacherTransport:
+    """Pinned, offline-only causal-LM teacher transport.
+
+    This is intentionally a generation adapter rather than an evaluator: the
+    returned text remains untrusted raw evidence and must still flow through
+    extraction, admission, and an independent judge.  ``local_files_only`` is
+    fixed so a calibration can never silently download a model or call hosted
+    inference.
+    """
+
+    def __init__(
+        self,
+        *,
+        model: str,
+        revision: str,
+        system_prompt: str,
+        device: str = "cpu",
+        dtype: str = "bfloat16",
+    ) -> None:
+        if not all((model, revision, system_prompt.strip())):
+            raise ValueError("local teacher requires pinned model, revision, and prompt")
+        if dtype not in {"float32", "float16", "bfloat16"}:
+            raise ValueError("local teacher dtype must be float32, float16, or bfloat16")
+        self.model_id = model
+        self.revision = revision
+        self.system_prompt = system_prompt
+        self.device = device
+        self.dtype = dtype
+        self._model: Any | None = None
+        self._tokenizer: Any | None = None
+
+    def _lazy_load(self) -> tuple[Any, Any]:
+        if self._model is not None and self._tokenizer is not None:
+            return self._model, self._tokenizer
+        try:
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+        except ImportError as exc:
+            raise RuntimeError(
+                "local teacher requires the torch and transformers extras"
+            ) from exc
+        torch_dtype = getattr(torch, self.dtype)
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(
+                self.model_id,
+                revision=self.revision,
+                local_files_only=True,
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model_id,
+                revision=self.revision,
+                local_files_only=True,
+                torch_dtype=torch_dtype,
+            )
+            model.to(self.device)
+            model.eval()
+        except Exception as exc:  # noqa: BLE001
+            raise RuntimeError(
+                f"failed to load local teacher {self.model_id}@{self.revision}: {type(exc).__name__}"
+            ) from exc
+        self._model = model
+        self._tokenizer = tokenizer
+        return model, tokenizer
+
+    def __call__(self, request: TeacherProgramExecutionRequestV1) -> Mapping[str, Any]:
+        import torch
+
+        model, tokenizer = self._lazy_load()
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": request.intent},
+        ]
+        if hasattr(tokenizer, "apply_chat_template"):
+            input_ids = tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                return_tensors="pt",
+            )
+        else:
+            input_ids = tokenizer(
+                f"{self.system_prompt}\n{request.intent}\n",
+                return_tensors="pt",
+            )["input_ids"]
+        input_ids = input_ids.to(self.device)
+        input_tokens = int(input_ids.shape[1])
+        with torch.inference_mode():
+            generated_ids = model.generate(
+                input_ids,
+                max_new_tokens=request.max_output_tokens,
+                do_sample=False,
+                pad_token_id=(
+                    tokenizer.pad_token_id
+                    if tokenizer.pad_token_id is not None
+                    else tokenizer.eos_token_id
+                ),
+            )
+        output_ids = generated_ids[:, input_tokens:]
+        output_tokens = int(output_ids.shape[1])
+        text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        raw = {
+            "provider": "local_transformers",
+            "model": self.model_id,
+            "revision": self.revision,
+            "device": self.device,
+            "dtype": self.dtype,
+            "local_files_only": True,
+            "response_text": text,
+        }
+        return {
+            "raw": raw,
+            "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens},
+        }
+
+
 def _optional_float(value: Any) -> float | None:
     return None if value is None else float(value)
 

@@ -1,4 +1,6 @@
 import hashlib
+import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -8,6 +10,7 @@ from slm_training.data.store import DataStore
 from slm_training.dsl.schema import load_jsonl
 from slm_training.harnesses.experiments.teacher_programs import (
     AdmissionMode,
+    LocalTransformersTeacherTransport,
     TeacherBudgetExceeded,
     TeacherProgramCandidate,
     TeacherProgramExecutionRequestV1,
@@ -300,4 +303,71 @@ def test_executor_archives_usage_and_resume_skips_completed_request(tmp_path):
     assert [event["event_type"] for event in executor.archive.verify_event_chain()] == [
         "teacher_program_attempted",
         "teacher_program_completed",
+    ]
+
+
+def test_local_transformers_transport_requires_pinned_local_configuration():
+    with pytest.raises(ValueError, match="pinned model"):
+        LocalTransformersTeacherTransport(
+            model="",
+            revision="revision",
+            system_prompt="Return one OpenUI program.",
+        )
+    with pytest.raises(ValueError, match="dtype"):
+        LocalTransformersTeacherTransport(
+            model="Qwen/Qwen2.5-7B-Instruct",
+            revision="a" * 40,
+            system_prompt="Return one OpenUI program.",
+            dtype="auto",
+        )
+
+
+def test_local_transformers_transport_loads_only_from_the_pinned_local_cache(monkeypatch):
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeTokenizer:
+        @classmethod
+        def from_pretrained(cls, _model: str, **kwargs: object):
+            calls.append(("tokenizer", kwargs))
+            return cls()
+
+    class FakeModel:
+        @classmethod
+        def from_pretrained(cls, _model: str, **kwargs: object):
+            calls.append(("model", kwargs))
+            return cls()
+
+        def to(self, device: str):
+            self.device = device
+            return self
+
+        def eval(self):
+            self.evaluated = True
+
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(bfloat16="bf16"))
+    monkeypatch.setitem(
+        sys.modules,
+        "transformers",
+        SimpleNamespace(AutoModelForCausalLM=FakeModel, AutoTokenizer=FakeTokenizer),
+    )
+    transport = LocalTransformersTeacherTransport(
+        model="Qwen/Qwen2.5-7B-Instruct",
+        revision="a" * 40,
+        system_prompt="Return one OpenUI program.",
+    )
+
+    model, _tokenizer = transport._lazy_load()
+
+    assert model.device == "cpu"
+    assert model.evaluated is True
+    assert calls == [
+        ("tokenizer", {"revision": "a" * 40, "local_files_only": True}),
+        (
+            "model",
+            {
+                "revision": "a" * 40,
+                "local_files_only": True,
+                "torch_dtype": "bf16",
+            },
+        ),
     ]
