@@ -404,6 +404,19 @@ _LAZY_SLM192_EXPORTS = {
     "validate_slm192_manifest": "validate_manifest",
 }
 
+_LAZY_SLM193_EXPORTS = {
+    "SLM193_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM193_MATRIX_SET": "MATRIX_SET",
+    "SLM193_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM193_ARM_NAMES": "ARM_NAMES",
+    "CacheArmResult": "CacheArmResult",
+    "CacheCaseRecord": "CacheCaseRecord",
+    "FlowCacheManifestV1": "FlowCacheManifestV1",
+    "run_slm193_fixture": "run_flow_cache_fixture",
+    "render_slm193_markdown": "render_markdown",
+    "validate_slm193_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -460,6 +473,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm192_profile_flow_pipeline
 
         value = getattr(slm192_profile_flow_pipeline, _LAZY_SLM192_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM193_EXPORTS:
+        from slm_training.harnesses.experiments import slm193_flow_caches
+
+        value = getattr(slm193_flow_caches, _LAZY_SLM193_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -598,6 +617,16 @@ __all__ = [
     "run_slm192_fixture",
     "render_slm192_markdown",
     "validate_slm192_manifest",
+    "SLM193_EXPERIMENT_ID",
+    "SLM193_MATRIX_SET",
+    "SLM193_MATRIX_VERSION",
+    "SLM193_ARM_NAMES",
+    "CacheArmResult",
+    "CacheCaseRecord",
+    "FlowCacheManifestV1",
+    "run_slm193_fixture",
+    "render_slm193_markdown",
+    "validate_slm193_manifest",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
