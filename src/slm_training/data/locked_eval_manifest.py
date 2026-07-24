@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -260,3 +261,69 @@ def write_locked_manifest(path: Path, manifest: LockedManifest) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(encoded, encoding="utf-8")
     return manifest.sha256
+
+
+def measure_stratified_legal_entropy(
+    manifest_payload: dict[str, Any], *, max_records: int = 24
+) -> dict[str, Any]:
+    """Replay one locked record per observed stratum with exact grammar authority.
+
+    This measures ``log2(|legal actions|)`` from compiler-owned sets, not a
+    model posterior.  It is therefore valid without a learned decode rollout
+    and makes the measurement recipe reproducible from the immutable manifest.
+    """
+    from slm_training.dsl.grammar.fastpath.compiler_draft import gold_compiler_decisions
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    if manifest_payload.get("schema") != SCHEMA:
+        raise ValueError("unsupported locked manifest schema")
+    rows = manifest_payload.get("rows") or []
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        if not isinstance(row, dict) or row.get("partition") != "locked_test":
+            continue
+        complexity = row.get("complexity") or {}
+        stratum = "-".join(
+            f"{key}={complexity.get(key)}"
+            for key in ("ast_depth", "component_cardinality", "binder_count")
+        )
+        groups.setdefault(stratum, []).append(row)
+    selected = [
+        sorted(group, key=lambda row: str((row.get("record") or {}).get("id")))[0]
+        for _, group in sorted(groups.items())
+    ][:max_records]
+    tokenizer = DSLNativeTokenizer.build()
+    measurements: list[dict[str, Any]] = []
+    for row in selected:
+        record = row["record"]
+        decisions = gold_compiler_decisions(
+            tokenizer,
+            tokenizer.encode(record["openui"], add_special=True),
+            slot_contract=list(record.get("placeholders") or ()),
+        )
+        arities = [len(decision.candidate_ids) for decision in decisions]
+        measurements.append(
+            {
+                "id": record["id"],
+                "stratum": row["complexity"],
+                "decision_count": len(arities),
+                "mean_legal_action_entropy_bits": (
+                    sum(math.log2(max(arity, 1)) for arity in arities) / len(arities)
+                    if arities
+                    else 0.0
+                ),
+                "max_legal_action_entropy_bits": (
+                    max((math.log2(max(arity, 1)) for arity in arities), default=0.0)
+                ),
+                "max_legal_action_count": max(arities, default=0),
+            }
+        )
+    return {
+        "schema": "LockedManifestLegalEntropyV1",
+        "manifest_sha256": manifest_payload.get("manifest_sha256"),
+        "partition": "locked_test",
+        "selection": "one canonical record per observed complexity stratum",
+        "tokenizer": "DSLNativeTokenizer",
+        "authority": "gold_compiler_decisions",
+        "records": measurements,
+    }

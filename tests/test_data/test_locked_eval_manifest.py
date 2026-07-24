@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.data.locked_eval_manifest import build_locked_manifest, write_locked_manifest
+from slm_training.data.locked_eval_manifest import measure_stratified_legal_entropy
 from slm_training.dsl.schema import load_jsonl
 
 
@@ -32,3 +33,15 @@ def test_locked_manifest_is_partitioned_and_immutable(tmp_path: Path) -> None:
     path.write_text("{}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="immutable manifest"):
         write_locked_manifest(path, manifest)
+
+
+def test_stratified_legal_entropy_uses_exact_compiler_sets(tmp_path: Path) -> None:
+    candidates = load_jsonl("src/slm_training/resources/test_seeds.jsonl")[:4]
+    manifest = build_locked_manifest(
+        candidates, source_records=[], min_locked_records=1, partition_size=1
+    )
+    report = measure_stratified_legal_entropy(manifest.payload())
+
+    assert report["authority"] == "gold_compiler_decisions"
+    assert report["records"]
+    assert all(row["max_legal_action_count"] >= 2 for row in report["records"])

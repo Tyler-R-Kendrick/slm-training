@@ -17,8 +17,7 @@ assignment are content-addressed in the file. Promotion/ship campaign claims
 must carry this manifest digest, and promoted-anchor metadata persists it.
 
 This is corpus wiring and decontamination evidence, not a model-quality or
-ship claim. `legal_action_entropy` is deliberately recorded as requiring a
-decode trace; no model-selection or promotion result was run here.
+ship claim. No model-selection or promotion result was run here.
 
 ### Local decode-trace attempt (2026-07-24)
 
@@ -29,4 +28,17 @@ Two one-record local CPU probes against the compatible
 forest, so neither is evidence and neither changes the manifest. The older
 CPU-smoke checkpoint was rejected before decode because its output contract is
 not symbol-only/v2. A bounded grammar-trace path is still required before
-legal-action entropy can be claimed as a populated manifest dimension.
+model-posterior entropy can be claimed from a learned decode rollout.
+
+### Exact legal-action entropy (2026-07-24)
+
+Legal-action entropy does not require a learned posterior: the canonical
+compiler owns the legal set, so the correct structural metric is
+`log2(|legal actions|)`. `measure_locked_manifest_arity` deterministically
+replayed one canonical `locked_test` record from each observed complexity
+stratum with `gold_compiler_decisions` and `DSLNativeTokenizer`. All 24
+selected strata completed locally within the cap; mean entropy ranged from
+2.2742 to 3.3451 bits and the largest exact legal set had 76 actions. The
+result (`9801d964…e28f03e48`) is reproducible from the immutable manifest and
+the committed measurement script. It is compiler evidence only, not a model
+quality result.

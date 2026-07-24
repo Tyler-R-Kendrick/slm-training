@@ -259,14 +259,20 @@
       ]
     },
     "data.locked_eval_manifest": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "scripts/build_locked_promotion_manifest.py",
+        "scripts/measure_locked_manifest_arity.py",
         "src/slm_training/data/locked_eval_manifest.py",
         "tests/test_data/test_locked_eval_manifest.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-285 measure exact compiler-owned legal-action entropy on one locked record per observed complexity stratum"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",

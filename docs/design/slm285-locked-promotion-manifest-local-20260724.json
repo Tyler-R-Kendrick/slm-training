@@ -29,7 +29,7 @@
   "honesty": {
     "human_audit_is_not_a_gate": true,
     "model_or_ship_claim": false,
-    "legal_action_entropy": "requires_decode_trace; not inferred"
+    "legal_action_entropy": "exact compiler-owned log2(legal action count); no model posterior claim"
   },
   "local_decode_trace_attempt": {
     "status": "interrupted_not_evidence",
@@ -39,6 +39,16 @@
     "policies": ["strict_compiler_tree", "maskgit"],
     "interrupt_after_seconds": 170,
     "reason": "both probes reached the completion-forest path before the canonical interrupt cap"
+  },
+  "legal_action_entropy_measurement": {
+    "status": "completed",
+    "authority": "gold_compiler_decisions",
+    "tokenizer": "DSLNativeTokenizer",
+    "selection": "one canonical locked_test record per observed complexity stratum",
+    "records": 24,
+    "mean_bits_range": [2.274212754555428, 3.3450973279584715],
+    "max_legal_action_count": 76,
+    "result_sha256": "9801d964181c61f9074e3779bffcaa23699f68afbb42d2c1bcc2571e28f03e48"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
