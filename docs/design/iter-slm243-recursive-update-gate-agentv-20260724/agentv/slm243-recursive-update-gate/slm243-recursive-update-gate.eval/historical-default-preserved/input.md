@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {}, "claim": "bounded_architecture_repair_not_ship", "failures": [], "result": {"gated_initial_sigmoid": 0.01798621006309986, "historical_empty_f_update_norm": 5.656853675842285, "layerscale_initial_value": 0.0010000000474974513, "private_norm_objects_distinct": true, "true_empty_f_exact_zero": true, "true_empty_f_update_norm": 0.0}}

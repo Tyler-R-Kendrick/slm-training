@@ -142,6 +142,14 @@ from slm_training.models.blocks import DenoiserTower, RMSNorm, TransformerBlock
 #: point of a matched-control campaign that needs *no* z-state parameters for
 #: arms C/D.
 Z_STATE_MODES: tuple[str, ...] = ("full", "y_only", "parameter_free")
+RECURSIVE_UPDATE_MODES: tuple[str, ...] = (
+    "current_v1",
+    "delta_only",
+    "layerscale",
+    "gated",
+)
+RECURSIVE_EMPTY_F_MODES: tuple[str, ...] = ("pass_through", "zero")
+RECURSIVE_NORM_MODES: tuple[str, ...] = ("shared", "private")
 RECURSIVE_DIAGNOSTIC_UPDATE_MODES: tuple[str, ...] = ("as_is", "residual_delta")
 RECURSIVE_STATE_PATH_ABLATIONS: tuple[str, ...] = (
     "none",
@@ -202,6 +210,9 @@ class SharedRecursiveDenoiserTower(nn.Module):
         tie_output_embedding: bool = True,
         z_state_mode: str = "full",
         detach_between_steps: bool = False,
+        update_mode: str = "current_v1",
+        empty_f_mode: str = "pass_through",
+        norm_mode: str = "shared",
     ) -> None:
         super().__init__()
         if z_state_mode not in Z_STATE_MODES:
@@ -209,6 +220,22 @@ class SharedRecursiveDenoiserTower(nn.Module):
                 f"z_state_mode={z_state_mode!r} is not one of {Z_STATE_MODES!r}"
             )
         self.z_state_mode = z_state_mode
+        if update_mode not in RECURSIVE_UPDATE_MODES:
+            raise ValueError(
+                f"update_mode={update_mode!r} is not one of {RECURSIVE_UPDATE_MODES!r}"
+            )
+        if empty_f_mode not in RECURSIVE_EMPTY_F_MODES:
+            raise ValueError(
+                f"empty_f_mode={empty_f_mode!r} is not one of "
+                f"{RECURSIVE_EMPTY_F_MODES!r}"
+            )
+        if norm_mode not in RECURSIVE_NORM_MODES:
+            raise ValueError(
+                f"norm_mode={norm_mode!r} is not one of {RECURSIVE_NORM_MODES!r}"
+            )
+        self.update_mode = update_mode
+        self.empty_f_mode = empty_f_mode
+        self.norm_mode = norm_mode
         # SLM-241 (RSC-A05) arm H: stop-gradient recurrence. Purely a
         # backward-graph flag -- adds no parameter, changes no forward
         # computation. See the module docstring above for the exact
@@ -256,6 +283,15 @@ class SharedRecursiveDenoiserTower(nn.Module):
         self._g_layers = self.layers[f_end:]
 
         self.norm = RMSNorm(d_model)
+        if self.norm_mode == "private":
+            self.f_norm = RMSNorm(d_model)
+            self.g_norm = RMSNorm(d_model)
+        if self.update_mode == "layerscale":
+            self.f_update_scale = nn.Parameter(torch.full((d_model,), 1e-3))
+            self.g_update_scale = nn.Parameter(torch.full((d_model,), 1e-3))
+        elif self.update_mode == "gated":
+            self.f_update_gate = nn.Parameter(torch.full((d_model,), -4.0))
+            self.g_update_gate = nn.Parameter(torch.full((d_model,), -4.0))
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         self.tie_output_embedding = bool(tie_output_embedding)
         if self.tie_output_embedding:
@@ -424,14 +460,19 @@ class SharedRecursiveDenoiserTower(nn.Module):
         *,
         runtime_symbol_features: torch.Tensor | None = None,
         return_attn: bool = False,
-        update_mode: str = "as_is",
+        update_mode: str | None = None,
         state_path_ablation: str = "none",
     ) -> dict[str, torch.Tensor | None]:
         """Apply one canonical shared recurrence transition without mutation."""
-        if update_mode not in RECURSIVE_DIAGNOSTIC_UPDATE_MODES:
+        effective_update_mode = self.update_mode if update_mode is None else update_mode
+        supported_update_modes = (
+            *RECURSIVE_UPDATE_MODES,
+            *RECURSIVE_DIAGNOSTIC_UPDATE_MODES,
+        )
+        if effective_update_mode not in supported_update_modes:
             raise ValueError(
-                f"update_mode={update_mode!r} is not one of "
-                f"{RECURSIVE_DIAGNOSTIC_UPDATE_MODES!r}"
+                f"update_mode={effective_update_mode!r} is not one of "
+                f"{supported_update_modes!r}"
             )
         if state_path_ablation not in RECURSIVE_STATE_PATH_ABLATIONS:
             raise ValueError(
@@ -444,24 +485,62 @@ class SharedRecursiveDenoiserTower(nn.Module):
             )
         y_before = y
         z_before = z
+        f_norm = self.f_norm if self.norm_mode == "private" else self.norm
+        g_norm = self.g_norm if self.norm_mode == "private" else self.norm
+
+        def update_from_stack(
+            output: torch.Tensor,
+            stack_input: torch.Tensor,
+            *,
+            branch: str,
+        ) -> torch.Tensor:
+            mode = {
+                "as_is": "current_v1",
+                "residual_delta": "delta_only",
+            }.get(effective_update_mode, effective_update_mode)
+            if mode == "current_v1":
+                return output
+            delta = output - stack_input
+            if mode == "delta_only":
+                return delta
+            if mode == "layerscale":
+                scale = (
+                    self.f_update_scale
+                    if branch == "f"
+                    else self.g_update_scale
+                )
+                return delta * scale
+            gate = (
+                self.f_update_gate if branch == "f" else self.g_update_gate
+            )
+            return delta * torch.sigmoid(gate)
+
         if z is None:
-            f_in = self.norm(y)
-            f_out = self._apply_layers(
-                f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
-            )
-            assert isinstance(f_out, torch.Tensor)
-            f_update = f_out if update_mode == "as_is" else f_out - f_in
+            f_in = f_norm(y)
+            if not self._f_layers and self.empty_f_mode == "zero":
+                f_update = torch.zeros_like(f_in)
+            else:
+                f_out = self._apply_layers(
+                    f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
+                )
+                assert isinstance(f_out, torch.Tensor)
+                f_update = update_from_stack(f_out, f_in, branch="f")
             y = y + f_update
-            g_in = self.norm(y)
+            g_in = g_norm(y)
         else:
-            f_in = self.norm(z if state_path_ablation == "detach_y_to_z" else z + y)
-            f_out = self._apply_layers(
-                f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
-            )
-            assert isinstance(f_out, torch.Tensor)
-            f_update = f_out if update_mode == "as_is" else f_out - f_in
+            f_in = f_norm(z if state_path_ablation == "detach_y_to_z" else z + y)
+            if not self._f_layers and self.empty_f_mode == "zero":
+                f_update = torch.zeros_like(f_in)
+            else:
+                f_out = self._apply_layers(
+                    f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
+                )
+                assert isinstance(f_out, torch.Tensor)
+                f_update = update_from_stack(f_out, f_in, branch="f")
             z = z + f_update
-            g_in = self.norm(y if state_path_ablation == "detach_z_to_y" else y + z)
+            g_in = g_norm(
+                y if state_path_ablation == "detach_z_to_y" else y + z
+            )
 
         g_out = self._apply_layers(
             g_in,
@@ -477,7 +556,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
             g_out, attn = g_out
         else:
             assert isinstance(g_out, torch.Tensor)
-        g_update = g_out if update_mode == "as_is" else g_out - g_in
+        g_update = update_from_stack(g_out, g_in, branch="g")
         y = y + g_update
         hidden = self.norm(y)
         logits = self.lm_head(hidden)
@@ -506,7 +585,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         return_attn: bool = False,
         return_step_boundaries: bool = False,
         diagnostics: bool = False,
-        diagnostic_update_mode: str = "as_is",
+        diagnostic_update_mode: str | None = None,
         diagnostic_targets: torch.Tensor | None = None,
         diagnostic_mask: torch.Tensor | None = None,
     ) -> dict[str, Any]:
@@ -539,13 +618,16 @@ class SharedRecursiveDenoiserTower(nn.Module):
         """
         if not isinstance(diagnostics, bool):
             raise TypeError("diagnostics must be a bool")
-        if diagnostic_update_mode not in RECURSIVE_DIAGNOSTIC_UPDATE_MODES:
+        if (
+            diagnostic_update_mode is not None
+            and diagnostic_update_mode not in RECURSIVE_DIAGNOSTIC_UPDATE_MODES
+        ):
             raise ValueError(
                 f"diagnostic_update_mode={diagnostic_update_mode!r} is not one of "
                 f"{RECURSIVE_DIAGNOSTIC_UPDATE_MODES!r}"
             )
         if not diagnostics and (
-            diagnostic_update_mode != "as_is"
+            diagnostic_update_mode is not None
             or diagnostic_targets is not None
             or diagnostic_mask is not None
         ):
@@ -687,6 +769,14 @@ class SharedRecursiveDenoiserTower(nn.Module):
         if return_step_boundaries:
             result["step_boundaries"] = step_boundaries
         if diagnostics:
+            diagnostics_update_label = (
+                diagnostic_update_mode
+                if diagnostic_update_mode is not None
+                else {
+                    "current_v1": "as_is",
+                    "delta_only": "residual_delta",
+                }.get(self.update_mode, self.update_mode)
+            )
             mask: torch.Tensor | None = None
             counts: torch.Tensor | None = None
             task_metrics: list[
@@ -775,7 +865,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
                     RecursiveDepthDiagnosticsV1(
                         contract_version="RecursiveDepthDiagnosticsV1",
                         step=index + 1,
-                        update_mode=diagnostic_update_mode,
+                        update_mode=diagnostics_update_label,
                         y=y_state,
                         z=z_state,
                         y_update=y_update,

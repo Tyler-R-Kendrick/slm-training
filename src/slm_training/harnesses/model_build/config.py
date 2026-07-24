@@ -84,6 +84,9 @@ class ModelBuildConfig:
     # only). Reuses denoiser_arch="shared_recursive" (arm B's/G's arch
     # string), no new arch value.
     recursive_detach_between_steps: bool = False
+    recursive_update_mode: str = "current_v1"
+    recursive_empty_f_mode: str = "pass_through"
+    recursive_norm_mode: str = "shared"
     recursive_depth_supervision_weights: tuple[float, ...] = ()
     # SLM-279: required explicit final-depth semantics when weights are non-empty.
     recursive_depth_aux_mode: str | None = None

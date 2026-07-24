@@ -3309,6 +3309,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: append the SLM-243 measured recursive-update architecture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: append the SLM-232 measured latent-state disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -3369,7 +3374,7 @@
       ]
     },
     "harness.experiments.slm199_legal_edit_flow": {
-      "version": "v2",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
@@ -3385,11 +3390,22 @@
         "tests/test_scripts/test_run_legal_edit_flow_fixture.py",
         "tests/test_scripts/test_vercel_bundle_policy.py",
         "vercel.json",
+        ".vercelignore",
         "docs/design/iter-slm199-legal-edit-flow-20260723.json",
         "docs/design/iter-slm199-legal-edit-flow-20260723.md",
         "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "move nested AgentV evidence exclusion to Vercel source-upload policy after live previews proved the function-level glob did not remove those files"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "exclude SLM-243 offline matrix code from the Vercel source upload while retaining its compact dashboard result JSON"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -3677,6 +3693,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add the SLM-243 adapted recursive-update evidence to shared research lineage without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -4037,6 +4058,61 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial bounded z-state rank, context decomposition, causal ablation, matched y-only/nuisance control, prior-join, and fail-closed disposition gate"
+        }
+      ]
+    },
+    "harness.experiments.slm243_recursive_update_gate": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py",
+        "scripts/run_slm243_recursive_update_gate.py",
+        "tests/test_harnesses/experiments/test_slm243_recursive_update_gate.py",
+        "tests/test_scripts/test_run_slm243_recursive_update_gate.py",
+        "docs/design/iter-slm243-recursive-update-gate-20260724.json",
+        "docs/design/iter-slm243-recursive-update-gate-20260724.md",
+        "docs/design/iter-slm243-recursive-update-gate-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the compact dashboard report and hash-bound raw matrix generated cleanly against implementation commit 62726d66"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "split full 90-cell telemetry into a hash-bound raw matrix under the Vercel-excluded AgentV directory while retaining all gate inputs and semantic aggregates in dashboard JSON"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "deduplicate triangular depth telemetry and retain raw semantic rows at R=8 so dashboard evidence stays deployable without changing any gate input or verdict"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible SLM-243 report and AgentV bundle generated against implementation commit c926cb05"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: make check mode replay the committed version stamp so durable evidence remains reproducible after its docs-only commit"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: serialize AgentV paths relative to the durable evidence directory so reports are machine-portable"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add deterministic mechanism fixtures proving historical empty-F pass-through, exact true-empty zero, near-identity scales and gates, and private norm identity"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial six-arm, five-depth, three-paired-seed recurrence update, empty-F, and private-norm architecture gate"
         }
       ]
     },
@@ -5304,7 +5380,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -5331,6 +5407,11 @@
         "docs/design/iter-slm282-recurrence-health-20260723.md"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-23",
+          "note": "add default-preserving SLM-243 current, delta-only, LayerScale, gated, true-empty-F, and private-norm recurrence controls"
+        },
         {
           "version": "v17",
           "date": "2026-07-23",
@@ -5514,7 +5595,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v230",
+      "version": "v231",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5538,6 +5619,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v231",
+          "date": "2026-07-23",
+          "note": "persist and validate SLM-243 recurrence update, empty-F, and norm modes while migrating old checkpoints to historical defaults"
+        },
         {
           "version": "v230",
           "date": "2026-07-23",

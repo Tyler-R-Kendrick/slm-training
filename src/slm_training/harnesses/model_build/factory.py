@@ -328,6 +328,13 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         recursive_detach_between_steps=getattr(
             config, "recursive_detach_between_steps", False
         ),
+        recursive_update_mode=getattr(
+            config, "recursive_update_mode", "current_v1"
+        ),
+        recursive_empty_f_mode=getattr(
+            config, "recursive_empty_f_mode", "pass_through"
+        ),
+        recursive_norm_mode=getattr(config, "recursive_norm_mode", "shared"),
         recursive_depth_supervision_weights=config.recursive_depth_supervision_weights,
         recursive_depth_aux_mode=config.recursive_depth_aux_mode,
         recursive_depth_aux_weight=float(config.recursive_depth_aux_weight),

@@ -39,6 +39,9 @@ from slm_training.models.twotower_numeric_gates import (
     validate_twotower_config,
 )
 from slm_training.models.recursive_denoiser import (
+    RECURSIVE_EMPTY_F_MODES,
+    RECURSIVE_NORM_MODES,
+    RECURSIVE_UPDATE_MODES,
     SharedRecursiveDenoiserTower,
     StackedMatchedStateDenoiserTower,
 )
@@ -261,6 +264,10 @@ class TwoTowerConfig:
     # denoiser_arch="shared_recursive" (arm B's exact arch string, same reuse
     # convention as arm G's recursive_steps=1).
     recursive_detach_between_steps: bool = False
+    # SLM-243 (RSC1-04): orthogonal, default-off recurrence repair controls.
+    recursive_update_mode: str = "current_v1"
+    recursive_empty_f_mode: str = "pass_through"
+    recursive_norm_mode: str = "shared"
     # SLM-138: per-recursion CE weights for deep supervision (empty = off).
     recursive_depth_supervision_weights: tuple[float, ...] = ()
     # SLM-211: default-on weight tying between token embedding and output head.
@@ -631,6 +638,35 @@ class TwoTowerConfig:
             validate_twotower_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
+        repair_modes = {
+            "recursive_update_mode": (
+                self.recursive_update_mode,
+                RECURSIVE_UPDATE_MODES,
+                "current_v1",
+            ),
+            "recursive_empty_f_mode": (
+                self.recursive_empty_f_mode,
+                RECURSIVE_EMPTY_F_MODES,
+                "pass_through",
+            ),
+            "recursive_norm_mode": (
+                self.recursive_norm_mode,
+                RECURSIVE_NORM_MODES,
+                "shared",
+            ),
+        }
+        for field_name, (value, supported, _) in repair_modes.items():
+            if value not in supported:
+                raise ValueError(
+                    f"{field_name}={value!r} is not one of {supported!r}"
+                )
+        if self.denoiser_arch not in SHARED_RECURSIVE_ARCH_Z_STATE_MODES and any(
+            value != default for value, _, default in repair_modes.values()
+        ):
+            raise ValueError(
+                "non-default recursive repair modes require a shared_recursive "
+                "denoiser architecture"
+            )
         # SLM-237/238: architecture-aware recursive-depth supervision gate.
         if self.recursive_depth_supervision_weights or (
             self.recursive_depth_aux_mode is not None
@@ -1307,6 +1343,15 @@ class TwoTowerModel(nn.Module):
                     z_state_mode=SHARED_RECURSIVE_ARCH_Z_STATE_MODES[denoiser_arch],
                     detach_between_steps=bool(
                         getattr(self.config, "recursive_detach_between_steps", False)
+                    ),
+                    update_mode=str(
+                        getattr(self.config, "recursive_update_mode", "current_v1")
+                    ),
+                    empty_f_mode=str(
+                        getattr(self.config, "recursive_empty_f_mode", "pass_through")
+                    ),
+                    norm_mode=str(
+                        getattr(self.config, "recursive_norm_mode", "shared")
                     ),
                 )
             elif denoiser_arch == STACKED_DENOISER_ARCH:
