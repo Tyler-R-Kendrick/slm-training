@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from slm_training.evals.agentv import publish_agentv_evaluation
 from slm_training.harnesses.experiments.slm200_flow_objective_attribution import (
@@ -21,6 +22,31 @@ ROOT = Path(__file__).resolve().parents[1]
 DESIGN_JSON = ROOT / "docs/design/iter-slm200-flow-objective-attribution-20260723.json"
 DESIGN_MD = ROOT / "docs/design/iter-slm200-flow-objective-attribution-20260723.md"
 AGENTV_DIR = ROOT / "docs/design/iter-slm200-flow-objective-attribution-agentv-20260723"
+
+
+def _portable(value: Any) -> Any:
+    prefix = str(AGENTV_DIR.resolve())
+    if isinstance(value, str) and value.startswith(prefix):
+        return "agentv-dir://" + value[len(prefix) :].lstrip("/")
+    if isinstance(value, list):
+        return [_portable(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _portable(item) for key, item in value.items()}
+    return value
+
+
+def _rewrite_agentv_paths() -> None:
+    prefixes = {
+        str(AGENTV_DIR.resolve()): "agentv-dir://",
+        quote(str(AGENTV_DIR.resolve()), safe=""): quote("agentv-dir://", safe=""),
+    }
+    for path in (AGENTV_DIR / "agentv").rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".jsonl", ".md"}:
+            continue
+        content = path.read_text(encoding="utf-8")
+        for prefix, replacement in prefixes.items():
+            content = content.replace(prefix, replacement)
+        path.write_text(content, encoding="utf-8")
 
 
 def _cases(report: dict[str, Any]) -> list[dict[str, Any]]:
@@ -203,7 +229,8 @@ def _publish(report: dict[str, Any]) -> dict[str, Any]:
         cases=_cases(report),
         version_stamp=stamp,
     )
-    report["agentv"] = published
+    _rewrite_agentv_paths()
+    report["agentv"] = _portable(published)
     DESIGN_JSON.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
