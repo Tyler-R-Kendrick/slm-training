@@ -1392,12 +1392,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v77",
+      "version": "v78",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v78",
+          "date": "2026-07-24",
+          "note": "remove human-audit gate from SLM-266 hands-off principal admission"
+        },
         {
           "version": "v77",
           "date": "2026-07-24",
@@ -4774,7 +4779,7 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
@@ -4784,6 +4789,11 @@
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "make G12 optional evidence and derive Silver admission only from automated deep verification"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",

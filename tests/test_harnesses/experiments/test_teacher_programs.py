@@ -28,9 +28,14 @@ def test_request_and_generation_manifest_require_frozen_inputs():
     assert manifest.manifest_hash == manifest.manifest_hash
 
 
-def test_deep_mode_rejects_skipped_human_audit_and_keeps_gold():
-    result = admit_teacher_programs([_candidate("skipped", audit=None), _candidate("gold")], mode=AdmissionMode.DEEP_VERIFIED, protected_fingerprints=_EMPTY)
-    assert [row["candidate_id"] for row in result.accepted] == ["gold"]
+def test_deep_mode_is_hands_off_but_requires_independent_judge():
+    result = admit_teacher_programs(
+        [_candidate("automatic", audit=None), _candidate("missing-judge", audit=None, judge=None)],
+        mode=AdmissionMode.DEEP_VERIFIED,
+        protected_fingerprints=_EMPTY,
+    )
+    assert [row["candidate_id"] for row in result.accepted] == ["automatic"]
+    assert result.accepted[0]["admission_tier"] == "Silver"
     assert result.rejected[0]["reason"] == "required_gate_not_pass"
 
 

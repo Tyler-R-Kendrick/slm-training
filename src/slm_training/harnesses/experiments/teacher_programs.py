@@ -158,7 +158,7 @@ def _required_gates(candidate: TeacherProgramCandidate, mode: AdmissionMode) -> 
     gates = {
         Gate.LEXICAL, Gate.GRAMMAR, Gate.SCHEMA, Gate.REFERENCES, Gate.DATAFLOW,
         Gate.GROUNDING, Gate.CANONICAL, Gate.PROVENANCE,
-        Gate.INDEPENDENT_JUDGE, Gate.HUMAN_AUDIT,
+        Gate.INDEPENDENT_JUDGE,
     }
     if candidate.require_runtime:
         gates.add(Gate.RUNTIME)
@@ -241,14 +241,18 @@ def _admit_one(
     )
     if missing:
         return None, _reject(candidate, "required_gate_not_pass", gates=missing, verification=report.to_dict())
-    if mode is not AdmissionMode.PARSE_ONLY and report.tier.value not in {"Gold", "Silver"}:
-        return None, _reject(candidate, "principal_tier_not_gold_or_silver", verification=report.to_dict())
+    admission_tier = (
+        None
+        if mode is AdmissionMode.PARSE_ONLY
+        else "Gold" if report.tier.value == "Gold" else "Silver"
+    )
     return {
         "candidate_id": candidate.candidate_id,
         "record": record.to_dict(),
         "canonical_root_hash": fingerprint_openui(record.openui),
         "pair_hash": fingerprint_pair(record.prompt, record.openui),
         "verification": report.to_dict(),
+        "admission_tier": admission_tier,
     }, None
 
 
