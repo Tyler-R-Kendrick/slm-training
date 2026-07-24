@@ -53,6 +53,7 @@ from slm_training.dsl.production_codec import (
     decode_choices,
     encode_choices,
 )
+from slm_training.models.tokenizer import validate_token_layout
 
 if TYPE_CHECKING:  # pragma: no cover - typing-only import
     from slm_training.dsl.grammar.fastpath.compiler_draft import ConstraintEvidence
@@ -385,10 +386,15 @@ class ChoiceTokenizer:
             _add(f"{STATE_REF_PREFIX}{i}", "state")
 
         token_to_id = {t: i for i, t in enumerate(vocab)}
+        id_to_token = {i: t for t, i in token_to_id.items()}
+        id_to_kind = {i: kinds[i] for i in range(len(vocab))}
+        validate_token_layout(
+            token_to_id, id_to_token=id_to_token, id_to_kind=id_to_kind
+        )
         return cls(
             token_to_id=token_to_id,
-            id_to_token={i: t for t, i in token_to_id.items()},
-            id_to_kind={i: kinds[i] for i in range(len(vocab))},
+            id_to_token=id_to_token,
+            id_to_kind=id_to_kind,
             version=CHOICE_TOKENIZER_VERSION,
             sym_slots=sym_slots,
             ref_slots=ref_slots,
@@ -573,12 +579,17 @@ class ChoiceTokenizer:
                 f"symbol-only v{CHOICE_TOKENIZER_VERSION}"
             )
         token_to_id = {str(k): int(v) for k, v in data["token_to_id"].items()}
+        id_to_token = {i: t for t, i in token_to_id.items()}
+        id_to_kind = {
+            int(k): str(v) for k, v in (data.get("id_to_kind") or {}).items()
+        }
+        validate_token_layout(
+            token_to_id, id_to_token=id_to_token, id_to_kind=id_to_kind
+        )
         return cls(
             token_to_id=token_to_id,
-            id_to_token={i: t for t, i in token_to_id.items()},
-            id_to_kind={
-                int(k): str(v) for k, v in (data.get("id_to_kind") or {}).items()
-            },
+            id_to_token=id_to_token,
+            id_to_kind=id_to_kind,
             version=version,
             sym_slots=int(data.get("sym_slots") or DEFAULT_SYM_SLOTS),
             ref_slots=int(data.get("ref_slots") or DEFAULT_REF_SLOTS),
@@ -681,7 +692,10 @@ class ChoiceDecodeState:
         if expected == "integer":
             expected = "number"
         if expected == "string":
-            return expr_type == "placeholder"
+            # Content slots carry the explicit placeholder marker above. Other
+            # string-valued schema positions include closed enum literals such
+            # as Input's ``"email"`` type and must remain legal choices.
+            return expr_type in {"placeholder", "string"}
         return expected is None or expr_type in {str(expected), "any"}
 
     def _active_schema(self) -> dict[str, Any]:

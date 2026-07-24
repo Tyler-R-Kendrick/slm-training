@@ -87,6 +87,8 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
+      - name: Certify tokenizer–grammar invariants
+        run: python -m scripts.verify_tokenizer_grammar_invariants
 
   python-static:
     runs-on: ubuntu-latest

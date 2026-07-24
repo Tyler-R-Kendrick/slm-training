@@ -28,6 +28,7 @@ from slm_training.dsl.language_contract import grammar_string_literals
 from slm_training.dsl.openui_tokens import (
     STRUCTURAL_TOKENS as _FALLBACK_STRUCTURAL_TOKENS,
 )
+from slm_training.models.tokenizer import validate_token_layout
 
 
 def _active_structural_tokens() -> frozenset[str]:
@@ -736,6 +737,9 @@ class DSLNativeTokenizer:
         token_to_id = {t: i for i, t in enumerate(vocab)}
         id_to_token = {i: t for t, i in token_to_id.items()}
         id_to_kind = {i: kinds[i] for i in range(len(vocab))}
+        validate_token_layout(
+            token_to_id, id_to_token=id_to_token, id_to_kind=id_to_kind
+        )
         return cls(
             token_to_id=token_to_id,
             id_to_token=id_to_token,
@@ -1287,6 +1291,9 @@ class DSLNativeTokenizer:
                 i: rebuilt.id_to_kind.get(i, TokenKind.SPECIAL.value)
                 for i in id_to_token
             }
+        validate_token_layout(
+            token_to_id, id_to_token=id_to_token, id_to_kind=id_to_kind
+        )
         return cls(
             token_to_id=token_to_id,
             id_to_token=id_to_token,
