@@ -1392,12 +1392,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v75",
+      "version": "v76",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v76",
+          "date": "2026-07-24",
+          "note": "add deterministic SLM-207 valid-edit-flow closeout harness"
+        },
         {
           "version": "v75",
           "date": "2026-07-23",
@@ -7198,6 +7203,48 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial registration; SLM-194 FFE3-03 candidate proposal recall, fallback, parity, and wall-cost fixture"
+        }
+      ]
+    },
+    "harness.experiments.valid_edit_flow_closeout": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/valid_edit_flow_closeout.py",
+        "tests/test_harnesses/experiments/test_valid_edit_flow_closeout.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "stamp the closeout with its dedicated harness and matrix component versions"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; fail-closed SLM-207 evidence lock and causal disposition"
+        }
+      ]
+    },
+    "matrix.valid_edit_flow_closeout": {
+      "version": "vfa3-04-v2",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_valid_edit_flow_closeout.py",
+        "tests/test_scripts/test_run_valid_edit_flow_closeout.py",
+        "docs/design/valid-edit-flow-closeout.json",
+        "docs/design/valid-edit-flow-closeout.md"
+      ],
+      "history": [
+        {
+          "version": "vfa3-04-v2",
+          "date": "2026-07-24",
+          "note": "isolate design-output destination so closeout verification tests do not mutate committed evidence"
+        },
+        {
+          "version": "vfa3-04-v1",
+          "date": "2026-07-24",
+          "note": "initial registration; deterministic VFA program closeout"
         }
       ]
     },
