@@ -555,6 +555,99 @@
         },
         "stamped_at": "2026-07-24T07:03:21.189039+00:00"
       }
+    },
+    "E1084": {
+      "status": "invalid_transport_interruption",
+      "run_id": "e1084_v273_root_order_repro",
+      "relation": "fresh E937 scratch arm for lexer-native opaque root-reference order; no checkpoint parent",
+      "steps_requested": 395,
+      "last_observed_step": 35,
+      "last_observed_loss": 21.724807739257812,
+      "stop": "terminal transport interruption before harness finalization",
+      "checkpoint": null,
+      "train_summary": null,
+      "eligible_for_eval": false,
+      "eligible_for_sync_promotion_or_parent": false,
+      "next_action": "Restart a fresh E1084-equivalent arm in a persistent terminal; do not resume this incomplete state.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v41",
+          "harness.model_build.train": "v24",
+          "model.twotower": "v273"
+        }
+      }
+    },
+    "E1085": {
+      "status": "rejected_reachable_order_decode_no_metric_gain",
+      "run_id": "e1085_v273_root_order_repro",
+      "relation": "fresh E937 scratch treatment; binder-component, binder-arity, root-identity, and opaque root-order losses all 1",
+      "steps_requested": 395,
+      "steps_completed": 395,
+      "first_stop": "wall_time_budget",
+      "first_elapsed_wall_seconds": 95.67327989200021,
+      "resume_stop": "wall_time_budget",
+      "resume_elapsed_wall_seconds": 95.92322349699998,
+      "final_resume_stop": "steps",
+      "final_resume_elapsed_wall_seconds": 26.334646508000333,
+      "cumulative_elapsed_wall_seconds": 217.93114989700054,
+      "last_loss": 5.812128067016602,
+      "checkpoint": "outputs/runs/e1085_v273_root_order_repro/checkpoints/last.pt",
+      "checkpoint_sha256": "ccbeccc976079b269ab0b0c916f1af98ce65924fcca255831423e2e165052ad7",
+      "checkpoint_sync": "disabled_scratch",
+      "data_manifest_sha": "23e81f05616592a29c755a96849da1af279e40ee075a4353277b36739af679e1",
+      "root_reference_identity_strict_subset_records": 220,
+      "root_reference_order_loss_weight": 1.0,
+      "eligible_for_eval": false,
+      "eligible_for_sync_promotion_or_parent": false,
+      "next_action": "Do not sweep root-order decode weights or promote this checkpoint; design a distinct structural representation only after recording this matched negative result.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "harness.model_build.train": "v24"
+        },
+        "stamped_at": "2026-07-24T07:26:51.002657+00:00"
+      },
+      "matched_settings_result": {
+        "decode_off_run": "e1086_v273_root_order_settings_decode0",
+        "decode_on_run": "e1087_v273_root_order_settings_decode1",
+        "suite": "held_out",
+        "eval_limit": 1,
+        "eval_offset": 4,
+        "evaluation_policy": "strict_compiler_tree",
+        "decode_weights": [0.0, 1.0],
+        "off_metrics": {
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "strict_meaningful_rate": 0.0,
+          "placeholder_fidelity": 0.3333333333333333,
+          "structural_similarity": 0.06,
+          "component_type_recall": 0.0,
+          "reward_score": 0.707,
+          "decode_timeout_count": 0
+        },
+        "on_metrics": {
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "strict_meaningful_rate": 0.0,
+          "placeholder_fidelity": 0.3333333333333333,
+          "structural_similarity": 0.06,
+          "component_type_recall": 0.0,
+          "reward_score": 0.707,
+          "decode_timeout_count": 0,
+          "root_reference_order_applications": 17,
+          "root_reference_order_choice_changes": 7
+        },
+        "agent_evals": {
+          "decode_off_jsonl": "outputs/runs/e1086_v273_root_order_settings_decode0/agentv/openui-model-ship-gates-2026-07-24t07-32-39-177259-00-00.eval.jsonl",
+          "decode_on_jsonl": "outputs/runs/e1087_v273_root_order_settings_decode1/agentv/openui-model-ship-gates-2026-07-24t07-32-59-937079-00-00.eval.jsonl",
+          "sdk": "@agentv/core"
+        },
+        "verdict": "rejected: order decode is reachable and changes seven choices, but the matched outcome is metric-identical and fails strict/meaningful gates."
+      }
     }
   },
   "disposition": {
@@ -580,6 +673,8 @@
     "e1075_pending_targeted_held": true,
     "e1077_completed": true,
     "e1075_checkpoint_rejected": false,
+    "e1085_root_order_checkpoint_rejected": true,
+    "e1085_root_order_weight_sweep_closed": true,
     "next_hypothesis": "complete matched v272 lexer-native root-identity exposure, then test strict smoke before any targeted held rows"
   },
   "version_stamp": {

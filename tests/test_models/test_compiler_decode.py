@@ -22,6 +22,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     gold_compiler_decision_positions,
     root_declaration_reference_arity_target,
     root_declaration_reference_identity_target,
+    root_declaration_reference_order_target,
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
@@ -5482,6 +5483,7 @@ def test_binder_reference_arities_follow_grammar_token_roles() -> None:
         frozenset({0, 1}),
         3,
     )
+    assert root_declaration_reference_order_target(tokenizer, ids) == ((0, 1), 3)
 
 
 def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
@@ -5579,6 +5581,60 @@ def test_lexer_root_reference_identity_trains_and_biases_unused_binders() -> Non
     stop = CompletionPath((tokenizer.token_to_id["]"],), "grammar_rsqb")
     prefix = tokenizer.encode("root = Card([title,", add_special=False)
     bias = model._root_reference_identity_path_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        (title, body, stop),
+        torch.tensor([3.0, 1.0, 2.0]),
+    )
+    assert bias is not None
+    assert bias[0] < 0
+    assert 1.0 + bias[1] == pytest.approx(3.0)
+    assert bias[2] == 0
+
+
+def test_lexer_root_reference_order_trains_and_biases_next_binder() -> None:
+    model = _model(
+        root_reference_order_loss_weight=1.0,
+        root_reference_order_decode_weight=1.0,
+    )
+    record = ExampleRecord(
+        id="lexer-root-order",
+        prompt="card with title and body",
+        openui=(
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")\n'
+            'unused = TextContent(":slot_2")'
+        ),
+        placeholders=[":slot_0", ":slot_1", ":slot_2"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    auxiliary_loss = model.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+
+    assert model.root_reference_order_head is not None
+    assert model.root_reference_order_head.weight.grad is not None
+    assert model.root_reference_order_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["root_reference_order_rows"] == 1
+    assert model.last_training_metrics["root_reference_order_positions"] == 2
+
+    tokenizer = model.tokenizer
+    with torch.no_grad():
+        model.root_reference_order_head.weight.zero_()
+        model.root_reference_order_head.bias.zero_()
+        slots = tokenizer.bind_slots
+        model.root_reference_order_head.bias[slots + 1] = 4.0
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    title = CompletionPath((tokenizer.bind_id(1),), "bind_reference")
+    body = CompletionPath((tokenizer.bind_id(2),), "bind_reference")
+    stop = CompletionPath((tokenizer.token_to_id["]"],), "grammar_rsqb")
+    prefix = tokenizer.encode("root = Card([title,", add_special=False)
+    bias = model._root_reference_order_path_bias(
         ctx,
         ctx_pad,
         prefix,

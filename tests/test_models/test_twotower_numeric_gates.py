@@ -221,6 +221,8 @@ def test_model_build_config_rejects_reference_weights_for_other_models() -> None
         "binder_component_plan_decode_weight",
         "binder_topology_decode_weight",
         "binder_arity_decode_weight",
+        "root_reference_order_loss_weight",
+        "root_reference_order_decode_weight",
     ],
 )
 def test_model_build_config_rejects_compiler_path_levers_when_decode_is_off(
@@ -254,6 +256,16 @@ def test_model_build_config_accepts_lexer_identity_with_tree_decode() -> None:
     assert cfg.root_reference_identity_decode_weight == 1.0
 
 
+def test_model_build_config_accepts_lexer_root_order_with_tree_decode() -> None:
+    cfg = _valid_build_config(
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        root_reference_order_loss_weight=1.0,
+        root_reference_order_decode_weight=1.0,
+    )
+    assert cfg.root_reference_order_decode_weight == 1.0
+
+
 def test_twotower_rejects_untrained_root_arity_decode_head() -> None:
     with pytest.raises(ValueError, match="requires a trained checkpoint objective"):
         _valid_twotower_config(
@@ -261,6 +273,16 @@ def test_twotower_rejects_untrained_root_arity_decode_head() -> None:
             compiler_decode_mode="tree",
             root_reference_arity_decode_weight=1.0,
             root_reference_arity_loss_weight=0.0,
+        )
+
+
+def test_twotower_rejects_untrained_root_order_decode_head() -> None:
+    with pytest.raises(ValueError, match="requires a trained checkpoint objective"):
+        _valid_twotower_config(
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            root_reference_order_decode_weight=1.0,
+            root_reference_order_loss_weight=0.0,
         )
 
 

@@ -293,3 +293,38 @@ diagnostic only: it remains unsynced, unpromoted, unserved, and non-parentable.
 It is now eligible solely for the preregistered decode-off Settings diagnostic;
 that AgentEvals/AgentV result determines whether the earlier Settings regression
 was decode-ranking-specific or checkpoint-level.
+
+## E1084 v273 root-reference order (invalid transport interruption)
+
+E1084 began the fresh E937 CPU-scratch lexer/tree treatment with the E1080
+binder-component, binder-arity, and root-identity objectives plus the new
+opaque, position-conditioned root-reference-order objective. The terminal
+transport interrupted it at step 35 before the derived harness budget could
+finalize a checkpoint or `train_summary.json`; its last observed loss was
+21.7248 and order accuracy was 0.3333 over four ordinal positions. It is
+invalid operationally and supplies no quality evidence: do not resume,
+evaluate, sync, promote, serve, or parent it. Restart the same fresh arm in a
+persistent terminal session.
+
+## E1085 v273 root-reference order (own-state partial)
+
+E1085 is the replacement fresh E937 treatment, using CPU scratch lexer/tree,
+batch 4, seed 0, and loss weights 1 for binder component, binder arity,
+root-identity, and the new order head. The canonical 95-second harness cap
+cleanly stopped at 159/395 steps after 95.67s and serialized its own
+`last.pt` plus `last_full_state.pt`. Its first own-state continuation likewise
+stopped cleanly at 290/395 after 95.92s. The final own-state continuation then
+reached exactly 395 steps in 26.33s (217.93 cumulative seconds), with final
+loss 5.8121 and checkpoint SHA `ccbeccc9...052ad7`. This completed unsynced
+local scratch checkpoint is eligible only for the matched Settings
+decode-off/decode-on diagnostic and is never promotion, serving, sync, or parent
+evidence.
+
+The preregistered Settings pair is a matched negative result. E1086 (order
+decode 0) and E1087 (weight 1) both produce parse 1.0, strict/meaningful 0.0,
+fidelity 0.3333, structure 0.06, component recall 0.0, reward 0.707, and zero
+timeouts under the strict compiler-tree policy. The order head is genuinely
+reachable in E1087—17 applications and seven choice changes—but yields no end
+metric gain. Both runs emitted AgentEvals JSONL and pinned `@agentv/core`
+bundles. Therefore root-order weight sweeps are closed: E1085 is rejected and
+must never sync, promote, serve, or become a parent.

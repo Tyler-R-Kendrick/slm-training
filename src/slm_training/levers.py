@@ -143,6 +143,7 @@ _COMPILER_PATH_DECODE_LEVERS: Final = (
     "binder_component_plan_decode_weight",
     "binder_topology_decode_weight",
     "binder_arity_decode_weight",
+    "root_reference_order_decode_weight",
 )
 LEVER_REQUIREMENTS: Final = {
     **{name: (_CHOICE,) for name in _CHOICE_ONLY_DECODE_LEVERS},
@@ -150,6 +151,7 @@ LEVER_REQUIREMENTS: Final = {
     **{name: (_LEXER_COMPILER,) for name in _COMPILER_PATH_DECODE_LEVERS},
     "root_reference_arity_loss_weight": (_CHOICE, _LEXER_COMPILER),
     "root_reference_identity_loss_weight": (_CHOICE, _LEXER_COMPILER),
+    "root_reference_order_loss_weight": (_LEXER_COMPILER,),
 }
 
 # A decode head is usable only when its checkpoint trained that head. Without
@@ -168,6 +170,7 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
     "binder_arity_decode_weight": ("binder_arity_loss_weight",),
     "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",),
     "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),
+    "root_reference_order_decode_weight": ("root_reference_order_loss_weight",),
 }
 
 # Runtime prerequisites belong in the same registry as codec support.  Keeping

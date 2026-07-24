@@ -706,6 +706,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias terminal root-list references by learned inclusion.",
     )
     parser.add_argument(
+        "--root-reference-order-loss-weight",
+        type=float,
+        default=0.0,
+        help="Lexer/tree CE weight for ordered opaque terminal-root binders.",
+    )
+    parser.add_argument(
+        "--root-reference-order-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias lexer/tree terminal-root binders by their emitted ordinal.",
+    )
+    parser.add_argument(
         "--required-slot-margin-decode-weight",
         type=float,
         default=0.0,
@@ -1227,6 +1239,8 @@ def main(argv: list[str] | None = None) -> int:
         root_reference_identity_decode_weight=(
             args.root_reference_identity_decode_weight
         ),
+        root_reference_order_loss_weight=args.root_reference_order_loss_weight,
+        root_reference_order_decode_weight=args.root_reference_order_decode_weight,
         required_slot_margin_decode_weight=(
             args.required_slot_margin_decode_weight
         ),

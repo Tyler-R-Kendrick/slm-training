@@ -387,6 +387,8 @@ class TwoTowerConfig:
     root_reference_identity_loss_weight: float = 0.0
     root_reference_identity_negative_weight: float = 1.0
     root_reference_identity_decode_weight: float = 0.0
+    root_reference_order_loss_weight: float = 0.0
+    root_reference_order_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -718,6 +720,9 @@ def _load_checkpoint_state(
         }
         allowed_missing |= {
             key for key in missing if key.startswith("root_reference_identity_head.")
+        }
+        allowed_missing |= {
+            key for key in missing if key.startswith("root_reference_order_head.")
         }
     # SLM-138: a shared-recursive denoiser adds z-state parameters that older
     # stacked checkpoints legitimately omit; warm-start them randomly. Only
@@ -1570,6 +1575,28 @@ class TwoTowerModel(nn.Module):
             if root_reference_identity_enabled
             else None
         )
+        root_reference_order_enabled = (
+            float(
+                getattr(self.config, "root_reference_order_loss_weight", 0.0) or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "root_reference_order_decode_weight", 0.0) or 0.0
+            )
+            > 0.0
+        )
+        root_reference_order_slots = int(getattr(tokenizer, "bind_slots", 0) or 0)
+        self.root_reference_order_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    root_reference_order_slots * root_reference_order_slots,
+                ),
+                111,
+            )
+            if root_reference_order_enabled and root_reference_order_slots > 0
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -1764,6 +1791,7 @@ class TwoTowerModel(nn.Module):
             "binder_arity_head.",
             "root_reference_arity_head.",
             "root_reference_identity_head.",
+            "root_reference_order_head.",
             "trust_gate.",
             "survival_head.",
         )
@@ -3735,6 +3763,73 @@ class TwoTowerModel(nn.Module):
                     "root_reference_identity_classes_mean": (
                         sum(identity_class_counts) / len(identity_class_counts)
                         if identity_class_counts
+                        else 0.0
+                    ),
+                }
+            )
+
+        root_order_w = float(
+            getattr(self.config, "root_reference_order_loss_weight", 0.0) or 0.0
+        )
+        if root_order_w > 0.0 and self.root_reference_order_head is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                root_declaration_reference_order_target,
+            )
+
+            slots = int(getattr(self.tokenizer, "bind_slots", 0) or 0)
+            order_logits = self.root_reference_order_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            ).view(len(batch), slots, slots)
+            order_losses: list[torch.Tensor] = []
+            order_hits: list[torch.Tensor] = []
+            order_positions: list[int] = []
+            order_class_counts: list[int] = []
+            for row in range(len(batch)):
+                target_and_bound = root_declaration_reference_order_target(
+                    self.tokenizer, target_ids[row].tolist()
+                )
+                if target_and_bound is None:
+                    continue
+                references, section_count = target_and_bound
+                valid_count = min(int(section_count), slots)
+                position_count = min(len(references), slots)
+                if valid_count <= 0 or position_count <= 0:
+                    continue
+                targets = torch.as_tensor(
+                    references[:position_count], device=ctx.device
+                )
+                valid_targets = targets.lt(valid_count)
+                if not valid_targets.any():
+                    continue
+                positions = torch.arange(position_count, device=ctx.device)[valid_targets]
+                scores = order_logits[row, positions, :valid_count]
+                targets = targets[valid_targets]
+                order_losses.append(F.cross_entropy(scores, targets))
+                order_hits.append(scores.argmax(dim=-1).eq(targets).float().mean())
+                order_positions.append(int(targets.numel()))
+                order_class_counts.append(valid_count)
+            order_loss = (
+                torch.stack(order_losses).mean()
+                if order_losses
+                else order_logits.sum() * 0.0
+            )
+            detached = root_order_w * order_loss
+            if self._detached_auxiliary_loss is not None:
+                detached = detached + self._detached_auxiliary_loss
+            self._detached_auxiliary_loss = detached
+            self.last_training_metrics.update(
+                {
+                    "root_reference_order_loss": float(order_loss.detach().cpu()),
+                    "root_reference_order_accuracy": float(
+                        torch.stack(order_hits).mean().detach().cpu()
+                        if order_hits
+                        else 0.0
+                    ),
+                    "root_reference_order_rows": len(order_losses),
+                    "root_reference_order_positions": sum(order_positions),
+                    "root_reference_order_classes_mean": (
+                        sum(order_class_counts) / len(order_class_counts)
+                        if order_class_counts
                         else 0.0
                     ),
                 }
@@ -9050,6 +9145,108 @@ class TwoTowerModel(nn.Module):
                 bias[position] = -20.0 * mix
         return bias
 
+    def _root_reference_order_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        paths: tuple,
+        scores: torch.Tensor | list[float],
+    ) -> list[float] | None:
+        """Re-rank the next lexer root binder by its opaque emitted ordinal."""
+        weight = float(
+            getattr(self.config, "root_reference_order_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.root_reference_order_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            active_declaration_binder_id,
+        )
+
+        try:
+            is_root = active_declaration_binder_id(
+                self.tokenizer, prefix
+            ) == self.tokenizer.bind_id(0)
+            newline_id = self.tokenizer.token_to_id.get("NL")
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+        if not is_root:
+            return None
+        active_start = (
+            max(
+                (
+                    index
+                    for index, token_id in enumerate(prefix)
+                    if newline_id is not None and token_id == int(newline_id)
+                ),
+                default=-1,
+            )
+            + 1
+        )
+        emitted = [
+            int(slot) - 1
+            for token_id in prefix[active_start:]
+            if (slot := self.tokenizer.bind_slot_of(token_id)) is not None and slot > 0
+        ]
+        slots = int(getattr(self.tokenizer, "bind_slots", 0) or 0)
+        if len(emitted) >= slots or slots <= 0:
+            return None
+        references: list[tuple[int, int]] = []
+        for position, path in enumerate(paths):
+            reference = next(
+                (
+                    int(slot) - 1
+                    for token_id in path.token_ids
+                    if (slot := self.tokenizer.bind_slot_of(token_id)) is not None
+                    and slot > 0
+                ),
+                None,
+            )
+            if reference is not None:
+                references.append((position, reference))
+        if not references:
+            return None
+        valid_count = min(
+            max(reference for _position, reference in references) + 1,
+            slots,
+        )
+        unused = [
+            (position, reference)
+            for position, reference in references
+            if reference < valid_count and reference not in emitted
+        ]
+        if not unused:
+            return None
+        logits = self.root_reference_order_head(self._pool_context(ctx, ctx_pad))[0]
+        logits = logits.view(slots, slots)[len(emitted), :valid_count]
+
+        def score_value(score: torch.Tensor | float) -> float:
+            if isinstance(score, torch.Tensor):
+                return float(score.detach().cpu())
+            return float(score)
+
+        ranked_unused = sorted(
+            unused,
+            key=lambda item: float(logits[item[1]].detach().cpu()),
+            reverse=True,
+        )
+        ranked_reference_scores = sorted(
+            (scores[position] for position, _reference in references),
+            key=score_value,
+            reverse=True,
+        )
+        mix = min(weight, 1.0)
+        bias = [0.0] * len(paths)
+        for rank, (position, _reference) in enumerate(ranked_unused):
+            bias[position] = mix * (
+                score_value(ranked_reference_scores[rank])
+                - score_value(scores[position])
+            )
+        for position, reference in references:
+            if reference in emitted:
+                bias[position] = -20.0 * mix
+        return bias
+
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -9247,6 +9444,17 @@ class TwoTowerModel(nn.Module):
                     stats.root_reference_identity_applications += 1
                     stats.root_reference_identity_choice_changes += int(
                         int(scores.argmax().item()) != before_root_identity
+                    )
+            root_order_bias = self._root_reference_order_path_bias(
+                ctx, ctx_pad, prefix, paths, scores
+            )
+            if root_order_bias is not None:
+                before_root_order = int(scores.argmax().item())
+                scores = scores + scores.new_tensor(root_order_bias)
+                if stats is not None:
+                    stats.root_reference_order_applications += 1
+                    stats.root_reference_order_choice_changes += int(
+                        int(scores.argmax().item()) != before_root_order
                     )
             semantic_plan_bias = self._semantic_plan_bias(
                 plan_row,
@@ -9566,6 +9774,21 @@ class TwoTowerModel(nn.Module):
                 stats.root_reference_identity_choice_changes += int(
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_root_identity
+                )
+        root_order_bias = self._root_reference_order_path_bias(
+            ctx, ctx_pad, prefix, paths, path_scores
+        )
+        if root_order_bias is not None:
+            before_root_order = max(range(len(paths)), key=path_scores.__getitem__)
+            path_scores = [
+                score + root_order_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+            if stats is not None:
+                stats.root_reference_order_applications += 1
+                stats.root_reference_order_choice_changes += int(
+                    max(range(len(paths)), key=path_scores.__getitem__)
+                    != before_root_order
                 )
         coverage_close_bias = self._slot_coverage_close_path_bias(
             prefix, paths, slot_contract, path_scores

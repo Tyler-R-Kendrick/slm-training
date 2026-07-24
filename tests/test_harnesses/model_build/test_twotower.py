@@ -344,6 +344,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             root_reference_identity_loss_weight=0.0,
             root_reference_identity_negative_weight=3.0,
             root_reference_identity_decode_weight=0.0,
+            root_reference_order_loss_weight=1.0,
+            root_reference_order_decode_weight=0.4,
         ),
     )
     assert model.component_inventory_head is not None
@@ -390,6 +392,9 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.root_reference_identity_loss_weight == 0.0
     assert loaded.config.root_reference_identity_negative_weight == 3.0
     assert loaded.config.root_reference_identity_decode_weight == 0.0
+    assert loaded.root_reference_order_head is not None
+    assert loaded.config.root_reference_order_loss_weight == 1.0
+    assert loaded.config.root_reference_order_decode_weight == 0.4
 
     apply_runtime_overrides(
         loaded,
@@ -406,6 +411,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
                     "binder_arity_decode_weight",
                     "root_reference_arity_decode_weight",
                     "root_reference_identity_decode_weight",
+                    "root_reference_order_decode_weight",
                 }
             ),
             compiler_decode_mode="tree",
@@ -417,6 +423,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_arity_decode_weight=0.0,
             root_reference_arity_decode_weight=0.0,
             root_reference_identity_decode_weight=0.0,
+            root_reference_order_decode_weight=0.0,
         ),
     )
     assert loaded.config.component_inventory_decode_weight == 0.0
@@ -427,6 +434,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_arity_decode_weight == 0.0
     assert loaded.config.root_reference_arity_decode_weight == 0.0
     assert loaded.config.root_reference_identity_decode_weight == 0.0
+    assert loaded.config.root_reference_order_decode_weight == 0.0
 
 
 def test_slot_pair_interaction_never_encodes_empty_next_slot() -> None:

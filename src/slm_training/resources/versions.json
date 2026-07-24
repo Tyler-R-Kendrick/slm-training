@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v40",
+      "version": "v41",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v41",
+          "date": "2026-07-24",
+          "note": "Gate lexer-only ordered root-reference training and decode on a trained checkpoint objective"
+        },
         {
           "version": "v40",
           "date": "2026-07-23",
@@ -2895,7 +2900,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v57",
+      "version": "v58",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2908,6 +2913,11 @@
         "scripts/run_agentv_eval.mjs"
       ],
       "history": [
+        {
+          "version": "v58",
+          "date": "2026-07-24",
+          "note": "Expose lexer/tree ordered root-reference decode override and its decode telemetry"
+        },
         {
           "version": "v57",
           "date": "2026-07-24",
@@ -3265,13 +3275,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-24",
+          "note": "Record lexer-native ordered root-reference objective and its opaque ordinal recipe metadata"
+        },
         {
           "version": "v23",
           "date": "2026-07-23",
@@ -4264,7 +4279,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v272",
+      "version": "v273",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4289,6 +4304,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v273",
+          "date": "2026-07-24",
+          "note": "Add a lexer-native position-conditioned root-reference head over opaque request-local binder ordinals"
+        },
         {
           "version": "v272",
           "date": "2026-07-23",

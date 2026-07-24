@@ -640,6 +640,65 @@ def root_declaration_reference_identity_target(
     return references, max(available, max(references, default=-1) + 1)
 
 
+def root_declaration_reference_order_target(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> tuple[tuple[int, ...], int] | None:
+    """Return terminal-root binder ordinals in emitted order and their bound.
+
+    Ordinals are request-local lexer binder slots (never source names).  This
+    intentionally retains the order lost by the identity-set target.
+    """
+    try:
+        root = int(tokenizer.bind_id(0))
+        equal_id = int(tokenizer.token_to_id["="])
+        newline_id = tokenizer.token_to_id.get("NL")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    statements: list[list[int]] = []
+    current: list[int] = []
+    for raw_token_id in token_ids:
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            if current:
+                statements.append(current)
+            current = []
+        else:
+            current.append(token_id)
+    if current:
+        statements.append(current)
+
+    references: tuple[int, ...] | None = None
+    available = 0
+    for statement in statements:
+        declaration_at = next(
+            (
+                index
+                for index, token_id in enumerate(statement[:-1])
+                if token_id in bind_ids and statement[index + 1] == equal_id
+            ),
+            None,
+        )
+        if declaration_at is None:
+            continue
+        declaration_slot = tokenizer.bind_slot_of(statement[declaration_at])
+        if declaration_slot is None:
+            continue
+        if declaration_slot > 0:
+            available = max(available, int(declaration_slot))
+        if statement[declaration_at] == root:
+            references = tuple(
+                int(slot) - 1
+                for token_id in statement[declaration_at + 2 :]
+                if token_id in bind_ids
+                and (slot := tokenizer.bind_slot_of(token_id)) is not None
+                and slot > 0
+            )
+    if references is None:
+        return None
+    return references, max(available, max(references, default=-1) + 1)
+
+
 def active_parent_component_ids(
     tokenizer: Any, prefix_ids: list[int]
 ) -> tuple[int, ...]:
@@ -2018,6 +2077,7 @@ __all__ = [
     "active_declaration_reference_count",
     "root_declaration_reference_arity_target",
     "root_declaration_reference_identity_target",
+    "root_declaration_reference_order_target",
     "active_parent_component_ids",
     "binder_component_targets",
     "binder_reference_arities",
