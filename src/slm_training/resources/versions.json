@@ -4332,6 +4332,25 @@
         }
       ]
     },
+    "harness.experiments.slm301_prompt_observability": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm301_prompt_observability.py",
+        "scripts/run_slm301_prompt_observability.py",
+        "tests/test_harnesses/experiments/test_slm301_prompt_observability.py",
+        "docs/design/iter-slm301-prompt-observability-20260724.json",
+        "docs/design/iter-slm301-prompt-observability-20260724.md",
+        "docs/design/slm301-slot-observability-audit-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-301 LAR1-04 prompt-observability arms (as-is vs +inventory) with phase-0 coverage classification, AR/X22 baselines, paired predeclared-delta report"
+        }
+      ]
+    },
     "harness.model_build.eval": {
       "version": "v49",
       "kind": "harness",
