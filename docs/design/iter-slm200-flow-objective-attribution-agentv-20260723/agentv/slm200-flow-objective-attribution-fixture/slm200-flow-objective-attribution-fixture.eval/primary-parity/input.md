@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"declared_differences_only": true, "identical_decoder": true, "identical_row_order": true, "paired_initialization": true, "parameter_count_within_one_percent": true}, "claim": "fixture_wiring_not_confirmation", "failures": [], "result": {"declared_differences_only": true, "identical_decoder": true, "identical_row_order": true, "initialization_digest_counts": {"0": 1, "1": 1, "2": 1, "3": 1, "4": 1}, "paired_initialization": true, "parameter_count_within_one_percent": true, "parameter_counts": [4772]}}

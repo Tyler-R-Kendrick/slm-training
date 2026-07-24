@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"endpoint_tv_below_001": true, "event_count_tv_below_005": true, "max_rate_error_below_1e3": true, "valid_generator": true, "zero_illegal_rate": true}, "claim": "fixture_wiring_not_confirmation", "failures": [], "result": {"analytic_endpoint_tv": 0.0, "event_count_tv": 0.0, "rate_fit": {"edges": 5, "final_mse": 6.312777713901596e-07, "initial_mse": 0.09415864944458008, "max_abs_error": 0.0003113746643066406, "rows": 5, "source_predicted_hazard": 1.0003113746643066, "source_target_hazard": 1.0}}}
