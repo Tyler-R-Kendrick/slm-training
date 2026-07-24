@@ -317,3 +317,56 @@ def test_cli_score_mode(tmp_path: Path) -> None:
     assert code == 0
     payload = json.loads((out / "scoreboard.json").read_text())
     assert set(payload["arms"]) == {"C"}
+
+
+def _arm(n=20, low=0.0, high=0.1, syntax=0.5):
+    return {
+        "n": n,
+        "v2_strict": {"wilson_95": {"low": low, "high": high}},
+        "syntax": {"rate": syntax},
+    }
+
+
+def test_disposition_scale_binding():
+    from slm_training.harnesses.experiments.external_ceiling_matrix import (
+        compute_disposition,
+    )
+
+    sb = {
+        "arms": {
+            "A": _arm(),
+            "B": _arm(high=0.2),
+            "C": _arm(low=0.3, high=0.6, syntax=0.9),
+        }
+    }
+    out = compute_disposition(sb)
+    assert out["disposition"] == "scale_binding"
+
+
+def test_disposition_task_or_metric_binding():
+    from slm_training.harnesses.experiments.external_ceiling_matrix import (
+        compute_disposition,
+    )
+
+    sb = {
+        "arms": {
+            "A": _arm(),
+            "B": _arm(high=0.2),
+            "C": _arm(low=0.0, high=0.05, syntax=0.9),
+        }
+    }
+    assert compute_disposition(sb)["disposition"] == "task_or_metric_binding"
+
+
+def test_disposition_inconclusive_when_arm_incomplete():
+    from slm_training.harnesses.experiments.external_ceiling_matrix import (
+        compute_disposition,
+    )
+
+    sb = {"arms": {"A": _arm(), "B": _arm(), "C": _arm(n=3)}}
+    out = compute_disposition(sb)
+    assert out["disposition"] == "inconclusive"
+    assert out["incomplete_arms"] == ["C"]
+    assert "resolving_evidence" in out
+    out2 = compute_disposition(sb, not_run=("B", "C"))
+    assert out2["not_run_arms"] == ["B", "C"]

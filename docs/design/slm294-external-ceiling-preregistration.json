@@ -29,7 +29,11 @@
   },
   "metrics": {
     "primary": "binding_aware_meaningful_v2_rate_strict (candidate_pending_calibration; deterministic fail-closed, no LLM judge)",
-    "secondary": ["meaningful_program_v1_report verdict rate + typed reason-code histogram (diagnostic-only per SLM-288 demotion)", "official syntax/validity rate (invariant)", "binding_aware_meaningful_v2 coverage"],
+    "secondary": [
+      "meaningful_program_v1_report verdict rate + typed reason-code histogram (diagnostic-only per SLM-288 demotion)",
+      "official syntax/validity rate (invariant)",
+      "binding_aware_meaningful_v2 coverage"
+    ],
     "intervals": "Wilson score 95% per arm (slm_training.evals.power_protocol.wilson_interval)",
     "human_subset": "the SLM-288 frozen packet is output-labels of prior generations and does not transfer to new arm outputs; the three smoke prompts it covers are included in analysis as a secondary stratum with agent-rater labels relabeled blind per arm output (disclosed non-human)"
   },
@@ -52,5 +56,44 @@
     "scale_binding": "LAR2-LAR4 architecture program preserved; scale is the binding lever",
     "task_or_metric_binding": "LAR2-LAR4 architecture program closes; task/data/metric contract must change first",
     "inconclusive": "LAR2-LAR4 remain blocked pending the named resolving evidence"
-  }
+  },
+  "amendments": [
+    {
+      "date": "2026-07-24",
+      "before_results": true,
+      "change": "arm A decode: unconstrained generation + official post-validation (identical to arms B/C) instead of canonical grammar-constrained decode",
+      "evidence": "grammar-constrained LTR decode costs >20s/token on rico-scale layouts (stuck in lark LALR accepts() per candidate token; a single request exceeds the 170s command cap). Unconstrained decode: 256 tokens in 11.0s on the same checkpoint. Constraining is therefore infeasible under the run policy for every arm; uniform unconstrained+post-validation is the fair comparison and legality is still measured via the official parser.",
+      "also": "arm A training uses chunked --resume-from under the 170s command cap (~15s/step on this corpus; the first 600-step attempt was wall-capped at 12 steps and is discarded)"
+    },
+    {
+      "date": "2026-07-24",
+      "before_results": true,
+      "change": "arm C loads bfloat16 instead of float32 (same greedy decode/template; host RAM cannot hold a 7B fp32 copy)",
+      "evidence": "fp32 load of Qwen2.5-7B-Instruct drove host RAM to 0 GB available and the chunk was killed before producing any output."
+    },
+    {
+      "date": "2026-07-24",
+      "before_results": true,
+      "change": "evaluated request set fixed to the deterministic first-20 prefix of the 35 frozen requests; max_new_tokens 384 -> 256; execution serialized one request per command inside the 170s policy cap",
+      "evidence": "measured latency under memory contention was 661-1700s/request (SmolLM2-135M), breaching both the 170s command cap and the locked 240 CPU-minute per-arm cap at n=35. n=20 still meets the LAR0 minimum (DEFAULT_MIN_SUITE_N=20). All outputs produced by over-cap commands were discarded, not scored."
+    },
+    {
+      "date": "2026-07-24",
+      "before_results": true,
+      "change": "arm C (Qwen2.5-7B) declared not_run under local policy unless an uncontended single request completes within 170s; otherwise the disposition is inconclusive with arm C as the resolving evidence",
+      "evidence": "7B bf16 CPU generation is projected at several minutes per request even uncontended (measured fp32 OOM; no local GPU; HF_TOKEN unset so managed HF Jobs unavailable)."
+    },
+    {
+      "date": "2026-07-24",
+      "before_results": true,
+      "change": "arm B (SmolLM2-135M) also declared not_run under local policy: a single uncontended fp32 request took 296s (>170s cap); bf16 projection still exceeds the cap; reducing max_new_tokens to fit was rejected because truncating external outputs while arm A gets full length would bias the scale comparison. All over-cap outputs discarded unscored.",
+      "evidence": "measured 2026-07-24: 4m56s for one 256-token greedy request, model load ~30s, 12-core CPU host; user time 14m41s."
+    },
+    {
+      "date": "2026-07-24",
+      "before_results": true,
+      "change": "arm A decode also not_run: the trained 600-step checkpoint's constrained decode costs >17s/token on rico-scale layouts (>280s for 16 tokens; lark lexer rebuild per token in compiler_draft.build_completion_forest). Arm A TRAINING completed within policy (600 steps, final loss 1.5187, chunked resume under the 170s cap). No request of any arm completed within the cap on this host; every over-cap output was discarded unscored.",
+      "evidence": "faulthandler traces 2026-07-24 (models/grammar.py pick_constrained_token -> compiler_draft build_completion_forest -> lark _build_lexer); fresh-untrained model decodes the same record in 8.5s/64 tokens while the trained checkpoint exceeds 280s/16 tokens."
+    }
+  ]
 }

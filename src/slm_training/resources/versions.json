@@ -1929,6 +1929,28 @@
         }
       ]
     },
+    "harness.experiments.external_ceiling": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/external_scorer.py",
+        "scripts/run_external_ceiling.py",
+        "src/slm_training/harnesses/experiments/external_ceiling_matrix.py",
+        "tests/test_scripts/test_run_external_ceiling_frontier.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "add arm-A tiny-baseline chunk runner, locked-threshold disposition mode with EvidenceBundleV1 plus AgentV, per-arm dtype and max_new_tokens controls"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-294 external-ceiling frontier execution (chunked resume, atomic raw JSONL, Wilson scoreboard) and scorer generate()"
+        }
+      ]
+    },
     "harness.experiments.ast_sketch_retrieval": {
       "version": "v2",
       "kind": "harness",
@@ -3896,6 +3918,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: add the SLM-294 diagnostic checkpoint row to the shared model card without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
