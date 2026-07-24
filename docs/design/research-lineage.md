@@ -1728,6 +1728,22 @@ through the active pack, and fails before model input construction. It adds no
 learned mechanism and does not establish suffix-completion or composition
 capability.
 
+## Discrete flow objective-attribution fixture (VFA1-02 / SLM-200)
+
+| | |
+| --- | --- |
+| **Papers** | Gat et al., *Discrete Flow Matching*, [arXiv:2407.15595](https://arxiv.org/abs/2407.15595). Lipman et al., *Flow Matching for Generative Modeling*, [arXiv:2210.02747](https://arxiv.org/abs/2210.02747). |
+| **Fidelity** | **Adapted / surrogate** — exact finite-graph A9 plus explicitly labelled `adapted_path_approximation` bridge targets; not faithful production DFM |
+| **Code** | [`slm200_flow_objective_attribution.py`](../../src/slm_training/harnesses/experiments/slm200_flow_objective_attribution.py) and [`run_flow_objective_attribution.py`](../../scripts/run_flow_objective_attribution.py) |
+| **Evidence** | [`iter-slm200-flow-objective-attribution-20260723.md`](iter-slm200-flow-objective-attribution-20260723.md) |
+
+The A0–A9 registry isolates normalized CE, time/state weighting, hazard, edge
+rate, and shuffled-target mechanisms while keeping exact candidate authority,
+total capacity, initialization, row order, and decode fixed. The committed run
+is only a two-target non-publishable fixture screen: confirmation remains
+untouched, the shuffled control does not degrade, and no causal weighting,
+hazard, transport, checkpoint, or ship conclusion is supported.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

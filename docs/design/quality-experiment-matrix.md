@@ -6269,3 +6269,23 @@ truthfully labelled `adapted_path_approximation`, confirmation stays blocked
 for VFA1-02, flow remains default-off, and no checkpoint is written. AgentV
 passes 5/5 contract and honesty cases. Full evidence:
 [`iter-slm199-legal-edit-flow-20260723.md`](iter-slm199-legal-edit-flow-20260723.md).
+
+# VFA1-02 — objective × state-weighting attribution (2026-07-23)
+
+Accept the matched factorial and confirmation-firewall wiring, but record no
+objective attribution. A1–A8 use the same 4,772 total parameters, paired
+initialization per seed, identical SLM-196 train-row/candidate order, and the
+same exact-live one-edit fixed-K decoder. A8 rotates surrogate rates only among
+supervised candidates; A9 independently reproduces the exact closed CTMC
+oracle with maximum rate error below 0.000312 and zero endpoint/event-count TV.
+AgentV passes all 5/5 field-level contract and honesty cases.
+
+The measured production screen is non-causal: every arm has 0/2 free-running
+target exactness, including A7 and shuffled A8, so the negative control fails
+to degrade and requires investigation. The corpus remains non-publishable,
+contains only two independent targets, and lacks a hash-pinned A0
+identical-state input. SLM-183 measured only 0.11 power at the preregistered
+0.08 MDE. Confirmation was not touched, its ledger is empty, no checkpoint was
+written, and the disposition is `no_conclusion_underpowered_fixture`. Full
+evidence:
+[`iter-slm200-flow-objective-attribution-20260723.md`](iter-slm200-flow-objective-attribution-20260723.md).
