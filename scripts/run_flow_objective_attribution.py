@@ -57,7 +57,17 @@ def _cases(report: dict[str, Any]) -> list[dict[str, Any]]:
                     "declared_differences_only",
                 )
             ),
-            "checks": parity,
+            "checks": {
+                "parameter_count_within_one_percent": parity[
+                    "parameter_count_within_one_percent"
+                ],
+                "identical_row_order": parity["identical_row_order"],
+                "identical_decoder": parity["identical_decoder"],
+                "paired_initialization": parity["paired_initialization"],
+                "declared_differences_only": parity[
+                    "declared_differences_only"
+                ],
+            },
             "result": parity,
         },
         {
