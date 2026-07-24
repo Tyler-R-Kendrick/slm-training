@@ -63,6 +63,64 @@ ACTION_REPLACE_STATEMENT = 9  # swap one canonical V0.5 statement for another
 ACTION_BIND_PLACEHOLDER = 10  # (re)bind a leaf's slot to an inventory placeholder
 N_ACTIONS = 11
 
+ACTION_NAMES: tuple[str, ...] = (
+    "STOP",
+    "REPLACE",
+    "ADD",
+    "REMOVE",
+    "ADD_CONTAINER",
+    "REMOVE_CONTAINER",
+    "INSERT_SUBTREE",
+    "REPLACE_SUBTREE",
+    "INSERT_STATEMENT",
+    "REPLACE_STATEMENT",
+    "BIND_PLACEHOLDER",
+)
+ACTION_IDS: dict[str, int] = {name: i for i, name in enumerate(ACTION_NAMES)}
+
+# SLM-310: mutation kinds that can realize a given *inverse* (supervised
+# repair) action. sample_mutation reweights its forward-noise choice by
+# sampling the inverse action from a declared distribution and mapping back
+# to a mutation kind. STOP is never an inverse action (unreachable).
+INVERSE_TO_MUTATION_KINDS: dict[int, tuple[int, ...]] = {
+    ACTION_REPLACE: (ACTION_REPLACE,),
+    ACTION_ADD: (ACTION_REMOVE,),
+    ACTION_REMOVE: (ACTION_ADD, ACTION_INSERT_STATEMENT),
+    ACTION_ADD_CONTAINER: (ACTION_REMOVE_CONTAINER,),
+    ACTION_REMOVE_CONTAINER: (ACTION_ADD_CONTAINER, ACTION_INSERT_SUBTREE),
+    ACTION_INSERT_SUBTREE: (ACTION_REMOVE_CONTAINER,),
+    ACTION_REPLACE_SUBTREE: (ACTION_REPLACE_SUBTREE,),
+    ACTION_REPLACE_STATEMENT: (ACTION_REPLACE_STATEMENT,),
+    ACTION_BIND_PLACEHOLDER: (ACTION_BIND_PLACEHOLDER,),
+}
+
+# SLM-310: reason codes emitted by TreeEditSpace.apply (out-param ``reason``)
+# so decode-time proposal telemetry can report WHY a candidate was dead.
+REASON_INDEX_OUT_OF_RANGE = "index_out_of_range"
+REASON_NO_OP = "no_op"
+REASON_LEAF_CONTAINER_MISMATCH = "leaf_container_mismatch"
+REASON_MAX_STMTS = "max_stmts"
+REASON_PARENT_OR_COMP = "parent_or_comp_precondition"
+REASON_SLOT_OUT_OF_RANGE = "slot_out_of_range"
+REASON_NOT_REMOVABLE = "not_removable"
+REASON_UNREFERENCED_LEAF = "unreferenced_leaf"
+REASON_TARGET_OUT_OF_RANGE = "target_out_of_range"
+REASON_NOT_CONTAINER = "not_container"
+REASON_SUBTREE_NOT_LEAF_ONLY = "subtree_not_leaf_only"
+REASON_UNREFERENCED_CONTAINER = "unreferenced_container"
+REASON_PAYLOAD_OUT_OF_RANGE = "payload_out_of_range"
+REASON_PAYLOAD_NOT_LEAF = "payload_not_leaf"
+REASON_NOT_CANONICAL_SUBTREE = "not_canonical_subtree"
+REASON_STATEMENT_INVALID = "statement_invalid"
+REASON_TARGET_NOT_CANONICAL = "target_not_canonical"
+REASON_NOT_BINDABLE = "not_bindable"
+REASON_NOT_LEAF_COMPONENT = "not_leaf_component"
+REASON_UNKNOWN_ACTION = "unknown_action"
+REASON_PRE_VALIDATE_REJECTED = "pre_validate_rejected"
+REASON_INVALID_RESULT = "invalid_result"
+# Decode-side (not from apply): candidate produced an already-seen state.
+REASON_DUPLICATE_STATE = "duplicate_state"
+
 MAX_STMTS = 24
 MAX_SLOTS = 16
 
@@ -283,6 +341,7 @@ class TreeEditSpace:
         edit: Edit,
         inventory: list[str],
         pre_validate: Callable[[list[Statement]], bool] | None = None,
+        reason: list[str] | None = None,
     ) -> list[Statement] | None:
         """Apply one edit; None when inapplicable or invalid (fail closed).
 
@@ -291,7 +350,16 @@ class TreeEditSpace:
         reachability analyzer to skip already-visited states). It can only
         reject, never accept: every accepted state is still re-validated
         through the real parser.
+
+        ``reason`` (SLM-310) is an optional out-list: when the edit is
+        rejected, exactly one machine-readable rejection code is appended
+        (``REASON_*`` constants). Acceptance appends nothing.
         """
+        def _fail(code: str) -> None:
+            if reason is not None:
+                reason.append(code)
+            return None
+
         if edit.action == ACTION_STOP:
             return [Statement(**vars(s)) for s in statements]
         working = [
@@ -300,26 +368,26 @@ class TreeEditSpace:
         ]
         if edit.action == ACTION_REPLACE:
             if not (0 <= edit.stmt < len(working) and 0 <= edit.comp < len(self.components)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             target = working[edit.stmt]
             new_comp = self.components[edit.comp]
             leaf_like = not target.has_list
             if leaf_like != (new_comp in LEAF_COMPONENTS):
-                return None
+                return _fail(REASON_LEAF_CONTAINER_MISMATCH)
             if target.comp == new_comp:
-                return None
+                return _fail(REASON_NO_OP)
             target.comp = new_comp
         elif edit.action == ACTION_ADD:
             if not (0 <= edit.stmt < len(working) and 0 <= edit.comp < len(self.components)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             if len(working) >= MAX_STMTS:
-                return None
+                return _fail(REASON_MAX_STMTS)
             parent = working[edit.stmt]
             comp = self.components[edit.comp]
             if not parent.has_list or comp not in LEAF_COMPONENTS:
-                return None
+                return _fail(REASON_PARENT_OR_COMP)
             if not inventory or not (0 <= edit.slot < len(inventory)):
-                return None
+                return _fail(REASON_SLOT_OUT_OF_RANGE)
             placeholder = inventory[edit.slot]
             if not placeholder.startswith(":"):
                 placeholder = f":{placeholder}"
@@ -336,10 +404,10 @@ class TreeEditSpace:
             )
         elif edit.action == ACTION_REMOVE:
             if not (0 <= edit.stmt < len(working)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             target = working[edit.stmt]
             if target.has_list or target.name == "root":
-                return None
+                return _fail(REASON_NOT_REMOVABLE)
             referenced = False
             for other in working:
                 if target.name in other.children:
@@ -349,22 +417,22 @@ class TreeEditSpace:
                 # Unreferenced UI leaves stay immutable (old behavior); V0.5
                 # pack statements are unreferenced by construction and are
                 # removable (inverse of INSERT_STATEMENT).
-                return None
+                return _fail(REASON_UNREFERENCED_LEAF)
             working = [s for s in working if s.name != target.name]
         elif edit.action == ACTION_ADD_CONTAINER:
             # Preconditions: parent is a container, MAX_STMTS bound, comp is a
             # container. The minted container starts EMPTY (leaf-only subtree)
             # so REMOVE_CONTAINER is an exact safe inverse.
             if not (0 <= edit.stmt < len(working) and 0 <= edit.comp < len(self.components)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             if len(working) >= MAX_STMTS:
-                return None
+                return _fail(REASON_MAX_STMTS)
             parent = working[edit.stmt]
             comp = self.components[edit.comp]
             if not parent.has_list or comp not in CONTAINER_COMPONENTS:
-                return None
+                return _fail(REASON_PARENT_OR_COMP)
             if not (0 <= edit.target < len(CONTAINER_RESTS)):
-                return None
+                return _fail(REASON_TARGET_OUT_OF_RANGE)
             name = self.fresh_name(working)
             parent.children.append(name)
             working.append(
@@ -380,18 +448,18 @@ class TreeEditSpace:
             # shapes the container-creating actions mint, so removal restores
             # the prior state exactly. Leaf children are dropped with it.
             if not (0 <= edit.stmt < len(working)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             target = working[edit.stmt]
             if not target.has_list or target.name == "root":
-                return None
+                return _fail(REASON_NOT_CONTAINER)
             by_name = {s.name: s for s in working}
             if any(
                 by_name.get(child) is None or by_name[child].has_list
                 for child in target.children
             ):
-                return None
+                return _fail(REASON_SUBTREE_NOT_LEAF_ONLY)
             if not any(target.name in other.children for other in working):
-                return None
+                return _fail(REASON_UNREFERENCED_CONTAINER)
             drop = {target.name, *target.children}
             working = [
                 Statement(
@@ -412,22 +480,22 @@ class TreeEditSpace:
             # comp is a container, payload indexes a leaf component, slot is
             # in inventory, MAX_STMTS bound. Inverse: REMOVE_CONTAINER.
             if not (0 <= edit.stmt < len(working) and 0 <= edit.comp < len(self.components)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             if len(working) + 2 > MAX_STMTS:
-                return None
+                return _fail(REASON_MAX_STMTS)
             parent = working[edit.stmt]
             root_comp = self.components[edit.comp]
             if not parent.has_list or root_comp not in CONTAINER_COMPONENTS:
-                return None
+                return _fail(REASON_PARENT_OR_COMP)
             if not (0 <= edit.payload < len(self.components)):
-                return None
+                return _fail(REASON_PAYLOAD_OUT_OF_RANGE)
             leaf_comp = self.components[edit.payload]
             if leaf_comp not in LEAF_COMPONENTS:
-                return None
+                return _fail(REASON_PAYLOAD_NOT_LEAF)
             if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
-                return None
+                return _fail(REASON_SLOT_OUT_OF_RANGE)
             if not (0 <= edit.target < len(CONTAINER_RESTS)):
-                return None
+                return _fail(REASON_TARGET_OUT_OF_RANGE)
             placeholder = self._placeholder(inventory, edit.slot)
             cname = self.fresh_name(working)
             lname = self.fresh_name(
@@ -451,21 +519,21 @@ class TreeEditSpace:
             # The small-canonical-subtree precondition keeps the inverse
             # (restore old leaf comp + slot) expressible as the same action.
             if not (0 <= edit.stmt < len(working)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             target = working[edit.stmt]
             if not target.has_list or len(target.children) != 1:
-                return None
+                return _fail(REASON_NOT_CANONICAL_SUBTREE)
             by_name = {s.name: s for s in working}
             leaf = by_name.get(target.children[0])
             if leaf is None or leaf.has_list:
-                return None
+                return _fail(REASON_NOT_CANONICAL_SUBTREE)
             if not (0 <= edit.payload < len(self.components)):
-                return None
+                return _fail(REASON_PAYLOAD_OUT_OF_RANGE)
             leaf_comp = self.components[edit.payload]
             if leaf_comp not in LEAF_COMPONENTS:
-                return None
+                return _fail(REASON_PAYLOAD_NOT_LEAF)
             if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
-                return None
+                return _fail(REASON_SLOT_OUT_OF_RANGE)
             placeholder = self._placeholder(inventory, edit.slot)
             leaf.comp = leaf_comp
             leaf.rest = json.dumps(placeholder, ensure_ascii=False)
@@ -476,15 +544,15 @@ class TreeEditSpace:
             # Preconditions: MAX_STMTS bound, payload indexes V05_TEMPLATES.
             # Inverse: REMOVE (pack statements are unreferenced).
             if len(working) >= MAX_STMTS:
-                return None
+                return _fail(REASON_MAX_STMTS)
             if not (0 <= edit.payload < len(V05_TEMPLATES)):
-                return None
+                return _fail(REASON_PAYLOAD_OUT_OF_RANGE)
             comp, args = V05_TEMPLATES[edit.payload]
             candidate = Statement(self.fresh_v05_name(working, comp), comp, [], args, False)
             try:
                 validate_output(candidate.render(), kind="statement")
             except Exception:  # noqa: BLE001
-                return None
+                return _fail(REASON_STATEMENT_INVALID)
             working.append(candidate)
         elif edit.action == ACTION_REPLACE_STATEMENT:
             # Swap one canonical V0.5 statement for another template.
@@ -492,20 +560,20 @@ class TreeEditSpace:
             # (so the inverse — restore the old template — is expressible),
             # payload indexes V05_TEMPLATES, and the swap is a real change.
             if not (0 <= edit.stmt < len(working)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             target = working[edit.stmt]
             if v05_template_index(target) is None:
-                return None
+                return _fail(REASON_TARGET_NOT_CANONICAL)
             if not (0 <= edit.payload < len(V05_TEMPLATES)):
-                return None
+                return _fail(REASON_PAYLOAD_OUT_OF_RANGE)
             comp, args = V05_TEMPLATES[edit.payload]
             if target.comp == comp and target.rest.strip() == args:
-                return None
+                return _fail(REASON_NO_OP)
             candidate = Statement(target.name, comp, [], args, False)
             try:
                 validate_output(candidate.render(), kind="statement")
             except Exception:  # noqa: BLE001
-                return None
+                return _fail(REASON_STATEMENT_INVALID)
             working[edit.stmt] = candidate
         elif edit.action == ACTION_BIND_PLACEHOLDER:
             # Transactional declaration-plus-reference: (re)bind a leaf's slot
@@ -513,23 +581,23 @@ class TreeEditSpace:
             # (non-root, non-container, leaf component), slot in inventory.
             # Inverse: BIND_PLACEHOLDER with the old slot index.
             if not (0 <= edit.stmt < len(working)):
-                return None
+                return _fail(REASON_INDEX_OUT_OF_RANGE)
             target = working[edit.stmt]
             if target.has_list or target.name == "root":
-                return None
+                return _fail(REASON_NOT_BINDABLE)
             if target.comp not in LEAF_COMPONENTS:
-                return None
+                return _fail(REASON_NOT_LEAF_COMPONENT)
             if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
-                return None
+                return _fail(REASON_SLOT_OUT_OF_RANGE)
             placeholder = self._placeholder(inventory, edit.slot)
             target.rest = json.dumps(placeholder, ensure_ascii=False)
         else:
-            return None
+            return _fail(REASON_UNKNOWN_ACTION)
         if pre_validate is not None and not pre_validate(working):
-            return None
+            return _fail(REASON_PRE_VALIDATE_REJECTED)
         rendered = render_statements(working)
         if not _is_valid(rendered):
-            return None
+            return _fail(REASON_INVALID_RESULT)
         return working
 
     def sample_mutation(
@@ -537,24 +605,45 @@ class TreeEditSpace:
         statements: list[Statement],
         inventory: list[str],
         rng: random.Random,
+        inverse_action_weights: dict[int, float] | None = None,
     ) -> tuple[list[Statement], Edit] | None:
         """One random validity-preserving mutation and the *inverse* edit
-        (the supervised repair step) — Kapur's forward process."""
+        (the supervised repair step) — Kapur's forward process.
+
+        ``inverse_action_weights`` (SLM-310) optionally declares a target
+        distribution over the *inverse* (repair) action: the inverse action
+        is sampled from the declared weights and mapped back to a mutation
+        kind that can realize it (``INVERSE_TO_MUTATION_KINDS``). Inverse
+        actions with no realizing mutation kind are skipped via the normal
+        retry loop. None = historical uniform-over-mutation-kinds behavior
+        (checkpoint / seed parity).
+        """
         for _ in range(12):
-            kind = rng.choice(
-                (
-                    ACTION_REPLACE,
-                    ACTION_ADD,
-                    ACTION_REMOVE,
-                    ACTION_ADD_CONTAINER,
-                    ACTION_REMOVE_CONTAINER,
-                    ACTION_INSERT_SUBTREE,
-                    ACTION_REPLACE_SUBTREE,
-                    ACTION_INSERT_STATEMENT,
-                    ACTION_REPLACE_STATEMENT,
-                    ACTION_BIND_PLACEHOLDER,
+            if inverse_action_weights:
+                population = sorted(inverse_action_weights)
+                inverse_action = rng.choices(
+                    population,
+                    weights=[inverse_action_weights[a] for a in population],
+                )[0]
+                kinds = INVERSE_TO_MUTATION_KINDS.get(inverse_action, ())
+                if not kinds:
+                    continue
+                kind = rng.choice(kinds)
+            else:
+                kind = rng.choice(
+                    (
+                        ACTION_REPLACE,
+                        ACTION_ADD,
+                        ACTION_REMOVE,
+                        ACTION_ADD_CONTAINER,
+                        ACTION_REMOVE_CONTAINER,
+                        ACTION_INSERT_SUBTREE,
+                        ACTION_REPLACE_SUBTREE,
+                        ACTION_INSERT_STATEMENT,
+                        ACTION_REPLACE_STATEMENT,
+                        ACTION_BIND_PLACEHOLDER,
+                    )
                 )
-            )
             if kind == ACTION_REPLACE:
                 idx = rng.randrange(len(statements))
                 stmt = statements[idx]
@@ -884,6 +973,19 @@ class TreeEditDiffusionConfig:
     # (see ``from_checkpoint``) for behavior parity.
     value_label_mode: str = "bounded_distance"
     pairwise_progress_margin: float = 0.1
+    # SLM-310 (LAR2-03): declared inverse-action distribution for the
+    # corruption sampler, mapping action NAME (``ACTION_NAMES``, e.g. "ADD")
+    # to a non-negative weight. Reweights sample_mutation's forward-noise
+    # choice toward mutation kinds whose inverse edit matches the declared
+    # distribution (e.g. ADD-balanced supervision); the gold corpus is never
+    # touched. None (default) = historical uniform behavior.
+    corruption_action_distribution: dict[str, float] | None = None
+    # SLM-310: STOP-slot accounting during decode. "legacy" (default,
+    # historical): every enumerated STOP proposal consumes an expand_per_state
+    # slot even when its frozen candidate is dropped as a duplicate.
+    # "corrected": STOP consumes a slot only when its frozen candidate is
+    # actually retained on the beam.
+    stop_slot_accounting: str = "legacy"
 
 
 # SLM-308: oracle depth/budget used for training-time value labels. The
@@ -1085,6 +1187,28 @@ class TreeEditDiffusionModel(nn.Module):
             upper_bound_witness=witness,
         )
 
+    def _inverse_action_weights(self) -> dict[int, float] | None:
+        """SLM-310 corruption sampler: declared inverse-action weights keyed
+        by action id, or None for the historical uniform sampler."""
+        declared = self.config.corruption_action_distribution
+        if not declared:
+            return None
+        weights: dict[int, float] = {}
+        for name, weight in declared.items():
+            if name not in ACTION_IDS:
+                raise ValueError(
+                    f"corruption_action_distribution names unknown action {name!r} "
+                    f"(known: {sorted(ACTION_IDS)})"
+                )
+            if weight < 0:
+                raise ValueError(
+                    f"corruption_action_distribution weight for {name!r} is negative"
+                )
+            weights[ACTION_IDS[name]] = float(weight)
+        if not any(weights.values()):
+            raise ValueError("corruption_action_distribution has no positive weight")
+        return weights
+
     def forward(self, batch: list[ExampleRecord]) -> float:
         return float(self.training_loss(batch).detach().cpu())
 
@@ -1093,6 +1217,11 @@ class TreeEditDiffusionModel(nn.Module):
             raise ValueError(
                 f"unknown value_label_mode {self.config.value_label_mode!r}"
             )
+        if self.config.stop_slot_accounting not in {"legacy", "corrected"}:
+            raise ValueError(
+                f"unknown stop_slot_accounting {self.config.stop_slot_accounting!r}"
+            )
+        inverse_weights = self._inverse_action_weights()
         bounded_mode = self.config.value_label_mode == "bounded_distance"
         prompts: list[str] = []
         states: list[str] = []
@@ -1133,7 +1262,10 @@ class TreeEditDiffusionModel(nn.Module):
             inverse: Edit | None = None
             applied = 0
             for _ in range(k):
-                step = self.space.sample_mutation(current, inventory, self._rng)
+                step = self.space.sample_mutation(
+                    current, inventory, self._rng,
+                    inverse_action_weights=inverse_weights,
+                )
                 if step is None:
                     break
                 prev = current
@@ -1391,8 +1523,24 @@ class TreeEditDiffusionModel(nn.Module):
         seed = self._seed_state(inventory)
         if seed is None:
             return "", {"failure": "no_valid_seed"}
+        if self.config.stop_slot_accounting not in {"legacy", "corrected"}:
+            raise ValueError(
+                f"unknown stop_slot_accounting {self.config.stop_slot_accounting!r}"
+            )
         beam: list[tuple[float, list[Statement], bool]] = [(0.0, seed, False)]
         evidence: dict[str, Any] = {"steps": 0, "expansions": 0, "kind": "tree_edit"}
+        # SLM-310: per-proposal reason-coded applicability telemetry. Every
+        # enumerated candidate the decode loop visits is recorded in
+        # deterministic (score-sorted) enumeration order with its head
+        # log-prob factor score, whether TreeEditSpace.apply accepts it, the
+        # rejection reason code when rejected, whether it consumed
+        # expand_per_state budget, and whether it was retained on the beam.
+        proposals: list[dict[str, Any]] = []
+        # Expanded (live) states per step, so downstream audits can re-check
+        # full edit-space applicability on exactly the states decode visited.
+        states_log: list[dict[str, Any]] = []
+        verifier_calls = 0
+        corrected_stop = self.config.stop_slot_accounting == "corrected"
         for _ in range(self.config.max_search_steps):
             live = [entry for entry in beam if not entry[2]]
             if not live:
@@ -1411,32 +1559,76 @@ class TreeEditDiffusionModel(nn.Module):
                 render_statements(s) for _, s, frozen in next_beam if frozen
             }
             for row, (_, statements, _) in enumerate(live):
+                states_log.append(
+                    {
+                        "step": evidence["steps"],
+                        "beam_row": row,
+                        "source": render_statements(statements),
+                    }
+                )
                 candidates = self._enumerate_edits(
                     out, row, len(statements), len(inventory)
                 )
                 expanded = 0
-                for _, edit in candidates:
+                for rank, (score, edit) in enumerate(candidates):
                     if expanded >= self.config.expand_per_state:
                         break
+                    record: dict[str, Any] = {
+                        "step": evidence["steps"],
+                        "beam_row": row,
+                        "rank": rank,
+                        "action": edit.action,
+                        "action_name": ACTION_NAMES[edit.action],
+                        "score": float(score),
+                    }
+                    proposals.append(record)
                     if edit.action == ACTION_STOP:
                         text = render_statements(statements)
-                        if text not in seen:
+                        retained = text not in seen
+                        record["applicable"] = True
+                        record["rejection_reason"] = (
+                            None if retained else REASON_DUPLICATE_STATE
+                        )
+                        record["selected"] = retained
+                        if retained:
                             seen.add(text)
                             next_beam.append(
                                 (float(out["value"][row]), statements, True)
                             )
-                        expanded += 1
+                        # STOP-slot accounting arms (SLM-310): legacy consumes
+                        # a slot for every STOP proposal; corrected consumes
+                        # one only when the frozen candidate is retained.
+                        consumed = retained if corrected_stop else True
+                        record["consumed_budget"] = consumed
+                        if consumed:
+                            expanded += 1
                         continue
-                    child = self.space.apply(statements, edit, inventory)
+                    reason: list[str] = []
+                    child = self.space.apply(
+                        statements, edit, inventory, reason=reason
+                    )
+                    verifier_calls += 1
                     if child is None:
+                        record["applicable"] = False
+                        record["rejection_reason"] = reason[0]
+                        record["selected"] = False
+                        record["consumed_budget"] = False
                         continue
                     text = render_statements(child)
                     if text in seen:
+                        record["applicable"] = True
+                        record["rejection_reason"] = REASON_DUPLICATE_STATE
+                        record["selected"] = False
+                        record["consumed_budget"] = False
                         continue
                     seen.add(text)
                     next_beam.append((float(out["value"][row]), child, False))
                     expanded += 1
                     evidence["expansions"] += 1
+                    record["applicable"] = True
+                    record["rejection_reason"] = None
+                    record["selected"] = True
+                    record["consumed_budget"] = True
             if not next_beam:
                 break
             # Re-score unfrozen children by the value head (Kapur's search
@@ -1466,6 +1658,21 @@ class TreeEditDiffusionModel(nn.Module):
         best = max(beam, key=lambda entry: entry[0])
         evidence["value"] = float(best[0])
         evidence["frozen"] = bool(best[2])
+        evidence["proposals"] = proposals
+        evidence["states"] = states_log
+        evidence["verifier_calls"] = verifier_calls
+        evidence["proposal_summary"] = {
+            "visited": len(proposals),
+            "applicable": sum(1 for p in proposals if p["applicable"]),
+            "selected": sum(1 for p in proposals if p["selected"]),
+            "consumed_budget": sum(1 for p in proposals if p["consumed_budget"]),
+            "dead": sum(
+                1
+                for p in proposals
+                if not p["applicable"]
+                or p["rejection_reason"] == REASON_DUPLICATE_STATE
+            ),
+        }
         return render_statements(best[1]), evidence
 
     def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:

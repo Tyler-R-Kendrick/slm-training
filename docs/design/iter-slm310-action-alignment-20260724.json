@@ -1,0 +1,3792 @@
+{
+  "experiment": "slm310-action-alignment",
+  "issue": "SLM-310",
+  "question": "Does ADD-balanced corruption sampling close the train/demand action gap, and does corrected STOP-slot accounting improve search budget use \u2014 each lever isolated at fixture scale?",
+  "preregistered_thresholds": {
+    "t1_add_target_share_gain_min": 0.1,
+    "t2_valid_final_no_regression": true,
+    "t3_stop_budget_not_worse_and_valid_final_no_regression": true,
+    "t4_lever_isolation_structural": true,
+    "verdict_rule": "per lever: adopted iff its thresholds hold in both cells of the matched pair, else rejected; levers are never combined"
+  },
+  "config": {
+    "steps": 8,
+    "batch_size": 4,
+    "seed": 0,
+    "audit_samples": 400,
+    "n_records": 8,
+    "value_label_mode": "mutation_count",
+    "add_balanced_distribution": {
+      "REPLACE": 1.0,
+      "ADD": 4.0,
+      "REMOVE": 1.0,
+      "ADD_CONTAINER": 1.0,
+      "REMOVE_CONTAINER": 1.0,
+      "INSERT_SUBTREE": 1.0,
+      "REPLACE_SUBTREE": 1.0,
+      "REPLACE_STATEMENT": 1.0,
+      "BIND_PLACEHOLDER": 1.0
+    },
+    "cells": {
+      "cell_a": {
+        "corruption": null,
+        "stop": "legacy"
+      },
+      "cell_b": {
+        "corruption": {
+          "REPLACE": 1.0,
+          "ADD": 4.0,
+          "REMOVE": 1.0,
+          "ADD_CONTAINER": 1.0,
+          "REMOVE_CONTAINER": 1.0,
+          "INSERT_SUBTREE": 1.0,
+          "REPLACE_SUBTREE": 1.0,
+          "REPLACE_STATEMENT": 1.0,
+          "BIND_PLACEHOLDER": 1.0
+        },
+        "stop": "legacy"
+      },
+      "cell_c": {
+        "corruption": null,
+        "stop": "corrected"
+      },
+      "cell_d": {
+        "corruption": {
+          "REPLACE": 1.0,
+          "ADD": 4.0,
+          "REMOVE": 1.0,
+          "ADD_CONTAINER": 1.0,
+          "REMOVE_CONTAINER": 1.0,
+          "INSERT_SUBTREE": 1.0,
+          "REPLACE_SUBTREE": 1.0,
+          "REPLACE_STATEMENT": 1.0,
+          "BIND_PLACEHOLDER": 1.0
+        },
+        "stop": "corrected"
+      }
+    }
+  },
+  "cells": {
+    "cell_a": {
+      "levers": {
+        "corruption": null,
+        "stop": "legacy"
+      },
+      "metrics": {
+        "training_targets": {
+          "samples": 400,
+          "n_targets": 378,
+          "counts": {
+            "STOP": 71,
+            "REPLACE": 42,
+            "ADD": 67,
+            "REMOVE": 69,
+            "ADD_CONTAINER": 5,
+            "REMOVE_CONTAINER": 69,
+            "INSERT_SUBTREE": 7,
+            "REPLACE_SUBTREE": 19,
+            "INSERT_STATEMENT": 0,
+            "REPLACE_STATEMENT": 7,
+            "BIND_PLACEHOLDER": 22
+          },
+          "shares": {
+            "STOP": 0.18783068783068782,
+            "REPLACE": 0.1111111111111111,
+            "ADD": 0.17724867724867724,
+            "REMOVE": 0.18253968253968253,
+            "ADD_CONTAINER": 0.013227513227513227,
+            "REMOVE_CONTAINER": 0.18253968253968253,
+            "INSERT_SUBTREE": 0.018518518518518517,
+            "REPLACE_SUBTREE": 0.05026455026455026,
+            "INSERT_STATEMENT": 0.0,
+            "REPLACE_STATEMENT": 0.018518518518518517,
+            "BIND_PLACEHOLDER": 0.0582010582010582
+          },
+          "inverse_action_weights": null
+        },
+        "decode_demand": {
+          "overall": {
+            "visited": {
+              "ADD": 11,
+              "BIND_PLACEHOLDER": 4464,
+              "INSERT_STATEMENT": 116,
+              "INSERT_SUBTREE": 138,
+              "REMOVE": 43,
+              "REMOVE_CONTAINER": 95,
+              "REPLACE": 73,
+              "REPLACE_STATEMENT": 36,
+              "REPLACE_SUBTREE": 6116,
+              "STOP": 58
+            },
+            "applicable": {
+              "ADD": 6,
+              "BIND_PLACEHOLDER": 1296,
+              "INSERT_STATEMENT": 116,
+              "INSERT_SUBTREE": 2,
+              "REMOVE": 8,
+              "REMOVE_CONTAINER": 5,
+              "REPLACE": 16,
+              "REPLACE_SUBTREE": 608,
+              "STOP": 58
+            },
+            "selected": {
+              "ADD": 2,
+              "INSERT_STATEMENT": 113,
+              "INSERT_SUBTREE": 2,
+              "REMOVE": 8,
+              "REMOVE_CONTAINER": 3,
+              "REPLACE": 13,
+              "REPLACE_SUBTREE": 33,
+              "STOP": 58
+            },
+            "rejection_reasons": {
+              "duplicate_state": 1883,
+              "invalid_result": 206,
+              "leaf_container_mismatch": 25,
+              "no_op": 6,
+              "not_bindable": 2628,
+              "not_canonical_subtree": 5328,
+              "not_container": 90,
+              "not_leaf_component": 540,
+              "not_removable": 35,
+              "parent_or_comp_precondition": 141,
+              "target_not_canonical": 36
+            },
+            "visited_total": 11150,
+            "dead_total": 10918,
+            "dead_candidate_rate": 0.9791928251121076,
+            "visited_shares": {
+              "ADD": 0.0009865470852017937,
+              "BIND_PLACEHOLDER": 0.4003587443946188,
+              "INSERT_STATEMENT": 0.010403587443946188,
+              "INSERT_SUBTREE": 0.012376681614349776,
+              "REMOVE": 0.0038565022421524664,
+              "REMOVE_CONTAINER": 0.008520179372197309,
+              "REPLACE": 0.006547085201793722,
+              "REPLACE_STATEMENT": 0.003228699551569507,
+              "REPLACE_SUBTREE": 0.5485201793721973,
+              "STOP": 0.005201793721973094
+            },
+            "verifier_calls": 11092,
+            "states_with_applicable_add": 58,
+            "states_recalled": 6,
+            "applicable_add_recall": 0.10344827586206896
+          },
+          "by_suite": {
+            "train": {
+              "visited": {
+                "ADD": 11,
+                "BIND_PLACEHOLDER": 4464,
+                "INSERT_STATEMENT": 116,
+                "INSERT_SUBTREE": 138,
+                "REMOVE": 43,
+                "REMOVE_CONTAINER": 95,
+                "REPLACE": 73,
+                "REPLACE_STATEMENT": 36,
+                "REPLACE_SUBTREE": 6116,
+                "STOP": 58
+              },
+              "applicable": {
+                "ADD": 6,
+                "BIND_PLACEHOLDER": 1296,
+                "INSERT_STATEMENT": 116,
+                "INSERT_SUBTREE": 2,
+                "REMOVE": 8,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE": 16,
+                "REPLACE_SUBTREE": 608,
+                "STOP": 58
+              },
+              "selected": {
+                "ADD": 2,
+                "INSERT_STATEMENT": 113,
+                "INSERT_SUBTREE": 2,
+                "REMOVE": 8,
+                "REMOVE_CONTAINER": 3,
+                "REPLACE": 13,
+                "REPLACE_SUBTREE": 33,
+                "STOP": 58
+              },
+              "rejection_reasons": {
+                "duplicate_state": 1883,
+                "invalid_result": 206,
+                "leaf_container_mismatch": 25,
+                "no_op": 6,
+                "not_bindable": 2628,
+                "not_canonical_subtree": 5328,
+                "not_container": 90,
+                "not_leaf_component": 540,
+                "not_removable": 35,
+                "parent_or_comp_precondition": 141,
+                "target_not_canonical": 36
+              },
+              "visited_total": 11150,
+              "dead_total": 10918,
+              "dead_candidate_rate": 0.9791928251121076,
+              "visited_shares": {
+                "ADD": 0.0009865470852017937,
+                "BIND_PLACEHOLDER": 0.4003587443946188,
+                "INSERT_STATEMENT": 0.010403587443946188,
+                "INSERT_SUBTREE": 0.012376681614349776,
+                "REMOVE": 0.0038565022421524664,
+                "REMOVE_CONTAINER": 0.008520179372197309,
+                "REPLACE": 0.006547085201793722,
+                "REPLACE_STATEMENT": 0.003228699551569507,
+                "REPLACE_SUBTREE": 0.5485201793721973,
+                "STOP": 0.005201793721973094
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 58,
+              "states_recalled": 6,
+              "applicable_add_recall": 0.10344827586206896
+            }
+          },
+          "by_source": {
+            "fixture_00": {
+              "visited": {
+                "BIND_PLACEHOLDER": 576,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 15,
+                "REPLACE": 3,
+                "REPLACE_STATEMENT": 2,
+                "REPLACE_SUBTREE": 297,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 180,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 9,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 185,
+                "invalid_result": 1,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 252,
+                "not_canonical_subtree": 288,
+                "not_container": 15,
+                "not_leaf_component": 144,
+                "not_removable": 6,
+                "target_not_canonical": 2
+              },
+              "visited_total": 918,
+              "dead_total": 894,
+              "dead_candidate_rate": 0.9738562091503268,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.6274509803921569,
+                "INSERT_STATEMENT": 0.013071895424836602,
+                "REMOVE": 0.007625272331154684,
+                "REMOVE_CONTAINER": 0.016339869281045753,
+                "REPLACE": 0.0032679738562091504,
+                "REPLACE_STATEMENT": 0.002178649237472767,
+                "REPLACE_SUBTREE": 0.3235294117647059,
+                "STOP": 0.006535947712418301
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_01": {
+              "visited": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 648,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 17,
+                "REMOVE": 3,
+                "REMOVE_CONTAINER": 14,
+                "REPLACE": 2,
+                "REPLACE_STATEMENT": 2,
+                "REPLACE_SUBTREE": 1022,
+                "STOP": 9
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 180,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 3,
+                "REPLACE_SUBTREE": 230,
+                "STOP": 9
+              },
+              "selected": {
+                "INSERT_STATEMENT": 17,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 7,
+                "STOP": 9
+              },
+              "rejection_reasons": {
+                "duplicate_state": 407,
+                "invalid_result": 73,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 432,
+                "not_canonical_subtree": 720,
+                "not_container": 11,
+                "not_leaf_component": 36,
+                "not_removable": 2,
+                "parent_or_comp_precondition": 17,
+                "target_not_canonical": 2
+              },
+              "visited_total": 1737,
+              "dead_total": 1701,
+              "dead_candidate_rate": 0.9792746113989638,
+              "visited_shares": {
+                "ADD": 0.0011514104778353484,
+                "BIND_PLACEHOLDER": 0.37305699481865284,
+                "INSERT_STATEMENT": 0.010362694300518135,
+                "INSERT_SUBTREE": 0.00978698906160046,
+                "REMOVE": 0.0017271157167530224,
+                "REMOVE_CONTAINER": 0.008059873344847437,
+                "REPLACE": 0.0011514104778353484,
+                "REPLACE_STATEMENT": 0.0011514104778353484,
+                "REPLACE_SUBTREE": 0.588370754173863,
+                "STOP": 0.0051813471502590676
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 9,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.1111111111111111
+            },
+            "fixture_02": {
+              "visited": {
+                "BIND_PLACEHOLDER": 504,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 11,
+                "REPLACE": 17,
+                "REPLACE_STATEMENT": 6,
+                "REPLACE_SUBTREE": 868,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 108,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 4,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 3,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 111,
+                "invalid_result": 6,
+                "leaf_container_mismatch": 5,
+                "no_op": 2,
+                "not_bindable": 324,
+                "not_canonical_subtree": 864,
+                "not_container": 11,
+                "not_leaf_component": 72,
+                "not_removable": 6,
+                "target_not_canonical": 6
+              },
+              "visited_total": 1431,
+              "dead_total": 1407,
+              "dead_candidate_rate": 0.9832285115303984,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.3522012578616352,
+                "INSERT_STATEMENT": 0.008385744234800839,
+                "REMOVE": 0.004891684136967156,
+                "REMOVE_CONTAINER": 0.007686932215234102,
+                "REPLACE": 0.011879804332634521,
+                "REPLACE_STATEMENT": 0.0041928721174004195,
+                "REPLACE_SUBTREE": 0.6065688329839273,
+                "STOP": 0.0041928721174004195
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_03": {
+              "visited": {
+                "BIND_PLACEHOLDER": 468,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 11,
+                "REPLACE": 17,
+                "REPLACE_STATEMENT": 8,
+                "REPLACE_SUBTREE": 868,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 72,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 4,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 3,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 75,
+                "invalid_result": 6,
+                "leaf_container_mismatch": 5,
+                "no_op": 2,
+                "not_bindable": 324,
+                "not_canonical_subtree": 864,
+                "not_container": 11,
+                "not_leaf_component": 72,
+                "not_removable": 6,
+                "target_not_canonical": 8
+              },
+              "visited_total": 1397,
+              "dead_total": 1373,
+              "dead_candidate_rate": 0.9828203292770222,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.3350035790980673,
+                "INSERT_STATEMENT": 0.008589835361488905,
+                "REMOVE": 0.005010737294201861,
+                "REMOVE_CONTAINER": 0.007874015748031496,
+                "REPLACE": 0.012168933428775949,
+                "REPLACE_STATEMENT": 0.00572655690765927,
+                "REPLACE_SUBTREE": 0.6213314244810307,
+                "STOP": 0.004294917680744453
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_04": {
+              "visited": {
+                "BIND_PLACEHOLDER": 468,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 11,
+                "REPLACE": 17,
+                "REPLACE_STATEMENT": 6,
+                "REPLACE_SUBTREE": 868,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 108,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 4,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 3,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 111,
+                "invalid_result": 6,
+                "leaf_container_mismatch": 5,
+                "no_op": 2,
+                "not_bindable": 324,
+                "not_canonical_subtree": 864,
+                "not_container": 11,
+                "not_leaf_component": 36,
+                "not_removable": 6,
+                "target_not_canonical": 6
+              },
+              "visited_total": 1395,
+              "dead_total": 1371,
+              "dead_candidate_rate": 0.9827956989247312,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.33548387096774196,
+                "INSERT_STATEMENT": 0.008602150537634409,
+                "REMOVE": 0.005017921146953405,
+                "REMOVE_CONTAINER": 0.007885304659498209,
+                "REPLACE": 0.012186379928315413,
+                "REPLACE_STATEMENT": 0.004301075268817204,
+                "REPLACE_SUBTREE": 0.6222222222222222,
+                "STOP": 0.004301075268817204
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_05": {
+              "visited": {
+                "ADD": 4,
+                "BIND_PLACEHOLDER": 540,
+                "INSERT_STATEMENT": 16,
+                "INSERT_SUBTREE": 48,
+                "REMOVE": 4,
+                "REMOVE_CONTAINER": 9,
+                "REPLACE": 6,
+                "REPLACE_STATEMENT": 4,
+                "REPLACE_SUBTREE": 587,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 216,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 119,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 15,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 8
+              },
+              "rejection_reasons": {
+                "duplicate_state": 331,
+                "invalid_result": 38,
+                "leaf_container_mismatch": 3,
+                "not_bindable": 288,
+                "not_canonical_subtree": 432,
+                "not_container": 9,
+                "not_leaf_component": 36,
+                "not_removable": 3,
+                "parent_or_comp_precondition": 50,
+                "target_not_canonical": 4
+              },
+              "visited_total": 1226,
+              "dead_total": 1194,
+              "dead_candidate_rate": 0.9738988580750407,
+              "visited_shares": {
+                "ADD": 0.0032626427406199023,
+                "BIND_PLACEHOLDER": 0.44045676998368677,
+                "INSERT_STATEMENT": 0.013050570962479609,
+                "INSERT_SUBTREE": 0.03915171288743882,
+                "REMOVE": 0.0032626427406199023,
+                "REMOVE_CONTAINER": 0.00734094616639478,
+                "REPLACE": 0.004893964110929853,
+                "REPLACE_STATEMENT": 0.0032626427406199023,
+                "REPLACE_SUBTREE": 0.47879282218597063,
+                "STOP": 0.0065252854812398045
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.25
+            },
+            "fixture_06": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 720,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 33,
+                "REMOVE": 4,
+                "REMOVE_CONTAINER": 14,
+                "REPLACE": 5,
+                "REPLACE_STATEMENT": 4,
+                "REPLACE_SUBTREE": 1019,
+                "STOP": 9
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 216,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 2,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 119,
+                "STOP": 9
+              },
+              "selected": {
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 2,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 9
+              },
+              "rejection_reasons": {
+                "duplicate_state": 332,
+                "invalid_result": 38,
+                "leaf_container_mismatch": 2,
+                "not_bindable": 396,
+                "not_canonical_subtree": 864,
+                "not_container": 12,
+                "not_leaf_component": 108,
+                "not_removable": 3,
+                "parent_or_comp_precondition": 32,
+                "target_not_canonical": 4
+              },
+              "visited_total": 1827,
+              "dead_total": 1791,
+              "dead_candidate_rate": 0.9802955665024631,
+              "visited_shares": {
+                "ADD": 0.0005473453749315818,
+                "BIND_PLACEHOLDER": 0.39408866995073893,
+                "INSERT_STATEMENT": 0.009852216748768473,
+                "INSERT_SUBTREE": 0.0180623973727422,
+                "REMOVE": 0.0021893814997263274,
+                "REMOVE_CONTAINER": 0.007662835249042145,
+                "REPLACE": 0.002736726874657909,
+                "REPLACE_STATEMENT": 0.0021893814997263274,
+                "REPLACE_SUBTREE": 0.5577449370552818,
+                "STOP": 0.0049261083743842365
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 9,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.1111111111111111
+            },
+            "fixture_07": {
+              "visited": {
+                "ADD": 4,
+                "BIND_PLACEHOLDER": 540,
+                "INSERT_STATEMENT": 16,
+                "INSERT_SUBTREE": 40,
+                "REMOVE": 4,
+                "REMOVE_CONTAINER": 10,
+                "REPLACE": 6,
+                "REPLACE_STATEMENT": 4,
+                "REPLACE_SUBTREE": 587,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 216,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 119,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 15,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 8
+              },
+              "rejection_reasons": {
+                "duplicate_state": 331,
+                "invalid_result": 38,
+                "leaf_container_mismatch": 3,
+                "not_bindable": 288,
+                "not_canonical_subtree": 432,
+                "not_container": 10,
+                "not_leaf_component": 36,
+                "not_removable": 3,
+                "parent_or_comp_precondition": 42,
+                "target_not_canonical": 4
+              },
+              "visited_total": 1219,
+              "dead_total": 1187,
+              "dead_candidate_rate": 0.9737489745693191,
+              "visited_shares": {
+                "ADD": 0.003281378178835111,
+                "BIND_PLACEHOLDER": 0.44298605414273995,
+                "INSERT_STATEMENT": 0.013125512715340444,
+                "INSERT_SUBTREE": 0.03281378178835111,
+                "REMOVE": 0.003281378178835111,
+                "REMOVE_CONTAINER": 0.008203445447087777,
+                "REPLACE": 0.004922067268252666,
+                "REPLACE_STATEMENT": 0.003281378178835111,
+                "REPLACE_SUBTREE": 0.4815422477440525,
+                "STOP": 0.006562756357670222
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.25
+            }
+          }
+        },
+        "calibration": {
+          "per_action": {
+            "STOP": {
+              "target_share": 0.18783068783068782,
+              "visited_share": 0.005201793721973094,
+              "gap": -0.18262889410871472
+            },
+            "REPLACE": {
+              "target_share": 0.1111111111111111,
+              "visited_share": 0.006547085201793722,
+              "gap": -0.10456402590931738
+            },
+            "ADD": {
+              "target_share": 0.17724867724867724,
+              "visited_share": 0.0009865470852017937,
+              "gap": -0.17626213016347544
+            },
+            "REMOVE": {
+              "target_share": 0.18253968253968253,
+              "visited_share": 0.0038565022421524664,
+              "gap": -0.17868318029753005
+            },
+            "ADD_CONTAINER": {
+              "target_share": 0.013227513227513227,
+              "visited_share": 0.0,
+              "gap": -0.013227513227513227
+            },
+            "REMOVE_CONTAINER": {
+              "target_share": 0.18253968253968253,
+              "visited_share": 0.008520179372197309,
+              "gap": -0.1740195031674852
+            },
+            "INSERT_SUBTREE": {
+              "target_share": 0.018518518518518517,
+              "visited_share": 0.012376681614349776,
+              "gap": -0.006141836904168741
+            },
+            "REPLACE_SUBTREE": {
+              "target_share": 0.05026455026455026,
+              "visited_share": 0.5485201793721973,
+              "gap": 0.4982556291076471
+            },
+            "INSERT_STATEMENT": {
+              "target_share": 0.0,
+              "visited_share": 0.010403587443946188,
+              "gap": 0.010403587443946188
+            },
+            "REPLACE_STATEMENT": {
+              "target_share": 0.018518518518518517,
+              "visited_share": 0.003228699551569507,
+              "gap": -0.01528981896694901
+            },
+            "BIND_PLACEHOLDER": {
+              "target_share": 0.0582010582010582,
+              "visited_share": 0.4003587443946188,
+              "gap": 0.34215768619356063
+            }
+          },
+          "mean_abs_deviation": 0.1546939823173007
+        },
+        "dead_candidate_rate": 0.9791928251121076,
+        "applicable_add_recall": 0.10344827586206896,
+        "verifier_calls": 11092,
+        "stop_budget_consumed": 58,
+        "stop_proposals_visited": 58,
+        "valid_final_rate": 1.0,
+        "n_records": 8,
+        "training_metrics": {
+          "action": 2.143547534942627,
+          "stmt": 2.8126392364501953,
+          "slot": 2.276818037033081,
+          "value": 0.21380357444286346,
+          "value_bounded": 0.0,
+          "value_unknown_excluded": 0.0,
+          "skipped": 0.0
+        }
+      }
+    },
+    "cell_b": {
+      "levers": {
+        "corruption": {
+          "REPLACE": 1.0,
+          "ADD": 4.0,
+          "REMOVE": 1.0,
+          "ADD_CONTAINER": 1.0,
+          "REMOVE_CONTAINER": 1.0,
+          "INSERT_SUBTREE": 1.0,
+          "REPLACE_SUBTREE": 1.0,
+          "REPLACE_STATEMENT": 1.0,
+          "BIND_PLACEHOLDER": 1.0
+        },
+        "stop": "legacy"
+      },
+      "metrics": {
+        "training_targets": {
+          "samples": 400,
+          "n_targets": 397,
+          "counts": {
+            "STOP": 79,
+            "REPLACE": 59,
+            "ADD": 130,
+            "REMOVE": 44,
+            "ADD_CONTAINER": 7,
+            "REMOVE_CONTAINER": 41,
+            "INSERT_SUBTREE": 12,
+            "REPLACE_SUBTREE": 9,
+            "INSERT_STATEMENT": 0,
+            "REPLACE_STATEMENT": 3,
+            "BIND_PLACEHOLDER": 13
+          },
+          "shares": {
+            "STOP": 0.19899244332493704,
+            "REPLACE": 0.1486146095717884,
+            "ADD": 0.327455919395466,
+            "REMOVE": 0.11083123425692695,
+            "ADD_CONTAINER": 0.017632241813602016,
+            "REMOVE_CONTAINER": 0.10327455919395466,
+            "INSERT_SUBTREE": 0.030226700251889168,
+            "REPLACE_SUBTREE": 0.022670025188916875,
+            "INSERT_STATEMENT": 0.0,
+            "REPLACE_STATEMENT": 0.007556675062972292,
+            "BIND_PLACEHOLDER": 0.0327455919395466
+          },
+          "inverse_action_weights": {
+            "REPLACE": 1.0,
+            "ADD": 4.0,
+            "REMOVE": 1.0,
+            "ADD_CONTAINER": 1.0,
+            "REMOVE_CONTAINER": 1.0,
+            "INSERT_SUBTREE": 1.0,
+            "REPLACE_SUBTREE": 1.0,
+            "REPLACE_STATEMENT": 1.0,
+            "BIND_PLACEHOLDER": 1.0
+          }
+        },
+        "decode_demand": {
+          "overall": {
+            "visited": {
+              "ADD": 16,
+              "BIND_PLACEHOLDER": 5917,
+              "INSERT_STATEMENT": 148,
+              "INSERT_SUBTREE": 36,
+              "REMOVE": 84,
+              "REMOVE_CONTAINER": 150,
+              "REPLACE": 8,
+              "REPLACE_STATEMENT": 126,
+              "REPLACE_SUBTREE": 8144,
+              "STOP": 74
+            },
+            "applicable": {
+              "ADD": 12,
+              "BIND_PLACEHOLDER": 1453,
+              "INSERT_STATEMENT": 148,
+              "INSERT_SUBTREE": 4,
+              "REMOVE": 22,
+              "REMOVE_CONTAINER": 20,
+              "REPLACE": 2,
+              "REPLACE_SUBTREE": 944,
+              "STOP": 74
+            },
+            "selected": {
+              "ADD": 8,
+              "BIND_PLACEHOLDER": 13,
+              "INSERT_STATEMENT": 148,
+              "INSERT_SUBTREE": 4,
+              "REMOVE": 12,
+              "REMOVE_CONTAINER": 4,
+              "REPLACE": 2,
+              "REPLACE_SUBTREE": 31,
+              "STOP": 73
+            },
+            "rejection_reasons": {
+              "duplicate_state": 2384,
+              "invalid_result": 288,
+              "leaf_container_mismatch": 6,
+              "not_bindable": 4464,
+              "not_canonical_subtree": 6912,
+              "not_container": 130,
+              "not_removable": 62,
+              "parent_or_comp_precondition": 36,
+              "target_not_canonical": 126
+            },
+            "visited_total": 14703,
+            "dead_total": 14408,
+            "dead_candidate_rate": 0.979936067469224,
+            "visited_shares": {
+              "ADD": 0.0010882132898048017,
+              "BIND_PLACEHOLDER": 0.40243487723593824,
+              "INSERT_STATEMENT": 0.010065972930694417,
+              "INSERT_SUBTREE": 0.002448479902060804,
+              "REMOVE": 0.005713119771475209,
+              "REMOVE_CONTAINER": 0.010201999591920016,
+              "REPLACE": 0.0005441066449024008,
+              "REPLACE_STATEMENT": 0.008569679657212814,
+              "REPLACE_SUBTREE": 0.5539005645106441,
+              "STOP": 0.005032986465347208
+            },
+            "verifier_calls": 14629,
+            "states_with_applicable_add": 74,
+            "states_recalled": 12,
+            "applicable_add_recall": 0.16216216216216217
+          },
+          "by_suite": {
+            "train": {
+              "visited": {
+                "ADD": 16,
+                "BIND_PLACEHOLDER": 5917,
+                "INSERT_STATEMENT": 148,
+                "INSERT_SUBTREE": 36,
+                "REMOVE": 84,
+                "REMOVE_CONTAINER": 150,
+                "REPLACE": 8,
+                "REPLACE_STATEMENT": 126,
+                "REPLACE_SUBTREE": 8144,
+                "STOP": 74
+              },
+              "applicable": {
+                "ADD": 12,
+                "BIND_PLACEHOLDER": 1453,
+                "INSERT_STATEMENT": 148,
+                "INSERT_SUBTREE": 4,
+                "REMOVE": 22,
+                "REMOVE_CONTAINER": 20,
+                "REPLACE": 2,
+                "REPLACE_SUBTREE": 944,
+                "STOP": 74
+              },
+              "selected": {
+                "ADD": 8,
+                "BIND_PLACEHOLDER": 13,
+                "INSERT_STATEMENT": 148,
+                "INSERT_SUBTREE": 4,
+                "REMOVE": 12,
+                "REMOVE_CONTAINER": 4,
+                "REPLACE": 2,
+                "REPLACE_SUBTREE": 31,
+                "STOP": 73
+              },
+              "rejection_reasons": {
+                "duplicate_state": 2384,
+                "invalid_result": 288,
+                "leaf_container_mismatch": 6,
+                "not_bindable": 4464,
+                "not_canonical_subtree": 6912,
+                "not_container": 130,
+                "not_removable": 62,
+                "parent_or_comp_precondition": 36,
+                "target_not_canonical": 126
+              },
+              "visited_total": 14703,
+              "dead_total": 14408,
+              "dead_candidate_rate": 0.979936067469224,
+              "visited_shares": {
+                "ADD": 0.0010882132898048017,
+                "BIND_PLACEHOLDER": 0.40243487723593824,
+                "INSERT_STATEMENT": 0.010065972930694417,
+                "INSERT_SUBTREE": 0.002448479902060804,
+                "REMOVE": 0.005713119771475209,
+                "REMOVE_CONTAINER": 0.010201999591920016,
+                "REPLACE": 0.0005441066449024008,
+                "REPLACE_STATEMENT": 0.008569679657212814,
+                "REPLACE_SUBTREE": 0.5539005645106441,
+                "STOP": 0.005032986465347208
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 74,
+              "states_recalled": 12,
+              "applicable_add_recall": 0.16216216216216217
+            }
+          },
+          "by_source": {
+            "fixture_00": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 688,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 13,
+                "REMOVE_CONTAINER": 17,
+                "REPLACE": 1,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 293,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 112,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 5,
+                "REPLACE_SUBTREE": 5,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 4,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 8
+              },
+              "rejection_reasons": {
+                "duplicate_state": 115,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 576,
+                "not_canonical_subtree": 288,
+                "not_container": 17,
+                "not_removable": 8,
+                "target_not_canonical": 16
+              },
+              "visited_total": 1053,
+              "dead_total": 1021,
+              "dead_candidate_rate": 0.9696106362773029,
+              "visited_shares": {
+                "ADD": 0.000949667616334283,
+                "BIND_PLACEHOLDER": 0.6533713200379867,
+                "INSERT_STATEMENT": 0.015194681861348529,
+                "REMOVE": 0.012345679012345678,
+                "REMOVE_CONTAINER": 0.016144349477682812,
+                "REPLACE": 0.000949667616334283,
+                "REPLACE_STATEMENT": 0.015194681861348529,
+                "REPLACE_SUBTREE": 0.27825261158594494,
+                "STOP": 0.007597340930674264
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.125
+            },
+            "fixture_01": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 21,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 16,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2556,
+              "dead_total": 2512,
+              "dead_candidate_rate": 0.9827856025039123,
+              "visited_shares": {
+                "ADD": 0.0011737089201877935,
+                "BIND_PLACEHOLDER": 0.3380281690140845,
+                "INSERT_STATEMENT": 0.008607198748043818,
+                "INSERT_SUBTREE": 0.0035211267605633804,
+                "REMOVE": 0.003912363067292645,
+                "REMOVE_CONTAINER": 0.008215962441314555,
+                "REPLACE_STATEMENT": 0.006259780907668232,
+                "REPLACE_SUBTREE": 0.6259780907668232,
+                "STOP": 0.004303599374021909
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            },
+            "fixture_02": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 544,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 14,
+                "REPLACE": 3,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 576,
+                "STOP": 7
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 40,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 3,
+                "REPLACE": 1,
+                "STOP": 7
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 4,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "STOP": 7
+              },
+              "rejection_reasons": {
+                "duplicate_state": 38,
+                "leaf_container_mismatch": 2,
+                "not_bindable": 504,
+                "not_canonical_subtree": 576,
+                "not_container": 14,
+                "not_removable": 7,
+                "target_not_canonical": 16
+              },
+              "visited_total": 1185,
+              "dead_total": 1157,
+              "dead_candidate_rate": 0.9763713080168777,
+              "visited_shares": {
+                "ADD": 0.0008438818565400844,
+                "BIND_PLACEHOLDER": 0.45907172995780593,
+                "INSERT_STATEMENT": 0.01181434599156118,
+                "REMOVE": 0.008438818565400843,
+                "REMOVE_CONTAINER": 0.01181434599156118,
+                "REPLACE": 0.002531645569620253,
+                "REPLACE_STATEMENT": 0.01350210970464135,
+                "REPLACE_SUBTREE": 0.4860759493670886,
+                "STOP": 0.00590717299578059
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 7,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.14285714285714285
+            },
+            "fixture_03": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 579,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 9,
+                "REMOVE_CONTAINER": 15,
+                "REPLACE": 3,
+                "REPLACE_STATEMENT": 14,
+                "REPLACE_SUBTREE": 578,
+                "STOP": 7
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 75,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 2,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 7
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 3,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 1,
+                "STOP": 7
+              },
+              "rejection_reasons": {
+                "duplicate_state": 74,
+                "leaf_container_mismatch": 2,
+                "not_bindable": 504,
+                "not_canonical_subtree": 576,
+                "not_container": 15,
+                "not_removable": 7,
+                "target_not_canonical": 14
+              },
+              "visited_total": 1220,
+              "dead_total": 1192,
+              "dead_candidate_rate": 0.9770491803278688,
+              "visited_shares": {
+                "ADD": 0.000819672131147541,
+                "BIND_PLACEHOLDER": 0.4745901639344262,
+                "INSERT_STATEMENT": 0.011475409836065573,
+                "REMOVE": 0.007377049180327869,
+                "REMOVE_CONTAINER": 0.012295081967213115,
+                "REPLACE": 0.002459016393442623,
+                "REPLACE_STATEMENT": 0.011475409836065573,
+                "REPLACE_SUBTREE": 0.4737704918032787,
+                "STOP": 0.005737704918032787
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 7,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.14285714285714285
+            },
+            "fixture_04": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 650,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 12,
+                "REMOVE_CONTAINER": 18,
+                "REPLACE": 1,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 297,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 74,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 4,
+                "REPLACE_SUBTREE": 9,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 2,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 7
+              },
+              "rejection_reasons": {
+                "duplicate_state": 81,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 576,
+                "not_canonical_subtree": 288,
+                "not_container": 18,
+                "not_removable": 8,
+                "target_not_canonical": 16
+              },
+              "visited_total": 1019,
+              "dead_total": 988,
+              "dead_candidate_rate": 0.9695780176643768,
+              "visited_shares": {
+                "ADD": 0.0009813542688910696,
+                "BIND_PLACEHOLDER": 0.6378802747791953,
+                "INSERT_STATEMENT": 0.015701668302257114,
+                "REMOVE": 0.011776251226692836,
+                "REMOVE_CONTAINER": 0.017664376840039256,
+                "REPLACE": 0.0009813542688910696,
+                "REPLACE_STATEMENT": 0.015701668302257114,
+                "REPLACE_SUBTREE": 0.2914622178606477,
+                "STOP": 0.007850834151128557
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.125
+            },
+            "fixture_05": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 22,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 17,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2557,
+              "dead_total": 2513,
+              "dead_candidate_rate": 0.9827923347673054,
+              "visited_shares": {
+                "ADD": 0.0011732499022291747,
+                "BIND_PLACEHOLDER": 0.3378959718420024,
+                "INSERT_STATEMENT": 0.008603832616347283,
+                "INSERT_SUBTREE": 0.0035197497066875244,
+                "REMOVE": 0.003910833007430583,
+                "REMOVE_CONTAINER": 0.008603832616347283,
+                "REPLACE_STATEMENT": 0.006257332811888932,
+                "REPLACE_SUBTREE": 0.6257332811888933,
+                "STOP": 0.004301916308173641
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            },
+            "fixture_06": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 22,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 17,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2557,
+              "dead_total": 2513,
+              "dead_candidate_rate": 0.9827923347673054,
+              "visited_shares": {
+                "ADD": 0.0011732499022291747,
+                "BIND_PLACEHOLDER": 0.3378959718420024,
+                "INSERT_STATEMENT": 0.008603832616347283,
+                "INSERT_SUBTREE": 0.0035197497066875244,
+                "REMOVE": 0.003910833007430583,
+                "REMOVE_CONTAINER": 0.008603832616347283,
+                "REPLACE_STATEMENT": 0.006257332811888932,
+                "REPLACE_SUBTREE": 0.6257332811888933,
+                "STOP": 0.004301916308173641
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            },
+            "fixture_07": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 21,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 16,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2556,
+              "dead_total": 2512,
+              "dead_candidate_rate": 0.9827856025039123,
+              "visited_shares": {
+                "ADD": 0.0011737089201877935,
+                "BIND_PLACEHOLDER": 0.3380281690140845,
+                "INSERT_STATEMENT": 0.008607198748043818,
+                "INSERT_SUBTREE": 0.0035211267605633804,
+                "REMOVE": 0.003912363067292645,
+                "REMOVE_CONTAINER": 0.008215962441314555,
+                "REPLACE_STATEMENT": 0.006259780907668232,
+                "REPLACE_SUBTREE": 0.6259780907668232,
+                "STOP": 0.004303599374021909
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            }
+          }
+        },
+        "calibration": {
+          "per_action": {
+            "STOP": {
+              "target_share": 0.19899244332493704,
+              "visited_share": 0.005032986465347208,
+              "gap": -0.19395945685958982
+            },
+            "REPLACE": {
+              "target_share": 0.1486146095717884,
+              "visited_share": 0.0005441066449024008,
+              "gap": -0.148070502926886
+            },
+            "ADD": {
+              "target_share": 0.327455919395466,
+              "visited_share": 0.0010882132898048017,
+              "gap": -0.3263677061056612
+            },
+            "REMOVE": {
+              "target_share": 0.11083123425692695,
+              "visited_share": 0.005713119771475209,
+              "gap": -0.10511811448545175
+            },
+            "ADD_CONTAINER": {
+              "target_share": 0.017632241813602016,
+              "visited_share": 0.0,
+              "gap": -0.017632241813602016
+            },
+            "REMOVE_CONTAINER": {
+              "target_share": 0.10327455919395466,
+              "visited_share": 0.010201999591920016,
+              "gap": -0.09307255960203464
+            },
+            "INSERT_SUBTREE": {
+              "target_share": 0.030226700251889168,
+              "visited_share": 0.002448479902060804,
+              "gap": -0.027778220349828363
+            },
+            "REPLACE_SUBTREE": {
+              "target_share": 0.022670025188916875,
+              "visited_share": 0.5539005645106441,
+              "gap": 0.5312305393217271
+            },
+            "INSERT_STATEMENT": {
+              "target_share": 0.0,
+              "visited_share": 0.010065972930694417,
+              "gap": 0.010065972930694417
+            },
+            "REPLACE_STATEMENT": {
+              "target_share": 0.007556675062972292,
+              "visited_share": 0.008569679657212814,
+              "gap": 0.0010130045942405219
+            },
+            "BIND_PLACEHOLDER": {
+              "target_share": 0.0327455919395466,
+              "visited_share": 0.40243487723593824,
+              "gap": 0.36968928529639167
+            }
+          },
+          "mean_abs_deviation": 0.16581796402600976
+        },
+        "dead_candidate_rate": 0.979936067469224,
+        "applicable_add_recall": 0.16216216216216217,
+        "verifier_calls": 14629,
+        "stop_budget_consumed": 74,
+        "stop_proposals_visited": 74,
+        "valid_final_rate": 1.0,
+        "n_records": 8,
+        "training_metrics": {
+          "action": 2.112842082977295,
+          "stmt": 2.703423023223877,
+          "comp": 2.7941222190856934,
+          "slot": 2.7572789192199707,
+          "value": 0.16673196852207184,
+          "value_bounded": 0.0,
+          "value_unknown_excluded": 0.0,
+          "skipped": 0.0
+        }
+      }
+    },
+    "cell_c": {
+      "levers": {
+        "corruption": null,
+        "stop": "corrected"
+      },
+      "metrics": {
+        "training_targets": {
+          "samples": 400,
+          "n_targets": 378,
+          "counts": {
+            "STOP": 71,
+            "REPLACE": 42,
+            "ADD": 67,
+            "REMOVE": 69,
+            "ADD_CONTAINER": 5,
+            "REMOVE_CONTAINER": 69,
+            "INSERT_SUBTREE": 7,
+            "REPLACE_SUBTREE": 19,
+            "INSERT_STATEMENT": 0,
+            "REPLACE_STATEMENT": 7,
+            "BIND_PLACEHOLDER": 22
+          },
+          "shares": {
+            "STOP": 0.18783068783068782,
+            "REPLACE": 0.1111111111111111,
+            "ADD": 0.17724867724867724,
+            "REMOVE": 0.18253968253968253,
+            "ADD_CONTAINER": 0.013227513227513227,
+            "REMOVE_CONTAINER": 0.18253968253968253,
+            "INSERT_SUBTREE": 0.018518518518518517,
+            "REPLACE_SUBTREE": 0.05026455026455026,
+            "INSERT_STATEMENT": 0.0,
+            "REPLACE_STATEMENT": 0.018518518518518517,
+            "BIND_PLACEHOLDER": 0.0582010582010582
+          },
+          "inverse_action_weights": null
+        },
+        "decode_demand": {
+          "overall": {
+            "visited": {
+              "ADD": 11,
+              "BIND_PLACEHOLDER": 4464,
+              "INSERT_STATEMENT": 116,
+              "INSERT_SUBTREE": 138,
+              "REMOVE": 43,
+              "REMOVE_CONTAINER": 95,
+              "REPLACE": 73,
+              "REPLACE_STATEMENT": 36,
+              "REPLACE_SUBTREE": 6116,
+              "STOP": 58
+            },
+            "applicable": {
+              "ADD": 6,
+              "BIND_PLACEHOLDER": 1296,
+              "INSERT_STATEMENT": 116,
+              "INSERT_SUBTREE": 2,
+              "REMOVE": 8,
+              "REMOVE_CONTAINER": 5,
+              "REPLACE": 16,
+              "REPLACE_SUBTREE": 608,
+              "STOP": 58
+            },
+            "selected": {
+              "ADD": 2,
+              "INSERT_STATEMENT": 113,
+              "INSERT_SUBTREE": 2,
+              "REMOVE": 8,
+              "REMOVE_CONTAINER": 3,
+              "REPLACE": 13,
+              "REPLACE_SUBTREE": 33,
+              "STOP": 58
+            },
+            "rejection_reasons": {
+              "duplicate_state": 1883,
+              "invalid_result": 206,
+              "leaf_container_mismatch": 25,
+              "no_op": 6,
+              "not_bindable": 2628,
+              "not_canonical_subtree": 5328,
+              "not_container": 90,
+              "not_leaf_component": 540,
+              "not_removable": 35,
+              "parent_or_comp_precondition": 141,
+              "target_not_canonical": 36
+            },
+            "visited_total": 11150,
+            "dead_total": 10918,
+            "dead_candidate_rate": 0.9791928251121076,
+            "visited_shares": {
+              "ADD": 0.0009865470852017937,
+              "BIND_PLACEHOLDER": 0.4003587443946188,
+              "INSERT_STATEMENT": 0.010403587443946188,
+              "INSERT_SUBTREE": 0.012376681614349776,
+              "REMOVE": 0.0038565022421524664,
+              "REMOVE_CONTAINER": 0.008520179372197309,
+              "REPLACE": 0.006547085201793722,
+              "REPLACE_STATEMENT": 0.003228699551569507,
+              "REPLACE_SUBTREE": 0.5485201793721973,
+              "STOP": 0.005201793721973094
+            },
+            "verifier_calls": 11092,
+            "states_with_applicable_add": 58,
+            "states_recalled": 6,
+            "applicable_add_recall": 0.10344827586206896
+          },
+          "by_suite": {
+            "train": {
+              "visited": {
+                "ADD": 11,
+                "BIND_PLACEHOLDER": 4464,
+                "INSERT_STATEMENT": 116,
+                "INSERT_SUBTREE": 138,
+                "REMOVE": 43,
+                "REMOVE_CONTAINER": 95,
+                "REPLACE": 73,
+                "REPLACE_STATEMENT": 36,
+                "REPLACE_SUBTREE": 6116,
+                "STOP": 58
+              },
+              "applicable": {
+                "ADD": 6,
+                "BIND_PLACEHOLDER": 1296,
+                "INSERT_STATEMENT": 116,
+                "INSERT_SUBTREE": 2,
+                "REMOVE": 8,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE": 16,
+                "REPLACE_SUBTREE": 608,
+                "STOP": 58
+              },
+              "selected": {
+                "ADD": 2,
+                "INSERT_STATEMENT": 113,
+                "INSERT_SUBTREE": 2,
+                "REMOVE": 8,
+                "REMOVE_CONTAINER": 3,
+                "REPLACE": 13,
+                "REPLACE_SUBTREE": 33,
+                "STOP": 58
+              },
+              "rejection_reasons": {
+                "duplicate_state": 1883,
+                "invalid_result": 206,
+                "leaf_container_mismatch": 25,
+                "no_op": 6,
+                "not_bindable": 2628,
+                "not_canonical_subtree": 5328,
+                "not_container": 90,
+                "not_leaf_component": 540,
+                "not_removable": 35,
+                "parent_or_comp_precondition": 141,
+                "target_not_canonical": 36
+              },
+              "visited_total": 11150,
+              "dead_total": 10918,
+              "dead_candidate_rate": 0.9791928251121076,
+              "visited_shares": {
+                "ADD": 0.0009865470852017937,
+                "BIND_PLACEHOLDER": 0.4003587443946188,
+                "INSERT_STATEMENT": 0.010403587443946188,
+                "INSERT_SUBTREE": 0.012376681614349776,
+                "REMOVE": 0.0038565022421524664,
+                "REMOVE_CONTAINER": 0.008520179372197309,
+                "REPLACE": 0.006547085201793722,
+                "REPLACE_STATEMENT": 0.003228699551569507,
+                "REPLACE_SUBTREE": 0.5485201793721973,
+                "STOP": 0.005201793721973094
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 58,
+              "states_recalled": 6,
+              "applicable_add_recall": 0.10344827586206896
+            }
+          },
+          "by_source": {
+            "fixture_00": {
+              "visited": {
+                "BIND_PLACEHOLDER": 576,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 15,
+                "REPLACE": 3,
+                "REPLACE_STATEMENT": 2,
+                "REPLACE_SUBTREE": 297,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 180,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 9,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 185,
+                "invalid_result": 1,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 252,
+                "not_canonical_subtree": 288,
+                "not_container": 15,
+                "not_leaf_component": 144,
+                "not_removable": 6,
+                "target_not_canonical": 2
+              },
+              "visited_total": 918,
+              "dead_total": 894,
+              "dead_candidate_rate": 0.9738562091503268,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.6274509803921569,
+                "INSERT_STATEMENT": 0.013071895424836602,
+                "REMOVE": 0.007625272331154684,
+                "REMOVE_CONTAINER": 0.016339869281045753,
+                "REPLACE": 0.0032679738562091504,
+                "REPLACE_STATEMENT": 0.002178649237472767,
+                "REPLACE_SUBTREE": 0.3235294117647059,
+                "STOP": 0.006535947712418301
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_01": {
+              "visited": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 648,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 17,
+                "REMOVE": 3,
+                "REMOVE_CONTAINER": 14,
+                "REPLACE": 2,
+                "REPLACE_STATEMENT": 2,
+                "REPLACE_SUBTREE": 1022,
+                "STOP": 9
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 180,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 3,
+                "REPLACE_SUBTREE": 230,
+                "STOP": 9
+              },
+              "selected": {
+                "INSERT_STATEMENT": 17,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 7,
+                "STOP": 9
+              },
+              "rejection_reasons": {
+                "duplicate_state": 407,
+                "invalid_result": 73,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 432,
+                "not_canonical_subtree": 720,
+                "not_container": 11,
+                "not_leaf_component": 36,
+                "not_removable": 2,
+                "parent_or_comp_precondition": 17,
+                "target_not_canonical": 2
+              },
+              "visited_total": 1737,
+              "dead_total": 1701,
+              "dead_candidate_rate": 0.9792746113989638,
+              "visited_shares": {
+                "ADD": 0.0011514104778353484,
+                "BIND_PLACEHOLDER": 0.37305699481865284,
+                "INSERT_STATEMENT": 0.010362694300518135,
+                "INSERT_SUBTREE": 0.00978698906160046,
+                "REMOVE": 0.0017271157167530224,
+                "REMOVE_CONTAINER": 0.008059873344847437,
+                "REPLACE": 0.0011514104778353484,
+                "REPLACE_STATEMENT": 0.0011514104778353484,
+                "REPLACE_SUBTREE": 0.588370754173863,
+                "STOP": 0.0051813471502590676
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 9,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.1111111111111111
+            },
+            "fixture_02": {
+              "visited": {
+                "BIND_PLACEHOLDER": 504,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 11,
+                "REPLACE": 17,
+                "REPLACE_STATEMENT": 6,
+                "REPLACE_SUBTREE": 868,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 108,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 4,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 3,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 111,
+                "invalid_result": 6,
+                "leaf_container_mismatch": 5,
+                "no_op": 2,
+                "not_bindable": 324,
+                "not_canonical_subtree": 864,
+                "not_container": 11,
+                "not_leaf_component": 72,
+                "not_removable": 6,
+                "target_not_canonical": 6
+              },
+              "visited_total": 1431,
+              "dead_total": 1407,
+              "dead_candidate_rate": 0.9832285115303984,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.3522012578616352,
+                "INSERT_STATEMENT": 0.008385744234800839,
+                "REMOVE": 0.004891684136967156,
+                "REMOVE_CONTAINER": 0.007686932215234102,
+                "REPLACE": 0.011879804332634521,
+                "REPLACE_STATEMENT": 0.0041928721174004195,
+                "REPLACE_SUBTREE": 0.6065688329839273,
+                "STOP": 0.0041928721174004195
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_03": {
+              "visited": {
+                "BIND_PLACEHOLDER": 468,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 11,
+                "REPLACE": 17,
+                "REPLACE_STATEMENT": 8,
+                "REPLACE_SUBTREE": 868,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 72,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 4,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 3,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 75,
+                "invalid_result": 6,
+                "leaf_container_mismatch": 5,
+                "no_op": 2,
+                "not_bindable": 324,
+                "not_canonical_subtree": 864,
+                "not_container": 11,
+                "not_leaf_component": 72,
+                "not_removable": 6,
+                "target_not_canonical": 8
+              },
+              "visited_total": 1397,
+              "dead_total": 1373,
+              "dead_candidate_rate": 0.9828203292770222,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.3350035790980673,
+                "INSERT_STATEMENT": 0.008589835361488905,
+                "REMOVE": 0.005010737294201861,
+                "REMOVE_CONTAINER": 0.007874015748031496,
+                "REPLACE": 0.012168933428775949,
+                "REPLACE_STATEMENT": 0.00572655690765927,
+                "REPLACE_SUBTREE": 0.6213314244810307,
+                "STOP": 0.004294917680744453
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_04": {
+              "visited": {
+                "BIND_PLACEHOLDER": 468,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 7,
+                "REMOVE_CONTAINER": 11,
+                "REPLACE": 17,
+                "REPLACE_STATEMENT": 6,
+                "REPLACE_SUBTREE": 868,
+                "STOP": 6
+              },
+              "applicable": {
+                "BIND_PLACEHOLDER": 108,
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 4,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 6
+              },
+              "selected": {
+                "INSERT_STATEMENT": 12,
+                "REMOVE": 1,
+                "REPLACE": 3,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 6
+              },
+              "rejection_reasons": {
+                "duplicate_state": 111,
+                "invalid_result": 6,
+                "leaf_container_mismatch": 5,
+                "no_op": 2,
+                "not_bindable": 324,
+                "not_canonical_subtree": 864,
+                "not_container": 11,
+                "not_leaf_component": 36,
+                "not_removable": 6,
+                "target_not_canonical": 6
+              },
+              "visited_total": 1395,
+              "dead_total": 1371,
+              "dead_candidate_rate": 0.9827956989247312,
+              "visited_shares": {
+                "BIND_PLACEHOLDER": 0.33548387096774196,
+                "INSERT_STATEMENT": 0.008602150537634409,
+                "REMOVE": 0.005017921146953405,
+                "REMOVE_CONTAINER": 0.007885304659498209,
+                "REPLACE": 0.012186379928315413,
+                "REPLACE_STATEMENT": 0.004301075268817204,
+                "REPLACE_SUBTREE": 0.6222222222222222,
+                "STOP": 0.004301075268817204
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 6,
+              "states_recalled": 0,
+              "applicable_add_recall": 0.0
+            },
+            "fixture_05": {
+              "visited": {
+                "ADD": 4,
+                "BIND_PLACEHOLDER": 540,
+                "INSERT_STATEMENT": 16,
+                "INSERT_SUBTREE": 48,
+                "REMOVE": 4,
+                "REMOVE_CONTAINER": 9,
+                "REPLACE": 6,
+                "REPLACE_STATEMENT": 4,
+                "REPLACE_SUBTREE": 587,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 216,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 119,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 15,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 8
+              },
+              "rejection_reasons": {
+                "duplicate_state": 331,
+                "invalid_result": 38,
+                "leaf_container_mismatch": 3,
+                "not_bindable": 288,
+                "not_canonical_subtree": 432,
+                "not_container": 9,
+                "not_leaf_component": 36,
+                "not_removable": 3,
+                "parent_or_comp_precondition": 50,
+                "target_not_canonical": 4
+              },
+              "visited_total": 1226,
+              "dead_total": 1194,
+              "dead_candidate_rate": 0.9738988580750407,
+              "visited_shares": {
+                "ADD": 0.0032626427406199023,
+                "BIND_PLACEHOLDER": 0.44045676998368677,
+                "INSERT_STATEMENT": 0.013050570962479609,
+                "INSERT_SUBTREE": 0.03915171288743882,
+                "REMOVE": 0.0032626427406199023,
+                "REMOVE_CONTAINER": 0.00734094616639478,
+                "REPLACE": 0.004893964110929853,
+                "REPLACE_STATEMENT": 0.0032626427406199023,
+                "REPLACE_SUBTREE": 0.47879282218597063,
+                "STOP": 0.0065252854812398045
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.25
+            },
+            "fixture_06": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 720,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 33,
+                "REMOVE": 4,
+                "REMOVE_CONTAINER": 14,
+                "REPLACE": 5,
+                "REPLACE_STATEMENT": 4,
+                "REPLACE_SUBTREE": 1019,
+                "STOP": 9
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 216,
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 2,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 119,
+                "STOP": 9
+              },
+              "selected": {
+                "INSERT_STATEMENT": 18,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 1,
+                "REMOVE_CONTAINER": 2,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 4,
+                "STOP": 9
+              },
+              "rejection_reasons": {
+                "duplicate_state": 332,
+                "invalid_result": 38,
+                "leaf_container_mismatch": 2,
+                "not_bindable": 396,
+                "not_canonical_subtree": 864,
+                "not_container": 12,
+                "not_leaf_component": 108,
+                "not_removable": 3,
+                "parent_or_comp_precondition": 32,
+                "target_not_canonical": 4
+              },
+              "visited_total": 1827,
+              "dead_total": 1791,
+              "dead_candidate_rate": 0.9802955665024631,
+              "visited_shares": {
+                "ADD": 0.0005473453749315818,
+                "BIND_PLACEHOLDER": 0.39408866995073893,
+                "INSERT_STATEMENT": 0.009852216748768473,
+                "INSERT_SUBTREE": 0.0180623973727422,
+                "REMOVE": 0.0021893814997263274,
+                "REMOVE_CONTAINER": 0.007662835249042145,
+                "REPLACE": 0.002736726874657909,
+                "REPLACE_STATEMENT": 0.0021893814997263274,
+                "REPLACE_SUBTREE": 0.5577449370552818,
+                "STOP": 0.0049261083743842365
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 9,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.1111111111111111
+            },
+            "fixture_07": {
+              "visited": {
+                "ADD": 4,
+                "BIND_PLACEHOLDER": 540,
+                "INSERT_STATEMENT": 16,
+                "INSERT_SUBTREE": 40,
+                "REMOVE": 4,
+                "REMOVE_CONTAINER": 10,
+                "REPLACE": 6,
+                "REPLACE_STATEMENT": 4,
+                "REPLACE_SUBTREE": 587,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 216,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 119,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 15,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 8
+              },
+              "rejection_reasons": {
+                "duplicate_state": 331,
+                "invalid_result": 38,
+                "leaf_container_mismatch": 3,
+                "not_bindable": 288,
+                "not_canonical_subtree": 432,
+                "not_container": 10,
+                "not_leaf_component": 36,
+                "not_removable": 3,
+                "parent_or_comp_precondition": 42,
+                "target_not_canonical": 4
+              },
+              "visited_total": 1219,
+              "dead_total": 1187,
+              "dead_candidate_rate": 0.9737489745693191,
+              "visited_shares": {
+                "ADD": 0.003281378178835111,
+                "BIND_PLACEHOLDER": 0.44298605414273995,
+                "INSERT_STATEMENT": 0.013125512715340444,
+                "INSERT_SUBTREE": 0.03281378178835111,
+                "REMOVE": 0.003281378178835111,
+                "REMOVE_CONTAINER": 0.008203445447087777,
+                "REPLACE": 0.004922067268252666,
+                "REPLACE_STATEMENT": 0.003281378178835111,
+                "REPLACE_SUBTREE": 0.4815422477440525,
+                "STOP": 0.006562756357670222
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.25
+            }
+          }
+        },
+        "calibration": {
+          "per_action": {
+            "STOP": {
+              "target_share": 0.18783068783068782,
+              "visited_share": 0.005201793721973094,
+              "gap": -0.18262889410871472
+            },
+            "REPLACE": {
+              "target_share": 0.1111111111111111,
+              "visited_share": 0.006547085201793722,
+              "gap": -0.10456402590931738
+            },
+            "ADD": {
+              "target_share": 0.17724867724867724,
+              "visited_share": 0.0009865470852017937,
+              "gap": -0.17626213016347544
+            },
+            "REMOVE": {
+              "target_share": 0.18253968253968253,
+              "visited_share": 0.0038565022421524664,
+              "gap": -0.17868318029753005
+            },
+            "ADD_CONTAINER": {
+              "target_share": 0.013227513227513227,
+              "visited_share": 0.0,
+              "gap": -0.013227513227513227
+            },
+            "REMOVE_CONTAINER": {
+              "target_share": 0.18253968253968253,
+              "visited_share": 0.008520179372197309,
+              "gap": -0.1740195031674852
+            },
+            "INSERT_SUBTREE": {
+              "target_share": 0.018518518518518517,
+              "visited_share": 0.012376681614349776,
+              "gap": -0.006141836904168741
+            },
+            "REPLACE_SUBTREE": {
+              "target_share": 0.05026455026455026,
+              "visited_share": 0.5485201793721973,
+              "gap": 0.4982556291076471
+            },
+            "INSERT_STATEMENT": {
+              "target_share": 0.0,
+              "visited_share": 0.010403587443946188,
+              "gap": 0.010403587443946188
+            },
+            "REPLACE_STATEMENT": {
+              "target_share": 0.018518518518518517,
+              "visited_share": 0.003228699551569507,
+              "gap": -0.01528981896694901
+            },
+            "BIND_PLACEHOLDER": {
+              "target_share": 0.0582010582010582,
+              "visited_share": 0.4003587443946188,
+              "gap": 0.34215768619356063
+            }
+          },
+          "mean_abs_deviation": 0.1546939823173007
+        },
+        "dead_candidate_rate": 0.9791928251121076,
+        "applicable_add_recall": 0.10344827586206896,
+        "verifier_calls": 11092,
+        "stop_budget_consumed": 58,
+        "stop_proposals_visited": 58,
+        "valid_final_rate": 1.0,
+        "n_records": 8,
+        "training_metrics": {
+          "action": 2.143547534942627,
+          "stmt": 2.8126392364501953,
+          "slot": 2.276818037033081,
+          "value": 0.21380357444286346,
+          "value_bounded": 0.0,
+          "value_unknown_excluded": 0.0,
+          "skipped": 0.0
+        }
+      }
+    },
+    "cell_d": {
+      "levers": {
+        "corruption": {
+          "REPLACE": 1.0,
+          "ADD": 4.0,
+          "REMOVE": 1.0,
+          "ADD_CONTAINER": 1.0,
+          "REMOVE_CONTAINER": 1.0,
+          "INSERT_SUBTREE": 1.0,
+          "REPLACE_SUBTREE": 1.0,
+          "REPLACE_STATEMENT": 1.0,
+          "BIND_PLACEHOLDER": 1.0
+        },
+        "stop": "corrected"
+      },
+      "metrics": {
+        "training_targets": {
+          "samples": 400,
+          "n_targets": 397,
+          "counts": {
+            "STOP": 79,
+            "REPLACE": 59,
+            "ADD": 130,
+            "REMOVE": 44,
+            "ADD_CONTAINER": 7,
+            "REMOVE_CONTAINER": 41,
+            "INSERT_SUBTREE": 12,
+            "REPLACE_SUBTREE": 9,
+            "INSERT_STATEMENT": 0,
+            "REPLACE_STATEMENT": 3,
+            "BIND_PLACEHOLDER": 13
+          },
+          "shares": {
+            "STOP": 0.19899244332493704,
+            "REPLACE": 0.1486146095717884,
+            "ADD": 0.327455919395466,
+            "REMOVE": 0.11083123425692695,
+            "ADD_CONTAINER": 0.017632241813602016,
+            "REMOVE_CONTAINER": 0.10327455919395466,
+            "INSERT_SUBTREE": 0.030226700251889168,
+            "REPLACE_SUBTREE": 0.022670025188916875,
+            "INSERT_STATEMENT": 0.0,
+            "REPLACE_STATEMENT": 0.007556675062972292,
+            "BIND_PLACEHOLDER": 0.0327455919395466
+          },
+          "inverse_action_weights": {
+            "REPLACE": 1.0,
+            "ADD": 4.0,
+            "REMOVE": 1.0,
+            "ADD_CONTAINER": 1.0,
+            "REMOVE_CONTAINER": 1.0,
+            "INSERT_SUBTREE": 1.0,
+            "REPLACE_SUBTREE": 1.0,
+            "REPLACE_STATEMENT": 1.0,
+            "BIND_PLACEHOLDER": 1.0
+          }
+        },
+        "decode_demand": {
+          "overall": {
+            "visited": {
+              "ADD": 16,
+              "BIND_PLACEHOLDER": 5917,
+              "INSERT_STATEMENT": 148,
+              "INSERT_SUBTREE": 36,
+              "REMOVE": 84,
+              "REMOVE_CONTAINER": 150,
+              "REPLACE": 8,
+              "REPLACE_STATEMENT": 126,
+              "REPLACE_SUBTREE": 8145,
+              "STOP": 74
+            },
+            "applicable": {
+              "ADD": 12,
+              "BIND_PLACEHOLDER": 1453,
+              "INSERT_STATEMENT": 148,
+              "INSERT_SUBTREE": 4,
+              "REMOVE": 22,
+              "REMOVE_CONTAINER": 20,
+              "REPLACE": 2,
+              "REPLACE_SUBTREE": 945,
+              "STOP": 74
+            },
+            "selected": {
+              "ADD": 8,
+              "BIND_PLACEHOLDER": 13,
+              "INSERT_STATEMENT": 148,
+              "INSERT_SUBTREE": 4,
+              "REMOVE": 12,
+              "REMOVE_CONTAINER": 4,
+              "REPLACE": 2,
+              "REPLACE_SUBTREE": 32,
+              "STOP": 73
+            },
+            "rejection_reasons": {
+              "duplicate_state": 2384,
+              "invalid_result": 288,
+              "leaf_container_mismatch": 6,
+              "not_bindable": 4464,
+              "not_canonical_subtree": 6912,
+              "not_container": 130,
+              "not_removable": 62,
+              "parent_or_comp_precondition": 36,
+              "target_not_canonical": 126
+            },
+            "visited_total": 14704,
+            "dead_total": 14408,
+            "dead_candidate_rate": 0.9798694232861807,
+            "visited_shares": {
+              "ADD": 0.001088139281828074,
+              "BIND_PLACEHOLDER": 0.4024075081610446,
+              "INSERT_STATEMENT": 0.010065288356909684,
+              "INSERT_SUBTREE": 0.0024483133841131663,
+              "REMOVE": 0.005712731229597388,
+              "REMOVE_CONTAINER": 0.010201305767138194,
+              "REPLACE": 0.000544069640914037,
+              "REPLACE_STATEMENT": 0.008569096844396083,
+              "REPLACE_SUBTREE": 0.5539309031556039,
+              "STOP": 0.005032644178454842
+            },
+            "verifier_calls": 14630,
+            "states_with_applicable_add": 74,
+            "states_recalled": 12,
+            "applicable_add_recall": 0.16216216216216217
+          },
+          "by_suite": {
+            "train": {
+              "visited": {
+                "ADD": 16,
+                "BIND_PLACEHOLDER": 5917,
+                "INSERT_STATEMENT": 148,
+                "INSERT_SUBTREE": 36,
+                "REMOVE": 84,
+                "REMOVE_CONTAINER": 150,
+                "REPLACE": 8,
+                "REPLACE_STATEMENT": 126,
+                "REPLACE_SUBTREE": 8145,
+                "STOP": 74
+              },
+              "applicable": {
+                "ADD": 12,
+                "BIND_PLACEHOLDER": 1453,
+                "INSERT_STATEMENT": 148,
+                "INSERT_SUBTREE": 4,
+                "REMOVE": 22,
+                "REMOVE_CONTAINER": 20,
+                "REPLACE": 2,
+                "REPLACE_SUBTREE": 945,
+                "STOP": 74
+              },
+              "selected": {
+                "ADD": 8,
+                "BIND_PLACEHOLDER": 13,
+                "INSERT_STATEMENT": 148,
+                "INSERT_SUBTREE": 4,
+                "REMOVE": 12,
+                "REMOVE_CONTAINER": 4,
+                "REPLACE": 2,
+                "REPLACE_SUBTREE": 32,
+                "STOP": 73
+              },
+              "rejection_reasons": {
+                "duplicate_state": 2384,
+                "invalid_result": 288,
+                "leaf_container_mismatch": 6,
+                "not_bindable": 4464,
+                "not_canonical_subtree": 6912,
+                "not_container": 130,
+                "not_removable": 62,
+                "parent_or_comp_precondition": 36,
+                "target_not_canonical": 126
+              },
+              "visited_total": 14704,
+              "dead_total": 14408,
+              "dead_candidate_rate": 0.9798694232861807,
+              "visited_shares": {
+                "ADD": 0.001088139281828074,
+                "BIND_PLACEHOLDER": 0.4024075081610446,
+                "INSERT_STATEMENT": 0.010065288356909684,
+                "INSERT_SUBTREE": 0.0024483133841131663,
+                "REMOVE": 0.005712731229597388,
+                "REMOVE_CONTAINER": 0.010201305767138194,
+                "REPLACE": 0.000544069640914037,
+                "REPLACE_STATEMENT": 0.008569096844396083,
+                "REPLACE_SUBTREE": 0.5539309031556039,
+                "STOP": 0.005032644178454842
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 74,
+              "states_recalled": 12,
+              "applicable_add_recall": 0.16216216216216217
+            }
+          },
+          "by_source": {
+            "fixture_00": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 688,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 13,
+                "REMOVE_CONTAINER": 17,
+                "REPLACE": 1,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 293,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 112,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 5,
+                "REPLACE_SUBTREE": 5,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 4,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 8
+              },
+              "rejection_reasons": {
+                "duplicate_state": 115,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 576,
+                "not_canonical_subtree": 288,
+                "not_container": 17,
+                "not_removable": 8,
+                "target_not_canonical": 16
+              },
+              "visited_total": 1053,
+              "dead_total": 1021,
+              "dead_candidate_rate": 0.9696106362773029,
+              "visited_shares": {
+                "ADD": 0.000949667616334283,
+                "BIND_PLACEHOLDER": 0.6533713200379867,
+                "INSERT_STATEMENT": 0.015194681861348529,
+                "REMOVE": 0.012345679012345678,
+                "REMOVE_CONTAINER": 0.016144349477682812,
+                "REPLACE": 0.000949667616334283,
+                "REPLACE_STATEMENT": 0.015194681861348529,
+                "REPLACE_SUBTREE": 0.27825261158594494,
+                "STOP": 0.007597340930674264
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.125
+            },
+            "fixture_01": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 21,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 16,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2556,
+              "dead_total": 2512,
+              "dead_candidate_rate": 0.9827856025039123,
+              "visited_shares": {
+                "ADD": 0.0011737089201877935,
+                "BIND_PLACEHOLDER": 0.3380281690140845,
+                "INSERT_STATEMENT": 0.008607198748043818,
+                "INSERT_SUBTREE": 0.0035211267605633804,
+                "REMOVE": 0.003912363067292645,
+                "REMOVE_CONTAINER": 0.008215962441314555,
+                "REPLACE_STATEMENT": 0.006259780907668232,
+                "REPLACE_SUBTREE": 0.6259780907668232,
+                "STOP": 0.004303599374021909
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            },
+            "fixture_02": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 544,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 14,
+                "REPLACE": 3,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 576,
+                "STOP": 7
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 40,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 3,
+                "REPLACE": 1,
+                "STOP": 7
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 4,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "STOP": 7
+              },
+              "rejection_reasons": {
+                "duplicate_state": 38,
+                "leaf_container_mismatch": 2,
+                "not_bindable": 504,
+                "not_canonical_subtree": 576,
+                "not_container": 14,
+                "not_removable": 7,
+                "target_not_canonical": 16
+              },
+              "visited_total": 1185,
+              "dead_total": 1157,
+              "dead_candidate_rate": 0.9763713080168777,
+              "visited_shares": {
+                "ADD": 0.0008438818565400844,
+                "BIND_PLACEHOLDER": 0.45907172995780593,
+                "INSERT_STATEMENT": 0.01181434599156118,
+                "REMOVE": 0.008438818565400843,
+                "REMOVE_CONTAINER": 0.01181434599156118,
+                "REPLACE": 0.002531645569620253,
+                "REPLACE_STATEMENT": 0.01350210970464135,
+                "REPLACE_SUBTREE": 0.4860759493670886,
+                "STOP": 0.00590717299578059
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 7,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.14285714285714285
+            },
+            "fixture_03": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 579,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 9,
+                "REMOVE_CONTAINER": 15,
+                "REPLACE": 3,
+                "REPLACE_STATEMENT": 14,
+                "REPLACE_SUBTREE": 578,
+                "STOP": 7
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 75,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 2,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 2,
+                "STOP": 7
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 3,
+                "INSERT_STATEMENT": 14,
+                "REMOVE": 1,
+                "REPLACE": 1,
+                "REPLACE_SUBTREE": 1,
+                "STOP": 7
+              },
+              "rejection_reasons": {
+                "duplicate_state": 74,
+                "leaf_container_mismatch": 2,
+                "not_bindable": 504,
+                "not_canonical_subtree": 576,
+                "not_container": 15,
+                "not_removable": 7,
+                "target_not_canonical": 14
+              },
+              "visited_total": 1220,
+              "dead_total": 1192,
+              "dead_candidate_rate": 0.9770491803278688,
+              "visited_shares": {
+                "ADD": 0.000819672131147541,
+                "BIND_PLACEHOLDER": 0.4745901639344262,
+                "INSERT_STATEMENT": 0.011475409836065573,
+                "REMOVE": 0.007377049180327869,
+                "REMOVE_CONTAINER": 0.012295081967213115,
+                "REPLACE": 0.002459016393442623,
+                "REPLACE_STATEMENT": 0.011475409836065573,
+                "REPLACE_SUBTREE": 0.4737704918032787,
+                "STOP": 0.005737704918032787
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 7,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.14285714285714285
+            },
+            "fixture_04": {
+              "visited": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 650,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 12,
+                "REMOVE_CONTAINER": 18,
+                "REPLACE": 1,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 298,
+                "STOP": 8
+              },
+              "applicable": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 74,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 4,
+                "REPLACE_SUBTREE": 10,
+                "STOP": 8
+              },
+              "selected": {
+                "ADD": 1,
+                "BIND_PLACEHOLDER": 2,
+                "INSERT_STATEMENT": 16,
+                "REMOVE": 1,
+                "REPLACE_SUBTREE": 5,
+                "STOP": 7
+              },
+              "rejection_reasons": {
+                "duplicate_state": 81,
+                "leaf_container_mismatch": 1,
+                "not_bindable": 576,
+                "not_canonical_subtree": 288,
+                "not_container": 18,
+                "not_removable": 8,
+                "target_not_canonical": 16
+              },
+              "visited_total": 1020,
+              "dead_total": 988,
+              "dead_candidate_rate": 0.9686274509803922,
+              "visited_shares": {
+                "ADD": 0.000980392156862745,
+                "BIND_PLACEHOLDER": 0.6372549019607843,
+                "INSERT_STATEMENT": 0.01568627450980392,
+                "REMOVE": 0.011764705882352941,
+                "REMOVE_CONTAINER": 0.01764705882352941,
+                "REPLACE": 0.000980392156862745,
+                "REPLACE_STATEMENT": 0.01568627450980392,
+                "REPLACE_SUBTREE": 0.29215686274509806,
+                "STOP": 0.00784313725490196
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 8,
+              "states_recalled": 1,
+              "applicable_add_recall": 0.125
+            },
+            "fixture_05": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 22,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 17,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2557,
+              "dead_total": 2513,
+              "dead_candidate_rate": 0.9827923347673054,
+              "visited_shares": {
+                "ADD": 0.0011732499022291747,
+                "BIND_PLACEHOLDER": 0.3378959718420024,
+                "INSERT_STATEMENT": 0.008603832616347283,
+                "INSERT_SUBTREE": 0.0035197497066875244,
+                "REMOVE": 0.003910833007430583,
+                "REMOVE_CONTAINER": 0.008603832616347283,
+                "REPLACE_STATEMENT": 0.006257332811888932,
+                "REPLACE_SUBTREE": 0.6257332811888933,
+                "STOP": 0.004301916308173641
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            },
+            "fixture_06": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 22,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 17,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2557,
+              "dead_total": 2513,
+              "dead_candidate_rate": 0.9827923347673054,
+              "visited_shares": {
+                "ADD": 0.0011732499022291747,
+                "BIND_PLACEHOLDER": 0.3378959718420024,
+                "INSERT_STATEMENT": 0.008603832616347283,
+                "INSERT_SUBTREE": 0.0035197497066875244,
+                "REMOVE": 0.003910833007430583,
+                "REMOVE_CONTAINER": 0.008603832616347283,
+                "REPLACE_STATEMENT": 0.006257332811888932,
+                "REPLACE_SUBTREE": 0.6257332811888933,
+                "STOP": 0.004301916308173641
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            },
+            "fixture_07": {
+              "visited": {
+                "ADD": 3,
+                "BIND_PLACEHOLDER": 864,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 9,
+                "REMOVE": 10,
+                "REMOVE_CONTAINER": 21,
+                "REPLACE_STATEMENT": 16,
+                "REPLACE_SUBTREE": 1600,
+                "STOP": 11
+              },
+              "applicable": {
+                "ADD": 2,
+                "BIND_PLACEHOLDER": 288,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 5,
+                "REPLACE_SUBTREE": 232,
+                "STOP": 11
+              },
+              "selected": {
+                "ADD": 1,
+                "INSERT_STATEMENT": 22,
+                "INSERT_SUBTREE": 1,
+                "REMOVE": 2,
+                "REMOVE_CONTAINER": 1,
+                "REPLACE_SUBTREE": 6,
+                "STOP": 11
+              },
+              "rejection_reasons": {
+                "duplicate_state": 519,
+                "invalid_result": 72,
+                "not_bindable": 576,
+                "not_canonical_subtree": 1296,
+                "not_container": 16,
+                "not_removable": 8,
+                "parent_or_comp_precondition": 9,
+                "target_not_canonical": 16
+              },
+              "visited_total": 2556,
+              "dead_total": 2512,
+              "dead_candidate_rate": 0.9827856025039123,
+              "visited_shares": {
+                "ADD": 0.0011737089201877935,
+                "BIND_PLACEHOLDER": 0.3380281690140845,
+                "INSERT_STATEMENT": 0.008607198748043818,
+                "INSERT_SUBTREE": 0.0035211267605633804,
+                "REMOVE": 0.003912363067292645,
+                "REMOVE_CONTAINER": 0.008215962441314555,
+                "REPLACE_STATEMENT": 0.006259780907668232,
+                "REPLACE_SUBTREE": 0.6259780907668232,
+                "STOP": 0.004303599374021909
+              },
+              "verifier_calls": 0,
+              "states_with_applicable_add": 11,
+              "states_recalled": 2,
+              "applicable_add_recall": 0.18181818181818182
+            }
+          }
+        },
+        "calibration": {
+          "per_action": {
+            "STOP": {
+              "target_share": 0.19899244332493704,
+              "visited_share": 0.005032644178454842,
+              "gap": -0.1939597991464822
+            },
+            "REPLACE": {
+              "target_share": 0.1486146095717884,
+              "visited_share": 0.000544069640914037,
+              "gap": -0.14807053993087438
+            },
+            "ADD": {
+              "target_share": 0.327455919395466,
+              "visited_share": 0.001088139281828074,
+              "gap": -0.32636778011363793
+            },
+            "REMOVE": {
+              "target_share": 0.11083123425692695,
+              "visited_share": 0.005712731229597388,
+              "gap": -0.10511850302732956
+            },
+            "ADD_CONTAINER": {
+              "target_share": 0.017632241813602016,
+              "visited_share": 0.0,
+              "gap": -0.017632241813602016
+            },
+            "REMOVE_CONTAINER": {
+              "target_share": 0.10327455919395466,
+              "visited_share": 0.010201305767138194,
+              "gap": -0.09307325342681647
+            },
+            "INSERT_SUBTREE": {
+              "target_share": 0.030226700251889168,
+              "visited_share": 0.0024483133841131663,
+              "gap": -0.027778386867776002
+            },
+            "REPLACE_SUBTREE": {
+              "target_share": 0.022670025188916875,
+              "visited_share": 0.5539309031556039,
+              "gap": 0.531260877966687
+            },
+            "INSERT_STATEMENT": {
+              "target_share": 0.0,
+              "visited_share": 0.010065288356909684,
+              "gap": 0.010065288356909684
+            },
+            "REPLACE_STATEMENT": {
+              "target_share": 0.007556675062972292,
+              "visited_share": 0.008569096844396083,
+              "gap": 0.0010124217814237906
+            },
+            "BIND_PLACEHOLDER": {
+              "target_share": 0.0327455919395466,
+              "visited_share": 0.4024075081610446,
+              "gap": 0.369661916221498
+            }
+          },
+          "mean_abs_deviation": 0.16581827351391246
+        },
+        "dead_candidate_rate": 0.9798694232861807,
+        "applicable_add_recall": 0.16216216216216217,
+        "verifier_calls": 14630,
+        "stop_budget_consumed": 73,
+        "stop_proposals_visited": 74,
+        "valid_final_rate": 1.0,
+        "n_records": 8,
+        "training_metrics": {
+          "action": 2.112842082977295,
+          "stmt": 2.703423023223877,
+          "comp": 2.7941222190856934,
+          "slot": 2.7572789192199707,
+          "value": 0.16673196852207184,
+          "value_bounded": 0.0,
+          "value_unknown_excluded": 0.0,
+          "skipped": 0.0
+        }
+      }
+    }
+  },
+  "threshold_checks": {
+    "t1_add_target_share_gains": {
+      "cell_b_minus_cell_a": 0.15020724214678874,
+      "cell_d_minus_cell_c": 0.15020724214678874
+    },
+    "t1_ok": true,
+    "t2_valid_final": {
+      "cell_b_vs_cell_a": true,
+      "cell_d_vs_cell_c": true
+    },
+    "t2_ok": true,
+    "t3_stop_accounting": {
+      "cell_c_vs_cell_a": {
+        "stop_budget_legacy": 58,
+        "stop_budget_corrected": 58,
+        "budget_ok": true,
+        "valid_final_ok": true
+      },
+      "cell_d_vs_cell_b": {
+        "stop_budget_legacy": 74,
+        "stop_budget_corrected": 73,
+        "budget_ok": true,
+        "valid_final_ok": true
+      }
+    },
+    "t3_ok": true,
+    "t4_lever_isolation": {
+      "b_minus_a": [
+        "corruption"
+      ],
+      "c_minus_a": [
+        "stop"
+      ],
+      "d_minus_b": [
+        "stop"
+      ],
+      "d_minus_c": [
+        "corruption"
+      ]
+    },
+    "t4_ok": true
+  },
+  "verdicts": {
+    "corruption_add_balanced": "adopted",
+    "stop_slot_corrected": "adopted"
+  },
+  "baseline_audit": {
+    "training_targets": {
+      "samples": 400,
+      "n_targets": 378,
+      "counts": {
+        "STOP": 71,
+        "REPLACE": 42,
+        "ADD": 67,
+        "REMOVE": 69,
+        "ADD_CONTAINER": 5,
+        "REMOVE_CONTAINER": 69,
+        "INSERT_SUBTREE": 7,
+        "REPLACE_SUBTREE": 19,
+        "INSERT_STATEMENT": 0,
+        "REPLACE_STATEMENT": 7,
+        "BIND_PLACEHOLDER": 22
+      },
+      "shares": {
+        "STOP": 0.18783068783068782,
+        "REPLACE": 0.1111111111111111,
+        "ADD": 0.17724867724867724,
+        "REMOVE": 0.18253968253968253,
+        "ADD_CONTAINER": 0.013227513227513227,
+        "REMOVE_CONTAINER": 0.18253968253968253,
+        "INSERT_SUBTREE": 0.018518518518518517,
+        "REPLACE_SUBTREE": 0.05026455026455026,
+        "INSERT_STATEMENT": 0.0,
+        "REPLACE_STATEMENT": 0.018518518518518517,
+        "BIND_PLACEHOLDER": 0.0582010582010582
+      },
+      "inverse_action_weights": null
+    },
+    "decode_demand": {
+      "overall": {
+        "visited": {
+          "ADD": 11,
+          "BIND_PLACEHOLDER": 4464,
+          "INSERT_STATEMENT": 116,
+          "INSERT_SUBTREE": 138,
+          "REMOVE": 43,
+          "REMOVE_CONTAINER": 95,
+          "REPLACE": 73,
+          "REPLACE_STATEMENT": 36,
+          "REPLACE_SUBTREE": 6116,
+          "STOP": 58
+        },
+        "applicable": {
+          "ADD": 6,
+          "BIND_PLACEHOLDER": 1296,
+          "INSERT_STATEMENT": 116,
+          "INSERT_SUBTREE": 2,
+          "REMOVE": 8,
+          "REMOVE_CONTAINER": 5,
+          "REPLACE": 16,
+          "REPLACE_SUBTREE": 608,
+          "STOP": 58
+        },
+        "selected": {
+          "ADD": 2,
+          "INSERT_STATEMENT": 113,
+          "INSERT_SUBTREE": 2,
+          "REMOVE": 8,
+          "REMOVE_CONTAINER": 3,
+          "REPLACE": 13,
+          "REPLACE_SUBTREE": 33,
+          "STOP": 58
+        },
+        "rejection_reasons": {
+          "duplicate_state": 1883,
+          "invalid_result": 206,
+          "leaf_container_mismatch": 25,
+          "no_op": 6,
+          "not_bindable": 2628,
+          "not_canonical_subtree": 5328,
+          "not_container": 90,
+          "not_leaf_component": 540,
+          "not_removable": 35,
+          "parent_or_comp_precondition": 141,
+          "target_not_canonical": 36
+        },
+        "visited_total": 11150,
+        "dead_total": 10918,
+        "dead_candidate_rate": 0.9791928251121076,
+        "visited_shares": {
+          "ADD": 0.0009865470852017937,
+          "BIND_PLACEHOLDER": 0.4003587443946188,
+          "INSERT_STATEMENT": 0.010403587443946188,
+          "INSERT_SUBTREE": 0.012376681614349776,
+          "REMOVE": 0.0038565022421524664,
+          "REMOVE_CONTAINER": 0.008520179372197309,
+          "REPLACE": 0.006547085201793722,
+          "REPLACE_STATEMENT": 0.003228699551569507,
+          "REPLACE_SUBTREE": 0.5485201793721973,
+          "STOP": 0.005201793721973094
+        },
+        "verifier_calls": 11092,
+        "states_with_applicable_add": 58,
+        "states_recalled": 6,
+        "applicable_add_recall": 0.10344827586206896
+      },
+      "by_source": {
+        "fixture_00": {
+          "visited": {
+            "BIND_PLACEHOLDER": 576,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 7,
+            "REMOVE_CONTAINER": 15,
+            "REPLACE": 3,
+            "REPLACE_STATEMENT": 2,
+            "REPLACE_SUBTREE": 297,
+            "STOP": 6
+          },
+          "applicable": {
+            "BIND_PLACEHOLDER": 180,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 9,
+            "STOP": 6
+          },
+          "selected": {
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 4,
+            "STOP": 6
+          },
+          "rejection_reasons": {
+            "duplicate_state": 185,
+            "invalid_result": 1,
+            "leaf_container_mismatch": 1,
+            "not_bindable": 252,
+            "not_canonical_subtree": 288,
+            "not_container": 15,
+            "not_leaf_component": 144,
+            "not_removable": 6,
+            "target_not_canonical": 2
+          },
+          "visited_total": 918,
+          "dead_total": 894,
+          "dead_candidate_rate": 0.9738562091503268,
+          "visited_shares": {
+            "BIND_PLACEHOLDER": 0.6274509803921569,
+            "INSERT_STATEMENT": 0.013071895424836602,
+            "REMOVE": 0.007625272331154684,
+            "REMOVE_CONTAINER": 0.016339869281045753,
+            "REPLACE": 0.0032679738562091504,
+            "REPLACE_STATEMENT": 0.002178649237472767,
+            "REPLACE_SUBTREE": 0.3235294117647059,
+            "STOP": 0.006535947712418301
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 6,
+          "states_recalled": 0,
+          "applicable_add_recall": 0.0
+        },
+        "fixture_01": {
+          "visited": {
+            "ADD": 2,
+            "BIND_PLACEHOLDER": 648,
+            "INSERT_STATEMENT": 18,
+            "INSERT_SUBTREE": 17,
+            "REMOVE": 3,
+            "REMOVE_CONTAINER": 14,
+            "REPLACE": 2,
+            "REPLACE_STATEMENT": 2,
+            "REPLACE_SUBTREE": 1022,
+            "STOP": 9
+          },
+          "applicable": {
+            "ADD": 1,
+            "BIND_PLACEHOLDER": 180,
+            "INSERT_STATEMENT": 18,
+            "INSERT_SUBTREE": 1,
+            "REMOVE": 1,
+            "REMOVE_CONTAINER": 3,
+            "REPLACE_SUBTREE": 230,
+            "STOP": 9
+          },
+          "selected": {
+            "INSERT_STATEMENT": 17,
+            "INSERT_SUBTREE": 1,
+            "REMOVE": 1,
+            "REMOVE_CONTAINER": 1,
+            "REPLACE_SUBTREE": 7,
+            "STOP": 9
+          },
+          "rejection_reasons": {
+            "duplicate_state": 407,
+            "invalid_result": 73,
+            "leaf_container_mismatch": 1,
+            "not_bindable": 432,
+            "not_canonical_subtree": 720,
+            "not_container": 11,
+            "not_leaf_component": 36,
+            "not_removable": 2,
+            "parent_or_comp_precondition": 17,
+            "target_not_canonical": 2
+          },
+          "visited_total": 1737,
+          "dead_total": 1701,
+          "dead_candidate_rate": 0.9792746113989638,
+          "visited_shares": {
+            "ADD": 0.0011514104778353484,
+            "BIND_PLACEHOLDER": 0.37305699481865284,
+            "INSERT_STATEMENT": 0.010362694300518135,
+            "INSERT_SUBTREE": 0.00978698906160046,
+            "REMOVE": 0.0017271157167530224,
+            "REMOVE_CONTAINER": 0.008059873344847437,
+            "REPLACE": 0.0011514104778353484,
+            "REPLACE_STATEMENT": 0.0011514104778353484,
+            "REPLACE_SUBTREE": 0.588370754173863,
+            "STOP": 0.0051813471502590676
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 9,
+          "states_recalled": 1,
+          "applicable_add_recall": 0.1111111111111111
+        },
+        "fixture_02": {
+          "visited": {
+            "BIND_PLACEHOLDER": 504,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 7,
+            "REMOVE_CONTAINER": 11,
+            "REPLACE": 17,
+            "REPLACE_STATEMENT": 6,
+            "REPLACE_SUBTREE": 868,
+            "STOP": 6
+          },
+          "applicable": {
+            "BIND_PLACEHOLDER": 108,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 4,
+            "REPLACE_SUBTREE": 4,
+            "STOP": 6
+          },
+          "selected": {
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 3,
+            "REPLACE_SUBTREE": 2,
+            "STOP": 6
+          },
+          "rejection_reasons": {
+            "duplicate_state": 111,
+            "invalid_result": 6,
+            "leaf_container_mismatch": 5,
+            "no_op": 2,
+            "not_bindable": 324,
+            "not_canonical_subtree": 864,
+            "not_container": 11,
+            "not_leaf_component": 72,
+            "not_removable": 6,
+            "target_not_canonical": 6
+          },
+          "visited_total": 1431,
+          "dead_total": 1407,
+          "dead_candidate_rate": 0.9832285115303984,
+          "visited_shares": {
+            "BIND_PLACEHOLDER": 0.3522012578616352,
+            "INSERT_STATEMENT": 0.008385744234800839,
+            "REMOVE": 0.004891684136967156,
+            "REMOVE_CONTAINER": 0.007686932215234102,
+            "REPLACE": 0.011879804332634521,
+            "REPLACE_STATEMENT": 0.0041928721174004195,
+            "REPLACE_SUBTREE": 0.6065688329839273,
+            "STOP": 0.0041928721174004195
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 6,
+          "states_recalled": 0,
+          "applicable_add_recall": 0.0
+        },
+        "fixture_03": {
+          "visited": {
+            "BIND_PLACEHOLDER": 468,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 7,
+            "REMOVE_CONTAINER": 11,
+            "REPLACE": 17,
+            "REPLACE_STATEMENT": 8,
+            "REPLACE_SUBTREE": 868,
+            "STOP": 6
+          },
+          "applicable": {
+            "BIND_PLACEHOLDER": 72,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 4,
+            "REPLACE_SUBTREE": 4,
+            "STOP": 6
+          },
+          "selected": {
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 3,
+            "REPLACE_SUBTREE": 2,
+            "STOP": 6
+          },
+          "rejection_reasons": {
+            "duplicate_state": 75,
+            "invalid_result": 6,
+            "leaf_container_mismatch": 5,
+            "no_op": 2,
+            "not_bindable": 324,
+            "not_canonical_subtree": 864,
+            "not_container": 11,
+            "not_leaf_component": 72,
+            "not_removable": 6,
+            "target_not_canonical": 8
+          },
+          "visited_total": 1397,
+          "dead_total": 1373,
+          "dead_candidate_rate": 0.9828203292770222,
+          "visited_shares": {
+            "BIND_PLACEHOLDER": 0.3350035790980673,
+            "INSERT_STATEMENT": 0.008589835361488905,
+            "REMOVE": 0.005010737294201861,
+            "REMOVE_CONTAINER": 0.007874015748031496,
+            "REPLACE": 0.012168933428775949,
+            "REPLACE_STATEMENT": 0.00572655690765927,
+            "REPLACE_SUBTREE": 0.6213314244810307,
+            "STOP": 0.004294917680744453
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 6,
+          "states_recalled": 0,
+          "applicable_add_recall": 0.0
+        },
+        "fixture_04": {
+          "visited": {
+            "BIND_PLACEHOLDER": 468,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 7,
+            "REMOVE_CONTAINER": 11,
+            "REPLACE": 17,
+            "REPLACE_STATEMENT": 6,
+            "REPLACE_SUBTREE": 868,
+            "STOP": 6
+          },
+          "applicable": {
+            "BIND_PLACEHOLDER": 108,
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 4,
+            "REPLACE_SUBTREE": 4,
+            "STOP": 6
+          },
+          "selected": {
+            "INSERT_STATEMENT": 12,
+            "REMOVE": 1,
+            "REPLACE": 3,
+            "REPLACE_SUBTREE": 2,
+            "STOP": 6
+          },
+          "rejection_reasons": {
+            "duplicate_state": 111,
+            "invalid_result": 6,
+            "leaf_container_mismatch": 5,
+            "no_op": 2,
+            "not_bindable": 324,
+            "not_canonical_subtree": 864,
+            "not_container": 11,
+            "not_leaf_component": 36,
+            "not_removable": 6,
+            "target_not_canonical": 6
+          },
+          "visited_total": 1395,
+          "dead_total": 1371,
+          "dead_candidate_rate": 0.9827956989247312,
+          "visited_shares": {
+            "BIND_PLACEHOLDER": 0.33548387096774196,
+            "INSERT_STATEMENT": 0.008602150537634409,
+            "REMOVE": 0.005017921146953405,
+            "REMOVE_CONTAINER": 0.007885304659498209,
+            "REPLACE": 0.012186379928315413,
+            "REPLACE_STATEMENT": 0.004301075268817204,
+            "REPLACE_SUBTREE": 0.6222222222222222,
+            "STOP": 0.004301075268817204
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 6,
+          "states_recalled": 0,
+          "applicable_add_recall": 0.0
+        },
+        "fixture_05": {
+          "visited": {
+            "ADD": 4,
+            "BIND_PLACEHOLDER": 540,
+            "INSERT_STATEMENT": 16,
+            "INSERT_SUBTREE": 48,
+            "REMOVE": 4,
+            "REMOVE_CONTAINER": 9,
+            "REPLACE": 6,
+            "REPLACE_STATEMENT": 4,
+            "REPLACE_SUBTREE": 587,
+            "STOP": 8
+          },
+          "applicable": {
+            "ADD": 2,
+            "BIND_PLACEHOLDER": 216,
+            "INSERT_STATEMENT": 16,
+            "REMOVE": 1,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 119,
+            "STOP": 8
+          },
+          "selected": {
+            "ADD": 1,
+            "INSERT_STATEMENT": 15,
+            "REMOVE": 1,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 6,
+            "STOP": 8
+          },
+          "rejection_reasons": {
+            "duplicate_state": 331,
+            "invalid_result": 38,
+            "leaf_container_mismatch": 3,
+            "not_bindable": 288,
+            "not_canonical_subtree": 432,
+            "not_container": 9,
+            "not_leaf_component": 36,
+            "not_removable": 3,
+            "parent_or_comp_precondition": 50,
+            "target_not_canonical": 4
+          },
+          "visited_total": 1226,
+          "dead_total": 1194,
+          "dead_candidate_rate": 0.9738988580750407,
+          "visited_shares": {
+            "ADD": 0.0032626427406199023,
+            "BIND_PLACEHOLDER": 0.44045676998368677,
+            "INSERT_STATEMENT": 0.013050570962479609,
+            "INSERT_SUBTREE": 0.03915171288743882,
+            "REMOVE": 0.0032626427406199023,
+            "REMOVE_CONTAINER": 0.00734094616639478,
+            "REPLACE": 0.004893964110929853,
+            "REPLACE_STATEMENT": 0.0032626427406199023,
+            "REPLACE_SUBTREE": 0.47879282218597063,
+            "STOP": 0.0065252854812398045
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 8,
+          "states_recalled": 2,
+          "applicable_add_recall": 0.25
+        },
+        "fixture_06": {
+          "visited": {
+            "ADD": 1,
+            "BIND_PLACEHOLDER": 720,
+            "INSERT_STATEMENT": 18,
+            "INSERT_SUBTREE": 33,
+            "REMOVE": 4,
+            "REMOVE_CONTAINER": 14,
+            "REPLACE": 5,
+            "REPLACE_STATEMENT": 4,
+            "REPLACE_SUBTREE": 1019,
+            "STOP": 9
+          },
+          "applicable": {
+            "ADD": 1,
+            "BIND_PLACEHOLDER": 216,
+            "INSERT_STATEMENT": 18,
+            "INSERT_SUBTREE": 1,
+            "REMOVE": 1,
+            "REMOVE_CONTAINER": 2,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 119,
+            "STOP": 9
+          },
+          "selected": {
+            "INSERT_STATEMENT": 18,
+            "INSERT_SUBTREE": 1,
+            "REMOVE": 1,
+            "REMOVE_CONTAINER": 2,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 4,
+            "STOP": 9
+          },
+          "rejection_reasons": {
+            "duplicate_state": 332,
+            "invalid_result": 38,
+            "leaf_container_mismatch": 2,
+            "not_bindable": 396,
+            "not_canonical_subtree": 864,
+            "not_container": 12,
+            "not_leaf_component": 108,
+            "not_removable": 3,
+            "parent_or_comp_precondition": 32,
+            "target_not_canonical": 4
+          },
+          "visited_total": 1827,
+          "dead_total": 1791,
+          "dead_candidate_rate": 0.9802955665024631,
+          "visited_shares": {
+            "ADD": 0.0005473453749315818,
+            "BIND_PLACEHOLDER": 0.39408866995073893,
+            "INSERT_STATEMENT": 0.009852216748768473,
+            "INSERT_SUBTREE": 0.0180623973727422,
+            "REMOVE": 0.0021893814997263274,
+            "REMOVE_CONTAINER": 0.007662835249042145,
+            "REPLACE": 0.002736726874657909,
+            "REPLACE_STATEMENT": 0.0021893814997263274,
+            "REPLACE_SUBTREE": 0.5577449370552818,
+            "STOP": 0.0049261083743842365
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 9,
+          "states_recalled": 1,
+          "applicable_add_recall": 0.1111111111111111
+        },
+        "fixture_07": {
+          "visited": {
+            "ADD": 4,
+            "BIND_PLACEHOLDER": 540,
+            "INSERT_STATEMENT": 16,
+            "INSERT_SUBTREE": 40,
+            "REMOVE": 4,
+            "REMOVE_CONTAINER": 10,
+            "REPLACE": 6,
+            "REPLACE_STATEMENT": 4,
+            "REPLACE_SUBTREE": 587,
+            "STOP": 8
+          },
+          "applicable": {
+            "ADD": 2,
+            "BIND_PLACEHOLDER": 216,
+            "INSERT_STATEMENT": 16,
+            "REMOVE": 1,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 119,
+            "STOP": 8
+          },
+          "selected": {
+            "ADD": 1,
+            "INSERT_STATEMENT": 15,
+            "REMOVE": 1,
+            "REPLACE": 1,
+            "REPLACE_SUBTREE": 6,
+            "STOP": 8
+          },
+          "rejection_reasons": {
+            "duplicate_state": 331,
+            "invalid_result": 38,
+            "leaf_container_mismatch": 3,
+            "not_bindable": 288,
+            "not_canonical_subtree": 432,
+            "not_container": 10,
+            "not_leaf_component": 36,
+            "not_removable": 3,
+            "parent_or_comp_precondition": 42,
+            "target_not_canonical": 4
+          },
+          "visited_total": 1219,
+          "dead_total": 1187,
+          "dead_candidate_rate": 0.9737489745693191,
+          "visited_shares": {
+            "ADD": 0.003281378178835111,
+            "BIND_PLACEHOLDER": 0.44298605414273995,
+            "INSERT_STATEMENT": 0.013125512715340444,
+            "INSERT_SUBTREE": 0.03281378178835111,
+            "REMOVE": 0.003281378178835111,
+            "REMOVE_CONTAINER": 0.008203445447087777,
+            "REPLACE": 0.004922067268252666,
+            "REPLACE_STATEMENT": 0.003281378178835111,
+            "REPLACE_SUBTREE": 0.4815422477440525,
+            "STOP": 0.006562756357670222
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 8,
+          "states_recalled": 2,
+          "applicable_add_recall": 0.25
+        }
+      },
+      "by_suite": {
+        "train": {
+          "visited": {
+            "ADD": 11,
+            "BIND_PLACEHOLDER": 4464,
+            "INSERT_STATEMENT": 116,
+            "INSERT_SUBTREE": 138,
+            "REMOVE": 43,
+            "REMOVE_CONTAINER": 95,
+            "REPLACE": 73,
+            "REPLACE_STATEMENT": 36,
+            "REPLACE_SUBTREE": 6116,
+            "STOP": 58
+          },
+          "applicable": {
+            "ADD": 6,
+            "BIND_PLACEHOLDER": 1296,
+            "INSERT_STATEMENT": 116,
+            "INSERT_SUBTREE": 2,
+            "REMOVE": 8,
+            "REMOVE_CONTAINER": 5,
+            "REPLACE": 16,
+            "REPLACE_SUBTREE": 608,
+            "STOP": 58
+          },
+          "selected": {
+            "ADD": 2,
+            "INSERT_STATEMENT": 113,
+            "INSERT_SUBTREE": 2,
+            "REMOVE": 8,
+            "REMOVE_CONTAINER": 3,
+            "REPLACE": 13,
+            "REPLACE_SUBTREE": 33,
+            "STOP": 58
+          },
+          "rejection_reasons": {
+            "duplicate_state": 1883,
+            "invalid_result": 206,
+            "leaf_container_mismatch": 25,
+            "no_op": 6,
+            "not_bindable": 2628,
+            "not_canonical_subtree": 5328,
+            "not_container": 90,
+            "not_leaf_component": 540,
+            "not_removable": 35,
+            "parent_or_comp_precondition": 141,
+            "target_not_canonical": 36
+          },
+          "visited_total": 11150,
+          "dead_total": 10918,
+          "dead_candidate_rate": 0.9791928251121076,
+          "visited_shares": {
+            "ADD": 0.0009865470852017937,
+            "BIND_PLACEHOLDER": 0.4003587443946188,
+            "INSERT_STATEMENT": 0.010403587443946188,
+            "INSERT_SUBTREE": 0.012376681614349776,
+            "REMOVE": 0.0038565022421524664,
+            "REMOVE_CONTAINER": 0.008520179372197309,
+            "REPLACE": 0.006547085201793722,
+            "REPLACE_STATEMENT": 0.003228699551569507,
+            "REPLACE_SUBTREE": 0.5485201793721973,
+            "STOP": 0.005201793721973094
+          },
+          "verifier_calls": 0,
+          "states_with_applicable_add": 58,
+          "states_recalled": 6,
+          "applicable_add_recall": 0.10344827586206896
+        }
+      }
+    },
+    "calibration": {
+      "per_action": {
+        "STOP": {
+          "target_share": 0.18783068783068782,
+          "visited_share": 0.005201793721973094,
+          "gap": -0.18262889410871472
+        },
+        "REPLACE": {
+          "target_share": 0.1111111111111111,
+          "visited_share": 0.006547085201793722,
+          "gap": -0.10456402590931738
+        },
+        "ADD": {
+          "target_share": 0.17724867724867724,
+          "visited_share": 0.0009865470852017937,
+          "gap": -0.17626213016347544
+        },
+        "REMOVE": {
+          "target_share": 0.18253968253968253,
+          "visited_share": 0.0038565022421524664,
+          "gap": -0.17868318029753005
+        },
+        "ADD_CONTAINER": {
+          "target_share": 0.013227513227513227,
+          "visited_share": 0.0,
+          "gap": -0.013227513227513227
+        },
+        "REMOVE_CONTAINER": {
+          "target_share": 0.18253968253968253,
+          "visited_share": 0.008520179372197309,
+          "gap": -0.1740195031674852
+        },
+        "INSERT_SUBTREE": {
+          "target_share": 0.018518518518518517,
+          "visited_share": 0.012376681614349776,
+          "gap": -0.006141836904168741
+        },
+        "REPLACE_SUBTREE": {
+          "target_share": 0.05026455026455026,
+          "visited_share": 0.5485201793721973,
+          "gap": 0.4982556291076471
+        },
+        "INSERT_STATEMENT": {
+          "target_share": 0.0,
+          "visited_share": 0.010403587443946188,
+          "gap": 0.010403587443946188
+        },
+        "REPLACE_STATEMENT": {
+          "target_share": 0.018518518518518517,
+          "visited_share": 0.003228699551569507,
+          "gap": -0.01528981896694901
+        },
+        "BIND_PLACEHOLDER": {
+          "target_share": 0.0582010582010582,
+          "visited_share": 0.4003587443946188,
+          "gap": 0.34215768619356063
+        }
+      },
+      "mean_abs_deviation": 0.1546939823173007
+    },
+    "loss_reweighting_prediction": {
+      "predicted": true,
+      "rule": "predict reweighting iff applicable-ADD recall < 0.5 or |ADD visited share - ADD target share| > 0.2",
+      "add_share_gap": -0.17626213016347544,
+      "applicable_add_recall": 0.10344827586206896
+    }
+  },
+  "loss_decision": {
+    "audit_prediction": {
+      "predicted": true,
+      "rule": "predict reweighting iff applicable-ADD recall < 0.5 or |ADD visited share - ADD target share| > 0.2",
+      "add_share_gap": -0.17626213016347544,
+      "applicable_add_recall": 0.10344827586206896
+    },
+    "decision": "not_added_preregistered_cells_unchanged",
+    "rationale": "The audit's preregistered rule predicted reweighting=True. The matched 2x2 was preregistered without a loss arm; adding one post-hoc would break lever isolation, so it is deferred to a follow-up preregistered cell rather than combined here."
+  },
+  "honesty": "Fixture-scale matched cells; decode-demand metrics come from SLM-310 per-proposal telemetry (visited = enumerated candidates the decode loop actually considered). A fixture verdict is wiring/distribution evidence, not a production ship claim. Negative results are retained per lever, never combined.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ae5448c594233b304ea22720604a962ad041fe63",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm310_action_alignment": "v1",
+      "harness.experiments.slm299_edit_reachability": "v4"
+    },
+    "stamped_at": "2026-07-24T22:07:47.206210+00:00"
+  }
+}

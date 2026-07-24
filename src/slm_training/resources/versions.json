@@ -4480,7 +4480,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -4495,6 +4495,11 @@
       ],
       "history": [
         {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "SLM-310: tree_edit_diffusion gains reason-coded apply rejections, per-proposal decode telemetry (applicability/rejection/budget), corruption_action_distribution + stop_slot_accounting config knobs (defaults = historical behavior, checkpoint parity); test_tree_edit_diffusion unchanged semantics"
+        },
+        {
           "version": "v3",
           "date": "2026-07-24",
           "note": "SLM-308: tree_edit_diffusion gains value_label_mode (bounded_distance default for new trainings, mutation_count parity for pre-field checkpoints), oracle-backed normalized cost-to-go value targets with UNKNOWN exclusion, and pairwise parent/improving-child progress loss; edit space and reachability machinery unchanged"
@@ -4508,25 +4513,6 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; real X22 tree-edit reachability analyzer, suite audit CLI, and reachability-unproven gate input"
-        }
-      ]
-    },
-    "harness.experiments.slm301_prompt_observability": {
-      "version": "v1",
-      "kind": "harness",
-      "paths": [
-        "src/slm_training/harnesses/experiments/slm301_prompt_observability.py",
-        "scripts/run_slm301_prompt_observability.py",
-        "tests/test_harnesses/experiments/test_slm301_prompt_observability.py",
-        "docs/design/iter-slm301-prompt-observability-20260724.json",
-        "docs/design/iter-slm301-prompt-observability-20260724.md",
-        "docs/design/slm301-slot-observability-audit-20260724.json"
-      ],
-      "history": [
-        {
-          "version": "v1",
-          "date": "2026-07-24",
-          "note": "initial registration; SLM-301 LAR1-04 prompt-observability arms (as-is vs +inventory) with phase-0 coverage classification, AR/X22 baselines, paired predeclared-delta report"
         }
       ]
     },
@@ -6312,7 +6298,7 @@
         {
           "version": "v223",
           "date": "2026-07-22",
-        "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
+          "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
         },
         {
           "version": "v222",
@@ -7835,6 +7821,24 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; byte-preserving archived harness replay records"
+        }
+      ]
+    },
+    "harness.experiments.slm310_action_alignment": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm310_action_alignment.py",
+        "scripts/run_slm310_action_alignment.py",
+        "tests/test_harnesses/experiments/test_slm310_action_alignment.py",
+        "docs/design/iter-slm310-action-alignment-20260724.json",
+        "docs/design/iter-slm310-action-alignment-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-310 LAR2-03 action alignment: reason-coded proposal telemetry, train-target vs decode-demand distribution audit, declared inverse-action corruption sampler, legacy/corrected STOP-slot accounting arms, matched 2x2 fixture experiment with preregistered thresholds"
         }
       ]
     }
