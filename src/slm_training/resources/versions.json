@@ -1103,7 +1103,7 @@
       ]
     },
     "features.openfeature": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
@@ -1111,6 +1111,7 @@
         "src/slm_training/features/levers.py",
         "src/slm_training/features/runtime.py",
         "src/slm_training/web/observability.py",
+        "src/slm_training/web/app.py",
         "src/slm_training/web/routes.py",
         "src/apps/dashboard/src/features/keys.ts",
         "src/apps/dashboard/src/features/runtime.ts",
@@ -1122,6 +1123,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-24",
+          "note": "Expose the isolated research-harness OpenFeature capability and OFREP read endpoints beside product flags"
+        },
         {
           "version": "v6",
           "date": "2026-07-23",
@@ -1362,6 +1368,23 @@
           "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration; frozen DSL-agnostic core extracted structurally (versioning, lineage, checkpoint_reference, gate/promotion engines, scaling math, record_schema/eval_cache/score_policy) with behavior pinned by tests/test_harness_core"
+        }
+      ]
+    },
+    "harness.flags": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flags/",
+        "src/slm_training/harnesses/model_build/experiment_flags.py",
+        "docs/design/openfeature-research-levers.md",
+        "tests/test_flags/test_openfeature_experiments.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "SLM-342: add isolated OpenFeature-compatible research-lever evaluation, assignment metadata, and OFREP read surface"
         }
       ]
     },
@@ -4320,7 +4343,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v49",
+      "version": "v50",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4331,6 +4354,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-07-24",
+          "note": "SLM-342: overlay explicit OpenFeature research-lever assignments on evaluation config and persist them in emitted results"
+        },
         {
           "version": "v49",
           "date": "2026-07-24",
