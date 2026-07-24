@@ -30,7 +30,10 @@ The local path never downloads a model or calls hosted inference; it records
 device, dtype, model revision, and actual token usage in the same
 content-addressed raw request/response/error archive plus hash-chained attempt events under
 `outputs/autoresearch/<campaign>/`. Missing usage, price, or campaign lock
-fails closed; no human rating is involved.
+fails closed; no human rating is involved. Execution additionally loads the
+declared `ExperimentCampaignV1`, locks it in that archive before the first
+outcome event, and requires its digest to equal the generation manifest's
+`campaign_manifest_sha256`.
 
 ## Admission modes
 

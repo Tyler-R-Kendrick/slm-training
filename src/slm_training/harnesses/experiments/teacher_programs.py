@@ -1,10 +1,10 @@
 """Fail-closed SLM-266 teacher-program request and admission contracts.
 
-This owner deliberately has no provider client.  It freezes a provider-neutral
-generation manifest and admits *already archived* raw responses through the
-existing ProgramSpec, verifier, and leakage owners.  A missing judge, human
-audit, budget, or protected-split manifest is a rejection, never an inferred
-pass.
+This owner freezes a provider-neutral generation manifest, offers explicitly
+selected remote or local transports, and admits *already archived* raw responses
+through the existing ProgramSpec, verifier, and leakage owners. A missing judge,
+human audit, budget, campaign lock, or protected-split manifest is a rejection,
+never an inferred pass.
 """
 
 from __future__ import annotations
@@ -415,6 +415,21 @@ class TeacherProgramExecutor:
             spent_output_tokens=output_tokens,
             spent_dollars=dollars,
         )
+
+
+def verify_teacher_generation_campaign_lock(
+    manifest: TeacherProgramGenerationManifestV1,
+    archive: CampaignStore,
+) -> str:
+    """Return the pre-execution lock digest matching this generation manifest."""
+    if not manifest.campaign_manifest_sha256:
+        raise ValueError("teacher generation requires a locked campaign manifest sha256")
+    lock = archive.load_experiment_campaign(manifest.manifest_id)
+    if lock.manifest.campaign_id != archive.campaign_id:
+        raise ValueError("teacher generation campaign lock belongs to another archive")
+    if lock.manifest_sha256 != manifest.campaign_manifest_sha256:
+        raise ValueError("teacher generation campaign lock digest does not match manifest")
+    return lock.manifest_sha256
 
 
 class OpenAICompatibleTeacherTransport:
@@ -1050,4 +1065,5 @@ __all__ = [
     "TeacherRawArchiveRefV1",
     "admit_teacher_programs",
     "materialize_teacher_admission",
+    "verify_teacher_generation_campaign_lock",
 ]

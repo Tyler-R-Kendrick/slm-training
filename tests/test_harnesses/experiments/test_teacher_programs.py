@@ -20,6 +20,7 @@ from slm_training.harnesses.experiments.teacher_programs import (
     TeacherRawArchiveRefV1,
     admit_teacher_programs,
     materialize_teacher_admission,
+    verify_teacher_generation_campaign_lock,
 )
 
 
@@ -304,6 +305,30 @@ def test_executor_archives_usage_and_resume_skips_completed_request(tmp_path):
         "teacher_program_attempted",
         "teacher_program_completed",
     ]
+
+
+def test_generation_requires_the_matching_pre_execution_campaign_lock(tmp_path, monkeypatch):
+    archive = CampaignStore("teacher", tmp_path)
+    lock = SimpleNamespace(
+        manifest_sha256="b" * 64,
+        manifest=SimpleNamespace(campaign_id="teacher"),
+    )
+    monkeypatch.setattr(archive, "load_experiment_campaign", lambda _experiment: lock)
+
+    assert (
+        verify_teacher_generation_campaign_lock(_executable_manifest(), archive)
+        == "b" * 64
+    )
+
+    mismatched = SimpleNamespace(
+        manifest_sha256="c" * 64,
+        manifest=SimpleNamespace(campaign_id="teacher"),
+    )
+    monkeypatch.setattr(
+        archive, "load_experiment_campaign", lambda _experiment: mismatched
+    )
+    with pytest.raises(ValueError, match="does not match"):
+        verify_teacher_generation_campaign_lock(_executable_manifest(), archive)
 
 
 def test_local_transformers_transport_requires_pinned_local_configuration():

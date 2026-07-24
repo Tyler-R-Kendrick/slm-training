@@ -1471,12 +1471,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v83",
+      "version": "v84",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v84",
+          "date": "2026-07-24",
+          "note": "bind SLM-266 teacher execution to a matching preregistered campaign lock"
+        },
         {
           "version": "v83",
           "date": "2026-07-24",
@@ -5037,7 +5042,7 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
@@ -5049,6 +5054,11 @@
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-24",
+          "note": "require an archive-verified ExperimentCampaignV1 lock before SLM-266 execution"
+        },
         {
           "version": "v6",
           "date": "2026-07-24",
