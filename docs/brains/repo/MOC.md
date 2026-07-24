@@ -49,3 +49,6 @@ hypothesis loop's novelty audit can exclude them.
 
 - _(seed)_ E249 / E252 local-preference chain — negative; see
   [`research-lineage.md`](../../design/research-lineage.md) "Exact-state local decision preference".
+- [[root-tail-pair-data-augmentation]] — grammar-derived compact root-pair
+  augmentation is a negative result; do not repeat its transform, weight sweep,
+  or decoder overlay.

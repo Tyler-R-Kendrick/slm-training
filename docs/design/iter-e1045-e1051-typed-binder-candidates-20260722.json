@@ -521,7 +521,7 @@
       }
     },
     "E1080": {
-      "status": "completed_train_pending_decode_off_settings",
+      "status": "completed_train_and_decode_off_settings_rejected",
       "run_id": "e1080_v272_root_identity_repro",
       "relation": "fresh E1075-recipe reproduction after E1079 transport interruption; no prior checkpoint used",
       "steps_requested": 395,
@@ -543,9 +543,26 @@
         "throughput_ratio_E1080_over_E1075": 0.0979,
         "interpretation": "Different local host throughput; partial losses are not quality-comparable."
       },
-      "eligible_for_eval": true,
+      "eligible_for_eval": false,
       "eligible_for_sync_promotion_or_parent": false,
-      "next_action": "Run the decode-off Settings diagnostic against this completed local-only checkpoint.",
+      "E1092_decode_off_settings": {
+        "run_id": "e1092_v272_root_identity_settings_decode0",
+        "evaluation_policy": "strict_compiler_tree",
+        "root_reference_identity_decode_weight": 0.0,
+        "result": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "decode_timeout_count": 1,
+          "empty_prediction_count": 1,
+          "latency_ms_p50": 12009.85
+        },
+        "agent_evals_jsonl": "outputs/runs/e1092_v272_root_identity_settings_decode0/agentv/openui-model-ship-gates-2026-07-24t08-10-55-249186-00-00.eval.jsonl",
+        "agentv_sdk": "@agentv/core",
+        "interpretation": "Decode-off still times out empty, so the E1080 Settings failure is checkpoint-level rather than identity-ranking-specific."
+      },
+      "next_action": "Reject E1080; do not run an identity decode-weight sweep from this checkpoint.",
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
         "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",

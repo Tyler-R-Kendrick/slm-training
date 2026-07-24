@@ -290,9 +290,12 @@ strict-subset audit remains 220 rows and final loss is 5.7942.
 The first invocation's throughput differs materially from E1075's host, so
 loss and wall time are not quality comparisons. E1080 is a completed scratch
 diagnostic only: it remains unsynced, unpromoted, unserved, and non-parentable.
-It is now eligible solely for the preregistered decode-off Settings diagnostic;
-that AgentEvals/AgentV result determines whether the earlier Settings regression
-was decode-ranking-specific or checkpoint-level.
+E1092 runs the preregistered decode-off Settings diagnostic using this immutable
+checkpoint and the strict compiler-tree policy. It times out at 12.01 seconds
+and returns an empty prediction (parse/fidelity/structure/reward all 0, AgentV
+0/1). Thus the E1080 Settings failure is checkpoint-level rather than
+root-identity decode-ranking-specific. Reject E1080; it must never sync,
+promote, serve, or be used as a parent.
 
 ## E1084 v273 root-reference order (invalid transport interruption)
 

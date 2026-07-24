@@ -6842,3 +6842,13 @@ structure 0.06, reward 0.707, and no timeout to a 12.01-second timeout-empty
 prediction with every headline metric 0. AgentEvals JSONL and the pinned
 AgentV bundle are emitted. Reject the snapshot/checkpoint; no sync, serving,
 promotion, or parent use. See `iter-e1090-root-tail-pair-train-20260724.md`.
+
+### E1092: root-identity decode-off Settings control (rejected)
+
+E1092 closes E1080's preregistered control without modifying its inactive
+worktree: it evaluates the immutable v272 checkpoint with root-identity decode
+weight 0 on the same held Settings row and strict compiler-tree policy. It times
+out at 12.01 seconds with an empty prediction and every headline metric 0,
+emitting AgentEvals JSONL and the pinned AgentV bundle. Identity ranking is not
+the cause of E1080's Settings failure; reject the checkpoint and do not sweep
+that decode weight. See `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
