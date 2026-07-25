@@ -57,7 +57,13 @@ def test_invalid_rates_returns_error(tmp_path: Path) -> None:
     assert rc == 1
 
 
-def test_frontier_mode_emits_fixture_plan(tmp_path: Path) -> None:
+def test_frontier_mode_emits_fixture_plan_but_reports_nonzero(tmp_path: Path) -> None:
+    """Frontier fallback must never look like a completed frontier run.
+
+    A scheduler that only checks the exit code must be able to tell that no
+    real GPU work happened, even though the fixture artifacts are still
+    written for inspection.
+    """
     out = tmp_path / "frontier"
     rc = run_self_context_curriculum.main(
         [
@@ -73,6 +79,31 @@ def test_frontier_mode_emits_fixture_plan(tmp_path: Path) -> None:
             "hf://bucket",
         ]
     )
-    assert rc == 0
+    assert rc != 0
     report_text = (out / "self_context_curriculum_report.json").read_text()
     assert "slm300_frontier_partial" in report_text
+
+
+def test_malformed_seeds_returns_controlled_error(tmp_path: Path) -> None:
+    out = tmp_path / "bad_seeds"
+    rc = run_self_context_curriculum.main(
+        ["--mode", "plan-only", "--output-dir", str(out), "--seeds", "0,x"]
+    )
+    assert rc == 2
+    assert not (out / "self_context_curriculum_manifest.json").exists()
+
+
+def test_malformed_rates_returns_controlled_error(tmp_path: Path) -> None:
+    out = tmp_path / "bad_rates"
+    rc = run_self_context_curriculum.main(
+        [
+            "--mode",
+            "plan-only",
+            "--output-dir",
+            str(out),
+            "--self-context-rates",
+            "0.0,not-a-float",
+        ]
+    )
+    assert rc == 2
+    assert not (out / "self_context_curriculum_manifest.json").exists()

@@ -256,7 +256,7 @@ def validate_manifest(manifest: SelfContextCurriculumManifest) -> list[str]:
 def _arm_label(rate: float) -> str:
     if rate == 0.0:
         return "A_control"
-    return f"SC{int(round(rate * 100)):02d}"
+    return f"SC{rate * 100:g}".replace(".", "p")
 
 
 def run_fixture_self_context_curriculum(
@@ -270,7 +270,15 @@ def run_fixture_self_context_curriculum(
     The policy-origin mixture is computed exactly (it is a pure function of
     the manifest, not a training result); every other per-arm metric remains
     ``None`` because no model is trained in this wiring slice.
+
+    Raises:
+        ValueError: if ``manifest`` fails :func:`validate_manifest` (e.g. a
+            missing ``0.0`` control rate or empty seeds).
     """
+    errors = validate_manifest(manifest)
+    if errors:
+        raise ValueError("; ".join(errors))
+
     arms: list[SelfContextArmResult] = []
     time.perf_counter()  # mark start timing for future telemetry
     for rate in manifest.self_context_rates:

@@ -1716,7 +1716,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v109",
+      "version": "v110",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1725,6 +1725,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v110",
+          "date": "2026-07-25",
+          "note": "SLM-300 self-context curriculum: validate manifest inside run_fixture_self_context_curriculum (trust-boundary hardening) and make _arm_label lossless for arbitrary caller-supplied rates (address CodeRabbit review on PR #895)"
+        },
         {
           "version": "v109",
           "date": "2026-07-25",
@@ -8654,12 +8659,17 @@
       ]
     },
     "matrix.self_context_curriculum": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_self_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "frontier fallback now returns nonzero exit code instead of masquerading as a completed frontier run; malformed --seeds/--self-context-rates CSV values now return a controlled exit code 2 instead of an uncaught traceback (address CodeRabbit review on PR #895)"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

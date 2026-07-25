@@ -322,12 +322,12 @@
   "run_id": "slm300_fixture",
   "status": "fixture",
   "version_stamp": {
-    "code_commit": "86212e9ab2338bb9cf5ab135e85e3d3d4e7d21b5",
+    "code_commit": "caa144b0524a758dbdefa3b8e70b563dc126e11a",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v105"
+      "harness.experiments": "v106"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-25T08:30:53.792312+00:00"
+    "stamped_at": "2026-07-25T08:43:03.262457+00:00"
   }
 }

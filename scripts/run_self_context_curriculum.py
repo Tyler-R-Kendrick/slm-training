@@ -78,10 +78,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    seeds = tuple(int(s.strip()) for s in args.seeds.split(",") if s.strip())
-    rates = tuple(
-        float(x.strip()) for x in args.self_context_rates.split(",") if x.strip()
-    )
+    try:
+        seeds = tuple(int(s.strip()) for s in args.seeds.split(",") if s.strip())
+        rates = tuple(
+            float(x.strip()) for x in args.self_context_rates.split(",") if x.strip()
+        )
+    except ValueError as error:
+        print(f"argument error: {error}", file=sys.stderr)
+        return 2
 
     manifest = build_self_context_manifest(
         parent_checkpoint_uri=args.parent_checkpoint_uri,
@@ -99,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     manifest.to_json(args.output_dir / "self_context_curriculum_manifest.json")
 
+    exit_code = 0
     if args.mode == "plan-only":
         report = run_fixture_self_context_curriculum(
             manifest, run_id="slm300_plan", output_dir=args.output_dir
@@ -110,12 +115,15 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(
             "frontier mode requires GPU host and durable checkpoints; "
-            "emitting fixture plan only",
+            "emitting fixture plan only (not a completed frontier run)",
             file=sys.stderr,
         )
         report = run_fixture_self_context_curriculum(
             manifest, run_id="slm300_frontier_partial", output_dir=args.output_dir
         )
+        # A fixture fallback must never be mistaken for completed frontier
+        # evidence by a scheduler that only checks the exit code.
+        exit_code = 2
 
     markdown = render_markdown(report)
     (args.output_dir / "self_context_curriculum_report.md").write_text(
@@ -123,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     report.to_json(args.output_dir / "self_context_curriculum_report.json")
     print(markdown)
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

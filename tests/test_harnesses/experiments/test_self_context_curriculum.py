@@ -158,3 +158,30 @@ def test_render_markdown_arm_table() -> None:
     md = render_markdown(report)
     assert "A_control" in md
     assert "SC10" in md
+
+
+def test_run_fixture_rejects_invalid_manifest_directly() -> None:
+    """The runner is itself a trust boundary: a hand-built invalid manifest
+
+    (bypassing the CLI's own validate_manifest call) must not silently
+    produce a successful fixture report.
+    """
+    manifest = SelfContextCurriculumManifest(
+        self_context_rates=(0.10, 0.25), seeds=(0,)
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="0.0 control rate is required"):
+        run_fixture_self_context_curriculum(manifest, run_id="invalid_test")
+
+
+def test_arm_labels_are_lossless_for_close_rates() -> None:
+    """Distinct nearby rates must not collide onto the same arm label/run_id."""
+    manifest = build_self_context_manifest(
+        self_context_rates=(0.0, 0.101, 0.104), seeds=(0,)
+    )
+    report = run_fixture_self_context_curriculum(manifest, run_id="close_rates")
+    labels = {arm.arm_label for arm in report.arms}
+    run_ids = {arm.run_id for arm in report.arms}
+    assert len(labels) == 3
+    assert len(run_ids) == 3
