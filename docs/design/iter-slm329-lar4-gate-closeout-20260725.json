@@ -1,0 +1,51 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "SLM-331/334 stay blocked; LAR4 remains blocked per the SLM-327 closeout.",
+  "failed_gates": [
+    "gate_lar3_05",
+    "gate_lar2_02",
+    "gate_lar2_05"
+  ],
+  "gates": {
+    "gate_lar2_02": {
+      "evidence": "docs/design/iter-slm308-distance-value-20260724.json",
+      "issue": "SLM-308",
+      "observed_outcome": "rejected at fixture budget (beam regret +0.0, rank corr +0.072 < bars)",
+      "passed": false,
+      "required_outcome": "distance-value lever adopted"
+    },
+    "gate_lar2_05": {
+      "evidence": "docs/design/iter-slm314-winner-take-all-20260724.json",
+      "issue": "SLM-314",
+      "observed_outcome": "rejected (coverage gain -0.25)",
+      "passed": false,
+      "required_outcome": "WTA coverage improvement"
+    },
+    "gate_lar3_05": {
+      "evidence": "docs/design/iter-slm327-lar3-closeout-20260725.json",
+      "issue": "SLM-327",
+      "observed_outcome": "recursive_core_negative; recurrence line closed",
+      "passed": false,
+      "required_outcome": "recursive_core_positive baseline"
+    }
+  },
+  "issue": "SLM-329",
+  "matrix_set": "slm329-cross-depth-conditioning",
+  "matrix_version": "slm329-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "SLM-329 is blocked by LAR3-05, LAR2-02, and LAR2-05, and its own advancement rule requires clearing the LAR3 positive baseline. SLM-327 closed the recurrence line as recursive_core_negative \u2014 no LAR3 positive baseline exists. The LAR2 levers it builds on were also measured and rejected at fixture budget: SLM-308 bounded-distance value labels (beam regret +0.0 < 0.05 bar) and SLM-314 WTA multi-mode (coverage gain -0.25 < gate). No cross-depth self-conditioning work is authorized.",
+  "run_id": "slm329_gate_closeout",
+  "schema": "slm329_lar4_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "50d621fe53dfbca948b293615ed16a67f6ed857e",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T00:37:52.487967+00:00"
+  }
+}
