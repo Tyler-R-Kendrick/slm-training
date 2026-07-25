@@ -22,6 +22,7 @@ from slm_training.dsl.operators import (
     ApplicationProvenanceV1,
     AstOperatorV1,
     BindingPhase,
+    BoundArgumentV1,
     CompilerCoverage,
     EffectDeltaKind,
     EffectDeltaV1,

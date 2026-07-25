@@ -47,7 +47,10 @@ from slm_training.dsl.operators.contracts import (
     ApplicationProvenanceV1,
     EffectDeltaKind,
 )
-from slm_training.dsl.operators.legal_set import OperatorLegalSetV1
+from slm_training.dsl.operators.legal_set import (
+    LegalOperatorActionV1,
+    OperatorLegalSetV1,
+)
 from slm_training.dsl.operators.registry import OperatorLibraryV1, OperatorStateV1
 from slm_training.dsl.pack import DslPack
 from slm_training.models.dynamic_pointer_scorer import (
