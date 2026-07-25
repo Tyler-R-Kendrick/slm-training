@@ -51,10 +51,10 @@ METRICS = RECORD_METRICS + CELL_METRICS
 LOCKED_MANIFEST = Path(
     "src/slm_training/resources/data/eval/manifests/abstract_planning_locked_v1.jsonl"
 )
-E297_TRAIN_DIR = Path(
-    "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1"
+LOCKED_TRAIN_DIR = Path(
+    "src/slm_training/resources/data/train/slm230_symbol_only_v1"
 )
-E297_RECORD_COUNT = 480
+LOCKED_TRAIN_RECORD_COUNT = 97
 LOCAL_TRAIN_TARGET_TOKENS = 5_000
 
 
@@ -152,15 +152,15 @@ def load_locked_protocol(
             "precision": "float32",
             "optimizer": "adamw",
             "train": {
-                "corpus": str(E297_TRAIN_DIR),
-                "manifest_sha256": _file_sha256(E297_TRAIN_DIR / "manifest.json"),
-                "record_count": E297_RECORD_COUNT,
+                "corpus": str(LOCKED_TRAIN_DIR),
+                "manifest_sha256": _file_sha256(LOCKED_TRAIN_DIR / "manifest.json"),
+                "record_count": LOCKED_TRAIN_RECORD_COUNT,
                 "max_updates": 10_000,
                 "target_token_budget": LOCAL_TRAIN_TARGET_TOKENS,
                 "batch_size": 4,
             },
-            "prompt_source": "e297.record.prompt",
-            "target_source": "e297.record.openui",
+            "prompt_source": "slm230_symbol_only.record.prompt",
+            "target_source": "slm230_symbol_only.record.openui",
             "decode": {"raw": False, "constrained": True, "repaired": True},
             "backends": {
                 "scratch_design_off": {
@@ -266,8 +266,8 @@ def validate_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) -
         if seed in initial_by_seed and initial_by_seed[seed] != initial:
             raise ValueError("paired backends must share bit-exact initialization")
         initial_by_seed[seed] = initial
-        if cell.get("train_data_manifest_sha256") != _file_sha256(E297_TRAIN_DIR / "manifest.json"):
-            raise ValueError("cell did not retain the locked E297 training digest")
+        if cell.get("train_data_manifest_sha256") != _file_sha256(LOCKED_TRAIN_DIR / "manifest.json"):
+            raise ValueError("cell did not retain the locked training digest")
         if not cell.get("checkpoint_sha256") or not cell.get("cell_manifest_sha256"):
             raise ValueError("cell lacks the trained checkpoint manifest identity")
         records = cell.get("records")
@@ -524,13 +524,13 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
 def _locked_train_config(
     protocol: LockedPowerProtocol, *, output_dir: Path, seed: int, backend: str
 ):
-    """Freeze the one local E297 training recipe for a protocol cell."""
+    """Freeze the one local current-contract training recipe for a protocol cell."""
     from slm_training.harnesses.model_build import ModelBuildConfig
 
     overrides = protocol.recipe["backends"][backend]
     protocol_sha = str(protocol.to_dict()["protocol_sha256"])
     return ModelBuildConfig(
-        train_dir=E297_TRAIN_DIR,
+        train_dir=LOCKED_TRAIN_DIR,
         run_root=output_dir / "trained_cells" / protocol_sha / f"seed{seed}_{backend}",
         run_id="train",
         seed=seed,
@@ -571,11 +571,11 @@ def _validate_locked_cell_manifest(
         raise ValueError("trained cell locked manifest digest mismatch")
     if int(payload.get("seed", -1)) != seed or payload.get("backend") != backend:
         raise ValueError("trained cell does not match requested seed/backend")
-    if payload.get("train_record_count") != E297_RECORD_COUNT:
-        raise ValueError("trained cell did not use the complete E297 corpus")
-    expected_data_sha = _file_sha256(E297_TRAIN_DIR / "manifest.json")
+    if payload.get("train_record_count") != LOCKED_TRAIN_RECORD_COUNT:
+        raise ValueError("trained cell did not use the complete locked training corpus")
+    expected_data_sha = _file_sha256(LOCKED_TRAIN_DIR / "manifest.json")
     if payload.get("train_data_manifest_sha256") != expected_data_sha:
-        raise ValueError("trained cell E297 manifest digest mismatch")
+        raise ValueError("trained cell training manifest digest mismatch")
     if payload.get("target_token_budget") != LOCAL_TRAIN_TARGET_TOKENS:
         raise ValueError("trained cell target-token budget mismatch")
     if payload.get("initial_tensor_sha256") != payload.get("repeat_initial_tensor_sha256"):
@@ -604,7 +604,7 @@ def load_locked_trained_cell(
 def prepare_locked_trained_cell(
     protocol: LockedPowerProtocol, *, output_dir: Path, seed: int, backend: str
 ) -> dict[str, Any]:
-    """Train exactly one frozen local E297 checkpoint for a seed/backend cell."""
+    """Train exactly one frozen local checkpoint for a seed/backend cell."""
     from slm_training.harnesses.model_build import build_model, train
     from slm_training.harnesses.model_build.data import load_train_records
 
@@ -617,9 +617,9 @@ def prepare_locked_trained_cell(
         return load_locked_trained_cell(
             protocol, output_dir=output_dir, seed=seed, backend=backend
         )[0]
-    records = load_train_records(E297_TRAIN_DIR)
-    if len(records) != E297_RECORD_COUNT:
-        raise ValueError("E297 record count no longer matches the locked recipe")
+    records = load_train_records(LOCKED_TRAIN_DIR)
+    if len(records) != LOCKED_TRAIN_RECORD_COUNT:
+        raise ValueError("locked train record count no longer matches the recipe")
     if {record.id for record in records} & set(protocol.record_ids):
         raise ValueError("locked evaluation rows must never enter local training")
     config = _locked_train_config(protocol, output_dir=output_dir, seed=seed, backend=backend)
@@ -642,8 +642,8 @@ def prepare_locked_trained_cell(
         "locked_eval_manifest_sha256": protocol.manifest_sha256,
         "seed": seed,
         "backend": backend,
-        "train_data_manifest": str(E297_TRAIN_DIR / "manifest.json"),
-        "train_data_manifest_sha256": _file_sha256(E297_TRAIN_DIR / "manifest.json"),
+        "train_data_manifest": str(LOCKED_TRAIN_DIR / "manifest.json"),
+        "train_data_manifest_sha256": _file_sha256(LOCKED_TRAIN_DIR / "manifest.json"),
         "train_record_count": len(records),
         "target_token_budget": LOCAL_TRAIN_TARGET_TOKENS,
         "initial_tensor_sha256": initial,

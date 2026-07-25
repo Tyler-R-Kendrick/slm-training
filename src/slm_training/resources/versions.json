@@ -1519,12 +1519,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v101",
+      "version": "v102",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v102",
+          "date": "2026-07-25",
+          "note": "SLM-287 replace rejected historical E297 input with the current-contract locked SLM-230 corpus"
+        },
         {
           "version": "v101",
           "date": "2026-07-25",
@@ -3476,7 +3481,7 @@
       ]
     },
     "harness.experiments.slm183_power_protocol": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
@@ -3487,6 +3492,11 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-07-25",
+          "note": "SLM-287 lock the current-contract local training corpus before the trained baseline grid"
+        },
         {
           "version": "v12",
           "date": "2026-07-25",

@@ -10,7 +10,7 @@ from slm_training.autoresearch.schemas import CampaignSpec
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.experiments.slm287_power_protocol import (
     BACKENDS,
-    E297_TRAIN_DIR,
+    LOCKED_TRAIN_DIR,
     METRICS,
     SEEDS,
     VARIANTS,
@@ -52,7 +52,7 @@ def protocol() -> LockedPowerProtocol:
 @pytest.fixture
 def cells(protocol: LockedPowerProtocol) -> list[dict]:
     train_manifest_sha = hashlib.sha256(
-        (E297_TRAIN_DIR / "manifest.json").read_bytes()
+        (LOCKED_TRAIN_DIR / "manifest.json").read_bytes()
     ).hexdigest()
     return [
         {
@@ -206,10 +206,10 @@ def test_shards_require_a_matching_trained_cell_manifest(protocol, tmp_path) -> 
         "locked_eval_manifest_sha256": protocol.manifest_sha256,
         "seed": 0,
         "backend": BACKENDS[0],
-        "train_record_count": 480,
+        "train_record_count": 97,
         "target_token_budget": 5_000,
         "train_data_manifest_sha256": hashlib.sha256(
-            (E297_TRAIN_DIR / "manifest.json").read_bytes()
+            (LOCKED_TRAIN_DIR / "manifest.json").read_bytes()
         ).hexdigest(),
         "initial_tensor_sha256": "a" * 64,
         "repeat_initial_tensor_sha256": "a" * 64,
