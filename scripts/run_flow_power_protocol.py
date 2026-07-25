@@ -34,8 +34,11 @@ from slm_training.harnesses.experiments.slm183_power_protocol import (
 )
 from slm_training.harnesses.experiments.slm287_power_protocol import (
     LOCKED_MANIFEST,
+    build_locked_campaign,
     execute_local_grid,
+    execute_local_shard,
     load_locked_protocol,
+    merge_locked_shards,
     summarize_cells,
 )
 from slm_training.versioning import build_version_stamp
@@ -56,6 +59,44 @@ def _parse_int_tuple(value: str) -> tuple[int, ...]:
     return tuple(int(x.strip()) for x in value.split(",") if x.strip())
 
 
+def _locked_shard_path(
+    output_dir: Path, protocol_sha256: str, seed: int, backend: str, shard_index: int
+) -> Path:
+    return (
+        output_dir
+        / "shards"
+        / protocol_sha256
+        / f"seed{seed}"
+        / backend
+        / f"shard_{shard_index}.json"
+    )
+
+
+def _lock_slm287_campaign(output_dir: Path, protocol: Any) -> tuple[CampaignStore, Any]:
+    campaign = build_locked_campaign(protocol)
+    store = CampaignStore(campaign.campaign_id, output_dir / "campaigns")
+    spec = CampaignSpec(
+            campaign_id=campaign.campaign_id,
+            objective="Measure the five-seed two-backend locked local baseline.",
+            primary_metric="binding_aware_meaningful_v2",
+            researcher_mode="diagnostic",
+            budget=campaign.budget,
+            created_at=campaign.created_at,
+    )
+    if (store.root / "campaign.json").exists():
+        existing = store.load_campaign()
+        if (
+            existing.campaign_id != spec.campaign_id
+            or existing.primary_metric != spec.primary_metric
+            or existing.budget != spec.budget
+            or existing.created_at != spec.created_at
+        ):
+            raise ValueError("existing SLM-287 campaign spec is incompatible")
+    else:
+        store.initialize(spec)
+    return store, store.lock_experiment_campaign(campaign)
+
+
 def _build_payload(
     mode: str,
     output_dir: Path,
@@ -66,6 +107,10 @@ def _build_payload(
     iter_json: Path | None,
     locked_manifest: Path,
     locked_limit: int | None,
+    locked_seed: int | None,
+    locked_backend: str | None,
+    shard_index: int | None,
+    shard_count: int | None,
 ) -> tuple[dict[str, Any], str]:
     if mode == "locked-plan":
         protocol = load_locked_protocol(locked_manifest, limit=locked_limit)
@@ -106,6 +151,105 @@ def _build_payload(
         return summarize_cells(protocol, cells), (
             "python -m scripts.run_flow_power_protocol --mode locked-run "
             f"--locked-manifest {locked_manifest}"
+        )
+    if mode == "locked-shard":
+        if locked_limit is not None:
+            raise ValueError("locked shards require the complete locked manifest")
+        if locked_seed is None or locked_backend is None:
+            raise ValueError("locked-shard requires --locked-seed and --locked-backend")
+        if shard_index is None or shard_count is None:
+            raise ValueError("locked-shard requires --shard-index and --shard-count")
+        protocol = load_locked_protocol(locked_manifest)
+        store, lock = _lock_slm287_campaign(output_dir, protocol)
+        store.append_event(
+            "shard_started",
+            experiment_id=lock.manifest.experiment_id,
+            status="running",
+            detail={"campaign_manifest_sha256": lock.manifest_sha256, "shard_index": shard_index},
+        )
+        shard = execute_local_shard(
+            protocol,
+            manifest_path=locked_manifest,
+            output_dir=output_dir,
+            seed=locked_seed,
+            backend=locked_backend,
+            shard_index=shard_index,
+            shard_count=shard_count,
+        )
+        from slm_training.evals.agentv import publish_agentv_evaluation
+
+        stamp = build_version_stamp(
+            "harness.experiments", "evals.power_protocol", "data.locked_eval_manifest"
+        )
+        shard["agentv"] = publish_agentv_evaluation(
+            output_dir,
+            name=f"slm287-{locked_backend}-seed{locked_seed}-shard{shard_index}",
+            claim="The bounded locked shard completed without a decode timeout.",
+            cases=[
+                {
+                    "id": f"seed{locked_seed}-{locked_backend}-shard{shard_index}",
+                    "criteria": "The canonical evaluator returned all declared variants for every assigned locked record.",
+                    "pass": set(shard["records"]) == set(shard["record_ids"]),
+                    "result": {"record_ids": shard["record_ids"], "variants": list(shard["cell_metrics"])},
+                }
+            ],
+            version_stamp=stamp,
+        )
+        shard["campaign_manifest_sha256"] = lock.manifest_sha256
+        path = _locked_shard_path(
+            output_dir,
+            str(shard["protocol_sha256"]),
+            locked_seed,
+            locked_backend,
+            shard_index,
+        )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(shard, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        artifact = store.write_artifact("locked_shards", shard)
+        store.append_event(
+            "shard_finished",
+            experiment_id=lock.manifest.experiment_id,
+            status="completed",
+            artifact_sha256=artifact.stem,
+            detail={"campaign_manifest_sha256": lock.manifest_sha256, "shard_index": shard_index},
+        )
+        return (
+            {
+                **shard,
+                "status": "completed_shard_not_evidence",
+                "claim_class": "diagnostic",
+                "shard_path": str(path),
+                "version_stamp": build_version_stamp(
+                    "harness.experiments",
+                    "evals.power_protocol",
+                    "data.locked_eval_manifest",
+                ),
+            },
+            "python -m scripts.run_flow_power_protocol --mode locked-shard "
+            f"--locked-seed {locked_seed} --locked-backend {locked_backend} "
+            f"--shard-index {shard_index} --shard-count {shard_count}",
+        )
+    if mode == "locked-merge":
+        if locked_limit is not None:
+            raise ValueError("locked merge requires the complete locked manifest")
+        if shard_count is None:
+            raise ValueError("locked-merge requires --shard-count")
+        protocol = load_locked_protocol(locked_manifest)
+        store, lock = _lock_slm287_campaign(output_dir, protocol)
+        protocol_sha = str(protocol.to_dict()["protocol_sha256"])
+        shards = []
+        for seed in protocol.to_dict()["seeds"]:
+            for backend in protocol.to_dict()["backends"]:
+                for index in range(shard_count):
+                    path = _locked_shard_path(output_dir, protocol_sha, seed, backend, index)
+                    if not path.is_file():
+                        raise ValueError(f"missing locked shard artifact: {path}")
+                    shards.append(json.loads(path.read_text(encoding="utf-8")))
+        result = summarize_cells(protocol, merge_locked_shards(protocol, shards, shard_count=shard_count))
+        result["campaign_manifest_sha256"] = lock.manifest_sha256
+        return result, (
+            "python -m scripts.run_flow_power_protocol --mode locked-merge "
+            f"--shard-count {shard_count}"
         )
     manifest = build_default_manifest(seeds=seeds)
     campaign = build_experiment_campaign(seeds=seeds)
@@ -363,7 +507,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--mode",
-        choices={"plan-only", "fixture", "analyze-existing", "locked-plan", "locked-analyze", "locked-run"},
+        choices={
+            "plan-only", "fixture", "analyze-existing", "locked-plan", "locked-analyze",
+            "locked-run", "locked-shard", "locked-merge",
+        },
         default="plan-only",
         help="Run mode: plan-only writes the manifest; fixture runs the CPU simulation; "
         "analyze-existing reads an iter JSON.",
@@ -413,6 +560,10 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         help="Bounded diagnostic prefix of locked_test; never a promotion result.",
     )
+    parser.add_argument("--locked-seed", type=int, help="Declared SLM-287 seed for one shard.")
+    parser.add_argument("--locked-backend", help="Declared SLM-287 backend for one shard.")
+    parser.add_argument("--shard-index", type=int, help="Zero-based deterministic locked shard index.")
+    parser.add_argument("--shard-count", type=int, help="Number of deterministic locked shards.")
     parser.add_argument(
         "--write-design-docs",
         action="store_true",
@@ -445,6 +596,10 @@ def main(argv: list[str] | None = None) -> int:
             args.iter_json,
             args.locked_manifest,
             args.locked_limit,
+            args.locked_seed,
+            args.locked_backend,
+            args.shard_index,
+            args.shard_count,
         )
     except TimeoutError as exc:
         protocol = load_locked_protocol(args.locked_manifest, limit=args.locked_limit)
@@ -492,7 +647,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     run_json.write_text(report_text, encoding="utf-8")
 
-    if args.mode in {"fixture", "locked-plan", "locked-analyze", "locked-run"} and args.write_design_docs:
+    if args.mode in {"fixture", "locked-plan", "locked-analyze", "locked-run", "locked-merge"} and args.write_design_docs:
         root = Path(__file__).resolve().parents[1]
         json_path = root / (
             "docs/design/iter-slm287-locked-power-protocol-20260724.json"

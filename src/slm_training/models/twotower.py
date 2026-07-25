@@ -4128,10 +4128,14 @@ class TwoTowerModel(nn.Module):
         """Return serialized OpenUI if parseable and non-trivial; else None."""
         try:
             from slm_training.dsl.parser import validate
+        except TimeoutError:
+            raise
         except Exception:  # noqa: BLE001
             return None
         try:
             program = validate(text)
+        except TimeoutError:
+            raise
         except Exception:  # noqa: BLE001
             return None
         ser = (program.serialized or text).strip()
@@ -4445,6 +4449,8 @@ class TwoTowerModel(nn.Module):
                             state=st,
                             **pick_kw,
                         )
+                    except TimeoutError:
+                        raise
                     except Exception:  # noqa: BLE001
                         choice = None
             if choice is None:

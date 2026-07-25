@@ -17,6 +17,16 @@ from typing import Any
 
 import numpy as np
 
+from slm_training.autoresearch.experiment_campaign import (
+    ArtifactRequirementV1,
+    CampaignArmV1,
+    CampaignBudget,
+    CampaignControlV1,
+    CampaignEndpointV1,
+    CampaignGateV1,
+    ExperimentCampaignV1,
+    MultiplicityFamilyV1,
+)
 from slm_training.evals.power_protocol import (
     cluster_bootstrap_ci,
     exact_paired_binary_test,
@@ -28,13 +38,16 @@ EXPERIMENT_ID = "slm287-locked-power-protocol"
 SEEDS = (0, 1, 2, 3, 4)
 BACKENDS = ("scratch_design_off", "scratch_design_on")
 VARIANTS = ("raw", "constrained", "repaired")
-METRICS = (
+RECORD_METRICS = (
     "binding_aware_meaningful_v2",
     "binder_reference_f1",
     "latency_ms",
+)
+CELL_METRICS = (
     "compute_proxy_forwards",
     "peak_rss_bytes",
 )
+METRICS = RECORD_METRICS + CELL_METRICS
 LOCKED_MANIFEST = Path(
     "src/slm_training/resources/data/eval/manifests/abstract_planning_locked_v1.jsonl"
 )
@@ -128,6 +141,78 @@ def load_locked_protocol(
     )
 
 
+def build_locked_campaign(protocol: LockedPowerProtocol) -> ExperimentCampaignV1:
+    """Build the immutable AP-007 diagnostic campaign before shard execution."""
+    stamp = build_version_stamp(
+        "harness.experiments", "evals.power_protocol", "data.locked_eval_manifest"
+    )
+    return ExperimentCampaignV1(
+        campaign_id="slm287-locked-power",
+        experiment_id=EXPERIMENT_ID,
+        hypothesis="DESIGN.md context changes locked baseline outcomes under paired local decoding.",
+        decision="Measure rather than select a baseline configuration.",
+        endpoints=(
+            CampaignEndpointV1(
+                endpoint_id="meaning_v2", metric="binding_aware_meaningful_v2",
+                role="primary", direction="increase", minimum_effect=0.02,
+            ),
+            CampaignEndpointV1(
+                endpoint_id="binder_f1", metric="binder_reference_f1",
+                role="secondary", direction="increase", minimum_effect=0.02,
+            ),
+        ),
+        arms=tuple(
+            CampaignArmV1(
+                arm_id=backend,
+                role="control" if backend == BACKENDS[0] else "candidate",
+                config_sha256=_sha(protocol.recipe["backends"][backend]),
+            )
+            for backend in BACKENDS
+        ),
+        seeds=SEEDS,
+        budget=CampaignBudget(max_experiments=10, max_wall_minutes=2),
+        stopping_rules=("Reject any timed-out shard; merge only exact complete coverage.",),
+        controls=(
+            CampaignControlV1(
+                control_id="paired_design_off",
+                description="Same seed and locked records without DESIGN.md context.",
+                kind="quality",
+            ),
+            CampaignControlV1(
+                control_id="raw_decode",
+                description="Raw decode is retained beside constrained and repaired variants.",
+                kind="negative",
+            ),
+        ),
+        negative_controls=("raw_decode",),
+        multiplicity_families=(
+            MultiplicityFamilyV1(
+                family_id="locked_quality", hypothesis_ids=("meaning_v2", "binder_f1"), alpha=0.05
+            ),
+        ),
+        promotion_gates=(
+            CampaignGateV1(gate_id="diagnostic_only", endpoint_id="meaning_v2", operator="ge", threshold=-1.0),
+        ),
+        rollback_gates=(
+            CampaignGateV1(gate_id="timeout_rejects", endpoint_id="meaning_v2", operator="lt", threshold=2.0),
+        ),
+        artifact_requirements=(
+            ArtifactRequirementV1(kind="version_stamp"),
+            ArtifactRequirementV1(kind="seed_result", minimum_count=10),
+            ArtifactRequirementV1(kind="paired_examples"),
+            ArtifactRequirementV1(kind="endpoint_result"),
+            ArtifactRequirementV1(kind="agentevals"),
+            ArtifactRequirementV1(kind="agentv"),
+        ),
+        claim_class="diagnostic",
+        source_commit=str(stamp["code_commit"]),
+        source_dirty=bool(stamp["code_dirty"]),
+        author="slm-training",
+        locked_eval_manifest_sha256=protocol.manifest_sha256,
+        created_at="2026-07-25T00:00:00Z",
+    )
+
+
 def validate_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) -> None:
     """Fail closed unless every declared seed/backend has paired full evidence."""
     expected = {(seed, backend) for seed in SEEDS for backend in BACKENDS}
@@ -149,12 +234,127 @@ def validate_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) -
         records = cell.get("records")
         if not isinstance(records, dict) or set(records) != ids:
             raise ValueError("cell records are not the frozen locked record set")
+        cell_metrics = cell.get("cell_metrics")
+        if not isinstance(cell_metrics, dict) or set(cell_metrics) != set(VARIANTS):
+            raise ValueError("cell lacks raw/constrained/repaired cell metrics")
         for record in records.values():
             if not isinstance(record, dict) or set(record) != set(VARIANTS):
                 raise ValueError("cell lacks raw/constrained/repaired evidence")
             for values in record.values():
-                if any(metric not in values or not math.isfinite(float(values[metric])) for metric in METRICS):
+                if any(
+                    metric not in values or not math.isfinite(float(values[metric]))
+                    for metric in RECORD_METRICS
+                ):
                     raise ValueError("cell metric is missing or non-finite")
+        for values in cell_metrics.values():
+            if any(
+                metric not in values or not math.isfinite(float(values[metric]))
+                for metric in CELL_METRICS
+            ):
+                raise ValueError("cell metric is missing or non-finite")
+
+
+def locked_shard_ids(
+    protocol: LockedPowerProtocol, *, shard_index: int, shard_count: int
+) -> tuple[str, ...]:
+    """Return the deterministic locked IDs assigned to one capped local shard."""
+    if not 0 < shard_count <= len(protocol.record_ids):
+        raise ValueError("locked shard count must be between one and locked record count")
+    if not 0 <= shard_index < shard_count:
+        raise IndexError(f"shard_index {shard_index} out of range {shard_count}")
+    seed = str(protocol.to_dict()["protocol_sha256"])
+    ordered = sorted(
+        protocol.record_ids,
+        key=lambda record_id: hashlib.sha256(f"{seed}:{record_id}".encode("utf-8")).hexdigest(),
+    )
+    return tuple(record_id for rank, record_id in enumerate(ordered) if rank % shard_count == shard_index)
+
+
+def merge_locked_shards(
+    protocol: LockedPowerProtocol,
+    shards: list[dict[str, Any]],
+    *,
+    shard_count: int,
+) -> list[dict[str, Any]]:
+    """Merge exact shard artifacts, rejecting any missing or duplicated evidence."""
+    expected = {
+        (seed, backend, shard_index)
+        for seed in SEEDS
+        for backend in BACKENDS
+        for shard_index in range(shard_count)
+    }
+    observed = {
+        (int(shard.get("seed", -1)), str(shard.get("backend")), int(shard.get("shard_index", -1)))
+        for shard in shards
+    }
+    if observed != expected or len(shards) != len(expected):
+        raise ValueError("locked power protocol requires every seed/backend/shard artifact")
+    protocol_sha = protocol.to_dict()["protocol_sha256"]
+    by_cell: dict[tuple[int, str], list[dict[str, Any]]] = {}
+    for shard in shards:
+        if shard.get("protocol_sha256") != protocol_sha:
+            raise ValueError("shard protocol digest mismatch")
+        if int(shard.get("shard_count", -1)) != shard_count:
+            raise ValueError("shard count mismatch")
+        expected_ids = set(
+            locked_shard_ids(
+                protocol,
+                shard_index=int(shard["shard_index"]),
+                shard_count=shard_count,
+            )
+        )
+        if set(shard.get("record_ids") or ()) != expected_ids:
+            raise ValueError("shard record IDs do not match deterministic assignment")
+        by_cell.setdefault((int(shard["seed"]), str(shard["backend"])), []).append(shard)
+
+    campaign_digests = {str(shard.get("campaign_manifest_sha256") or "") for shard in shards}
+    if len(campaign_digests) != 1 or not next(iter(campaign_digests)):
+        raise ValueError("shards must share one locked campaign manifest")
+
+    cells: list[dict[str, Any]] = []
+    for (seed, backend), cell_shards in sorted(by_cell.items()):
+        first = cell_shards[0]
+        initial = str(first.get("initial_tensor_sha256"))
+        repeated = str(first.get("repeat_initial_tensor_sha256"))
+        if any(
+            str(shard.get("initial_tensor_sha256")) != initial
+            or str(shard.get("repeat_initial_tensor_sha256")) != repeated
+            for shard in cell_shards
+        ):
+            raise ValueError("shards rebuilt a cell with non-identical initialization")
+        records: dict[str, Any] = {}
+        cell_metrics = {
+            variant: {"compute_proxy_forwards": 0.0, "peak_rss_bytes": 0.0}
+            for variant in VARIANTS
+        }
+        for shard in cell_shards:
+            shard_records = shard.get("records")
+            if not isinstance(shard_records, dict) or set(records) & set(shard_records):
+                raise ValueError("shard records are missing or duplicated")
+            records.update(shard_records)
+            shard_metrics = shard.get("cell_metrics")
+            if not isinstance(shard_metrics, dict) or set(shard_metrics) != set(VARIANTS):
+                raise ValueError("shard cell metrics are missing")
+            for variant in VARIANTS:
+                cell_metrics[variant]["compute_proxy_forwards"] += float(
+                    shard_metrics[variant]["compute_proxy_forwards"]
+                )
+                cell_metrics[variant]["peak_rss_bytes"] = max(
+                    cell_metrics[variant]["peak_rss_bytes"],
+                    float(shard_metrics[variant]["peak_rss_bytes"]),
+                )
+        cells.append(
+            {
+                "seed": seed,
+                "backend": backend,
+                "locked_eval_manifest_sha256": protocol.manifest_sha256,
+                "initial_tensor_sha256": initial,
+                "repeat_initial_tensor_sha256": repeated,
+                "records": records,
+                "cell_metrics": cell_metrics,
+            }
+        )
+    return cells
 
 
 def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) -> dict[str, Any]:
@@ -170,8 +370,16 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
         ]
         summaries[variant] = {
             metric: float(np.mean([float(row[metric]) for row in rows]))
-            for metric in METRICS
+            for metric in RECORD_METRICS
         }
+        summaries[variant].update(
+            {
+                metric: float(
+                    np.mean([float(cell["cell_metrics"][variant][metric]) for cell in cells])
+                )
+                for metric in CELL_METRICS
+            }
+        )
     control, candidate = BACKENDS
     left: list[float] = []
     right: list[float] = []
@@ -205,6 +413,34 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
         "exact_paired_test": exact_paired_binary_test([int(v) for v in left], [int(v) for v in right]),
         "pairing": "record_id paired within seed; target-cluster bootstrap",
     }
+    endpoints: dict[str, dict[str, Any]] = {}
+    for variant in VARIANTS:
+        endpoint_intervals: dict[str, Any] = {}
+        for metric in RECORD_METRICS:
+            differences = [
+                float(by_key[seed, candidate]["records"][record_id][variant][metric])
+                - float(by_key[seed, control]["records"][record_id][variant][metric])
+                for seed in SEEDS
+                for record_id in protocol.record_ids
+            ]
+            endpoint_intervals[metric] = cluster_bootstrap_ci(
+                differences,
+                [record_id for _seed in SEEDS for record_id in protocol.record_ids],
+                lambda values: float(np.mean(values)),
+            )
+        for metric in CELL_METRICS:
+            differences = [
+                float(by_key[seed, candidate]["cell_metrics"][variant][metric])
+                - float(by_key[seed, control]["cell_metrics"][variant][metric])
+                for seed in SEEDS
+            ]
+            endpoint_intervals[metric] = cluster_bootstrap_ci(
+                differences,
+                list(SEEDS),
+                lambda values: float(np.mean(values)),
+            )
+        endpoints[variant] = endpoint_intervals
+    paired["endpoints"] = endpoints
     mde = mde_simulation(
         base_rate=float(np.mean(left)),
         sigma_seed=float(np.std(seed_effects, ddof=0)),
@@ -235,13 +471,17 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
     }
 
 
-def execute_local_grid(
+def execute_local_shard(
     protocol: LockedPowerProtocol,
     *,
     manifest_path: Path,
     output_dir: Path,
-) -> list[dict[str, Any]]:
-    """Run the canonical evaluator for every declared local zero-update cell.
+    seed: int,
+    backend: str,
+    shard_index: int,
+    shard_count: int,
+) -> dict[str, Any]:
+    """Run one deterministic, bounded local cell shard through the evaluator.
 
     The temporary suite is a byte-for-byte projection of the locked rows.  It
     exists only under the run root so the shared evaluator can score it; the
@@ -259,16 +499,25 @@ def execute_local_grid(
         for row in payload["rows"]
         if row.get("partition") == "locked_test"
     }
-    records = [record_by_id[record_id] for record_id in protocol.record_ids]
-    suite_dir = output_dir / "locked_eval" / "suites" / "locked_power"
+    all_records = [record_by_id[record_id] for record_id in protocol.record_ids]
+    shard_ids = locked_shard_ids(
+        protocol,
+        shard_index=shard_index,
+        shard_count=shard_count,
+    )
+    records = [record_by_id[record_id] for record_id in shard_ids]
+    if backend not in BACKENDS or seed not in SEEDS:
+        raise ValueError("locked shard must name a declared seed and backend")
+    suite_dir = output_dir / "locked_eval" / "suites" / f"locked_power_{seed}_{backend}_{shard_index}"
     suite_dir.mkdir(parents=True, exist_ok=True)
     records_path = suite_dir / "records.jsonl"
     records_path.write_text(
         "".join(_canonical(record.to_dict()) + "\n" for record in records),
         encoding="utf-8",
     )
+    suite_name = f"locked_power_{seed}_{backend}_{shard_index}"
     (output_dir / "locked_eval" / "manifest.json").write_text(
-        json.dumps({"suites": {"locked_power": str(records_path)}}, indent=2) + "\n",
+        json.dumps({"suites": {suite_name: str(records_path)}}, indent=2) + "\n",
         encoding="utf-8",
     )
 
@@ -280,77 +529,105 @@ def execute_local_grid(
             digest.update(tensor.detach().cpu().numpy().tobytes())
         return digest.hexdigest()
 
-    cells: list[dict[str, Any]] = []
-    for seed in SEEDS:
-        for backend in BACKENDS:
-            overrides = protocol.recipe["backends"][backend]
-            config = ModelBuildConfig(
-                train_dir=output_dir / "empty_train",
-                test_dir=output_dir / "locked_eval",
-                suite="locked_power",
-                run_root=output_dir,
-                run_id=f"{EXPERIMENT_ID}/{backend}/seed{seed}",
-                seed=seed,
-                device="cpu",
-                model_name="twotower",
-                output_tokenizer="choice",
-                d_model=32,
-                n_heads=4,
-                context_layers=1,
-                denoiser_layers=1,
-                context_backend=str(overrides["context_backend"]),
-                local_files_only=True,
-                design_md_in_context=bool(overrides["design_md_in_context"]),
-                grammar_ltr_max_tokens=32,
-                grammar_ltr_primary=True,
-                gen_steps=1,
-                decode_timeout_seconds=5.0,
-                run_class="scratch_matrix",
-            )
-            model = build_model(config, records)
-            initial = state_sha(model)
-            repeated = state_sha(build_model(config, records))
-            before_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-            audit = evaluate_grammar_leakage_audit(
-                config,
-                model=model,
-                publish_agentv=False,
-                variant_names=VARIANTS,
-            )
-            if any(
-                int(audit["variants"][variant].get("decode_timeout_count") or 0)
-                for variant in VARIANTS
-            ):
-                raise TimeoutError(
-                    "locked local cell timed out; no numeric power result is valid"
-                )
-            peak_rss = max(before_rss, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-            scored: dict[str, dict[str, dict[str, float]]] = {}
-            for variant in VARIANTS:
-                details = audit["variants"][variant].get("details") or []
-                values: dict[str, dict[str, float]] = {}
-                for detail in details:
-                    values[str(detail["id"])] = {
-                        "binding_aware_meaningful_v2": float(bool(detail.get("binding_aware_meaningful_v2"))),
-                        "binder_reference_f1": float(detail.get("binder_reference_f1") or 0.0),
-                        "latency_ms": float(detail.get("latency_ms") or 0.0),
-                        "compute_proxy_forwards": float(
-                            (audit["variants"][variant].get("decode_telemetry") or {}).get("forwards", 0)
-                        ),
-                        "peak_rss_bytes": float(peak_rss * 1024),
-                    }
-                scored[variant] = values
-            cells.append(
-                {
-                    "seed": seed,
-                    "backend": backend,
-                    "locked_eval_manifest_sha256": protocol.manifest_sha256,
-                    "initial_tensor_sha256": initial,
-                    "repeat_initial_tensor_sha256": repeated,
-                    "records": {
-                        record_id: {variant: scored[variant][record_id] for variant in VARIANTS}
-                        for record_id in protocol.record_ids
-                    },
-                }
-            )
-    return cells
+    overrides = protocol.recipe["backends"][backend]
+    config = ModelBuildConfig(
+        train_dir=output_dir / "empty_train",
+        test_dir=output_dir / "locked_eval",
+        suite=suite_name,
+        run_root=output_dir,
+        run_id=f"{EXPERIMENT_ID}/{backend}/seed{seed}/shard{shard_index}",
+        seed=seed,
+        device="cpu",
+        model_name="twotower",
+        output_tokenizer="choice",
+        d_model=32,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        context_backend=str(overrides["context_backend"]),
+        local_files_only=True,
+        design_md_in_context=bool(overrides["design_md_in_context"]),
+        # The locked baseline measures a bounded decoder; eight tokens keeps
+        # every local shard inside the repository cap without changing the
+        # raw/constrained/repaired comparison contract.
+        grammar_ltr_max_tokens=8,
+        grammar_ltr_primary=True,
+        gen_steps=1,
+        decode_timeout_seconds=5.0,
+        run_class="scratch_matrix",
+    )
+    # Always build from the complete locked vocabulary so every shard of a
+    # cell has the same initialized tensor identities.
+    model = build_model(config, all_records)
+    initial = state_sha(model)
+    repeated = state_sha(build_model(config, all_records))
+    before_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    audit = evaluate_grammar_leakage_audit(
+        config,
+        model=model,
+        publish_agentv=False,
+        variant_names=VARIANTS,
+    )
+    if any(
+        int(audit["variants"][variant].get("decode_timeout_count") or 0)
+        for variant in VARIANTS
+    ):
+        raise TimeoutError("locked local shard timed out; no numeric power result is valid")
+    peak_rss = max(before_rss, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    scored: dict[str, dict[str, dict[str, float]]] = {}
+    cell_metrics: dict[str, dict[str, float]] = {}
+    for variant in VARIANTS:
+        details = audit["variants"][variant].get("details") or []
+        values: dict[str, dict[str, float]] = {}
+        for detail in details:
+            values[str(detail["id"])] = {
+                "binding_aware_meaningful_v2": float(
+                    bool(detail.get("binding_aware_meaningful_v2"))
+                ),
+                "binder_reference_f1": float(detail.get("binder_reference_f1") or 0.0),
+                "latency_ms": float(detail.get("latency_ms") or 0.0),
+            }
+        scored[variant] = values
+        cell_metrics[variant] = {
+            "compute_proxy_forwards": float(
+                (audit["variants"][variant].get("decode_telemetry") or {}).get("forwards", 0)
+            ),
+            "peak_rss_bytes": float(peak_rss * 1024),
+        }
+    return {
+        "schema": "Slm287LockedPowerShardV1",
+        "protocol_sha256": protocol.to_dict()["protocol_sha256"],
+        "shard_count": shard_count,
+        "shard_index": shard_index,
+        "record_ids": list(shard_ids),
+        "seed": seed,
+        "backend": backend,
+        "locked_eval_manifest_sha256": protocol.manifest_sha256,
+        "initial_tensor_sha256": initial,
+        "repeat_initial_tensor_sha256": repeated,
+        "records": {
+            record_id: {variant: scored[variant][record_id] for variant in VARIANTS}
+            for record_id in shard_ids
+        },
+        "cell_metrics": cell_metrics,
+    }
+
+
+def execute_local_grid(
+    protocol: LockedPowerProtocol, *, manifest_path: Path, output_dir: Path
+) -> list[dict[str, Any]]:
+    """Compatibility owner for the unsharded local grid."""
+    shards = [
+        execute_local_shard(
+            protocol,
+            manifest_path=manifest_path,
+            output_dir=output_dir,
+            seed=seed,
+            backend=backend,
+            shard_index=0,
+            shard_count=1,
+        )
+        for seed in SEEDS
+        for backend in BACKENDS
+    ]
+    return merge_locked_shards(protocol, shards, shard_count=1)

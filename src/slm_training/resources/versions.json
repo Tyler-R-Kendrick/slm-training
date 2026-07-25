@@ -1519,12 +1519,32 @@
       ]
     },
     "harness.experiments": {
-      "version": "v95",
+      "version": "v99",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v99",
+          "date": "2026-07-25",
+          "note": "SLM-287 freeze AP-007 campaign manifest bytes across local shard invocations"
+        },
+        {
+          "version": "v98",
+          "date": "2026-07-25",
+          "note": "SLM-287 freeze the bounded local choice decoder at eight tokens"
+        },
+        {
+          "version": "v97",
+          "date": "2026-07-25",
+          "note": "SLM-287 balance deterministic locked shards so every capped shard contains evidence"
+        },
+        {
+          "version": "v96",
+          "date": "2026-07-25",
+          "note": "SLM-287 add deterministic per-cell local shards and fail-closed exact-union merge with cell-scoped telemetry"
+        },
         {
           "version": "v95",
           "date": "2026-07-25",
@@ -3446,7 +3466,7 @@
       ]
     },
     "harness.experiments.slm183_power_protocol": {
-      "version": "v7",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
@@ -3457,6 +3477,26 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-25",
+          "note": "SLM-287 reuse an existing validated campaign spec despite unordered allowed-knob serialization"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-25",
+          "note": "SLM-287 reuse the same immutable campaign spec for every local shard"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-25",
+          "note": "SLM-287 bind shard events to the locked AP-007 campaign experiment"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-25",
+          "note": "SLM-287 expose deterministic local shard and merge modes through the shared power-protocol CLI"
+        },
         {
           "version": "v7",
           "date": "2026-07-24",
@@ -6365,7 +6405,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v237",
+      "version": "v238",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6394,6 +6434,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v238",
+          "date": "2026-07-25",
+          "note": "Propagate decode deadlines through canonical OpenUI validation and constrained LTR recovery"
+        },
         {
           "version": "v237",
           "date": "2026-07-24",
