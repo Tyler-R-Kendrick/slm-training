@@ -683,7 +683,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
@@ -774,7 +774,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts \u2014 one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
         }
       ]
     },
@@ -1209,7 +1209,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -1716,7 +1716,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v108",
+      "version": "v109",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1725,6 +1725,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v109",
+          "date": "2026-07-25",
+          "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
+        },
         {
           "version": "v108",
           "date": "2026-07-25",
@@ -2148,7 +2153,7 @@
         {
           "version": "v31",
           "date": "2026-07-20",
-          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         },
         {
           "version": "v30",
@@ -2188,7 +2193,7 @@
         {
           "version": "v24",
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         },
         {
           "version": "v23",
@@ -2248,7 +2253,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -2367,7 +2372,7 @@
         {
           "version": "v1",
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
@@ -2595,7 +2600,7 @@
         {
           "version": "sde5-03-v1",
           "date": "2026-07-21",
-          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness"
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan \u00d7 grammar-mass \u00d7 high-debt exposure floor-escape matrix wiring/fixture harness"
         }
       ]
     },
@@ -3066,7 +3071,7 @@
         {
           "version": "v1",
           "date": "2026-07-20",
-          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         }
       ]
     },
@@ -8645,6 +8650,20 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-249 (LOT0-02) CompilerReasoningTraceV1 typed step schema, deterministic extractor reusing SemanticPlanV1/production_codec, lossless visible serialization, permutation-invariant/cycle-free/truncation-explicit helpers, a bounded (n=16 fixture) K/c coverage probe, and the CompilerReasoningTraceGateV1 contract with an inconclusive verdict (oracle-ceiling experiment plan only, no training run, per the LOT0-01 authorization's allowed_lot1_work scope)"
+        }
+      ]
+    },
+    "matrix.self_context_curriculum": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_self_context_curriculum.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-300 AP-015 self-context exposure-bias curriculum plan/fixture CLI"
         }
       ]
     }
