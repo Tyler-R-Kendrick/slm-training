@@ -1519,12 +1519,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v100",
+      "version": "v101",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v101",
+          "date": "2026-07-25",
+          "note": "SLM-287 train one local E297 checkpoint per locked seed/backend cell and require shards to reuse its immutable manifest"
+        },
         {
           "version": "v100",
           "date": "2026-07-25",
@@ -3471,7 +3476,7 @@
       ]
     },
     "harness.experiments.slm183_power_protocol": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
@@ -3482,6 +3487,11 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-25",
+          "note": "SLM-287 expose the locked local E297 trained-cell protocol through the shared power-protocol CLI"
+        },
         {
           "version": "v11",
           "date": "2026-07-25",

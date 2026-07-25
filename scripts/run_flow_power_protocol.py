@@ -37,8 +37,10 @@ from slm_training.harnesses.experiments.slm287_power_protocol import (
     build_locked_campaign,
     execute_local_grid,
     execute_local_shard,
+    locked_cell_manifest_path,
     load_locked_protocol,
     merge_locked_shards,
+    prepare_locked_trained_cell,
     summarize_cells,
 )
 from slm_training.versioning import build_version_stamp
@@ -151,6 +153,49 @@ def _build_payload(
         return summarize_cells(protocol, cells), (
             "python -m scripts.run_flow_power_protocol --mode locked-run "
             f"--locked-manifest {locked_manifest}"
+        )
+    if mode == "locked-train":
+        if locked_limit is not None:
+            raise ValueError("locked train requires the complete locked manifest")
+        if locked_seed is None or locked_backend is None:
+            raise ValueError("locked-train requires --locked-seed and --locked-backend")
+        protocol = load_locked_protocol(locked_manifest)
+        store, lock = _lock_slm287_campaign(output_dir, protocol)
+        store.append_event(
+            "locked_train_started",
+            experiment_id=lock.manifest.experiment_id,
+            status="running",
+            detail={"campaign_manifest_sha256": lock.manifest_sha256, "seed": locked_seed, "backend": locked_backend},
+        )
+        cell = prepare_locked_trained_cell(
+            protocol, output_dir=output_dir, seed=locked_seed, backend=locked_backend
+        )
+        cell_path = locked_cell_manifest_path(
+            output_dir, protocol=protocol, seed=locked_seed, backend=locked_backend
+        )
+        artifact = store.write_artifact("locked_trained_cells", cell)
+        store.append_event(
+            "locked_train_finished",
+            experiment_id=lock.manifest.experiment_id,
+            status="completed",
+            artifact_sha256=artifact.stem,
+            detail={"campaign_manifest_sha256": lock.manifest_sha256, "seed": locked_seed, "backend": locked_backend},
+        )
+        return (
+            {
+                **cell,
+                "status": "completed_training_not_evidence",
+                "claim_class": "diagnostic",
+                "campaign_manifest_sha256": lock.manifest_sha256,
+                "cell_manifest_path": str(cell_path),
+                "version_stamp": build_version_stamp(
+                    "harness.experiments",
+                    "evals.power_protocol",
+                    "data.locked_eval_manifest",
+                ),
+            },
+            "python -m scripts.run_flow_power_protocol --mode locked-train "
+            f"--locked-seed {locked_seed} --locked-backend {locked_backend}",
         )
     if mode == "locked-shard":
         if locked_limit is not None:
@@ -509,7 +554,7 @@ def main(argv: list[str] | None = None) -> int:
         "--mode",
         choices={
             "plan-only", "fixture", "analyze-existing", "locked-plan", "locked-analyze",
-            "locked-run", "locked-shard", "locked-merge",
+            "locked-run", "locked-train", "locked-shard", "locked-merge",
         },
         default="plan-only",
         help="Run mode: plan-only writes the manifest; fixture runs the CPU simulation; "

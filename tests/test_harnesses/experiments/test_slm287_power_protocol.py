@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from copy import deepcopy
 
 import pytest
@@ -8,11 +10,14 @@ from slm_training.autoresearch.schemas import CampaignSpec
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.experiments.slm287_power_protocol import (
     BACKENDS,
+    E297_TRAIN_DIR,
     METRICS,
     SEEDS,
     VARIANTS,
     LockedPowerProtocol,
     build_locked_campaign,
+    load_locked_trained_cell,
+    locked_cell_manifest_path,
     locked_eval_root,
     locked_shard_ids,
     merge_locked_shards,
@@ -46,6 +51,9 @@ def protocol() -> LockedPowerProtocol:
 
 @pytest.fixture
 def cells(protocol: LockedPowerProtocol) -> list[dict]:
+    train_manifest_sha = hashlib.sha256(
+        (E297_TRAIN_DIR / "manifest.json").read_bytes()
+    ).hexdigest()
     return [
         {
             "seed": seed,
@@ -53,6 +61,9 @@ def cells(protocol: LockedPowerProtocol) -> list[dict]:
             "locked_eval_manifest_sha256": protocol.manifest_sha256,
             "initial_tensor_sha256": f"seed-{seed}".ljust(64, "0"),
             "repeat_initial_tensor_sha256": f"seed-{seed}".ljust(64, "0"),
+            "train_data_manifest_sha256": train_manifest_sha,
+            "checkpoint_sha256": "c" * 64,
+            "cell_manifest_sha256": "m" * 64,
             "records": {
                 "locked-1": {
                     variant: {
@@ -169,6 +180,8 @@ def test_merges_exact_shards_and_sums_cell_compute(protocol, cells) -> None:
                     **{key: cell[key] for key in (
                         "seed", "backend", "locked_eval_manifest_sha256",
                         "initial_tensor_sha256", "repeat_initial_tensor_sha256",
+                        "train_data_manifest_sha256", "checkpoint_sha256",
+                        "cell_manifest_sha256",
                         "cell_metrics",
                     )},
                     "records": {record_id: cell["records"][record_id] for record_id in ids},
@@ -178,6 +191,38 @@ def test_merges_exact_shards_and_sums_cell_compute(protocol, cells) -> None:
     assert len(merged) == 10
     assert set(merged[0]["records"]) == {"locked-1", "locked-2"}
     assert merged[0]["cell_metrics"]["raw"]["compute_proxy_forwards"] == 2.0
+
+
+def test_shards_require_a_matching_trained_cell_manifest(protocol, tmp_path) -> None:
+    checkpoint = tmp_path / "last.pt"
+    checkpoint.write_bytes(b"trained")
+    path = locked_cell_manifest_path(
+        tmp_path, protocol=protocol, seed=0, backend=BACKENDS[0]
+    )
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({
+        "schema": "Slm287LockedTrainedCellV1",
+        "protocol_sha256": protocol.to_dict()["protocol_sha256"],
+        "locked_eval_manifest_sha256": protocol.manifest_sha256,
+        "seed": 0,
+        "backend": BACKENDS[0],
+        "train_record_count": 480,
+        "target_token_budget": 5_000,
+        "train_data_manifest_sha256": hashlib.sha256(
+            (E297_TRAIN_DIR / "manifest.json").read_bytes()
+        ).hexdigest(),
+        "initial_tensor_sha256": "a" * 64,
+        "repeat_initial_tensor_sha256": "a" * 64,
+        "checkpoint_path": str(checkpoint),
+        "checkpoint_sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+    }), encoding="utf-8")
+
+    cell, loaded_path = load_locked_trained_cell(
+        protocol, output_dir=tmp_path, seed=0, backend=BACKENDS[0]
+    )
+
+    assert loaded_path == path
+    assert cell["checkpoint_sha256"] == hashlib.sha256(checkpoint.read_bytes()).hexdigest()
 
 
 def test_mde_uses_observed_seed_and_target_effect_variance(protocol, cells) -> None:

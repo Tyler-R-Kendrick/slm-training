@@ -51,6 +51,11 @@ METRICS = RECORD_METRICS + CELL_METRICS
 LOCKED_MANIFEST = Path(
     "src/slm_training/resources/data/eval/manifests/abstract_planning_locked_v1.jsonl"
 )
+E297_TRAIN_DIR = Path(
+    "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1"
+)
+E297_RECORD_COUNT = 480
+LOCAL_TRAIN_TARGET_TOKENS = 5_000
 
 
 def _canonical(value: object) -> str:
@@ -61,11 +66,27 @@ def _sha(value: object) -> str:
     return hashlib.sha256(_canonical(value).encode("utf-8")).hexdigest()
 
 
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def locked_eval_root(
     output_dir: Path, *, seed: int, backend: str, shard_index: int
 ) -> Path:
     """Return the evaluator workspace owned by exactly one local shard."""
     return output_dir / "locked_eval" / f"seed{seed}_{backend}_shard{shard_index}"
+
+
+def locked_cell_manifest_path(
+    output_dir: Path, *, protocol: "LockedPowerProtocol", seed: int, backend: str
+) -> Path:
+    """Return the one immutable trained-cell manifest consumed by every shard."""
+    return (
+        output_dir
+        / "trained_cells"
+        / str(protocol.to_dict()["protocol_sha256"])
+        / f"seed{seed}_{backend}.json"
+    )
 
 
 @dataclass(frozen=True)
@@ -130,9 +151,16 @@ def load_locked_protocol(
             "device": "cpu",
             "precision": "float32",
             "optimizer": "adamw",
-            "updates": 0,
-            "prompt_source": "locked_manifest.record.prompt",
-            "target_source": "locked_manifest.record.openui",
+            "train": {
+                "corpus": str(E297_TRAIN_DIR),
+                "manifest_sha256": _file_sha256(E297_TRAIN_DIR / "manifest.json"),
+                "record_count": E297_RECORD_COUNT,
+                "max_updates": 10_000,
+                "target_token_budget": LOCAL_TRAIN_TARGET_TOKENS,
+                "batch_size": 4,
+            },
+            "prompt_source": "e297.record.prompt",
+            "target_source": "e297.record.openui",
             "decode": {"raw": False, "constrained": True, "repaired": True},
             "backends": {
                 "scratch_design_off": {
@@ -238,6 +266,10 @@ def validate_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) -
         if seed in initial_by_seed and initial_by_seed[seed] != initial:
             raise ValueError("paired backends must share bit-exact initialization")
         initial_by_seed[seed] = initial
+        if cell.get("train_data_manifest_sha256") != _file_sha256(E297_TRAIN_DIR / "manifest.json"):
+            raise ValueError("cell did not retain the locked E297 training digest")
+        if not cell.get("checkpoint_sha256") or not cell.get("cell_manifest_sha256"):
+            raise ValueError("cell lacks the trained checkpoint manifest identity")
         records = cell.get("records")
         if not isinstance(records, dict) or set(records) != ids:
             raise ValueError("cell records are not the frozen locked record set")
@@ -329,6 +361,14 @@ def merge_locked_shards(
             for shard in cell_shards
         ):
             raise ValueError("shards rebuilt a cell with non-identical initialization")
+        for key in (
+            "train_data_manifest_sha256",
+            "checkpoint_sha256",
+            "cell_manifest_sha256",
+        ):
+            value = first.get(key)
+            if not value or any(shard.get(key) != value for shard in cell_shards):
+                raise ValueError("shards did not reuse one immutable trained cell")
         records: dict[str, Any] = {}
         cell_metrics = {
             variant: {"compute_proxy_forwards": 0.0, "peak_rss_bytes": 0.0}
@@ -357,6 +397,9 @@ def merge_locked_shards(
                 "locked_eval_manifest_sha256": protocol.manifest_sha256,
                 "initial_tensor_sha256": initial,
                 "repeat_initial_tensor_sha256": repeated,
+                "train_data_manifest_sha256": first["train_data_manifest_sha256"],
+                "checkpoint_sha256": first["checkpoint_sha256"],
+                "cell_manifest_sha256": first["cell_manifest_sha256"],
                 "records": records,
                 "cell_metrics": cell_metrics,
             }
@@ -478,6 +521,147 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
     }
 
 
+def _locked_train_config(
+    protocol: LockedPowerProtocol, *, output_dir: Path, seed: int, backend: str
+):
+    """Freeze the one local E297 training recipe for a protocol cell."""
+    from slm_training.harnesses.model_build import ModelBuildConfig
+
+    overrides = protocol.recipe["backends"][backend]
+    protocol_sha = str(protocol.to_dict()["protocol_sha256"])
+    return ModelBuildConfig(
+        train_dir=E297_TRAIN_DIR,
+        run_root=output_dir / "trained_cells" / protocol_sha / f"seed{seed}_{backend}",
+        run_id="train",
+        seed=seed,
+        device="cpu",
+        model_name="twotower",
+        output_tokenizer="choice",
+        d_model=32,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        context_backend=str(overrides["context_backend"]),
+        local_files_only=True,
+        design_md_in_context=bool(overrides["design_md_in_context"]),
+        optimizer_name="adamw",
+        steps=int(protocol.recipe["train"]["max_updates"]),
+        batch_size=int(protocol.recipe["train"]["batch_size"]),
+        target_token_budget=int(protocol.recipe["train"]["target_token_budget"]),
+        grammar_ltr_max_tokens=8,
+        grammar_ltr_primary=True,
+        gen_steps=1,
+        run_class="scratch_matrix",
+    )
+
+
+def _validate_locked_cell_manifest(
+    protocol: LockedPowerProtocol,
+    payload: dict[str, Any],
+    *,
+    seed: int,
+    backend: str,
+) -> dict[str, Any]:
+    """Reject stale, partial, or mismatched training before evaluating a shard."""
+    if payload.get("schema") != "Slm287LockedTrainedCellV1":
+        raise ValueError("trained cell manifest schema mismatch")
+    if payload.get("protocol_sha256") != protocol.to_dict()["protocol_sha256"]:
+        raise ValueError("trained cell protocol digest mismatch")
+    if payload.get("locked_eval_manifest_sha256") != protocol.manifest_sha256:
+        raise ValueError("trained cell locked manifest digest mismatch")
+    if int(payload.get("seed", -1)) != seed or payload.get("backend") != backend:
+        raise ValueError("trained cell does not match requested seed/backend")
+    if payload.get("train_record_count") != E297_RECORD_COUNT:
+        raise ValueError("trained cell did not use the complete E297 corpus")
+    expected_data_sha = _file_sha256(E297_TRAIN_DIR / "manifest.json")
+    if payload.get("train_data_manifest_sha256") != expected_data_sha:
+        raise ValueError("trained cell E297 manifest digest mismatch")
+    if payload.get("target_token_budget") != LOCAL_TRAIN_TARGET_TOKENS:
+        raise ValueError("trained cell target-token budget mismatch")
+    if payload.get("initial_tensor_sha256") != payload.get("repeat_initial_tensor_sha256"):
+        raise ValueError("trained cell initialization was not bit exact")
+    checkpoint = Path(str(payload.get("checkpoint_path") or ""))
+    if not checkpoint.is_file() or _file_sha256(checkpoint) != payload.get("checkpoint_sha256"):
+        raise ValueError("trained cell checkpoint is missing or has changed")
+    return payload
+
+
+def load_locked_trained_cell(
+    protocol: LockedPowerProtocol, *, output_dir: Path, seed: int, backend: str
+) -> tuple[dict[str, Any], Path]:
+    """Load the required frozen cell checkpoint; shards are evaluation-only."""
+    path = locked_cell_manifest_path(
+        output_dir, protocol=protocol, seed=seed, backend=backend
+    )
+    if not path.is_file():
+        raise ValueError("locked shard requires a completed locked-train cell manifest")
+    payload = _validate_locked_cell_manifest(
+        protocol, json.loads(path.read_text(encoding="utf-8")), seed=seed, backend=backend
+    )
+    return payload, path
+
+
+def prepare_locked_trained_cell(
+    protocol: LockedPowerProtocol, *, output_dir: Path, seed: int, backend: str
+) -> dict[str, Any]:
+    """Train exactly one frozen local E297 checkpoint for a seed/backend cell."""
+    from slm_training.harnesses.model_build import build_model, train
+    from slm_training.harnesses.model_build.data import load_train_records
+
+    if backend not in BACKENDS or seed not in SEEDS:
+        raise ValueError("locked train must name a declared seed and backend")
+    path = locked_cell_manifest_path(
+        output_dir, protocol=protocol, seed=seed, backend=backend
+    )
+    if path.is_file():
+        return load_locked_trained_cell(
+            protocol, output_dir=output_dir, seed=seed, backend=backend
+        )[0]
+    records = load_train_records(E297_TRAIN_DIR)
+    if len(records) != E297_RECORD_COUNT:
+        raise ValueError("E297 record count no longer matches the locked recipe")
+    if {record.id for record in records} & set(protocol.record_ids):
+        raise ValueError("locked evaluation rows must never enter local training")
+    config = _locked_train_config(protocol, output_dir=output_dir, seed=seed, backend=backend)
+    model = build_model(config, records)
+
+    def state_sha(value: Any) -> str:
+        digest = hashlib.sha256()
+        for name, tensor in sorted(value.state_dict().items()):
+            digest.update(name.encode("utf-8"))
+            digest.update(tensor.detach().cpu().numpy().tobytes())
+        return digest.hexdigest()
+
+    initial = state_sha(model)
+    repeated = state_sha(build_model(config, records))
+    summary = train(config, model=model)
+    checkpoint = Path(str(summary["checkpoint"]))
+    payload = {
+        "schema": "Slm287LockedTrainedCellV1",
+        "protocol_sha256": protocol.to_dict()["protocol_sha256"],
+        "locked_eval_manifest_sha256": protocol.manifest_sha256,
+        "seed": seed,
+        "backend": backend,
+        "train_data_manifest": str(E297_TRAIN_DIR / "manifest.json"),
+        "train_data_manifest_sha256": _file_sha256(E297_TRAIN_DIR / "manifest.json"),
+        "train_record_count": len(records),
+        "target_token_budget": LOCAL_TRAIN_TARGET_TOKENS,
+        "initial_tensor_sha256": initial,
+        "repeat_initial_tensor_sha256": repeated,
+        "checkpoint_path": str(checkpoint),
+        "checkpoint_sha256": _file_sha256(checkpoint),
+        "train_summary": {
+            key: summary.get(key)
+            for key in ("steps", "seen_target_tokens", "stopped_on", "data_manifest_sha")
+        },
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(path)
+    return _validate_locked_cell_manifest(protocol, payload, seed=seed, backend=backend)
+
+
 def execute_local_shard(
     protocol: LockedPowerProtocol,
     *,
@@ -495,7 +679,9 @@ def execute_local_shard(
     manifest digest remains the authority for membership.
     """
     from slm_training.dsl.schema import ExampleRecord
-    from slm_training.harnesses.model_build import ModelBuildConfig, build_model
+    from dataclasses import replace
+
+    from slm_training.harnesses.model_build import build_model
     from slm_training.harnesses.model_build.eval_runner import (
         evaluate_grammar_leakage_audit,
     )
@@ -506,7 +692,6 @@ def execute_local_shard(
         for row in payload["rows"]
         if row.get("partition") == "locked_test"
     }
-    all_records = [record_by_id[record_id] for record_id in protocol.record_ids]
     shard_ids = locked_shard_ids(
         protocol,
         shard_index=shard_index,
@@ -532,47 +717,20 @@ def execute_local_shard(
         json.dumps({"suites": {suite_name: str(records_path)}}, indent=2) + "\n",
         encoding="utf-8",
     )
-
-    def state_sha(model: Any) -> str:
-        state = getattr(model, "state_dict")()
-        digest = hashlib.sha256()
-        for name, tensor in sorted(state.items()):
-            digest.update(name.encode("utf-8"))
-            digest.update(tensor.detach().cpu().numpy().tobytes())
-        return digest.hexdigest()
-
-    overrides = protocol.recipe["backends"][backend]
-    config = ModelBuildConfig(
-        train_dir=output_dir / "empty_train",
+    cell, cell_path = load_locked_trained_cell(
+        protocol, output_dir=output_dir, seed=seed, backend=backend
+    )
+    config = replace(
+        _locked_train_config(protocol, output_dir=output_dir, seed=seed, backend=backend),
         test_dir=eval_root,
         suite=suite_name,
-        run_root=output_dir,
         run_id=f"{EXPERIMENT_ID}/{backend}/seed{seed}/shard{shard_index}",
-        seed=seed,
-        device="cpu",
-        model_name="twotower",
-        output_tokenizer="choice",
-        d_model=32,
-        n_heads=4,
-        context_layers=1,
-        denoiser_layers=1,
-        context_backend=str(overrides["context_backend"]),
-        local_files_only=True,
-        design_md_in_context=bool(overrides["design_md_in_context"]),
-        # The locked baseline measures a bounded decoder; eight tokens keeps
-        # every local shard inside the repository cap without changing the
-        # raw/constrained/repaired comparison contract.
-        grammar_ltr_max_tokens=8,
-        grammar_ltr_primary=True,
-        gen_steps=1,
         decode_timeout_seconds=5.0,
-        run_class="scratch_matrix",
+        runtime_override_fields=frozenset(),
     )
-    # Always build from the complete locked vocabulary so every shard of a
-    # cell has the same initialized tensor identities.
-    model = build_model(config, all_records)
-    initial = state_sha(model)
-    repeated = state_sha(build_model(config, all_records))
+    # Shards load the sole trained checkpoint for this cell; they never rebuild
+    # or fit a model from frozen evaluation records.
+    model = build_model(config, [], checkpoint=Path(cell["checkpoint_path"]))
     before_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     audit = evaluate_grammar_leakage_audit(
         config,
@@ -615,8 +773,11 @@ def execute_local_shard(
         "seed": seed,
         "backend": backend,
         "locked_eval_manifest_sha256": protocol.manifest_sha256,
-        "initial_tensor_sha256": initial,
-        "repeat_initial_tensor_sha256": repeated,
+        "train_data_manifest_sha256": cell["train_data_manifest_sha256"],
+        "checkpoint_sha256": cell["checkpoint_sha256"],
+        "cell_manifest_sha256": _file_sha256(cell_path),
+        "initial_tensor_sha256": cell["initial_tensor_sha256"],
+        "repeat_initial_tensor_sha256": cell["repeat_initial_tensor_sha256"],
         "records": {
             record_id: {variant: scored[variant][record_id] for variant in VARIANTS}
             for record_id in shard_ids
