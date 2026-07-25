@@ -1,0 +1,93 @@
+{
+  "schema": "slm267_uniform_saturation_reading/v1",
+  "issue": "SLM-267",
+  "hypothesis": "VSD-H7a",
+  "status": "inconclusive",
+  "objective": "First measured reading of whether the bounded OpenUI ProgramSpec space can reach 10k unique canonical roots under the frozen uniform-valid policy, using the new streaming/resumable CLI.",
+  "recipe": {
+    "command": "python -m scripts.generate_programspec_corpus --pack openui --policy uniform --target-unique-roots 10000 --seed 0 --shard-id 0 --max-wall-minutes 2.5 --dataset-id compiler_programs_uniform_smoke_v1",
+    "device": "cpu",
+    "generator_config": {
+      "components": "all_pinned (54)",
+      "max_depth": 3,
+      "max_width": 3
+    },
+    "shards_run": 2,
+    "max_wall_minutes_per_shard": 2.5,
+    "honesty_mode": "smoke_local_no_checkpoint_no_training"
+  },
+  "candidate_grid_size_by_config": [
+    {"max_depth": 3, "max_width": 3, "candidates": 1781},
+    {"max_depth": 5, "max_width": 4, "candidates": 1785},
+    {"max_depth": 8, "max_width": 6, "candidates": 1791},
+    {"max_depth": 10, "max_width": 8, "candidates": 1793}
+  ],
+  "seed_independence_note": "candidate count is a deterministic function of GeneratorConfig only; seed perturbs tie-break jitter among equal-score candidates and never adds candidates.",
+  "shard_reports": [
+    {
+      "shard_index": 1,
+      "fresh_start": true,
+      "calls_this_run": 334,
+      "new_accepted": 334,
+      "new_rejected": 0,
+      "cumulative_accepted": 334,
+      "cumulative_calls": 334,
+      "disposition": "wall_clock_stopped",
+      "elapsed_seconds": 150.0,
+      "per_record_seconds": 0.4491017964071856
+    },
+    {
+      "shard_index": 2,
+      "fresh_start": false,
+      "calls_this_run": 324,
+      "new_accepted": 0,
+      "new_rejected": 0,
+      "cumulative_accepted": 334,
+      "cumulative_calls": 658,
+      "disposition": "wall_clock_stopped",
+      "elapsed_seconds": 150.0,
+      "per_record_seconds": 0.46296296296296297
+    }
+  ],
+  "final_manifest": {
+    "schema": "programspec_corpus_stream_manifest/v1",
+    "dataset_id": "compiler_programs_uniform_smoke_v1",
+    "pack": "openui",
+    "policy": "uniform",
+    "seed": 0,
+    "shard_id": "0",
+    "target_unique_roots": 10000,
+    "unique_roots": 334,
+    "candidate_grid_size": 1781,
+    "rejected_total": 0,
+    "calls_total": 658,
+    "exhausted": false,
+    "accepted_ids_sha256": "1a7b75bcc58e2f9d9c42205c394ac6a91675288da347b56bbcddcee067eae719"
+  },
+  "findings": [
+    "All 334 generated programs cleared G0-G10 as Silver at this config; zero rejections at smoke scale.",
+    "The uniform-policy candidate grid (1,781 at the config used here) is far below the 10k target and is nearly insensitive to --max-depth/--max-width, because it is dominated by O(components^2) pairwise and O(components*properties*variants) prop-target candidates rather than depth/width combinatorics.",
+    "The second capped shard replayed the first shard's 324-of-334 prior calls and produced zero net-new accepted records: the MVP resume mechanism (replay from index 0, skip emission for already-seen calls) does not deliver O(new work) cross-shard throughput at the measured ~0.45-0.46s/generate_one() cost -- it is closer to O(total work) per shard.",
+    "The 0/50-accept reading seen during local development before this run was traced to a missing `npm ci` install for the @openuidev/lang-core Node bridge (src/apps/openui_bridge/), not a generator or verifier defect; the full tests/test_data/test_progspec_generate.py suite passes once the bridge is installed."
+  ],
+  "blockers_for_next_increment": [
+    "Persist the generator's internal candidate cursor (not just accepted ids) in state.json so resume is O(new work).",
+    "Widen GeneratorConfig / candidate construction (more selected_groups/triples, literal-value pools, multi-instance component repeats) so the candidate grid itself can exceed 10k before the resume-cost question is the binding constraint.",
+    "Wire a stable CoverageGapManifestV1 consumer from SLM-265 evidence before --policy targeted can be implemented."
+  ],
+  "no_claims": [
+    "No 10k, 100k, or 1M corpus was published.",
+    "No coverage-targeted policy was run.",
+    "No training experiment (3-seed 10k comparison) was run.",
+    "No checkpoint, promotion, or ship claim is made."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d3d0a4f836c88aeb28e4911d27a0db386a680e6b",
+    "code_dirty": true,
+    "components": {
+      "data.progspec.corpus_stream": "v1"
+    },
+    "stamped_at": "2026-07-25T07:54:51.479309+00:00"
+  }
+}
