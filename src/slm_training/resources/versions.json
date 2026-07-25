@@ -1525,19 +1525,29 @@
       ]
     },
     "harness.distill": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/legal_set_kl.py",
         "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
         "src/slm_training/harnesses/distill/semantic_repair.py",
+        "src/slm_training/harnesses/distill/operator_decision_state.py",
         "scripts/run_spv2_05_semantic_repair_fixture.py",
+        "scripts/run_dsh4_01_operator_decision_state_fixture.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
         "tests/test_harnesses/distill/test_semantic_repair.py",
+        "tests/test_harnesses/distill/test_operator_decision_state.py",
         "docs/design/iter-spv2-05-semantic-repair-20260720.md",
-        "docs/design/iter-spv2-05-semantic-repair-20260720.json"
+        "docs/design/iter-spv2-05-semantic-repair-20260720.json",
+        "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
+        "docs/design/dsh4-01-operator-decision-state-export-20260725.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "SLM-386 DSH4-01: operator decision-state export reusing DSH3-06 legal-set + SPV2-03 teacher-trace contracts, with accepted-trajectory replay and a fail-closed stop-rule gate before teacher queries"
+        },
         {
           "version": "v2",
           "date": "2026-07-20",
