@@ -6489,6 +6489,22 @@
         }
       ]
     },
+    "model.operator_policy_view": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_policy_view.py",
+        "tests/test_models/test_operator_policy_view.py",
+        "docs/design/dsh3-22-operator-policy-view.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-397 (DSH3-22): freeze the sanitized OperatorPolicyInputV1 model boundary over ReferenceTableV1/OperatorLegalSetV1, with recursive forbidden-field validation and row-local joins only"
+        }
+      ]
+    },
     "model.legal_edit_batch": {
       "version": "v2",
       "kind": "model",
