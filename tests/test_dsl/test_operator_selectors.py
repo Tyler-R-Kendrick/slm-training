@@ -508,6 +508,81 @@ def test_mixed_selector_kinds_coexist_in_one_table() -> None:
     }
 
 
+def test_attaching_a_selector_preserves_existing_entry_refs() -> None:
+    table = _table(4, seed=17)
+    stack_refs = _stack_refs(table)
+    node_ref = table.entries[0].ref
+    new_table, _ = build_selector(
+        table,
+        selector_kind=SelectorKind.COMPONENT_TYPE_IN_SCOPE,
+        scope_fingerprint=_SCOPE,
+        matching_refs=stack_refs,
+        max_fanout=8,
+        seed=5,
+    )
+    assert new_table.entries == table.entries
+    assert (
+        new_table.resolve(
+            node_ref,
+            state_digest=_STATE,
+            branch_digest=_branch(),
+            expected_kind=RefKind.NODE,
+        )
+        == table.entries[0].descriptor
+    )
+
+
+def test_reattaching_an_identical_selector_is_idempotent() -> None:
+    table = _table(4, seed=18)
+    stack_refs = _stack_refs(table)
+    descriptor = build_selector_descriptor(
+        table=table,
+        selector_kind=SelectorKind.COMPONENT_TYPE_IN_SCOPE,
+        scope_fingerprint=_SCOPE,
+        matching_refs=stack_refs,
+        max_fanout=8,
+    )
+    once = attach_selector(table, descriptor, seed=1)
+    twice = attach_selector(once, descriptor, seed=2)
+    assert len(twice.selectors) == 1
+    assert twice.selectors[0].descriptor == descriptor
+
+
+def test_selector_descriptor_cardinality_must_match_target_count() -> None:
+    table = _table(4, seed=19)
+    stack_refs = _stack_refs(table)
+    descriptor = build_selector_descriptor(
+        table=table,
+        selector_kind=SelectorKind.COMPONENT_TYPE_IN_SCOPE,
+        scope_fingerprint=_SCOPE,
+        matching_refs=stack_refs,
+        max_fanout=8,
+    )
+    bad = descriptor.to_dict()
+    bad["cardinality"] = descriptor.cardinality + 1
+    with pytest.raises(ReferenceResolutionError) as raised:
+        SelectorDescriptorV1.from_dict(bad)
+    assert raised.value.code == "selector.cardinality_mismatch"
+
+
+def test_selector_entry_from_dict_rejects_a_non_selector_ref() -> None:
+    table = _table(4, seed=20)
+    stack_refs = _stack_refs(table)
+    descriptor = build_selector_descriptor(
+        table=table,
+        selector_kind=SelectorKind.COMPONENT_TYPE_IN_SCOPE,
+        scope_fingerprint=_SCOPE,
+        matching_refs=stack_refs,
+        max_fanout=8,
+    )
+    attached = attach_selector(table, descriptor, seed=1)
+    entry_dict = attached.selectors[0].to_dict()
+    entry_dict["ref"] = {**entry_dict["ref"], "kind": RefKind.NODE.value}
+    with pytest.raises(ReferenceResolutionError) as raised:
+        SelectorEntryV1.from_dict(entry_dict)
+    assert raised.value.code == "selector.type_incompatible"
+
+
 def test_truncated_scan_is_unknown_and_never_forceable() -> None:
     table = _table(6, seed=10)
     truncated = build_selector_from_scope(

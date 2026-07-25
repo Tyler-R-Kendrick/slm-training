@@ -178,3 +178,30 @@ This issue delivers the contract, builder, and resolver layer only:
 
 These are compiler contract/unit fixtures. No train, eval, benchmark, matrix,
 checkpoint, model-card, ship-gate, or model-quality claim is produced.
+
+## Review follow-up (2026-07-25)
+
+Two review findings against the initial cut were fixed in place rather than
+deferred, since both were small and could otherwise silently corrupt the
+guarantees this contract exists to make:
+
+* `SelectorDescriptorV1.__post_init__` now normalizes `compiler_facts`
+  (dedupe + sort by value) at construction, matching the ordering `to_dict`
+  already serialized. Before this, a descriptor built from unsorted or
+  duplicated facts satisfied every validation check and had the right
+  `fingerprint`, but `from_dict(to_dict(x)) == x` could fail — the
+  deserialized copy compared unequal to the original despite being
+  semantically identical.
+* `attach_selectors` now dedupes the combined existing+new descriptor list by
+  `fingerprint` before allocating opaque IDs. Before this, re-attaching an
+  identical selector (same kind/scope/targets, hence the same
+  `descriptor_fingerprint` and opaque ID) produced two entries with the same
+  key and `ReferenceTableV1.__post_init__` rejected the table with the
+  entry-level `ref.duplicate` code — a misleading failure for an otherwise
+  idempotent re-derivation of the same selector.
+
+Added regression coverage for both, plus for the previously-untested
+`selector.cardinality_mismatch` and `selector.type_incompatible` rejection
+codes and the entry-ref-stability guarantee (`attach_selector` reallocates
+only the selector set; a `NodeRef` a caller already holds keeps resolving to
+the same descriptor afterward).

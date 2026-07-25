@@ -525,13 +525,18 @@
       ]
     },
     "dsl.operators.references": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/references.py",
         "tests/test_dsl/test_operator_references.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "DSH5-01 review follow-up: normalize SelectorDescriptorV1.compiler_facts at construction so from_dict(to_dict(x)) == x for unsorted/duplicate facts, and dedupe descriptors by fingerprint in attach_selectors so re-attaching an identical selector is idempotent instead of raising ref.duplicate"
+        },
         {
           "version": "v2",
           "date": "2026-07-25",
@@ -549,9 +554,15 @@
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/selectors.py",
-        "tests/test_dsl/test_operator_selectors.py"
+        "tests/test_dsl/test_operator_selectors.py",
+        "docs/design/dsh5-01-selector-refs.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: DSH5-01 review follow-up adds entry-ref-stability, re-attach-idempotence, cardinality-mismatch, and type-incompatible regression tests plus registers the design doc under this component's paths; no change to selectors.py behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

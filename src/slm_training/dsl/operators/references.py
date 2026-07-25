@@ -309,6 +309,11 @@ class SelectorDescriptorV1:
     schema: str = "selector_descriptor/v1"
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "compiler_facts",
+            tuple(sorted(set(self.compiler_facts), key=lambda fact: fact.value)),
+        )
         _require_digest(self.semantic_fingerprint, "semantic_fingerprint")
         _require_digest(self.scope_fingerprint, "scope_fingerprint")
         for target in self.target_fingerprints:
@@ -617,11 +622,17 @@ def attach_selectors(
     :func:`build_reference_table`, but only reallocates the selector set —
     node/role/... refs a caller already holds on ``table`` keep resolving.
     """
-    combined = (
+    combined_list: list[SelectorDescriptorV1] = []
+    seen: set[str] = set()
+    for descriptor in (
         *(entry.descriptor for entry in table.selectors),
         *selector_descriptors,
-    )
-    selectors = _allocate_selector_entries(table.request_id, seed, combined)
+    ):
+        if descriptor.fingerprint in seen:
+            continue
+        seen.add(descriptor.fingerprint)
+        combined_list.append(descriptor)
+    selectors = _allocate_selector_entries(table.request_id, seed, tuple(combined_list))
     random.Random(seed).shuffle(selectors)
     return ReferenceTableV1(
         request_id=table.request_id,
