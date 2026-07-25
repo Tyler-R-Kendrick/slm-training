@@ -1716,7 +1716,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v112",
+      "version": "v113",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1725,6 +1725,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v113",
+          "date": "2026-07-25",
+          "note": "register SLM-254 LOT3-01 in the LOT downstream gate registry; closes not_authorized (causal study not authorized) off the unmet LOT1/LOT2 chain"
+        },
         {
           "version": "v112",
           "date": "2026-07-25",
@@ -2371,7 +2376,7 @@
       ]
     },
     "harness.experiments.lot_downstream_gate": {
-      "version": "v2",
+      "version": "v3",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
@@ -2381,9 +2386,16 @@
         "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json",
         "docs/design/iter-slm252-lot2-01-not-authorized-20260725.md",
         "docs/design/iter-slm253-lot2-02-not-authorized-20260725.json",
-        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.md"
+        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.md",
+        "docs/design/iter-slm254-lot3-01-not-authorized-20260725.json",
+        "docs/design/iter-slm254-lot3-01-not-authorized-20260725.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "add SLM-254 LOT3-01 registry entry + not_authorized iter docs (causal-latent-use-gate-v1)"
+        },
         {
           "version": "v2",
           "date": "2026-07-25",
