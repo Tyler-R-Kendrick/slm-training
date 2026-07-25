@@ -31,6 +31,12 @@ from slm_training.dsl.language_contract import (
     STRUCTURAL_ID_ATOMS,
     grammar_string_literals,
 )
+from slm_training.dsl.openui_tokens import (
+    ABSTRACT_PLAN_BEGIN,
+    ABSTRACT_PLAN_END,
+    MAX_ABSTRACT_PLAN_SLOTS,
+    abstract_plan_slot_token,
+)
 from slm_training.dsl.production_codec import (
     BUILTIN_PREFIX,
     CHOICE_STMT_MARKERS,
@@ -62,6 +68,9 @@ if TYPE_CHECKING:  # pragma: no cover - typing-only import
     from slm_training.dsl.grammar.fastpath.compiler_draft import ConstraintEvidence
 
 # v2 removes the free-form string opener from new vocabularies.
+# AP-016 (SLM-302): optional default-off abstract_plan_slots=0 reserved
+# block. Default build() remains byte-identical to the current layout;
+# CHOICE_TOKENIZER_VERSION only bumps when the default enables it.
 CHOICE_TOKENIZER_VERSION = 3
 CHOICE_TOKENIZER_KIND = "choice_codec"
 
@@ -94,6 +103,18 @@ def _is_direct_placeholder_schema(schema: dict[str, Any]) -> bool:
 
 def _byte_token(ch: str) -> str:
     return f"{_BYTE_PREFIX}{ord(ch):02x}"
+
+
+def _validate_abstract_plan_slots(value: int) -> int:
+    """Fail closed on out-of-range abstract_plan_slots (AP-016/SLM-302)."""
+    value = int(value)
+    if not 0 <= value <= MAX_ABSTRACT_PLAN_SLOTS:
+        raise ValueError(
+            f"abstract_plan_slots must be within [0, {MAX_ABSTRACT_PLAN_SLOTS}], "
+            f"got {value}"
+        )
+    return value
+
 
 DEFAULT_SYM_SLOTS = 64
 DEFAULT_REF_SLOTS = 64
@@ -178,6 +199,9 @@ class ChoiceTokenizer:
     ref_slots: int = DEFAULT_REF_SLOTS
     state_slots: int = DEFAULT_STATE_SLOTS
     max_int_literal: int = DEFAULT_MAX_INT_LITERAL
+    # AP-016 (SLM-302): reserved abstract-plan slot count. 0 (default) adds no
+    # rows and preserves prior vocab/ids exactly; see dsl.abstract_plan.AbstractPlanV1.
+    abstract_plan_slots: int = 0
     # Fail-closed <unk> encodings observed (unseen component / literal / key).
     overflow_count: int = 0
     allowed_cache: dict[tuple[object, ...], frozenset[int]] = field(
@@ -236,6 +260,20 @@ class ChoiceTokenizer:
 
     def sym_id(self, slot: int) -> int:
         return self.token_to_id[f"{SLOT_PREFIX}{slot}"]
+
+    def is_abstract_id(self, tid: int) -> bool:
+        return self.kind_of(tid) == "abstract"
+
+    @property
+    def abstract_begin_id(self) -> int | None:
+        return self.token_to_id.get(ABSTRACT_PLAN_BEGIN)
+
+    @property
+    def abstract_end_id(self) -> int | None:
+        return self.token_to_id.get(ABSTRACT_PLAN_END)
+
+    def abstract_slot_id(self, slot: int) -> int:
+        return self.token_to_id[abstract_plan_slot_token(slot)]
 
     def candidate_partition(self, name: str) -> frozenset[int]:
         """Return a lazily built production-category token partition."""
@@ -326,6 +364,7 @@ class ChoiceTokenizer:
         ref_slots: int = DEFAULT_REF_SLOTS,
         state_slots: int = DEFAULT_STATE_SLOTS,
         max_int_literal: int = DEFAULT_MAX_INT_LITERAL,
+        abstract_plan_slots: int = 0,
     ) -> ChoiceTokenizer:
         """Deterministic, corpus-independent vocabulary from the grammar."""
         vocab: list[str] = []
@@ -390,6 +429,16 @@ class ChoiceTokenizer:
         for i in range(state_slots):
             _add(f"{STATE_REF_PREFIX}{i}", "state")
 
+        # AP-016 (SLM-302): reserved abstract-plan block, appended last so all
+        # prior ids are unchanged. Default-off: 0 slots adds nothing and
+        # leaves build() output byte-identical to before.
+        abstract_plan_slots = _validate_abstract_plan_slots(abstract_plan_slots)
+        if abstract_plan_slots:
+            _add(ABSTRACT_PLAN_BEGIN, "abstract")
+            _add(ABSTRACT_PLAN_END, "abstract")
+            for i in range(abstract_plan_slots):
+                _add(abstract_plan_slot_token(i), "abstract")
+
         token_to_id = {t: i for i, t in enumerate(vocab)}
         id_to_token = {i: t for t, i in token_to_id.items()}
         id_to_kind = {i: kinds[i] for i in range(len(vocab))}
@@ -405,6 +454,7 @@ class ChoiceTokenizer:
             ref_slots=ref_slots,
             state_slots=state_slots,
             max_int_literal=max_int_literal,
+            abstract_plan_slots=abstract_plan_slots,
         )
 
     # --- encode / decode ---------------------------------------------------
@@ -562,6 +612,7 @@ class ChoiceTokenizer:
                     "ref_slots": self.ref_slots,
                     "state_slots": self.state_slots,
                     "max_int_literal": self.max_int_literal,
+                    "abstract_plan_slots": self.abstract_plan_slots,
                     "token_to_id": self.token_to_id,
                     "id_to_kind": {str(k): v for k, v in self.id_to_kind.items()},
                 },
@@ -601,6 +652,9 @@ class ChoiceTokenizer:
             state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),
             max_int_literal=int(
                 data.get("max_int_literal") or DEFAULT_MAX_INT_LITERAL
+            ),
+            abstract_plan_slots=_validate_abstract_plan_slots(
+                data.get("abstract_plan_slots") or 0
             ),
         )
 

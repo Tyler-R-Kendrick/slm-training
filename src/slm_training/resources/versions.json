@@ -6929,7 +6929,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v245",
+      "version": "v246",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6964,6 +6964,16 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v246",
+          "date": "2026-07-25",
+          "note": "AP-016 (SLM-302) CodeRabbit fix: reject abstract_plan_slots outside [0, MAX_ABSTRACT_PLAN_SLOTS] in dsl_tokenizer.py/choice_tokenizer.py build() and load()"
+        },
+        {
+          "version": "v246",
+          "date": "2026-07-25",
+          "note": "no-bump: AP-016 (SLM-302) added an optional abstract_plan_slots=0 default-off reserved codebook block to dsl_tokenizer.py/choice_tokenizer.py/openui_tokens.py; default build() output is byte-identical"
+        },
         {
           "version": "v245",
           "date": "2026-07-25",
@@ -8658,6 +8668,11 @@
         {
           "version": "v2",
           "date": "2026-07-25",
+          "note": "no-bump: AP-016 (SLM-302) reserves ABSTRACT_PLAN_BEGIN/END + abstract_slot(i) markers in openui_tokens.py for the default-off AbstractPlanV1 codebook; ops vocabulary fingerprint and shared_token_ids() mapping are unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
           "note": "no-bump: refresh checked-in dsl_native + choice_codec tokenizer layout registry fingerprints after STRUCTURAL_ID_ATOMS vocab expansion (main #920 CI unblock); ops token-id namespace unchanged"
         },
         {
@@ -8712,6 +8727,26 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-300 AP-015 self-context exposure-bias curriculum plan/fixture CLI"
+        }
+      ]
+    },
+    "dsl.abstract_plan": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/abstract_plan.py",
+        "tests/test_dsl/test_abstract_plan.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "CodeRabbit review on PR #899: require canonical begin_token/end_token and exact codebook_version (a plan can no longer claim a mapping its V1 ids do not back), and preserve padding_idx/max_norm/norm_type/scale_grad_by_freq/sparse/requires_grad (not just row values) in resize_embedding_preserving_rows"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "AP-016 (SLM-302): initial registration -- collision-free AbstractPlanV1 latent-plan token codebook contract (reserved <beginabstract>/<endabstract> + M-slot pool), default-off in every consuming tokenizer, plus embedding-resize migration helpers"
         }
       ]
     }
