@@ -7099,10 +7099,12 @@
       ]
     },
     "model.twotower": {
-      "version": "v248",
+      "version": "v249",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
+        "src/slm_training/models/abstract_plan_head.py",
+        "tests/test_models/test_abstract_plan_head.py",
         "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
@@ -7134,6 +7136,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v249",
+          "date": "2026-07-25",
+          "note": "SLM-315 (AP-023): add a default-off AbstractPlanHead (new src/slm_training/models/abstract_plan_head.py) over pooled context-tower states, exposed only via the new TwoTowerModel.abstract_plan_trace(...) side channel; training_loss()/forward() are unmodified and abstract_plan_mode='disabled' (the default) constructs no head, leaving compatibility_fingerprint/RNG stream/optimizer groups bit-exact with the prior baseline (tests/test_harnesses/model_build/test_twotower.py::test_abstract_plan_head_is_bit_exact_with_baseline_when_disabled)."
+        },
         {
           "version": "v248",
           "date": "2026-07-25",

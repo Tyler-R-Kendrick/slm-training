@@ -108,6 +108,8 @@ from slm_training.dsl.action_shortlist import (
     retrieve_then_rerank,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
+from slm_training.dsl.abstract_plan import AbstractPlanV1
+from slm_training.models.abstract_plan_head import AbstractPlanHead, AbstractPlanTrace
 from slm_training.models.tokenizer import (
     OpenUITokenizer,
     load_tokenizer_sidecar,
@@ -573,6 +575,15 @@ class TwoTowerConfig:
     # sparse grammar-action scorer.  ``none`` is identity; other values select a
     # standalone connector variant for future wiring.
     semantic_connector: str = "none"  # none | linear | low_rank | cross_attention
+    # AP-023 (SLM-315): default-off discrete abstract-plan head over pooled
+    # context-tower states. ``disabled`` builds no head at all, so
+    # compatibility_fingerprint/RNG stream/optimizer groups stay bit-exact
+    # with the pre-existing baseline. A connector into the decoder stays
+    # off regardless of this mode until AP-027 evidence clears (see
+    # ``semantic_connector`` above) -- this only ever populates
+    # ``TwoTowerModel.abstract_plan_trace(...)``, a side channel that
+    # ``training_loss``/``forward`` never call.
+    abstract_plan_mode: str = "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
     connector_hidden_dim: int = 256
     connector_rank: int = 32
     connector_n_queries: int = 4
@@ -1660,6 +1671,24 @@ class TwoTowerModel(nn.Module):
             if root_reference_identity_enabled and _is_choice_output(self.config)
             else None
         )
+        # AP-023 (SLM-315): default-off discrete abstract-plan head over
+        # pooled context-tower states. ``disabled`` constructs nothing (zero
+        # params, RNG/optimizer/fingerprint untouched); see
+        # ``abstract_plan_trace`` for the only caller of this head.
+        abstract_plan_mode = str(
+            getattr(self.config, "abstract_plan_mode", "disabled") or "disabled"
+        )
+        self.abstract_plan: AbstractPlanV1 | None = (
+            AbstractPlanV1() if abstract_plan_mode != "disabled" else None
+        )
+        self.abstract_plan_head: AbstractPlanHead | None = (
+            isolated_aux_init(
+                lambda: AbstractPlanHead(self.config.d_model, self.abstract_plan),
+                116,
+            )
+            if abstract_plan_mode != "disabled"
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -1873,6 +1902,7 @@ class TwoTowerModel(nn.Module):
             "root_reference_identity_head.",
             "trust_gate.",
             "survival_head.",
+            "abstract_plan_head.",
         )
         grouped: dict[str, list[nn.Parameter]] = {"base": []}
         seen: set[int] = set()
@@ -2195,6 +2225,32 @@ class TwoTowerModel(nn.Module):
                     pad_id=self.context_tokenizer.pad_id,
                     device=self.device_name,
                 )
+
+    def abstract_plan_trace(
+        self,
+        prompts: list[str],
+        *,
+        target_plan_ids: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+        cache_keys: list[str] | None = None,
+    ) -> AbstractPlanTrace | None:
+        """Predict a plan trace from pooled context-tower states (AP-023 / SLM-315).
+
+        Returns ``None`` when ``abstract_plan_mode == "disabled"`` (the
+        default). A pure side channel: neither ``training_loss`` nor
+        ``forward`` ever calls this, so no plan signal reaches the decoder
+        unless a caller invokes it explicitly.
+        """
+        if self.abstract_plan_head is None:
+            return None
+        ctx, ctx_pad = self._encode_context(prompts, cache_keys=cache_keys)
+        return self.abstract_plan_head(
+            ctx,
+            ctx_pad,
+            mode=self.config.abstract_plan_mode,
+            target_plan_ids=target_plan_ids,
+            generator=generator,
+        )
 
     def apply_dynamic_quant(self) -> bool:
         """P5: dynamically quantize Linear layers to int8 (CPU). Returns True on success."""
