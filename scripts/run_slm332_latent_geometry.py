@@ -52,6 +52,8 @@ def _rewrite_agentv_paths(output_dir: Path) -> None:
     replacements = {
         str(output_dir.resolve()): "agentv-dir://",
         quote(str(output_dir.resolve()), safe=""): quote("agentv-dir://", safe=""),
+        str(ROOT.resolve()): "repo://",
+        quote(str(ROOT.resolve()), safe=""): quote("repo://", safe=""),
     }
     for path in (output_dir / "agentv").rglob("*"):
         if not path.is_file() or path.suffix not in {".json", ".jsonl", ".md"}:

@@ -8868,7 +8868,7 @@
       ]
     },
     "harness.experiments.slm332_latent_geometry": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/program_latent_objectives.py",
@@ -8880,6 +8880,7 @@
         "tests/test_harnesses/test_slm332_latent_geometry.py"
       ],
       "history": [
+        {"version": "v5", "date": "2026-07-25", "note": "normalize AgentV code-grader paths to portable repo URIs in committed evidence"},
         {"version": "v4", "date": "2026-07-25", "note": "retain declared opaque binding-target ordinals so AP-009 binding swaps survive factorization"},
         {"version": "v3", "date": "2026-07-25", "note": "add bounded local control-versus-combined runner with AgentEvals non-promotion assertion"},
         {"version": "v2", "date": "2026-07-25", "note": "wire admitted AP-009 binding pairs through the codec-only geometry harness"},
