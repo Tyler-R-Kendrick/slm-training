@@ -185,6 +185,22 @@
         }
       ]
     },
+    "data.flow.operator_policy_corpus": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/flow/operator_policy_corpus.py",
+        "tests/test_data/flow/test_operator_policy_corpus.py",
+        "docs/design/dsh3-24-operator-policy-corpus.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-399 (DSH3-24): OperatorPolicyRowV1 rows from collapse CONFLICT/DIFFERENT_RESULT hard negatives over freshly re-enumerated (never copied) live legal sets, built on the SLM-397 sanitized OperatorPolicyInputV1 boundary"
+        }
+      ]
+    },
     "data.flow.legal_edit_bridge_corpus": {
       "version": "v2",
       "kind": "data_builder",
