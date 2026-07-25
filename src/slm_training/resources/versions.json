@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v111",
+      "version": "v113",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1775,6 +1775,16 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v113",
+          "date": "2026-07-25",
+          "note": "SLM-328 AP-030 CAP2-06 program-factor latent size/width/codec rate-distortion sweep wiring/fixture harness"
+        },
+        {
+          "version": "v112",
+          "date": "2026-07-25",
+          "note": "SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
+        },
         {
           "version": "v111",
           "date": "2026-07-25",
