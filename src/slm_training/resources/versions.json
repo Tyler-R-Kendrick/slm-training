@@ -4363,6 +4363,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: append SLM-249 (LOT0-02) target-trace contract section to shared research-lineage.md without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "no-bump: add SLM-298 local diagnostic checkpoint rows to shared README and model card without changing the SLM-228 disposition"
         },
         {
@@ -6857,6 +6862,11 @@
         {
           "version": "v243",
           "date": "2026-07-25",
+          "note": "no-bump: SLM-249 (LOT0-02) adds CausalLatentUseFalsificationSpecV1 and describe_causal_latent_use_falsification_test to causal_trace.py -- a defined-but-not-run test spec dataclass with no model dependency; no existing capture/replay behavior changed"
+        },
+        {
+          "version": "v243",
+          "date": "2026-07-25",
           "note": "Commit the speculative-rank n-gram table and default to it; prove grammar checkpoints with common_forced_run so prefills truncate at determined positions; accept a sole-legal DFA proof when the native completion domain is horizon-limited rather than contradictory (decode invariants I2/I3/I4)"
         },
         {
@@ -8534,6 +8544,30 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial reserved compute-ops vocabulary shared encoder<->decoder: 19 ops derived from the live local/topology/conversation registries across ast/graph/set/topology/history, reserved in the new `ops` token-id namespace above every codec range, one shared_token_ids() mapping, grammar layering assertion, content-addressed drift gate (decode invariant I13)"
+        }
+      ]
+    },
+    "harness.experiments.slm249_compiler_reasoning_trace": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/data/progspec/compiler_reasoning_trace.py",
+        "src/slm_training/data/semantic_plan/compiler_reasoning_trace_extract.py",
+        "src/slm_training/harnesses/experiments/compiler_reasoning_trace_coverage.py",
+        "scripts/report_compiler_reasoning_trace_coverage.py",
+        "tests/test_data/test_progspec/test_compiler_reasoning_trace.py",
+        "tests/test_data/test_semantic_plan_extraction/test_compiler_reasoning_trace_extract.py",
+        "tests/test_harnesses/experiments/test_compiler_reasoning_trace_coverage.py",
+        "tests/test_compiler_reasoning_trace_contract.py",
+        "docs/design/compiler-reasoning-trace-v1.json",
+        "docs/design/compiler-reasoning-trace-v1.md",
+        "docs/design/compiler-reasoning-trace-coverage/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-249 (LOT0-02) CompilerReasoningTraceV1 typed step schema, deterministic extractor reusing SemanticPlanV1/production_codec, lossless visible serialization, permutation-invariant/cycle-free/truncation-explicit helpers, a bounded (n=16 fixture) K/c coverage probe, and the CompilerReasoningTraceGateV1 contract with an inconclusive verdict (oracle-ceiling experiment plan only, no training run, per the LOT0-01 authorization's allowed_lot1_work scope)"
         }
       ]
     }
