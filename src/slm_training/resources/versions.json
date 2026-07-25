@@ -8853,6 +8853,24 @@
           "note": "AP-016 (SLM-302): initial registration -- collision-free AbstractPlanV1 latent-plan token codebook contract (reserved <beginabstract>/<endabstract> + M-slot pool), default-off in every consuming tokenizer, plus embedding-resize migration helpers"
         }
       ]
+    },
+    "data.abstract_cot_warmup": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/abstract_cot/warmup.py",
+        "src/slm_training/data/abstract_cot/__init__.py",
+        "scripts/publish_abstract_cot_warmup.py",
+        "tests/test_data/test_abstract_cot_warmup.py",
+        "src/slm_training/resources/data/abstract_cot/warmup_v1.jsonl"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "AP-018 (SLM-306): initial registration -- builds [prompt; privileged_plan; abstract_span; target] bottleneck warm-up records from the existing gold OpenUISemanticPlanExtractor/CAP2-05 tensorizer and the reserved AP-016 AbstractPlanV1 codebook; iteration-0 abstract spans are record-id+seed-keyed random codebook tokens (no plan/target leakage); excludes abstract_planning_locked_v1 locked_test rows by id and gold-plan fingerprint; typed SegmentLayoutV1 fixes the target-excludes-privileged_plan bottleneck contract AP-019 must honor"
+        }
+      ]
     }
   }
 }
