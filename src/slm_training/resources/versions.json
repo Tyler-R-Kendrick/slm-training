@@ -5485,7 +5485,7 @@
    ]
   },
   "harness.train_data": {
-   "version": "v23",
+   "version": "v24",
    "kind": "harness",
    "paths": [
     "scripts/build_train_data.py",
@@ -5498,6 +5498,11 @@
     "src/slm_training/resources/frontier/"
    ],
    "history": [
+    {
+     "version": "v24",
+     "date": "2026-07-25",
+     "note": "add CAP0 QA views (capped diagnostic identity, canonicalize pairs, accepted-set suffix completion, anti-identity hard negatives) under harness.experiments.slm360_cap0_qa"
+    },
     {
      "version": "v23",
      "date": "2026-07-25",
@@ -8024,6 +8029,23 @@
      "version": "v1",
      "date": "2026-07-25",
      "note": "initial partial-state classifier (COMPLETE / FRAGMENT(start) / PREFIX(frontier)+certificate / INVALID) with lexer/marker cut discipline, bounded accepting-completion certificates replayed to verified terminals, coverage-gated pruning guard, and family stop rule (SLM-359 / DSH1-07)"
+    }
+   ]
+  },
+  "harness.experiments.slm360_cap0_qa": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/train_data/cap0_qa.py",
+    "tests/test_harnesses/train_data/test_cap0_qa.py",
+    "docs/design/iter-slm360-cap0-qa-20260725.json",
+    "docs/design/iter-slm360-cap0-qa-20260725.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "initial CAP0 QA views: capped diagnostic IDENTITY rows, DSH1-05 CANONICALIZE pairs, accepted-set COMPLETE_SUFFIX rows with verified-terminal replay and separate canonical preference, both anti-identity hard-negative kinds, atomic-production nonidentity coverage guard, no-single-gold-where-multi audit, and identity-baseline stop rule (SLM-360 / DSH1-08)"
     }
    ]
   }

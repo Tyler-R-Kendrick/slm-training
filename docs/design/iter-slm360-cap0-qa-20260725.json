@@ -1,0 +1,73 @@
+{
+ "schema_version": "cap0_qa_fixture/v1",
+ "issue": "SLM-360",
+ "track": "DSH1-08",
+ "date": "2026-07-25",
+ "run_class": "contract_fixture",
+ "decision": "supported",
+ "cap0_qa_schema": "cap0_qa/v1",
+ "generator_version": "v1",
+ "fixture": {
+  "answers": 5,
+  "identity_cap": 0.1,
+  "seed": 7,
+  "stats": {
+   "answers": 5,
+   "rows_total": 25,
+   "rows_by_kind": {
+    "identity": 2,
+    "canonicalize": 17,
+    "complete_suffix": 6
+   },
+   "identity_fraction": 0.08,
+   "identity_cap": 0.1,
+   "ambiguous_prefixes": 2,
+   "hard_negatives": 2,
+   "hard_negatives_by_kind": {
+    "same_symbols_different_structure": 1,
+    "matched_structure_permuted_markers": 1
+   },
+   "scoring": "accepted_set_membership"
+  },
+  "uncovered_productions": [],
+  "identity_baseline": {
+   "identity_baseline_score": 0.0,
+   "non_diagnostic_rows": 23,
+   "identity_solved_rows": 0,
+   "matches": false,
+   "do_not_train": false
+  }
+ },
+ "version_stamp": {
+  "stamp_schema": "version_stamp/v1",
+  "code_commit": "feb2b1f7b699787ee67f7ed3ad877fb8847be71b",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments.slm360_cap0_qa": "v1",
+   "harness.train_data": "v24"
+  },
+  "stamped_at": "2026-07-25T04:28:43.883607+00:00"
+ },
+ "controls": {
+  "rows_serialize_through_harness_dsl_and_round_trip": "passed",
+  "identity_rows_capped_and_marked_diagnostic": "passed",
+  "every_atomic_production_in_nonidentity_context": "passed",
+  "hard_negatives_same_symbols_different_structure": "passed",
+  "hard_negatives_matched_structure_permuted_markers": "passed",
+  "ambiguous_prefix_persists_all_verified_accepted_completions": "passed",
+  "canonical_preference_separate_from_accepted_set": "passed",
+  "no_single_gold_label_where_multiple_completions_accepted": "passed",
+  "accepted_completions_replay_to_verified_terminals": "passed",
+  "identity_baseline_stop_rule_flags_copy_solvable_suite": "passed",
+  "determinism": "passed"
+ },
+ "commands": [
+  "python -m pytest -q tests/test_harnesses/train_data/test_cap0_qa.py",
+  "python -m pytest -q tests/test_harnesses/train_data tests/test_dsl",
+  "python -m scripts.verify_version_stamps --check",
+  "python -m scripts.repo_policy",
+  "python -m ruff check src/slm_training/harnesses/train_data/cap0_qa.py tests/test_harnesses/train_data/test_cap0_qa.py",
+  "git diff --check"
+ ],
+ "claim_limits": "fixture-scale contract evidence only; no corpus publication, no CAP0 training run, no model evaluation, no ship-gate claim"
+}
