@@ -8456,7 +8456,7 @@
       ]
     },
     "ops.vocab": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/ops_vocab.py",
@@ -8466,6 +8466,11 @@
         "tests/test_dsl/test_ops_vocab.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "SLM-413: rebuilt registry for the new conversation.transaction_commit op (DSH5-05's TRANSACTION_COMMIT turn) -- 19 -> 20 ops; every history-family/set/topology token_id after the insertion point shifts by one, per `python -c 'from slm_training.dsl.ops_vocab import write_registry; write_registry()'`"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
