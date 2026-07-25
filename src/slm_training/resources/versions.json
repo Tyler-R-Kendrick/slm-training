@@ -259,7 +259,7 @@
       ]
     },
     "data.locked_eval_manifest": {
-      "version": "v2",
+      "version": "v3",
       "kind": "data_builder",
       "paths": [
         "scripts/build_locked_promotion_manifest.py",
@@ -268,6 +268,11 @@
         "tests/test_data/test_locked_eval_manifest.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "SLM-306 add canonical_manifest_path/load_locked_manifest_payload/verify_locked_manifest_digest -- independently recompute the manifest_sha256 from real committed manifest bytes (rows+metadata) instead of trusting the self-declared digest field, failing closed on a tampered or unsupported-schema file"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -1354,7 +1359,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -1367,6 +1372,11 @@
         "tests/test_autoresearch/test_harness.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-25",
+          "note": "SLM-306 validate_result_claim / CampaignStore.validate_campaign_result gain an optional locked_manifest_path; when given, the declared locked_eval_manifest_sha256 is independently re-derived from real manifest bytes on disk (locked_eval_manifest.verify_locked_manifest_digest) instead of only self-consistency between manifest and result. Default None preserves prior behavior for callers without a manifest file"
+        },
         {
           "version": "v5",
           "date": "2026-07-24",
@@ -1513,12 +1523,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v87",
+      "version": "v88",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v88",
+          "date": "2026-07-25",
+          "note": "SLM-306 thread locked_manifest_path (optional, default None) through load_campaign_governance/evaluate_promotion/register_promoted_checkpoint so promotion entrypoints can opt into on-disk locked-manifest digest verification instead of only trusting the self-reported locked_eval_manifest_sha256 string"
+        },
         {
           "version": "v87",
           "date": "2026-07-24",

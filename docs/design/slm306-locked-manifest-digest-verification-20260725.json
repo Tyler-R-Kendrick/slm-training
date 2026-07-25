@@ -1,0 +1,54 @@
+{
+  "schema_version": "slm306_locked_manifest_digest_verification/v1",
+  "run_id": "slm306_local_locked_manifest_digest_verification_20260725",
+  "status": "completed",
+  "device": "local CPU",
+  "backend": "offline committed resources only; no network, no GPU",
+  "manifest_path": "src/slm_training/resources/data/eval/manifests/abstract_planning_locked_v1.jsonl",
+  "manifest_schema": "LockedPromotionManifestV1",
+  "declared_manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+  "rows": 286,
+  "partition_counts": {
+    "agentv_calibration": 20,
+    "dev": 20,
+    "human_audit": 20,
+    "locked_test": 226
+  },
+  "gap_before_this_change": "ExperimentCampaignV1.locked_eval_manifest_sha256 and CampaignResultV1.locked_eval_manifest_sha256 are free-form 64-hex-char strings validated only for pattern shape and self-consistency (manifest.locked_eval_manifest_sha256 == result.locked_eval_manifest_sha256). Neither was ever checked against real bytes of the committed manifest file. tests/test_autoresearch/test_experiment_campaign.py's own fixture used the literal digest \"e\"*64, which does not correspond to any manifest -- and validate_result_claim already returned () (no failures) for it.",
+  "reproduction": {
+    "recompute_declared_digest": {
+      "method": "load_locked_manifest_payload(canonical_manifest_path()) recomputes sha256({schema, rows, metadata}) with the same canonical json.dumps(sort_keys=True, separators=(',',':')) encoding LockedManifest.sha256 uses, and fails closed if it does not equal the file's own manifest_sha256 field",
+      "result": "recomputed digest equals declared digest: true"
+    },
+    "verify_locked_manifest_digest_checks": {
+      "true_digest_against_real_file": true,
+      "forged_digest_e64_against_real_file": false
+    },
+    "validate_result_claim_scenarios": {
+      "forged_digest_no_verification_path__prior_behavior": [],
+      "forged_digest_with_verification_path__new_gate": [
+        "locked_eval_manifest_digest_unverified_on_disk"
+      ],
+      "real_digest_with_verification_path": [],
+      "real_digest_missing_manifest_file": [
+        "locked_eval_manifest_digest_unverified_on_disk"
+      ]
+    }
+  },
+  "honesty": {
+    "model_or_ship_claim": false,
+    "scope": "governance/gate wiring audit only -- no model quality, promotion, or training result is claimed here",
+    "backward_compatibility": "locked_manifest_path defaults to None everywhere it was threaded (validate_result_claim, CampaignStore.validate_campaign_result, evaluate_promotion, register_promoted_checkpoint, load_campaign_governance); every existing caller and test that never passed it keeps its prior (self-consistency-only) behavior unchanged. No canonical default path is wired in yet -- callers that want the stronger check must opt in with locked_eval_manifest.canonical_manifest_path()."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "34c70de1dc67a62517e54e45cacd326f6ca5a32b",
+    "code_dirty": true,
+    "components": {
+      "data.locked_eval_manifest": "v3",
+      "harness.autoresearch.experiment_campaign": "v6",
+      "harness.experiments": "v88"
+    },
+    "stamped_at": "2026-07-25T01:40:30.332227+00:00"
+  }
+}

@@ -350,8 +350,18 @@ def validate_result_claim(
     result: CampaignResultV1,
     *,
     artifact_root: Path | None = None,
+    locked_manifest_path: Path | None = None,
 ) -> tuple[str, ...]:
-    """Return fail-closed governance failures for a claimed result."""
+    """Return fail-closed governance failures for a claimed result.
+
+    ``locked_manifest_path``, when given, independently re-derives the
+    declared ``locked_eval_manifest_sha256`` from real manifest bytes on disk
+    instead of trusting the self-reported digest string. It is optional (and
+    ``None`` by default) so existing exploratory/fixture callers that never
+    built a manifest file are unaffected; promotion/ship call sites should
+    pass the canonical path (``locked_eval_manifest.canonical_manifest_path``)
+    to get the stronger, content-addressed check.
+    """
     failures: list[str] = []
     expected_sha = campaign_manifest_sha256(manifest)
     if result.campaign_id != manifest.campaign_id:
@@ -368,6 +378,16 @@ def validate_result_claim(
         failures.append("locked_eval_manifest_sha256_missing")
     elif result.locked_eval_manifest_sha256 != manifest.locked_eval_manifest_sha256:
         failures.append("locked_eval_manifest_sha256_mismatch")
+    elif locked_manifest_path is not None:
+        # Deferred: slm_training.data.locked_eval_manifest transitively imports
+        # slm_training.harnesses.experiments (canonical_ast_dedup), which
+        # imports this module -- a module-level import here would cycle.
+        from slm_training.data.locked_eval_manifest import verify_locked_manifest_digest
+
+        if not verify_locked_manifest_digest(
+            locked_manifest_path, manifest.locked_eval_manifest_sha256
+        ):
+            failures.append("locked_eval_manifest_digest_unverified_on_disk")
     if result.exploratory:
         failures.append("exploratory_result")
 
