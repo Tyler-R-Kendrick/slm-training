@@ -448,6 +448,11 @@
         {
           "version": "v4",
           "date": "2026-07-25",
+          "note": "no-bump: review follow-up extracts the duplicated authority-resolution/pack-id-mismatch block from the AST_EDIT and TRANSACTION_COMMIT branches of replay_conversation_trace into a shared _resolve_turn_authority helper; behavior-preserving, no externally-visible change"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
           "note": "DSH5-05: add the TRANSACTION_COMMIT conversation operation, TurnArtifactV1.transaction (retaining every constituent application ID via application_ids), append_operator_transaction_turn, and a caller-supplied TransactionReplayer hook on replay_conversation_trace so one turn can carry a whole OperatorTransactionV1 without conversation.py importing the transaction_executor module (see docs/design/dsh5-05-transaction-executor.md, Layering)"
         },
         {
@@ -779,7 +784,7 @@
       ]
     },
     "dsl.operators.transaction_executor": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/transaction_executor.py",
@@ -788,6 +793,11 @@
         "docs/design/dsh5-05-transaction-executor.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "review follow-up: the STALE_TRANSACTION_BASE staleness guard in commit_operator_transaction now also checks provenance.source_artifact_digest against transaction.provenance.source_artifact_digest (previously only request_id/pack_id), matching the equivalent check append_operator_transaction_turn already made in conversation.py -- without this, inconsistent provenance metadata could be embedded in the committed OperatorTransactionCommitV1 record. Also fixes a stale docstring cross-reference in ast_merge.py (named a nonexistent _compose_prepared_outputs; now points to compose_operator_transaction) and hardens the test-only sequential-shadow oracle with an explicit tiny-domain size assert plus a direct assertion on the selector-lineage fix"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
