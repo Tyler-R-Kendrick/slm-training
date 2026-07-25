@@ -83,6 +83,12 @@ from slm_training.dsl.operators.local import (
     build_openui_local_operator_context,
     build_openui_local_operator_library,
 )
+from slm_training.dsl.operators.bulk import (
+    MAP_SET_PROPERTY,
+    attach_bulk_selector,
+    build_openui_bulk_operator_library,
+    openui_bulk_registered_operators,
+)
 from slm_training.dsl.operators.legal_set import (
     LegalOperatorActionV1,
     LegalSetCoverage,
@@ -201,6 +207,7 @@ __all__ = [
     "HardNegativeOutcome",
     "LegalOperatorActionV1",
     "LegalSetCoverage",
+    "MAP_SET_PROPERTY",
     "MOVE_NODE",
     "MergeConflictKind",
     "NodeRef",
@@ -276,8 +283,10 @@ __all__ = [
     "ast_diff_paths",
     "append_operator_turn",
     "apply_reserved_operator_target",
+    "attach_bulk_selector",
     "attach_selector",
     "attach_selectors",
+    "build_openui_bulk_operator_library",
     "build_openui_local_operator_context",
     "build_openui_local_operator_library",
     "build_openui_topology_operator_context",
@@ -297,6 +306,7 @@ __all__ = [
     "fork_conversation",
     "iter_operator_argument_tuples",
     "merge_conversation_branches",
+    "openui_bulk_registered_operators",
     "ordered_parent_digest",
     "persistent_node_fingerprint",
     "parse_reserved_operator_target",

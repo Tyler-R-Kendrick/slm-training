@@ -343,6 +343,11 @@
         {
           "version": "v14",
           "date": "2026-07-25",
+          "note": "no-bump: DSH5-02 registers dsl.operators.bulk as its own component (see that entry) and re-exports its public names from operators/__init__.py; contracts.py itself is unchanged"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
           "note": "DSH5-01: add RefKind.SELECTOR and the opaque SelectorRef opaque-reference class"
         },
         {
@@ -567,6 +572,22 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "DSH5-01: initial exact finite SelectorRefV1 builder/resolver over compiler-owned target sets, with bounded-scan UNKNOWN truncation and a defensive-copy context resolver"
+        }
+      ]
+    },
+    "dsl.operators.bulk": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/bulk.py",
+        "tests/test_dsl/test_bulk_operators.py",
+        "docs/design/dsh5-02-map-set-property.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "DSH5-02: initial exact atomic openui.map_set_property bulk operator consuming an already-built SelectorRef, with per-target property deltas, all-or-nothing validation before any mutation, and order-invariant replay"
         }
       ]
     },
