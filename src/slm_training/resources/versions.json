@@ -512,6 +512,26 @@
         }
       ]
     },
+    "harness.experiments.slm367_two_pack_freeze": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/mini_pack.py",
+        "src/slm_training/dsl/grammars/mini_flow.lark",
+        "src/slm_training/harnesses/train_data/cap1_two_pack_freeze.py",
+        "tests/test_dsl/test_mini_pack.py",
+        "tests/test_harnesses/train_data/test_cap1_two_pack_freeze.py",
+        "docs/design/iter-slm367-two-pack-freeze-20260725.md",
+        "docs/design/iter-slm367-two-pack-freeze-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial two-pack generic CAP1 eval + schema-sensitivity freeze: complete test-only mini-flow DslPack (lark authority, canonicalizer, static validator, schema contract, SemanticFrameV1 provider, marker policy, fragment parse) with DSH1-01-style fail-closed completeness conformance and a no-OpenUI import audit; immutable Cap1TwoPackSuiteV1 over disjoint semantic root families with original/empty/contradictory/reordered/irrelevant schema strata, marker permutations (SLM-366), paraphrases (SLM-365), one-fact counterfactuals (SLM-366/DSH2-02), accepted-set-or-excluded ambiguity recording, sha256 rows + tamper-evident manifest + provenance suite cards, fail-closed verify_suite_integrity, create-once freeze, relevant-vs-irrelevant schema-sensitivity scoring with tolerance, and mandatory determinacy-calibration + CAP0-retention gates"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
