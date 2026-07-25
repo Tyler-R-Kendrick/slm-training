@@ -8868,16 +8868,19 @@
       ]
     },
     "harness.experiments.slm332_latent_geometry": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/program_latent_objectives.py",
+        "src/slm_training/models/semantic_plan_factors.py",
         "src/slm_training/harnesses/experiments/slm332_latent_geometry.py",
         "scripts/run_slm332_latent_geometry.py",
         "tests/test_models/test_program_latent_objectives.py",
+        "tests/test_models/test_semantic_plan_factors.py",
         "tests/test_harnesses/test_slm332_latent_geometry.py"
       ],
       "history": [
+        {"version": "v4", "date": "2026-07-25", "note": "retain declared opaque binding-target ordinals so AP-009 binding swaps survive factorization"},
         {"version": "v3", "date": "2026-07-25", "note": "add bounded local control-versus-combined runner with AgentEvals non-promotion assertion"},
         {"version": "v2", "date": "2026-07-25", "note": "wire admitted AP-009 binding pairs through the codec-only geometry harness"},
         {"version": "v1", "date": "2026-07-25", "note": "initial SLM-332 fail-closed latent geometry primitive"}

@@ -140,6 +140,37 @@ def test_binder_reference_reflects_bindings_and_symbols() -> None:
     assert not torch.equal(with_binding, without_binding)
 
 
+def test_binder_reference_retains_opaque_declared_binding_target_ordinal() -> None:
+    base = _plan()
+    first = base.model_copy(update={
+        "symbols": (
+            PlanSymbol(symbol_id="sym_0000", semantic_role="text"),
+            PlanSymbol(symbol_id="sym_0001", semantic_role="text"),
+        ),
+        "bindings": (
+            PlanBinding(
+                role_slot_id=base.bindings[0].role_slot_id,
+                candidate_symbols=("sym_0000",),
+                placeholder_fallback=True,
+            ),
+        ),
+    })
+    second = first.model_copy(update={
+        "bindings": (
+            PlanBinding(
+                role_slot_id=first.bindings[0].role_slot_id,
+                candidate_symbols=("sym_0001",),
+                placeholder_fallback=True,
+            ),
+        ),
+    })
+
+    first_tensor = tensorize_semantic_plan(first)["binder_reference"]
+    second_tensor = tensorize_semantic_plan(second)["binder_reference"]
+
+    assert not torch.equal(first_tensor, second_tensor)
+
+
 def test_cardinality_and_property_role_value_truncate_by_max_role_slots() -> None:
     config = ProgramFactorTensorizerConfig(max_role_slots=1)
     plan = _plan(component_families=("Stack", "TextContent", "Button"))

@@ -18,6 +18,7 @@ def test_admitted_ap009_binding_contrasts_are_canonical_and_explicit() -> None:
     assert corpus.positive.shape == corpus.negative.shape
     assert corpus.positive.shape[0] == 366
     assert set(corpus.transform_ids) == {"binding_swap_symbol", "binding_swap_symbol_reverse"}
+    assert torch.all(torch.linalg.vector_norm(corpus.positive - corpus.negative, dim=-1) > 0)
 
 
 def test_geometry_config_can_form_the_matched_reconstruction_control() -> None:

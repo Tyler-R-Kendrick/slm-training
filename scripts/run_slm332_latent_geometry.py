@@ -14,6 +14,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import torch
 
@@ -44,6 +45,21 @@ def _portable(value: Any, output_dir: Path) -> Any:
     if isinstance(value, dict):
         return {key: _portable(item, output_dir) for key, item in value.items()}
     return value
+
+
+def _rewrite_agentv_paths(output_dir: Path) -> None:
+    """Keep committed AgentV evidence independent of this worktree location."""
+    replacements = {
+        str(output_dir.resolve()): "agentv-dir://",
+        quote(str(output_dir.resolve()), safe=""): quote("agentv-dir://", safe=""),
+    }
+    for path in (output_dir / "agentv").rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".jsonl", ".md"}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for source, replacement in replacements.items():
+            text = text.replace(source, replacement)
+        path.write_text(text, encoding="utf-8")
 
 
 def _model(feature_dim: int, *, seed: int) -> FactorReconstructionModel:
@@ -108,8 +124,7 @@ def run(*, steps: int, seed: int, agentv_dir: Path) -> dict[str, Any]:
         },
         "version_stamp": stamp,
     }
-    report["agentv"] = _portable(
-        publish_agentv_evaluation(
+    published = publish_agentv_evaluation(
             agentv_dir,
             name="slm332-latent-geometry",
             claim="local_codec_only_geometry_diagnostic_not_ship",
@@ -125,9 +140,9 @@ def run(*, steps: int, seed: int, agentv_dir: Path) -> dict[str, Any]:
                 "result": report["strict_semantics"],
             }],
             version_stamp=stamp,
-        ),
-        agentv_dir,
     )
+    _rewrite_agentv_paths(agentv_dir)
+    report["agentv"] = _portable(published, agentv_dir)
     return report
 
 
