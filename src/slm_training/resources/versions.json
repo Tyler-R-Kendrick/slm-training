@@ -276,7 +276,7 @@
       ]
     },
     "data.locked_eval_manifest": {
-      "version": "v2",
+      "version": "v3",
       "kind": "data_builder",
       "paths": [
         "scripts/build_locked_promotion_manifest.py",
@@ -285,6 +285,11 @@
         "tests/test_data/test_locked_eval_manifest.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "SLM-298 export AST/reference complexity and strata as the shared curriculum authority"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -1613,12 +1618,25 @@
       ]
     },
     "harness.experiments": {
-      "version": "v104",
+      "version": "v106",
       "kind": "harness",
       "paths": [
-        "src/slm_training/harnesses/experiments/"
+        "src/slm_training/harnesses/experiments/",
+        "scripts/run_slm298_capacity_context_curriculum.py",
+        "tests/test_harnesses/experiments/test_slm298_capacity_context_curriculum.py",
+        "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v106",
+          "date": "2026-07-25",
+          "note": "SLM-298 preserve every ExampleRecord output contract field while materializing complexity curriculum views"
+        },
+        {
+          "version": "v105",
+          "date": "2026-07-25",
+          "note": "SLM-298 preregistered bounded local capacity x frozen-context x complexity-curriculum factorial"
+        },
         {
           "version": "v104",
           "date": "2026-07-25",
@@ -3856,6 +3874,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: append SLM-298 bounded local diagnostic evidence to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-24",
           "note": "no-bump: append corrected historical E615 fixture evidence to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
@@ -4281,6 +4304,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: add SLM-298 local diagnostic checkpoint rows to shared README and model card without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
