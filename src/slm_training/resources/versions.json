@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v113",
+      "version": "v114",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1775,6 +1775,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v114",
+          "date": "2026-07-25",
+          "note": "add SLM-269 DCA0-01 fail-closed activation audit (slm269_dca0_activation.py): prerequisite evidence unqualified (SLM-260 fixture-only, SLM-261 missing, SLM-268 blocked) -> inconclusive, no corpus/training launched"
+        },
         {
           "version": "v113",
           "date": "2026-07-25",
@@ -2389,6 +2394,25 @@
           "version": "v1",
           "date": "2026-07-18",
           "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"
+        }
+      ]
+    },
+    "harness.experiments.slm269_dca0_activation": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm269_dca0_activation.py",
+        "scripts/audit_dca0_target_policy_activation.py",
+        "tests/test_harnesses/experiments/test_slm269_dca0_activation.py",
+        "tests/test_scripts/test_audit_dca0_target_policy_activation.py",
+        "docs/design/iter-slm269-dca0-01-activation-20260725.json",
+        "docs/design/iter-slm269-dca0-01-activation-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-269 DCA0-01 activation audit closes inconclusive/blocked against real prerequisite artifacts"
         }
       ]
     },
