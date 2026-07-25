@@ -150,6 +150,12 @@ def test_choice_decode_all_singletons_skips_denoiser(monkeypatch) -> None:
     assert stats.ambiguous_rows_forwarded == 0
 
 
+def test_public_twotower_generation_rejects_unconstrained_override() -> None:
+    model = _model()
+    with pytest.raises(ValueError, match="grammar_constrained=False"):
+        model.generate("card", grammar_constrained=False)
+
+
 def test_choice_decode_mixed_step_forwards_only_ambiguous_rows(monkeypatch) -> None:
     from slm_training.models import choice_tokenizer
 
@@ -226,6 +232,44 @@ def test_compiler_singleton_bypass_requires_complete_coverage(
     assert int(result[1]) == model.tokenizer.eos_id
     assert forwards == expected_forwards
     assert stats.forced_tokens == expected_forced
+
+
+def test_compiler_tree_batches_only_ambiguous_prefills_with_bound(monkeypatch) -> None:
+    model = _model(compiler_prefill_max_states=2)
+    candidates = sorted(model.tokenizer.kind_ids("component"))[:4]
+    assert len(candidates) == 4
+    a, b, x, y = candidates
+    paths = (
+        CompletionPath((a, x), "component"),
+        CompletionPath((a, y), "component"),
+        CompletionPath((b, x), "component"),
+        CompletionPath((b, y), "component"),
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+    original = model._denoiser_hidden
+    batch_sizes: list[int] = []
+
+    def hidden(ids, *args, **kwargs):
+        batch_sizes.append(int(ids.size(0)))
+        return original(ids, *args, **kwargs)
+
+    monkeypatch.setattr(model, "_denoiser_hidden", hidden)
+    with collect_decode_stats() as stats:
+        selected = model._select_compiler_path(
+            [model.tokenizer.bos_id],
+            paths,
+            ctx,
+            ctx_pad,
+            8,
+            tree=True,
+            coverage="complete",
+        )
+
+    assert selected in {path.token_ids for path in paths}
+    assert batch_sizes == [2, 1]
+    assert stats.compiler_prefill_batches == 2
+    assert stats.compiler_prefill_states == 3
+    assert stats.compiler_prefill_tokens == 24
 
 
 def test_compiler_empty_forest_records_bounded_dead_end_trace(monkeypatch) -> None:

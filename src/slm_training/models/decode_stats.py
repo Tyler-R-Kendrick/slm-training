@@ -26,6 +26,7 @@ class DecodeStats:
     ambiguous_rows_forwarded: int = 0
     forced_row_tokens_without_forward: int = 0
     all_forced_steps_without_forward: int = 0
+    semantic_singleton_bypasses: int = 0
     probes_count: int = 0
     dfa_sync_count: int = 0
     tokens_emitted: int = 0
@@ -38,6 +39,9 @@ class DecodeStats:
     compiler_ms: float = 0.0
     trie_ms: float = 0.0
     compiler_candidates: int = 0
+    compiler_prefill_batches: int = 0
+    compiler_prefill_states: int = 0
+    compiler_prefill_tokens: int = 0
     component_plan_applications: int = 0
     component_plan_choice_changes: int = 0
     semantic_plan_applications: int = 0
@@ -227,6 +231,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "ambiguous_rows_forwarded",
         "forced_row_tokens_without_forward",
         "all_forced_steps_without_forward",
+        "semantic_singleton_bypasses",
         "probes_count",
         "dfa_sync_count",
         "tokens_emitted",
@@ -238,6 +243,9 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_ms",
         "trie_ms",
         "compiler_candidates",
+        "compiler_prefill_batches",
+        "compiler_prefill_states",
+        "compiler_prefill_tokens",
         "component_plan_applications",
         "component_plan_choice_changes",
         "semantic_plan_applications",

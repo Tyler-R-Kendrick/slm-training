@@ -1825,43 +1825,39 @@ def evaluate_grammar_leakage_audit(
     publish_agentv: bool = True,
     variant_names: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
-    """Evaluate identical checkpoints under explicit raw/grammar controls.
+    """Compare deterministic constrained decoders on one checkpoint.
 
-    This is evaluation-only. It leaves the production decode default untouched
-    and persists one normal scorecard per variant through :func:`evaluate`.
+    Raw logits remain available as constraint-shadow telemetry, but are never
+    emitted as an unconstrained program.
     """
     from contextlib import contextmanager
     from dataclasses import replace
 
     all_variants = {
-        "raw": {
-            "grammar_constrained": False,
-            "grammar_ltr_repair": False,
-            "grammar_uniform_at_unforced": False,
-        },
-        "constrained": {
-            "grammar_constrained": True,
-            "grammar_ltr_repair": False,
-            "grammar_uniform_at_unforced": False,
-        },
-        "repaired": {
+        "constrained_native": {
             "grammar_constrained": True,
             "grammar_ltr_repair": True,
             "grammar_uniform_at_unforced": False,
+            "compiler_decode_mode": "off",
         },
-        "uniform_at_unforced": {
+        "constrained_compiler": {
             "grammar_constrained": True,
-            "grammar_ltr_repair": False,
-            "grammar_uniform_at_unforced": True,
+            "grammar_ltr_repair": True,
+            "grammar_uniform_at_unforced": False,
+            "compiler_decode_mode": "tree",
         },
     }
     selected_names = variant_names or tuple(all_variants)
-    if "raw" not in selected_names or not set(selected_names).issubset(all_variants):
-        raise ValueError("grammar leakage audit variants must include raw")
+    if "constrained_native" not in selected_names or not set(
+        selected_names
+    ).issubset(all_variants):
+        raise ValueError(
+            "grammar leakage audit variants must include constrained_native"
+        )
     variants = {name: all_variants[name] for name in selected_names}
 
     @contextmanager
-    def _temporary_plugin_config(overrides: dict[str, bool]):
+    def _temporary_plugin_config(overrides: dict[str, Any]):
         plugin_config = getattr(model, "config", None)
         saved = {
             key: getattr(plugin_config, key)
@@ -1905,18 +1901,18 @@ def evaluate_grammar_leakage_audit(
         "binder_reference_f1",
         "structural_similarity",
     )
-    raw = results["raw"]
+    baseline = results["constrained_native"]
     deltas = {
         name: {
             metric: (
                 None
-                if metrics.get(metric) is None or raw.get(metric) is None
-                else float(metrics[metric]) - float(raw[metric])
+                if metrics.get(metric) is None or baseline.get(metric) is None
+                else float(metrics[metric]) - float(baseline[metric])
             )
             for metric in metric_names
         }
         for name, metrics in results.items()
-        if name != "raw"
+        if name != "constrained_native"
     }
 
     def _strata(metrics: dict[str, Any]) -> dict[str, dict[str, dict[str, float]]]:
@@ -1952,9 +1948,12 @@ def evaluate_grammar_leakage_audit(
         "run_id": config.run_id,
         "suite": config.suite,
         "variants": results,
-        "raw_deltas": deltas,
+        "baseline_deltas": deltas,
         "strata": {name: _strata(metrics) for name, metrics in results.items()},
-        "claim_scope": "evaluation-only; no production default changed",
+        "claim_scope": (
+            "evaluation-only constrained decoder comparison; raw logits are "
+            "diagnostic shadows and never emitted"
+        ),
     }
     from slm_training.versioning import build_version_stamp
 

@@ -1,5 +1,12 @@
 # SLM-287: locked five-seed × two-config local baseline
 
+> **Historical policy artifact.** These measured rows were produced before
+> mandatory constrained generation and retain their original
+> `raw`/`constrained`/`repaired` labels as provenance. The live runner now uses
+> `constrained_native` and `constrained_compiler` only. Its changed campaign
+> digest requires a new preregistered run; the numbers below must not be
+> relabeled or treated as evidence for the new policy.
+
 **Claim class:** completed local trained diagnostic; not a ship or promotion
 result.
 

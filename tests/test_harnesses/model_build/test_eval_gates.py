@@ -125,6 +125,22 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
     } <= policy.keys()
 
 
+@pytest.mark.parametrize(
+    "unsafe",
+    [
+        {"grammar_constrained": False},
+        {"allow_unconstrained_fallback": True},
+        {"grammar_sample_decode": True},
+        {"grammar_uniform_at_unforced": True},
+    ],
+)
+def test_new_model_build_config_rejects_unsafe_generation_flags(
+    unsafe: dict[str, bool],
+) -> None:
+    with pytest.raises(ValueError, match="unsafe|stochastic"):
+        ModelBuildConfig(train_dir=Path("train"), **unsafe)
+
+
 def test_evaluation_policy_snapshots_every_loaded_model_config_field() -> None:
     config = ModelBuildConfig(train_dir=Path("train"))
     loaded = SimpleNamespace(alpha=1, path=Path("checkpoint"), modes=("tree",))
@@ -249,23 +265,27 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
         config, model=model, publish_agentv=False
     )
 
-    assert model.calls == [False, True, True, True]
+    assert model.calls == [True, True]
     assert model.config.grammar_constrained is True
     assert model.config.grammar_ltr_repair is False
     assert model.config.grammar_uniform_at_unforced is False
     assert set(payload["variants"]) == {
-        "raw", "constrained", "repaired", "uniform_at_unforced"
+        "constrained_native",
+        "constrained_compiler",
     }
-    assert payload["strata"]["raw"]["semantic_factor"]["content"]["n"] == 1
+    assert (
+        payload["strata"]["constrained_native"]["semantic_factor"]["content"]["n"]
+        == 1
+    )
     assert Path(payload["output"]).is_file()
 
     selected = evaluate_grammar_leakage_audit(
         config,
         model=AuditModel(),
         publish_agentv=False,
-        variant_names=("raw", "constrained", "repaired"),
+        variant_names=("constrained_native",),
     )
-    assert set(selected["variants"]) == {"raw", "constrained", "repaired"}
+    assert set(selected["variants"]) == {"constrained_native"}
 
 
 def test_evaluate_rejects_negative_offset(tmp_path: Path) -> None:

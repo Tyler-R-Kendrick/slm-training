@@ -8,17 +8,22 @@ from typing import Any
 CHECKPOINT_DECLARED_POLICY = "checkpoint_declared"
 STRICT_COMPILER_TREE_POLICY_ID = "strict_compiler_tree"
 
-# Fields shared by exact choice completion and strict compiler-tree decoding.
-# Keep decode/honesty atomic, but preserve checkpoint input conditioning:
-# changing schema, slot-contract, or DESIGN.md context changes model logits and
-# is an experiment lever, not a decode-safety requirement.
-STRICT_EVALUATION_POLICY: dict[str, Any] = {
+# This floor applies even to legacy checkpoints. Persisted unsafe decode flags
+# remain lineage metadata but cannot re-enable unconstrained generation.
+MANDATORY_GENERATION_POLICY: dict[str, Any] = {
     "grammar_constrained": True,
     "grammar_ltr_primary": True,
     "grammar_finalize_validate": True,
+    "grammar_fastpath": True,
+    "grammar_sample_decode": False,
+    "grammar_uniform_at_unforced": False,
+    "allow_unconstrained_fallback": False,
+}
+# Fields shared by exact choice completion and strict compiler-tree decoding.
+STRICT_EVALUATION_POLICY: dict[str, Any] = {
+    **MANDATORY_GENERATION_POLICY,
     "slot_contract_constrained_decode": True,
     "honest_slot_contract": True,
-    "allow_unconstrained_fallback": False,
 }
 STRICT_COMPILER_TREE_POLICY: dict[str, Any] = {
     **STRICT_EVALUATION_POLICY,
@@ -26,7 +31,7 @@ STRICT_COMPILER_TREE_POLICY: dict[str, Any] = {
     "compiler_decode_mode": "tree",
 }
 EVALUATION_POLICIES: dict[str, dict[str, Any]] = {
-    CHECKPOINT_DECLARED_POLICY: {},
+    CHECKPOINT_DECLARED_POLICY: MANDATORY_GENERATION_POLICY,
     STRICT_COMPILER_TREE_POLICY_ID: STRICT_COMPILER_TREE_POLICY,
 }
 
@@ -60,6 +65,7 @@ def apply_strict_compiler_tree_policy(config: object) -> None:
 __all__ = [
     "CHECKPOINT_DECLARED_POLICY",
     "EVALUATION_POLICIES",
+    "MANDATORY_GENERATION_POLICY",
     "STRICT_COMPILER_TREE_POLICY",
     "STRICT_COMPILER_TREE_POLICY_ID",
     "STRICT_EVALUATION_POLICY",

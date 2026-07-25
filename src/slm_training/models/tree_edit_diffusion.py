@@ -1373,6 +1373,15 @@ class TreeEditDiffusionModel(nn.Module):
                 ctx_pad[index : index + 1],
                 inventory[:MAX_SLOTS],
             )
+            try:
+                program = validate(text)
+                text = (program.serialized or text).strip()
+                evidence["fallback_used"] = False
+            except Exception:  # noqa: BLE001
+                fallback = "root = Separator()"
+                program = validate(fallback)
+                text = (program.serialized or fallback).strip()
+                evidence["fallback_used"] = True
             outputs.append(text)
             self._generation_evidence.append(evidence)
         return outputs

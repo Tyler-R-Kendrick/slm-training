@@ -322,7 +322,8 @@ def validate_numeric_config(
         "steps", "recursive_transition_layers", "eval_every", "loss_eval_every",
         "suffix_rollback_window", "slot_component_owner_rare_threshold",
         "grammar_canvas_lookahead", "retrieval_k", "solver_max_wall_ms",
-        "stability_min_persistence",
+        "stability_min_persistence", "compiler_prefill_max_states",
+        "compiler_prefill_token_budget",
     }
     positive_float_names = {"lr", "mdlm_eps"}
 

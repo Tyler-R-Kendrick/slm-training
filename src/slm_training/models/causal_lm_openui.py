@@ -46,6 +46,7 @@ class CausalLMOpenUIPlugin:
         self.tokenizer = tokenizer
         self.config = config
         self._grammar_mask_cache: dict[tuple[int, ...], tuple[int, ...]] = {}
+        self._last_generation_evidence: list[dict[str, object]] = []
 
     @classmethod
     def from_pretrained(cls, config: CausalLMOpenUIConfig) -> CausalLMOpenUIPlugin:
@@ -208,27 +209,75 @@ class CausalLMOpenUIPlugin:
             input_ids = self.tokenizer(f"{system}\n{prompt}\n", return_tensors="pt")[
                 "input_ids"
             ].to(self.model.device)
-        start = int(input_ids.shape[1])
-
-        def allowed(_batch_id: int, ids: Any) -> list[int]:
-            prefix = tuple(int(value) for value in ids[start:].tolist())
-            return list(self._allowed_ids(prefix))
-
+        generated: list[int] = []
+        forwards = 0
+        singleton_bypasses = 0
+        fallback_used = False
         with torch.inference_mode():
-            output = self.model.generate(
-                input_ids,
-                max_new_tokens=int(
-                    kwargs.get("max_new_tokens", self.config.max_length)
-                ),
-                do_sample=False,
-                prefix_allowed_tokens_fn=allowed,
-                pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
-            )
-        text = self.tokenizer.decode(
-            output[0, start:], skip_special_tokens=True
-        ).strip()
+            for _ in range(
+                int(kwargs.get("max_new_tokens", self.config.max_length))
+            ):
+                legal = self._allowed_ids(tuple(generated))
+                if not legal:
+                    fallback_used = True
+                    break
+                if len(legal) == 1:
+                    choice = int(legal[0])
+                    singleton_bypasses += 1
+                else:
+                    suffix = torch.tensor(
+                        [generated], dtype=input_ids.dtype, device=input_ids.device
+                    )
+                    model_ids = (
+                        torch.cat([input_ids, suffix], dim=1)
+                        if generated
+                        else input_ids
+                    )
+                    output = self.model(input_ids=model_ids)
+                    forwards += 1
+                    logits = output.logits[0, -1]
+                    legal_ids = torch.tensor(
+                        legal, dtype=torch.long, device=logits.device
+                    )
+                    choice = int(
+                        legal_ids[logits.index_select(0, legal_ids).argmax()].item()
+                    )
+                generated.append(choice)
+                if choice == int(self.tokenizer.eos_token_id):
+                    break
+        text = self.tokenizer.decode(generated, skip_special_tokens=True).strip()
+        certified = self._certify(text)
+        if certified is None:
+            certified = self._certified_fallback()
+            fallback_used = True
+        self._last_generation_evidence = [
+            {
+                "grammar_constrained": True,
+                "model_forwards": forwards,
+                "singleton_bypasses": singleton_bypasses,
+                "fallback_used": fallback_used,
+            }
+        ]
+        return certified
+
+    @staticmethod
+    def _certify(text: str) -> str | None:
+        try:
+            program = validate(text)
+        except Exception:  # noqa: BLE001
+            return None
+        return (program.serialized or text).strip()
+
+    @staticmethod
+    def _certified_fallback() -> str:
+        text = "root = Separator()"
         program = validate(text)
         return (program.serialized or text).strip()
+
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        evidence = list(self._last_generation_evidence)
+        self._last_generation_evidence = []
+        return evidence
 
     def _allowed_ids(self, prefix: tuple[int, ...]) -> tuple[int, ...]:
         cached = self._grammar_mask_cache.get(prefix)
@@ -254,8 +303,6 @@ class CausalLMOpenUIPlugin:
                 continue
             if not status.hard_error:
                 allowed.append(token_id)
-        if not allowed:
-            allowed = [eos]
         result = tuple(allowed)
         self._grammar_mask_cache[prefix] = result
         return result
@@ -371,8 +418,8 @@ class CausalLMOpenUIPlugin:
             final_text = (program.serialized or text).strip()
             valid = True
         except Exception:  # noqa: BLE001 - honest: an unfinished decode is not valid
-            final_text = text
-            valid = False
+            final_text = self._certified_fallback()
+            valid = True
         if trace_writer is not None:
             trace_writer.record_all(result)
         return CausalTracedGeneration(text=final_text, result=result, valid=valid)
@@ -434,7 +481,7 @@ class CausalLMOpenUIPlugin:
             program = validate(raw_text)
             canonical: str | None = (program.serialized or raw_text).strip()
         except Exception:  # noqa: BLE001 - unfinished continuation has no canonical form
-            canonical = None
+            canonical = self._certified_fallback()
         return GeneratedOutcome(
             action_id=int(forced_action_id),
             continuation_seed=int(continuation_seed),

@@ -1524,12 +1524,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v103",
+      "version": "v104",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v104",
+          "date": "2026-07-25",
+          "note": "Replace the locked power protocol's emitted raw variants with mandatory constrained native and compiler comparisons while preserving historical evidence"
+        },
         {
           "version": "v103",
           "date": "2026-07-25",
@@ -4693,7 +4698,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -4707,6 +4712,11 @@
         "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Certify tree-edit generation outputs and emit a tagged deterministic valid fallback on unexpected invalid states"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -4776,7 +4786,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v56",
+      "version": "v57",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4789,6 +4799,11 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v57",
+          "date": "2026-07-25",
+          "note": "Make constrained deterministic generation mandatory, replace raw emitted audit arms with constraint-shadow-safe decoder comparisons, and report singleton/prefill work"
+        },
         {
           "version": "v56",
           "date": "2026-07-24",
@@ -6002,12 +6017,17 @@
       ]
     },
     "matrix.perf": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Add serial and bounded device-aware compiler speculative-prefill comparison arms with utilization telemetry"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -6465,7 +6485,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v238",
+      "version": "v239",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6494,6 +6514,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v239",
+          "date": "2026-07-25",
+          "note": "Make exact scope-aware singletons inference-free, batch only ambiguous compiler prefills under device-aware bounds, and prohibit unconstrained generation fallbacks"
+        },
         {
           "version": "v238",
           "date": "2026-07-25",
@@ -8069,6 +8094,11 @@
         "docs/design/perf-experiment-matrix.md"
       ],
       "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-24",
+          "note": "no-bump: append unrelated C9-C10 compiler-prefill evidence without changing the SLM-194 candidate-proposal matrix"
+        },
         {
           "version": "ffe3-03-v1",
           "date": "2026-07-23",
