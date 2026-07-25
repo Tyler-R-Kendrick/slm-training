@@ -944,6 +944,25 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra CE weight on gold placeholder tokens during training.",
     )
     parser.add_argument(
+        "--semantic-contrast-dir",
+        type=Path,
+        help="Explicit immutable directory (or pairs.jsonl) of hard-valid train-split pairs.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-loss-weight",
+        type=float,
+        default=0.0,
+        help="Default-off pairwise semantic-contrast margin objective weight.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-margin", type=float, default=1.0,
+        help="Required positive-over-negative sequence-score margin.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-fraction", type=float, default=0.0,
+        help="Fraction of each canonical batch occupied by complete contrast pairs.",
+    )
+    parser.add_argument(
         "--schema-in-context",
         action="store_true",
         help="Inject compact OpenUI component schema into the context tower.",
@@ -1440,6 +1459,10 @@ def main(argv: list[str] | None = None) -> int:
             args.required_slot_margin_decode_weight
         ),
         fidelity_loss_weight=args.fidelity_loss_weight,
+        semantic_contrast_dir=args.semantic_contrast_dir,
+        semantic_contrast_loss_weight=args.semantic_contrast_loss_weight,
+        semantic_contrast_margin=args.semantic_contrast_margin,
+        semantic_contrast_fraction=args.semantic_contrast_fraction,
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
         compiler_decode_mode=args.compiler_decode_mode,

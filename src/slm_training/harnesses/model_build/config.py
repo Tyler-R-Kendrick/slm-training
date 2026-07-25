@@ -106,6 +106,11 @@ class ModelBuildConfig:
     grammar_finalize_validate: bool = True
     ltr_loss_weight: float = 0.5
     fidelity_loss_weight: float = 0.5
+    # SLM-292: explicit immutable contrast corpus; disabled unless weight > 0.
+    semantic_contrast_dir: Path | None = None
+    semantic_contrast_loss_weight: float = 0.0
+    semantic_contrast_margin: float = 1.0
+    semantic_contrast_fraction: float = 0.0
     # None = preserve checkpoint on load; factory defaults new models to True.
     design_md_in_context: bool | None = None
     # Deterministic record-level train-time omission; evaluation is unaffected.

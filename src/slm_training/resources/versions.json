@@ -5158,13 +5158,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-07-25",
+          "note": "SLM-292 pair-preserving hard-valid semantic-contrast mixer with score-only negative sides and auditable recipe metadata"
+        },
         {
           "version": "v24",
           "date": "2026-07-23",
@@ -6501,8 +6506,26 @@
         }
       ]
     },
+    "harness.experiments.slm292_semantic_contrast_objective": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
+        "scripts/run_slm292_semantic_contrast_objective.py",
+        "tests/test_models/test_semantic_contrast_loss.py",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.json",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-292 bounded local semantic-contrast objective wiring control"
+        }
+      ]
+    },
     "model.twotower": {
-      "version": "v239",
+      "version": "v240",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6516,6 +6539,7 @@
         "src/slm_training/models/onnx_inference.py",
         "src/slm_training/models/checkpoint_migrate.py",
         "src/slm_training/models/template_fill.py",
+        "src/slm_training/models/semantic_contrast_loss.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
         "src/slm_training/dsl/openui_tokens.py",
@@ -6531,6 +6555,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v240",
+          "date": "2026-07-25",
+          "note": "SLM-292 default-off hard-valid pairwise sequence-margin objective and explicit train-loop plumbing"
+        },
         {
           "version": "v239",
           "date": "2026-07-25",
