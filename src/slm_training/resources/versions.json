@@ -358,6 +358,16 @@
         {
           "version": "v14",
           "date": "2026-07-25",
+          "note": "no-bump: stop re-exporting hierarchical_head from operators package init so ops_vocab/decode-invariant checks stay torch-free on python-static"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
+          "note": "no-bump: re-export the SLM-383 (DSH3-15) hierarchical_head module from the operators package alongside the DSH5-01 SelectorRef exports; no behavior change to any existing export"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
           "note": "no-bump: DSH5-05 re-exports OperatorTransactionCommitV1/commit_operator_transaction/compose_operator_transaction/merge_ast_value transaction-executor and shared ast_merge symbols from operators/__init__.py (new dsl.operators.transaction_executor component); no change to contracts.py itself"
         },
         {
@@ -712,6 +722,31 @@
         }
       ]
     },
+    "dsl.operators.hierarchical_head": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/hierarchical_head.py",
+        "tests/test_dsl/test_hierarchical_operator_head.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: consumers import hierarchical_head submodule directly; package init no longer eagerly loads torch"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-383 (DSH3-15) wiring-only, default-off two-stage compiler-masked operator action head reusing the SLM-168 DynamicPointerScorer seam; candidates drawn solely from OperatorLegalSetV1, typed features from ActionEffectV1 only. No causal-improvement claim: DSH3-14/SLM-382 (E803) rejected the decoder-visible-token hypothesis this head's own Decision text gates on, and cap2_disposition.py's HIERARCHICAL_HEAD verdict remains UNRUN_CONDITIONAL pending a follow-up multi-seed causal-attribution experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: drop an unused legal_set import in hierarchical_head.py (ruff F401); no behavior change. The follow-up causal-attribution experiment referenced above now exists in harness.experiments.hierarchical_operator_head_baseline and has flipped cap2_disposition.py's HIERARCHICAL_HEAD verdict from UNRUN_CONDITIONAL"
+        }
+      ]
+    },
     "dsl.operators.reserved_tokens": {
       "version": "v1",
       "kind": "harness",
@@ -924,7 +959,7 @@
       ]
     },
     "evals.cap2_disposition": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/cap2_disposition.py",
@@ -932,6 +967,11 @@
         "tests/test_evals/test_cap2_disposition.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "SLM-383 (DSH3-15) follow-up: build_cap2_disposition now requires a hierarchical_head_report and flips HIERARCHICAL_HEAD from unrun_conditional to rejected (evidence SLM-383.hierarchical_operator_head_baseline) since the head ties the token baseline instead of causally improving beyond it. CERT_CAP2/DSH4 disposition unchanged (still rejected/closed)."
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -1735,7 +1775,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
-        {"version": "v111", "date": "2026-07-25", "note": "SLM-268 fail-closed activation audit for verified-data scaling"},
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed activation audit for verified-data scaling"
+        },
         {
           "version": "v111",
           "date": "2026-07-25",
@@ -3768,6 +3812,27 @@
         }
       ]
     },
+    "harness.experiments.hierarchical_operator_head_baseline": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/hierarchical_operator_head_baseline.py",
+        "scripts/run_hierarchical_operator_head_baseline.py",
+        "tests/test_harnesses/experiments/test_hierarchical_operator_head_baseline.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: import HierarchicalOperator* from hierarchical_head submodule instead of package init (torch-free ops_vocab path)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-383 (DSH3-15) follow-up to E803: capacity-matched token-baseline vs. weight-zero (frozen no-op) vs. enabled hierarchical-operator-action-head causal experiment over a typed-candidate-group-size fixture corpus, with causal choice-change and compiler-membership evidence"
+        }
+      ]
+    },
     "harness.experiments.slm183_power_protocol": {
       "version": "v13",
       "kind": "harness",
@@ -4448,6 +4513,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: add the SLM-383 (DSH3-15) hierarchical-operator-head-baseline and updated DSH3-17 disposition lineage entries to research-lineage.md without changing the SLM-228 spectral disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -5690,8 +5760,16 @@
         "docs/design/iter-slm268-verified-data-scaling-activation-20260725.md"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-25", "note": "no-bump: regenerated the deterministic SLM-268 activation report after rebase"},
-        {"version": "v1", "date": "2026-07-25", "note": "SLM-268 fail-closed local verified-data scaling activation audit"}
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: regenerated the deterministic SLM-268 activation report after rebase"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed local verified-data scaling activation audit"
+        }
       ]
     },
     "harness.experiments.slm267_programspec_coverage_scaling": {
