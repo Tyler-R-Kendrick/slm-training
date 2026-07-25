@@ -44,6 +44,7 @@ _NON_LEVER_FIELDS = frozenset(
         "replay_train_dir",
         "mixture_manifest",
         "targeted_margin_manifest",
+        "semantic_contrast_corpus_path",
         "action_alias_manifest",
         "checkpoint_bucket",
         "full_state_checkpoint",

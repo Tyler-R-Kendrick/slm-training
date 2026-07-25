@@ -4500,7 +4500,7 @@
       ]
     },
     "harness.experiment_feature_flags": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/feature_flags.py",
@@ -4508,6 +4508,11 @@
         "src/slm_training/resources/experiment_feature_flag_history.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "SLM-292 (AP-010): classify the new semantic_contrast_corpus_path field as artifact plumbing (like targeted_margin_manifest), not a lever; the paired semantic_contrast_* behavior levers auto-register as flags with no code change needed"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -4738,6 +4743,24 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; real X22 tree-edit reachability analyzer, suite audit CLI, and reachability-unproven gate input"
+        }
+      ]
+    },
+    "harness.experiments.slm292_semantic_contrast_smoke": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm292_semantic_contrast_smoke.py",
+        "scripts/run_slm292_semantic_contrast_smoke.py",
+        "tests/test_harnesses/experiments/test_slm292_semantic_contrast_smoke.py",
+        "docs/design/iter-slm292-semantic-contrast-smoke-20260725.json",
+        "docs/design/iter-slm292-semantic-contrast-smoke-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-292 (AP-010) fixture-scale matched control/treatment smoke for the default-off semantic-contrast objective (new src/slm_training/models/semantic_contrast_loss.py); wiring evidence only, no promotion claim"
         }
       ]
     },
@@ -6502,12 +6525,13 @@
       ]
     },
     "model.twotower": {
-      "version": "v239",
+      "version": "v240",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
         "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
+        "src/slm_training/models/semantic_contrast_loss.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/tokenizer.py",
@@ -6528,9 +6552,17 @@
         "src/slm_training/models/twotower_numeric_gates.py",
         "tests/test_models/test_twotower_numeric_gates.py",
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.json",
-        "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
+        "docs/design/iter-slm242-twotower-numeric-gates-20260721.md",
+        "tests/test_models/test_semantic_contrast_loss.py",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.json",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
       ],
       "history": [
+        {
+          "version": "v240",
+          "date": "2026-07-25",
+          "note": "SLM-292 (AP-010): add a default-off hard-valid semantic-contrast batch mixer + pairwise-margin objective over SLM-290 openui_hard_valid_v1 pairs (new semantic_contrast_loss.py, semantic_contrast_loss_weight==0.0 default is bit-exact with the prior training_loss path -- see docs/design/iter-slm292-semantic-contrast-smoke-20260725.{json,md})"
+        },
         {
           "version": "v239",
           "date": "2026-07-25",

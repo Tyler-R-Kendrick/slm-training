@@ -311,6 +311,19 @@ class ModelBuildConfig:
     targeted_margin_manifest: Path | None = None
     targeted_margin_value: float = 1.0
     targeted_margin_family_weights: tuple[tuple[str, float], ...] = ()
+    # SLM-292 (AP-010): default-off hard-valid semantic-contrast batch mixer
+    # (see TwoTowerConfig / semantic_contrast_loss.py). weight == 0.0 default
+    # takes the exact legacy training_loss path.
+    semantic_contrast_loss_weight: float = 0.0
+    # str, not Path: see TwoTowerConfig.semantic_contrast_corpus_path.
+    semantic_contrast_corpus_path: str | None = None
+    semantic_contrast_objective: str = "margin"
+    semantic_contrast_margin: float = 0.2
+    semantic_contrast_temperature: float | None = None
+    semantic_contrast_batch_pairs: int = 8
+    semantic_contrast_sampling_seed: int = 0
+    semantic_contrast_split: str | None = "train"
+    semantic_contrast_family_weights: tuple[tuple[str, float], ...] = ()
     component_inventory_loss_weight: float = 0.0
     component_inventory_decode_weight: float | None = None
     component_plan_loss_weight: float = 0.0

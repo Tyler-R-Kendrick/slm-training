@@ -1,0 +1,674 @@
+{
+  "schema": "slm292_semantic_contrast_smoke/v1",
+  "claim_class": "fixture_wiring",
+  "disclosure": "Fixture-scale wiring evidence only (2 training records, d_model=32, 15 steps). This is NOT the AP-010 promotion claim: meaning-v2 +0.05 absolute (or binder/reference F1 +0.10) with paired CI excluding zero, replicated across >=3 seeds on the full held-out suites, is unmeasured here. Constrained/raw/repaired decode-outcome comparisons are not run in this smoke at all (a single constrained TwoTowerModel.generate call takes >60s even on this toy architecture and would blow the repo MAX_RUN_MINUTES hard run cap) -- explicit follow-up via scripts.evaluate_model.",
+  "control_arm": {
+    "arm_id": "control",
+    "semantic_contrast_loss_weight": 0.0,
+    "seed": 123,
+    "steps": 15,
+    "d_model": 32,
+    "n_heads": 4,
+    "context_layers": 1,
+    "denoiser_layers": 1
+  },
+  "treatment_arm": {
+    "arm_id": "treatment",
+    "semantic_contrast_loss_weight": 1.0,
+    "seed": 123,
+    "steps": 15,
+    "d_model": 32,
+    "n_heads": 4,
+    "context_layers": 1,
+    "denoiser_layers": 1
+  },
+  "steps": [
+    {
+      "arm_id": "control",
+      "step": 1,
+      "total_loss": 39.370208740234375,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 2,
+      "total_loss": 39.3469352722168,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 3,
+      "total_loss": 27.019121170043945,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 4,
+      "total_loss": 27.095672607421875,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 5,
+      "total_loss": 17.071521759033203,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 6,
+      "total_loss": 23.597610473632812,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 7,
+      "total_loss": 21.537456512451172,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 8,
+      "total_loss": 21.83405876159668,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 9,
+      "total_loss": 19.801660537719727,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 10,
+      "total_loss": 18.808002471923828,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 11,
+      "total_loss": 18.47437286376953,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 12,
+      "total_loss": 17.184226989746094,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 13,
+      "total_loss": 12.492647171020508,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 14,
+      "total_loss": 13.528162002563477,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "control",
+      "step": 15,
+      "total_loss": 12.038130760192871,
+      "semantic_contrast_loss": null,
+      "semantic_contrast_loss_weight": null,
+      "semantic_contrast_objective": null,
+      "semantic_contrast_margin": null,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": null,
+      "semantic_contrast_sampling_seed": null,
+      "semantic_contrast_family_counts": null,
+      "semantic_contrast_transform_counts": null,
+      "semantic_contrast_positive_distance_mean": null,
+      "semantic_contrast_negative_distance_mean": null
+    },
+    {
+      "arm_id": "treatment",
+      "step": 1,
+      "total_loss": 38.84579086303711,
+      "semantic_contrast_loss": 0.19966433942317963,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "contract": 2,
+        "content": 3,
+        "binding": 1
+      },
+      "semantic_contrast_transform_counts": {
+        "contract_archetype_mismatch": 2,
+        "content_invert_role": 2,
+        "content_swap_family": 1,
+        "binding_swap_symbol_reverse": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.004040618737538655,
+      "semantic_contrast_negative_distance_mean": 0.0043762922286987305
+    },
+    {
+      "arm_id": "treatment",
+      "step": 2,
+      "total_loss": 38.54044723510742,
+      "semantic_contrast_loss": 0.1983489990234375,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "binding": 2,
+        "content": 4
+      },
+      "semantic_contrast_transform_counts": {
+        "binding_swap_symbol_reverse": 1,
+        "binding_swap_symbol": 1,
+        "content_swap_family": 1,
+        "content_invert_role": 3
+      },
+      "semantic_contrast_positive_distance_mean": 0.006883561611175537,
+      "semantic_contrast_negative_distance_mean": 0.008534570535024008
+    },
+    {
+      "arm_id": "treatment",
+      "step": 3,
+      "total_loss": 25.028573989868164,
+      "semantic_contrast_loss": 0.1996324211359024,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "binding": 3,
+        "content": 3
+      },
+      "semantic_contrast_transform_counts": {
+        "binding_swap_symbol": 1,
+        "content_swap_family": 3,
+        "binding_swap_symbol_reverse": 2
+      },
+      "semantic_contrast_positive_distance_mean": 0.0035080015659332275,
+      "semantic_contrast_negative_distance_mean": 0.0038755834102630615
+    },
+    {
+      "arm_id": "treatment",
+      "step": 4,
+      "total_loss": 34.89051055908203,
+      "semantic_contrast_loss": 0.19970721006393433,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "content": 3,
+        "contract": 1,
+        "binding": 2
+      },
+      "semantic_contrast_transform_counts": {
+        "content_swap_family": 3,
+        "contract_archetype_mismatch": 1,
+        "binding_swap_symbol_reverse": 2
+      },
+      "semantic_contrast_positive_distance_mean": 0.0030247767766316733,
+      "semantic_contrast_negative_distance_mean": 0.003317574659983317
+    },
+    {
+      "arm_id": "treatment",
+      "step": 5,
+      "total_loss": 22.977331161499023,
+      "semantic_contrast_loss": 0.19960780441761017,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "contract": 2,
+        "binding": 2,
+        "content": 2
+      },
+      "semantic_contrast_transform_counts": {
+        "contract_archetype_mismatch": 2,
+        "binding_swap_symbol_reverse": 1,
+        "content_swap_family": 1,
+        "binding_swap_symbol": 1,
+        "content_invert_role": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.0027457475662231445,
+      "semantic_contrast_negative_distance_mean": 0.003137946128845215
+    },
+    {
+      "arm_id": "treatment",
+      "step": 6,
+      "total_loss": 20.832353591918945,
+      "semantic_contrast_loss": 0.19716478884220123,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "binding": 1,
+        "content": 5
+      },
+      "semantic_contrast_transform_counts": {
+        "binding_swap_symbol": 1,
+        "content_swap_family": 4,
+        "content_invert_role": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.006651014089584351,
+      "semantic_contrast_negative_distance_mean": 0.009486228227615356
+    },
+    {
+      "arm_id": "treatment",
+      "step": 7,
+      "total_loss": 23.91090965270996,
+      "semantic_contrast_loss": 0.19814176857471466,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "contract": 2,
+        "content": 2,
+        "binding": 2
+      },
+      "semantic_contrast_transform_counts": {
+        "contract_archetype_mismatch": 2,
+        "content_invert_role": 1,
+        "binding_swap_symbol_reverse": 2,
+        "content_swap_family": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.004604617754618327,
+      "semantic_contrast_negative_distance_mean": 0.006462842226028442
+    },
+    {
+      "arm_id": "treatment",
+      "step": 8,
+      "total_loss": 22.210939407348633,
+      "semantic_contrast_loss": 0.19953756034374237,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "content": 3,
+        "binding": 2,
+        "contract": 1
+      },
+      "semantic_contrast_transform_counts": {
+        "content_swap_family": 2,
+        "binding_swap_symbol": 2,
+        "content_invert_role": 1,
+        "contract_archetype_mismatch": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.0020627379417419434,
+      "semantic_contrast_negative_distance_mean": 0.002525190512339274
+    },
+    {
+      "arm_id": "treatment",
+      "step": 9,
+      "total_loss": 17.122982025146484,
+      "semantic_contrast_loss": 0.19835694134235382,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "content": 3,
+        "binding": 1,
+        "contract": 2
+      },
+      "semantic_contrast_transform_counts": {
+        "content_invert_role": 2,
+        "content_swap_family": 1,
+        "binding_swap_symbol_reverse": 1,
+        "contract_archetype_mismatch": 2
+      },
+      "semantic_contrast_positive_distance_mean": 0.004497239987055461,
+      "semantic_contrast_negative_distance_mean": 0.006140301624933879
+    },
+    {
+      "arm_id": "treatment",
+      "step": 10,
+      "total_loss": 18.582340240478516,
+      "semantic_contrast_loss": 0.19955730438232422,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "binding": 4,
+        "contract": 2
+      },
+      "semantic_contrast_transform_counts": {
+        "binding_swap_symbol": 3,
+        "binding_swap_symbol_reverse": 1,
+        "contract_archetype_mismatch": 2
+      },
+      "semantic_contrast_positive_distance_mean": 0.0017774303754170735,
+      "semantic_contrast_negative_distance_mean": 0.0022201339403788247
+    },
+    {
+      "arm_id": "treatment",
+      "step": 11,
+      "total_loss": 20.928030014038086,
+      "semantic_contrast_loss": 0.19963397085666656,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "content": 2,
+        "contract": 1,
+        "binding": 3
+      },
+      "semantic_contrast_transform_counts": {
+        "content_swap_family": 2,
+        "contract_archetype_mismatch": 1,
+        "binding_swap_symbol": 2,
+        "binding_swap_symbol_reverse": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.0016627311706542969,
+      "semantic_contrast_negative_distance_mean": 0.0020287632942199707
+    },
+    {
+      "arm_id": "treatment",
+      "step": 12,
+      "total_loss": 12.486422538757324,
+      "semantic_contrast_loss": 0.19957439601421356,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "binding": 2,
+        "content": 2,
+        "contract": 2
+      },
+      "semantic_contrast_transform_counts": {
+        "binding_swap_symbol": 1,
+        "content_swap_family": 1,
+        "binding_swap_symbol_reverse": 1,
+        "contract_archetype_mismatch": 2,
+        "content_invert_role": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.0015832781791687012,
+      "semantic_contrast_negative_distance_mean": 0.0020088950792948404
+    },
+    {
+      "arm_id": "treatment",
+      "step": 13,
+      "total_loss": 16.17510414123535,
+      "semantic_contrast_loss": 0.199305459856987,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "content": 3,
+        "binding": 3
+      },
+      "semantic_contrast_transform_counts": {
+        "content_swap_family": 2,
+        "binding_swap_symbol_reverse": 2,
+        "content_invert_role": 1,
+        "binding_swap_symbol": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.002219537893931071,
+      "semantic_contrast_negative_distance_mean": 0.002914090951283773
+    },
+    {
+      "arm_id": "treatment",
+      "step": 14,
+      "total_loss": 10.449190139770508,
+      "semantic_contrast_loss": 0.1996193528175354,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "binding": 2,
+        "content": 3,
+        "contract": 1
+      },
+      "semantic_contrast_transform_counts": {
+        "binding_swap_symbol_reverse": 1,
+        "binding_swap_symbol": 1,
+        "content_swap_family": 2,
+        "content_invert_role": 1,
+        "contract_archetype_mismatch": 1
+      },
+      "semantic_contrast_positive_distance_mean": 0.0015610655148824055,
+      "semantic_contrast_negative_distance_mean": 0.0019417107105255127
+    },
+    {
+      "arm_id": "treatment",
+      "step": 15,
+      "total_loss": 13.572135925292969,
+      "semantic_contrast_loss": 0.19837482273578644,
+      "semantic_contrast_loss_weight": 1.0,
+      "semantic_contrast_objective": "margin",
+      "semantic_contrast_margin": 0.2,
+      "semantic_contrast_temperature": null,
+      "semantic_contrast_pairs": 6,
+      "semantic_contrast_sampling_seed": 0,
+      "semantic_contrast_family_counts": {
+        "content": 2,
+        "binding": 1,
+        "contract": 3
+      },
+      "semantic_contrast_transform_counts": {
+        "content_swap_family": 1,
+        "content_invert_role": 1,
+        "binding_swap_symbol_reverse": 1,
+        "contract_archetype_mismatch": 3
+      },
+      "semantic_contrast_positive_distance_mean": 0.002965142329533895,
+      "semantic_contrast_negative_distance_mean": 0.004590312639872233
+    }
+  ],
+  "mutation_effects": [
+    {
+      "family": "binding",
+      "n_samples": 31,
+      "mean_positive_distance": 0.0029795522330909644,
+      "mean_negative_distance": 0.0037350465533553916,
+      "mean_margin": 0.0007554943202644272
+    },
+    {
+      "family": "content",
+      "n_samples": 40,
+      "mean_positive_distance": 0.0037663571536540987,
+      "mean_negative_distance": 0.0048324793577194216,
+      "mean_margin": 0.0010661222040653229
+    },
+    {
+      "family": "contract",
+      "n_samples": 19,
+      "mean_positive_distance": 0.0029318212417134065,
+      "mean_negative_distance": 0.0038040526080549805,
+      "mean_margin": 0.000872231366341574
+    }
+  ],
+  "control_final_loss": 12.038130760192871,
+  "treatment_final_loss": 13.572135925292969,
+  "generated_at": "2026-07-25T06:00:05.804963Z",
+  "command": "python -m scripts.run_slm292_semantic_contrast_smoke",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b8fabf4c21f27c2d019570a3bc153b9dd1467b4c",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm292_semantic_contrast_smoke": "v1",
+      "model.twotower": "v240",
+      "data.semantic_contrast": "v2"
+    },
+    "stamped_at": "2026-07-25T06:00:05.846537+00:00"
+  }
+}

@@ -12,11 +12,14 @@ from collections import Counter, defaultdict
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+if TYPE_CHECKING:
+    from slm_training.models.semantic_contrast_loss import SemanticContrastStepResult
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.dsl.language_contract import (
@@ -122,6 +125,19 @@ _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
 _QUOTED_SPAN_RE = re.compile(r'("(?:\\.|[^"\\])*")')
 _REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
 _DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
+
+#: SLM-292 (AP-010): packaged SLM-290 hard-valid semantic-contrast corpus,
+#: used when ``semantic_contrast_corpus_path`` is left unset (the objective
+#: is still gated off by default via ``semantic_contrast_loss_weight == 0.0``
+#: -- this constant is never read on that path).
+_DEFAULT_SEMANTIC_CONTRAST_CORPUS = (
+    Path(__file__).resolve().parent.parent
+    / "resources"
+    / "data"
+    / "eval"
+    / "openui_hard_valid_v1"
+    / "pairs.jsonl"
+)
 
 #: SLM-241 (RSC-A05): the canonical ``denoiser_arch`` string for each named
 #: control arm this issue builds (A/B/C/D/E/F/G/H; see
@@ -333,6 +349,25 @@ class TwoTowerConfig:
     targeted_margin_manifest: Path | None = None
     targeted_margin_value: float = 1.0
     targeted_margin_family_weights: tuple[tuple[str, float], ...] = ()
+    # SLM-292 (AP-010): default-off hard-valid semantic-contrast batch mixer.
+    # Pairs each admitted SLM-290 openui_hard_valid_v1 positive program with
+    # its hard-valid negative (parser/schema/reference-valid, semantically
+    # wrong) and applies one preregistered pairwise-margin loss over pooled
+    # context-encoder representations (see semantic_contrast_loss.py).
+    # weight == 0.0 (the default) takes the exact legacy training_loss path:
+    # no corpus load, no extra encoder forward, no extra RNG draw.
+    semantic_contrast_loss_weight: float = 0.0
+    # str, not Path: checkpoint config is round-tripped through
+    # torch.load(..., weights_only=True), which does not allowlist
+    # pathlib.Path by default.
+    semantic_contrast_corpus_path: str | None = None
+    semantic_contrast_objective: str = "margin"
+    semantic_contrast_margin: float = 0.2
+    semantic_contrast_temperature: float | None = None
+    semantic_contrast_batch_pairs: int = 8
+    semantic_contrast_sampling_seed: int = 0
+    semantic_contrast_split: str | None = "train"
+    semantic_contrast_family_weights: tuple[tuple[str, float], ...] = ()
     # Prompt-level multi-label component inventory derived from gold token kinds.
     component_inventory_loss_weight: float = 0.0
     # Bias only compiler-legal component candidates with the learned inventory.
@@ -1666,6 +1701,12 @@ class TwoTowerModel(nn.Module):
         ] | None = None
         self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
+        # SLM-292 (AP-010): lazily loaded, cached hard-valid contrast corpus
+        # (keyed by resolved path) plus a monotonically increasing step
+        # counter so seeded sampling varies deterministically across steps
+        # without ever being read when the objective is off.
+        self._semantic_contrast_pairs_cache: dict[str, list[Any]] = {}
+        self._semantic_contrast_step: int = 0
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
         self._current_runtime_table: object | None = None
@@ -4066,7 +4107,76 @@ class TwoTowerModel(nn.Module):
                 )
                 mask_loss = mask_loss + aux_w * aux
 
+        sc_w = float(getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0)
+        if sc_w > 0.0:
+            sc_result = self._semantic_contrast_loss_term()
+            if sc_result is not None:
+                mask_loss = mask_loss + sc_w * sc_result.loss
+                self.last_training_metrics.update(sc_result.metrics_dict())
+
         return mask_loss
+
+    def _semantic_contrast_loss_term(
+        self,
+    ) -> SemanticContrastStepResult | None:
+        """SLM-292 (AP-010): one step of the hard-valid semantic-contrast objective.
+
+        Only ever called when ``semantic_contrast_loss_weight > 0.0`` (see
+        ``training_loss``). Loads and caches the SLM-290 ``openui_hard_valid_v1``
+        corpus (or an explicit override path), samples a small mini-batch of
+        admitted hard-valid contrast pairs, encodes prompt/positive/negative
+        program text through the existing context encoder (one extra forward
+        pass on ``3 * semantic_contrast_batch_pairs`` short strings), and scores
+        the configured pairwise objective. Returns ``None`` (never raises) when
+        no admitted pairs are available for the configured corpus/filters so a
+        misconfigured path degrades to "objective contributes nothing" instead
+        of crashing an otherwise-valid training step.
+        """
+        from slm_training.models.semantic_contrast_loss import (
+            compute_semantic_contrast_step,
+            load_contrast_pairs,
+        )
+
+        corpus_path = getattr(self.config, "semantic_contrast_corpus_path", None)
+        if corpus_path is None:
+            corpus_path = _DEFAULT_SEMANTIC_CONTRAST_CORPUS
+        corpus_path = str(corpus_path)
+        split = getattr(self.config, "semantic_contrast_split", "train")
+        cache_key = f"{corpus_path}::{split}"
+        pairs = self._semantic_contrast_pairs_cache.get(cache_key)
+        if pairs is None:
+            try:
+                pairs = load_contrast_pairs(corpus_path, split=split)
+            except OSError:
+                pairs = []
+            self._semantic_contrast_pairs_cache[cache_key] = pairs
+        if not pairs:
+            return None
+
+        def rep_fn(texts: list[str]) -> torch.Tensor:
+            ctx, ctx_pad = self._encode_context(texts)
+            return self._pool_context(ctx, ctx_pad)
+
+        self._semantic_contrast_step += 1
+        batch_pairs = int(getattr(self.config, "semantic_contrast_batch_pairs", 8) or 8)
+        batch_pairs = max(1, min(batch_pairs, len(pairs)))
+        weight = float(getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0)
+        return compute_semantic_contrast_step(
+            pairs,
+            rep_fn,
+            objective=str(getattr(self.config, "semantic_contrast_objective", "margin")),
+            margin=float(getattr(self.config, "semantic_contrast_margin", 0.2) or 0.0),
+            temperature=getattr(self.config, "semantic_contrast_temperature", None),
+            weight=weight,
+            batch_pairs=batch_pairs,
+            seed=int(getattr(self.config, "semantic_contrast_sampling_seed", 0) or 0),
+            step=self._semantic_contrast_step,
+            family_weights=tuple(
+                getattr(self.config, "semantic_contrast_family_weights", ()) or ()
+            ),
+            corpus_path=corpus_path,
+            split=split,
+        )
 
     def _training_design_md(self, design_md: str | None, key: str) -> str | None:
         """Deterministically omit DESIGN.md for a configured share of records."""
@@ -13424,6 +13534,12 @@ class TwoTowerModel(nn.Module):
                     "serialized_weight_bytes": parameter_count * 4,
                 },
                 indent=2,
+                # The pre-existing targeted_margin_manifest field is
+                # Path | None; default=str keeps any Path-typed config field
+                # meta.json-serializable without special-casing each one (the
+                # pickled .pt payload already round-trips Path values
+                # natively -- this only affects the informational meta.json).
+                default=str,
             )
             + "\n",
             encoding="utf-8",

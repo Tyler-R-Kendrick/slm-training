@@ -1,0 +1,125 @@
+{
+  "schema": "slm292_semantic_contrast_objective/v1",
+  "issue": "SLM-292",
+  "ap": "AP-010",
+  "decision": "wiring_complete_not_promoted",
+  "claim_class": "fixture_wiring",
+  "summary": "Default-off hard-valid semantic-contrast batch mixer + pairwise-margin objective implemented and wired into TwoTowerModel.training_loss; consumes the SLM-290 openui_hard_valid_v1 corpus. Bit-exact-when-disabled and enabled-smoke behavior verified by unit tests. A matched control/treatment fixture-scale run demonstrates the objective computes and logs the required fields end-to-end. No promotion-grade evidence was collected in this session.",
+  "objective": {
+    "name": "pairwise_margin_contrast",
+    "kind": "margin",
+    "considered_but_not_implemented": ["infonce", "semantic_regret"],
+    "selection_rationale": "issue instructions named pairwise-margin/InfoNCE as the lower-risk, more standard choices given the session's time budget; margin was picked as the single preregistered objective to keep scope, testing, and bit-exactness verification tight",
+    "representation": "pooled context-encoder output (TwoTowerModel._pool_context over TwoTowerModel._encode_context) of the shared prompt (anchor), the gold OpenUI program text (positive), and the hard-valid mutated OpenUI program text (negative)",
+    "formula": "loss = mean(relu(margin + dist(anchor, positive) - dist(anchor, negative))), dist = 1 - cosine_similarity"
+  },
+  "corpus": {
+    "source_issue": "SLM-290",
+    "dataset_id": "openui_hard_valid_v1",
+    "path": "src/slm_training/resources/data/eval/openui_hard_valid_v1/pairs.jsonl",
+    "usable_admitted_pairs": 996,
+    "families": ["content", "binding", "contract"],
+    "mutation_classes": [
+      "content_swap_family",
+      "content_invert_role",
+      "binding_swap_symbol",
+      "binding_swap_symbol_reverse",
+      "contract_archetype_mismatch"
+    ],
+    "split_used": "train",
+    "note": "positive-family (positive_control_identity) rows are excluded by the pair-level admitted filter; they are same-program controls where the 'negative' side also passed meaningful, not a usable hard-valid contrast"
+  },
+  "implementation": {
+    "new_files": [
+      "src/slm_training/models/semantic_contrast_loss.py",
+      "src/slm_training/harnesses/experiments/slm292_semantic_contrast_smoke.py",
+      "scripts/run_slm292_semantic_contrast_smoke.py",
+      "tests/test_models/test_semantic_contrast_loss.py",
+      "tests/test_harnesses/experiments/test_slm292_semantic_contrast_smoke.py"
+    ],
+    "modified_files": [
+      "src/slm_training/models/twotower.py",
+      "src/slm_training/harnesses/model_build/config.py",
+      "src/slm_training/harnesses/model_build/factory.py",
+      "src/slm_training/harnesses/model_build/feature_flags.py",
+      "tests/test_harnesses/model_build/test_twotower.py",
+      "src/slm_training/resources/versions.json"
+    ],
+    "config_levers": [
+      "semantic_contrast_loss_weight (default 0.0 -- default-off gate)",
+      "semantic_contrast_corpus_path (default: packaged openui_hard_valid_v1/pairs.jsonl)",
+      "semantic_contrast_objective (default 'margin'; only supported value)",
+      "semantic_contrast_margin (default 0.2)",
+      "semantic_contrast_temperature (unused by margin; reserved)",
+      "semantic_contrast_batch_pairs (default 8)",
+      "semantic_contrast_sampling_seed (default 0)",
+      "semantic_contrast_split (default 'train')",
+      "semantic_contrast_family_weights (default empty == uniform)"
+    ],
+    "wiring_point": "TwoTowerModel.training_loss, immediately before the final `return mask_loss`, gated by `if semantic_contrast_loss_weight > 0.0`; a new private helper `_semantic_contrast_loss_term` lazily loads and caches the corpus on the model instance and calls `compute_semantic_contrast_step`",
+    "logged_fields": [
+      "semantic_contrast_loss",
+      "semantic_contrast_loss_weight",
+      "semantic_contrast_objective",
+      "semantic_contrast_margin",
+      "semantic_contrast_temperature",
+      "semantic_contrast_pairs",
+      "semantic_contrast_sampling_seed",
+      "semantic_contrast_family_counts",
+      "semantic_contrast_transform_counts",
+      "semantic_contrast_positive_distance_mean",
+      "semantic_contrast_negative_distance_mean",
+      "semantic_contrast_corpus_path",
+      "semantic_contrast_split"
+    ],
+    "logged_via": "TwoTowerModel.last_training_metrics (JSONL step rows in train_loop.py) plus the full per-pair record available from SemanticContrastStepResult.to_dict()"
+  },
+  "bit_exactness_evidence": {
+    "claim": "semantic_contrast_loss_weight == 0.0 (the dataclass default) is bit-exact and RNG-identical with the prior training_loss code path",
+    "tests": [
+      "tests/test_harnesses/model_build/test_twotower.py::test_semantic_contrast_disabled_by_default_is_bit_exact",
+      "tests/test_harnesses/model_build/test_twotower.py::test_semantic_contrast_disabled_does_not_change_optimizer_updates"
+    ],
+    "method": "identical seed construction, state_dict equality check post-construction, RNG-state-controlled backward() loss-tensor equality check (mirrors the repo's existing binder_arity_loss_weight-style optional-loss pattern), and a direct assertion that the corpus cache/step-counter are never touched when disabled"
+  },
+  "enabled_evidence": {
+    "claim": "fixture/smoke-scale only -- NOT the AP-010 promotion claim",
+    "unit_tests": [
+      "tests/test_models/test_semantic_contrast_loss.py (16 tests; pure loss/sampling/loader logic, no TwoTowerModel construction)",
+      "tests/test_harnesses/model_build/test_twotower.py::test_semantic_contrast_enabled_smoke_logs_required_fields",
+      "tests/test_harnesses/model_build/test_twotower.py::test_semantic_contrast_missing_corpus_degrades_to_noop",
+      "tests/test_harnesses/model_build/test_twotower.py::test_semantic_contrast_config_roundtrips_through_save_load",
+      "tests/test_harnesses/model_build/test_twotower.py::test_semantic_contrast_runs_against_real_slm290_corpus"
+    ],
+    "harness_smoke": "docs/design/iter-slm292-semantic-contrast-smoke-20260725.{json,md} (python -m scripts.run_slm292_semantic_contrast_smoke): matched control (weight=0.0) vs treatment (weight=1.0) TwoTowerModel arms, identical seed/architecture/records/steps; 15 steps each, d_model=32, 2 training records; treatment arm's per-step loss/margin/mutation-sampling/distance fields all logged and finite; per-mutation-family (content/binding/contract) aggregate distances reported",
+    "run_time": "~5s total (well under the repo's 3-minute MAX_RUN_MINUTES hard run cap)"
+  },
+  "acceptance_bar_status": {
+    "meaning_v2_plus_0_05_absolute_or_binder_reference_f1_plus_0_10": "NOT MEASURED (would require full training corpus + frozen held-out suite eval with evaluate_model --ship-gates)",
+    "paired_ci_excluding_zero": "NOT MEASURED",
+    "syntax_contract_validity_regression_le_0_01": "NOT MEASURED",
+    "replicate_on_ge_3_seeds": "NOT MEASURED (this session ran 1 seed at fixture scale only)",
+    "objective_zero_and_legacy_bit_exact_when_disabled": "MET -- see bit_exactness_evidence"
+  },
+  "scope_deliberately_excluded": [
+    "Full >=3-seed promotion campaign on the real training corpus + frozen held-out suites",
+    "Raw/constrained/repaired decode-outcome comparisons (a single constrained TwoTowerModel.generate call takes >60s on even a toy architecture and would blow MAX_RUN_MINUTES for a fixture smoke; deferred to scripts.evaluate_model at proper scale)",
+    "InfoNCE and semantic-regret objective variants (only pairwise-margin implemented, per the issue's 'pick ONE' instruction)"
+  ],
+  "recommended_follow_up": [
+    "New Linear issue (or SLM-292 continuation) to run the preregistered >=3-seed promotion campaign: real SFT training corpus for the token-CE loss, SLM-290 openui_hard_valid_v1 (train split) for the contrast objective, frozen held-out/adversarial/rico_held suites for meaning-v2 and binder/reference F1, evaluate_model --ship-gates for the syntax/contract validity regression check, paired bootstrap CI across seeds excluding zero before any promotion claim.",
+    "If promoted, extend the SLM-290 corpus's topology/binding_introduce_incompatible_symbol/contract_unresolve mutation families (currently small/absent in the admitted pairs) so the contrast objective is not only trained on content/binding/contract archetype mismatches."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b8fabf4c21f27c2d019570a3bc153b9dd1467b4c",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v240",
+      "data.semantic_contrast": "v2",
+      "harness.experiments.slm292_semantic_contrast_smoke": "v1",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-07-25T06:05:00+00:00"
+  }
+}

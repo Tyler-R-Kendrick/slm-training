@@ -1025,3 +1025,255 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
     # Honest production-shaped eval: tiny twotower may not parse at 120 steps.
     assert metrics["raw_syntax_validity"] >= 0.0
     assert "contract_precision" in metrics
+
+
+# ---------------------------------------------------------------------------
+# SLM-292 (AP-010): default-off hard-valid semantic-contrast objective
+# ---------------------------------------------------------------------------
+
+
+def _write_semantic_contrast_fixture(path: Path) -> Path:
+    """Tiny fixture built to the openui_hard_valid_v1 pair schema (see
+    docs/design/semantic-contrast-corpus-v1.md) -- fast, self-contained,
+    avoids parsing the full 40MB committed corpus in a unit test."""
+
+    def pair(pair_id: str, family: str, transform_id: str) -> dict:
+        return {
+            "pair_id": pair_id,
+            "source_program_id": f"src_{pair_id}",
+            "family": family,
+            "transform_id": transform_id,
+            "admitted": True,
+            "admission_reason": "gate_pass",
+            "positive": {
+                "severity": "moderate",
+                "record": {
+                    "id": f"{pair_id}_pos",
+                    "prompt": "Hero",
+                    "openui": HERO,
+                    "placeholders": [":hero.title", ":hero.body"],
+                    "split": "train",
+                    "source": "fixture",
+                    "meta": {},
+                },
+            },
+            "negative": {
+                "severity": "moderate",
+                "record": {
+                    "id": f"{pair_id}_neg",
+                    "prompt": "Hero",
+                    "openui": CTA,
+                    "placeholders": [":cta.label"],
+                    "split": "train",
+                    "source": "fixture",
+                    "meta": {},
+                },
+            },
+        }
+
+    rows = [
+        pair("p0", "content", "content_swap_family"),
+        pair("p1", "binding", "binding_swap_symbol"),
+        pair("p2", "contract", "contract_archetype_mismatch"),
+        pair("p3", "content", "content_invert_role"),
+    ]
+    with path.open("w", encoding="utf-8") as fh:
+        for row in rows:
+            fh.write(json.dumps(row) + "\n")
+    return path
+
+
+def test_semantic_contrast_disabled_by_default_is_bit_exact() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    off = model(semantic_contrast_loss_weight=0.0)
+
+    bsd = baseline.state_dict()
+    osd = off.state_dict()
+    assert set(bsd) == set(osd)
+    for key in bsd:
+        assert torch.equal(bsd[key], osd[key]), key
+
+    rng_state = baseline._rng.getstate()
+    torch.manual_seed(456)
+    l1 = baseline.training_loss(records)
+    baseline._rng.setstate(rng_state)
+    off._rng.setstate(rng_state)
+    torch.manual_seed(456)
+    l2 = off.training_loss(records)
+    assert torch.equal(l1, l2)
+    # Disabled path must never touch the corpus loader or step counter.
+    assert off._semantic_contrast_pairs_cache == {}
+    assert off._semantic_contrast_step == 0
+    assert "semantic_contrast_loss" not in off.last_training_metrics
+
+
+def test_semantic_contrast_disabled_does_not_change_optimizer_updates() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    off = model(semantic_contrast_loss_weight=0.0)
+    baseline_optimizer = torch.optim.AdamW(baseline.optimizer_parameter_groups())
+    off_optimizer = torch.optim.AdamW(off.optimizer_parameter_groups())
+    for candidate in (baseline, off):
+        for _, parameter in candidate.named_parameters():
+            if parameter.requires_grad:
+                parameter.grad = torch.full_like(parameter, 1.0)
+    _clip_optimizer_parameter_groups(baseline_optimizer, 1.0)
+    _clip_optimizer_parameter_groups(off_optimizer, 1.0)
+    baseline_optimizer.step()
+    off_optimizer.step()
+    off_state = dict(off.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        assert torch.equal(parameter, off_state[name]), name
+
+
+def test_semantic_contrast_enabled_smoke_logs_required_fields(tmp_path: Path) -> None:
+    corpus = _write_semantic_contrast_fixture(tmp_path / "pairs.jsonl")
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(7)
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            semantic_contrast_loss_weight=0.7,
+            semantic_contrast_corpus_path=str(corpus),
+            semantic_contrast_margin=0.3,
+            semantic_contrast_batch_pairs=3,
+            semantic_contrast_sampling_seed=42,
+        ),
+    )
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    loss.backward()
+
+    metrics = model.last_training_metrics
+    assert metrics["semantic_contrast_loss_weight"] == 0.7
+    assert metrics["semantic_contrast_objective"] == "margin"
+    assert metrics["semantic_contrast_margin"] == 0.3
+    assert metrics["semantic_contrast_pairs"] == 3
+    assert metrics["semantic_contrast_sampling_seed"] == 42
+    assert metrics["semantic_contrast_family_counts"]
+    assert metrics["semantic_contrast_transform_counts"]
+    assert metrics["semantic_contrast_positive_distance_mean"] is not None
+    assert metrics["semantic_contrast_negative_distance_mean"] is not None
+    assert metrics["semantic_contrast_corpus_path"] == str(corpus)
+    # Corpus loaded and cached exactly once for this (path, split) key.
+    assert len(model._semantic_contrast_pairs_cache) == 1
+    assert model._semantic_contrast_step == 1
+
+    # A second step advances the seeded step counter (varied sampling) and
+    # reuses the cached corpus (no second load).
+    model.training_loss(records)
+    assert model._semantic_contrast_step == 2
+    assert len(model._semantic_contrast_pairs_cache) == 1
+
+
+def test_semantic_contrast_missing_corpus_degrades_to_noop(tmp_path: Path) -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(7)
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            semantic_contrast_loss_weight=1.0,
+            semantic_contrast_corpus_path=str(tmp_path / "does_not_exist.jsonl"),
+        ),
+    )
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    assert "semantic_contrast_loss" not in model.last_training_metrics
+
+
+def test_semantic_contrast_config_roundtrips_through_save_load(tmp_path: Path) -> None:
+    corpus = _write_semantic_contrast_fixture(tmp_path / "pairs.jsonl")
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            semantic_contrast_loss_weight=0.5,
+            semantic_contrast_corpus_path=str(corpus),
+            semantic_contrast_margin=0.4,
+            semantic_contrast_batch_pairs=2,
+        ),
+    )
+    path = tmp_path / "semantic_contrast.pt"
+    model.save(path)
+    loaded = TwoTowerModel.from_checkpoint(path, device="cpu")
+    assert loaded.config.semantic_contrast_loss_weight == 0.5
+    assert Path(loaded.config.semantic_contrast_corpus_path) == corpus
+    assert loaded.config.semantic_contrast_margin == 0.4
+    assert loaded.config.semantic_contrast_batch_pairs == 2
+
+
+@pytest.mark.skipif(
+    not Path(
+        "src/slm_training/resources/data/eval/openui_hard_valid_v1/pairs.jsonl"
+    ).exists(),
+    reason="SLM-290 corpus not present",
+)
+def test_semantic_contrast_runs_against_real_slm290_corpus() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(7)
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            semantic_contrast_loss_weight=1.0,
+            semantic_contrast_batch_pairs=6,
+        ),
+    )
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["semantic_contrast_pairs"] == 6
+    assert set(metrics["semantic_contrast_family_counts"]) <= {
+        "content",
+        "binding",
+        "contract",
+    }

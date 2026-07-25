@@ -502,6 +502,33 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         targeted_margin_family_weights=tuple(
             getattr(config, "targeted_margin_family_weights", ()) or ()
         ),
+        semantic_contrast_loss_weight=float(
+            getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0
+        ),
+        semantic_contrast_corpus_path=(
+            str(getattr(config, "semantic_contrast_corpus_path", None))
+            if getattr(config, "semantic_contrast_corpus_path", None) is not None
+            else None
+        ),
+        semantic_contrast_objective=str(
+            getattr(config, "semantic_contrast_objective", "margin") or "margin"
+        ),
+        semantic_contrast_margin=float(
+            getattr(config, "semantic_contrast_margin", 0.2) or 0.0
+        ),
+        semantic_contrast_temperature=getattr(
+            config, "semantic_contrast_temperature", None
+        ),
+        semantic_contrast_batch_pairs=int(
+            getattr(config, "semantic_contrast_batch_pairs", 8) or 8
+        ),
+        semantic_contrast_sampling_seed=int(
+            getattr(config, "semantic_contrast_sampling_seed", 0) or 0
+        ),
+        semantic_contrast_split=getattr(config, "semantic_contrast_split", "train"),
+        semantic_contrast_family_weights=tuple(
+            getattr(config, "semantic_contrast_family_weights", ()) or ()
+        ),
         component_inventory_loss_weight=float(
             getattr(config, "component_inventory_loss_weight", 0.0) or 0.0
         ),
