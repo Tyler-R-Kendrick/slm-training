@@ -159,6 +159,7 @@ def load_locked_protocol(
                 "target_token_budget": LOCAL_TRAIN_TARGET_TOKENS,
                 "batch_size": 4,
             },
+            "power": {"effect_scale": "absolute_probability"},
             "prompt_source": "slm230_symbol_only.record.prompt",
             "target_source": "slm230_symbol_only.record.openui",
             "decode": {"raw": False, "constrained": True, "repaired": True},
@@ -500,6 +501,7 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
         n_seeds=len(SEEDS),
         n_simulations=100,
         effect_sizes=[0.02, 0.05, 0.08, 0.12, 0.2],
+        effect_scale=str(protocol.recipe.get("power", {}).get("effect_scale", "log_odds")),
         seed=0,
     )
     return {

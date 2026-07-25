@@ -883,13 +883,18 @@
       ]
     },
     "evals.power_protocol": {
-      "version": "v7",
+      "version": "v8",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/power_protocol.py",
         "tests/test_evals/test_power_protocol.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-25",
+          "note": "SLM-287 add preregisterable absolute-probability MDE sensitivity scale"
+        },
         {
           "version": "v7",
           "date": "2026-07-23",
@@ -1519,12 +1524,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v102",
+      "version": "v103",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v103",
+          "date": "2026-07-25",
+          "note": "SLM-287 preregister absolute-probability MDE sensitivity in the locked local protocol"
+        },
         {
           "version": "v102",
           "date": "2026-07-25",
