@@ -44,7 +44,7 @@ def _fingerprints(records: Iterable[ExampleRecord]) -> dict[str, set[str]]:
     return _train_fingerprints(records)
 
 
-def _complexity(record: ExampleRecord) -> dict[str, int | str]:
+def record_complexity(record: ExampleRecord) -> dict[str, int | str]:
     """Static, reproducible complexity strata; decoder entropy is not inferred."""
     from slm_training.evals.generalization import _component_combinations, _program_depth
 
@@ -62,10 +62,15 @@ def _complexity(record: ExampleRecord) -> dict[str, int | str]:
     }
 
 
-def _stratum(record: ExampleRecord) -> str:
-    row = _complexity(record)
+def complexity_stratum(record: ExampleRecord) -> str:
+    row = record_complexity(record)
     components = int(row["component_cardinality"])
     return f"d{min(int(row['ast_depth']), 5)}-c{min(components, 6)}-b{min(int(row['binder_count']), 6)}"
+
+
+# Kept for callers that imported the original private helpers.
+_complexity = record_complexity
+_stratum = complexity_stratum
 
 
 def _semantic_plan_fingerprint(record: ExampleRecord) -> str | None:
@@ -211,7 +216,7 @@ def build_locked_manifest(
     clean, rejected, verifier = _all_view_rejections(candidate_rows, source_rows)
     grouped: dict[str, list[ExampleRecord]] = {}
     for record in clean:
-        grouped.setdefault(_stratum(record), []).append(record)
+        grouped.setdefault(complexity_stratum(record), []).append(record)
     ordered = [record for _, rows in sorted(grouped.items()) for record in rows]
     required = min_locked_records + 3 * partition_size
     if len(ordered) < required:
@@ -231,7 +236,7 @@ def build_locked_manifest(
         {
             "record": record.to_dict(),
             "partition": partitions[record.id],
-            "complexity": _complexity(record),
+            "complexity": record_complexity(record),
         }
         for record in ordered
     )
@@ -241,7 +246,7 @@ def build_locked_manifest(
         "source_sha256": _sha([record.to_dict() for record in source_rows]),
         "verifier": {**verifier, "hard_views": ["exact", "normalized", "canonical_ast", "semantic_plan", "prompt_similarity"]},
         "partition_counts": dict(sorted(counts.items())),
-        "stratum_counts": dict(sorted(Counter(_stratum(record) for record in ordered).items())),
+        "stratum_counts": dict(sorted(Counter(complexity_stratum(record) for record in ordered).items())),
         "locked_labels_selection_forbidden": True,
         "human_audit_is_optional_not_a_promotion_gate": True,
     }

@@ -6452,3 +6452,15 @@ because it incorrectly compared initialization hashes across different seeds.
 The latter was repaired and versioned as campaign component v2; neither failed
 attempt is accepted as evidence. Full clean evidence:
 [`iter-slm233-recursive-campaign-20260724.md`](iter-slm233-recursive-campaign-20260724.md).
+
+# SLM-298 — local capacity × context × complexity curriculum (2026-07-25)
+
+The local `d_model` 32/64 × scratch trainable/frozen × flat/AST-reference
+curriculum experiment completed 20/24 bounded locked `n=1` cells. Every
+completed constrained cell is syntax-valid but has strict meaningful-program
+rate and binder-reference F1 of 0.0. The complete d64 2×2×3 subset has zero
+ordered−flat and trainable−frozen effects (95% CIs `[0.0, 0.0]`). Four d32
+seed-2 cells repeatedly hit the derived 170-second cap and are non-evidence,
+not zero-filled. No checkpoint is promoted and no ship claim is made. Full
+recipe, data-quality feedback, raw-artifact pointers, and caveats:
+[`iter-slm298-capacity-context-curriculum-20260725.md`](iter-slm298-capacity-context-curriculum-20260725.md).
