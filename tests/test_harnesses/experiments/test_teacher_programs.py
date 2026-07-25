@@ -19,6 +19,7 @@ from slm_training.harnesses.experiments.teacher_programs import (
     TeacherProgramGenerationManifestV1,
     TeacherProgramRequestV1,
     TeacherRawArchiveRefV1,
+    candidate_from_local_teacher_attempt,
     admit_teacher_programs,
     materialize_teacher_admission,
     verify_teacher_generation_campaign_lock,
@@ -130,6 +131,51 @@ def test_deep_mode_is_hands_off_but_requires_independent_judge():
     assert [row["candidate_id"] for row in result.accepted] == ["automatic"]
     assert result.accepted[0]["admission_tier"] == "Silver"
     assert result.rejected[0]["reason"] == "independent_judge_evidence_missing"
+
+
+def test_local_attempt_normalizer_binds_independent_judge_to_raw_artifact():
+    raw_hash = "a" * 64
+    attempt = {
+        "request_id": "request-1",
+        "raw_response": {
+            "raw": {
+                "provider": "local_transformers",
+                "model": "cached/local",
+                "revision": "r1",
+                "local_files_only": True,
+                "response_text": 'root = Card(":x")',
+            }
+        },
+    }
+    candidate = candidate_from_local_teacher_attempt(
+        attempt,
+        candidate_id="local-1",
+        response_id="response-1",
+        prompt="Create a card",
+        generator_family="local",
+        judge_family="judge",
+        coverage_gap_ids=("gap",),
+        program_family_id="teacher",
+        lineage_id="local-1",
+        split_group_id="local-1",
+        raw_artifact_sha256=raw_hash,
+        required_facts=("component:Card",),
+        judge_evidence=_judge_evidence(
+            "local-1", "Create a card", 'root = Card(":x")', approved=True
+        ),
+    )
+    candidate = TeacherProgramCandidate(
+        **{
+            **candidate.__dict__,
+            "judge_evidence": {
+                **candidate.judge_evidence,
+                "raw_artifact_sha256": raw_hash,
+            },
+        }
+    )
+    assert admit_teacher_programs(
+        [candidate], mode="deep_verified", protected_fingerprints=_EMPTY
+    ).accepted
 
 
 def test_deep_mode_rejects_asserted_or_tampered_judge_evidence():
@@ -310,7 +356,9 @@ def test_executor_archives_usage_and_resume_skips_completed_request(tmp_path):
     assert {event["experiment_id"] for event in events} == {"manifest"}
 
 
-def test_generation_requires_the_matching_pre_execution_campaign_lock(tmp_path, monkeypatch):
+def test_generation_requires_the_matching_pre_execution_campaign_lock(
+    tmp_path, monkeypatch
+):
     archive = CampaignStore("teacher", tmp_path)
     lock = SimpleNamespace(
         manifest_sha256="b" * 64,
@@ -350,7 +398,9 @@ def test_local_transformers_transport_requires_pinned_local_configuration():
         )
 
 
-def test_local_transformers_transport_loads_only_from_the_pinned_local_cache(monkeypatch):
+def test_local_transformers_transport_loads_only_from_the_pinned_local_cache(
+    monkeypatch,
+):
     calls: list[tuple[str, dict[str, object]]] = []
 
     class FakeTokenizer:
@@ -410,7 +460,7 @@ def test_local_transformers_transport_supplies_an_attention_mask():
             return torch.tensor([[1, 2]])
 
         def decode(self, _token_ids, **_kwargs):
-            return "root = Card(\":x\")"
+            return 'root = Card(":x")'
 
     class Model:
         def generate(self, input_ids, **kwargs):

@@ -5426,7 +5426,7 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
@@ -5438,6 +5438,11 @@
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-25",
+          "note": "normalize pinned local teacher attempts into raw-artifact-bound candidates for deterministic independent-judge admission"
+        },
         {
           "version": "v9",
           "date": "2026-07-24",
