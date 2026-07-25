@@ -113,6 +113,20 @@ required, and `check_changed` selects that file whenever anything under
 actionable reason instead of failing with a misleading one; CI runs the script
 directly in the bridge-enabled job, where it cannot be skipped.
 
+#### A2b — a stale vocabulary cap had been red on `main`, unselected
+
+`tests/test_harnesses/model_build/test_dsl_tokenizer.py::test_vocab_is_fixed_and_typed`
+asserted `tok.vocab_size <= 512`. Main #920 folded `STRUCTURAL_ID_ATOMS` into
+the fixed literal set (505 → 569) and left the cap behind, so the test had been
+failing on `main` — with *and* without the Node bridge — while CI stayed green,
+because `check_changed --changed-tests-only` runs only changed **test** files
+and that file had not changed.
+
+**Fixed** as part of Phase 1: the assertion now reads the checked-in
+`tokenizer_layout_registry.json` instead of a hand-written magic number, so it
+cannot go stale silently again. Same root cause as A1 — the vocabulary moved
+and its guards did not.
+
 ### A3 — `pytest` rewrites committed `docs/design/` evidence, nondeterministically (found, NOT fixed)
 
 Found while verifying Phase 1. Running the test suite dirties the repository's
