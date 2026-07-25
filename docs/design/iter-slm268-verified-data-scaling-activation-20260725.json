@@ -1,0 +1,103 @@
+{
+  "schema": "verified_data_scaling_activation/v1",
+  "experiment_id": "slm268-verified-data-scaling-activation",
+  "claim_class": "diagnostic",
+  "activation_status": "blocked",
+  "activation_verdict": "corpus_or_provenance_blocked",
+  "protocol": null,
+  "launchable_rungs": [],
+  "gates": [
+    {
+      "issue": "SLM-260",
+      "path": "docs/design/oracle-scoring-replay.md",
+      "sha256": "f27d4ad992d35de2319a805c63fa02cd28d425018cbf4d374bc8784c3876fa6b",
+      "qualified": false,
+      "reason": "fixture_only"
+    },
+    {
+      "issue": "SLM-261",
+      "path": "docs/design/training-loss-ledger.md",
+      "sha256": "missing",
+      "qualified": false,
+      "reason": "missing_or_unqualified"
+    },
+    {
+      "issue": "SLM-262",
+      "path": "docs/design/iter-slm262-gpu-reference-run-20260721.json",
+      "sha256": "70494322c9aa8df3b64def80a42a50b964ae3246bc5b33a0620b47a203f891cb",
+      "qualified": false,
+      "reason": "environment_incompatible"
+    },
+    {
+      "issue": "SLM-263",
+      "path": "docs/design/iter-slm263-semantic-failure-census-20260724.json",
+      "sha256": "90f99812d47cbc8cf9e09b157dc610f45b2247e9acd0cc0a7fab5e017a5c4802",
+      "qualified": false,
+      "reason": "insufficient_evidence"
+    },
+    {
+      "issue": "SLM-264",
+      "path": "docs/design/iter-slm264-semantic-collapse-telemetry-20260724.json",
+      "sha256": "4bd44514359127755d986795e78d82cb6f88f05803272687911fb60cde405509",
+      "qualified": false,
+      "reason": "insufficient_evidence"
+    },
+    {
+      "issue": "SLM-265",
+      "path": "docs/design/iter-slm265-domain-shift-audit-20260724.json",
+      "sha256": "4ca234bbc0afe4dd93c5c16009b8a7fc586f628a6f44c74de7d58bbeb3c5d1bf",
+      "qualified": false,
+      "reason": "insufficient_evidence"
+    },
+    {
+      "issue": "SLM-266",
+      "path": "docs/design/iter-slm266-local-yield-disposition-20260724.json",
+      "sha256": "c45354e82bbf1e57b4838e418afc7732a0e9f9f1241da31e7dbfc94e31c1fb25",
+      "qualified": false,
+      "reason": "budget_or_yield_blocked"
+    },
+    {
+      "issue": "SLM-267",
+      "path": "docs/design/iter-slm267-programspec-coverage-scaling-20260725.json",
+      "sha256": "309735956b54dfa077a5960087fe68a4ad4f8369e72edc66eebc49b7443fd627",
+      "qualified": false,
+      "reason": "inconclusive"
+    }
+  ],
+  "arms": {
+    "current_verified_unique_10k": {
+      "available": false,
+      "reason": "activation_blocked"
+    },
+    "teacher_verified_10k": {
+      "available": false,
+      "reason": "activation_blocked"
+    },
+    "compiler_targeted_10k": {
+      "available": false,
+      "reason": "activation_blocked"
+    },
+    "hybrid_teacher_compiler_10k": {
+      "available": false,
+      "reason": "activation_blocked"
+    }
+  },
+  "successor_conditions": [
+    "qualified full scorer replay",
+    "qualified trainer protocol and durable local cost path",
+    "frozen full evaluation strata",
+    "10k qualified teacher and compiler manifests"
+  ],
+  "honesty": "No train, eval, checkpoint, corpus publication, or ship claim was made.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ba0a7020dc4000af4fd8d5fde0f33e7ed364b130",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v111",
+      "harness.experiments.slm268_verified_data_activation": "v1"
+    },
+    "stamped_at": "2026-07-25T15:56:25.737939+00:00"
+  },
+  "manifest_sha256": "9e6afbef6c5099076dcd5d75225180b11e2ea4b05accb642b9d182c32b68e399"
+}
