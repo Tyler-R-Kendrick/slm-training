@@ -774,7 +774,7 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
@@ -782,6 +782,11 @@
         "tests/test_dsl/test_language_contract.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "Restore structural opaque identifier atoms required by canonical templatization after conflict resolution"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -6793,7 +6798,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v243",
+      "version": "v244",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6828,6 +6833,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v244",
+          "date": "2026-07-25",
+          "note": "Admit canonical structural identifier atoms in the fixed output-tokenizer literal set after conflict resolution"
+        },
         {
           "version": "v243",
           "date": "2026-07-25",

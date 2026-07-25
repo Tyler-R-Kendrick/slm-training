@@ -138,6 +138,9 @@ class OutputContractError(ValueError):
     """An OpenUI target contains text outside the symbol-only language."""
 
 
+STRUCTURAL_ID_ATOMS = frozenset(f"${index}" for index in range(64))
+
+
 class SurfaceCategory(str, Enum):
     GRAMMAR = "grammar_keyword_or_punctuation"
     CLOSED_VALUE = "closed_enum_or_primitive"

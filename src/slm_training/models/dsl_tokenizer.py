@@ -24,7 +24,10 @@ from pathlib import Path
 from typing import Iterable
 
 from slm_training.data.contract import RuntimeSymbol
-from slm_training.dsl.language_contract import grammar_string_literals
+from slm_training.dsl.language_contract import (
+    STRUCTURAL_ID_ATOMS,
+    grammar_string_literals,
+)
 from slm_training.dsl.openui_tokens import (
     STRUCTURAL_TOKENS as _FALLBACK_STRUCTURAL_TOKENS,
 )
@@ -111,7 +114,9 @@ MACRO_EXPANDABLE_KINDS = frozenset(
 
 
 # One schema-derived closed set shared by validation and both output tokenizers.
-_FIXED_STRING_BODIES: tuple[str, ...] = tuple(sorted(grammar_string_literals()))
+_FIXED_STRING_BODIES: tuple[str, ...] = tuple(
+    sorted(grammar_string_literals() | STRUCTURAL_ID_ATOMS)
+)
 
 _COMPONENT_NAMES: tuple[str, ...] = tuple(
     sorted(
