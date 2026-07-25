@@ -66,8 +66,25 @@ class AbstractPlanV1:
             raise ValueError("unsupported AbstractPlanV1 schema")
         if self.plan_version != "1":
             raise ValueError("unsupported AbstractPlanV1 plan_version")
-        if self.codebook_version < 1:
-            raise ValueError("codebook_version must be >= 1")
+        if self.codebook_version != ABSTRACT_PLAN_CODEBOOK_VERSION:
+            # token_ids always uses the V1 local-id mapping below; accepting
+            # any other codebook_version would let a serialized plan claim a
+            # future codebook while its ids/fingerprint stay V1.
+            raise ValueError(
+                "codebook_version must equal the supported V1 codebook "
+                f"version {ABSTRACT_PLAN_CODEBOOK_VERSION}, got "
+                f"{self.codebook_version}"
+            )
+        if self.begin_token != ABSTRACT_PLAN_BEGIN:
+            raise ValueError(
+                f"begin_token must be the canonical {ABSTRACT_PLAN_BEGIN!r} "
+                "delimiter (this V1 contract cannot represent another mapping)"
+            )
+        if self.end_token != ABSTRACT_PLAN_END:
+            raise ValueError(
+                f"end_token must be the canonical {ABSTRACT_PLAN_END!r} "
+                "delimiter (this V1 contract cannot represent another mapping)"
+            )
         if self.max_slot_count < 1:
             raise ValueError("max_slot_count must be >= 1")
         if not 1 <= self.slot_count <= self.max_slot_count:
@@ -188,8 +205,11 @@ def resize_embedding_preserving_rows(
     """Grow an embedding table, bit-exactly preserving every existing row.
 
     New rows are initialized independently (matched to the existing table's
-    mean/std) so growth never perturbs previously trained rows — required
-    before any checkpoint migration that adds AbstractPlanV1 rows.
+    mean/std) so growth never perturbs previously trained rows. ``padding_idx``,
+    ``max_norm``, ``norm_type``, ``scale_grad_by_freq``, ``sparse``, and
+    ``requires_grad`` are carried over from ``embedding`` so forward/gradient
+    behavior on pre-existing rows is unchanged, not just their stored values —
+    required before any checkpoint migration that adds AbstractPlanV1 rows.
     """
     import torch
     from torch import nn
@@ -205,6 +225,11 @@ def resize_embedding_preserving_rows(
     resized = nn.Embedding(
         new_num_embeddings,
         dim,
+        padding_idx=embedding.padding_idx,
+        max_norm=embedding.max_norm,
+        norm_type=embedding.norm_type,
+        scale_grad_by_freq=embedding.scale_grad_by_freq,
+        sparse=embedding.sparse,
         device=embedding.weight.device,
         dtype=embedding.weight.dtype,
     )
@@ -216,13 +241,14 @@ def resize_embedding_preserving_rows(
         resized.weight[old_num_embeddings:].normal_(
             mean=mean, std=std or 0.02, generator=generator
         )
+    resized.weight.requires_grad_(embedding.weight.requires_grad)
     return resized
 
 
 def verify_embedding_resize_preserved_old_rows(
     original: "torch.nn.Embedding", resized: "torch.nn.Embedding"
 ) -> None:
-    """Fail closed unless every pre-existing row is bit-for-bit unchanged."""
+    """Fail closed unless every pre-existing row and config is unchanged."""
     import torch
 
     old_n = original.weight.shape[0]
@@ -232,6 +258,17 @@ def verify_embedding_resize_preserved_old_rows(
         raise ValueError("resized embedding changed embedding dimension")
     if not torch.equal(resized.weight[:old_n], original.weight):
         raise ValueError("embedding resize mutated pre-existing rows")
+    for attr in (
+        "padding_idx",
+        "max_norm",
+        "norm_type",
+        "scale_grad_by_freq",
+        "sparse",
+    ):
+        if getattr(resized, attr) != getattr(original, attr):
+            raise ValueError(f"embedding resize changed {attr}")
+    if resized.weight.requires_grad != original.weight.requires_grad:
+        raise ValueError("embedding resize changed requires_grad")
 
 
 __all__ = [

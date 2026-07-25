@@ -3,6 +3,8 @@ default-off tokenizer parity."""
 
 from __future__ import annotations
 
+import json
+
 import pytest
 import torch
 
@@ -68,12 +70,25 @@ def test_to_dict_from_dict_round_trip() -> None:
         {"schema": "abstract_plan/v2"},
         {"plan_version": "2"},
         {"codebook_version": 0},
+        {"codebook_version": 2},
+        {"begin_token": "<other_begin>"},
+        {"end_token": "<other_end>"},
         {"provenance": ""},
     ],
 )
 def test_invalid_configurations_are_rejected(kwargs: dict) -> None:
     with pytest.raises(ValueError):
         AbstractPlanV1(**kwargs)
+
+
+def test_non_canonical_delimiters_and_versions_are_rejected_explicitly() -> None:
+    """AP-016 review: a V1 plan cannot claim a mapping its ids don't back."""
+    with pytest.raises(ValueError, match="begin_token"):
+        AbstractPlanV1(begin_token="<not_canonical>")
+    with pytest.raises(ValueError, match="end_token"):
+        AbstractPlanV1(end_token="<not_canonical>")
+    with pytest.raises(ValueError, match="codebook_version"):
+        AbstractPlanV1(codebook_version=2)
 
 
 def test_assert_no_collisions_passes_against_default_off_vocab() -> None:
@@ -125,6 +140,45 @@ def test_verify_resize_fails_closed_on_mutated_old_rows() -> None:
         verify_embedding_resize_preserved_old_rows(original, resized)
 
 
+def test_resize_embedding_preserves_non_default_config_and_forward_behavior() -> None:
+    torch.manual_seed(0)
+    original = torch.nn.Embedding(
+        5,
+        3,
+        padding_idx=0,
+        max_norm=0.5,
+        norm_type=2.0,
+        scale_grad_by_freq=True,
+    )
+    with torch.no_grad():
+        original.weight.copy_(torch.arange(15, dtype=torch.float32).reshape(5, 3))
+    resized = resize_embedding_preserving_rows(original, 8)
+    verify_embedding_resize_preserved_old_rows(original, resized)
+
+    # Config carried over, not just values.
+    assert resized.padding_idx == original.padding_idx
+    assert resized.max_norm == original.max_norm
+    assert resized.norm_type == original.norm_type
+    assert resized.scale_grad_by_freq == original.scale_grad_by_freq
+
+    # Forward behavior on pre-existing rows (incl. max_norm renormalization)
+    # is identical, not just the stored weights.
+    idx = torch.tensor([0, 1, 2, 3, 4])
+    assert torch.allclose(original(idx), resized(idx))
+
+
+def test_resize_embedding_preserves_requires_grad() -> None:
+    original = torch.nn.Embedding(4, 3)
+    original.weight.requires_grad_(False)
+    resized = resize_embedding_preserving_rows(original, 6)
+    assert resized.weight.requires_grad is False
+    verify_embedding_resize_preserved_old_rows(original, resized)
+
+    resized.weight.requires_grad_(True)
+    with pytest.raises(ValueError, match="requires_grad"):
+        verify_embedding_resize_preserved_old_rows(original, resized)
+
+
 # --- Tokenizer wiring: default-off parity + append-only enablement ---------
 
 
@@ -148,9 +202,22 @@ def test_dsl_native_tokenizer_enabled_is_append_only() -> None:
     assert enabled.abstract_slot_of(enabled.abstract_slot_id(3)) == 3
 
 
-def test_dsl_native_tokenizer_rejects_over_capacity() -> None:
+def test_dsl_native_tokenizer_rejects_out_of_range_slots() -> None:
     with pytest.raises(ValueError, match="abstract_plan_slots"):
         DSLNativeTokenizer.build(abstract_plan_slots=129)
+    with pytest.raises(ValueError, match="abstract_plan_slots"):
+        DSLNativeTokenizer.build(abstract_plan_slots=-1)
+
+
+def test_dsl_native_tokenizer_load_rejects_out_of_range_slots(tmp_path) -> None:
+    tok = DSLNativeTokenizer.build(abstract_plan_slots=5)
+    path = tmp_path / "dsl_native_bad.json"
+    tok.save(path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["abstract_plan_slots"] = -1
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="abstract_plan_slots"):
+        DSLNativeTokenizer.load(path)
 
 
 def test_dsl_native_tokenizer_save_load_round_trip(tmp_path) -> None:
@@ -186,3 +253,21 @@ def test_choice_tokenizer_save_load_round_trip(tmp_path) -> None:
     loaded = ChoiceTokenizer.load(path)
     assert loaded.token_to_id == tok.token_to_id
     assert loaded.abstract_plan_slots == 3
+
+
+def test_choice_tokenizer_rejects_out_of_range_slots() -> None:
+    with pytest.raises(ValueError, match="abstract_plan_slots"):
+        ChoiceTokenizer.build(abstract_plan_slots=129)
+    with pytest.raises(ValueError, match="abstract_plan_slots"):
+        ChoiceTokenizer.build(abstract_plan_slots=-1)
+
+
+def test_choice_tokenizer_load_rejects_out_of_range_slots(tmp_path) -> None:
+    tok = ChoiceTokenizer.build(abstract_plan_slots=3)
+    path = tmp_path / "choice_bad.json"
+    tok.save(path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["abstract_plan_slots"] = -1
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="abstract_plan_slots"):
+        ChoiceTokenizer.load(path)
