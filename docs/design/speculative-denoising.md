@@ -18,6 +18,22 @@ The transferable abstraction, in one line:
 > **propose a denoising transition → verify the transition → precompute from
 > likely verified successor states.**
 
+The compiler LTR path now applies the same abstraction to exact symbol tables:
+calculate the complete legal completion forest first, commit a singleton
+without inference, and prefill ambiguous future trie states in bounded batches.
+The neural model only ranks members of that exact domain. CPU defaults to four
+states per prefill batch; accelerator devices default to 32, with
+`compiler_prefill_max_states` and `compiler_prefill_token_budget` providing
+explicit caps. Telemetry records batch, state, and token counts. The measured
+C9/C10 fixture is recorded in
+[perf-experiment-matrix.md](perf-experiment-matrix.md); it was syntactically
+safe but non-promotable because the short-canvas quality anchor failed.
+
+Future n-gram or alternate draft techniques may change ordering or which legal
+future states are prefetched. They may not expand the pack-owned legal domain,
+override exact singleton authority, disable final certification, or introduce
+an unconstrained recovery path.
+
 For an AR model the state is a token prefix and the speculative outcome is
 "accept *j* tokens, emit recovery token *z*". For our masked-diffusion decode
 the state is `(canvas, unknown-mask, step)` and a verification result decides

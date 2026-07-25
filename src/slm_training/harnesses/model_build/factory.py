@@ -32,6 +32,13 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     cfg = getattr(model, "config", None)
     if cfg is None:
         return model
+    from slm_training.harnesses.model_build.eval_policy import (
+        MANDATORY_GENERATION_POLICY,
+    )
+
+    model._declared_generation_policy = {
+        key: getattr(cfg, key, None) for key in MANDATORY_GENERATION_POLICY
+    }
     allowed = config.runtime_override_fields
     for key in (
         "grammar_constrained",
@@ -71,6 +78,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_fastpath",
         "grammar_fastpath_mode",
         "grammar_draft_window",
+        "compiler_prefill_max_states",
+        "compiler_prefill_token_budget",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -243,6 +252,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
             value = getattr(config, key)
             if value is not None:
                 setattr(cfg, key, value)
+    for key, value in MANDATORY_GENERATION_POLICY.items():
+        if hasattr(cfg, key):
+            setattr(cfg, key, value)
     # Preserve checkpoint DESIGN.md conditioning unless caller sets an explicit bool.
     # Eval defaults must not force-enable gold DESIGN.md on no-design-md checkpoints.
     dm = getattr(config, "design_md_in_context", None)
@@ -354,6 +366,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_finalize_validate=getattr(config, "grammar_finalize_validate", False),
         ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
         fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
+        semantic_contrast_loss_weight=float(
+            getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0
+        ),
+        semantic_contrast_margin=float(
+            getattr(config, "semantic_contrast_margin", 1.0) or 0.0
+        ),
         grammar_ltr_primary=config.grammar_ltr_primary,
         design_md_in_context=(
             True
@@ -396,6 +414,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_fastpath=getattr(config, "grammar_fastpath", True),
         grammar_fastpath_mode=getattr(config, "grammar_fastpath_mode", "hybrid"),
         grammar_draft_window=int(getattr(config, "grammar_draft_window", 8) or 8),
+        compiler_prefill_max_states=max(
+            0, int(getattr(config, "compiler_prefill_max_states", 0) or 0)
+        ),
+        compiler_prefill_token_budget=max(
+            0, int(getattr(config, "compiler_prefill_token_budget", 0) or 0)
+        ),
         compiler_decode_mode=str(
             getattr(config, "compiler_decode_mode", "off") or "off"
         ),

@@ -148,7 +148,7 @@ def test_rejects_backend_pair_with_different_initialization(protocol, cells) -> 
 
 def test_rejects_missing_metric(protocol, cells) -> None:
     broken = deepcopy(cells)
-    del broken[0]["records"]["locked-1"]["raw"][METRICS[0]]
+    del broken[0]["records"]["locked-1"][VARIANTS[0]][METRICS[0]]
     with pytest.raises(ValueError, match="missing"):
         validate_cells(protocol, broken)
 
@@ -190,7 +190,10 @@ def test_merges_exact_shards_and_sums_cell_compute(protocol, cells) -> None:
     merged = merge_locked_shards(sharded_protocol, shards, shard_count=2)
     assert len(merged) == 10
     assert set(merged[0]["records"]) == {"locked-1", "locked-2"}
-    assert merged[0]["cell_metrics"]["raw"]["compute_proxy_forwards"] == 2.0
+    assert (
+        merged[0]["cell_metrics"][VARIANTS[0]]["compute_proxy_forwards"]
+        == 2.0
+    )
 
 
 def test_shards_require_a_matching_trained_cell_manifest(protocol, tmp_path) -> None:
@@ -229,7 +232,7 @@ def test_mde_uses_observed_seed_and_target_effect_variance(protocol, cells) -> N
     varied = deepcopy(cells)
     for cell in varied:
         for record in cell["records"].values():
-            record["repaired"]["binding_aware_meaningful_v2"] = float(
+            record[VARIANTS[0]]["binding_aware_meaningful_v2"] = float(
                 cell["seed"] % 2 == 0 and cell["backend"] == BACKENDS[1]
             )
     result = summarize_cells(protocol, varied)

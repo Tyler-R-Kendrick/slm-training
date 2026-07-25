@@ -304,25 +304,31 @@ def capture_raw_steps(
     decisions_seen = 0
     stop_reason = "max_new_tokens"
     for ordinal in range(int(max_new_tokens)):
-        logits = [float(value) for value in forward_logits(prefix)]
-        if not logits:
-            raise CausalTraceError("forward_logits returned an empty logit vector")
-        if not all(math.isfinite(value) for value in logits):
-            raise CausalTraceError("forward_logits returned non-finite logits")
         legal = tuple(int(token) for token in allowed_ids(prefix))
         if not legal:
             stop_reason = "no_legal_continuation"
             break
         legal_set = set(legal)
+        if len(legal_set) == 1:
+            selected = next(iter(legal_set))
+            generated.append(int(selected))
+            prefix = (*prefix, int(selected))
+            if selected == eos:
+                stop_reason = "eos"
+                break
+            continue
+        logits = [float(value) for value in forward_logits(prefix)]
+        if not logits:
+            raise CausalTraceError("forward_logits returned an empty logit vector")
+        if not all(math.isfinite(value) for value in logits):
+            raise CausalTraceError("forward_logits returned non-finite logits")
         if any(token < 0 or token >= len(logits) for token in legal_set):
             raise CausalTraceError("legal token id out of logit range")
         log_probs = _log_softmax(logits)
         raw_argmax = max(range(len(logits)), key=lambda i: (logits[i], -i))
         constrained = max(legal, key=lambda token: (logits[token], -token))
         forced = len(legal_set) == 1
-        if mode is TraceDecodeMode.RAW:
-            selected = raw_argmax
-        elif mode is TraceDecodeMode.UNIFORM_AT_UNFORCED and not forced:
+        if mode is TraceDecodeMode.UNIFORM_AT_UNFORCED and not forced:
             selected = rng.choice(sorted(legal_set))
         else:
             selected = constrained

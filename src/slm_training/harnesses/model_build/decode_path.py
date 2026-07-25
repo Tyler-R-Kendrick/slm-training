@@ -30,7 +30,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Literal, Mapping
 
-from slm_training.harnesses.model_build.eval_policy import STRICT_EVALUATION_POLICY
+from slm_training.harnesses.model_build.eval_policy import (
+    MANDATORY_GENERATION_POLICY,
+    STRICT_EVALUATION_POLICY,
+)
 from slm_training.lineage.records import content_sha
 
 __all__ = [
@@ -183,46 +186,43 @@ class DecodePathSpec:
 _CHECKPOINT_DECLARED = DecodePathSpec(
     path_id="checkpoint_declared",
     description=(
-        "Historical control: decode exactly as the checkpoint's own recorded "
-        "config/decoder declared. No runtime overrides are applied."
+        "Legacy-compatible control: preserve checkpoint conditioning and codec "
+        "while enforcing the mandatory constrained-generation floor."
     ),
     generation_entry="as_declared",
     completion_kind="declared",
     grammar_policy="checkpoint_declared",
     seed_policy="checkpoint_declared_seed",
-    expected_fallback="as recorded with the checkpoint",
-    impl_version="decode_path.checkpoint_declared/v1",
+    expected_fallback="certified deterministic fallback only",
+    impl_version="decode_path.checkpoint_declared/v2",
     supported_model_families=(),
     supported_output_codecs=(),
     sampling=(("deterministic", True),),
-    lever_overrides=(),
+    lever_overrides=tuple(MANDATORY_GENERATION_POLICY.items()),
     codec_lever_overrides=(),
 )
 
 _CURRENT_NATIVE = DecodePathSpec(
     path_id="current_native",
     description=(
-        "Diagnostic control: model-native decode that permits the unconstrained "
-        "retry, preserving the checkpoint's own output representation. Decode "
-        "invariant I6 (docs/design/decode-invariants.md) forbids this path in "
-        "serving or ship-gated configurations; it exists to measure what "
-        "constrained decoding buys."
+        "Current production model-native decode with current bug fixes, "
+        "preserving the checkpoint's own output representation. Constrained "
+        "end to end: it inherits MANDATORY_GENERATION_POLICY, so there is no "
+        "unconstrained retry (decode invariant I6, "
+        "docs/design/decode-invariants.md)."
     ),
     generation_entry="model_native_greedy_ltr",
     completion_kind="greedy",
     grammar_policy="current_native_grammar",
     seed_policy="fixed_seed_0",
-    expected_fallback="unconstrained fallback permitted (diagnostic control only)",
-    impl_version="decode_path.current_native/v1",
+    expected_fallback="certified deterministic fallback only",
+    impl_version="decode_path.current_native/v2",
     supported_model_families=("twotower",),
     supported_output_codecs=(),
     sampling=(("deterministic", True), ("grammar_sample_decode", False)),
     lever_overrides=(
-        ("grammar_constrained", True),
-        ("grammar_ltr_primary", True),
+        *tuple(MANDATORY_GENERATION_POLICY.items()),
         ("compiler_decode_mode", "off"),
-        ("grammar_sample_decode", False),
-        ("allow_unconstrained_fallback", True),
     ),
     codec_lever_overrides=(),
 )

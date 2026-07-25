@@ -69,6 +69,30 @@ class GenerateResult:
         return bool(self.valid and self.constrained)
 
 
+class SubstitutedGeneration(RuntimeError):
+    """The backend returned a certified stand-in, not a real model decode."""
+
+
+def _raise_on_substituted_generation(model: Any) -> None:
+    """Fail the attempt when the backend substituted a certified fallback.
+
+    Decode invariant I6 keeps output legal, and a backend is free to satisfy
+    that by returning a certified deterministic program instead of an invalid
+    one. That is not a successful generation, and the serving harness — which
+    persists every attempt as annotation evidence — must not record it as one.
+    Backends that expose no evidence channel are unaffected.
+    """
+    consume = getattr(model, "consume_generation_evidence", None)
+    if not callable(consume):
+        return
+    for row in consume() or ():
+        if isinstance(row, dict) and row.get("fallback_used"):
+            raise SubstitutedGeneration(
+                "backend substituted a certified fallback program for a failed "
+                "constrained decode"
+            )
+
+
 class GenerationExhausted(RuntimeError):
     """All real-model attempts failed validation or inference."""
 
@@ -648,6 +672,13 @@ class PlaygroundService:
                         grammar_constrained=grammar_constrained,
                         design_md=design_md,
                     )
+                    # I6 honesty: a backend may satisfy "never emit invalid
+                    # grammar" by substituting a certified deterministic
+                    # program (ONNX does). That program parses, so without
+                    # reading the evidence the harness would record a failed
+                    # decode as a successful real-model attempt and feed it to
+                    # the annotation store. Treat it as the failure it is.
+                    _raise_on_substituted_generation(model)
                 except Exception as exc:  # noqa: BLE001
                     last_error = str(exc)
                     if grammar_constrained:

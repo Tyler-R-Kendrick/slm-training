@@ -47,6 +47,8 @@ class PerfExperiment:
     grammar_finalize_on_last_attempt_only: bool = False
     parallel_unmask: str = "adaptive"
     compiler_decode_mode: str = "off"
+    compiler_prefill_max_states: int = 0
+    compiler_prefill_token_budget: int = 0
     grammar_equivalence_cache: bool = False
     grammar_active_symbol_bitsets: bool = False
     grammar_completion_bounds: bool = False
@@ -314,6 +316,21 @@ def experiments() -> list[PerfExperiment]:
             compact_active_canvas=True,
             grammar_ltr_primary=False,
         ),
+        PerfExperiment(
+            "C9",
+            "perf_c9_serial_compiler_prefill",
+            "Compiler tree with one ambiguous state per neural prefill",
+            compiler_decode_mode="tree",
+            compiler_prefill_max_states=1,
+        ),
+        PerfExperiment(
+            "C10",
+            "perf_c10_auto_compiler_prefill",
+            "Compiler tree with bounded device-aware speculative prefills",
+            compiler_decode_mode="tree",
+            compiler_prefill_max_states=0,
+            compiler_prefill_token_budget=0,
+        ),
     ]
 
 
@@ -343,6 +360,8 @@ def _apply(model: TwoTowerModel, exp: PerfExperiment) -> None:
     )
     cfg.parallel_unmask = str(exp.parallel_unmask)
     cfg.compiler_decode_mode = str(exp.compiler_decode_mode)
+    cfg.compiler_prefill_max_states = int(exp.compiler_prefill_max_states)
+    cfg.compiler_prefill_token_budget = int(exp.compiler_prefill_token_budget)
     cfg.grammar_equivalence_cache = bool(exp.grammar_equivalence_cache)
     cfg.grammar_active_symbol_bitsets = bool(exp.grammar_active_symbol_bitsets)
     cfg.grammar_completion_bounds = bool(exp.grammar_completion_bounds)
@@ -448,13 +467,14 @@ def run_one(
     device: str,
     warmup: int,
     out_dir: Path,
+    max_len: int | None = None,
 ) -> dict[str, Any]:
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
     model.eval()
     _apply(model, exp)
 
     for i in range(max(0, warmup)):
-        model.generate(prompts[i % len(prompts)][0])
+        model.generate(prompts[i % len(prompts)][0], max_len=max_len)
 
     rows: list[DecodeStats] = []
     parse_sum = 0.0
@@ -463,7 +483,7 @@ def run_one(
     texts: list[str] = []
     t0 = time.perf_counter()
     for prompt, gold in prompts:
-        text, stats = model.generate_with_stats(prompt)
+        text, stats = model.generate_with_stats(prompt, max_len=max_len)
         rows.append(stats)
         texts.append(text)
         q = _quality(text, gold)
@@ -479,6 +499,7 @@ def run_one(
         "run_id": exp.run_id,
         "description": exp.description,
         "n": n,
+        "max_len": max_len,
         "wall_sec": round(wall, 4),
         "latency_ms_mean": round((wall / n) * 1000.0, 2),
         "latency_ms_p50": summary.get("total_ms_p50"),
@@ -502,6 +523,12 @@ def run_one(
             "grammar_ltr_repair": bool(model.config.grammar_ltr_repair),
             "use_dynamic_quant": bool(model.config.use_dynamic_quant),
             "compiler_decode_mode": str(model.config.compiler_decode_mode),
+            "compiler_prefill_max_states": int(
+                model.config.compiler_prefill_max_states
+            ),
+            "compiler_prefill_token_budget": int(
+                model.config.compiler_prefill_token_budget
+            ),
         },
         "sample_output": texts[0] if texts else "",
     }
@@ -567,6 +594,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--suite", default="smoke")
     parser.add_argument("--limit", type=int, default=8)
     parser.add_argument("--warmup", type=int, default=1)
+    parser.add_argument("--max-len", type=int, default=None)
     parser.add_argument("--device", default="cpu")
     parser.add_argument(
         "--only",
@@ -626,6 +654,7 @@ def main(argv: list[str] | None = None) -> int:
             device=args.device,
             warmup=args.warmup,
             out_dir=args.out_dir,
+            max_len=args.max_len,
         )
         if exp.eid in {"P0", "C0"}:
             baseline = result
@@ -726,6 +755,7 @@ def main(argv: list[str] | None = None) -> int:
     board["version_stamp"] = build_version_stamp(
         "matrix.perf",
         "harness.model_build.eval",
+        "model.twotower",
     )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     board_path = args.out_dir / "scoreboard.json"

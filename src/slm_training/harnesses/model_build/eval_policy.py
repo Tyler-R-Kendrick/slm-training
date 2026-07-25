@@ -8,20 +8,22 @@ from typing import Any
 CHECKPOINT_DECLARED_POLICY = "checkpoint_declared"
 STRICT_COMPILER_TREE_POLICY_ID = "strict_compiler_tree"
 
-# Fields shared by exact choice completion and strict compiler-tree decoding.
-# Keep decode/honesty atomic, but preserve checkpoint input conditioning:
-# changing schema, slot-contract, or DESIGN.md context changes model logits and
-# is an experiment lever, not a decode-safety requirement.
-STRICT_EVALUATION_POLICY: dict[str, Any] = {
+# This floor applies even to legacy checkpoints. Persisted unsafe decode flags
+# remain lineage metadata but cannot re-enable unconstrained generation.
+MANDATORY_GENERATION_POLICY: dict[str, Any] = {
     "grammar_constrained": True,
     "grammar_ltr_primary": True,
     "grammar_finalize_validate": True,
+    "grammar_fastpath": True,
+    "grammar_sample_decode": False,
+    "grammar_uniform_at_unforced": False,
+    "allow_unconstrained_fallback": False,
+}
+# Fields shared by exact choice completion and strict compiler-tree decoding.
+STRICT_EVALUATION_POLICY: dict[str, Any] = {
+    **MANDATORY_GENERATION_POLICY,
     "slot_contract_constrained_decode": True,
     "honest_slot_contract": True,
-    "allow_unconstrained_fallback": False,
-    # Decode invariant I2 (docs/design/decode-invariants.md): a ship-gated
-    # decode always takes the deterministic bypass before any neural ranking.
-    "grammar_fastpath": True,
 }
 STRICT_COMPILER_TREE_POLICY: dict[str, Any] = {
     **STRICT_EVALUATION_POLICY,
@@ -29,7 +31,7 @@ STRICT_COMPILER_TREE_POLICY: dict[str, Any] = {
     "compiler_decode_mode": "tree",
 }
 EVALUATION_POLICIES: dict[str, dict[str, Any]] = {
-    CHECKPOINT_DECLARED_POLICY: {},
+    CHECKPOINT_DECLARED_POLICY: MANDATORY_GENERATION_POLICY,
     STRICT_COMPILER_TREE_POLICY_ID: STRICT_COMPILER_TREE_POLICY,
 }
 
@@ -52,15 +54,14 @@ def apply_evaluation_policy(config: object) -> None:
         ) from exc
     for field, value in policy.items():
         setattr(config, field, value)
-    if policy_id != CHECKPOINT_DECLARED_POLICY:
-        # A named strict policy is a ship-gated path: fail before the run when
-        # anything left it able to emit uncertified output (I6) or to spend a
-        # forward on a proven singleton (I2).
-        from slm_training.levers import require_constrained_production_config
+    # Every policy carries MANDATORY_GENERATION_POLICY, so every one of them is
+    # a path that must not be able to emit uncertified output (I6) or spend a
+    # forward on a proven singleton (I2). Fail before the run, not during it.
+    from slm_training.levers import require_constrained_production_config
 
-        require_constrained_production_config(
-            config, context=f"evaluation_policy {policy_id!r}"
-        )
+    require_constrained_production_config(
+        config, context=f"evaluation_policy {policy_id!r}"
+    )
 
 
 def apply_strict_compiler_tree_policy(config: object) -> None:
@@ -72,6 +73,7 @@ def apply_strict_compiler_tree_policy(config: object) -> None:
 __all__ = [
     "CHECKPOINT_DECLARED_POLICY",
     "EVALUATION_POLICIES",
+    "MANDATORY_GENERATION_POLICY",
     "STRICT_COMPILER_TREE_POLICY",
     "STRICT_COMPILER_TREE_POLICY_ID",
     "STRICT_EVALUATION_POLICY",

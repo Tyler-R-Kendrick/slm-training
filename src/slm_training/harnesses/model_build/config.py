@@ -98,14 +98,19 @@ class ModelBuildConfig:
     grammar_dsl: str = "openui"
     grammar_top_k: int = 16
     structural_bias: float = 1.25
-    grammar_ltr_repair: bool = False
+    grammar_ltr_repair: bool = True
     # Length-safe for compositional tokenizer (fixture gold up to ~160 tokens).
     grammar_ltr_max_tokens: int = 256
     grammar_ltr_stages: tuple[int, ...] | None = None
-    grammar_ltr_primary: bool = False
-    grammar_finalize_validate: bool = False
+    grammar_ltr_primary: bool = True
+    grammar_finalize_validate: bool = True
     ltr_loss_weight: float = 0.5
     fidelity_loss_weight: float = 0.5
+    # SLM-292: explicit immutable contrast corpus; disabled unless weight > 0.
+    semantic_contrast_dir: Path | None = None
+    semantic_contrast_loss_weight: float = 0.0
+    semantic_contrast_margin: float = 1.0
+    semantic_contrast_fraction: float = 0.0
     # None = preserve checkpoint on load; factory defaults new models to True.
     design_md_in_context: bool | None = None
     # Deterministic record-level train-time omission; evaluation is unaffected.
@@ -192,6 +197,8 @@ class ModelBuildConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    compiler_prefill_max_states: int = 0
+    compiler_prefill_token_budget: int = 0
     compiler_decode_mode: str = "off"  # off | forced | restricted | tree
     compiler_search_mode: str = "greedy"  # greedy | lattice | ptrm | gram
     compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always
@@ -488,6 +495,19 @@ class ModelBuildConfig:
     constraint_debt_routing_calibrator_path: Path | None = None
 
     def __post_init__(self) -> None:
+        if self.grammar_constrained is False:
+            raise ValueError(
+                "grammar_constrained=False is unsafe for OpenUI generation"
+            )
+        if self.allow_unconstrained_fallback:
+            raise ValueError(
+                "allow_unconstrained_fallback=True is unsafe for OpenUI generation"
+            )
+        if self.grammar_sample_decode or self.grammar_uniform_at_unforced:
+            raise ValueError(
+                "stochastic grammar selection is unsafe for deterministic "
+                "OpenUI generation"
+            )
         from slm_training.harnesses.model_build.eval_policy import (
             apply_evaluation_policy,
         )

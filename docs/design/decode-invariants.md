@@ -38,7 +38,7 @@ preference scores.
 | `dsl/grammar/fastpath/force_emit.py` · `force_next_token_id` / `draft_forced_ids` | forced token id, and forced multi-token drafts |
 | `models/grammar.py` · `exact_forced_token_id` | strengthens the proof to *sole legal tokenizer token* before bypassing |
 | `models/twotower.py` LTR / batched / MaskGIT loops | commit forced rows with the row removed from the forward |
-| `models/onnx_inference.py` · `_forced_singleton` | same bypass in the ONNX serving backend |
+| `models/onnx_inference.py` | derives the completion forest before every forward; a singleton domain commits with no denoiser run |
 
 **Status: implemented in all backends, with one open efficiency gap.** ONNX was
 the last structural gap — it forwarded first and consulted force-emit
@@ -51,8 +51,8 @@ When the scope-aware symbol table (DFA domain / `CompletionDomainV1` /
 choice-codec state) shows **exactly one** valid next symbol, that symbol is
 committed with **no neural forward and no ranking**, in every decode path and
 every backend. A partial proof refuses to bypass — `exact_forced_token_id`
-returns `None` unless the DFA-allowed set is exactly `{forced}`, and the ONNX
-`_forced_singleton` additionally requires `coverage == "complete"`.
+fails closed unless the exact authorities prove one continuation, and the ONNX
+loop requires `coverage == "complete"` before it will read the domain at all.
 
 Certainty is never downgraded into a soft preference.
 
@@ -67,7 +67,8 @@ proves it holds.
 #### Known gap — short-horizon repair loses the bypass
 
 `test_repair_exact_token_skips_forward_and_records_authority` is **red on
-`main`** (it predates this document; confirmed at `d77dfa0`). Diagnosis: in
+`main`** (it predates this document; confirmed at `d77dfa0`, and still red
+after the `995813d` constrained-decoding work merged in). Diagnosis: in
 `_constrained_ltr_repair` the state carries `remaining_tokens = length -
 len(prefix)`. For a DSL-native tokenizer, `exact_forced_token_id` requires the
 compiler forest on top of the DFA proof, and `build_completion_forest` returns
@@ -178,13 +179,24 @@ Fail-closed points:
 | Surface | Behavior |
 | --- | --- |
 | `models/grammar.py` · `pick_constrained_token` | refuses rather than emitting unconstrained top-1 when legality cannot be certified |
-| `models/twotower.py` · `allow_unconstrained_fallback` | **default `False`**; the unfiltered retry is opt-in and diagnostic |
+| `models/grammar.py` · `require_constrained_generation` | an unconstrained request is refused outright, not honored quietly |
+| `models/twotower.py` · `allow_unconstrained_fallback` | **default `False`**, and the MaskGIT unconstrained retry is gone |
+| `harnesses/model_build/eval_policy.py` · `MANDATORY_GENERATION_POLICY` | a floor under *every* policy, checkpoint-declared included; `require_constrained_production_config` checks it before the run |
 | `web/service.py` | absolute contract — raises `GenerationExhausted` rather than handing the UI an invalid constrained sample; forces `allow_unconstrained_fallback=False` on the serving config |
-| `models/onnx_inference.py` | raises `GrammarCertificationError` instead of returning uncertified text |
-| `harnesses/model_build/eval_policy.py` | every named strict policy is checked by `require_constrained_production_config` before the run |
+| `models/onnx_inference.py` | substitutes a certified deterministic program rather than returning uncertified text, and reports `fallback_used` |
 
 An empty legal domain is a constrained dead end, never a full-vocabulary
 fallback.
+
+**A certified substitute is not a successful decode.** ONNX satisfies I6 by
+returning a certified deterministic program when its own decode cannot be
+certified. That program parses, so a caller that only checks "does it parse"
+would record a failed decode as a real model attempt — and the playground
+persists every attempt as annotation evidence. `web/service.py` therefore reads
+`consume_generation_evidence()` after each attempt and raises
+`SubstitutedGeneration` on `fallback_used`, so the substitute is counted as the
+failure it is. Any new backend with a substitution path must expose the same
+evidence flag.
 
 **Registered weakening levers.** `levers.CONSTRAINT_WEAKENING_LEVERS` names
 every lever that can make output less constrained or spend a forward where a
@@ -202,13 +214,15 @@ them from production and ship-gated configurations.
 
 Named diagnostic controls (allowed, clearly labeled, never shipped):
 `--unconstrained-control` on `scripts/train_model.py` (the deprecated spelling
-`--no-grammar` still resolves to it), the HTTP `grammar_constrained=false`
+`--no-grammar` still resolves to it), and the HTTP `grammar_constrained=false`
 field — whose attempts are stamped `diagnostic_control: true` and whose result
-reports `certified=false` even when the text happens to parse — and the
-`current_native` decode-path spec used by `harnesses/eval/ablate_decode_scaffolding.py`.
+reports `certified=false` even when the text happens to parse. Note that
+`current_native` is **no longer** such a control: it now inherits
+`MANDATORY_GENERATION_POLICY` and is constrained end to end.
 
 **Status: enforced.** The former default-on unconstrained retry, the
-uncertified ONNX return, and the unlabeled HTTP control arm are all closed.
+uncertified ONNX return, the MaskGIT unconstrained fallback, and the
+substituted-decode-as-success gap on the serving path are all closed.
 
 ---
 

@@ -37,10 +37,14 @@ CANONICAL_CONFIGS: tuple[tuple[str, str], ...] = (
     ("src/slm_training/harnesses/model_build/config.py", "ModelBuildConfig"),
 )
 
-# Strict policies are ship-gated paths: they must state the safe value rather
-# than inherit it, so a future default change cannot silently unpin them.
+# The mandatory generation floor applies to every evaluation policy, including
+# checkpoint-declared. It must state each safe value rather than inherit it, so
+# a future default change cannot silently unpin a ship-gated path.
 STRICT_POLICIES: tuple[tuple[str, str], ...] = (
-    ("src/slm_training/harnesses/model_build/eval_policy.py", "STRICT_EVALUATION_POLICY"),
+    (
+        "src/slm_training/harnesses/model_build/eval_policy.py",
+        "MANDATORY_GENERATION_POLICY",
+    ),
 )
 
 # A serving backend hands output to a real consumer. Each must contain the
@@ -49,11 +53,15 @@ STRICT_POLICIES: tuple[tuple[str, str], ...] = (
 SERVING_FAIL_CLOSED: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "src/slm_training/models/onnx_inference.py",
-        ("raise GrammarCertificationError",),
+        ("require_constrained_generation", "fallback_used"),
     ),
     (
         "src/slm_training/web/service.py",
-        ("raise GenerationExhausted", "require_constrained_production_config"),
+        (
+            "raise GenerationExhausted",
+            "require_constrained_production_config",
+            "_raise_on_substituted_generation",
+        ),
     ),
 )
 
@@ -65,10 +73,7 @@ BYPASS_TESTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     (
         "onnx serving",
-        (
-            "tests/test_web/test_onnx_inference.py",
-            "last_forced_tokens_without_forward",
-        ),
+        ("tests/test_web/test_onnx_inference.py", "singleton_bypasses"),
     ),
 )
 

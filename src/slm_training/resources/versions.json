@@ -203,13 +203,25 @@
       ]
     },
     "data.semantic_contrast": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/semantic_contrast/",
-        "scripts/build_semantic_contrasts.py"
+        "scripts/build_semantic_contrasts.py",
+        "src/apps/openui_preview/verify.mjs",
+        "src/slm_training/data/verify/runtime.py",
+        "scripts/verify_semantic_contrast_runtime.py",
+        "tests/test_scripts/test_verify_semantic_contrast_runtime.py",
+        "src/slm_training/resources/data/eval/openui_hard_valid_v1/",
+        "docs/design/semantic-contrast-corpus-v1.md",
+        "docs/design/iter-slm290-semantic-contrast-20260725.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "SLM-290 local runtime-backed hard-valid publication, source manifest, minimum corpus/class checks, and quality feedback ledger"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1539,16 +1551,21 @@
       ]
     },
     "harness.experiments": {
-      "version": "v103",
+      "version": "v104",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
         {
-          "version": "v103",
+          "version": "v104",
           "date": "2026-07-25",
-          "note": "no-bump: follow the canonical allow_unconstrained_fallback default to False in the e228 recipe fallback; the recipe already sets it explicitly in every shipped arm"
+          "note": "no-bump: follow the canonical allow_unconstrained_fallback default to False in the e228 recipe fallback; every shipped arm already sets it explicitly"
+        },
+        {
+          "version": "v104",
+          "date": "2026-07-25",
+          "note": "Replace the locked power protocol's emitted raw variants with mandatory constrained native and compiler comparisons while preserving historical evidence"
         },
         {
           "version": "v103",
@@ -4718,7 +4735,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -4732,6 +4749,11 @@
         "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Certify tree-edit generation outputs and emit a tagged deterministic valid fallback on unexpected invalid states"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -4787,7 +4809,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v57",
+      "version": "v58",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4801,9 +4823,14 @@
       ],
       "history": [
         {
+          "version": "v58",
+          "date": "2026-07-25",
+          "note": "Gate every evaluation policy on require_constrained_production_config and add the I3 speculative-rank and I4 prefill-schedule decode counters (decode invariants I2/I3/I4/I6)"
+        },
+        {
           "version": "v57",
           "date": "2026-07-25",
-          "note": "Pin grammar_fastpath in the strict evaluation policy and gate named strict policies on require_constrained_production_config; add I3/I4 decode counters (decode invariants I2/I3/I4/I6)"
+          "note": "Make constrained deterministic generation mandatory, replace raw emitted audit arms with constraint-shadow-safe decoder comparisons, and report singleton/prefill work"
         },
         {
           "version": "v56",
@@ -5147,13 +5174,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-07-25",
+          "note": "SLM-292 pair-preserving hard-valid semantic-contrast mixer with score-only negative sides and auditable recipe metadata"
+        },
         {
           "version": "v24",
           "date": "2026-07-23",
@@ -5762,6 +5794,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: SLM-290 adds an eval-corpus runtime batch export under the shared verifier package; committed train-corpus certification behavior is unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "introduce immutable G0-G12 certification for committed train snapshots"
         }
       ]
@@ -6018,12 +6055,17 @@
       ]
     },
     "matrix.perf": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Add serial and bounded device-aware compiler speculative-prefill comparison arms with utilization telemetry"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -6480,8 +6522,26 @@
         }
       ]
     },
+    "harness.experiments.slm292_semantic_contrast_objective": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
+        "scripts/run_slm292_semantic_contrast_objective.py",
+        "tests/test_models/test_semantic_contrast_loss.py",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.json",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-292 bounded local semantic-contrast objective wiring control"
+        }
+      ]
+    },
     "model.twotower": {
-      "version": "v239",
+      "version": "v241",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6495,6 +6555,7 @@
         "src/slm_training/models/onnx_inference.py",
         "src/slm_training/models/checkpoint_migrate.py",
         "src/slm_training/models/template_fill.py",
+        "src/slm_training/models/semantic_contrast_loss.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
         "src/slm_training/dsl/openui_tokens.py",
@@ -6516,9 +6577,19 @@
       ],
       "history": [
         {
+          "version": "v241",
+          "date": "2026-07-25",
+          "note": "Add deterministic speculative ranking over the symbol table and a symbol-table prefill planner, both default-off levers, with their DecodeStats counters (decode invariants I3/I4)"
+        },
+        {
+          "version": "v240",
+          "date": "2026-07-25",
+          "note": "SLM-292 default-off hard-valid pairwise sequence-margin objective and explicit train-loop plumbing"
+        },
+        {
           "version": "v239",
           "date": "2026-07-25",
-          "note": "Fail closed by default: allow_unconstrained_fallback=False, ONNX bypass-before-forward and certified-or-raise, deterministic speculative ranking and symbol-table prefill scheduling levers (decode invariants I2/I3/I4/I6)"
+          "note": "Make exact scope-aware singletons inference-free, batch only ambiguous compiler prefills under device-aware bounds, and prohibit unconstrained generation fallbacks"
         },
         {
           "version": "v238",
@@ -8095,6 +8166,11 @@
         "docs/design/perf-experiment-matrix.md"
       ],
       "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-24",
+          "note": "no-bump: append unrelated C9-C10 compiler-prefill evidence without changing the SLM-194 candidate-proposal matrix"
+        },
         {
           "version": "ffe3-03-v1",
           "date": "2026-07-23",

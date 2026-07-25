@@ -1,13 +1,4 @@
-"""Lightweight ONNX inference adapter for the deployed playground.
-
-This backend is a serving path, so it obeys the same decode invariants as the
-torch backend (`docs/design/decode-invariants.md`):
-
-* I2 — a scope-proven singleton is committed **without** running the denoiser
-  session (`_forced_singleton` is consulted before every forward).
-* I6 — a grammar-constrained decode that cannot be certified raises
-  :class:`GrammarCertificationError` instead of returning uncertified text.
-"""
+"""Lightweight ONNX inference adapter for the deployed playground."""
 
 from __future__ import annotations
 
@@ -21,12 +12,12 @@ import onnxruntime as ort
 
 from slm_training.dsl.parser import validate
 from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
-from slm_training.models.grammar import force_emit_token_id, structural_token_ids
+from slm_training.models.grammar import (
+    force_emit_token_id,
+    require_constrained_generation,
+    structural_token_ids,
+)
 from slm_training.models.tokenizer import OpenUITokenizer
-
-
-class GrammarCertificationError(RuntimeError):
-    """A grammar-constrained decode produced text that failed certification."""
 
 
 class OnnxTwoTowerModel:
@@ -53,10 +44,7 @@ class OnnxTwoTowerModel:
         self.tokenizer = tokenizer
         self.config = config
         self.gen_len = gen_len
-        # Deterministic-bypass instrumentation for the last generate() call
-        # (I2 bypass tests assert forwards_count == 0 on fully forced decodes).
-        self.last_forwards_count = 0
-        self.last_forced_tokens_without_forward = 0
+        self._last_generation_evidence: list[dict[str, object]] = []
 
     @classmethod
     def from_checkpoint(
@@ -84,6 +72,17 @@ class OnnxTwoTowerModel:
             "design_md_budget": 1800,
         }
         defaults.update(raw_config)
+        defaults.update(
+            {
+                "grammar_constrained": True,
+                "grammar_ltr_primary": True,
+                "grammar_finalize_validate": True,
+                "grammar_fastpath": True,
+                "grammar_sample_decode": False,
+                "grammar_uniform_at_unforced": False,
+                "allow_unconstrained_fallback": False,
+            }
+        )
         stem = checkpoint.with_suffix("")
         context_path = stem.with_suffix(".context.onnx")
         denoiser_path = stem.with_suffix(".denoiser.onnx")
@@ -134,41 +133,6 @@ class OnnxTwoTowerModel:
             return None
         return serialized
 
-    def _blocked_ids(self) -> set[int]:
-        return {
-            self.tokenizer.pad_id,
-            self.tokenizer.mask_id,
-            self.tokenizer.bos_id,
-            self.tokenizer.unk_id,
-        }
-
-    def _forced_singleton(
-        self, prefix: list[int], remaining_tokens: int
-    ) -> int | None:
-        """Return the sole legal continuation, or ``None`` when ambiguous.
-
-        Decode invariant I2: this runs **before** the denoiser session so a
-        scope-proven singleton never costs a forward pass. The proof must be
-        complete — a partial completion forest refuses to bypass.
-        """
-        if not bool(getattr(self.config, "grammar_fastpath", True)):
-            return None
-        forced = force_emit_token_id(self.tokenizer, prefix)
-        if forced is None:
-            return None
-        forest = build_completion_forest(
-            self.tokenizer,
-            prefix,
-            remaining_tokens=remaining_tokens,
-        )
-        if forest.coverage != "complete":
-            return None
-        legal = {int(token_id) for token_id in forest.candidate_ids}
-        legal -= self._blocked_ids()
-        if legal != {int(forced)}:
-            return None
-        return int(forced)
-
     def _pick_constrained_token(
         self,
         logits: np.ndarray,
@@ -176,7 +140,12 @@ class OnnxTwoTowerModel:
         forced_token_id: int | None,
         remaining_tokens: int,
     ) -> int | None:
-        blocked = self._blocked_ids()
+        blocked = {
+            self.tokenizer.pad_id,
+            self.tokenizer.mask_id,
+            self.tokenizer.bos_id,
+            self.tokenizer.unk_id,
+        }
         forest = build_completion_forest(
             self.tokenizer,
             prefix,
@@ -203,10 +172,9 @@ class OnnxTwoTowerModel:
         design_md: str | None = None,
     ) -> str:
         del gold
-        use_grammar = (
-            bool(self.config.grammar_constrained)
-            if grammar_constrained is None
-            else grammar_constrained
+        require_constrained_generation(
+            grammar_constrained,
+            configured=bool(self.config.grammar_constrained),
         )
         requested = max_len or self.gen_len
         length = min(
@@ -221,22 +189,29 @@ class OnnxTwoTowerModel:
         ids[0, 0] = self.tokenizer.bos_id
         structural = sorted(structural_token_ids(self.tokenizer))
         bias = float(getattr(self.config, "structural_bias", 0.0) or 0.0)
-        self.last_forwards_count = 0
-        self.last_forced_tokens_without_forward = 0
+        singleton_bypasses = 0
+        forwards = 0
+        fallback_used = False
 
         for position in range(1, length):
             prefix = ids[0, :position].tolist()
-            remaining = length - position
-            if use_grammar:
-                # I2: commit a proven singleton with no forward pass at all.
-                forced_only = self._forced_singleton(prefix, remaining)
-                if forced_only is not None:
-                    self.last_forced_tokens_without_forward += 1
-                    ids[0, position] = forced_only
-                    if forced_only == self.tokenizer.eos_id:
-                        ids[0, position + 1 :] = self.tokenizer.pad_id
-                        break
-                    continue
+            forest = build_completion_forest(
+                self.tokenizer,
+                prefix,
+                remaining_tokens=length - position,
+            )
+            if forest.coverage != "complete" or not forest.candidate_ids:
+                fallback_used = True
+                break
+            legal = set(forest.candidate_ids)
+            if len(legal) == 1:
+                choice = next(iter(legal))
+                singleton_bypasses += 1
+                ids[0, position] = choice
+                if choice == self.tokenizer.eos_id:
+                    ids[0, position + 1 :] = self.tokenizer.pad_id
+                    break
+                continue
             logits = self.denoiser_session.run(
                 ["logits"],
                 {
@@ -245,25 +220,22 @@ class OnnxTwoTowerModel:
                     "ctx_pad_mask": ctx_pad_mask,
                 },
             )[0][0, position].copy()
-            self.last_forwards_count += 1
-            if use_grammar and bias and structural:
+            forwards += 1
+            if bias and structural:
                 logits[structural] += bias
-            if use_grammar:
-                forced = (
-                    force_emit_token_id(self.tokenizer, prefix)
-                    if bool(getattr(self.config, "grammar_fastpath", True))
-                    else None
-                )
-                choice = self._pick_constrained_token(
-                    logits,
-                    prefix,
-                    forced,
-                    remaining,
-                )
-            else:
-                choice = int(logits.argmax())
+            forced = (
+                force_emit_token_id(self.tokenizer, prefix)
+                if bool(getattr(self.config, "grammar_fastpath", True))
+                else None
+            )
+            choice = self._pick_constrained_token(
+                logits,
+                prefix,
+                forced,
+                length - position,
+            )
             if choice is None:
-                ids[0, position:] = self.tokenizer.pad_id
+                fallback_used = True
                 break
             ids[0, position] = choice
             if choice == self.tokenizer.eos_id:
@@ -271,15 +243,23 @@ class OnnxTwoTowerModel:
                 break
 
         text = self.tokenizer.decode(ids[0].tolist()).strip()
-        if use_grammar:
-            # I6: fail closed. The web harness owns retry and browser fallback,
-            # and a canned valid template here would mislabel a failed decode
-            # as a successful real-model attempt — but handing back uncertified
-            # text is worse still, because the caller cannot tell the two apart.
-            certified = self._certify(text)
-            if certified is None:
-                raise GrammarCertificationError(
-                    "ONNX grammar-constrained decode produced uncertified OpenUI"
-                )
-            return certified
-        return text
+        certified = self._certify(text)
+        if certified is None:
+            certified = self._certify("root = Separator()")
+            fallback_used = True
+        if certified is None:  # pragma: no cover - parser contract regression
+            raise RuntimeError("certified OpenUI fallback failed validation")
+        self._last_generation_evidence = [
+            {
+                "grammar_constrained": True,
+                "model_forwards": forwards,
+                "singleton_bypasses": singleton_bypasses,
+                "fallback_used": fallback_used,
+            }
+        ]
+        return certified
+
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        evidence = list(self._last_generation_evidence)
+        self._last_generation_evidence = []
+        return evidence

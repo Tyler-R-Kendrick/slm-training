@@ -65,7 +65,7 @@ def sandbox(tmp_path, monkeypatch):
     )
     write(
         "src/slm_training/harnesses/model_build/eval_policy.py",
-        "STRICT_EVALUATION_POLICY = {\n"
+        "MANDATORY_GENERATION_POLICY = {\n"
         '    "grammar_constrained": True,\n'
         '    "allow_unconstrained_fallback": False,\n'
         '    "grammar_fastpath": True,\n'
@@ -80,16 +80,17 @@ def sandbox(tmp_path, monkeypatch):
     )
     write(
         "src/slm_training/models/onnx_inference.py",
-        "raise GrammarCertificationError\n",
+        "require_constrained_generation\nfallback_used\n",
     )
     write(
         "src/slm_training/web/service.py",
-        "raise GenerationExhausted\nrequire_constrained_production_config\n",
+        "raise GenerationExhausted\nrequire_constrained_production_config\n"
+        "_raise_on_substituted_generation\n",
     )
     write("tests/test_models/test_inference_speed.py", "assert forwards_count == 0\n")
     write(
         "tests/test_web/test_onnx_inference.py",
-        "assert model.last_forced_tokens_without_forward > 0\n",
+        'assert int(evidence["singleton_bypasses"]) > 0\n',
     )
     doc = "# Decode invariants\n" + "".join(
         f"### {name} — x\n\n" for name in ("I1", "I2", "I3", "I4", "I6", "I11", "I12", "I13", "I14")
@@ -151,7 +152,7 @@ def test_unpinning_a_strict_policy_lever_fails(sandbox) -> None:
     _, write = sandbox
     write(
         "src/slm_training/harnesses/model_build/eval_policy.py",
-        'STRICT_EVALUATION_POLICY = {"grammar_constrained": True}\n',
+        'MANDATORY_GENERATION_POLICY = {"grammar_constrained": True}\n',
     )
     with pytest.raises(verifier.DecodeInvariantError, match="does not pin"):
         verifier.certify()
@@ -163,7 +164,7 @@ def test_serving_path_returning_uncertified_text_fails(sandbox) -> None:
     write(
         "src/slm_training/models/onnx_inference.py",
         "return self._certify(text) or text\n",
-    )
+    )  # no require_constrained_generation, no fallback_used evidence
     with pytest.raises(verifier.DecodeInvariantError, match="fail-closed marker"):
         verifier.certify()
 
