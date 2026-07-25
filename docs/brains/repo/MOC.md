@@ -47,6 +47,16 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
   space + complete bridge supervision? (see valid-edit flow project)
 - [[recursive-depth-supervision-objective]] — arithmetic/compatibility contract
   is supported; real-suite mode selection remains open.
+- [[recursive-recurrence-health]] — **updated 2026-07-25 (SLM-421)**: the n=2
+  SLM-282 negative was underpowered noise, not a robust contraction
+  violation. A powered n=20 Wilson-interval rerun (fresh disjoint seeds,
+  preregistered `min_pass_rate=0.5` locked before observing them) found
+  `recursive_core_positive` (18/20, Wilson 95% CI [0.699, 0.972]). This
+  satisfies only one of PR #853-#856's two LAR3 reopening conditions; LAR3
+  stays closed pending a powered rerun of SLM-317's value gate (blocked —
+  that harness is not yet merged to `main`). Next open question: land
+  SLM-317's harness on `main` (via its own PR #852) so its value gate can
+  get the same powered-rerun treatment.
 
 ## Dead ends (do not re-propose)
 
@@ -55,5 +65,3 @@ hypothesis loop's novelty audit can exclude them.
 
 - _(seed)_ E249 / E252 local-preference chain — negative; see
   [`research-lineage.md`](../../design/research-lineage.md) "Exact-state local decision preference".
-- [[recursive-recurrence-health]] — negative: seed 1 / R=4 / example `b`
-  regressed at the final depth, so the LAR3 activation prerequisite failed.
