@@ -1,0 +1,89 @@
+{
+  "schema_version": "paraphrase_provenance_contract/v1",
+  "issue": "SLM-364",
+  "milestone": "DSH2 M2 - Paraphrase synthesis and ambiguity control",
+  "date": "2026-07-25",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "implementation": "ParaphraseRequestV1 / ParaphraseResponseV1 / ReplayCache / request_paraphrase",
+  "depends_on": "dsl.semantic_frame (SLM-363, SemanticFrameV1 / CAP1SchemaV1)",
+  "slm_343_status": "backlog design-doc-only; StructuredDslSchemaV1 does not exist; CAP1SchemaV1 reused as its closest merged equivalent",
+  "sendable_payload_fields": ["schema", "frame"],
+  "excluded_frame_field": "canonical_source (literal canonical DSL target text)",
+  "cache_key_fields": [
+    "provider_id",
+    "model_id",
+    "model_revision",
+    "prompt_digest",
+    "system_digest",
+    "sampling",
+    "seed"
+  ],
+  "cache_key_excluded_fields": ["request_id", "created_at", "quarantined_at", "promoted_at"],
+  "providers": {
+    "DeterministicFixtureProviderV1": "fully offline, no network, no credentials; exercised end-to-end in every test",
+    "ApiKeyStubProviderV1": "structurally wired to a real-API shape; generate() raises ProviderNetworkDisabledError unless a transport callable is injected; never invoked against a real network anywhere in this change"
+  },
+  "controls": {
+    "sendable_payload_contains_only_schema_and_frame_keys": "passed",
+    "sendable_payload_excludes_canonical_dsl_source_text": "passed",
+    "sendable_payload_has_no_split_or_label_fields": "passed",
+    "cache_key_ignores_request_id_and_timestamp": "passed",
+    "cache_key_changes_with_seed_and_sampling": "passed",
+    "cache_key_matches_manual_computation": "passed",
+    "same_identity_reuses_one_cached_artifact_without_recalling_provider": "passed",
+    "promoted_artifact_resolves_exact_provenance": "passed",
+    "distinct_frames_yield_distinct_frame_fingerprints": "passed",
+    "dry_run_never_calls_provider_or_writes_cache": "passed",
+    "empty_response_stays_quarantined_and_is_never_promoted": "passed",
+    "echoed_structured_payload_is_rejected_not_promoted": "passed",
+    "validate_raw_response_rejects_empty_and_echo_and_secret_leak": "passed",
+    "quarantine_promote_refuses_without_validated_entry": "passed",
+    "total_provider_failure_publishes_nothing": "passed",
+    "retry_recovers_and_promotes_only_the_final_successful_response": "passed",
+    "rate_limit_without_enough_retries_publishes_nothing": "passed",
+    "secret_never_leaks_into_any_persisted_or_repr_form": "passed",
+    "api_key_stub_never_calls_network_without_a_wired_transport": "passed",
+    "sampling_params_rejects_out_of_range_values": "passed",
+    "deterministic_fixture_provider_is_deterministic": "passed",
+    "deterministic_fixture_provider_output_changes_with_seed": "passed"
+  },
+  "commands": [
+    "python -m pytest -q tests/test_dsl/test_paraphrase_provenance.py",
+    "python -m pytest -q tests/test_dsl/test_paraphrase_provenance.py tests/test_dsl/test_semantic_frame.py",
+    "python -m ruff check src/slm_training/dsl/paraphrase_provenance.py tests/test_dsl/test_paraphrase_provenance.py",
+    "python -m ruff format --check src/slm_training/dsl/paraphrase_provenance.py tests/test_dsl/test_paraphrase_provenance.py",
+    "python -m compileall -q src/slm_training/dsl/paraphrase_provenance.py tests/test_dsl/test_paraphrase_provenance.py",
+    "python -m scripts.verify_version_stamps --check",
+    "python -m scripts.repo_policy",
+    "git diff --check"
+  ],
+  "results": {
+    "focused_pytest_new_module": "27 passed",
+    "combined_pytest_with_semantic_frame_dependency": "44 passed (27 + 17)",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "compileall": "passed",
+    "version_stamps_check": "passed",
+    "repo_policy": "ok",
+    "diff_check": "passed"
+  },
+  "claim_limits": [
+    "No real LLM API was called: no network access, no real credentials, no cost.",
+    "This is a fixture/contract-level provenance and caching module only.",
+    "ApiKeyStubProviderV1 is structurally wired but never invoked against a real hosted API anywhere in this change.",
+    "ReplayCache is in-memory only; no disk persistence, cross-run replay, or distributed cache was built.",
+    "validate_raw_response is a generic well-formedness/echo/length/secret-leak gate, not a semantic-quality or grounding judge.",
+    "No corpus synthesis, train, model eval, benchmark, checkpoint, AgentEvals publication, capability certificate, or ship claim was produced."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2364419d97619d7056c6b0c049acace95daae747",
+    "code_dirty": true,
+    "components": {
+      "dsl.paraphrase_provenance": "v1",
+      "dsl.semantic_frame": "v1"
+    },
+    "stamped_at": "2026-07-25T05:11:43.841727+00:00"
+  }
+}

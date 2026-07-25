@@ -461,6 +461,23 @@
         }
       ]
     },
+    "dsl.paraphrase_provenance": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/paraphrase_provenance.py",
+        "tests/test_dsl/test_paraphrase_provenance.py",
+        "docs/design/dsh2-03-paraphrase-provenance-20260725.md",
+        "docs/design/dsh2-03-paraphrase-provenance-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial provider-neutral, content-addressed NL paraphrase request/response provenance contract: schema+frame-only sendable payload, replay cache, quarantine-before-promotion validation, and a deterministic offline fixture provider plus a structurally-wired never-invoked API-shaped stub with secret redaction"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
