@@ -33,7 +33,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/slm332-latent-geometry.eval.jsonl",
     "summary": {
-      "durationMs": 96,
+      "durationMs": 98,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -66,7 +66,7 @@
     "reconstruction_mse": 0.004580718465149403,
     "within_noise_mse": 0.00254172645509243
   },
-  "generated_at": "2026-07-25T21:22:35.587125+00:00",
+  "generated_at": "2026-07-25T21:24:46.797977+00:00",
   "interpolation": {
     "reason": "no_verified_latent_to_program_decoder",
     "required_when_available": [
@@ -97,13 +97,13 @@
     "status": "unavailable_fail_closed"
   },
   "version_stamp": {
-    "code_commit": "de5d78a44c40e763e039fd8d0cbab706fc8f9977",
+    "code_commit": "84f670bfa99450744d9a939808c80526609a3303",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v115",
       "harness.experiments.slm332_latent_geometry": "v5"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-25T21:22:35.587102+00:00"
+    "stamped_at": "2026-07-25T21:24:46.797951+00:00"
   }
 }

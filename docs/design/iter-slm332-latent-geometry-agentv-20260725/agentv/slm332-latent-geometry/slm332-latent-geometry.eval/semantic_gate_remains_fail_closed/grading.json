@@ -42,12 +42,12 @@
   ],
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "de5d78a44c40e763e039fd8d0cbab706fc8f9977",
+    "code_commit": "84f670bfa99450744d9a939808c80526609a3303",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v115",
       "harness.experiments.slm332_latent_geometry": "v5"
     },
-    "stamped_at": "2026-07-25T21:22:35.587102+00:00"
+    "stamped_at": "2026-07-25T21:24:46.797951+00:00"
   }
 }
