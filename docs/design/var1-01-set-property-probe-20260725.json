@@ -3,7 +3,7 @@
   "issue": "SLM-424 (VAR1-01)",
   "hypothetical": true,
   "production_action_space_changed": false,
-  "generated_at": "2026-07-25T19:04:27Z",
+  "generated_at": "2026-07-25T19:15:16Z",
   "mode": "extended",
   "max_edits": 8,
   "node_budget": 15,
@@ -17,7 +17,7 @@
       "mode": "extended",
       "max_edits": 8,
       "node_budget": 15,
-      "generated_at": "2026-07-25T19:04:27Z",
+      "generated_at": "2026-07-25T19:15:16Z",
       "verdict_policy": "reachable_fraction is computed over decided cases only; UNKNOWN_BUDGET cases are reported separately and are never counted as unreachable; suites without a corpus are corpus_unavailable, never zero-reachable. Reachability is a space-coverage proof, never a model-quality claim.",
       "suites": {
         "train": {
@@ -467,70 +467,70 @@
       },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "5c7e983712a20d88de4b90e46b9c60afd88b8e69",
+        "code_commit": "4d6c556d5bbbbc498e1b23f5dda32b4e7c06b6a6",
         "code_dirty": true,
         "components": {
           "harness.experiments.slm299_edit_reachability": "v4"
         },
-        "stamped_at": "2026-07-25T19:04:28.724206+00:00"
+        "stamped_at": "2026-07-25T19:15:17.271103+00:00"
       },
       "x22_evidence_annotations": [
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided adversarial cases (1 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided adversarial cases (1 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "rico",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 35 decided rico cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on rico in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "rico",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 35 decided rico cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on rico in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
@@ -544,7 +544,7 @@
       "mode": "extended",
       "max_edits": 8,
       "node_budget": 15,
-      "generated_at": "2026-07-25T19:04:27Z",
+      "generated_at": "2026-07-25T19:15:16Z",
       "verdict_policy": "reachable_fraction is computed over decided cases only; UNKNOWN_BUDGET cases are reported separately and are never counted as unreachable; suites without a corpus are corpus_unavailable, never zero-reachable. Reachability is a space-coverage proof, never a model-quality claim.",
       "suites": {
         "train": {
@@ -1004,58 +1004,58 @@
       },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "5c7e983712a20d88de4b90e46b9c60afd88b8e69",
+        "code_commit": "4d6c556d5bbbbc498e1b23f5dda32b4e7c06b6a6",
         "code_dirty": true,
         "components": {
           "harness.experiments.slm299_edit_reachability": "v4"
         },
-        "stamped_at": "2026-07-25T19:05:07.935258+00:00"
+        "stamped_at": "2026-07-25T19:15:55.964461+00:00"
       },
       "x22_evidence_annotations": [
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.5 over 2 decided adversarial cases (2 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.5 over 2 decided adversarial cases (2 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
@@ -1069,7 +1069,7 @@
       "mode": "extended",
       "max_edits": 8,
       "node_budget": 15,
-      "generated_at": "2026-07-25T19:04:27Z",
+      "generated_at": "2026-07-25T19:15:16Z",
       "verdict_policy": "reachable_fraction is computed over decided cases only; UNKNOWN_BUDGET cases are reported separately and are never counted as unreachable; suites without a corpus are corpus_unavailable, never zero-reachable. Reachability is a space-coverage proof, never a model-quality claim.",
       "suites": {
         "train": {
@@ -1519,70 +1519,70 @@
       },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "5c7e983712a20d88de4b90e46b9c60afd88b8e69",
+        "code_commit": "4d6c556d5bbbbc498e1b23f5dda32b4e7c06b6a6",
         "code_dirty": true,
         "components": {
           "harness.experiments.slm299_edit_reachability": "v4"
         },
-        "stamped_at": "2026-07-25T19:05:08.064116+00:00"
+        "stamped_at": "2026-07-25T19:15:56.075497+00:00"
       },
       "x22_evidence_annotations": [
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided adversarial cases (1 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided adversarial cases (1 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "rico",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 35 decided rico cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on rico in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "rico",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 35 decided rico cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on rico in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
@@ -1596,7 +1596,7 @@
       "mode": "extended",
       "max_edits": 8,
       "node_budget": 15,
-      "generated_at": "2026-07-25T19:04:27Z",
+      "generated_at": "2026-07-25T19:15:16Z",
       "verdict_policy": "reachable_fraction is computed over decided cases only; UNKNOWN_BUDGET cases are reported separately and are never counted as unreachable; suites without a corpus are corpus_unavailable, never zero-reachable. Reachability is a space-coverage proof, never a model-quality claim.",
       "suites": {
         "train": {
@@ -2056,58 +2056,58 @@
       },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "5c7e983712a20d88de4b90e46b9c60afd88b8e69",
+        "code_commit": "4d6c556d5bbbbc498e1b23f5dda32b4e7c06b6a6",
         "code_dirty": true,
         "components": {
           "harness.experiments.slm299_edit_reachability": "v4"
         },
-        "stamped_at": "2026-07-25T19:05:17.138412+00:00"
+        "stamped_at": "2026-07-25T19:16:04.814940+00:00"
       },
       "x22_evidence_annotations": [
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.5 over 2 decided adversarial cases (2 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "adversarial",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.5 over 2 decided adversarial cases (2 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "held_out",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "ood",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
         },
         {
-          "date": "2026-07-25T19:04:27Z",
+          "date": "2026-07-25T19:15:16Z",
           "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
           "suite": "smoke",
           "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
@@ -2679,11 +2679,11 @@
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "5c7e983712a20d88de4b90e46b9c60afd88b8e69",
+    "code_commit": "4d6c556d5bbbbc498e1b23f5dda32b4e7c06b6a6",
     "code_dirty": true,
     "components": {
       "harness.experiments.var1_01_set_property_probe": "v1"
     },
-    "stamped_at": "2026-07-25T19:05:17.138653+00:00"
+    "stamped_at": "2026-07-25T19:16:04.815194+00:00"
   }
 }

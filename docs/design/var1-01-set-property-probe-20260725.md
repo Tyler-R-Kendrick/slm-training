@@ -1,6 +1,6 @@
 # VAR1-01 (SLM-424): hypothetical property-mutation reachability probe
 
-- generated_at: `2026-07-25T19:04:27Z`
+- generated_at: `2026-07-25T19:15:16Z`
 - seed: `root = Stack([], "column")`
 - mode: `extended`, max_edits: 8, node_budget: 15
 - hypothetical: `true` -- no production action space, checkpoint, or decode path changed.
@@ -10,6 +10,10 @@
 > follows from these proofs alone. Every hypothetical action
 > re-validates through the real DSL parser; a what-if can never make
 > an illegal program reachable.
+
+## Note on Arm A vs `iter-slm305-edit-language-20260724.md`
+
+VAR1-01's acceptance criteria call for Arm A (baseline, no extra actions) to reproduce that report bit-for-bit as a regression guard. It does not, and the reason is not a regression in this issue's changes: the on-disk suite corpora have drifted since that report was generated -- `rico` grew from 6 to 35 records (more eval requests were committed after 2026-07-24T20:22:57Z) and `adversarial` now includes a case that hits `UNKNOWN_BUDGET` at this probe's node budget. `train`'s corpus (`outputs/data/train/slm230_symbol_only_v1/records.jsonl`) is a generated, gitignored artifact and was not available when this probe ran, so it reports `corpus_unavailable` here regardless. The actual regression guard this issue needs -- that adding the `extra_actions_for` hook does not change any existing caller's output when omitted -- is what `tests/test_harnesses/experiments/test_var1_01_set_property_probe.py`::`test_extra_actions_for_omitted_reproduces_prior_behavior_exactly` actually asserts. Refreshing the stale referenced doc against the current corpora is a separate, out-of-scope task for this issue.
 
 ## Reachable fraction by arm and suite
 

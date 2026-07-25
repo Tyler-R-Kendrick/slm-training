@@ -5150,6 +5150,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: pre-merge CI fixup -- 3 tests assumed 'Modal([], \"column\")' parses validly, which held in the dev sandbox but not in CI's environment; replaced with a Card-based construction already proven valid throughout the existing test suite, and added a report section explaining why Arm A cannot reproduce the referenced (now-stale) iter-slm305 doc bit-for-bit. Behavior of the probe/registry itself is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "SLM-424 (VAR1-01): four-arm hypothetical property-mutation/component-widening reachability probe over the SLM-299 suite corpora (A baseline, B set_property, C component_widen, D both). hypothetical=true throughout; no production action space change. node_budget reduced from the issue's suggested 120 to 15 to fit the repository's MAX_RUN_MINUTES=3 hard cap -- see the report's methodology note."
         }
       ]
