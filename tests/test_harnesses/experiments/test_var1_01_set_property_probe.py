@@ -28,6 +28,12 @@ from scripts.run_var1_01_set_property_probe import (
 
 SEED = DEFAULT_SEED_SOURCE  # 'root = Stack([], "column")'
 
+# Reused verbatim from test_slm299_edit_reachability.py's own _CARD_TARGET --
+# a target already proven parseable/valid across every environment this
+# suite runs in, so the component_widen tests below never depend on any
+# other component's exact grammar shape.
+_CARD_TARGET = 'root = Stack([card], "column")\ncard = Card([], "column")'
+
 
 # (a) set_property hypothetical: root-rest mutation ------------------------
 
@@ -62,47 +68,68 @@ def test_set_property_capability_gates_the_invariant_precisely() -> None:
 # (b) component_widen hypothetical: bounded to a narrowed live space -------
 
 
-def test_unsupported_component_is_unreachable_at_baseline() -> None:
-    target = 'root = Stack([n0], "column")\nn0 = Modal([], "column")'
-    case = analyze_reachability(SEED, target, slot_inventory=[])
+def test_unsupported_component_is_unreachable_when_pack_owned_tuple_is_narrow(
+    monkeypatch,
+) -> None:
+    """Demonstrates the real, current-state unsupported_component proof: it
+    checks CONTAINER_COMPONENTS by name, so narrowing that tuple (exactly
+    the kind of pack-vs-variant drift VAR0-03 exists to close) makes an
+    otherwise valid target provably unreachable. Uses Card -- whose validity
+    in this exact shape is already exercised throughout the existing test
+    suite (``_CARD_TARGET`` above) -- rather than depend on any other
+    component's exact grammar shape being parseable across environments."""
+    import slm_training.harnesses.experiments.slm299_edit_reachability as module
+
+    monkeypatch.setattr(module, "CONTAINER_COMPONENTS", ("Stack", "Form"))
+    case = module.analyze_reachability(SEED, _CARD_TARGET, slot_inventory=[])
     assert case.verdict is Verdict.PROVEN_UNREACHABLE
     assert case.reason_code == "unsupported_component"
 
 
-def test_component_widen_flips_a_real_repo_case_despite_full_grammar_space() -> None:
-    # Modal IS already a member of the live, grammar-derived
-    # TreeEditSpace.components (36 names) -- but _check_invariants's
-    # unsupported_component proof checks CONTAINER_COMPONENTS (3 names) too
-    # (an ``or``, so either narrow-tuple absence alone fires it), so the
-    # proof is unsound for anything in that 33-name gap: a real REPLACE
-    # could already reach it once the flawed proof stops pre-empting BFS.
-    # This is the exact narrow-vs-full mismatch VAR0-03 exists to close (see
-    # the probe report's "analyzer correctness note"); component_widen_action
-    # closes it here as a bounded what-if, without touching production code.
-    target = 'root = Stack([n0], "column")\nn0 = Modal([], "column")'
-    what_if = analyze_reachability(
-        SEED, target, slot_inventory=[], extra_actions=[component_widen_action(["Modal"])]
+def test_component_widen_flips_a_narrowed_container_components_tuple(
+    monkeypatch,
+) -> None:
+    # Card is already a member of the live, grammar-derived
+    # TreeEditSpace.components -- but _check_invariants's unsupported_component
+    # proof also checks CONTAINER_COMPONENTS by name (an ``or``, so either
+    # narrow-tuple absence alone fires it), so the proof is unsound for
+    # anything narrowed out of that tuple: a real REPLACE can already reach
+    # it once the flawed proof stops pre-empting BFS. This is the exact
+    # narrow-vs-full mismatch VAR0-03 exists to close (see the probe report's
+    # "analyzer correctness note"); component_widen_action closes it here as
+    # a bounded what-if, without touching production code.
+    import slm_training.harnesses.experiments.slm299_edit_reachability as module
+
+    monkeypatch.setattr(module, "CONTAINER_COMPONENTS", ("Stack", "Form"))
+    what_if = module.analyze_reachability(
+        SEED, _CARD_TARGET, slot_inventory=[], extra_actions=[component_widen_action(["Card"])]
     )
     assert what_if.verdict is Verdict.PROVEN_REACHABLE
 
 
-def test_component_widen_flips_a_case_absent_from_a_narrowed_space(
+def test_component_widen_generate_is_exercised_when_the_live_space_lacks_it(
     monkeypatch,
 ) -> None:
+    """Narrows both CONTAINER_COMPONENTS and the live TreeEditSpace itself,
+    so no real action can enumerate Card at all -- only
+    ``component_widen_action``'s own ``generate()`` (which assigns the
+    hypothetical component directly, bypassing ``space.components``) can
+    produce it. This is the one scenario that actually requires the
+    synthetic generator rather than merely lifting the invariant gate."""
     import slm_training.harnesses.experiments.slm299_edit_reachability as module
 
     narrowed = TreeEditSpace(
-        components=("TextContent", "Button", "Image", "TextInput", "Stack", "Card", "Form")
+        components=("TextContent", "Button", "Image", "TextInput", "Stack", "Form")
     )
     monkeypatch.setattr(module, "_SHARED_SPACE", narrowed)
+    monkeypatch.setattr(module, "CONTAINER_COMPONENTS", ("Stack", "Form"))
 
-    target = 'root = Stack([n0], "column")\nn0 = Modal([], "column")'
-    baseline = module.analyze_reachability(SEED, target, slot_inventory=[])
+    baseline = module.analyze_reachability(SEED, _CARD_TARGET, slot_inventory=[])
     assert baseline.verdict is Verdict.PROVEN_UNREACHABLE
     assert baseline.reason_code == "unsupported_component"
 
     what_if = module.analyze_reachability(
-        SEED, target, slot_inventory=[], extra_actions=[component_widen_action(["Modal"])]
+        SEED, _CARD_TARGET, slot_inventory=[], extra_actions=[component_widen_action(["Card"])]
     )
     assert what_if.verdict is Verdict.PROVEN_REACHABLE
     assert what_if.details["uses_synthetic_actions"] is True
@@ -113,7 +140,7 @@ def test_record_target_components_is_empty_for_grammar_legal_targets() -> None:
     # grammar-derived TreeEditSpace.components -- component_widen therefore
     # never fires in the real suite corpora today (see the probe report).
     record = {
-        "openui": 'root = Stack([n0], "column")\nn0 = Modal([], "column")',
+        "openui": _CARD_TARGET,
     }
     assert _record_target_components(record) == ()
 
