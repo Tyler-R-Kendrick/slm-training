@@ -6319,13 +6319,18 @@
       ]
     },
     "model.quantization": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-25",
+          "note": "DSH3-21: LocalFlatHead action_embeddings is now a registered nn.ParameterDict keyed by canonical_action_key(), with explicit materialize()/checkpoint_state()/load_checkpoint_state() for optimizer-visible, checkpoint-stable training; fixture-mode oracle/random-init behavior unchanged"
+        },
         {
           "version": "v5",
           "date": "2026-07-20",
