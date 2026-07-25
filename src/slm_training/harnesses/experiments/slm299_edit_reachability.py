@@ -442,6 +442,11 @@ def _check_invariants(
     # rest must therefore be a seed rest or (with container_add) a candidate
     # mint rest; without any container-creating action the multisets must
     # match exactly.
+    if "set_property" in capabilities:
+        # A rest-mutation action can produce any target rest on any
+        # container, root included -- skip both rest checks below entirely.
+        return None
+
     seed_rests = sorted(s.rest for s in seed_containers)
     target_rests = sorted(s.rest for s in target_containers)
     # Root can never be removed or re-minted, and REPLACE preserves rest:
@@ -449,13 +454,10 @@ def _check_invariants(
     seed_root_rest = next(
         (s.rest for s in seed_containers if s.name == "root"), None
     )
-    if "set_property" not in capabilities:
-        for stmt in target_containers:
-            if stmt.name == "root" and stmt.rest != seed_root_rest:
-                return REASON_NEEDS_DIRECTION_CHANGE
-    if "set_property" in capabilities:
-        pass  # a rest-mutation action can produce any target rest; skip entirely.
-    elif "container_add" in capabilities:
+    for stmt in target_containers:
+        if stmt.name == "root" and stmt.rest != seed_root_rest:
+            return REASON_NEEDS_DIRECTION_CHANGE
+    if "container_add" in capabilities:
         allowed = set(seed_rests) | set(CONTAINER_RESTS)
         if any(rest not in allowed for rest in target_rests):
             return REASON_NEEDS_DIRECTION_CHANGE

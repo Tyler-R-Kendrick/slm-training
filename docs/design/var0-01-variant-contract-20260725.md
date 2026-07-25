@@ -51,12 +51,15 @@ displaced `dsl/pack.py` as the live authority.
 **Disposition: `UNRESOLVED`.** This issue's non-goals explicitly forbid
 unifying or refactoring pack/variant surfaces ("no model, checkpoint,
 training, or decode-path change"). `variants.py`'s live checks are therefore
-written against `dsl/pack.py` (what `operators/registry.py` actually imports),
-and `_imports_module(source_path, "dsl.pack")` matches both `dsl.pack` and
-`dsl.packs` import spellings so a future consolidation does not silently
-invalidate the gate. Reconciling the two pack contracts is out of scope here
-and is not currently owned by any VAR-series issue; it should be triaged
-separately.
+written against `dsl/pack.py` (what `operators/registry.py` actually
+imports): `_imports_module(source_path, "slm_training.dsl.pack")` matches
+that module or a true submodule of it (exact dotted-prefix match, never a
+bare substring, so `slm_training.dsl.packaging` cannot be mistaken for it).
+It deliberately does **not** also accept `slm_training.dsl.packs` (plural) --
+that is the other, currently-unconsumed-by-`repl_operators` pack contract,
+and conflating the two would hide the exact drift this survey exists to
+record. Reconciling the two pack contracts is out of scope here and is not
+currently owned by any VAR-series issue; it should be triaged separately.
 
 ## Per-variant classification
 
@@ -140,8 +143,8 @@ separately.
 
 ## Verification
 
-```
-python -m scripts.verify_decode_invariants   # now reports a variant_contracts block
-python -m pytest -q tests/test_dsl/test_variants.py tests/test_dsl/test_ops_vocab.py
-python -m scripts.verify_version_stamps --check --base <merge-base>
+```bash
+rtk python -m scripts.verify_decode_invariants
+rtk python -m pytest -q tests/test_dsl/test_variants.py tests/test_dsl/test_ops_vocab.py
+rtk python -m scripts.verify_version_stamps --check --base <merge-base>
 ```

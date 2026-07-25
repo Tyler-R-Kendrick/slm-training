@@ -5118,6 +5118,11 @@
         {
           "version": "v4",
           "date": "2026-07-25",
+          "note": "no-bump: pre-merge review fixup -- collapse the set_property if/pass/elif chain in _check_invariants into an early-return guard clause (same behavior, verified by the full existing + new test suite passing unchanged)."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
           "note": "VAR1-01 (SLM-424): add set_property_action() and component_widen_action() hypothetical ExtraAction factories plus matching capability gates in _check_invariants ('set_property', 'component_widen'); thread an optional extra_actions_for hook through run_slm299_reachability_audit's analyze_record/_summarize_records/build_report (default None preserves prior behavior exactly). No production action space, TreeEditSpace, or checkpoint change; what-if lanes only, re-validated through the real parser and marked uses_synthetic_actions."
         },
         {
@@ -5147,6 +5152,11 @@
         "docs/design/var1-01-set-property-probe-20260725.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: pre-merge review fixup -- suppress x22_evidence_annotations for hypothetical arms B/C/D (only the real baseline's reachable_fraction may attribute to the real design docs those annotations name); default --node-budget to 15 (matches the committed evidence; 120 remains available via the flag for a longer out-of-cap job); create --md-out's parent directory before writing; _fmt_fraction now renders a None reachable_fraction as the explicit no_decided_cases label instead of the string 'None'; compute _record_target_components once per record in arms C/D."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -8882,6 +8892,11 @@
         "tests/test_dsl/test_variants.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: pre-merge review fixup -- _imports_module now requires an exact dotted-prefix match (module itself or a true submodule) instead of a bare substring, so e.g. slm_training.dsl.packaging can no longer be mistaken for slm_training.dsl.pack; added a negative regression test. No change to any of the three registered variants' inventory_source outcome."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

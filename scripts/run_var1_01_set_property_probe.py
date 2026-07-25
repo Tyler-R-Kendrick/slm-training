@@ -87,26 +87,20 @@ def _record_target_components(record: dict[str, Any]) -> tuple[str, ...]:
     return tuple(sorted({s.comp for s in statements if s.comp not in _LIVE_COMPONENTS}))
 
 
+def _widen_actions(record: dict[str, Any]) -> list:
+    comps = _record_target_components(record)
+    return [component_widen_action(comps)] if comps else []
+
+
 def _extra_actions_for(arm: str):
     if arm == "A_baseline":
         return None
     if arm == "B_set_property":
         return lambda record: [set_property_action()]
     if arm == "C_component_widen":
-        return lambda record: (
-            [component_widen_action(_record_target_components(record))]
-            if _record_target_components(record)
-            else []
-        )
+        return _widen_actions
     if arm == "D_both":
-        return lambda record: [
-            set_property_action(),
-            *(
-                [component_widen_action(_record_target_components(record))]
-                if _record_target_components(record)
-                else []
-            ),
-        ]
+        return lambda record: [set_property_action(), *_widen_actions(record)]
     raise ValueError(f"unknown arm {arm!r}")
 
 
@@ -133,12 +127,12 @@ def _categorize_flips(comparison: dict[str, Any]) -> dict[str, int]:
 
 
 def run_probe(
-    *, max_edits: int = 8, node_budget: int = 120, generated_at: str
+    *, max_edits: int = 8, node_budget: int = 15, generated_at: str
 ) -> dict[str, Any]:
     corpora = load_corpora()
     arm_reports: dict[str, Any] = {}
     for arm in ARMS:
-        arm_reports[arm] = build_report(
+        report = build_report(
             corpora,
             max_edits=max_edits,
             node_budget=node_budget,
@@ -146,6 +140,16 @@ def run_probe(
             mode="extended",
             extra_actions_for=_extra_actions_for(arm),
         )
+        if arm != "A_baseline":
+            # build_x22_evidence_annotations attributes suite quality readings
+            # in real design docs to this run's reachable_fraction. That is
+            # only ever true of the real (baseline) action space; a
+            # hypothetical arm's fraction must never be attachable to those
+            # docs, unmarked, by anything that reads annotations by
+            # target_doc. Drop them here rather than stamp them, since
+            # nothing in this probe's own report consumes them.
+            report.pop("x22_evidence_annotations", None)
+        arm_reports[arm] = report
 
     baseline_suites = arm_reports["A_baseline"]["suites"]
     flips: dict[str, dict[str, Any]] = {}
@@ -185,6 +189,8 @@ def run_probe(
 def _fmt_fraction(summary: dict[str, Any]) -> str:
     if summary.get("status") == "corpus_unavailable":
         return "corpus_unavailable"
+    if summary["reachable_fraction"] is None:
+        return "no_decided_cases"
     return str(summary["reachable_fraction"])
 
 
@@ -364,7 +370,11 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--max-edits", type=int, default=8)
-    parser.add_argument("--node-budget", type=int, default=120)
+    # 15, not the issue's suggested 120: that is what actually produced the
+    # committed evidence within MAX_RUN_MINUTES=3 (see the report's
+    # methodology note). Pass --node-budget 120 explicitly for a longer,
+    # separately-run job outside that cap.
+    parser.add_argument("--node-budget", type=int, default=15)
     parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON_OUT)
     parser.add_argument("--md-out", type=Path, default=DEFAULT_MD_OUT)
     args = parser.parse_args(argv)
@@ -375,6 +385,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
     args.json_out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    args.md_out.parent.mkdir(parents=True, exist_ok=True)
     args.md_out.write_text(render_markdown(payload), encoding="utf-8")
     print(_decision_sentence(payload))
     print(f"wrote {args.json_out} and {args.md_out}")

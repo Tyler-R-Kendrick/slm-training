@@ -127,6 +127,26 @@ def test_an_honest_module_constant_claim_is_not_rejected() -> None:
     module._validate_inventory_source(fixture)  # must not raise
 
 
+def test_imports_module_rejects_a_substring_false_positive() -> None:
+    """``slm_training.dsl.packaging`` must never satisfy a
+    ``slm_training.dsl.pack`` authority check -- only itself or a true
+    submodule (dotted prefix) may."""
+    import slm_training.dsl.variants as module
+
+    assert module._names_pack_authority(
+        "slm_training.dsl.packaging", "slm_training.dsl.pack"
+    ) is False
+    assert module._names_pack_authority(
+        "slm_training.dsl.packs.types", "slm_training.dsl.pack"
+    ) is False
+    assert module._names_pack_authority(
+        "slm_training.dsl.pack", "slm_training.dsl.pack"
+    ) is True
+    assert module._names_pack_authority(
+        "slm_training.dsl.pack.helpers", "slm_training.dsl.pack"
+    ) is True
+
+
 def test_an_unregistered_pack_id_fails_the_build(monkeypatch) -> None:
     """Every registered variant declares ``pack_id="openui"``; if it stops being
     a known pack, the build must reject it rather than silently trust the claim."""

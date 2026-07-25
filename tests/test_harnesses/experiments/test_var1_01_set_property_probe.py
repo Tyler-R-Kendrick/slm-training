@@ -58,11 +58,18 @@ def test_set_property_flips_root_direction_change_and_is_marked() -> None:
 
 
 def test_set_property_capability_gates_the_invariant_precisely() -> None:
-    # Without the capability, the same target is still unreachable at the
-    # invariant-proof stage (no BFS even runs) -- the capability, not BFS
-    # luck, is what changes the verdict.
-    baseline = analyze_reachability(SEED, 'root = Stack([], "row")', slot_inventory=[])
+    # Without the capability, the invariant proof fires before BFS ever runs
+    # (no states_visited recorded); with it, the proof is skipped and BFS
+    # actually searches (states_visited is populated) -- the capability,
+    # not BFS luck, is what changes the verdict.
+    target = 'root = Stack([], "row")'
+    baseline = analyze_reachability(SEED, target, slot_inventory=[])
     assert baseline.details.get("states_visited") is None
+
+    what_if = analyze_reachability(
+        SEED, target, slot_inventory=[], extra_actions=[set_property_action()]
+    )
+    assert what_if.details.get("states_visited") is not None
 
 
 # (b) component_widen hypothetical: bounded to a narrowed live space -------

@@ -149,13 +149,21 @@ def _module(relative: str) -> ast.Module:
     return ast.parse(_read(relative), filename=relative)
 
 
+def _names_pack_authority(module_name: str, target: str) -> bool:
+    """``module_name`` is ``target`` itself or one of its submodules -- never
+    a substring match, so e.g. ``slm_training.dsl.packaging`` cannot be
+    mistaken for ``slm_training.dsl.pack``/``slm_training.dsl.packs``."""
+    return module_name == target or module_name.startswith(f"{target}.")
+
+
 def _imports_module(relative: str, target: str) -> bool:
-    """Static check: does the module at ``relative`` import something naming ``target``?"""
+    """Static check: does the module at ``relative`` import ``target`` or a submodule of it?"""
     for node in ast.walk(_module(relative)):
-        if isinstance(node, ast.ImportFrom) and node.module and target in node.module:
-            return True
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if _names_pack_authority(node.module, target):
+                return True
         if isinstance(node, ast.Import) and any(
-            target in alias.name for alias in node.names
+            _names_pack_authority(alias.name, target) for alias in node.names
         ):
             return True
     return False
@@ -211,7 +219,7 @@ def _validate_inventory_source(entry: VariantContractV1) -> None:
     """
     if entry.inventory_source != "pack":
         return
-    if not _imports_module(entry.source_path, "dsl.pack"):
+    if not _imports_module(entry.source_path, "slm_training.dsl.pack"):
         raise VariantContractError(
             f"{entry.variant_id} claims inventory_source='pack' (pack_id="
             f"{entry.pack_id!r}) but {entry.source_path} does not import "
