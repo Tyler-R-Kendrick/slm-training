@@ -22,6 +22,7 @@ from slm_training.dsl.operators import (
     OperatorMutationV1,
     OperatorReadWriteSetV1,
     OperatorStateV1,
+    OperatorTransactionProofV1,
     OperatorTransactionRejectionKind,
     PreconditionV1,
     PreparedOperatorActionV1,
@@ -669,6 +670,30 @@ def test_serialization_round_trips_and_migration_guards_reject_unknown_schema() 
     stale_payload["schema"] = "operator_target_footprint/v0"
     with pytest.raises(ValueError, match="schema_unsupported"):
         TargetFootprintV1.from_dict(stale_payload)
+
+
+def test_transaction_proof_checks_are_order_and_duplicate_stable() -> None:
+    unsorted_proof = OperatorTransactionProofV1(
+        proof_kind="transaction.prepared",
+        checks=(
+            "order.canonical",
+            "base.consistent",
+            "base.consistent",
+            "footprints.exact",
+        ),
+        transaction_result_digest=_sha("result"),
+        composite_effect_fingerprint=_sha("effect"),
+    )
+    assert unsorted_proof.checks == (
+        "base.consistent",
+        "footprints.exact",
+        "order.canonical",
+    )
+    assert unsorted_proof.to_dict()["checks"] == list(unsorted_proof.checks)
+    assert (
+        OperatorTransactionProofV1.from_dict(unsorted_proof.to_dict())
+        == unsorted_proof
+    )
 
 
 def test_derive_read_write_set_reuses_merge_style_write_categorization() -> None:

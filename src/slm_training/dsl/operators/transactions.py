@@ -407,6 +407,7 @@ class OperatorTransactionProofV1:
     schema: str = "operator_transaction_proof/v1"
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "checks", tuple(sorted(set(self.checks))))
         _require_identifier(self.proof_kind, "proof_kind")
         if not self.checks:
             raise ValueError("a transaction proof requires at least one check")

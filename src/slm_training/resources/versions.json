@@ -728,7 +728,7 @@
       ]
     },
     "dsl.operators.transactions": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/transactions.py",
@@ -736,6 +736,11 @@
         "docs/design/dsh5-04-operator-transactions.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "DSH5-04 review follow-up: normalize OperatorTransactionProofV1.checks (dedupe + sort) at construction so from_dict(to_dict(x)) == x, matching the DSH5-01 review fix for the same bug shape"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
