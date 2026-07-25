@@ -121,3 +121,14 @@ def test_slm254_real_contracts_are_not_authorized() -> None:
 
     assert contract.verdict == NOT_AUTHORIZED
     assert contract.contract_id == "causal-latent-use-gate-v1"
+
+
+def test_slm255_real_contracts_are_not_authorized() -> None:
+    """LOT3-02 requires SLM-254's valid intervention encoding; with the
+    LOT1/LOT2 chain unmet there is no latent neighborhood to interpret.
+    """
+    fidelity, trace = _real_contracts()
+    contract = evaluate_downstream_gate(DOWNSTREAM_ISSUES["SLM-255"], fidelity, trace)
+
+    assert contract.verdict == NOT_AUTHORIZED
+    assert contract.contract_id == "alternative-valid-latent-gate-v1"
