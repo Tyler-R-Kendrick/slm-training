@@ -1644,7 +1644,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v107",
+      "version": "v108",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1653,6 +1653,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v108",
+          "date": "2026-07-25",
+          "note": "SLM-296 bounded verifier-filtered teacher-admission wiring evidence, family-independence, and locked-set decontamination controls"
+        },
         {
           "version": "v107",
           "date": "2026-07-25",
@@ -5573,6 +5578,26 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-267 bounded uniform-vs-coverage-targeted ProgramSpec sampling wiring evidence and deterministic shard-seed primitive"
+        }
+      ]
+    },
+    "harness.experiments.slm296_verified_teacher_admission": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm296_verified_teacher_admission.py",
+        "scripts/run_verified_teacher_admission.py",
+        "tests/test_harnesses/experiments/test_slm296_verified_teacher_admission.py",
+        "tests/test_scripts/test_run_verified_teacher_admission.py",
+        "docs/design/verified-teacher-admission.md",
+        "docs/design/iter-slm296-verified-teacher-admission-20260725.json",
+        "docs/design/iter-slm296-verified-teacher-admission-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-296 bounded verifier-filtered teacher-admission wiring evidence, family-independence and locked-set decontamination controls"
         }
       ]
     },
