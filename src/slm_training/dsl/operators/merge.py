@@ -214,6 +214,8 @@ def _refs(effect: ActionEffectV1) -> tuple[OperatorRef, ...]:
         *effect.produced_roles,
         *effect.consumed_binders,
         *effect.produced_binders,
+        *effect.consumed_nodes,
+        *effect.produced_nodes,
         *(delta.target for delta in effect.scope_deltas),
         *(delta.target for delta in effect.cardinality_deltas),
         *(delta.target for delta in effect.property_deltas),
@@ -359,29 +361,163 @@ def _effect_targets(
     return categories, True
 
 
-def _conflict_kind(
-    left_categories: Mapping[str, set[str]],
-    right_categories: Mapping[str, set[str]],
+def _base_target_lineage(
+    base: ConversationStateNodeV1, branch: ConversationStateNodeV1
+) -> dict[OperatorRef, tuple[str, ...]]:
+    targets = _base_targets(base, branch)
+    entries = {
+        entry.descriptor.semantic_fingerprint: entry
+        for entry in branch.reference_table.entries
+    }
+    lineage: dict[OperatorRef, tuple[str, ...]] = {}
+    for entry in branch.reference_table.entries:
+        chain: list[str] = []
+        current = entry
+        while current is not None:
+            target = targets.get(current.ref)
+            if target is None:
+                chain = []
+                break
+            chain.append(target)
+            parent = current.descriptor.parent_fingerprint
+            current = entries.get(parent) if parent is not None else None
+        if chain:
+            lineage[entry.ref] = tuple(chain)
+    return lineage
+
+
+def _effect_target_closure(
+    effect: ActionEffectV1, lineage: Mapping[OperatorRef, tuple[str, ...]]
+) -> tuple[set[str], bool]:
+    try:
+        return {
+            target
+            for ref in _refs(effect)
+            for target in lineage[ref]
+        }, True
+    except KeyError:
+        return set(), False
+
+
+def _removed_node_targets(
+    effect: ActionEffectV1, lineage: Mapping[OperatorRef, tuple[str, ...]]
+) -> tuple[set[str], bool]:
+    try:
+        consumed = {lineage[ref][0] for ref in effect.consumed_nodes}
+        produced = {lineage[ref][0] for ref in effect.produced_nodes}
+    except (KeyError, IndexError):
+        return set(), False
+    return consumed - produced, True
+
+
+def _unproven_structural_targets(
+    effect: ActionEffectV1, lineage: Mapping[OperatorRef, tuple[str, ...]]
+) -> tuple[set[str], bool]:
+    try:
+        explicit = {
+            lineage[ref][0]
+            for ref in (*effect.consumed_nodes, *effect.produced_nodes)
+        }
+        structural = {
+            lineage[delta.target][0]
+            for delta in (*effect.cardinality_deltas, *effect.topology_deltas)
+        }
+    except (KeyError, IndexError):
+        return set(), False
+    return structural - explicit, True
+
+
+def _effect_matches_declaration(
+    declaration: AstOperatorV1, effect: ActionEffectV1
+) -> bool:
+    return {
+        delta.kind
+        for delta in (
+            *effect.scope_deltas,
+            *effect.cardinality_deltas,
+            *effect.property_deltas,
+            *effect.topology_deltas,
+        )
+    } <= set(declaration.effect_signature)
+
+
+def classify_merge_effects(
     *,
-    left_operator_id: str,
-    right_operator_id: str,
+    left_declaration: AstOperatorV1,
+    right_declaration: AstOperatorV1,
+    left_effect: ActionEffectV1,
+    right_effect: ActionEffectV1,
+    left_lineage: Mapping[OperatorRef, tuple[str, ...]],
+    right_lineage: Mapping[OperatorRef, tuple[str, ...]],
 ) -> tuple[MergeConflictKind, tuple[str, ...]] | None:
-    overlap = set(left_categories) & set(right_categories)
+    """Classify exact effects from declared contracts and base-reference lineage.
+
+    Operator identifiers are intentionally excluded: a removal requires explicit
+    consumed-node flow which is not restored by produced-node flow.
+    """
+    if (
+        left_effect.compiler_coverage is not CompilerCoverage.EXACT
+        or right_effect.compiler_coverage is not CompilerCoverage.EXACT
+        or not _refs(left_effect)
+        or not _refs(right_effect)
+        or not _effect_matches_declaration(left_declaration, left_effect)
+        or not _effect_matches_declaration(right_declaration, right_effect)
+    ):
+        return MergeConflictKind.UNSUPPORTED_EFFECT, ()
+    left_direct = {ref: targets[0] for ref, targets in left_lineage.items()}
+    right_direct = {ref: targets[0] for ref, targets in right_lineage.items()}
+    left_targets, left_fresh = _effect_targets(left_effect, left_direct)
+    right_targets, right_fresh = _effect_targets(right_effect, right_direct)
+    if not left_fresh or not right_fresh:
+        return MergeConflictKind.STALE_REF, ()
+    left_removed, left_removal_exact = _removed_node_targets(
+        left_effect, left_lineage
+    )
+    right_removed, right_removal_exact = _removed_node_targets(
+        right_effect, right_lineage
+    )
+    left_closure, left_closure_exact = _effect_target_closure(
+        left_effect, left_lineage
+    )
+    right_closure, right_closure_exact = _effect_target_closure(
+        right_effect, right_lineage
+    )
+    if not (
+        left_removal_exact
+        and right_removal_exact
+        and left_closure_exact
+        and right_closure_exact
+    ):
+        return MergeConflictKind.UNSUPPORTED_EFFECT, ()
+    delete_overlap = (left_removed & right_closure) | (right_removed & left_closure)
+    if delete_overlap:
+        return MergeConflictKind.DELETE_MODIFY, tuple(sorted(delete_overlap))
+    overlap = set(left_targets) & set(right_targets)
     if not overlap:
+        left_unproven, left_unproven_exact = _unproven_structural_targets(
+            left_effect, left_lineage
+        )
+        right_unproven, right_unproven_exact = _unproven_structural_targets(
+            right_effect, right_lineage
+        )
+        if not left_unproven_exact or not right_unproven_exact:
+            return MergeConflictKind.UNSUPPORTED_EFFECT, ()
+        unknown_overlap = (left_unproven & right_closure) | (
+            right_unproven & left_closure
+        )
+        if unknown_overlap:
+            return MergeConflictKind.UNSUPPORTED_EFFECT, tuple(
+                sorted(unknown_overlap)
+            )
         return None
     combined = {
         category
         for target in overlap
         for category in (
-            left_categories[target] | right_categories[target]
+            left_targets[target] | right_targets[target]
         )
     }
-    if any("remove" in value or "delete" in value for value in (
-        left_operator_id,
-        right_operator_id,
-    )):
-        kind = MergeConflictKind.DELETE_MODIFY
-    elif combined & {"scope", "binder"}:
+    if combined & {"scope", "binder"}:
         kind = MergeConflictKind.SCOPE_BINDER
     elif combined & {"cardinality", "role"}:
         kind = MergeConflictKind.ROLE_CARDINALITY
@@ -487,31 +623,24 @@ def merge_conversation_branches(
         declarations.append(declaration)
 
     effects = (left.application.effect, right.application.effect)
-    if any(
-        effect is None
-        or effect.compiler_coverage is not CompilerCoverage.EXACT
-        or not _refs(effect)
-        for effect in effects
-    ):
+    if any(effect is None for effect in effects):
         return _conflict(
             MergeConflictKind.UNSUPPORTED_EFFECT, base, left, right
         )
     assert effects[0] is not None and effects[1] is not None
-    left_targets, left_fresh = _effect_targets(
-        effects[0], _base_targets(base, left.input_node)
+    overlap = classify_merge_effects(
+        left_declaration=declarations[0],
+        right_declaration=declarations[1],
+        left_effect=effects[0],
+        right_effect=effects[1],
+        left_lineage=_base_target_lineage(base, left.input_node),
+        right_lineage=_base_target_lineage(base, right.input_node),
     )
-    right_targets, right_fresh = _effect_targets(
-        effects[1], _base_targets(base, right.input_node)
-    )
-    if not left_fresh or not right_fresh:
-        return _conflict(MergeConflictKind.STALE_REF, base, left, right)
-
-    overlap = _conflict_kind(
-        left_targets,
-        right_targets,
-        left_operator_id=declarations[0].operator_id,
-        right_operator_id=declarations[1].operator_id,
-    )
+    if overlap is not None and overlap[0] in {
+        MergeConflictKind.STALE_REF,
+        MergeConflictKind.UNSUPPORTED_EFFECT,
+    }:
+        return _conflict(overlap[0], base, left, right, overlap[1])
     mutually_commuting = (
         declarations[1].operator_id in declarations[0].commutes_with
         and declarations[0].operator_id in declarations[1].commutes_with

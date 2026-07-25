@@ -15,14 +15,17 @@ from slm_training.dsl.operators import (
     EffectDeltaKind,
     EffectDeltaV1,
     MergeConflictKind,
+    NodeRef,
     OperatorLibraryV1,
     OperatorMutationV1,
     OperatorStateV1,
     RefKind,
     ReferenceDescriptorV1,
     RegisteredOperatorV1,
+    RoleRef,
     branch_fingerprint,
     build_reference_table,
+    classify_merge_effects,
     clone_reference_table_for_branch,
     merge_conversation_branches,
     replay_branch_merge,
@@ -55,6 +58,8 @@ def _effect(
     target,
     category: str,
     coverage: CompilerCoverage,
+    consumed_nodes: tuple[NodeRef, ...] = (),
+    produced_nodes: tuple[NodeRef, ...] = (),
 ) -> ActionEffectV1:
     delta = EffectDeltaV1(
         kind=EffectDeltaKind(category),
@@ -65,6 +70,8 @@ def _effect(
     values = {f"{category}_deltas": (delta,)}
     return ActionEffectV1(
         **values,
+        consumed_nodes=consumed_nodes,
+        produced_nodes=produced_nodes,
         compiler_coverage=coverage,
     )
 
@@ -78,7 +85,7 @@ class _Fixture:
         )
         descriptors = tuple(
             ReferenceDescriptorV1(
-                ref_kind=RefKind.VALUE,
+                ref_kind=RefKind.NODE,
                 semantic_fingerprint=_sha(name),
                 value_type=f"openui.{name}",
             )
@@ -110,6 +117,8 @@ class _Fixture:
         operator_id: str | None = None,
         commutes_with: tuple[str, ...] = (),
         stale_effect_ref: bool = False,
+        consumed_node: bool = False,
+        produced_node: bool = False,
     ) -> BranchEditV1:
         branch = branch_fingerprint(
             self.state.state_digest, _sha(f"merge-{name}")
@@ -158,6 +167,8 @@ class _Fixture:
                     target=target,
                     category=category,
                     coverage=coverage,
+                    consumed_nodes=(target,) if consumed_node else (),
+                    produced_nodes=(target,) if produced_node else (),
                 ),
             )
 
@@ -270,7 +281,7 @@ def test_mutually_declared_commuting_equal_overlap_can_merge() -> None:
         ("cardinality", "openui.change", MergeConflictKind.ROLE_CARDINALITY),
         ("topology", "openui.change", MergeConflictKind.CHILD_ORDER),
         ("scope", "openui.change", MergeConflictKind.SCOPE_BINDER),
-        ("topology", "openui.remove_node", MergeConflictKind.DELETE_MODIFY),
+        ("topology", "openui.remove_node", MergeConflictKind.CHILD_ORDER),
     ),
 )
 def test_overlapping_effects_return_specific_typed_conflicts(
@@ -306,6 +317,109 @@ def test_overlapping_effects_return_specific_typed_conflicts(
     assert len(decision.conflict.target_fingerprints) == 1
 
 
+def test_effect_derived_delete_conflict_ignores_operator_names() -> None:
+    fixture = _Fixture()
+    misleading = fixture.branch(
+        name="misleading_delete_name",
+        target_name="title",
+        replacement=":hero.left",
+        category="topology",
+        operator_id="openui.delete_name_only",
+    )
+    renamed_delete = fixture.branch(
+        name="renamed_semantics",
+        target_name="body",
+        replacement=":hero.copy",
+        category="topology",
+        operator_id="openui.rewrite",
+        consumed_node=True,
+    )
+    same_target_edit = fixture.branch(
+        name="same_target_edit",
+        target_name="body",
+        replacement=":hero.right",
+        category="property",
+        operator_id="openui.rename_again",
+    )
+    move_like = fixture.branch(
+        name="move_like",
+        target_name="title",
+        replacement=":hero.move",
+        category="topology",
+        operator_id="openui.relocate",
+        consumed_node=True,
+        produced_node=True,
+    )
+    misleading_decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=misleading,
+        right=move_like,
+        authority_resolver=fixture.resolve,
+    )
+    assert misleading_decision.conflict is not None
+    assert misleading_decision.conflict.kind is MergeConflictKind.CHILD_ORDER
+
+    delete_decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=renamed_delete,
+        right=same_target_edit,
+        authority_resolver=fixture.resolve,
+    )
+    assert delete_decision.conflict is not None
+    assert delete_decision.conflict.kind is MergeConflictKind.DELETE_MODIFY
+
+
+def test_effect_classifier_uses_lineage_and_refuses_unproven_removal() -> None:
+    node = NodeRef("merge-request", "node")
+    role = RoleRef("merge-request", "role")
+    declaration = AstOperatorV1(
+        operator_id="openui.renamed",
+        version="v1",
+        domain="openui.ast",
+        codomain="openui.ast",
+        argument_slots=(),
+        preconditions=(),
+        effect_signature=(EffectDeltaKind.TOPOLOGY, EffectDeltaKind.PROPERTY),
+        locality="node",
+        cost=1.0,
+    )
+    delete = ActionEffectV1(
+        consumed_nodes=(node,),
+        topology_deltas=(
+            EffectDeltaV1(EffectDeltaKind.TOPOLOGY, node, "present", "removed"),
+        ),
+    )
+    ambiguous = ActionEffectV1(
+        topology_deltas=(
+            EffectDeltaV1(EffectDeltaKind.TOPOLOGY, node, "before", "after"),
+        ),
+    )
+    mutate_child = ActionEffectV1(
+        property_deltas=(
+            EffectDeltaV1(EffectDeltaKind.PROPERTY, role, "before", "after"),
+        ),
+    )
+    lineage = {node: ("a" * 64,), role: ("b" * 64, "a" * 64)}
+    assert classify_merge_effects(
+        left_declaration=declaration,
+        right_declaration=declaration,
+        left_effect=delete,
+        right_effect=mutate_child,
+        left_lineage=lineage,
+        right_lineage=lineage,
+    ) == (MergeConflictKind.DELETE_MODIFY, ("a" * 64,))
+    assert classify_merge_effects(
+        left_declaration=declaration,
+        right_declaration=declaration,
+        left_effect=ambiguous,
+        right_effect=mutate_child,
+        left_lineage=lineage,
+        right_lineage=lineage,
+    ) == (MergeConflictKind.UNSUPPORTED_EFFECT, ("a" * 64,))
+
+
 def test_stale_refs_and_inexact_effects_refuse_without_mutation() -> None:
     stale_fixture = _Fixture()
     stale = stale_fixture.branch(
@@ -315,7 +429,7 @@ def test_stale_refs_and_inexact_effects_refuse_without_mutation() -> None:
         stale_effect_ref=True,
     )
     fresh = stale_fixture.branch(
-        name="fresh", target_name="body", replacement=":hero.right"
+        name="fresh", target_name="title", replacement=":hero.right"
     )
     stale_decision = merge_conversation_branches(
         pack=stale_fixture.pack,

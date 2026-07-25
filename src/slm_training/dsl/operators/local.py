@@ -598,6 +598,7 @@ def _executor(operator_id: str, context: OpenUILocalOperatorContextV1):
                 return _mutation(
                     bindings,
                     ActionEffectV1(
+                        consumed_nodes=(node_ref,),
                         cardinality_deltas=(
                             EffectDeltaV1(
                                 EffectDeltaKind.CARDINALITY,
