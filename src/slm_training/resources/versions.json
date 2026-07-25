@@ -2147,7 +2147,7 @@
       ]
     },
     "harness.experiments.ast_sketch_retrieval": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/ast_sketch_retrieval_factorial.py",
@@ -2156,6 +2156,16 @@
         "tests/test_scripts/test_run_ast_sketch_retrieval_factorial.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "no-bump: mock unavailable AgentV SDK in the CLI regression test; production local diagnostic still publishes AgentV evidence"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "add an isolated SLM-295 verified-patch-local mode while retaining the SLM-133 fixture interface"
+        },
         {
           "version": "v2",
           "date": "2026-07-21",
@@ -2798,6 +2808,23 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration of SLM-147 SPV1-04 X22 leakage-safe retrieved-valid-AST prototype seeding harness"
+        }
+      ]
+    },
+    "harness.retrieval.verified_patch": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/retrieval/verified_patch_v1.py",
+        "tests/test_harnesses/retrieval/test_verified_patch_v1.py",
+        "docs/design/iter-slm295-verified-patch-v1-20260725.json",
+        "docs/design/iter-slm295-verified-patch-v1-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration of the local verified retrieval and grammar-patch baseline"
         }
       ]
     },
