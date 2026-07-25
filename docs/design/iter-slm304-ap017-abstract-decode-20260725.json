@@ -1,0 +1,52 @@
+{
+  "schema": "slm304_abstract_decode/v1",
+  "issue": "SLM-304",
+  "experiment": "AP-017",
+  "claim_class": "wiring_fixture_only",
+  "evidence_class": "wiring/fixture; no training run, no quality or ship claim",
+  "design": {
+    "phases": [
+      "prompt",
+      "abstract",
+      "answer"
+    ],
+    "abstract_mask": "logits hard-masked to M codebook slots + <endabstract>; short logit row fails closed",
+    "hard_cap": "m_max slot tokens, then forced <endabstract> without a forward; recorded as forced_end/abstract_termination=forced_cap",
+    "fail_closed": "malformed/nested abstract delimiters raise AbstractDecodeError in prompt, span, and answer phase; no repair, no full-vocabulary fallback",
+    "sampling": "independent AbstractSamplingParams(temperature, seed) per phase; temperature 0 = greedy",
+    "telemetry": "per-phase token_ids/token_count and per-token logprobs (None for forward-free commits); plan compatibility_fingerprint stamped",
+    "default_off": "CausalLMOpenUIConfig.abstract=None keeps legacy outputs/logits byte-identical; generate_abstract_traced raises unless enabled"
+  },
+  "files": [
+    "src/slm_training/models/abstract_decode.py",
+    "src/slm_training/models/causal_lm_openui.py",
+    "tests/test_models/test_abstract_decode.py",
+    "src/slm_training/resources/versions.json",
+    "docs/design/iter-slm304-ap017-abstract-decode-20260725.md"
+  ],
+  "verification": {
+    "commands": [
+      "PYTHONPATH=src python -m pytest tests/test_models/test_abstract_decode.py -q",
+      "PYTHONPATH=src python -m pytest tests/test_models/test_causal_trace.py tests/test_models/test_causal_trace_plugin.py tests/test_models/test_causal_trace_fixture.py -q",
+      "python -m scripts.verify_version_stamps --check",
+      "python -m scripts.repo_policy"
+    ],
+    "results": {
+      "tests/test_models/test_abstract_decode.py": "15 passed",
+      "tests/test_models/test_causal_trace.py + test_causal_trace_plugin.py + test_causal_trace_fixture.py + tests/test_dsl/test_abstract_plan.py": "72 passed",
+      "scripts.verify_version_stamps --check": "ok",
+      "scripts.repo_policy": "ok",
+      "git diff --check": "ok"
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d7b489930cbd076e484f25f18a9f9fec2ba3bb28",
+    "code_dirty": true,
+    "components": {
+      "model.causal_abstract_decode": "v1",
+      "dsl.abstract_plan": "v2"
+    },
+    "stamped_at": "2026-07-25T16:50:52.781871+00:00"
+  }
+}

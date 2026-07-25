@@ -12,6 +12,11 @@ from typing import Any, Iterable
 from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.parser import stream_check, validate
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.models.abstract_decode import (
+    AbstractDecodeConfig,
+    AbstractTracedGeneration,
+    capture_abstract_trace,
+)
 from slm_training.harnesses.distill.trace_store import decode_config_hash
 from slm_training.lineage.records import content_sha
 from slm_training.lineage.tracks import CAUSAL_LORA_RECIPE
@@ -34,6 +39,10 @@ class CausalLMOpenUIConfig:
     max_length: int = 512
     device: str = "cpu"
     local_files_only: bool = False
+    # AP-017 (SLM-304): default-off codebook-only abstract trace decoding.
+    # ``None`` keeps every legacy generation path byte-identical; set an
+    # AbstractDecodeConfig to opt into generate_abstract_traced.
+    abstract: AbstractDecodeConfig | None = None
 
 
 class CausalLMOpenUIPlugin:
@@ -423,6 +432,70 @@ class CausalLMOpenUIPlugin:
         if trace_writer is not None:
             trace_writer.record_all(result)
         return CausalTracedGeneration(text=final_text, result=result, valid=valid)
+
+    def generate_abstract_traced(
+        self,
+        prompt: str,
+        *,
+        max_new_tokens: int | None = None,
+        allowed_ids_fn: AllowedIds | None = None,
+    ) -> AbstractTracedGeneration:
+        """Codebook-only abstract trace decode (AP-017): prompt -> abstract -> answer.
+
+        Default-off: raises unless ``config.abstract`` is set. The abstract phase
+        masks every forward to the AbstractPlanV1 codebook slots plus
+        ``<endabstract>`` and forces the end at ``m_max`` (recorded); the answer
+        phase hands control to the same constrained program-decode discipline as
+        :meth:`generate_constrained_traced` (singleton bypass, legal-masked
+        selection over the grammar seam). Only the answer-phase tokens are
+        certified as the final program text; the abstract span is trace evidence.
+        """
+        import torch
+
+        abstract_config = self.config.abstract
+        if abstract_config is None:
+            raise ValueError(
+                "abstract trace decoding is default-off: set "
+                "CausalLMOpenUIConfig.abstract to an AbstractDecodeConfig"
+            )
+        input_ids = self._encode_prompt(prompt)
+        prompt_row = tuple(int(value) for value in input_ids[0].tolist())
+        prompt_len = len(prompt_row)
+        device = self.model.device
+
+        def forward_logits(prefix: tuple[int, ...]) -> list[float]:
+            row = torch.tensor([list(prefix)], device=device)
+            with torch.inference_mode():
+                logits = self.model(row).logits[0, -1, :]
+            return logits.to(torch.float32).cpu().tolist()
+
+        def grammar_allowed(prefix: tuple[int, ...]) -> tuple[int, ...]:
+            return self._allowed_ids(tuple(int(token) for token in prefix[prompt_len:]))
+
+        capture = capture_abstract_trace(
+            forward_logits=forward_logits,
+            answer_allowed_ids=allowed_ids_fn or grammar_allowed,
+            plan=abstract_config.plan,
+            eos_id=int(self.tokenizer.eos_token_id),
+            max_answer_tokens=int(
+                max_new_tokens if max_new_tokens is not None else self.config.max_length
+            ),
+            initial_prefix=prompt_row,
+            m_max=abstract_config.m_max,
+            abstract_params=abstract_config.abstract,
+            answer_params=abstract_config.answer,
+        )
+        text = self.tokenizer.decode(
+            capture.answer.token_ids, skip_special_tokens=True
+        ).strip()
+        try:
+            program = validate(text)
+            final_text = (program.serialized or text).strip()
+            valid = True
+        except Exception:  # noqa: BLE001 - honest: an unfinished decode is not valid
+            final_text = self._certified_fallback()
+            valid = True
+        return AbstractTracedGeneration(text=final_text, capture=capture, valid=valid)
 
     def replay_causal_action(
         self,
