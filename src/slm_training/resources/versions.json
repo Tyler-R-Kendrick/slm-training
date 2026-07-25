@@ -5485,7 +5485,7 @@
    ]
   },
   "harness.train_data": {
-   "version": "v20",
+   "version": "v21",
    "kind": "harness",
    "paths": [
     "scripts/build_train_data.py",
@@ -5498,6 +5498,11 @@
     "src/slm_training/resources/frontier/"
    ],
    "history": [
+    {
+     "version": "v21",
+     "date": "2026-07-25",
+     "note": "add expanded-equivalence transform registry and canonical preference materialization under harness.experiments.slm357_equivalent_answers"
+    },
     {
      "version": "v20",
      "date": "2026-07-25",
@@ -7958,6 +7963,23 @@
      "version": "v1",
      "date": "2026-07-25",
      "note": "initial marker-table materialization with alpha-renaming, split-level permutation controls, and fail-closed marker audits (SLM-356 / DSH1-04)"
+    }
+   ]
+  },
+  "harness.experiments.slm357_equivalent_answers": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/train_data/equivalence_transforms.py",
+    "tests/test_harnesses/train_data/test_equivalence_transforms.py",
+    "docs/design/iter-slm357-equivalent-answers-20260725.json",
+    "docs/design/iter-slm357-equivalent-answers-20260725.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "initial expanded-equivalence transform registry with proof obligations, canonicality ordering guarded by required roles, and canonical-primary SFT/preference materialization (SLM-357 / DSH1-05)"
     }
    ]
   }

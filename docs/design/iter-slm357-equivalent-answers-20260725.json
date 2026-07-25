@@ -1,0 +1,53 @@
+{
+ "schema_version": "equivalence_class_fixture/v1",
+ "issue": "SLM-357",
+ "track": "DSH1-05",
+ "date": "2026-07-25",
+ "run_class": "contract_fixture",
+ "decision": "supported",
+ "equivalence_schema": "equivalence_class/v1",
+ "registry_version": "equivalence_transform_registry/v1",
+ "version_stamp": {
+  "stamp_schema": "version_stamp/v1",
+  "code_commit": "eaa5964b3bbe5da056709cbffaf4fa26f8640bdc",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments.slm357_equivalent_answers": "v1",
+   "harness.train_data": "v21"
+  },
+  "stamped_at": "2026-07-25T01:58:55.805489+00:00"
+ },
+ "controls": {
+  "every_expansion_canonicalizes_to_same_class": "passed",
+  "proof_obligation_official_parser_plus_canonicalizer": "passed",
+  "unproven_transform_stop_rule_negative_fixture": "passed",
+  "order_sensitive_never_reordered_without_authority": "passed",
+  "incomplete_shorter_never_outranks_complete": "passed",
+  "canonical_cost_compared_only_within_class": "passed",
+  "canonical_primary_sft_target": "passed",
+  "expanded_preferred_when_task_asks_expansion": "passed",
+  "margins_versions_deterministic_provenance_stamped": "passed",
+  "determinism": "passed"
+ },
+ "commands": [
+  "python -m pytest -q tests/test_harnesses/train_data/test_equivalence_transforms.py",
+  "python -m pytest -q tests/test_harnesses/train_data tests/test_dsl/test_canonicalize.py",
+  "python -m scripts.verify_version_stamps --check",
+  "python -m scripts.repo_policy",
+  "python -m ruff check src/slm_training/harnesses/train_data/equivalence_transforms.py tests/test_harnesses/train_data/test_equivalence_transforms.py",
+  "git diff --check"
+ ],
+ "results": {
+  "focused_pytest": "9 passed",
+  "train_data_and_canonicalize_suites": "see markdown (pre-existing failures unchanged)",
+  "version_stamps": "passed",
+  "repo_policy": "passed",
+  "ruff": "passed",
+  "diff_check": "passed"
+ },
+ "claim_limits": [
+  "Deterministic contract-fixture evidence at fixture scale; no corpus publication and no model evaluation.",
+  "Equivalence is proven per transform application via official parser + canonicalizer round-trip; transforms that cannot prove equivalence are retained only as negative fixtures (stop rule).",
+  "Canonical preference (canonical < expanded in canonicality rank) holds only inside the same compiler-verified equivalence class after required-role/cardinality/scope checks; incomplete programs can never outrank complete ones."
+ ]
+}
