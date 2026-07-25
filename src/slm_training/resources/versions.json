@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v114",
+      "version": "v115",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1775,6 +1775,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v115",
+          "date": "2026-07-25",
+          "note": "add generic DCA-chain activation gate (dca_activation_gate.py) closing SLM-270 DCA0-02 blocked/inconclusive off unqualified SLM-261/268/269 artifacts"
+        },
         {
           "version": "v114",
           "date": "2026-07-25",
@@ -2413,6 +2418,25 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-269 DCA0-01 activation audit closes inconclusive/blocked against real prerequisite artifacts"
+        }
+      ]
+    },
+    "harness.experiments.dca_activation_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/dca_activation_gate.py",
+        "scripts/audit_dca_activation.py",
+        "tests/test_harnesses/experiments/test_dca_activation_gate.py",
+        "tests/test_scripts/test_audit_dca_activation.py",
+        "docs/design/iter-slm270-dca0-02-activation-20260725.json",
+        "docs/design/iter-slm270-dca0-02-activation-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; generic DCA activation gate closes SLM-270 DCA0-02 blocked against real prerequisite artifacts"
         }
       ]
     },
