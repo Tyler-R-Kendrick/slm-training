@@ -137,9 +137,14 @@ def test_verbalization_is_deterministic() -> None:
 
 
 def test_builder_accepts_all_well_formed_fixture_rows() -> None:
-    corpus = build_abstract_cot_warmup_corpus(_fixture_records())
+    # Isolated from the real committed locked-test manifest: this test only
+    # asserts well-formed-fixture acceptance, not decontamination, and must
+    # not depend on what happens to be in production locked-test data.
+    corpus = build_abstract_cot_warmup_corpus(
+        _fixture_records(), AbstractCotWarmupConfig(locked_manifest_path=None)
+    )
     assert corpus.eligible_count == 5
-    assert corpus.accepted_count == 5
+    assert corpus.accepted_count == 5, corpus.exclusions
     assert corpus.acceptance_rate == 1.0
     assert corpus.emitted_count == 5
     assert not corpus.exclusions
@@ -192,8 +197,12 @@ def test_different_seed_changes_at_least_one_span() -> None:
 
 
 def test_binder_bucket_counts_cover_multiple_buckets() -> None:
-    corpus = build_abstract_cot_warmup_corpus(_fixture_records())
-    assert set(corpus.binder_bucket_counts) >= {"0", "1", "2"}
+    # Isolated from the real locked-test manifest -- see
+    # test_builder_accepts_all_well_formed_fixture_rows.
+    corpus = build_abstract_cot_warmup_corpus(
+        _fixture_records(), AbstractCotWarmupConfig(locked_manifest_path=None)
+    )
+    assert set(corpus.binder_bucket_counts) >= {"0", "1", "2"}, corpus.exclusions
     assert sum(corpus.binder_bucket_counts.values()) == corpus.accepted_count
 
 
