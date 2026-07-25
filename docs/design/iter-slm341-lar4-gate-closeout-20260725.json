@@ -1,0 +1,35 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "Terminal control/scaling issue closed with the recurrence line; reopens under the SLM-327 reopening conditions.",
+  "failed_gates": [
+    "gate_lar3_05"
+  ],
+  "gates": {
+    "gate_lar3_05": {
+      "evidence": "docs/design/iter-slm327-lar3-closeout-20260725.json",
+      "issue": "SLM-327",
+      "observed_outcome": "recursive_core_negative; recurrence line closed; no winning configuration exists",
+      "passed": false,
+      "required_outcome": "verified positive disposition + winning checkpoint"
+    }
+  },
+  "issue": "SLM-341",
+  "matrix_set": "slm341-layer-surgery-scaling",
+  "matrix_version": "slm341-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "SLM-341 anchors on the LAR3-05 winning checkpoint/configuration and its own acceptance criteria block scaling execution unless LAR3-05 has a verified positive disposition. SLM-327 closed the recurrence line as recursive_core_negative \u2014 there is no winning core checkpoint to localize, surgery, or scale, and the powered scaling matrix is explicitly blocked.",
+  "run_id": "slm341_gate_closeout",
+  "schema": "slm341_lar4_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "21b75602e4a5a181843ebd246e325d818d3c69ed",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T01:22:56.739303+00:00"
+  }
+}
