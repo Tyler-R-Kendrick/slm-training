@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v113",
+      "version": "v115",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1775,6 +1775,8 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {"version": "v115", "date": "2026-07-25", "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"},
+        {"version": "v114", "date": "2026-07-25", "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"},
         {
           "version": "v113",
           "date": "2026-07-25",
@@ -8863,6 +8865,22 @@
           "date": "2026-07-25",
           "note": "initial registration; SLM-249 (LOT0-02) CompilerReasoningTraceV1 typed step schema, deterministic extractor reusing SemanticPlanV1/production_codec, lossless visible serialization, permutation-invariant/cycle-free/truncation-explicit helpers, a bounded (n=16 fixture) K/c coverage probe, and the CompilerReasoningTraceGateV1 contract with an inconclusive verdict (oracle-ceiling experiment plan only, no training run, per the LOT0-01 authorization's allowed_lot1_work scope)"
         }
+      ]
+    },
+    "harness.experiments.slm332_latent_geometry": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/program_latent_objectives.py",
+        "src/slm_training/harnesses/experiments/slm332_latent_geometry.py",
+        "scripts/run_slm332_latent_geometry.py",
+        "tests/test_models/test_program_latent_objectives.py",
+        "tests/test_harnesses/test_slm332_latent_geometry.py"
+      ],
+      "history": [
+        {"version": "v3", "date": "2026-07-25", "note": "add bounded local control-versus-combined runner with AgentEvals non-promotion assertion"},
+        {"version": "v2", "date": "2026-07-25", "note": "wire admitted AP-009 binding pairs through the codec-only geometry harness"},
+        {"version": "v1", "date": "2026-07-25", "note": "initial SLM-332 fail-closed latent geometry primitive"}
       ]
     },
     "matrix.self_context_curriculum": {
