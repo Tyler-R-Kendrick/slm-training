@@ -1,0 +1,48 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "SLM-334 (LAR4-03) stays blocked.",
+  "failed_gates": [
+    "gate_lar3_05",
+    "gate_lar4_01",
+    "gate_repair_value"
+  ],
+  "gates": {
+    "gate_lar3_05": {
+      "evidence": "docs/design/iter-slm327-lar3-closeout-20260725.json",
+      "issue": "SLM-327",
+      "observed_outcome": "recursive_core_negative; recurrence line closed",
+      "passed": false
+    },
+    "gate_lar4_01": {
+      "evidence": "docs/design/iter-slm329-lar4-gate-closeout-20260725.json",
+      "issue": "SLM-329",
+      "observed_outcome": "closed not_authorized",
+      "passed": false
+    },
+    "gate_repair_value": {
+      "evidence": "docs/design/iter-slm317-repair-hybrid-20260724.json",
+      "issue": "SLM-317",
+      "observed_outcome": "inconclusive (value gate failed)",
+      "passed": false
+    }
+  },
+  "issue": "SLM-331",
+  "matrix_set": "slm331-parallel-edit-sets",
+  "matrix_version": "slm331-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "SLM-331 is blocked by LAR3-05, LAR4-01, and LAR2-01. The recurrence line it would accelerate with parallel latent edit slots is closed: SLM-327 recursive_core_negative, and SLM-329 (LAR4-01 cross-depth conditioning) closed not_authorized on the same evidence. The sequential repair line it would be compared against was measured and did not clear its value gate (SLM-317 inconclusive). K-slot parallel edit prediction has no authorized base architecture.",
+  "run_id": "slm331_gate_closeout",
+  "schema": "slm331_lar4_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "163517024c4864a7a136b9a498c8bd52db93c24a",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T00:40:04.396459+00:00"
+  }
+}
