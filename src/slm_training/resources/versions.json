@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v120",
+      "version": "v121",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1775,6 +1775,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v121",
+          "date": "2026-07-25",
+          "note": "add SLM-276 DCA2-03 CausalDispositionBundleV1 fail-closed publisher (dca_causal_disposition.py): aggregates prerequisite dispositions; no_model_ship_ready_measurement_or_data_blocker, no tournament, no promotion"
+        },
         {
           "version": "v120",
           "date": "2026-07-25",
@@ -2497,6 +2502,25 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; generic DCA activation gate closes SLM-270 DCA0-02 blocked against real prerequisite artifacts"
+        }
+      ]
+    },
+    "harness.experiments.dca_causal_disposition": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/dca_causal_disposition.py",
+        "scripts/build_causal_disposition.py",
+        "tests/test_harnesses/experiments/test_dca_causal_disposition.py",
+        "tests/test_scripts/test_build_causal_disposition.py",
+        "docs/design/iter-slm276-dca2-03-disposition-20260725.json",
+        "docs/design/iter-slm276-dca2-03-disposition-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-276 DCA2-03 disposition bundle publisher aggregates prerequisite gates fail-closed"
         }
       ]
     },
