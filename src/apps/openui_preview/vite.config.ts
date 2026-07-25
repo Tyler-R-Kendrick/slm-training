@@ -25,7 +25,9 @@ export default defineConfig({
       },
     },
     cssCodeSplit: false,
-    sourcemap: true,
+    // No production sourcemaps: they are dead weight in the Vercel function
+    // bundle (.vercelignore strips them anyway, so don't emit them at all).
+    sourcemap: false,
     target: "es2022",
   },
 });
