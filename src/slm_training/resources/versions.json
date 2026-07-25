@@ -444,6 +444,23 @@
         }
       ]
     },
+    "dsl.semantic_frame": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/semantic_frame.py",
+        "tests/test_dsl/test_semantic_frame.py",
+        "docs/design/dsh2-02-semantic-frame-20260725.md",
+        "docs/design/dsh2-02-semantic-frame-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial deterministic SemanticFrameV1 derivation from canonical AST plus a pack-owned CAP1 schema, with exact fact provenance, frame equivalence/conflict checks, inverse frame-to-constraint checking, and a proven one-fact counterfactual mutator"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
