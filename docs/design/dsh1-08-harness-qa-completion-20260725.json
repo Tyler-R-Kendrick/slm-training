@@ -1,0 +1,71 @@
+{
+  "schema_version": "dsh1-08-harness-qa-completion/v1",
+  "issue": "SLM-360",
+  "project": "DSH1 — CAP0 Grammar-Complete Symbolic Synthesis",
+  "milestone": "M3 — Symbolic QA views and legal partials",
+  "recorded_at": "2026-07-25",
+  "kind": "wiring / unit-tested contract",
+  "claim": "No decode-path integration, corpus build, training run, eval, benchmark, checkpoint, or ship claim. This records a capped/diagnostic-marked IDENTITY producer wrapper, a verified document-level COMPLETE_SUFFIX accepted-completion-set generator scored through the existing accepted_outputs membership path, an atomic-form reuse coverage checker, and two anti-identity hard-negative generators, plus the tests that pin the DSH1-08 acceptance criteria.",
+  "added": {
+    "core": "src/slm_training/harnesses/train_data/harness_qa.py",
+    "tests": [
+      "tests/test_harnesses/train_data/test_harness_qa.py"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "criterion": "Identity rows obey the declared cap",
+      "evidence": "test_identity_rows_obey_the_declared_cap; test_cap_drops_rows_beyond_the_declared_cap_never_silently_keeps_them",
+      "status": "satisfied"
+    },
+    {
+      "criterion": "Every atomic production appears in a nonidentity task",
+      "evidence": "test_every_lexical_atomic_form_also_appears_nonidentity (checked on scope_corpus + this module's COMPLETE_SUFFIX records combined); test_coverage_violation_detected_when_a_form_is_identity_only (negative control proving the checker detects a real gap)",
+      "status": "satisfied_for_lexical_atomic_forms",
+      "note": "Coverage is checked as combined scope_corpus + COMPLETE_SUFFIX output; scope_corpus's own families alone do not close this gap for every fixture, which is exactly what COMPLETE_SUFFIX is for."
+    },
+    {
+      "criterion": "All accepted completions replay to verified terminals",
+      "evidence": "test_complete_suffix_target_replays_to_a_verified_terminal",
+      "status": "satisfied_for_document_level_statement_splits",
+      "note": "Covers the document-level statement-boundary COMPLETE_SUFFIX split only, not a tokenizer/CompletionForest-backed mid-expression prefix split; see Reopen conditions in the paired markdown."
+    },
+    {
+      "criterion": "No arbitrary single-gold label is used where several completions are accepted",
+      "evidence": "accepted_completion_outputs/complete_suffix_record persist every verified accepted member via ExampleRecord.accepted_outputs; test_accepted_completion_outputs_excludes_only_the_canonical_member; test_legally_continuing_peer_suffix_is_accepted",
+      "status": "satisfied"
+    }
+  ],
+  "test_runs": [
+    {
+      "command": "ruff check src/slm_training/harnesses/train_data/harness_qa.py tests/test_harnesses/train_data/test_harness_qa.py",
+      "result": "all checks passed"
+    },
+    {
+      "command": "pytest tests/test_harnesses/train_data/test_harness_qa.py -q",
+      "result": "21 passed"
+    },
+    {
+      "command": "pytest tests/test_harnesses/train_data/ -q --ignore=tests/test_harnesses/train_data/test_scope_corpus.py",
+      "result": "68 passed, 31 skipped, 5 failed",
+      "note": "The 5 failures (test_sanitize.py::test_normalize_record_seam_rescues_dead_binding_quarantine and 4 cases in test_staged_materialization.py) are pre-existing: 'DSL pack version mismatch' / symbolic_surface_policy rejections reproduced identically on a clean checkout with none of this change's diff applied. Unrelated to harness_qa.py; see the paired markdown's Verification section."
+    },
+    {
+      "command": "pytest tests/test_harnesses/train_data/test_scope_corpus.py -q",
+      "result": "pre-existing failure on a clean checkout too: symbolic_surface_policy/v1 rejects the fixture's raw string literal ('\"column\"') in this sandbox, independent of this change",
+      "status": "environment_gap_not_evaluated"
+    },
+    {
+      "command": "python -m scripts.verify_version_stamps --check",
+      "result": "ok"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "34c70de1dc67a62517e54e45cacd326f6ca5a32b",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v20"
+    }
+  }
+}
