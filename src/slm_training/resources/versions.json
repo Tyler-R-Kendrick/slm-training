@@ -1525,24 +1525,34 @@
       ]
     },
     "harness.distill": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/legal_set_kl.py",
         "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
         "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/operator_decision_state.py",
+        "src/slm_training/harnesses/distill/operator_teacher_ceiling.py",
         "scripts/run_spv2_05_semantic_repair_fixture.py",
         "scripts/run_dsh4_01_operator_decision_state_fixture.py",
+        "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
         "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
+        "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
         "docs/design/iter-spv2-05-semantic-repair-20260720.md",
         "docs/design/iter-spv2-05-semantic-repair-20260720.json",
         "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
-        "docs/design/dsh4-01-operator-decision-state-export-20260725.json"
+        "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "SLM-387 DSH4-02: one-teacher ceiling over exact operator legal sets -- synthetic stand-in teacher, frequency/compiler-order/current-scorer/descriptor-similarity/oracle baselines, MRR/NDCG/calibration/selective-risk/verifier-regret metrics, perturbation-robustness harness, and stop-rule gate (fixture result: no_go_defer)"
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
