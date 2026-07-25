@@ -343,6 +343,11 @@
         {
           "version": "v14",
           "date": "2026-07-25",
+          "note": "no-bump: DSH5-02 re-exports openui.map_set_property bulk-operator symbols from operators/__init__.py (new dsl.operators.bulk component); no change to contracts.py itself"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
           "note": "DSH5-01: add RefKind.SELECTOR and the opaque SelectorRef opaque-reference class"
         },
         {
@@ -612,13 +617,18 @@
       ]
     },
     "dsl.operators.local": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/local.py",
         "tests/test_dsl/test_local_operators.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "DSH5-02: add OpenUILocalOperatorContextV1.resolve_selector, the first consumer of the DSH5-01 SelectorRef contract, resolving one selector to its exact freshly-reconfirmed target refs for the new bulk operator layer"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -628,6 +638,22 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial exact OpenUI add, remove, replace, property, and child-order operator family"
+        }
+      ]
+    },
+    "dsl.operators.bulk": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/bulk.py",
+        "tests/test_dsl/test_bulk_operators.py",
+        "docs/design/dsh5-02-bulk-set-property.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
