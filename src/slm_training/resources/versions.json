@@ -495,6 +495,23 @@
         }
       ]
     },
+    "harness.experiments.slm366_counterfactuals": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/train_data/semantic_counterfactuals.py",
+        "tests/test_harnesses/train_data/test_semantic_counterfactuals.py",
+        "docs/design/iter-slm366-counterfactuals-20260725.md",
+        "docs/design/iter-slm366-counterfactuals-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial one-fact semantic counterfactuals over SemanticFrameV1: typed mutations per declared dimension (role/order/cardinality/closed_value/required_child/relation) on the canonical AST with inverse round-trip, path-insensitive per-dimension frame projections proving exactly one dimension differs, matched-style length-bounded prompts via the SLM-365 offline fixture provider with marker/state-surface neutralization, embedding-close/action-distant and inventory-matched topology negatives, root-split-family inheritance with artifact-graph cross-family rejection, constant/frequency-only baseline at chance, and coded stop-rule rejections for any uncontrolled cue"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
