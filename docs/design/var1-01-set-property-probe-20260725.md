@@ -1,6 +1,6 @@
 # VAR1-01 (SLM-424): hypothetical property-mutation reachability probe
 
-- generated_at: `2026-07-25T19:15:16Z`
+- generated_at: `2026-07-25T19:20:28Z`
 - seed: `root = Stack([], "column")`
 - mode: `extended`, max_edits: 8, node_budget: 15
 - hypothetical: `true` -- no production action space, checkpoint, or decode path changed.
@@ -24,7 +24,7 @@ VAR1-01's acceptance criteria call for Arm A (baseline, no extra actions) to rep
 | held_out | 0.0 | 0.0 | 0.0 | 0.0 |
 | adversarial | 0.0 | 0.5 | 0.0 | 0.5 |
 | ood | 0.0 | 0.0 | 0.0 | 0.0 |
-| rico | 0.0 | None | 0.0 | None |
+| rico | 0.0 | no_decided_cases | 0.0 | no_decided_cases |
 
 ## Verdict flips vs baseline (Arm A)
 
