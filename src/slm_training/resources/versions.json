@@ -1726,7 +1726,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v110",
+      "version": "v111",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1735,6 +1735,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "add SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
+        },
         {
           "version": "v110",
           "date": "2026-07-25",
