@@ -9224,7 +9224,13 @@ class TwoTowerModel(nn.Module):
             scores = raw_logits[list(candidates)]
             inventory_bias = self._component_inventory_bias(ctx, ctx_pad, candidates)
             if inventory_bias is not None:
+                before_inventory = int(scores.argmax().item())
                 scores = scores + inventory_bias
+                if stats is not None:
+                    stats.component_inventory_applications += 1
+                    stats.component_inventory_choice_changes += int(
+                        int(scores.argmax().item()) != before_inventory
+                    )
             plan_bias = self._component_plan_bias(
                 ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
             )
@@ -9427,7 +9433,13 @@ class TwoTowerModel(nn.Module):
                     ctx, ctx_pad, candidate_ids
                 )
                 if inventory_bias is not None:
+                    before_inventory = int(scores.argmax().item())
                     scores = scores + inventory_bias
+                    if stats is not None:
+                        stats.component_inventory_applications += 1
+                        stats.component_inventory_choice_changes += int(
+                            int(scores.argmax().item()) != before_inventory
+                        )
                 if parent == tuple(prefix):
                     plan_bias = self._component_plan_bias(
                         ctx,
@@ -10403,7 +10415,13 @@ class TwoTowerModel(nn.Module):
                         candidate_ids,
                     )
                     if inventory_bias is not None:
+                        before_inventory = int(scores.argmax().item())
                         scores = scores + inventory_bias
+                        if stats is not None:
+                            stats.component_inventory_applications += 1
+                            stats.component_inventory_choice_changes += int(
+                                int(scores.argmax().item()) != before_inventory
+                            )
                     candidate_kinds = tuple(
                         (
                             "component_root"
