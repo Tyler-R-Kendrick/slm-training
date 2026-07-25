@@ -752,7 +752,30 @@ class ProgramGenerator:
         return source, cells
 
     def generate_one(self) -> ProgramSpec:
-        candidate = self._choose()
+        return self._materialize(self._choose())
+
+    def generate_uniform(self, rng: random.Random | None = None) -> ProgramSpec:
+        """Materialize the next unused candidate uniformly at random.
+
+        Unlike ``generate_one``, which always calls the greedy coverage-maximizing
+        ``_choose()``, every unused candidate in the fixed grid is equally likely.
+        This is the uniform-valid control arm referenced by VSD2-02: "uniform"
+        must state whether it is uniform over productions, value classes,
+        ProgramSpec templates, or accepted roots — here it is uniform over the
+        generator's own bounded candidate grid.
+        """
+        available = [
+            candidate
+            for candidate in self._candidates
+            if candidate.key() not in self._used
+        ]
+        if not available:
+            raise ValueError("candidate grid exhausted")
+        candidate = (rng or self._rng).choice(available)
+        self._used.add(candidate.key())
+        return self._materialize(candidate)
+
+    def _materialize(self, candidate: _Candidate) -> ProgramSpec:
         openui, cells = self._build_program(candidate)
         identity = json.dumps(
             [
