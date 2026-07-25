@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "run_id": "dsh4-02-20260725-fixture",
+  "run_class": "fixture_demo",
+  "linear_issue": "SLM-387",
+  "issue_slug": "DSH4-02",
+  "depends_on": "SLM-386 (DSH4-01)",
+  "suites": {
+    "fixture": {
+      "n_frequency_training_traces": 30,
+      "n_eval_traces": 30,
+      "top_k": 3,
+      "primary_metric": "mrr",
+      "metrics_overall": {
+        "baseline:compiler_order": {
+          "mrr": 0.41833333333333333,
+          "accepted_set_mass": null,
+          "top_3_recall": 0.7666666666666667,
+          "ndcg_at_3": 0.46903856809524963,
+          "calibration_ece": null,
+          "selective_risk_aurc": null
+        },
+        "baseline:current_scorer": {
+          "mrr": 0.5944444444444444,
+          "accepted_set_mass": 0.21644190450846335,
+          "top_3_recall": 0.7666666666666667,
+          "ndcg_at_3": 0.6007906338095277,
+          "calibration_ece": 0.03713493913527984,
+          "selective_risk_aurc": 0.5769545011716342
+        },
+        "baseline:descriptor_similarity": {
+          "mrr": 0.435,
+          "accepted_set_mass": 0.2,
+          "top_3_recall": 0.6333333333333333,
+          "ndcg_at_3": 0.4226122594047706,
+          "calibration_ece": 0.0,
+          "selective_risk_aurc": 0.7026447662468426
+        },
+        "baseline:frequency": {
+          "mrr": 0.58,
+          "accepted_set_mass": 0.24095238095238095,
+          "top_3_recall": 0.6333333333333333,
+          "ndcg_at_3": 0.534123967142861,
+          "calibration_ece": 0.011428571428571444,
+          "selective_risk_aurc": 0.5559649657307001
+        },
+        "oracle:accepted_set": {
+          "mrr": 1.0,
+          "accepted_set_mass": 1.0,
+          "top_3_recall": 1.0,
+          "ndcg_at_3": 1.0,
+          "calibration_ece": 0.0,
+          "selective_risk_aurc": 0.0
+        },
+        "teacher:synthetic_descriptor_v1": {
+          "mrr": 0.3433333333333334,
+          "accepted_set_mass": 0.19669296711740644,
+          "top_3_recall": 0.4666666666666667,
+          "ndcg_at_3": 0.2797596420238124,
+          "calibration_ece": 0.06274968930314237,
+          "selective_risk_aurc": 0.9629731531374468
+        }
+      },
+      "paired_comparisons_mrr_overall": [
+        {
+          "baseline_source_id": "baseline:frequency",
+          "mean_diff": -0.2366666666666667,
+          "ci_low": -0.4,
+          "ci_high": -0.065,
+          "n_paired": 30,
+          "win_rate": 0.4666666666666667,
+          "teacher_significantly_better": false
+        },
+        {
+          "baseline_source_id": "baseline:compiler_order",
+          "mean_diff": -0.075,
+          "ci_low": -0.13333333333333333,
+          "ci_high": -0.016666666666666666,
+          "n_paired": 30,
+          "win_rate": 0.6,
+          "teacher_significantly_better": false
+        },
+        {
+          "baseline_source_id": "baseline:current_scorer",
+          "mean_diff": -0.2511111111111111,
+          "ci_low": -0.42055555555555557,
+          "ci_high": -0.07777777777777777,
+          "n_paired": 30,
+          "win_rate": 0.36666666666666664,
+          "teacher_significantly_better": false
+        },
+        {
+          "baseline_source_id": "baseline:descriptor_similarity",
+          "mean_diff": -0.09166666666666666,
+          "ci_low": -0.18555555555555558,
+          "ci_high": -0.00555555555555556,
+          "n_paired": 30,
+          "win_rate": 0.5666666666666667,
+          "teacher_significantly_better": false
+        }
+      ],
+      "verifier_regret_correlation": {
+        "baseline:compiler_order": null,
+        "baseline:current_scorer": 0.19745818007116533,
+        "baseline:descriptor_similarity": null,
+        "baseline:frequency": 0.13664859862498716,
+        "oracle:accepted_set": 1.0,
+        "teacher:synthetic_descriptor_v1": -0.1532064692570853
+      },
+      "perturbation": {
+        "bound": 0.0,
+        "kind_distances": {
+          "candidate_order": 0.0,
+          "opaque_id_relabel": 0.0,
+          "description_length": 0.0,
+          "prompt_template": 0.0
+        },
+        "n_traces_compared": {
+          "candidate_order": 30,
+          "opaque_id_relabel": 30,
+          "description_length": 30,
+          "prompt_template": 30
+        },
+        "within_bound": true
+      },
+      "stop_rule": {
+        "go": false,
+        "recommendation": "no_go_defer",
+        "beats_required_baselines": false,
+        "failing_baselines": [
+          "baseline:compiler_order",
+          "baseline:current_scorer",
+          "baseline:descriptor_similarity",
+          "baseline:frequency"
+        ],
+        "insufficient_data_baselines": [],
+        "perturbation_within_bound": true,
+        "correlation_positive": false,
+        "verifier_regret_correlation": -0.1532064692570853,
+        "primary_metric": "mrr"
+      }
+    }
+  },
+  "recipe": {
+    "pack_id": "openui",
+    "fixture_operator_id": "openui.dsh4_02_fixture",
+    "n_candidates_per_state": 5,
+    "gold_weights": [0.10, 0.15, 0.50, 0.15, 0.10],
+    "n_frequency_training_states": 30,
+    "n_eval_states": 30,
+    "teacher": "SyntheticDescriptorTeacherV1 (non-learned stand-in; not a real LLM)",
+    "bootstrap": {"n_boot": 2000, "alpha": 0.05, "seed": 0},
+    "reused_contracts": [
+      "slm_training.harnesses.distill.operator_decision_state.OperatorDecisionStateTraceV1 (DSH4-01)",
+      "slm_training.dsl.operators.legal_set.OperatorLegalSetV1 / LegalOperatorActionV1 / LegalSetCoverage (DSH3-06)",
+      "slm_training.evals.solver_state_supervision.SupervisionSource (EFS3-01)"
+    ],
+    "added_module": "slm_training.harnesses.distill.operator_teacher_ceiling",
+    "added_script": "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py"
+  },
+  "claim_class": "wiring",
+  "status": "wiring_only",
+  "disposition": "fixture_wiring",
+  "honest_verdict": "no_go_defer",
+  "stop_rule_triggered": true,
+  "note": "Wiring-only fixture over a small deterministic compiler operator with a fixed five-candidate value vocabulary. SyntheticDescriptorTeacherV1 is a non-learned, provenance-marked stand-in for a real LLM teacher -- no external model is downloaded or scored. On this fixture the synthetic teacher does not significantly beat the frequency, deterministic-compiler-order, current-scorer, or descriptor-similarity baselines on paired MRR (bootstrap CI, 2000 resamples), and its scores do not positively correlate with verifier-backed (accepted) outcomes. Per the SLM-387 stop rule this harness therefore reports DEFER: do not distill this teacher. Perturbation robustness (candidate order, opaque-id relabeling, description length, prompt-template hash) is within the declared 0.0 bound by construction -- the teacher never reads any of those fields. This DEFER outcome is the harness's honest finding on synthetic data, not evidence about any future real teacher; a production KD-readiness claim requires swapping a real teacher behind OperatorTeacherAdapter and re-running this exact harness.",
+  "manifest_id": "manifest-dsh4-02-fixture-0",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8efcbe0487ca41834e846a022eec2f26c9481b16",
+    "code_dirty": true,
+    "components": {
+      "harness.distill": "v4"
+    },
+    "stamped_at": "2026-07-25T11:07:58.687934+00:00"
+  }
+}
