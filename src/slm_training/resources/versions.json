@@ -5730,6 +5730,26 @@
         }
       ]
     },
+    "data.corpus_certification": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/verify/",
+        "scripts/audit_data_corpora.py",
+        "tests/test_data/test_corpus_certification.py",
+        "tests/test_scripts/test_audit_data_corpora.py",
+        "src/slm_training/resources/data/train/openui_verified_v1/",
+        "docs/design/corpus-certification.md",
+        "docs/design/iter-slm289-corpus-certification-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "introduce immutable G0-G12 certification for committed train snapshots"
+        }
+      ]
+    },
     "harness.train_data": {
       "version": "v19",
       "kind": "harness",
