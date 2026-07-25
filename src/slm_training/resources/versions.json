@@ -958,6 +958,22 @@
         }
       ]
     },
+    "evals.topology_application_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/evals/topology_application_gate.py",
+        "scripts/run_topology_application_gate.py",
+        "tests/test_evals/test_topology_application_gate.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-384 (DSH3-16) activation gate: makes the CAP2 disposition's existing topology_application blocking condition (an accepted hierarchical_head arm) mechanically checkable instead of prose-only. Fail-closed against the real SLM-383 rejection; closes DSH3-16 not_authorized in plan-only mode with no production topology-diffusion model code."
+        }
+      ]
+    },
     "evals.cap2_disposition": {
       "version": "v2",
       "kind": "metric",
@@ -4513,6 +4529,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: add the SLM-384 (DSH3-16) topology-application activation-gate lineage entry to research-lineage.md without changing the SLM-228 spectral disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

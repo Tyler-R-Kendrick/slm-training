@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "eval_file": "output-dir:///agentv/dsh3-16-topology-application-gate.eval.jsonl",
+    "timestamp": "2026-07-25T16:13:22.168Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "fail-closed-not-authorized",
+      "gate-derived-from-disposition",
+      "plan-only-closure"
+    ],
+    "experiment": "dsh3-16-topology-application-gate"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "gate-derived-from-disposition:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "fail-closed-not-authorized:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "plan-only-closure:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": []
+}

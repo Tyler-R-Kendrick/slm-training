@@ -1,0 +1,87 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/dsh3-16-topology-application-gate/benchmark.json",
+      "indexPath": "output-dir://agentv/dsh3-16-topology-application-gate/index.jsonl",
+      "runDir": "output-dir://agentv/dsh3-16-topology-application-gate",
+      "timingPath": "output-dir://agentv/dsh3-16-topology-application-gate/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 3,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "gate-derived-from-disposition:domain_criterion",
+          "expected": true,
+          "id": "gate-derived-from-disposition:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "fail-closed-not-authorized:domain_criterion",
+          "expected": true,
+          "id": "fail-closed-not-authorized:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "plan-only-closure:domain_criterion",
+          "expected": true,
+          "id": "plan-only-closure:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 3
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/dsh3-16-topology-application-gate.eval.jsonl",
+    "summary": {
+      "durationMs": 151,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 3,
+      "total": 3
+    }
+  },
+  "gate": {
+    "hierarchical_head_evidence_ids": [
+      "SLM-383.hierarchical_operator_head_baseline"
+    ],
+    "hierarchical_head_verdict": "rejected",
+    "reason": "hierarchical_head verdict is 'rejected', not an accepted SUPPORTED operator-selection mechanism. DSH3-16's topology-apply comparison has no accepted arm to lower or apply, and no ActionEffectV1-to-TopologyNode mutation bridge exists between the operators package's AST-dict representation and the topology-diffusion model's typed node tree. Close in plan-only mode without production model code (SLM-250/LOT1-01 precedent).",
+    "schema": "topology_application_activation_gate/v1",
+    "verdict": "not_authorized"
+  },
+  "run": {
+    "checkpoint": null,
+    "device": "none",
+    "issue": "SLM-384",
+    "kind": "activation_gate_evaluation",
+    "ship_claim": false
+  },
+  "schema": "topology_application_gate_report/v1",
+  "version_stamp": {
+    "code_commit": "395dfc90a54ba0c7496adbd48de8d0a981debec5",
+    "code_dirty": true,
+    "components": {
+      "evals.cap2_disposition": "v2",
+      "evals.topology_application_gate": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T16:13:21.722857+00:00"
+  }
+}

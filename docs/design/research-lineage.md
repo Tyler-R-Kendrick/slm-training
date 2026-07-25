@@ -1675,6 +1675,27 @@ fails closed if a positive E803 claim or unsupported benefit is substituted.
 Evidence and scope:
 [`dsh3-17-cap2-disposition-20260723/summary.md`](dsh3-17-cap2-disposition-20260723/summary.md).
 
+## Topology-application activation gate (DSH3-16 / SLM-384)
+
+**Fidelity label: repository evidence disposition.** No paper-derived
+mechanism; this makes the CAP2 disposition's own `topology_application`
+blocking condition (an accepted `hierarchical_head` arm) mechanically
+checkable instead of prose-only, and evaluates it against SLM-383's real
+result.
+
+| | |
+| --- | --- |
+| **Gate condition** | `hierarchical_head` must be `SUPPORTED` with an implemented benefit before DSH3-16 may build an `ActionEffectV1`-to-`TopologyNode` mutation bridge or run its recompute-only/hierarchical-head/topology-apply comparison |
+| **Evaluated against** | SLM-383's `hierarchical_operator_head_baseline` result: `rejected` (ties the token baseline) |
+| **Decision** | `not_authorized`; close in plan-only mode, mirroring the SLM-250/LOT1-01 precedent -- no production topology-diffusion model code |
+
+Separately from the gate, the operators package's AST-dict tree,
+`grammar_diffusion.TopologyNode`, and `tree_edit_diffusion`'s flat statement
+list remain three incompatible representations with no existing mutation
+bridge between them; building one is out of scope while the gate is closed.
+Evidence and scope:
+[`dsh3-16-topology-application-gate-20260725/summary.md`](dsh3-16-topology-application-gate-20260725/summary.md).
+
 ## Staged DSL capability baseline (DSH0-01 / SLM-345)
 
 **Fidelity label: repository contract.** The staged vocabulary introduces no
