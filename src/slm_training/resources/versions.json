@@ -5485,7 +5485,7 @@
    ]
   },
   "harness.train_data": {
-   "version": "v21",
+   "version": "v22",
    "kind": "harness",
    "paths": [
     "scripts/build_train_data.py",
@@ -5498,6 +5498,11 @@
     "src/slm_training/resources/frontier/"
    ],
    "history": [
+    {
+     "version": "v22",
+     "date": "2026-07-25",
+     "note": "add typed answer-composition combinators with scope-safe alpha-renaming under harness.experiments.slm358_answer_composition"
+    },
     {
      "version": "v21",
      "date": "2026-07-25",
@@ -7980,6 +7985,23 @@
      "version": "v1",
      "date": "2026-07-25",
      "note": "initial expanded-equivalence transform registry with proof obligations, canonicality ordering guarded by required roles, and canonical-primary SFT/preference materialization (SLM-357 / DSH1-05)"
+    }
+   ]
+  },
+  "harness.experiments.slm358_answer_composition": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/train_data/answer_composition.py",
+    "tests/test_harnesses/train_data/test_answer_composition.py",
+    "docs/design/iter-slm358-answer-composition-20260725.json",
+    "docs/design/iter-slm358-answer-composition-20260725.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "initial typed answer-composition registry (APPEND_STATEMENT / INSERT_CHILD / MAKE_LIST / WRAP_NODE / COMPOSE_DOCUMENT) with deterministic atomic alpha-renaming, fail-closed admission, and content-addressed lineage (SLM-358 / DSH1-06)"
     }
    ]
   }

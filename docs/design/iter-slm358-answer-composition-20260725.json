@@ -1,0 +1,49 @@
+{
+ "schema_version": "answer_composition_fixture/v1",
+ "issue": "SLM-358",
+ "track": "DSH1-06",
+ "date": "2026-07-25",
+ "run_class": "contract_fixture",
+ "decision": "supported",
+ "composition_schema": "answer_composition/v1",
+ "registry_version": "answer_composition_registry/v1",
+ "combinators": [
+  "APPEND_STATEMENT",
+  "INSERT_CHILD",
+  "MAKE_LIST",
+  "WRAP_NODE",
+  "COMPOSE_DOCUMENT"
+ ],
+ "version_stamp": {
+  "stamp_schema": "version_stamp/v1",
+  "code_commit": "2093d1e5c9f46c3710937ae0167738b7481847e3",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments.slm358_answer_composition": "v1",
+   "harness.train_data": "v22"
+  },
+  "stamped_at": "2026-07-25T02:21:33.052254+00:00"
+ },
+ "controls": {
+  "all_five_combinators_round_trip_canonically": "passed",
+  "official_parser_plus_canonicalizer_admission": "passed",
+  "binder_collision_deterministic_atomic_alpha_rename": "passed",
+  "no_string_concatenation_audit": "passed",
+  "incompatible_typed_roots_fail_closed": "passed",
+  "cross_split_composition_fail_closed": "passed",
+  "illegal_intermediate_stop_rule": "passed",
+  "pre_postcondition_violations_fail_closed": "passed",
+  "lineage_content_addressed_deterministic": "passed",
+  "rejected_compositions_persist_no_lineage": "passed",
+  "determinism": "passed"
+ },
+ "commands": [
+  "python -m pytest -q tests/test_harnesses/train_data/test_answer_composition.py",
+  "python -m pytest -q tests/test_harnesses/train_data tests/test_dsl/test_canonicalize.py",
+  "python -m scripts.verify_version_stamps --check",
+  "python -m scripts.repo_policy",
+  "python -m ruff check src/slm_training/harnesses/train_data/answer_composition.py tests/test_harnesses/train_data/test_answer_composition.py",
+  "git diff --check"
+ ],
+ "claim_limits": "fixture-scale contract evidence only; no corpus publication, no model evaluation, no ship-gate claim"
+}
