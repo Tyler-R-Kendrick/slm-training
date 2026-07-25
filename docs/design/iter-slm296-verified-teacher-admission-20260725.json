@@ -233,15 +233,15 @@
   ],
   "schema": "verified_teacher_admission_report/v1",
   "status": "yield_limitation_no_real_teacher_available",
-  "timestamp": "2026-07-25T07:48:18.733805Z",
+  "timestamp": "2026-07-25T14:37:31.142872Z",
   "version_stamp": {
-    "code_commit": "368395a2fa7d9642fc9497f17664bfd9b6adc56d",
-    "code_dirty": true,
+    "code_commit": "fa349f9bc23414bf568cbb53ef5c7200e9b83356",
+    "code_dirty": false,
     "components": {
-      "harness.experiments": "v106",
+      "harness.experiments": "v108",
       "harness.experiments.slm296_verified_teacher_admission": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-25T07:48:18.761255+00:00"
+    "stamped_at": "2026-07-25T14:37:31.142906+00:00"
   }
 }

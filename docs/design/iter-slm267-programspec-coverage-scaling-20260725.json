@@ -85,15 +85,15 @@
   },
   "schema": "programspec_coverage_scaling_report/v1",
   "status": "inconclusive",
-  "timestamp": "2026-07-25T07:37:15.970003Z",
+  "timestamp": "2026-07-25T14:37:29.958752Z",
   "version_stamp": {
-    "code_commit": "8dd4794a7cea10f1fe9732e5bb25d198b810fc22",
-    "code_dirty": true,
+    "code_commit": "fa349f9bc23414bf568cbb53ef5c7200e9b83356",
+    "code_dirty": false,
     "components": {
-      "harness.experiments": "v105",
+      "harness.experiments": "v108",
       "harness.experiments.slm267_programspec_coverage_scaling": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-25T07:37:15.970040+00:00"
+    "stamped_at": "2026-07-25T14:37:29.958799+00:00"
   }
 }

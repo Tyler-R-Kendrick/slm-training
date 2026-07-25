@@ -5577,6 +5577,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: reran the deterministic SLM-267 fixture during rebase validation; regenerated only its version-stamped JSON evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "initial registration; SLM-267 bounded uniform-vs-coverage-targeted ProgramSpec sampling wiring evidence and deterministic shard-seed primitive"
         }
       ]
@@ -5594,6 +5599,11 @@
         "docs/design/iter-slm296-verified-teacher-admission-20260725.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: reran the deterministic SLM-296 fixture during rebase validation; regenerated only its version-stamped JSON evidence"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
