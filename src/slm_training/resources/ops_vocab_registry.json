@@ -1,5 +1,5 @@
 {
-  "count": 19,
+  "count": 20,
   "families": {
     "ast": [
       "openui.replace_node",
@@ -17,6 +17,7 @@
       "conversation.copy_state",
       "conversation.fork",
       "conversation.redo",
+      "conversation.transaction_commit",
       "conversation.undo"
     ],
     "set": [
@@ -31,7 +32,7 @@
       "openui.wrap_node"
     ]
   },
-  "fingerprint": "77d4fd561caf88424e6e5b874219db707236a420bc0dac2e1abd8ce929ffabd3",
+  "fingerprint": "e039ebe5ab2ea6d746bd0757d16f65e2768fb4c0b8f4f37aa42c3e32472ecb93",
   "namespace": "ops",
   "schema": "ops_vocab/v1",
   "symbols": [
@@ -115,58 +116,65 @@
     {
       "family": "history",
       "local_id": 11,
-      "op_id": "conversation.undo",
-      "token": "<|op:conversation.undo|>",
+      "op_id": "conversation.transaction_commit",
+      "token": "<|op:conversation.transaction_commit|>",
       "token_id": 65547
     },
     {
-      "family": "set",
+      "family": "history",
       "local_id": 12,
-      "op_id": "openui.add_child",
-      "token": "<|op:openui.add_child|>",
+      "op_id": "conversation.undo",
+      "token": "<|op:conversation.undo|>",
       "token_id": 65548
     },
     {
       "family": "set",
       "local_id": 13,
-      "op_id": "openui.remove_node",
-      "token": "<|op:openui.remove_node|>",
+      "op_id": "openui.add_child",
+      "token": "<|op:openui.add_child|>",
       "token_id": 65549
     },
     {
       "family": "set",
       "local_id": 14,
-      "op_id": "openui.reorder_children",
-      "token": "<|op:openui.reorder_children|>",
+      "op_id": "openui.remove_node",
+      "token": "<|op:openui.remove_node|>",
       "token_id": 65550
     },
     {
-      "family": "topology",
+      "family": "set",
       "local_id": 15,
-      "op_id": "openui.contract_subtree",
-      "token": "<|op:openui.contract_subtree|>",
+      "op_id": "openui.reorder_children",
+      "token": "<|op:openui.reorder_children|>",
       "token_id": 65551
     },
     {
       "family": "topology",
       "local_id": 16,
-      "op_id": "openui.expand_template",
-      "token": "<|op:openui.expand_template|>",
+      "op_id": "openui.contract_subtree",
+      "token": "<|op:openui.contract_subtree|>",
       "token_id": 65552
     },
     {
       "family": "topology",
       "local_id": 17,
-      "op_id": "openui.unwrap_node",
-      "token": "<|op:openui.unwrap_node|>",
+      "op_id": "openui.expand_template",
+      "token": "<|op:openui.expand_template|>",
       "token_id": 65553
     },
     {
       "family": "topology",
       "local_id": 18,
+      "op_id": "openui.unwrap_node",
+      "token": "<|op:openui.unwrap_node|>",
+      "token_id": 65554
+    },
+    {
+      "family": "topology",
+      "local_id": 19,
       "op_id": "openui.wrap_node",
       "token": "<|op:openui.wrap_node|>",
-      "token_id": 65554
+      "token_id": 65555
     }
   ]
 }
