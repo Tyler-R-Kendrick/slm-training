@@ -6571,6 +6571,24 @@
         }
       ]
     },
+    "model.operator_feature_encoder": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_feature_encoder.py",
+        "tests/test_models/test_operator_feature_encoder.py",
+        "scripts/run_dsh3_23_operator_feature_encoder_fixture.py",
+        "docs/design/dsh3-23-operator-feature-encoder.md",
+        "docs/design/dsh3-23-operator-feature-encoder.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-398 (DSH3-23): typed categorical embeddings over the sanitized OperatorPolicyInputV1 boundary, matched against the legacy hash-scalar control and a labeled row-position identity-bucket control; fixture-scale disposition only"
+        }
+      ]
+    },
     "model.operator_policy_view": {
       "version": "v1",
       "kind": "model",
