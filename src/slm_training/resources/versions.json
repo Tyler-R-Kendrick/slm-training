@@ -1726,7 +1726,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v110",
+      "version": "v111",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1735,6 +1735,7 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {"version": "v111", "date": "2026-07-25", "note": "SLM-268 fail-closed activation audit for verified-data scaling"},
         {
           "version": "v110",
           "date": "2026-07-25",
@@ -5671,6 +5672,21 @@
           "date": "2026-07-24",
           "note": "initial registration; SLM-265 outcome-blind domain-shift strata and coverage-gap audit"
         }
+      ]
+    },
+    "harness.experiments.slm268_verified_data_activation": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm268_verified_data_activation.py",
+        "scripts/audit_verified_data_scaling_activation.py",
+        "tests/test_harnesses/experiments/test_slm268_verified_data_activation.py",
+        "docs/design/iter-slm268-verified-data-scaling-activation-20260725.json",
+        "docs/design/iter-slm268-verified-data-scaling-activation-20260725.md"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-25", "note": "no-bump: regenerated the deterministic SLM-268 activation report after rebase"},
+        {"version": "v1", "date": "2026-07-25", "note": "SLM-268 fail-closed local verified-data scaling activation audit"}
       ]
     },
     "harness.experiments.slm267_programspec_coverage_scaling": {
