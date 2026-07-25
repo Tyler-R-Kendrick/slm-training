@@ -5170,7 +5170,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -5187,6 +5187,16 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-25",
+          "note": "eval_runner RuntimeSymbol construction: stop deriving semantic_role from template-marker surface text (opaque markers / TEMPLATE_MARKERS_ARE_OPAQUE)"
+        },
+        {
+          "version": "v60",
+          "date": "2026-07-25",
+          "note": "Fail-closed evaluate_model: always pass allow_unconstrained_fallback=False (matches ModelBuildConfig post_init / decode invariants); --no-unconstrained-fallback is a deprecated no-op"
+        },
         {
           "version": "v59",
           "date": "2026-07-25",
@@ -7043,7 +7053,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v246",
+      "version": "v247",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7078,6 +7088,21 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v247",
+          "date": "2026-07-25",
+          "note": "Wire missing ModelBuildConfig fields already passed by evaluate_model CLI: required_slot_array/root_completion, request_aware_slot_reservation, slot_alias_unique_decode, binder_topology_unique_decode, compiler_schema_component_types (defaults off)"
+        },
+        {
+          "version": "v247",
+          "date": "2026-07-25",
+          "note": "Default max_wall_minutes to MAX_HARNESS_WALL_MINUTES so factory configs pass train_loop's harness cap (reserves interrupt+finalize headroom)"
+        },
+        {
+          "version": "v247",
+          "date": "2026-07-25",
+          "note": "Wire missing ModelBuildConfig fields already passed by train_model CLI: binder_slot_ownership/presence, binder_reference_presence loss+decode weights, checkpoint_every_steps (defaults 0 / off)"
+        },
         {
           "version": "v246",
           "date": "2026-07-25",
