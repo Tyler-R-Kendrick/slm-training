@@ -1,5 +1,9 @@
 # DSH3-08 immutable conversation state graph
 
+> **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) —
+> constrained decoding is the product, deterministic singleton bypass outranks
+> learned scores, and a rejected approach never closes a goal.
+
 SLM-376 replaces hidden mutable edit-session context with a frozen,
 content-addressed state/turn graph. Every AST edge is derived from one
 successful pack-owned `OperatorApplicationV1`; history operations only select

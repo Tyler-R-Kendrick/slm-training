@@ -19,6 +19,9 @@ STRICT_EVALUATION_POLICY: dict[str, Any] = {
     "slot_contract_constrained_decode": True,
     "honest_slot_contract": True,
     "allow_unconstrained_fallback": False,
+    # Decode invariant I2 (docs/design/decode-invariants.md): a ship-gated
+    # decode always takes the deterministic bypass before any neural ranking.
+    "grammar_fastpath": True,
 }
 STRICT_COMPILER_TREE_POLICY: dict[str, Any] = {
     **STRICT_EVALUATION_POLICY,
@@ -49,6 +52,15 @@ def apply_evaluation_policy(config: object) -> None:
         ) from exc
     for field, value in policy.items():
         setattr(config, field, value)
+    if policy_id != CHECKPOINT_DECLARED_POLICY:
+        # A named strict policy is a ship-gated path: fail before the run when
+        # anything left it able to emit uncertified output (I6) or to spend a
+        # forward on a proven singleton (I2).
+        from slm_training.levers import require_constrained_production_config
+
+        require_constrained_production_config(
+            config, context=f"evaluation_policy {policy_id!r}"
+        )
 
 
 def apply_strict_compiler_tree_policy(config: object) -> None:

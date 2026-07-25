@@ -202,14 +202,17 @@ _CHECKPOINT_DECLARED = DecodePathSpec(
 _CURRENT_NATIVE = DecodePathSpec(
     path_id="current_native",
     description=(
-        "Current production model-native decode with current bug fixes, "
-        "preserving the checkpoint's own output representation."
+        "Diagnostic control: model-native decode that permits the unconstrained "
+        "retry, preserving the checkpoint's own output representation. Decode "
+        "invariant I6 (docs/design/decode-invariants.md) forbids this path in "
+        "serving or ship-gated configurations; it exists to measure what "
+        "constrained decoding buys."
     ),
     generation_entry="model_native_greedy_ltr",
     completion_kind="greedy",
     grammar_policy="current_native_grammar",
     seed_policy="fixed_seed_0",
-    expected_fallback="unconstrained fallback permitted (current default)",
+    expected_fallback="unconstrained fallback permitted (diagnostic control only)",
     impl_version="decode_path.current_native/v1",
     supported_model_families=("twotower",),
     supported_output_codecs=(),

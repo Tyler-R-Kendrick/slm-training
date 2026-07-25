@@ -1,4 +1,13 @@
-"""Lightweight ONNX inference adapter for the deployed playground."""
+"""Lightweight ONNX inference adapter for the deployed playground.
+
+This backend is a serving path, so it obeys the same decode invariants as the
+torch backend (`docs/design/decode-invariants.md`):
+
+* I2 — a scope-proven singleton is committed **without** running the denoiser
+  session (`_forced_singleton` is consulted before every forward).
+* I6 — a grammar-constrained decode that cannot be certified raises
+  :class:`GrammarCertificationError` instead of returning uncertified text.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +23,10 @@ from slm_training.dsl.parser import validate
 from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
 from slm_training.models.grammar import force_emit_token_id, structural_token_ids
 from slm_training.models.tokenizer import OpenUITokenizer
+
+
+class GrammarCertificationError(RuntimeError):
+    """A grammar-constrained decode produced text that failed certification."""
 
 
 class OnnxTwoTowerModel:
@@ -40,6 +53,10 @@ class OnnxTwoTowerModel:
         self.tokenizer = tokenizer
         self.config = config
         self.gen_len = gen_len
+        # Deterministic-bypass instrumentation for the last generate() call
+        # (I2 bypass tests assert forwards_count == 0 on fully forced decodes).
+        self.last_forwards_count = 0
+        self.last_forced_tokens_without_forward = 0
 
     @classmethod
     def from_checkpoint(
@@ -117,6 +134,41 @@ class OnnxTwoTowerModel:
             return None
         return serialized
 
+    def _blocked_ids(self) -> set[int]:
+        return {
+            self.tokenizer.pad_id,
+            self.tokenizer.mask_id,
+            self.tokenizer.bos_id,
+            self.tokenizer.unk_id,
+        }
+
+    def _forced_singleton(
+        self, prefix: list[int], remaining_tokens: int
+    ) -> int | None:
+        """Return the sole legal continuation, or ``None`` when ambiguous.
+
+        Decode invariant I2: this runs **before** the denoiser session so a
+        scope-proven singleton never costs a forward pass. The proof must be
+        complete — a partial completion forest refuses to bypass.
+        """
+        if not bool(getattr(self.config, "grammar_fastpath", True)):
+            return None
+        forced = force_emit_token_id(self.tokenizer, prefix)
+        if forced is None:
+            return None
+        forest = build_completion_forest(
+            self.tokenizer,
+            prefix,
+            remaining_tokens=remaining_tokens,
+        )
+        if forest.coverage != "complete":
+            return None
+        legal = {int(token_id) for token_id in forest.candidate_ids}
+        legal -= self._blocked_ids()
+        if legal != {int(forced)}:
+            return None
+        return int(forced)
+
     def _pick_constrained_token(
         self,
         logits: np.ndarray,
@@ -124,12 +176,7 @@ class OnnxTwoTowerModel:
         forced_token_id: int | None,
         remaining_tokens: int,
     ) -> int | None:
-        blocked = {
-            self.tokenizer.pad_id,
-            self.tokenizer.mask_id,
-            self.tokenizer.bos_id,
-            self.tokenizer.unk_id,
-        }
+        blocked = self._blocked_ids()
         forest = build_completion_forest(
             self.tokenizer,
             prefix,
@@ -174,8 +221,22 @@ class OnnxTwoTowerModel:
         ids[0, 0] = self.tokenizer.bos_id
         structural = sorted(structural_token_ids(self.tokenizer))
         bias = float(getattr(self.config, "structural_bias", 0.0) or 0.0)
+        self.last_forwards_count = 0
+        self.last_forced_tokens_without_forward = 0
 
         for position in range(1, length):
+            prefix = ids[0, :position].tolist()
+            remaining = length - position
+            if use_grammar:
+                # I2: commit a proven singleton with no forward pass at all.
+                forced_only = self._forced_singleton(prefix, remaining)
+                if forced_only is not None:
+                    self.last_forced_tokens_without_forward += 1
+                    ids[0, position] = forced_only
+                    if forced_only == self.tokenizer.eos_id:
+                        ids[0, position + 1 :] = self.tokenizer.pad_id
+                        break
+                    continue
             logits = self.denoiser_session.run(
                 ["logits"],
                 {
@@ -184,9 +245,9 @@ class OnnxTwoTowerModel:
                     "ctx_pad_mask": ctx_pad_mask,
                 },
             )[0][0, position].copy()
+            self.last_forwards_count += 1
             if use_grammar and bias and structural:
                 logits[structural] += bias
-            prefix = ids[0, :position].tolist()
             if use_grammar:
                 forced = (
                     force_emit_token_id(self.tokenizer, prefix)
@@ -197,7 +258,7 @@ class OnnxTwoTowerModel:
                     logits,
                     prefix,
                     forced,
-                    length - position,
+                    remaining,
                 )
             else:
                 choice = int(logits.argmax())
@@ -211,8 +272,14 @@ class OnnxTwoTowerModel:
 
         text = self.tokenizer.decode(ids[0].tolist()).strip()
         if use_grammar:
-            # The web harness owns retry and browser fallback. Returning a
-            # canned valid template here would incorrectly label a failed
-            # model decode as a successful real-model attempt.
-            return self._certify(text) or text
+            # I6: fail closed. The web harness owns retry and browser fallback,
+            # and a canned valid template here would mislabel a failed decode
+            # as a successful real-model attempt — but handing back uncertified
+            # text is worse still, because the caller cannot tell the two apart.
+            certified = self._certify(text)
+            if certified is None:
+                raise GrammarCertificationError(
+                    "ONNX grammar-constrained decode produced uncertified OpenUI"
+                )
+            return certified
         return text

@@ -3,6 +3,14 @@
 Follow **[AGENTS.md](AGENTS.md)** — the canonical instructions for every coding
 agent in this repo.
 
+Obey **AGENTS.md § Non-negotiable architecture invariants** — constrained
+decoding is the product, deterministic/singleton bypass outranks any learned
+score, speculation ranks only over forward-calculated symbol tables and always
+verifies before commit, symbol tables schedule prefills, the ops vocabulary is
+shared encoder↔decoder, and multi-turn is a CRDT event store. Never weaken
+them; a rejected experiment closes an approach, never a goal. Canonical
+expansion: [`docs/design/decode-invariants.md`](docs/design/decode-invariants.md).
+
 Load skills from `.agents/skills/` (mirrored / symlinked under `.claude/skills/`).
 Use `organize-repository` before changing tracked file placement and use
 `git mv` for every tracked relocation.

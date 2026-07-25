@@ -35,6 +35,10 @@ class ConversationOperation(str, Enum):
     REDO = "redo"
     CHECKOUT_STATE = "checkout_state"
     FORK = "fork"
+    # I11 (docs/design/decode-invariants.md): a turn may re-materialize an
+    # earlier state's artifact on the current branch. FORK opens a new branch;
+    # COPY_STATE carries content forward inside one.
+    COPY_STATE = "copy_state"
 
 
 class ConversationTraceError(ValueError):
@@ -110,6 +114,7 @@ class TurnArtifactV1:
     application: OperatorApplicationV1 | None = None
     branch_nonce_digest: str | None = None
     reference_seed: int | None = None
+    copy_source_state_id: str | None = None
     schema: str = "conversation_turn/v1"
 
     def __post_init__(self) -> None:
@@ -145,6 +150,12 @@ class TurnArtifactV1:
             raise ConversationTraceError(
                 "only fork turns may carry branch allocation fields"
             )
+        if self.operation is ConversationOperation.COPY_STATE:
+            if self.copy_source_state_id is None:
+                raise ConversationTraceError("copy requires a source state")
+            _require_digest(self.copy_source_state_id, "copy_source_state_id")
+        elif self.copy_source_state_id is not None:
+            raise ConversationTraceError("only copy turns may name a source state")
 
     @property
     def application_ids(self) -> tuple[str, ...]:
@@ -171,6 +182,7 @@ class TurnArtifactV1:
             "application_ids": list(self.application_ids),
             "branch_nonce_digest": self.branch_nonce_digest,
             "reference_seed": self.reference_seed,
+            "copy_source_state_id": self.copy_source_state_id,
         }
         if include_turn_id:
             value["turn_id"] = self.turn_id
@@ -433,6 +445,46 @@ def checkout_conversation_state(
     return _append_turn(trace, turn)
 
 
+def copy_conversation_state(
+    trace: ConversationTraceV1,
+    *,
+    source_state_id: str,
+    provenance: ApplicationProvenanceV1,
+) -> ConversationTraceV1:
+    """Re-materialize an earlier state's artifact as the next state.
+
+    I11: turn inputs are operations on the conversation AST, and ``copy`` is one
+    of them. Unlike ``fork`` this stays on the current branch, so the copied
+    node reuses the source's reference table verbatim — which is only sound
+    within one branch, hence the cross-branch refusal below.
+    """
+    _history_provenance(trace, provenance)
+    source = trace.node(source_state_id)
+    current = trace.current
+    if source.branch_digest != current.branch_digest:
+        raise ConversationTraceError("copy source is on another branch")
+    if any(
+        node.parent_state_id == current.state_id
+        and node.branch_digest == current.branch_digest
+        for node in trace.state_nodes
+    ):
+        raise ConversationTraceError("current state already has a next state")
+    output = ConversationStateNodeV1(
+        parent_state_id=current.state_id,
+        branch_digest=current.branch_digest,
+        state=source.state,
+        reference_table=source.reference_table,
+    )
+    turn = TurnArtifactV1(
+        operation=ConversationOperation.COPY_STATE,
+        input_state_id=current.state_id,
+        output_state_id=output.state_id,
+        provenance=provenance,
+        copy_source_state_id=source_state_id,
+    )
+    return _append_turn(trace, turn, new_node=output)
+
+
 def _fork_seed(branch_digest: str, requested_seed: int) -> int:
     if requested_seed < 0:
         raise ConversationTraceError("reference seed must be non-negative")
@@ -664,6 +716,20 @@ def replay_conversation_trace(
                 raise ConversationTraceError("redo did not select exact child")
         elif turn.operation is ConversationOperation.CHECKOUT_STATE:
             pass
+        elif turn.operation is ConversationOperation.COPY_STATE:
+            assert turn.copy_source_state_id is not None
+            if turn.copy_source_state_id not in by_id:
+                raise ConversationTraceError("copy source state is missing")
+            source = by_id[turn.copy_source_state_id]
+            if (
+                output.parent_state_id != cursor.state_id
+                or output.branch_digest != cursor.branch_digest
+                or source.branch_digest != cursor.branch_digest
+                or output.state != source.state
+                or output.reference_table != source.reference_table
+            ):
+                raise ConversationTraceError("copy replay differs")
+            created.add(output.state_id)
         else:
             assert turn.operation is ConversationOperation.FORK
             assert turn.branch_nonce_digest is not None
@@ -720,6 +786,7 @@ __all__ = [
     "append_operator_turn",
     "checkout_conversation_state",
     "clone_reference_table_for_branch",
+    "copy_conversation_state",
     "create_conversation_trace",
     "fork_conversation",
     "redo_conversation",

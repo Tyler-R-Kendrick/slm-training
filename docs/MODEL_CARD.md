@@ -52,6 +52,31 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 [adversarial-review.md](design/adversarial-review.md),
 [quality-experiment-matrix.md](design/quality-experiment-matrix.md).
 
+## Capability ladder position (decode invariant I10)
+
+Every checkpoint in this card is claimed **at a rung**, and a rung is never
+credited by a lower rung's evidence. Goal law:
+[decode-invariants.md](design/decode-invariants.md).
+
+| Rung | Status | Note |
+| --- | --- | --- |
+| 1. AST → AST | built | tree-edit diffusion + edit corpora |
+| 2. grammar → AST | built | prompt→AST corpus |
+| 3. grammar+ops → AST | built | `harnesses/train_data/operator_corpus.py` |
+| 4. simplified-NL → AST | thin | frozen frontier families L3–L5, tiny inventory — the bridge to rung 5 |
+| 5. complex NL → AST | **unbuilt** | fail-closed `nl_available=False` / `CERT_CAP1_unavailable` |
+
+Every checkpoint below is a rung-1–3 artifact. No row in this card claims rung 4
+or 5. Rung 5 is *unbuilt*, not abandoned: its successor approach is building out
+the simplified-NL inventory as the bridge, tracked in
+[decode-invariants.md § I10](design/decode-invariants.md).
+
+Serving-side decode contract for every promoted checkpoint: grammar-constrained
+end to end, `allow_unconstrained_fallback=False`, deterministic singleton bypass
+on, and fail-closed certification in every backend (torch and ONNX). A
+checkpoint evaluated under a `weakens_constraint` lever is diagnostic evidence,
+never a ship claim.
+
 ---
 
 ## Current checkpoint roster

@@ -1,5 +1,9 @@
 # Symbol-only output contract
 
+> **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) —
+> constrained decoding is the product, deterministic singleton bypass outranks
+> learned scores, and a rejected approach never closes a goal.
+
 OpenUI model targets and completions contain only grammar/AST symbols and
 template placeholders. The model never learns or emits arbitrary string
 content.

@@ -512,9 +512,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Load HF weights only from local cache.",
     )
     parser.add_argument(
+        "--unconstrained-control",
         "--no-grammar",
+        dest="unconstrained_control",
         action="store_true",
-        help="Disable streaming/grammar-constrained decode at generate time.",
+        help=(
+            "DIAGNOSTIC CONTROL ONLY: disable grammar-constrained decode at "
+            "generate time. Decode invariant I6 "
+            "(docs/design/decode-invariants.md) forbids this arm in serving or "
+            "ship-gated configurations; its output is never certified. "
+            "`--no-grammar` is the deprecated spelling."
+        ),
     )
     parser.add_argument(
         "--grammar-dsl",
@@ -1349,7 +1357,7 @@ def main(argv: list[str] | None = None) -> int:
         hf_model_revision=args.hf_revision,
         freeze_context=freeze,
         local_files_only=args.local_files_only,
-        grammar_constrained=not args.no_grammar,
+        grammar_constrained=not args.unconstrained_control,
         grammar_dsl=args.grammar_dsl,
         grammar_top_k=args.grammar_top_k,
         structural_bias=args.structural_bias,

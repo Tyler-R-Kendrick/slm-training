@@ -424,7 +424,8 @@ class ModelBuildConfig:
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
-    allow_unconstrained_fallback: bool = True
+    # Decode invariant I6 (docs/design/decode-invariants.md): diagnostic-only.
+    allow_unconstrained_fallback: bool = False
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix
@@ -438,6 +439,13 @@ class ModelBuildConfig:
     speculative_successor: bool = False  # E74 successor-state cache
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # I3/I4 (docs/design/decode-invariants.md): deterministic ranking over the
+    # forward-calculated symbol table, and symbol-table prefill scheduling.
+    speculative_rank: str = "off"  # off | ngram
+    speculative_rank_table: str | None = None
+    speculative_rank_margin: float = 0.0
+    prefill_schedule: str = "off"  # off | checkpoint
+    prefill_schedule_max_lookahead: int = 0
     # Hugging Face Bucket for durable checkpoints (full HF-context trains).
     # None → default hf://buckets/TKendrick/OpenUI when sync is enabled.
     # Empty string → disable auto bucket selection.

@@ -57,6 +57,7 @@ from slm_training.models.decode_stats import (
     get_active_stats,
     timed_ms,
 )
+from slm_training.runtime.decode_schedule import plan_prefill, record_plan
 from slm_training.models.grammar import (
     apply_structural_bias,
     exact_forced_token_id,
@@ -612,7 +613,9 @@ class TwoTowerConfig:
     # P7: playground/generate attempt budget + finalize-only-on-last.
     generate_max_attempts: int = 3
     grammar_finalize_on_last_attempt_only: bool = False
-    allow_unconstrained_fallback: bool = True
+    # Decode invariant I6 (docs/design/decode-invariants.md): the unconstrained
+    # retry is a diagnostic control, never a serving default. Fail closed.
+    allow_unconstrained_fallback: bool = False
     # --- V7 speculative denoising (docs/design/speculative-denoising.md) ---
     # E70 LESS-lite: require argmax persistence before committing (0=off);
     # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
@@ -632,6 +635,19 @@ class TwoTowerConfig:
     speculative_successor: bool = False
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # --- I3 deterministic speculative ranking (docs/design/decode-invariants.md) ---
+    # Ranking over the forward-calculated symbol table. "off" keeps the neural
+    # ranker; "ngram" consults a committed back-off table first. Legality is
+    # never affected — only which proven-legal candidate is chosen, and only
+    # when the margin clears `speculative_rank_margin` (0.0 = never commit).
+    speculative_rank: str = "off"
+    speculative_rank_table: str | None = None
+    speculative_rank_margin: float = 0.0
+    # --- I4 symbol-table prefill scheduling (docs/design/decode-invariants.md) ---
+    # Plans the next forward from the symbol table: minimal rows, prefill
+    # boundaries at grammar checkpoints. "off" preserves the legacy budget.
+    prefill_schedule: str = "off"
+    prefill_schedule_max_lookahead: int = 0
 
     def __post_init__(self) -> None:
         # SLM-242: generic fail-closed numeric/schedule gate.
@@ -4758,6 +4774,47 @@ class TwoTowerModel(nn.Module):
         )
         return self._action_shortlist_vectors
 
+    def _schedule_backend(self) -> str:
+        """Cached accelerator id used by the I4 prefill planner."""
+        cached = getattr(self, "_schedule_backend_cache", None)
+        if cached is None:
+            from slm_training.runtime.decode_schedule import schedule_backend
+
+            cached = schedule_backend(str(getattr(self.config, "device", "") or "") or None)
+            self._schedule_backend_cache = cached
+        return cached
+
+    def _speculative_ranker(self) -> Any | None:
+        """Return the configured deterministic path ranker, or ``None``.
+
+        I3: this is a *ranking* lever over the forward-calculated symbol table.
+        A configured-but-unloadable table raises rather than silently decoding
+        without it — a run must be able to name the table that ranked it.
+        """
+        cached = getattr(self, "_speculative_ranker_cache", ...)
+        if cached is not ...:
+            return cached
+        mode = str(getattr(self.config, "speculative_rank", "off") or "off").lower()
+        ranker = None
+        if mode not in {"off", ""}:
+            if mode != "ngram":
+                raise ValueError(
+                    f"unsupported speculative_rank {mode!r}; expected 'off' or 'ngram'"
+                )
+            from slm_training.dsl.grammar.fastpath.speculative_rank import load_ranker
+
+            table = getattr(self.config, "speculative_rank_table", None)
+            if not table:
+                raise ValueError(
+                    "speculative_rank='ngram' requires speculative_rank_table"
+                )
+            ranker = load_ranker(
+                table,
+                margin=float(getattr(self.config, "speculative_rank_margin", 0.0) or 0.0),
+            )
+        self._speculative_ranker_cache = ranker
+        return ranker
+
     def _maybe_apply_action_shortlist(
         self,
         paths: tuple,
@@ -8857,6 +8914,32 @@ class TwoTowerModel(nn.Module):
         # disabled this is a no-op and leaves ``paths`` unchanged.
         paths, _shortlist_trace = self._maybe_apply_action_shortlist(paths, prefix)
 
+        # I3: rank the already-legal domain deterministically before spending a
+        # forward. Membership is untouched; only the choice among proven-legal
+        # candidates is made here, and only when the corpus scorer clears its
+        # configured margin. Anything less falls through to the model below.
+        speculative = self._speculative_ranker()
+        if speculative is not None and len(paths) > 1:
+            choice = speculative.choose(prefix, paths)
+            if choice is not None:
+                if stats is not None:
+                    stats.speculative_rank_evaluations += 1
+                if choice.confident:
+                    selected = paths[choice.best_index]
+                    if stats is not None:
+                        stats.speculative_rank_commits += 1
+                        stats.speculative_rank_tokens += len(selected.token_ids)
+                    if recorder is not None:
+                        recorder.event(
+                            "speculative_rank_commit",
+                            position=len(prefix),
+                            margin=round(float(choice.margin), 6),
+                            candidates=len(paths),
+                        )
+                    return tuple(selected.token_ids)
+                if stats is not None:
+                    stats.speculative_rank_declined += 1
+
         def uniform_legal_index() -> int:
             """Seeded, stateless control choice for an otherwise legal decision."""
             material = json.dumps(
@@ -10747,6 +10830,31 @@ class TwoTowerModel(nn.Module):
                             if exact is not None:
                                 exact_map[bi] = exact
                 need_model = [bi for bi in active_idx.tolist() if bi not in exact_map]
+                # I4: let the symbol table shape the forward. With the lever
+                # off this returns the legacy row set and canvas budget, so the
+                # planner is observational until a campaign turns it on.
+                plan = plan_prefill(
+                    position=t,
+                    canvas=canvas,
+                    active_rows=active_idx.tolist(),
+                    committed_rows=tuple(exact_map),
+                    mode=str(getattr(self.config, "prefill_schedule", "off") or "off"),
+                    legacy_lookahead=lookahead,
+                    max_lookahead=int(
+                        getattr(self.config, "prefill_schedule_max_lookahead", 0) or 0
+                    ),
+                    backend=self._schedule_backend(),
+                    # No checkpoint input here: at plan time this loop has no
+                    # proof about positions *after* t — a forced run beyond the
+                    # current position only becomes provable once t is
+                    # committed, and the next iteration discovers it for free.
+                    # Callers that already hold a forced-run draft pass one.
+                    forced_run_lengths=None,
+                )
+                record_plan(stats, plan)
+                step_lookahead = lookahead
+                if plan.reason != "legacy_budget" and plan.needs_forward:
+                    step_lookahead = max(1, plan.prefill_end - t)
                 forwarded_rows = set(need_model)
                 pred = ids[:, t].clone()
                 for bi, choice in exact_map.items():
@@ -10767,8 +10875,8 @@ class TwoTowerModel(nn.Module):
                 if need_model:
                     need_t = torch.tensor(need_model, device=device, dtype=torch.long)
                     # P4: truncate canvas to prefix + lookahead for the forward.
-                    if lookahead > 0:
-                        end = min(canvas, t + lookahead)
+                    if step_lookahead > 0:
+                        end = min(canvas, t + step_lookahead)
                         fwd_ids = ids.index_select(0, need_t)[:, :end]
                         sub_ctx = ctx.index_select(0, need_t)
                         sub_pad = ctx_pad.index_select(0, need_t)
@@ -13209,7 +13317,7 @@ class TwoTowerModel(nn.Module):
             active_stats = get_active_stats()
             if active_stats is not None:
                 active_stats.unconstrained_retries += 1
-            if not bool(getattr(self.config, "allow_unconstrained_fallback", True)):
+            if not bool(getattr(self.config, "allow_unconstrained_fallback", False)):
                 return text
             unconstrained = self._generate_maskgit_one(
                 ctx,

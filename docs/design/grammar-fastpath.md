@@ -1,5 +1,9 @@
 # Grammar fast-path (force-emit + MaskGIT admit)
 
+> **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) —
+> constrained decoding is the product, deterministic singleton bypass outranks
+> learned scores, and a rejected approach never closes a goal.
+
 ## Goal
 
 Skip transformer steps when the OpenUI LALR acceptor has a **singleton structural

@@ -1,5 +1,9 @@
 # Speculative denoising (V7) — outcome-conditioned decode for TwoTower
 
+> **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) —
+> constrained decoding is the product, deterministic singleton bypass outranks
+> learned scores, and a rejected approach never closes a goal.
+
 > Status: **V7 shipped levers E70–E75** (see
 > [quality-experiment-matrix.md](quality-experiment-matrix.md)). Paper tags in
 > [research-lineage.md](research-lineage.md) §"Speculative denoising (V7)".
