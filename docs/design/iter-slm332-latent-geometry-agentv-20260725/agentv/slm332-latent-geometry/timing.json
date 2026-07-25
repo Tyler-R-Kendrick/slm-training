@@ -1,0 +1,20 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "de5d78a44c40e763e039fd8d0cbab706fc8f9977",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v115",
+      "harness.experiments.slm332_latent_geometry": "v5"
+    },
+    "stamped_at": "2026-07-25T21:22:35.587102+00:00"
+  }
+}
