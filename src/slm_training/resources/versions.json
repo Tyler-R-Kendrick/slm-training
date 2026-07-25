@@ -8783,7 +8783,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v3",
+      "version": "v4",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -8791,6 +8791,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "SLM-422 (VAR0-01): certify() gains variant_contracts via check_variant_contracts(), mirroring check_ops_vocab() -- pins slm_training.dsl.variants' registry against its live sources. No existing check's behavior changed."
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
@@ -8838,6 +8843,22 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial reserved compute-ops vocabulary shared encoder<->decoder: 19 ops derived from the live local/topology/conversation registries across ast/graph/set/topology/history, reserved in the new `ops` token-id namespace above every codec range, one shared_token_ids() mapping, grammar layering assertion, content-addressed drift gate (decode invariant I13)"
+        }
+      ]
+    },
+    "dsl.variants": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/variants.py",
+        "src/slm_training/resources/variant_registry.json",
+        "tests/test_dsl/test_variants.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-422 (VAR0-01): VariantContractV1 registers repl_operators, tree_edit_diffusion, and twotower_prompt_ast, each scoping pack_id / action_alphabet_id+fingerprint / kernel_ops / seed_policy_id / inventory_source; derived (not authored) from live sources (module ACTION_* constants, OPS_VOCAB, STRUCTURAL_TOKENS), content-addressed and drift-gated in check_variant_contracts() alongside check_ops_vocab(). Records tree_edit_diffusion's component inventory as an honest module_constant violation (LEAF_COMPONENTS/CONTAINER_COMPONENTS still hardcoded; VAR0-03 migrates this) rather than certifying it fixed. No model/decode-path/quality change; contract and survey only."
         }
       ]
     },
