@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v115",
+      "version": "v116",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1775,6 +1775,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v116",
+          "date": "2026-07-25",
+          "note": "register SLM-271 DCA0-03 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites"
+        },
         {
           "version": "v115",
           "date": "2026-07-25",
@@ -2422,7 +2427,7 @@
       ]
     },
     "harness.experiments.dca_activation_gate": {
-      "version": "v1",
+      "version": "v2",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/experiments/dca_activation_gate.py",
@@ -2430,9 +2435,16 @@
         "tests/test_harnesses/experiments/test_dca_activation_gate.py",
         "tests/test_scripts/test_audit_dca_activation.py",
         "docs/design/iter-slm270-dca0-02-activation-20260725.json",
-        "docs/design/iter-slm270-dca0-02-activation-20260725.md"
+        "docs/design/iter-slm270-dca0-02-activation-20260725.md",
+        "docs/design/iter-slm271-dca0-03-activation-20260725.json",
+        "docs/design/iter-slm271-dca0-03-activation-20260725.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "add SLM-271 DCA0-03 registry entry + blocked iter docs (mask-curriculum-activation-gate-v1)"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
