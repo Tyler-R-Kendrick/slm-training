@@ -19,6 +19,16 @@ Three verdicts, and only three:
 No logits, no model, no gold-time decode shortcuts: transitions are applied
 through the real ``TreeEditSpace.apply`` (re-validated by the DSL parser), so
 the analyzed space is the deployed space by construction.
+
+Reachability is a space-coverage proof, never a model-quality claim -- and,
+since VAR0-02 (SLM-423), a **variant-scoped** one: this module's engine
+implements exactly one registered variant's action alphabet
+(:data:`TREE_EDIT_VARIANT`, the tree-edit space below). A result computed
+here bounds only that variant; it is never a program-wide verdict on any
+other variant (e.g. the operator/REPL surface) or on patch-based generation
+in general. See ``scripts.run_var0_02_reachability_matrix`` for the
+per-variant x suite ``ReachabilityMatrixV1`` that makes this scoping
+explicit.
 """
 
 from __future__ import annotations
@@ -31,6 +41,7 @@ from enum import Enum
 from typing import Any, Callable, Sequence
 
 from slm_training.dsl.parser import validate
+from slm_training.dsl.variants import VARIANTS, VariantContractV1
 from slm_training.models.tree_edit_diffusion import (
     ACTION_ADD,
     ACTION_ADD_CONTAINER,
@@ -57,6 +68,7 @@ from slm_training.models.tree_edit_diffusion import (
 
 __all__ = [
     "DEFAULT_SEED_SOURCE",
+    "TREE_EDIT_VARIANT",
     "ExtraAction",
     "ReachabilityCase",
     "Verdict",
@@ -72,6 +84,17 @@ EXPERIMENT_ID = "slm299-edit-reachability"
 # ``slm155_factorization_comparison._MINIMAL_SEED_SOURCE`` (and to the
 # fallback candidate in ``TreeEditDiffusionModel._seed_state``).
 DEFAULT_SEED_SOURCE = 'root = Stack([], "column")'
+
+# VAR0-02 (SLM-423): this module's engine implements exactly one variant's
+# action alphabet -- the tree-edit space (v1/extended generations of
+# TreeEditSpace). ``VARIANTS`` is the derived registry from SLM-422
+# (VariantContractV1); pulling the tree-edit entry from there (rather than
+# constructing a local literal) means the fingerprint attributed to every
+# case below always matches the one certified by
+# ``scripts.verify_decode_invariants``.
+TREE_EDIT_VARIANT: VariantContractV1 = next(
+    entry for entry in VARIANTS if entry.variant_id == "tree_edit_diffusion"
+)
 
 # Reason codes for PROVEN_UNREACHABLE / UNKNOWN_BUDGET.
 REASON_REACHED = "reached"
@@ -666,6 +689,7 @@ def analyze_reachability(
     extra_actions: Sequence[ExtraAction] = (),
     node_budget: int = 800,
     mode: str = "extended",
+    variant: VariantContractV1 = TREE_EDIT_VARIANT,
 ) -> ReachabilityCase:
     """Prove (or honestly fail to prove) reachability of ``target_source``
     from ``seed_source`` under the real tree-edit space of ``mode``.
@@ -675,9 +699,30 @@ def analyze_reachability(
     extended edit language. ``extra_actions`` are hypothetical transitions
     (what-if analysis only); when any appear on a found path the case is
     marked in ``details`` so the proof is never confused with the real space.
+
+    ``variant`` (VAR0-02, SLM-423) scopes which registered
+    :class:`~slm_training.dsl.variants.VariantContractV1` this call's result
+    is attributed to. It defaults to :data:`TREE_EDIT_VARIANT` -- the only
+    variant this engine actually implements -- so every existing caller that
+    omits it keeps computing exactly what it always computed, bit-for-bit.
+    Passing any other registered variant raises: reachability is a
+    space-coverage *proof*, so this function must never silently reuse the
+    tree-edit BFS/invariant engine while mislabeling the result as some other
+    variant's alphabet. A future variant's own enumeration (e.g. the
+    operator/REPL alphabet via ``dsl/operators/legal_set.py``) needs its own
+    engine, not a relabeled tree-edit run.
     """
     if mode not in {"v1", "extended"}:
         raise ValueError(f"unknown reachability mode {mode!r}")
+    if variant.variant_id != TREE_EDIT_VARIANT.variant_id:
+        raise NotImplementedError(
+            f"analyze_reachability only implements the "
+            f"{TREE_EDIT_VARIANT.variant_id!r} action alphabet; "
+            f"{variant.variant_id!r} has no enumeration engine wired here. "
+            "See var0_02_reachability_matrix (SLM-423), which reports "
+            "unimplemented variants as NOT_MEASURED rather than inferring a "
+            "number from this (unrelated) alphabet's result."
+        )
     space = _shared_space()
     inventory = _normalize_inventory(slot_inventory)
 
@@ -695,6 +740,8 @@ def analyze_reachability(
         "inventory_size": len(inventory),
         "extra_actions": [a.name for a in extra_actions],
         "mode": mode,
+        "variant_id": variant.variant_id,
+        "action_alphabet_fingerprint": variant.action_alphabet_fingerprint,
     }
 
     if _is_unsupported_pack_feature(target_source, extended=(mode == "extended")):

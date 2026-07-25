@@ -366,13 +366,27 @@ The contract is in place: an 11-action tree-edit language
 
 **Status: partial — full-AST output is the shipped default.** The reserved
 patch-target arm was experimentally rejected, and the SLM-299/305 reachability
-audit measured `reachable_fraction = 0.0` from the standard seed on all suites
+audit measured `reachable_fraction = 0.0` from the standard seed on all
+suites for the **`tree_edit_diffusion` variant**
+(`action_alphabet_id=tree_edit_diffusion.edit_actions`,
+`action_alphabet_fingerprint=ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab` —
+`VariantContractV1`, `src/slm_training/dsl/variants.py`, SLM-422)
 ([`iter-slm305-edit-language-20260724.md`](iter-slm305-edit-language-20260724.md)).
+That number is a property of *this one variant's* action alphabet, not of the
+program: VAR0-02 (SLM-423) re-scoped the audit from a program-wide scalar to
+a per-*(variant, suite)* `ReachabilityMatrixV1`
+([`var0-02-reachability-matrix-20260725.md`](var0-02-reachability-matrix-20260725.md)).
+The `repl_operators` and `twotower_prompt_ast` variants are `NOT_MEASURED` in
+that matrix — not zero, not inferred from the tree-edit row, not yet
+disproven — because no enumeration engine over
+`dsl/operators/legal_set.py` (or an equivalent for the TwoTower denoiser) has
+been wired and measured yet.
 
 **Rejected approach, live goal.** Full-AST output is the *bootstrap* mode, not
 the end state. **Successor approach:** attack reachability first —
 reachability-aware seed selection, macro actions, reachability-certified
-training pairs (the SLM-299 analyzer already exists) — before any retrial of
+training pairs (the SLM-299 analyzer already exists), and measuring the
+`repl_operators` row that VAR0-02 left `NOT_MEASURED` — before any retrial of
 patch-as-default-target.
 
 ---
@@ -387,7 +401,12 @@ dated, documented waiver — in the same measured-results doc, and links it here
 
 Status labels like `rejected`, `unavailable`, `nl_available=False`, and
 `reachable_fraction=0.0` describe **current approach state**. They may never be
-cited as a reason an invariant does not apply.
+cited as a reason an invariant does not apply. A variant-scoped measurement —
+`reachable_fraction`, or any other number certified for one row of a
+`VariantContractV1` × suite matrix (SLM-422/SLM-423) — may likewise never be
+cited as a program-scoped status: it bounds only the variant it was measured
+against, and an unmeasured variant is `NOT_MEASURED`, never assumed to share
+another variant's number.
 
 Open goals with named successors, at a glance:
 

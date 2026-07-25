@@ -103,3 +103,25 @@ no ship claim, no gate weakened, nothing promoted. The lineage tag moves to
 **Faithful (mechanism)** with the observation-channel boundary stated; the
 render-feedback half of the paper remains unreproduced because the domain
 has no target render at generation time.
+
+## SLM-299 / VAR0-02 evidence annotation (2026-07-25, append-only)
+
+The SLM-299 edit-reachability audit measured, from the standard X22 minimal
+seed `root = Stack([], "column")`: `reachable_fraction=0.0` over the decided
+`adversarial`, `held_out`, `ood`, `rico`, `smoke`, and `train` cases (never
+counting `UNKNOWN_BUDGET` as unreachable) — see
+[`iter-slm305-edit-language-20260724.md`](iter-slm305-edit-language-20260724.md).
+The suite-level meaningful/struct readings in the table above are therefore
+bounded by that fraction: the unreachable share of gold programs cannot be
+produced by the decode space at all, so measured quality on those cases
+reflects edit-space coverage, not model quality.
+
+That fraction is specifically a measurement of the **`tree_edit_diffusion`**
+variant's action alphabet
+(`action_alphabet_fingerprint=ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab`
+— `VariantContractV1`, SLM-422) — the same variant this X22 baseline
+implements. It was never measured for the `repl_operators` or
+`twotower_prompt_ast` variants; per SLM-423 (VAR0-02), those rows are
+`NOT_MEASURED` in
+[`var0-02-reachability-matrix-20260725.md`](var0-02-reachability-matrix-20260725.md),
+not zero and not inferred from this baseline's tree-edit result.

@@ -100,3 +100,25 @@
 | adversarial | 0.0 | 0.0 | 0 | — |
 | ood | 0.0 | 0.0 | 0 | — |
 | rico | 0.0 | 0.0 | 0 | — |
+
+## VAR0-02 addendum (2026-07-25): variant attribution (append-only)
+
+Every `reachable_fraction = 0.0` figure in this report — and in the "X22
+evidence annotations" section above — is a measurement of exactly one
+registered variant: **`tree_edit_diffusion`**
+(`action_alphabet_id=tree_edit_diffusion.edit_actions`,
+`action_alphabet_fingerprint=ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab`
+— `VariantContractV1`, `src/slm_training/dsl/variants.py`, SLM-422), run from
+seed `root = Stack([], "column")` (`seed_id` in the matrix below is its
+sha256[:16]). It was never a measurement of `repl_operators` (the
+operator/REPL surface enumerable through `dsl/operators/legal_set.py`,
+containing e.g. `openui.set_property`-shaped operators) or of
+`twotower_prompt_ast`, and citing this doc's `0.0` as a program-wide verdict
+on patch-based generation — rather than a `tree_edit_diffusion`-scoped one —
+is the exact mistake SLM-423 (VAR0-02) exists to close (see I14's
+goal-drift guard in `decode-invariants.md`, which now states this rule
+generally). The full per-variant × suite matrix, including the
+`repl_operators` and `twotower_prompt_ast` rows (`NOT_MEASURED`, with a named
+reason each — never inferred from this report's tree-edit numbers), is
+published in
+[`var0-02-reachability-matrix-20260725.md`](var0-02-reachability-matrix-20260725.md).

@@ -5101,7 +5101,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -5115,6 +5115,11 @@
         "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "SLM-423 (VAR0-02): add a variant: VariantContractV1 parameter to analyze_reachability (default TREE_EDIT_VARIANT, the only variant this engine implements; passing any other registered variant raises NotImplementedError rather than silently mislabeling a tree-edit BFS as another alphabet's result). Every ReachabilityCase now carries variant_id/action_alphabet_fingerprint in details for attribution. Existing callers that omit variant are unchanged bit-for-bit (see test_variant_defaults_to_tree_edit_and_is_bitwise_identical). Backfilled append-only variant-attribution annotations into iter-slm305-edit-language-20260724.md and iter-x22-d3-kapur-tree-edit-20260717.md; the new per-variant x suite ReachabilityMatrixV1 lives in the new harness.experiments.var0_02_reachability_matrix component."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -8820,7 +8825,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v4",
+      "version": "v5",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -8828,6 +8833,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "SLM-423 (VAR0-02): I12's cited reachable_fraction=0.0 is now attributed to the named tree_edit_diffusion variant and its action_alphabet_fingerprint (VariantContractV1, SLM-422), with a pointer to the new per-variant x suite ReachabilityMatrixV1 (var0-02-reachability-matrix-20260725) where repl_operators and twotower_prompt_ast are NOT_MEASURED. I14's guard gains one sentence: a variant-scoped measurement may never be cited as a program-scoped status. No invariant weakened; I12's rejected-approach/successor-approach status is unchanged."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -8964,6 +8974,23 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "AP-016 (SLM-302): initial registration -- collision-free AbstractPlanV1 latent-plan token codebook contract (reserved <beginabstract>/<endabstract> + M-slot pool), default-off in every consuming tokenizer, plus embedding-resize migration helpers"
+        }
+      ]
+    },
+    "harness.experiments.var0_02_reachability_matrix": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_var0_02_reachability_matrix.py",
+        "tests/test_harnesses/experiments/test_var0_02_reachability_matrix.py",
+        "docs/design/var0-02-reachability-matrix-20260725.json",
+        "docs/design/var0-02-reachability-matrix-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-423 (VAR0-02): initial registration. Emits ReachabilityMatrixV1 -- rows = every variant in slm_training.dsl.variants.VARIANTS, columns = the six standard suites. Reuses the SLM-299 audit's build_report for the tree_edit_diffusion row (same seed/corpora/verdict policy as iter-slm299-edit-reachability); repl_operators and twotower_prompt_ast are NOT_MEASURED with a named, specific reason each -- never inferred from the tree-edit row, never a fabricated number. Measurement/attribution only; no action alphabet changed."
         }
       ]
     }
