@@ -4809,7 +4809,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v58",
+      "version": "v59",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4818,10 +4818,24 @@
         "src/slm_training/models/decode_stats.py",
         "src/slm_training/harnesses/quality/retrieval.py",
         "scripts/evaluate_model.py",
+        "scripts/run_slm293_property_role_saturation.py",
+        "tests/test_scripts/test_run_slm293_property_role_saturation.py",
+        "docs/design/iter-slm293-property-role-saturation-20260725.json",
+        "docs/design/iter-slm293-property-role-saturation-20260725.md",
         "src/slm_training/runtime/telemetry/trace.py",
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v59",
+          "date": "2026-07-25",
+          "note": "no-bump: regenerate SLM-293 local evidence after rebase so its stamp names the merged v59/v242 constraints; harness behavior is unchanged"
+        },
+        {
+          "version": "v59",
+          "date": "2026-07-25",
+          "note": "SLM-293: add component-inventory decoder telemetry plus bounded paired frozen-base capacity and connector-disposition evidence"
+        },
         {
           "version": "v58",
           "date": "2026-07-25",
@@ -6541,7 +6555,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v241",
+      "version": "v242",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6576,6 +6590,11 @@
         "tests/test_runtime/test_decode_schedule.py"
       ],
       "history": [
+        {
+          "version": "v242",
+          "date": "2026-07-25",
+          "note": "SLM-293: instrument component-inventory decode applications and argmax changes"
+        },
         {
           "version": "v241",
           "date": "2026-07-25",
