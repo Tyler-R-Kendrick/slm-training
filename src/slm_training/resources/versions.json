@@ -8925,6 +8925,24 @@
           "note": "AP-016 (SLM-302): initial registration -- collision-free AbstractPlanV1 latent-plan token codebook contract (reserved <beginabstract>/<endabstract> + M-slot pool), default-off in every consuming tokenizer, plus embedding-resize migration helpers"
         }
       ]
+    },
+    "evals.cap2_operator_policy_rebase": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/evals/cap2_operator_policy_rebase.py",
+        "scripts/publish_cap2_operator_policy_rebase.py",
+        "docs/design/cap2-operator-policy-rebase.md",
+        "docs/design/cap2-operator-policy-rebase.json",
+        "tests/test_evals/test_cap2_operator_policy_rebase.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; DSH3-18 CAP2 operator-policy rebase addendum -- read-only inventory of existing CAP2 symbols, DSH3-14/15/17 update proposals, and a machine-readable DSH3-19..DSH3-33 dependency map gating DSH3 M5/M6/M7; no runtime behavior change"
+        }
+      ]
     }
   }
 }

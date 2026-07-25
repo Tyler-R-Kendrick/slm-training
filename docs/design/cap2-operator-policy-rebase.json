@@ -1,0 +1,403 @@
+{
+  "disposition": {
+    "dependency_map": [
+      {
+        "alias": "DSH3-19",
+        "blocked_by": [
+          "DSH3-18"
+        ],
+        "issue_id": "SLM-394",
+        "ready": true,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "dsl.operators.merge._conflict_kind",
+          "dsl.operators.merge.MergeConflictKind"
+        ]
+      },
+      {
+        "alias": "DSH3-20",
+        "blocked_by": [
+          "DSH3-19"
+        ],
+        "issue_id": "SLM-395",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "dsl.operators.merge",
+          "dsl.operators.references",
+          "dsl.operators.conversation"
+        ]
+      },
+      {
+        "alias": "DSH3-21",
+        "blocked_by": [
+          "DSH3-18"
+        ],
+        "issue_id": "SLM-396",
+        "ready": true,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "in_review",
+        "target_symbols": [
+          "models.local_action_head.LocalFlatHead"
+        ]
+      },
+      {
+        "alias": "DSH3-22",
+        "blocked_by": [
+          "DSH3-18",
+          "DSH3-20"
+        ],
+        "issue_id": "SLM-397",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "dsl.operators.contracts",
+          "dsl.operators.references",
+          "dsl.operators.legal_set",
+          "models.legal_edit_batch"
+        ]
+      },
+      {
+        "alias": "DSH3-23",
+        "blocked_by": [
+          "DSH3-21",
+          "DSH3-22"
+        ],
+        "issue_id": "SLM-398",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "models.legal_edit_batch.FEATURE_NAMES",
+          "models.legal_edit_batch._stable_scalar",
+          "models.legal_edit_scorer.LegalEditScorer"
+        ]
+      },
+      {
+        "alias": "DSH3-24",
+        "blocked_by": [
+          "DSH3-18",
+          "DSH3-22"
+        ],
+        "issue_id": "SLM-399",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "dsl.operators.collapse",
+          "data.flow.bridge_corpus"
+        ]
+      },
+      {
+        "alias": "DSH3-25",
+        "blocked_by": [
+          "DSH3-22",
+          "DSH3-24"
+        ],
+        "issue_id": "SLM-400",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "dsl.operators.legal_set.OperatorSupportVerdict",
+          "dsl.operators.legal_set.LegalSetCoverage"
+        ]
+      },
+      {
+        "alias": "DSH3-26",
+        "blocked_by": [
+          "DSH3-24",
+          "DSH3-25"
+        ],
+        "issue_id": "SLM-401",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "harnesses.experiments.slm191_termination_matrix",
+          "dsl.operators.conversation"
+        ]
+      },
+      {
+        "alias": "DSH3-27",
+        "blocked_by": [
+          "DSH3-22",
+          "DSH3-23",
+          "DSH3-25"
+        ],
+        "issue_id": "SLM-402",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "dsl.operators.references",
+          "dsl.operators.legal_set"
+        ]
+      },
+      {
+        "alias": "DSH3-28",
+        "blocked_by": [
+          "DSH3-21",
+          "DSH3-22",
+          "DSH3-23",
+          "DSH3-24",
+          "DSH3-25",
+          "DSH3-26",
+          "DSH3-27"
+        ],
+        "issue_id": "SLM-403",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "models.local_action_head",
+          "models.dynamic_pointer_scorer",
+          "harnesses.experiments.cap2_state_local_action",
+          "evals.cap2_operator"
+        ]
+      },
+      {
+        "alias": "DSH3-29",
+        "blocked_by": [
+          "DSH3-25",
+          "DSH3-28"
+        ],
+        "issue_id": "SLM-404",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "models.local_action_head.TernaryECOCHead",
+          "dsl.operators.preference"
+        ]
+      },
+      {
+        "alias": "DSH3-30",
+        "blocked_by": [
+          "DSH3-24",
+          "DSH3-28"
+        ],
+        "issue_id": "SLM-405",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "dsl.operators.collapse",
+          "data.flow.bridge_corpus"
+        ]
+      },
+      {
+        "alias": "DSH3-31",
+        "blocked_by": [
+          "DSH3-28"
+        ],
+        "issue_id": "SLM-406",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "models.decode_stats.DecodeStats",
+          "harnesses.experiments.cap2_state_local_action"
+        ]
+      },
+      {
+        "alias": "DSH3-32",
+        "blocked_by": [
+          "DSH3-28"
+        ],
+        "issue_id": "SLM-407",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "models.decode_stats",
+          "dsl.operators.legal_set",
+          "models.tree_edit_diffusion"
+        ]
+      },
+      {
+        "alias": "DSH3-33",
+        "blocked_by": [
+          "DSH3-18",
+          "DSH3-19",
+          "DSH3-21",
+          "DSH3-22",
+          "DSH3-25",
+          "DSH3-26",
+          "DSH3-27",
+          "DSH3-28",
+          "DSH3-32"
+        ],
+        "issue_id": "SLM-408",
+        "ready": false,
+        "schema": "cap2_rebase_dependency_node/v1",
+        "status": "backlog",
+        "target_symbols": [
+          "evals.cap2_disposition.Cap2CapabilityDispositionV1"
+        ]
+      }
+    ],
+    "frozen_suite_identity": {
+      "code_commit": "8a29de4b81da07393ec3acb3b906376baa593145",
+      "evidence_id": "SLM-381.cap2_operator_v1",
+      "operator_corpus_fingerprint": "5ee0d27141a3fa72be35bedbdec347f97f513c0e7af672ca4be580e5b982682e",
+      "source_records_fingerprint": "f18b2fa1d9e271fcb8789c766cbb3717262353d1bbddfd37c5a1b85bca16a00e",
+      "suite_hash": "16f210786bac7fd5f5edb64d13888c3cc7d634330a81b5065150e7a41fcb1d4d",
+      "suite_n": 20,
+      "suite_version": "cap2_operator_v1"
+    },
+    "inventory": [
+      {
+        "code_anchor": "src/slm_training/models/local_action_head.py:180-234",
+        "note": "Per-action embeddings are held in a plain python dict (`self.action_embeddings`), not an `nn.ParameterDict`/`nn.Embedding`. Verified empirically: `head.parameters()` and `head.state_dict()` omit these tensors even though autograd tracks their gradients -- not optimizer-visible or checkpoint-stable. DSH3-21 targets exactly this gap and is already In Review (PR #897) as of this addendum.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "49618dc2a0ebf68b581e77778dc0cfd501a0ddf75398443319af358b7762cc3d",
+        "status": "fixture_only",
+        "symbol_id": "models.local_action_head.LocalFlatHead"
+      },
+      {
+        "code_anchor": "src/slm_training/models/local_action_head.py:122-645",
+        "note": "Real `nn.Linear`/`nn.Embedding` parameters (optimizer- and checkpoint-visible), but exercised only by unit fixtures; never wired into a training loop or the CAP2 harness. `_check_forced` gives every family the single-legal-action singleton bypass.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "49618dc2a0ebf68b581e77778dc0cfd501a0ddf75398443319af358b7762cc3d",
+        "status": "fixture_only",
+        "symbol_id": "models.local_action_head (GlobalMaskedHead|TernaryDigitHead|TernaryECOCHead|GrammarFactorizedHead|ResidualTritPlaneHead)"
+      },
+      {
+        "code_anchor": "src/slm_training/models/legal_edit_scorer.py:194-216",
+        "note": "`count == 1` returns a forced decision with zero model calls before scoring -- the same singleton-bypass invariant as `local_action_head._check_forced`, already present on this adjacent legal-edit path.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "ec0fde60d39dc0b3402f3f047053fa6bbe0aa2203877dd922f3d0c082a93577c",
+        "status": "production_ready",
+        "symbol_id": "models.legal_edit_scorer.DirectLegalEditPolicy.decide"
+      },
+      {
+        "code_anchor": "src/slm_training/models/legal_edit_batch.py:16-38",
+        "note": "Candidate features -- including `successor_fingerprint` -- are SHA-derived one-dimensional scalars, not typed embeddings. DSH3-23 targets replacing this; note the current feature vector already includes `successor_fingerprint` as a plain feature, which DSH3-23 must isolate rather than assume absent.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "2d8ee67f3f90b7997e93c63129993a8f6f7fd531fb281b07652935b51dbdcfb2",
+        "status": "production_ready",
+        "symbol_id": "models.legal_edit_batch (FEATURE_NAMES, _stable_scalar)"
+      },
+      {
+        "code_anchor": "src/slm_training/models/legal_edit_scorer.py:74-146",
+        "note": "Trainable `nn.Module` scorer consuming `legal_edit_batch` features; exercised in unit tests and small harness scripts (SLM-197/198/199/200), not the CAP2 M5-M7 pipeline.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "ec0fde60d39dc0b3402f3f047053fa6bbe0aa2203877dd922f3d0c082a93577c",
+        "status": "fixture_only",
+        "symbol_id": "models.legal_edit_scorer.LegalEditScorer"
+      },
+      {
+        "code_anchor": "src/slm_training/harnesses/experiments/candidate_selector.py:1-6",
+        "note": "Module docstring self-declares 'Wiring/fixture harness only'; built for general candidate selection with calibrated abstention, never applied to operator legal-action candidates specifically.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "b945fb22f7debd4255ff83e42355ef267ef5f93681cba73bf85a13d97fb43d21",
+        "status": "fixture_only",
+        "symbol_id": "harnesses.experiments.candidate_selector (SLM-127/EFS3-04)"
+      },
+      {
+        "code_anchor": "src/slm_training/dsl/operators/collapse.py:37-41,261-329",
+        "note": "`CONFLICT`/`DIFFERENT_RESULT` hard negatives and replay-verified collapse are implemented, but no test file in `tests/` imports `slm_training.dsl.operators.collapse` -- zero direct test coverage today. DSH3-24/25/30 must add coverage when building policy rows from this module.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "08bdd3c3b13179f7c81a51c305ad8d36180163ae9f7a9f62975ae05bb6b95fbf",
+        "status": "untested",
+        "symbol_id": "dsl.operators.collapse (HardNegativeOutcome, replay_collapsed_instruction, collapse_conversation_trace)"
+      },
+      {
+        "code_anchor": "src/slm_training/dsl/operators/legal_set.py:43,49,226,244,429,456-457,510,518,537",
+        "note": "`UNKNOWN`/`PARTIAL` are already typed and used at the legal-set/data layer. DSH3-25's real gap is the *learning* side (loss denominator, DEFER semantics) -- not the coverage taxonomy, which already exists.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "84f4c182c3c4c1b26860704262034f7fcc8cef576ef19eaf491248d3c6421b40",
+        "status": "production_ready",
+        "symbol_id": "dsl.operators.legal_set (OperatorSupportVerdict.UNKNOWN, LegalSetCoverage.PARTIAL)"
+      },
+      {
+        "code_anchor": "src/slm_training/dsl/operators/merge.py:368-398",
+        "note": "Line 385 classifies `DELETE_MODIFY` by substring test (`\"remove\" in value or \"delete\" in value`) over operator IDs -- exactly the name-dependent heuristic DSH3-19 must replace with an effect-derived classifier. `STALE_REF` conflicts are raised earlier and independently (lines 543/550/588), so DSH3-19's priority requirement is already structurally satisfied.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "263be9f75790379ed3785c7cfe9c279ceca59db16fe959b7eddda8bf6a65c001",
+        "status": "production_ready",
+        "symbol_id": "dsl.operators.merge._conflict_kind (DELETE_MODIFY heuristic)"
+      },
+      {
+        "code_anchor": "src/slm_training/models/decode_stats.py:12-175",
+        "note": "`compiler_lattice_false_hard_eliminations`, `compiler_lattice_selector_regret`, `compiler_lattice_invalid_selected_over_valid`, and `constrained_dead_ends` (with related counters) already exist and are reusable as DSH3-31 features; no operator-specific replay-outcome label (illegal/executor-rejection/replay-failure/semantic-miss/DEFER) exists yet on top of them.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "13922672fec08ed8ccbbb7a0f77e609eb44c318019a7605dceaaf73e13890a0c",
+        "status": "production_ready",
+        "symbol_id": "models.decode_stats.DecodeStats"
+      },
+      {
+        "code_anchor": "src/slm_training/evals/cap2_disposition.py:1-304",
+        "note": "Terminal disposition already published (CERT_CAP2 not issued, DSH4 closed). DSH3-33 must publish a *new* disposition instance over the rebased M5-M7 evidence rather than mutate this one; historical evidence at docs/design/dsh3-17-cap2-disposition-20260723/ stays immutable.",
+        "schema": "cap2_rebase_inventory_item/v1",
+        "source_digest": "f5e8dbcd6a103e0a937e8dac7bdd6ab4fc1ba74995b4dd80575591e6b081462f",
+        "status": "production_ready",
+        "symbol_id": "evals.cap2_disposition.Cap2CapabilityDispositionV1 (DSH3-17/SLM-385)"
+      }
+    ],
+    "issue_notes": [
+      {
+        "action": "unchanged",
+        "alias": "DSH3-14",
+        "issue_id": "SLM-382",
+        "note": "Serialized-action control (E803) already ran and is Done; stands unchanged as the reserved-token discrete-action baseline the new M5-M7 work is measured against.",
+        "schema": "cap2_rebase_issue_note/v1",
+        "superseded_by": null
+      },
+      {
+        "action": "rebased",
+        "alias": "DSH3-15",
+        "issue_id": "SLM-383",
+        "note": "Rebase onto local_action_head.py: build the compiler-masked hierarchical head as a new `LocalActionHead` family in that module (reusing `StateContext`/`LocalActionOutput`/`ActionDecision` and the `_check_forced` singleton bypass) instead of a parallel scorer stack. Effectively superseded by the DSH3-21/22/28 track.",
+        "schema": "cap2_rebase_issue_note/v1",
+        "superseded_by": null
+      },
+      {
+        "action": "superseded",
+        "alias": "DSH3-17",
+        "issue_id": "SLM-385",
+        "note": "Terminal CERT_CAP2-rejected disposition already published from the pre-rebase E803 evidence (docs/design/dsh3-17-cap2-disposition-20260723/); DSH3-33 supersedes it once M5-M7 evidence exists. Prior historical evidence is unchanged.",
+        "schema": "cap2_rebase_issue_note/v1",
+        "superseded_by": "DSH3-33"
+      }
+    ],
+    "pinned_baseline": "5cd5b8b",
+    "reproducibility_note": {
+      "attempted": true,
+      "blockers_fixed_this_session": [
+        "src/apps/openui_bridge/node_modules were not installed",
+        "a sandbox-global NODE_OPTIONS=--import tsx breaks the bridge subprocess invocation in src/slm_training/dsl/operators/registry.py"
+      ],
+      "commands": [
+        "cd src/apps/openui_bridge && npm ci",
+        "NODE_OPTIONS= python -m pytest -q tests/test_evals/test_cap2_operator.py"
+      ],
+      "disposition": "Treated as an open reproducibility gap of the DSH3-13 authority itself, not a DSH3-18 finding to fix. The frozen docs/design/dsh3-13-cap2-operator-eval-20260723/report.json remains the evidence of record (adversarial control: prove with behavior, never mutate the frozen suite). A dedicated follow-up should bisect why build_symbolic_operator_corpus no longer reproduces its frozen fingerprint in a clean environment.",
+      "reproduced": false,
+      "residual_error": "ValueError: CAP2 generated operator corpus drifted (src/slm_training/evals/cap2_operator.py:365) -- the regenerated content_fingerprint does not match the frozen manifest fingerprint even after both environment blockers are fixed"
+    },
+    "schema": "cap2_operator_policy_rebase/v1",
+    "stop_rule": {
+      "reason": "HEAD does not contain a trained typed operator policy with powered CAP2 evidence (DSH3-28/SLM-403 is unstarted); the portfolio is not obsolete and this addendum proceeds as an inventory/dependency contract, not a closure.",
+      "triggered": false
+    },
+    "version_stamp": {
+      "code_commit": "86212e9ab2338bb9cf5ab135e85e3d3d4e7d21b5",
+      "code_dirty": true,
+      "components": {
+        "evals.cap2_operator_policy_rebase": "v1"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-07-25T09:50:00.012000+00:00"
+    }
+  },
+  "issue": {
+    "alias": "DSH3-18",
+    "id": "SLM-393"
+  },
+  "schema": "cap2_operator_policy_rebase_report/v1"
+}
