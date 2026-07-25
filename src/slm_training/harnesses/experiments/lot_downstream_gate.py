@@ -121,6 +121,19 @@ DOWNSTREAM_ISSUES: dict[str, DownstreamIssueSpec] = {
             "diagnostic."
         ),
     ),
+    "SLM-256": DownstreamIssueSpec(
+        linear_issue="SLM-256",
+        alias="LOT2-03",
+        title="Sweep Kxc latent capacity, semantic block order, and output-length independence",
+        gate_contract_id="latent-workspace-capacity-gate-v1",
+        slug="lot2-03-workspace-capacity",
+        activation_requirement=(
+            "SLM-249 provides data-derived stage count/length distributions "
+            "and accepted stage order; SLM-251 provides a qualified faithful "
+            "treatment and continued explicit control; SLM-252 provides the "
+            "selected supervision routing/timing/grounding contract."
+        ),
+    ),
 }
 
 

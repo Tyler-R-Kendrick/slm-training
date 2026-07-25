@@ -64,3 +64,12 @@ def test_slm255_run_reports_not_authorized(tmp_path: Path) -> None:
     data = json.loads((out / "lot3_02_alternative_valid_latents_gate.json").read_text())
     assert data["verdict"] == "not_authorized"
     assert data["issue"]["alias"] == "LOT3-02"
+
+
+def test_slm256_run_reports_not_authorized(tmp_path: Path) -> None:
+    out = tmp_path / "gate256"
+    rc = evaluate_lot_downstream_gate.main(["--issue", "SLM-256", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "lot2_03_workspace_capacity_gate.json").read_text())
+    assert data["verdict"] == "not_authorized"
+    assert data["issue"]["alias"] == "LOT2-03"
