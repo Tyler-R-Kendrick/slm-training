@@ -1,0 +1,288 @@
+{
+  "claim_class": "local_head_capacity_only",
+  "factors": {
+    "binder": {
+      "connector_choice_changes": 0,
+      "connector_disposition": "non_causal_not_on_decoder_path",
+      "connector_eligible_decode_positions": 0,
+      "connector_interventions": {
+        "gold_substituted": "not_applicable_no_decoder_owner",
+        "learned": "not_applicable_no_decoder_owner",
+        "shuffled": "not_applicable_no_decoder_owner",
+        "zeroed": "not_applicable_no_decoder_owner"
+      },
+      "decoder_counter": "binder_component_plan_choice_changes",
+      "disposition": "capacity_saturated_decoder_control_pending",
+      "head_accuracy": 1.0,
+      "head_factor_controls": {
+        "gold_substituted": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "learned": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "shuffled": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.0
+        },
+        "zeroed": {
+          "choice_changes_vs_zero": 0,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        }
+      },
+      "head_metric": "binder_component_plan_accuracy",
+      "strict_semantic_metrics": "not_run",
+      "twotower_decoder_interventions": "pending_bounded_decode"
+    },
+    "cardinality": {
+      "connector_choice_changes": 0,
+      "connector_disposition": "non_causal_not_on_decoder_path",
+      "connector_eligible_decode_positions": 0,
+      "connector_interventions": {
+        "gold_substituted": "not_applicable_no_decoder_owner",
+        "learned": "not_applicable_no_decoder_owner",
+        "shuffled": "not_applicable_no_decoder_owner",
+        "zeroed": "not_applicable_no_decoder_owner"
+      },
+      "decoder_counter": "binder_arity_choice_changes",
+      "disposition": "capacity_saturated_decoder_control_pending",
+      "head_accuracy": 1.0,
+      "head_factor_controls": {
+        "gold_substituted": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "learned": {
+          "choice_changes_vs_zero": 2,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        },
+        "shuffled": {
+          "choice_changes_vs_zero": 2,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        },
+        "zeroed": {
+          "choice_changes_vs_zero": 0,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        }
+      },
+      "head_metric": "binder_arity_accuracy",
+      "strict_semantic_metrics": "not_run",
+      "twotower_decoder_interventions": "pending_bounded_decode"
+    },
+    "inventory": {
+      "connector_choice_changes": 0,
+      "connector_disposition": "non_causal_not_on_decoder_path",
+      "connector_eligible_decode_positions": 0,
+      "connector_interventions": {
+        "gold_substituted": "not_applicable_no_decoder_owner",
+        "learned": "not_applicable_no_decoder_owner",
+        "shuffled": "not_applicable_no_decoder_owner",
+        "zeroed": "not_applicable_no_decoder_owner"
+      },
+      "decoder_counter": "component_inventory_choice_changes",
+      "disposition": "head_not_saturated",
+      "head_accuracy": 0.8333333730697632,
+      "head_factor_controls": {
+        "gold_substituted": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "learned": {
+          "choice_changes_vs_zero": 2,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        },
+        "shuffled": {
+          "choice_changes_vs_zero": 2,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        },
+        "zeroed": {
+          "choice_changes_vs_zero": 0,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        }
+      },
+      "head_metric": "component_inventory_topk_recall",
+      "strict_semantic_metrics": "not_run",
+      "twotower_decoder_interventions": "pending_bounded_decode"
+    },
+    "property_ownership": {
+      "connector_choice_changes": 0,
+      "connector_disposition": "non_causal_not_on_decoder_path",
+      "connector_eligible_decode_positions": 0,
+      "connector_interventions": {
+        "gold_substituted": "not_applicable_no_decoder_owner",
+        "learned": "not_applicable_no_decoder_owner",
+        "shuffled": "not_applicable_no_decoder_owner",
+        "zeroed": "not_applicable_no_decoder_owner"
+      },
+      "decoder_counter": "slot_component_choice_changes",
+      "disposition": "capacity_saturated_decoder_control_pending",
+      "head_accuracy": 1.0,
+      "head_factor_controls": {
+        "gold_substituted": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "learned": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "shuffled": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.0
+        },
+        "zeroed": {
+          "choice_changes_vs_zero": 0,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        }
+      },
+      "head_metric": "slot_component_accuracy",
+      "strict_semantic_metrics": "not_run",
+      "twotower_decoder_interventions": "pending_bounded_decode"
+    },
+    "reference_edge": {
+      "connector_choice_changes": 0,
+      "connector_disposition": "non_causal_not_on_decoder_path",
+      "connector_eligible_decode_positions": 0,
+      "connector_interventions": {
+        "gold_substituted": "not_applicable_no_decoder_owner",
+        "learned": "not_applicable_no_decoder_owner",
+        "shuffled": "not_applicable_no_decoder_owner",
+        "zeroed": "not_applicable_no_decoder_owner"
+      },
+      "decoder_counter": "root_reference_arity_choice_changes",
+      "disposition": "capacity_saturated_decoder_control_pending",
+      "head_accuracy": 1.0,
+      "head_factor_controls": {
+        "gold_substituted": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "learned": {
+          "choice_changes_vs_zero": 2,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        },
+        "shuffled": {
+          "choice_changes_vs_zero": 2,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        },
+        "zeroed": {
+          "choice_changes_vs_zero": 0,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        }
+      },
+      "head_metric": "root_reference_arity_accuracy",
+      "strict_semantic_metrics": "not_run",
+      "twotower_decoder_interventions": "pending_bounded_decode"
+    },
+    "topology": {
+      "connector_choice_changes": 0,
+      "connector_disposition": "non_causal_not_on_decoder_path",
+      "connector_eligible_decode_positions": 0,
+      "connector_interventions": {
+        "gold_substituted": "not_applicable_no_decoder_owner",
+        "learned": "not_applicable_no_decoder_owner",
+        "shuffled": "not_applicable_no_decoder_owner",
+        "zeroed": "not_applicable_no_decoder_owner"
+      },
+      "decoder_counter": "component_edge_choice_changes",
+      "disposition": "head_not_saturated",
+      "head_accuracy": 0.6666666865348816,
+      "head_factor_controls": {
+        "gold_substituted": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "learned": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 1.0
+        },
+        "shuffled": {
+          "choice_changes_vs_zero": 1,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.0
+        },
+        "zeroed": {
+          "choice_changes_vs_zero": 0,
+          "eligible_choices": 2,
+          "strict_factor_accuracy": 0.5
+        }
+      },
+      "head_metric": "component_edge_alignment_accuracy",
+      "strict_semantic_metrics": "not_run",
+      "twotower_decoder_interventions": "pending_bounded_decode"
+    }
+  },
+  "generated_at": "2026-07-25T06:46:21.655663+00:00",
+  "limitations": [
+    "Two-record capacity saturation is not a held-out or ship result.",
+    "No bounded full decode completed in this capacity control, so no decoder counter, meaning-v2, or strict-program metric is claimed.",
+    "The legacy semantic_connector remains fixture-only and is not a decoder intervention path."
+  ],
+  "recipe": {
+    "auxiliary_head_parameters_trainable": 16,
+    "base_generator_digest_after": "e7fb1d5f59a12cc0122977427d8c4b4195a5c9004d93bbcfaaecd19dc93d2fda",
+    "base_generator_digest_before": "e7fb1d5f59a12cc0122977427d8c4b4195a5c9004d93bbcfaaecd19dc93d2fda",
+    "base_generator_trainable_parameters": 0,
+    "device": "cpu",
+    "no_checkpoint_written": true,
+    "no_remote_or_hf_run": true,
+    "peak_head_accuracy": {
+      "binder_arity_accuracy": 1.0,
+      "binder_component_plan_accuracy": 1.0,
+      "component_edge_alignment_accuracy": 0.6666666865348816,
+      "component_inventory_topk_recall": 0.8333333730697632,
+      "root_reference_arity_accuracy": 1.0,
+      "slot_component_accuracy": 1.0
+    },
+    "records": 2,
+    "seed": 293,
+    "split": "train",
+    "steps": 24
+  },
+  "run_id": "slm293-property-role-saturation-r1",
+  "schema": "SLM293PropertyRoleSaturationV1",
+  "semantic_connector_audit": {
+    "choice_changes": 0,
+    "connector_config": "low_rank",
+    "connector_modules_installed": [],
+    "disposition": "non_causal_not_on_decoder_path",
+    "eligible_decode_positions": 0,
+    "reason": "SemanticConnector is a standalone fixture module; TwoTower owns no instance, so learned, gold, shuffled, and zeroed connector outputs cannot reach an eligible decode choice.",
+    "structural_meaning_v2_delta": 0.0
+  },
+  "status": "capacity_control_complete_connector_dispositioned",
+  "version_stamp": {
+    "code_commit": "52a0d2c46032b4a16dc285bdb892778ab6832fe9",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v59",
+      "model.twotower": "v242"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T06:46:21.654875+00:00"
+  }
+}
