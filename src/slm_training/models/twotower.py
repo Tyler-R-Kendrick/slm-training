@@ -395,6 +395,9 @@ class TwoTowerConfig:
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
+    # SLM-292: paired hard-valid sequence margin. Zero keeps legacy training exact.
+    semantic_contrast_loss_weight: float = 0.0
+    semantic_contrast_margin: float = 1.0
     design_md_in_context: bool = True
     # Static by (seed, record key) so context caching remains sound.
     design_md_dropout: float = 0.0
@@ -2832,6 +2835,26 @@ class TwoTowerModel(nn.Module):
                 row_flat = mdlm_row_w.unsqueeze(1).expand(-1, seq).reshape(-1)
                 weights = weights * row_flat
             mask_flat = predict_mask.reshape(-1)
+            contrast_weight = float(
+                getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0
+            )
+            if contrast_weight > 0.0:
+                from slm_training.models.semantic_contrast_loss import (
+                    semantic_contrast_metadata,
+                )
+
+                # Negative sides are score-only: their token CE would train the
+                # very corruption that the pairwise objective must reject.
+                token_rows = torch.as_tensor(
+                    [
+                        semantic_contrast_metadata(record) is None
+                        or semantic_contrast_metadata(record)["role"] != "negative"
+                        for record in batch
+                    ],
+                    device=target_ids.device,
+                    dtype=torch.bool,
+                )
+                mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
             mask_loss = (ce * weights)[mask_flat].mean()
             # Diagnostic only: preserve per-record masked token loss without
             # changing the scalar objective or its gradient reduction.
@@ -2958,6 +2981,67 @@ class TwoTowerModel(nn.Module):
                 self.last_training_metrics
             ).as_dict()
         )
+
+        contrast_weight = float(
+            getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0
+        )
+        if contrast_weight > 0.0:
+            from slm_training.models.semantic_contrast_loss import (
+                pairwise_margin_loss,
+                semantic_contrast_metadata,
+            )
+
+            if not predict_mask.any():
+                raise ValueError("semantic contrast objective has no scored tokens")
+            sequence_ce = F.cross_entropy(
+                logits.reshape(-1, logits.size(-1)), target_ids.reshape(-1), reduction="none"
+            ).reshape(target_ids.shape)
+            sequence_nll = (sequence_ce * predict_mask).sum(dim=1) / predict_mask.sum(
+                dim=1
+            ).clamp_min(1)
+            pairs: dict[str, dict[str, int]] = {}
+            families: dict[str, int] = {}
+            for index, record in enumerate(batch):
+                meta = semantic_contrast_metadata(record)
+                if meta is None:
+                    continue
+                pair = pairs.setdefault(meta["pair_id"], {})
+                if meta["role"] in pair:
+                    raise ValueError("semantic contrast batch duplicates a pair side")
+                pair[meta["role"]] = index
+                families[meta["family"]] = families.get(meta["family"], 0) + 1
+            complete = [pair for pair in pairs.values() if set(pair) == {"positive", "negative"}]
+            if len(complete) != len(pairs) or not complete:
+                raise ValueError("semantic contrast batch must contain complete positive/negative pairs")
+            positive_scores = -torch.stack([sequence_nll[pair["positive"]] for pair in complete])
+            negative_scores = -torch.stack([sequence_nll[pair["negative"]] for pair in complete])
+            objective = pairwise_margin_loss(
+                positive_scores,
+                negative_scores,
+                margin=float(getattr(self.config, "semantic_contrast_margin", 1.0)),
+            )
+            mask_loss = mask_loss + contrast_weight * objective.loss
+            self.last_training_metrics.update(
+                {
+                    "semantic_contrast_loss": float(objective.loss.detach().cpu()),
+                    "semantic_contrast_loss_weight": contrast_weight,
+                    "semantic_contrast_margin": float(getattr(self.config, "semantic_contrast_margin", 1.0)),
+                    "semantic_contrast_pairs": len(complete),
+                    "semantic_contrast_family_sides": dict(sorted(families.items())),
+                    "semantic_contrast_positive_nll": float((-positive_scores).mean().detach().cpu()),
+                    "semantic_contrast_negative_nll": float((-negative_scores).mean().detach().cpu()),
+                    "semantic_contrast_score_distance": float(objective.score_distance.detach().cpu()),
+                    "semantic_contrast_violation_rate": float(objective.violation_rate.detach().cpu()),
+                }
+            )
+        else:
+            self.last_training_metrics.update(
+                {
+                    "semantic_contrast_loss": 0.0,
+                    "semantic_contrast_loss_weight": 0.0,
+                    "semantic_contrast_pairs": 0,
+                }
+            )
 
         length_w = float(
             getattr(self.config, "diffusion_length_loss_weight", 0.0) or 0.0

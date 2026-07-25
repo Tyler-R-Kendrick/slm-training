@@ -252,6 +252,26 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         raise ValueError(
             "replay sampling cannot be combined with curriculum or mixture sampling"
         )
+    contrast_weight = float(
+        getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0
+    )
+    contrast_fraction = float(
+        getattr(config, "semantic_contrast_fraction", 0.0) or 0.0
+    )
+    contrast_pairs = []
+    contrast_dir = getattr(config, "semantic_contrast_dir", None)
+    if contrast_weight > 0.0:
+        if contrast_dir is None:
+            raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
+        if not 0.0 < contrast_fraction <= 1.0:
+            raise ValueError("semantic_contrast_fraction must be in (0, 1]")
+        if config.batch_size < 2:
+            raise ValueError("semantic contrast objective requires batch_size >= 2")
+        if replay_fraction:
+            raise ValueError("semantic contrast objective cannot be combined with replay")
+        from slm_training.models.semantic_contrast_loss import load_semantic_contrast_pairs
+
+        contrast_pairs = load_semantic_contrast_pairs(Path(contrast_dir))
     replay_records = []
     replay_manifest_sha: str | None = None
     if replay_fraction:
@@ -514,6 +534,23 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             task_family_pools = index_task_family_pools(records)
 
     def _batches_for_step(step: int) -> list[list]:
+        if contrast_pairs:
+            # Pair sides stay in the same batch. Negative sides are scored only
+            # by TwoTowerModel; their token CE never becomes a training target.
+            pair_count = min(
+                config.batch_size // 2,
+                max(1, round(config.batch_size * contrast_fraction / 2)),
+            )
+            primary_count = config.batch_size - (2 * pair_count)
+            windows = []
+            for _ in range(8):
+                rows = []
+                for pair in (rng.choice(contrast_pairs) for _ in range(pair_count)):
+                    rows.extend((pair.positive, pair.negative))
+                rows.extend(rng.choice(records) for _ in range(primary_count))
+                rng.shuffle(rows)
+                windows.append(rows)
+            return windows
         if replay_records:
             target = config.batch_size * 8
             replay_count = round(target * replay_fraction)
@@ -1225,6 +1262,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 "primary": _source_loss_proxy_summary("primary"),
                 "replay": _source_loss_proxy_summary("replay"),
             },
+        },
+        "semantic_contrast": {
+            "enabled": bool(contrast_pairs),
+            "path": str(contrast_dir) if contrast_pairs else None,
+            "loss_weight": contrast_weight,
+            "margin": float(getattr(config, "semantic_contrast_margin", 1.0)),
+            "fraction": contrast_fraction,
+            "pair_count": len(contrast_pairs),
+            "families": sorted({pair.family for pair in contrast_pairs}),
         },
         "model": config.model_name,
         "device": config.device,
