@@ -348,6 +348,11 @@
         {
           "version": "v14",
           "date": "2026-07-25",
+          "note": "no-bump: DSH5-04 re-exports OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 transaction symbols from operators/__init__.py (new dsl.operators.transactions component); no change to contracts.py itself"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
           "note": "no-bump: DSH5-02 re-exports openui.map_set_property bulk-operator symbols from operators/__init__.py (new dsl.operators.bulk component); no change to contracts.py itself"
         },
         {
@@ -724,6 +729,27 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial exact move, reparent, wrap, unwrap, duplicate, expand, and contract operator family"
+        }
+      ]
+    },
+    "dsl.operators.transactions": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/transactions.py",
+        "tests/test_dsl/test_operator_transactions.py",
+        "docs/design/dsh5-04-operator-transactions.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "DSH5-04 review follow-up: normalize OperatorTransactionProofV1.checks (dedupe + sort) at construction so from_dict(to_dict(x)) == x, matching the DSH5-01 review fix for the same bug shape"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
         }
       ]
     },
