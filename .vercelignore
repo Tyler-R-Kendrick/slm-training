@@ -1,3 +1,21 @@
+# Never upload local build/run artifacts: outputs/ alone is ~10 GB of local
+# experiment state and instantly blows the function bundle limit. The
+# function-level excludeFiles glob in vercel.json does not reliably remove
+# these (see SLM-231/233 history), so they are excluded at source-upload time.
+/outputs/
+/.venv/
+/.vercel/
+/node_modules/
+/build/
+/session/
+/slm_training.egg-info/
+/_uv/
+/tests/
+/.pytest_cache/
+/.ruff_cache/
+/src/apps/*/node_modules/
+/src/apps/*/dist/
+
 # Offline rebuild inputs; the deployed control plane reads committed data/eval
 # snapshots instead.
 src/slm_training/resources/rico/**
@@ -5,6 +23,38 @@ src/slm_training/resources/rico/**
 # Offline governance mirrors duplicate committed records and are not read by
 # the deployed control-plane APIs.
 src/slm_training/resources/data/**/governance/**
+
+# Published training records (~69 MB of JSONL) are training inputs, not
+# dashboard runtime data. The deployed data pages degrade gracefully to an
+# empty record list while manifests, quality reports, and stats stay live.
+src/slm_training/resources/data/**/records.jsonl
+
+# The Vercel function ships no inference runtime (see
+# src/slm_training/web/requirements-vercel.txt), so the demo checkpoint is
+# dead weight in the bundle. Local and GPU deploys still resolve it from the
+# repository.
+src/slm_training/resources/checkpoints/**
+
+# Historical experiment evidence over ~200 KB is durable review material, not
+# dashboard runtime input. The observability reader tolerates missing files and
+# falls back to the committed dashboard snapshot, so these stay offline.
+docs/design/sde5-floor-escape-matrix-results.json
+docs/design/iter-sde5-floor-escape-20260721.json
+docs/design/quality-matrix-v10-e266-results.json
+docs/design/slm286-ship-gate-evidence-census-20260723.json
+docs/design/iter-slm191-termination-matrix-20260721.json
+docs/design/iter-slm167-zero-training-sparse-ceiling-20260720.json
+docs/design/iter-slm303-decode-budget-audit-20260724.json
+docs/design/iter-slm260-oracle-scoring-replay-20260724.json
+docs/design/iter-slm260-oracle-scoring-replay-20260721.json
+docs/design/data-corpus-audit.json
+docs/design/iter-slm297-unified-rescore-20260724.json
+docs/design/iter-sde0-02-metric-gaming-20260719.json
+docs/design/iter-efs2-03-conflict-slice-repair-20260719.json
+docs/design/iter-slm200-flow-objective-attribution-20260723.json
+docs/design/quality-matrix-v10-e267-results.json
+docs/design/quality-matrix-v10-e268-results.json
+docs/design/iter-efs0-03-meaningful-v2-frontier-audit-20260717.json
 
 # E530 r1 is retained only as invalid recipe-drift evidence. Production must
 # expose the corrected immutable r2 snapshot, not this rejected candidate.

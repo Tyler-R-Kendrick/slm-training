@@ -20,6 +20,30 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
         "setuptools"
     ]["exclude-package-data"]["slm_training"]
     assert "docs/design/*-agentv-*/**" in ignored
+    assert "src/slm_training/resources/data/**/records.jsonl" in ignored
+    assert "src/slm_training/web/static/**/*.map" in ignored
+    assert "src/slm_training/resources/checkpoints/**" in ignored
+    for artifact in (
+        "/outputs/",
+        "/.venv/",
+        "/node_modules/",
+        "/build/",
+        "/session/",
+        "/_uv/",
+        "/tests/",
+    ):
+        assert artifact in ignored
+    requirements = (ROOT / "src/slm_training/web/requirements-vercel.txt").read_text(
+        encoding="utf-8"
+    )
+    req_deps = [
+        line.strip()
+        for line in requirements.splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    assert not any("onnxruntime" in dep for dep in req_deps)
+    assert not any("numpy" in dep for dep in req_deps)
+    assert any("fastapi" in dep for dep in req_deps)
     assert "scripts/run_slm243_recursive_update_gate.py" in ignored
     assert (
         "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py"

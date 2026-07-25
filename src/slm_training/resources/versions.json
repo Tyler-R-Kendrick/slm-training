@@ -3961,6 +3961,16 @@
       "history": [
         {
           "version": "v4",
+          "date": "2026-07-25",
+          "note": "no-bump: route the Vercel slim dependency set through installCommand + src/slm_training/web/requirements-vercel.txt (repo policy bars a top-level requirements.txt) and lock the new exclusions in the bundle policy test"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy \u2014 exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
+        },
+        {
+          "version": "v4",
           "date": "2026-07-24",
           "note": "no-bump: assert the wheel matches the existing Vercel exclusion for the offline SLM-230 corpus"
         },
@@ -5925,6 +5935,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-25",
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified \u2014 the new module is versioned under harness.experiments.slm379_operator_frames v1"
+        },
         {
           "version": "v19",
           "date": "2026-07-23",
