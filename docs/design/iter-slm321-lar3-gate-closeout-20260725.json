@@ -1,0 +1,43 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "SLM-324/326/327 stay blocked. Reopen with SLM-319 when a recurrence-health audit returns recursive_core_positive AND a repair advancement screen passes its value gate.",
+  "failed_gates": [
+    "gate_lar3_01",
+    "gate_recurrence_health"
+  ],
+  "gates": {
+    "gate_lar3_01": {
+      "evidence": "docs/design/iter-slm319-lar3-gate-closeout-20260725.json",
+      "issue": "SLM-319",
+      "observed_outcome": "closed not_authorized (entry gates unmet)",
+      "passed": false,
+      "required_outcome": "LAR3-01 recurrent-core abstraction implemented"
+    },
+    "gate_recurrence_health": {
+      "evidence": "docs/design/iter-slm282-recurrence-health-20260723.json",
+      "issue": "SLM-282",
+      "observed_outcome": "recursive_core_negative (1/2 seeds); residual_delta_can_promote=false",
+      "passed": false,
+      "required_outcome": "recursive_core_positive or promotable residual_delta arm"
+    }
+  },
+  "issue": "SLM-321",
+  "matrix_set": "slm321-residual-delta-gates",
+  "matrix_version": "slm321-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "SLM-319 (LAR3-01) closed not_authorized on 2026-07-25: LAR3 entry prerequisites fail (SLM-282 recursive_core_negative, SLM-317 inconclusive with the value gate failed), so the LAR3-01 recurrent-core abstraction this issue anchors on does not exist. Independently, SLM-282's matched as_is/residual_delta audit found the as_is arm negative (1 of 2 required seed passes) and residual_delta_can_promote=false, so the delta-mode premise has no positive fixture evidence either.",
+  "run_id": "slm321_gate_closeout",
+  "schema": "slm321_lar3_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "e258c9173c2da0637ae41ed2c4405183f9e610b2",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T00:30:46.372520+00:00"
+  }
+}
