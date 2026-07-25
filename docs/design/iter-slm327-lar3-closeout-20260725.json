@@ -1,0 +1,47 @@
+{
+  "claim_class": "wiring",
+  "consequences": {
+    "lar3": "recurrence line closed for this repository state; infrastructure (recursive_denoiser, telemetry, fixtures) preserved default-off",
+    "lar4": "remains blocked \u2014 LAR4 opens only on a powered semantic improvement that does not exist",
+    "production_defaults": "unchanged; no checkpoint, config, or gate change",
+    "slm139": "remains closed (no_supported_probabilistic_regime); nothing in this closeout reopens it"
+  },
+  "decision": "recursive_core_negative",
+  "evidence": {
+    "lar3_closeouts": [
+      "docs/design/iter-slm319-lar3-gate-closeout-20260725.json",
+      "docs/design/iter-slm321-lar3-gate-closeout-20260725.json",
+      "docs/design/iter-slm324-lar3-gate-closeout-20260725.json",
+      "docs/design/iter-slm326-lar3-gate-closeout-20260725.json"
+    ],
+    "slm233_recursive_core_gate_v2": {
+      "path": "docs/design/iter-slm233-recursive-campaign-20260724.json",
+      "verdict": "architecture_not_identifiable"
+    },
+    "slm282_contraction_audit": {
+      "path": "docs/design/iter-slm282-recurrence-health-20260723.json",
+      "verdict": "recursive_core_negative"
+    },
+    "slm317_repair_screen": {
+      "path": "docs/design/iter-slm317-repair-hybrid-20260724.json",
+      "verdict": "inconclusive (value gate failed)"
+    }
+  },
+  "issue": "SLM-327",
+  "matrix_set": "slm327-recurrent-core-activation",
+  "matrix_version": "slm327-v1",
+  "reason": "The matched recurrent-core activation experiment cannot be run: LAR3-01..04 are all closed not_authorized, so no candidate configurations exist to advance. Independently, the recurrence line's direct evidence is negative at every measurement point: SLM-233's matched recursive-depth campaign returned architecture_not_identifiable with rsc3/rsc4 in blocked_claims; SLM-282's preregistered contraction audit returned recursive_core_negative (1/2 required seeds); SLM-230/231/232 returned stagnant/expansive_unstable/unstable; SLM-139 already closed no_supported_probabilistic_regime. Per this issue's own advancement rule, a negative closes the recurrence line and preserves infrastructure only.",
+  "reopening_conditions": "new evidence that the semantic floor has escaped (floor_escaped) AND a recurrence-health audit returning recursive_core_positive (>=2 seeds) AND a passing valid-state repair advancement screen",
+  "run_id": "slm327_lar3_closeout",
+  "schema": "slm327_lar3_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "dc3b56ad170434ee2c5316e0384d89a5565a482d",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T00:35:44.352141+00:00"
+  }
+}
