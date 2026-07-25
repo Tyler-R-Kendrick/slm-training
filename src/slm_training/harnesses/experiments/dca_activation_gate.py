@@ -87,6 +87,19 @@ DCA_ISSUES: dict[str, DcaIssueSpec] = {
             "SLM-270 selected objective set."
         ),
     ),
+    "SLM-272": DcaIssueSpec(
+        linear_issue="SLM-272",
+        alias="DCA1-01",
+        title="Train complete-program verifier-ranked DPO/IPO objectives before sparse-reward diffusion RL",
+        gate_contract_id="program-preference-activation-gate-v1",
+        slug="dca1-01-program-preference",
+        activation_requirement=(
+            "SLM-260 scorer oracle clean; SLM-268 selected verified "
+            "data/semantic baseline or explicit floor; SLM-269 selected "
+            "target policy; SLM-270 selected objective set; SLM-271 "
+            "selected mask policy or no-effect disposition."
+        ),
+    ),
 }
 
 
