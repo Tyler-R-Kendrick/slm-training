@@ -243,8 +243,9 @@ python -m scripts.hf_jobs_train \
   --extra-train-args "--resume-from outputs/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt --target-token-budget 25604"
 ```
 
-Primary metric: `binding_aware_meaningful_v2_rate_strict` plus AgentV and
-independent labels. The recipe is frozen; any hash mismatch is a failed
+Primary metric: `binding_aware_meaningful_v2_rate_strict`, with the remaining
+named AgentEvals grader metrics and independent labels tracked alongside it.
+The recipe is frozen; any hash mismatch is a failed
 experiment. Frontier execution requires the E228 checkpoint and SLM-103 bucket
 sync.
 
@@ -6813,3 +6814,932 @@ unused binders. Reward rises 0.957→0.965 while structure falls
 0.5717→0.5396. E1077 then shows the targeted Dual Card row still times out to
 an empty prediction at 12 seconds, exactly matching E1073. Run only the matched
 Settings row before disposition.
+
+### E1298-E1301 multi-slot switch corpus control (2026-07-24)
+
+E1298's strict 442-record multi-slot document corpus earns one local matched
+scratch control. E1300 is externally interrupted at step 139 before it writes
+a checkpoint and is non-evidence. E1301 completes the harness-derived
+three-pass endpoint at 332 steps via exact full-state continuations. Its
+strict compiler-tree Settings diagnostic avoids a timeout but predicts only
+`TextContent(":slot_0")`: parse 1.0, strict-v2 0, fidelity 0.3333, structure
+0.06, recall 0, reward 0.707, and two fallbacks. This regresses E1292's
+non-timeout Settings structure 0.52→0.06, recall 0.5→0, and reward
+0.749→0.707. AgentV runs all 25 named metrics without execution errors. Reject
+the checkpoint without a wider suite; no sync, promotion, serving, or parent
+use.
+
+### E1312 E1308 Form-capacity mixture control (2026-07-24)
+
+E1312 reached 291 CPU scratch steps on E1308's strict 387-record mixture via
+an explicit resume from its 199-step full-state checkpoint. Its complete
+strict held-out evaluation (`e1314_v275_e1312_full_held_out`) is rejected:
+parse 0.4, meaning-v1/strict-v2 0.2, fidelity 0.25, structure 0.17934, recall
+0.26667, reward 0.3238, three 12-second timeouts, three empty predictions, and
+two fallbacks. The pinned AgentV bundle has 25 named grader summaries and a
+`custom-task` pass-rate of 0.077. Relative to E1304, strict-v2 falls
+0.4→0.2 and reward 0.8558→0.3238. The data effect is not causal because E1312
+disabled E1301's three unit-weight auxiliary losses; reject this local-only
+checkpoint and never sync, promote, serve, resume, or use it as a parent.
+
+### E1316-E1317 E1308 foreground control (rejected)
+
+E1316 is the single-writer 291-step CPU scratch control on the unchanged
+387-record E1308 mixture, checkpoint SHA `e4842853...df2685ff`. E1317's full
+strict compiler-tree held-out n=5 evaluation is worse: the named graders give
+parse/meaningful-program/strict binding-aware meaningfulness/fidelity/contract
+recall/structure/component recall all 0.2, AST node F1 1.0, AST edge F1 0.5,
+and reward 0.1874. Four rows (Form, Dual Card, Tabs, Settings) time out at 12
+seconds and return empty predictions; fallback count is zero. The 25 named
+grader metrics ran through `@agentv/core` with zero execution errors and no
+aggregate AgentV metric. This is a local scratch failure, not a data-causal or
+ship result: reject, never sync, promote, serve, resume, or use it as a parent.
+
+E1318 is the required matched follow-up: retain E1308 and all E1316 settings,
+but restore the three unit-weight auxiliary losses present in E1301. It is
+preregistered and unevaluable until the 291-step endpoint and full named-grader
+held-out evaluation complete.
+
+E1318-E1319 closes that matched arm: restoring all three auxiliary losses
+exactly reproduces E1317's named-grader metrics (parse/strict-v2/fidelity/
+structure/recall/component recall 0.2; reward 0.1874; four empty timeouts).
+The E1308 corpus does not repair this checkpoint family; reject it.
+
+E1320-E1323 are decoder-only evaluations of that rejected E1318 checkpoint.
+The v279 required-slot root completion reduces held-out timeouts to one and
+raises parse to 0.8, fidelity/recall to 0.6333, structure to 0.4589, component
+recall to 0.4619, and reward to 0.6936, while strict binding-aware
+meaningfulness remains 0.2. E1324 isolates the remaining Tabs row: its named
+graders pass parse/strict-v2/fidelity/recall (all 1.0) after a constrained
+fallback emits `Tabs([])`, but component recall is 0.6667. Each evaluation ran
+25 named graders through `@agentv/core` with zero execution errors and no
+aggregate metric. The checkpoint remains rejected and non-promotable.
+
+E1325 removes only schema-component typing on that Tabs diagnostic. It
+regresses to an empty timeout and zero on every listed named grader metric,
+including parse, strict-v2, fidelity, recall, structure, component recall, and
+reward. The 25 named graders ran through `@agentv/core` with zero execution
+errors and no aggregate metric. Keep schema typing enabled.
+
+E1326 explains the Form residual: the model selects a Form inside Stack, but
+the eight-token completion forest reaches its first comma before the required
+buttons/fields continuation fits in lookahead. The bounded fallback then
+collapses to one TextContent, yielding strict-v2 0, fidelity/recall 0.1667,
+structure 0.1148, component recall 0.1429, and reward 0.657. Its 25 named
+graders ran through `@agentv/core` with zero execution errors and no aggregate
+metric.
+
+E1327's bounded lattice rollback is metric-identical to E1326. E1328 fixes the
+required-reference admission bug, proving Form's buttons field is legal, but
+the model subsequently overcommits seven forward binders before declaration and
+falls back to the same one-slot TextContent. Its named metrics remain strict-v2
+0, fidelity/recall 0.1667, structure 0.1148, component recall 0.1429, and
+reward 0.657. Both evaluations ran 25 named graders through `@agentv/core`
+with zero execution errors and no aggregate metric; neither is promotable.
+
+E1329 evaluates a cross-property forward-binder reservation on the Form row.
+The constraint closes `Form.fields` after `b6` as intended, but the model then
+expands an unresolved root sequence through the bounded decode and returns an
+empty timeout. Parse, meaningful-program, strict binding-aware meaningfulness,
+fidelity, contract recall, structural similarity, component recall, and reward
+are all 0; timeout and empty-prediction counts are each 1, with no fallback.
+The 25 named graders ran through `@agentv/core` with zero execution errors and
+no aggregate metric. Reject and withdraw this default-on rule; retain E1328's
+required-reference correction.
+
+E1330's bounded held-out n=5 replay ended without an evaluation or AgentEvals
+artifact and is invalid. E1331 narrows that check to the Form row of the earlier E1301 local-only
+checkpoint under the current v282 decoder. It keeps E1323's strict
+compiler-tree policy and E1328's required-reference repair, without E1329's
+withdrawn reservation. It matches E1328 exactly: parse 1.0, strict-v2 0,
+fidelity/recall 0.1667, structure 0.1148, component recall 0.1429, reward
+0.657, zero timeouts, and two fallbacks. The 25 named graders ran through
+`@agentv/core` with zero execution errors and no aggregate metric. E1332 now
+tests only `binder_arity_decode_weight=1` on that same row. It is
+prediction-identical, with zero binder-arity applications, so the decode lever
+is rejected. E1333 instead builds a strict E1298-plus-title/Form mixture with
+typed ProgramSpecs requiring TextContent, Form, FormControl, Input, and Button.
+Its producer varies legitimate topology dimensions while retaining independent
+judging, strict deduplication, exposure caps, and held-out decontamination. No
+checkpoint can be promoted, served, synced, resumed, or used as a parent.
+
+E1333's strict E1298-plus-title/Form build retains 471 records at mean quality
+1.0 with zero verifier, quality, or n-gram decontamination failures. Eighty-nine
+retained rows contain the target title-plus-Form topology, but raw ProgramSpec
+yield is 13/257 after strict deduplication. Feedback flags redundant expansion,
+so E1334 is one fresh local 354-step scratch control only, with E1301's
+auxiliary-loss recipe and no parent checkpoint. Its outcome must use named
+graders; no aggregate runner metric or promotion claim is allowed.
+
+E1334 is invalid before model construction because the current numeric
+capability gate rejects lexer-native root-reference-identity loss. E1335 reruns
+the same fresh E1333 control with that loss at zero; no checkpoint was written
+by E1334 and it informs no comparison.
+
+E1335 completed its 354-step fresh CPU scratch chain through full-state
+checkpoints at 120, 216, 288, 312, and 354. The local no-sync checkpoint has
+SHA `831ff54a3f8771fc7a93e3e3b39a1bc5d61646138dca8f0d76ab8b6fd4957950` and
+uses E1333's 471 strict records under `harness.model_build.train` v24. It is
+eligible only for a bounded evaluation reporting named AgentEvals graders; no
+promotion, serving, resume, or parent use is authorized.
+
+E1336 is the preregistered one-row held-out Form replay of that exact E1335
+SHA under strict compiler-tree decoding. It reports named AgentEvals grader
+outputs executed through `@agentv/core`, never an aggregate runner metric, and
+compares prediction and metrics directly with E1331's current-decoder Form row.
+
+E1336 exactly reproduces E1331's `root = TextContent(":slot_0")` prediction.
+Its named metrics are parse 1.0, strict binding-aware meaningfulness 0,
+fidelity/contract recall 0.1667, structure 0.1148, component recall 0.1429,
+reward 0.657, zero timeouts, and two fallbacks. The 25 named graders executed
+through `@agentv/core` with zero execution errors and no aggregate metric.
+Reject E1335 and the E1333 data-control hypothesis; keep the checkpoint
+local-only and prohibit sync, promotion, serving, resume, and parent use.
+
+E1337 repairs the ProgramSpec producer rather than a gate: the same strict
+E1298-plus-Form build uses v42 prompts that state verified topology and Form
+arity. It is eligible for one fresh control only if strict feedback retains
+materially more raw ProgramSpec rows than E1333's 13 with no verifier, quality,
+or n-gram decontamination failure.
+
+E1337 is rejected: its topology-aware prompt projection preserves strict
+quality (mean 1.0; zero verifier, quality, and n-gram decontamination failures)
+but reduces retained rows from 471 to 446 and raw ProgramSpec rows from 13/257
+to 5/257. Withdraw the producer change and do not train the corpus; strict
+quality, deduplication, exposure, and decontamination gates remain unchanged.
+
+E1338 is the next source-isolation control: retain only verified title-plus-Form
+ProgramSpecs while keeping all strict gates. It supports one fresh scratch
+control only if direct ProgramSpec retention exceeds E1333's 13 rows with no
+verifier, quality, or n-gram decontamination failure.
+
+E1338 retains 21/240 direct ProgramSpec rows at mean quality 1.0 with zero
+verifier, quality, and n-gram decontamination failures (65 fuzzy and 37
+semantic dedup drops). E1339 is therefore one fresh no-parent 354-step CPU
+scratch control with E1335's supported recipe; any checkpoint is local-only
+pending a bounded named-grader evaluation.
+
+E1339 is invalid because the external 120-second limit ended at step 43 before
+the first 120-step full-state checkpoint. E1340 restarts the exact fresh recipe
+with 30-step full-state checkpoints; only a complete 354-step single-writer
+chain may be evaluated.
+
+E1340 also ended before its first durable state (step 29); E1341 keeps the
+same fresh recipe but writes full state every 15 steps. Interrupted segments
+remain invalid and unevaluable.
+
+E1341 stopped at step 8 before its 15-step state checkpoint. The isolated
+long-record corpus cannot establish valid durable state at this architecture
+under the CPU cap, so E1339-E1341 are invalid and unevaluable; no partial
+output informs a model decision.
+
+E1342 separates CPU compilation overhead from the corpus hypothesis: it repeats
+the same fresh E1338 control without `--fast-train` and with a 15-step state
+interval. The noncompiled E1339 reached 43 steps, versus 29 and 8 for compiled
+E1340/E1341. Only a completed chain can inform the data decision.
+
+E1342 has durable continuation state through step 75. Capped segments are not
+evaluation evidence, but the same single-writer full-state chain may continue;
+do not evaluate, sync, promote, serve, or use it as a parent before terminal
+training.
+
+E1342 completed 354 steps with SHA `2ac6cbf5e7eae5077e0b48f1b46a58b99d2fc28ad41bd7092b26dff7f234c848`.
+E1344 is the bounded strict compiler-tree Form replay, reporting named
+AgentEvals grader outputs through `@agentv/core` with no aggregate metric.
+
+E1344 rejects E1342/E1338: the isolated corpus produces one empty 12-second
+timeout and named parse, strict-v2, fidelity, recall, structure, component
+recall, and reward metrics all equal to 0. The 25 named graders executed
+through `@agentv/core` with zero errors and no aggregate metric. The checkpoint
+is local-only and may never be synced, promoted, served, resumed, or parented.
+
+E1345 replays E1301's exact Form row with its trained root-reference identity
+decode head enabled at 1. The strict policy and every other decode lever match
+E1331; named AgentEvals grader outputs remain the only reported metrics.
+
+E1345 is prediction-identical to E1331 despite six trained-head applications:
+parse 1.0, strict-v2 0, fidelity/recall 0.1667, structure 0.1148, component
+recall 0.1429, reward 0.657, no timeout, and two fallbacks. The 25 named
+graders executed through `@agentv/core` with zero errors and no aggregate
+metric. Reject the decode lever and retain weight 0.
+
+E1346 replayed the exact E1301 Form row after permitting a root close while
+unresolved forward binders require later declarations. The first constrained
+path did close the root and start declarations, but dead-ended; the selected
+fallback remained E1331's `root = TextContent(":slot_0")`. All tracked named
+AgentEvals metrics are identical to E1331/E1345: parse 1.0, strict-v2 0,
+fidelity/recall 0.1667, structure 0.1148, component recall 0.1429, reward
+0.657, no timeout, and two fallbacks. The 25 named graders executed through
+`@agentv/core` with zero errors and no aggregate metric. Reject and revert the
+policy change; the 89-token internal path is diagnostic, not a metric.
+
+E1347 combined E1329's typed-binder capacity reservation with an outer-root
+close after the completed nested Form. It raises named structure from 0.1148 to
+0.4261 and component recall from 0.1429 to 0.2857, but the fallback contains no
+placeholders: strict-v2 remains 0 and named fidelity, recall, and reward regress
+to 0. The 25 named graders executed through `@agentv/core` with zero errors and
+no aggregate metric. Reject and revert this policy change.
+
+E1348 is a fresh no-parent CPU control on E1333's verified title-plus-Form
+mixture. E1335 trained binder-instance component and arity heads but left the
+typed `component_plan` objective and its grammar-legal decode bias at zero,
+leaving no learned root `Stack` or bound `Form` selection pressure. E1348
+enables only that existing typed component-plan supervision and decode bias,
+retaining E1335's binder-plan, binder-arity, fidelity, strict corpus, and
+honest-slot recipe. No evaluator, named AgentEvals metric, gate, corpus, or
+deterministic decoder authority changes. A completed terminal checkpoint gets
+one bounded Form evaluation; otherwise the run is invalid and the local
+checkpoint may never be synced, promoted, served, resumed, or parented.
+
+E1348 is invalid before model construction: the numeric capability gate rejects
+decode weights in a training configuration, because they are evaluation-time
+overrides. It wrote no checkpoint or training evidence. E1349 repeats the
+fresh loss-only component-plan control and reserves both legal decode weights
+for its bounded evaluation.
+
+E1349 is also invalid: its compiled run timed out at step 8 before the first
+15-step full-state checkpoint. The nonzero component-plan loss is diagnostic
+only. E1350 restarts the same fresh loss-only recipe without compilation, using
+15-step full-state checkpoints so capped segments can continue one exact
+single-writer chain. Only its terminal checkpoint may receive the planned
+named-grader evaluation.
+
+E1350 is also invalid when noncompiled: the environment stopped at step 6,
+before its first state checkpoint. E1351 moves the same typed component-plan
+hypothesis to the previously cap-feasible 64-dimensional architecture with
+15-step durable states. It is a separate no-parent architecture control, not a
+causal comparison with full-width E1335; only a terminal continuation chain
+may receive the bounded named-grader evaluation.
+
+E1351 is invalid as well: the reduced architecture stopped at step 5 before a
+durable state. E1352 retains that small typed component-plan recipe but uses
+batch size one and five-step full-state checkpoints, the only execution change
+needed to make a capped continuation chain possible. It remains a separate
+no-parent architecture control.
+
+E1352 completed its 354-step single-writer chain with local SHA
+`e57d1c9f248cb465b3e0d7429bce6ab48314da1b8323743759f9ac97c7e56b9c`.
+It is local-only and now eligible solely for the preregistered one-row strict
+Form evaluation with typed component-plan and binder-arity decode weights.
+
+E1353 rejects E1352: it exactly reproduces E1331's
+`root = TextContent(":slot_0")`. The named graders report parse 1.0, strict
+binding-aware meaningfulness 0, fidelity/contract recall 0.1667, structure
+0.1148, component recall 0.1429, reward 0.657, no timeout, and two fallbacks.
+The typed component-plan head applied three times but changed no choice; binder
+arity never reached an eligible continuation path. All 25 named AgentEvals
+graders executed through `@agentv/core` with zero errors and no aggregate
+metric. Keep this local checkpoint rejected, never synced, promoted, served,
+resumed, or parented.
+
+E1354 is a matched scalar probe of the same E1352 checkpoint: E1353 reached
+the trained typed component-plan head three times at decode weight 1 but changed
+no choice. It raises only that grammar-legal weight to 4 while retaining the
+binder-arity weight, strict policy, Form row, and named-grader comparison. Any
+non-improving outcome leaves E1352 rejected and local-only.
+
+E1354 closes that scalar sweep: at component-plan decode weight 4 it is still
+exactly `root = TextContent(":slot_0")`, with the same named metrics as E1353
+(parse 1.0, strict-v2 0, fidelity/recall 0.1667, structure 0.1148, component
+recall 0.1429, reward 0.657, no timeout, two fallbacks). It again makes three
+component-plan applications but zero choice changes; binder arity is unreachable.
+The 25 named AgentEvals graders ran through `@agentv/core` with zero errors and
+no aggregate metric. Reject E1354 and close this scalar sweep.
+
+E1355 completed its locked 354-step CPU scratch chain in 88.8 seconds through
+durable full-state continuations (local SHA
+`b6aeb93cfdf6e5f30ccc6e1a6f01d96cbb22f69c9fecd9bd52d80218d07752d8`).
+E1356 then ran the preregistered strict compiler-tree held-out Form row. Its 25
+named AgentEvals grader outputs, executed through `@agentv/core` with zero
+errors and no aggregate metric, exactly match E1331/E1353/E1354: parse 1.0,
+strict-v2 0, fidelity and contract recall 0.1667, structure 0.1148, component
+recall 0.1429, reward 0.657, no timeout, and two fallbacks. The prediction is
+again `root = TextContent(":slot_0")`. The shared-alignment model did alter
+five of eight semantic-plan choices, but hit an empty compiler completion forest
+after `b7` and fell back to the same minimal output. Reject E1355; it remains
+local-only, unsynced, unpromoted, unserved, unresumed, and non-parentable.
+
+E1364 is preregistered as a fresh no-parent E1333 small-architecture control.
+E1363 reaches the `b6 =` declaration before its completion forest empties, and
+the existing binder-specific component planner has a declaration-path decode
+bias that was never activated in the preceding arms. E1364 retains E1358's
+semantic-exhaustive supervision and changes only
+`binder_component_plan_decode_weight` from 0 to 2 under the required compiler
+tree mode. Strict policy, named
+graders, grammar authority, and fallback behavior remain locked.
+
+E1364 completed its locked 354-step CPU scratch chain (local SHA
+`e452eee2f1cac2836903b39e65fb6998767cf8c25416d61e2d172d926096a364`).
+E1365's strict one-row Form evaluation exactly matches E1356/E1359/E1361/E1363's
+25 named grader outputs and `root = TextContent(":slot_0")`: parse 1.0,
+strict-v2 0, fidelity/contract recall 0.1667, structure 0.1148, component
+recall 0.1429, reward 0.657, no timeout, and two fallbacks. `@agentv/core`
+executed the graders with zero errors and no aggregate metric. The binder
+planner applied twice but changed no choice; the completion forest still emptied
+before b7. Reject E1364; it remains local-only, unsynced, unpromoted, unserved,
+unresumed, and non-parentable.
+
+E1366 is preregistered as a fresh no-parent E1333 small-architecture control.
+The existing LTR objective has a first-token guarantee and a prefix-only extra
+weight, but no tail emphasis. E1366 retains E1358's semantic-exhaustive recipe
+and changes only the new `ltr_tail_loss_weight` from 0 to 1 over the final 32
+real target tokens, directly supervising late declarations and closures. Strict
+policy, named graders, grammar authority, and fallback behavior remain locked.
+
+E1366 completed its locked 354-step CPU scratch chain through durable full-state
+continuations (local SHA
+`9ef29258e8150ff1ee1e6b698c193c3d69447342b9d4fa86d53b5f20f96a28f5`).
+E1367's strict one-row Form evaluation exactly matches E1365/E1363 and the
+E1356-family baseline on all reported named metrics: parse 1.0, strict-v2 0,
+fidelity/contract recall 0.1667, structure 0.1148, component recall 0.1429,
+reward 0.657, no timeout, and two fallbacks. The 25 named AgentEvals graders
+ran through `@agentv/core` with zero execution errors and no aggregate metric.
+Tail weighting shifts the empty completion forest from position 96 to 93, but
+does not produce `b7 =` and falls back to `root = TextContent(":slot_0")`.
+Reject E1366; it remains local-only, unsynced, unpromoted, unserved, unresumed,
+and non-parentable.
+
+E1368 is an append-only exploratory decoder diagnosis, not a replacement for
+the locked strict E1367 result. It holds E1366's terminal checkpoint, held-out
+Form row, tree decode, named graders, and scoring policy fixed while changing
+only `compiler_schema_component_types` from enabled to disabled. The purpose is
+to determine whether forward-binder typed component filtering itself creates the
+empty completion forest after visible-slot exhaustion. Its result is
+non-promotable and may only choose the next implementation target.
+
+E1368 confirms that dependency. With only that filter disabled, the same
+checkpoint has no dead end or fallback and its named metrics rise to fidelity
+and contract recall 1.0, structure 0.4048, component recall 0.4286, and reward
+0.985; strict-v2 remains 0. The 25 named AgentEvals graders ran through
+`@agentv/core` with zero execution errors and no aggregate metric. The output
+fills every visible slot but places `TextContent` and `SwitchItem` in
+schema-invalid Form fields. The strict filter is necessary and remains enabled;
+the next target is reserving visible-slot capacity for required components that
+are not yet emitted, rather than weakening schema authority.
+
+E1369 is preregistered as the narrow strict-decoder repair. It will reserve
+capacity only for schema-required content of unresolved typed binders and for
+prompt-required components not yet emitted; optional content remains free to
+use its already-legal `null`. It holds the rejected E1366 checkpoint and the
+strict E1367 evaluation policy fixed. The result is decoder-only diagnostic
+evidence and cannot make the checkpoint promotable or reusable.
+
+E1369 rejects the partial reservation. It closes the Form field list one binder
+earlier, but its incremental scan does not see the unresolved root references at
+the optional FormControl hint; that hint still consumes the final visible slot
+before `b6`. The terminal v284 strict evaluation therefore exactly retains
+E1367's named metrics, minimal fallback prediction, one dead end, and two
+fallbacks. The 25 named AgentEvals graders ran through `@agentv/core` with zero
+execution errors and no aggregate metric. The next mechanism must derive pending
+typed-binder demand from the completed root-reference plan, not the parser's
+partial prefix.
+
+E1370 is preregistered as the exact follow-up: retain E1369's request-aware
+reservation after prompt-required components are emitted, so unresolved typed
+binders still reserve their schema-required visible content at optional string
+positions. It is an unchanged-checkpoint strict decoder diagnostic only.
+
+E1370 rejects the stronger reservation. It forces the optional `Button.action`
+to legal `null`, but that local state has no grammar-completable continuation;
+the forest fails earlier at position 30 and the minimal fallback retains every
+E1367 named metric. The 25 named AgentEvals graders ran through `@agentv/core`
+with zero execution errors and no aggregate metric. Capacity forcing is closed
+unless it is coupled to an exact completion-aware action filter.
+
+E1371 is preregistered after isolating E1370's guard defect. It applies the
+same unresolved-binder reservation only before an optional value begins, leaving
+the grammar-required close legal after `null`. This remains an unchanged-
+checkpoint, strict decoder-only diagnostic.
+
+E1371 fixes E1370's premature null failure and moves the strict forest dead end
+to `b7 =` at position 104, but it does not improve any named metric. The root
+has already planned five Button binders while all six visible slots are consumed
+by the root Button and five FormControls. The 25 named AgentEvals graders ran
+through `@agentv/core` with zero execution errors and no aggregate metric.
+Reject E1371; future capacity work must budget all root-planned typed binders,
+not only Form fields.
+
+E1372 is preregistered as the global root-plan capacity control. It permits an
+otherwise optional typed array to close empty only when unresolved typed binders
+outside that array already consume the remaining visible-slot budget. The
+unchanged local checkpoint and strict decoder remain diagnostic-only.
+
+E1372 rejects that allowance. Although empty `Buttons` is legal, the learned
+decoder still adds `b6 = Button` to the array, spends the final visible slot,
+and dead-ends at `b7 =` at position 96. Its minimal fallback and all 25 named
+grader metrics remain baseline: strict-v2 0, fidelity/contract recall 0.1667,
+structure 0.1148, component recall 0.1429, reward 0.657, and two fallbacks.
+The named AgentEvals graders ran through `@agentv/core` with zero execution
+errors and no aggregate metric. Reject E1372. E1373 is preregistered as the
+smallest general follow-up: before a typed array admits a new binder, reserve a
+schema-derived transitive lower bound for every unresolved typed declaration,
+including a required child component. It is decoder-only, strict, local, and
+cannot promote or reuse the checkpoint.
+
+E1373 is promising but remains one-row diagnostic evidence. The transitive
+schema lower bound forces `b1 = Buttons([])`, lets the shared `b6` input
+declaration complete, and removes the dead end and both fallbacks. The 25 named
+grader outputs are parse and meaningful-program 1.0, fidelity/contract recall
+0.8333, structure 0.5644, component recall 0.5714, and reward 0.95; strict
+binding-aware v2 remains 0 because the program omits one required placeholder
+and duplicates the shared subtree. The graders ran through `@agentv/core` with
+zero execution errors and no aggregate metric. E1374 is preregistered as the
+matched v288 flag-off control before treating the improvement as causal. This
+checkpoint remains local-only, unsynced, unpromoted, unserved, unresumed, and
+non-parentable.
+
+E1374 validates the causal attribution. Holding the v288 decoder, checkpoint,
+strict policy, and named graders fixed while disabling only the reservation
+returns to the fallback baseline: meaningful-program 0, fidelity/contract
+recall 0.1667, structure 0.1148, component recall 0.1429, reward 0.657, one
+dead end, and two fallbacks. The 25 named graders ran through `@agentv/core`
+with zero execution errors and no aggregate metric. E1375 is preregistered as
+an eight-row held-out diagnostic with the validated E1373 decoder, to measure
+recurring strict-v2 failures before a new training intervention is selected.
+
+E1375 completed all five available held-out rows (the requested limit was eight).
+The 25 named graders report parse 1.0, meaningful-program 0.8, strict-v2 0.4,
+fidelity/contract recall 0.8167, structure 0.5096, component recall 0.7143,
+reward 0.8982, two fallbacks, and no timeout. The strict failures are duplicate
+subtree/placeholder identity and missing required topology, not syntax. The
+graders ran through `@agentv/core` with zero execution errors and no aggregate
+metric. E1376 is preregistered as one fresh matched CPU scratch training control
+that enables only binder-topology supervision; its trained head will receive a
+separate bounded strict evaluation. The E1333 synthesis feedback was read:
+its warnings concern redundant/eval-adjacent source expansion, so corpus gates
+and thresholds remain unchanged for this causal loss comparison.
+
+E1376 completed its locked 354 CPU scratch steps (`stopped_on: steps`) at local
+SHA `9a58fc5abd9c0b620222ef332396609e7f7d4b5fd1aedf45cc249fe6b3f6dcac`.
+The initial per-step full-state snapshots exhausted the bounded shell window,
+so the same single-writer state chain resumed with a 15-step snapshot cadence;
+this changed recovery overhead only, not the model, data, loss hypothesis,
+metrics, or gates. E1377 is preregistered before execution: held-out n=5,
+strict compiler-tree policy, tree decode with schema component types,
+request-aware slot reservation, and binder-topology decode weight 2. Its named
+AgentEvals grader outputs are the tracked metrics; `@agentv/core` is only the
+runner/publisher and will not be reported as an aggregate metric.
+
+E1377 rejects the topology intervention. The 25 named graders report held-out
+n=5 parse 1.0, meaningful-program 0.8, strict-v2 0.4, contract recall and
+placeholder fidelity 0.8167, structure 0.49536, component recall 0.7143,
+reward 0.8982, two fallbacks, and no timeout. E1375's strict-v2, parse,
+meaningful, fidelity/recall, component recall, reward, fallback, and timeout
+metrics are unchanged, while structure declines from 0.5096. Residual strict
+failures remain duplicate binder/subtree identity and missing required
+topology. `@agentv/core` executed/published the 25 named grader results with
+zero execution errors; it is SDK metadata, not a metric. E1376 is rejected,
+local-only, and never eligible for sync, serving, resume, parentage, or
+promotion.
+
+E1378 is preregistered as the final bounded current-corpus test of the existing
+root-reference identity head. From E1376, it changes only root-identity loss
+from 0 to 1; lexer supervision also requires compiler tree mode as a capability
+validity prerequisite, not a decoder-time treatment. The head targets the duplicate root declaration/subtree failures
+reported by E1377. Older root-identity work on a different corpus was negative,
+so no gain is presumed and unchanged named metrics close this add-on. E1379 and
+E1380 will use the same held-out n=5 strict policy and validated v288 decoder,
+with root-identity decode respectively off and 1, while retaining topology
+decode weight 2. Their individual named AgentEvals grader outputs are the
+tracked metrics; `@agentv/core` is runner/publisher metadata only.
+
+E1378 completed its locked 354 CPU scratch steps at local SHA
+`d0695f469422f05f8b7f71b9f8e4037edfe5e1c4907681921d055162eeae0bb3`.
+E1379 is the trained-head decode-off control: the 25 named graders give n=5
+parse 1.0, meaningful-program 0.8, strict-v2 0.4, fidelity/contract recall
+0.8167, structure 0.49536, component recall 0.7143, reward 0.8982, two
+fallbacks, and no timeout. Holding the checkpoint and every other decode
+setting fixed, E1380 enables root-identity rank weight 1 and improves strict-v2
+to 0.6 while removing `duplicate_placeholder_identity`; parse, meaningful,
+fidelity/recall, component recall, reward, fallbacks, and timeouts are unchanged
+and structure is 0.4987. The 25 named AgentEvals graders have zero execution
+errors in each run; `@agentv/core` is the runner/publisher, never a metric.
+This is promising five-row local evidence only, not a ship or promotion claim.
+
+E1381 is preregistered as a same-checkpoint v289 decoder control. From E1380,
+it enables only nested binder uniqueness: when a learned topology choice is
+already referenced by the active declaration, it is suppressed and the existing
+parent-conditioned topology scores rank the remaining legal children. This is
+not new grammar authority and remains default-off. The same held-out n=5 strict
+policy and individual named AgentEvals grader metrics apply; `@agentv/core` is
+runner/publisher metadata only.
+
+E1381 completed through the 25 named graders with zero SDK execution errors.
+Against E1380, strict-v2 remains 0.6 and parse, meaningful-program,
+fidelity/contract recall, fallback, and timeout metrics are unchanged. The
+opt-in nested uniqueness ranker improves structure from 0.4987 to 0.54202 and
+component recall from 0.7143 to 0.7810, while reward decreases slightly from
+0.8982 to 0.8958. It changes Dual Card but leaves Form nested reuse and Tabs
+fallback unresolved. This is local diagnostic evidence only; `@agentv/core`
+remains runner/publisher metadata, not a metric or promotion decision.
+
+E1382 is preregistered as the canonical multi-suite ship-gate audit of E1381's
+decoder configuration. It records the individual named grader outputs across
+the policy suites before any data intervention. Its local CPU scratch checkpoint
+cannot become a ship claim, sync target, serving model, resume parent, or
+promotion candidate regardless of the audit outcome.
+
+E1382 did not complete under the canonical 110-second interrupt and wrote no
+scoreboard or AgentEvals bundle. It is invalid non-evidence, not a failed gate
+or a partial multi-suite result.
+
+E1383 completes the independently bounded adversarial suite (n=4): its 25
+named graders report parse 1.0, meaningful-program and strict-v2 0.75,
+fidelity/contract recall 1.0, structure 0.7254, component recall 0.75, reward
+0.946, and zero fallbacks/timeouts. One strict row is unknown for prompt and
+required inventory, rather than a decoder parse failure. `@agentv/core` has
+zero execution errors and remains runner/publisher metadata only. This remains
+local bounded evidence, not a multi-suite ship result.
+
+E1384 independently completes OOD n=4: the named graders report parse and
+meaningful-program 1.0, strict-v2 0.75, fidelity/contract recall 0.9,
+structure 0.73255, component recall 0.8125, reward 0.913, and zero
+fallbacks/timeouts. One required placeholder remains missing. `@agentv/core`
+executed the 25 named graders with zero errors; this is bounded local evidence,
+not a replacement for the incomplete multi-suite scoreboard or `rico_held`.
+
+E1385 completes smoke n=3 with parse, meaningful-program, strict-v2,
+fidelity, and contract recall all 1.0; structure is 0.5751, component recall
+0.5833, reward 0.945, and fallbacks/timeouts are zero. `@agentv/core` executed
+the 25 named graders with zero errors. This confirms smoke wiring only and does
+not upgrade the local scratch checkpoint's claim level.
+
+E1386 is preregistered as a fresh no-parent structural-fixture foreground
+control. It changes only online sampling of the immutable E1333 corpus:
+human-curated fixtures receive 25% mixture weight instead of the base 6.3%,
+raising rare Tabs exposure without adding, reconstructing, or selecting any
+held-out record. Its held-out n=5 named-grader evaluation is fixed before
+training; its validated mixture manifest SHA-256 is
+`d5d1052899b586addf43938fa06c121d104232789aa29b58e506bef9b2fe9e62`.
+`@agentv/core` remains runner/publisher metadata only.
+
+Training used the canonical capped-resume chain from persisted full state; all
+354 requested steps completed before the held-out evaluation was consumed.
+
+E1386 has now completed its 354 fixed CPU scratch steps (`stopped_on: steps`),
+writing local checkpoint SHA
+`b4c0c5e5d133765dde7786d305cb6a0b47c038d71b04938429894d91c255a3e6`.
+E1387 held-out n=5 then gives parse and meaningful-program rates of 1.0,
+strict-v2 0.4, fidelity/contract recall 0.9267, structural similarity 0.6325,
+component recall 0.8476, reward 0.9372, zero timeouts, and one fallback.
+`@agentv/core` executed the 25 named graders with zero errors; it contributes
+no aggregate metric. Despite the stronger structural named metrics, strict-v2
+falls from E1381's 0.6 to 0.4, so this mixture-only foreground control is
+rejected and not expanded to policy suites, promotion, or serving.
+
+E1388 proposed an existing grammar-state-aware slot-coverage continuation at
+tested low weight 2.0 against the completed E1386 checkpoint. It is invalid
+before evaluation: `ModelBuildConfig` rejects that lever because it relies on
+marker-label-derived schema reachability under opaque template markers. The
+guard remains intact; no CLI override, grader invocation, or result artifact
+was produced. E1387's Form/Dual Card missing `:slot_4` and Tabs repeated
+`:slot_3` evidence remains diagnostic only. `@agentv/core` is not a metric.
+
+E1389 is preregistered as the contract-safe alternative. It adds the required
+opaque ordinal slot-contract context and the existing required-slot margin at
+tested low weight 2.0; the capability gate accepts this pair. The margin may
+only floor a legal still-missing opaque slot at a schema position that accepts
+a slot. External names, marker labels, and template spellings remain outside
+legal/scoring authority. The held-out n=5 named-grader surface is fixed.
+
+E1389 completes with exactly the E1387 strict surface: parse and
+meaningful-program rates 1.0, strict-v2 0.4, fidelity/contract recall 0.9267,
+structure 0.6325, component recall 0.8476, zero timeouts, and one fallback
+(reward differs only from 0.9372 to 0.9396). The margin applies 16 times but
+changes zero choices, leaving Form/Dual Card missing `:slot_4` and Tabs'
+repeated `:slot_3` unresolved. `@agentv/core` executed 25 named graders with
+zero errors and no aggregate metric. The opaque margin bundle is rejected; no
+weight sweep follows.
+
+E1390 is preregistered as the structural successor: an opt-in compiler-array
+close rule that sees only opaque request ordinals and grammar legality. It
+keeps an array open while an ordinal remains missing and another legal path
+exists, allowing Form/Card/Tabs to create a further slot-bearing child.
+
+E1390 is rejected. Its named strict-v2 rate reaches 0.6, but parse and
+meaningful-program rates both collapse to 0.6, with two parse-error empty
+rows; structural similarity falls to 0.33266, component recall to 0.5333, and
+reward to 0.567. `@agentv/core` executed 25 named graders with zero errors and
+no aggregate metric. The unbounded array-close prohibition is not retained.
+
+E1391 is preregistered with the same opaque close constraint restricted by
+Lark's parser value stack to non-root component arrays. The root `Stack` list
+is untouched; no source labels or marker spelling enter the rule.
+
+E1391 is rejected. The named parse rate improves to 0.8 over E1390, but
+meaningful-program remains 0.6, strict-v2 remains 0.4, contract/fidelity
+recall fall to 0.6167, structure to 0.36698, and component recall to 0.5810.
+There is one decode timeout and two fallbacks. `@agentv/core` executed the 25
+named graders with zero errors and no aggregate metric. This array-close rule
+family is closed.
+
+E1392 completed its preregistered fresh duration control on immutable E1333:
+708 steps versus E1378's 354, with the same seed, small scratch architecture,
+losses, corpus, and held-out n=5 endpoint (local SHA
+`f3c3d4468bfcfa256d04244bf3b21c01dda57ab33f77ee8451486be5feeafa4a`).
+E1393 is rejected: named parse is 0.6, meaningful-program 0.4, strict-v2 0.4,
+contract precision 0.6, contract/fidelity recall 0.45, structure 0.33734,
+component recall 0.4667, and reward 0.5136. There are two parse errors, two
+decode timeouts, and two fallbacks. Against E1378's shorter control, strict-v2
+does not improve and every other tracked quality metric regresses. `@agentv/core`
+executed the 25 named graders with zero errors and no aggregate metric. Duration
+is closed as a lever; this local checkpoint is never syncable, promotable,
+servable, resumable, or parentable.
+
+E1394 is preregistered as a fresh 354-step E1333 exposure-targeted sampling
+control. E1333 has only six Tabs instances versus 216 Sliders, while E1381's
+remaining strict failures are a Tabs fallback and a Form that repeats Slider
+subtrees while omitting one opaque slot. It changes only the canonical online
+sampler to capped inverse-frequency action targeting with root/template diversity
+caps; it does not alter corpus admission, held-out records, decoder authority,
+seed, architecture, or losses. The locked held-out n=5 endpoint must exceed
+E1381 strict-v2 0.6 without regressing the other named quality metrics or adding
+timeouts; otherwise reject without a sampler scalar sweep.
+
+E1394/E1395 is invalid as a sampler control. The 354-step checkpoint SHA is
+`4e2c8fa62af863c149fac9c5df6a6175a15d2aedfda801343d55bab71c939586`, but
+its train summary records `mixture: null`: resource-path resolution did not
+activate `mixture.json`. E1395 is prediction-identical to E1381 (strict-v2
+0.6 and the same one Tabs low-component-recall failure). `@agentv/core`
+executed the 25 named graders with zero errors and no aggregate metric. This
+is not evidence about exposure targeting; a fresh arm must pass the manifest
+explicitly.
+
+E1396 is preregistered as E1394's fresh corrected restart: it passes the
+canonical `mixture.json` explicitly and is invalid before evaluation unless the
+train summary confirms `exposure_targeted` sampling and the exact manifest path.
+
+E1396 completed its corrected 354-step sampler control (local SHA
+`1b1bd5febf7ec2c8a4ead2783b1f00b01fbde33cc72dd881d38abd8f002531d5`).
+The train summary verifies the explicit mixture manifest and active
+`exposure_targeted` policy. E1397 is rejected: named parse/meaningful rate is
+0.4, strict-v2 0.2, contract precision 0.4, contract/fidelity recall 0.3667,
+structure 0.22688, component recall 0.3143, reward 0.3822, and three parse-error
+timeouts. `@agentv/core` executed the 25 named graders with zero errors and no
+aggregate metric. Every tracked quality metric regresses from E1381; do not
+sweep the sampler caps or weights.
+
+E1398 is preregistered as a fresh E1333 resolved-AST component-edge control.
+It adds only the existing parent-conditioned component-edge supervision and its
+grammar-legal decode bias at weight 1. This targets E1381's repeated Form
+children and Tabs topology failure without using opaque marker labels or names.
+
+E1398 completed 354 capped CPU scratch steps (local SHA
+`8995cfe7562af8d79470fadb50e90c2f8453d0704ab44e90e40eaa91ff33ed1e`).
+E1399 held-out n=5 improves named parse and meaningful-program to 1.0,
+contract precision/recall and fidelity to 1.0, structure to 0.6513, component
+recall to 0.9429, reward to 0.9616, and reduces fallbacks to one with no
+timeouts. Strict-v2 remains 0.6, equal to E1381 rather than exceeding its
+preregistered endpoint. `@agentv/core` executed the 25 named graders with zero
+errors and no aggregate metric. Reject E1398; do not sweep component-edge loss
+or decode scalars.
+
+E1400 is preregistered as a decoder-only control on E1398. It enables only
+opaque bound-slot alias uniqueness: if a completed binder's resolved
+grammar-token graph carries a required ordinal, a second reference is rejected
+only when another grammar-legal path exists. This directly targets E1399's
+Form `b7`/`:slot_4` and Tabs `b1`/`:slot_1` duplicate-identity failures. The
+constraint sees opaque ordinals and binder structure only, never marker
+spellings, names, or template text. It must exceed E1399's strict-v2 0.6 with
+no named-metric regression; otherwise reject without tuning the alias penalty.
+
+E1400 is invalid, not a no-effect result. Its v292 implementation counted
+binder references only within each binder's own declaration, so the
+cross-declaration Form `b7` and Tabs `b1` reuse did not qualify; prediction
+and all named grader outputs are therefore identical to E1399. `@agentv/core`
+executed the 25 named graders with zero errors and no aggregate metric. E1401
+is the one fresh rerun after v293 corrects that count globally; it changes no
+scalar, checkpoint, or policy.
+
+E1401 completes and is rejected: every named metric is prediction-identical to
+E1399 (parse/meaningful 1.0, strict-v2 0.6, contract/fidelity 1.0, structure
+0.6513, component recall 0.9429, reward 0.9616, one fallback, zero timeouts).
+Compiler traces show both duplicate aliases are forward references, so their
+slot-bearing declarations are absent when the second reference is ranked.
+`@agentv/core` executed the 25 named graders with zero errors and no aggregate
+metric. Do not add a blind global binder-reuse ban or tune this constraint.
+
+E1402 is preregistered as the learned forward-reference control. It adds a
+binder-to-opaque-slot ownership BCE head and decode weight 4 to E1378's fixed
+E1333 recipe. It trains solely from resolved lexer binder IDs and opaque slot
+ordinals, then down-ranks a repeated forward binder predicted to carry a
+request slot. Strict-v2 must exceed 0.6 without regressing the other named
+quality metrics; otherwise reject without an ownership scalar sweep.
+
+E1402 completed 354 capped CPU scratch steps (local SHA
+`d22c5cc60025fc1554e6eef768c29e8bc9bd065f73df41aac4854571c0b6f563`).
+E1403 is rejected: named parse is 1.0 and strict-v2 remains 0.6, but
+meaningful-program falls to 0.8, contract/fidelity recall to 0.8167, structure
+to 0.54202, component recall to 0.7810, reward to 0.8958, and fallbacks rise
+to two. Tabs collapses to TextContent. `@agentv/core` executed the 25 named
+graders with zero errors and no aggregate metric. Do not sweep ownership loss
+or decode weights.
+
+E1404 is preregistered as the binary forward-reference presence control. From
+the same fixed E1333 recipe it replaces the sparse binder-to-slot ordinal
+target with a BCE target for whether a binder's resolved graph carries any
+opaque request slot, at loss 1 and decoder weight 4. It uses only resolved
+lexer binder identities and opaque slot presence; it does not read marker
+spellings, external names, or template text. Strict-v2 must exceed 0.6 without
+regressing the other named quality metrics; otherwise reject without a
+presence scalar sweep.
+
+E1404 completed exactly 354 steps through capped full-state windows, ending at
+local SHA `20c404eb449730e780f5e1d4191bf84aa2016a4bad71f8e8d212739c4338afef`
+with `stopped_on: steps`. The final continuation uses `OMP_NUM_THREADS=1` on
+the saturated shared host; model, data, loss, decoder, and locked endpoint
+remain unchanged. It is eligible only for preregistered E1405 local held-out
+evaluation, never sync, serve, resume, parent, or promotion.
+
+E1405 is rejected: all 25 named grader outputs are prediction-identical to
+E1403, with parse 1.0, meaningful-program 0.8, strict-v2 0.6,
+contract/fidelity recall 0.8167, structure 0.54202, component recall 0.7810,
+reward 0.8958, two fallbacks, and zero timeouts. `@agentv/core` executed the
+named graders with zero errors and no aggregate metric. Do not sweep binary
+presence loss or decode weights.
+
+E1406 is preregistered as the same-checkpoint decode-off control: E1404's
+checkpoint and every E1405 setting remain fixed except binary presence decode
+weight 4 becomes 0. Matching prediction and named metrics closes this mechanism
+as inactive or behavior-neutral; a difference records paired evidence only,
+without a weight sweep.
+
+E1406 closes the binary presence mechanism. Decode-off retains every E1405
+headline named metric exactly: parse 1.0, meaningful-program 0.8, strict-v2
+0.6, contract/fidelity recall 0.8167, structure 0.54202, component recall
+0.7810, reward 0.8958, two fallbacks, and zero timeouts. Its trace adds one
+`duplicate_subtree_spam` reason, but that diagnostic difference does not change
+any tracked metric. `@agentv/core` executed the 25 named graders with zero
+errors and no aggregate metric. Do not tune the presence weight or resume this
+checkpoint.
+
+E1407 is invalid before execution: the repeated-reference-only objective has
+zero rows in all 471 E1333 records and zero rows across 50 local admitted train
+corpora, so it would report a zero auxiliary loss. E1409 is the corrected
+prefix-conditioned presence control. It trains the detached masked-prefix head
+at every non-root lexer binder reference, but applies its decode bias only to a
+repeated legal reference. Resolved opaque slot presence is label-only; no future
+declaration tokens, marker spellings, external names, or template text enter
+the feature. E1410 fixes held-out n=5, the E1381 strict compiler-tree endpoint,
+and decode weight 4. The 25 named AgentEvals grader outputs are the tracked
+metrics; `@agentv/core` is runner/publisher only. It must exceed strict-v2 0.6
+without named-metric regressions versus E1381, or is rejected without a scalar
+sweep.
+
+E1409 completes exactly 354 capped CPU scratch steps. E1410 is rejected:
+parse 1.0, meaningful-program 0.8, strict-v2 0.6, contract/fidelity recall
+0.8167, structure 0.54202, component recall 0.7810, reward 0.8958, two
+fallbacks, and zero timeouts exactly match E1405/E1403. `@agentv/core`
+executed the 25 named graders with zero errors and no aggregate metric. Do not
+sweep the prefix-head loss or decode weight.
+
+E1411 is a decoder-only control on E1409: it enables only deterministic nested
+Form-array completion while an opaque required slot is absent. E1410's Form
+row closes its fields before `:slot_4`; E1399 instead reaches it by repeating
+an Input binder. Held-out n=5 remains fixed. The 25 named graders are the
+tracked metrics; `@agentv/core` is runner/publisher only.
+
+E1411 is rejected: parse 0.8, meaningful-program 0.6, strict-v2 0.4,
+contract/fidelity recall 0.6167, structure 0.39298, component recall 0.5810,
+reward 0.7060, and one timeout. `@agentv/core` executed the 25 named graders
+with zero errors and no aggregate metric. Do not tune this constraint.
+
+E1412 is a fresh E1333 interaction arm, not a scalar retry. E1399's
+component-edge objective supplies Form capacity but repeats forward `b7`;
+E1410 avoids that alias but leaves `:slot_4` uncovered. E1412 trains both
+isolated objectives together and fixes decode to component-edge weight 1 plus
+prefix-reference weight 4. Its locked held-out n=5 endpoint must exceed
+E1399 strict-v2 0.6 without regressions in parse, meaningful-program,
+contract/fidelity recall, component recall, or timeout count. The 25 named
+AgentEvals graders are the tracked metrics; `@agentv/core` is runner/publisher
+only, never an aggregate metric. The resulting scratch checkpoint remains
+local-only and ineligible for sync, service, parentage, or promotion.
+
+E1416 completed 354 CPU scratch steps (last loss 16.7465; SHA
+`33580eceba2fde657f81d19d0a3d75f9b0405356431a8b2ff43d6fb77e784a6f`).
+E1417 is invalid for the intended current-version comparison: post-run recipe
+audit found E1398's component-edge alignment loss 1 was omitted from E1416.
+Retain the named metrics, but make no base-version or detached-head inference;
+E1418 must restore that fixed alignment objective.
+
+E1418 is the exact matched correction: component-edge loss 1 plus
+component-edge alignment loss 1, with no added auxiliary head. E1419 locks the
+held-out n=5 endpoint. The 25 named AgentEvals graders are the tracked metrics;
+`@agentv/core` is runner/publisher only, never an aggregate metric. The run is
+local-only and ineligible for sync, service, parentage, or promotion.
+
+E1418 completed its fixed 354-step CPU scratch recipe (`stopped_on: steps`,
+last loss 19.4225; SHA `63da6830...2fb0df5f`). E1419 matches E1399 across the
+locked n=5 headline vector: parse and meaningful-program 1.0, strict-v2 0.6,
+contract precision/recall and fidelity 1.0, structure 0.6513, component recall
+0.9429, reward 0.9616, one fallback, and zero timeouts. All 25 named AgentEvals
+grader outputs executed with zero errors through `@agentv/core`; that SDK is
+runner/publisher metadata only. This confirms current-v296 base compatibility;
+E1416/E1417 was invalid because the alignment loss was absent, not because of
+version drift or detached-head interference. No scalar sweep, sync, service,
+parentage, resume, or promotion follows this completed control.
+
+E1420 support audit: E1333's 471 admitted records contain 1,011 forward binder
+references but zero repeated forward references before declaration. The Form
+and Tabs duplicate-identity failures are consequently out of support for the
+current learned heads. The next candidate is a strict data-producer extension
+with paired valid-sharing and distinct-slot-conflict structures; no global
+reuse constraint, scalar retune, or gate change is justified.
+
+E1412 completed its fixed 354-step CPU scratch chain with `stopped_on: steps`,
+last loss 17.0087, and local checkpoint SHA
+`78a2e601d376e25a5f924a3fff26c226e8bad19877046a9d57cc0eb690fd73f3`.
+It remains local-only; E1413 is its single preregistered held-out evaluation.
+
+E1413 rejects the joint arm: parse 1.0, meaningful-program 0.8, strict-v2
+0.4, contract/fidelity recall 0.75, structure 0.47854, component recall
+0.7429, reward 0.8758, two fallbacks, and zero timeouts. The Form trace still
+reuses forward `b7`, and every quality headline regresses from E1399.
+`@agentv/core` executed the 25 named graders with zero errors and no aggregate
+metric. Do not sweep component-edge or prefix-reference weights; E1412 is
+rejected, local-only, and never sync/promote/serve/resume/use as parent.
+
+E1414 is a fresh interaction arm: E1398's component-edge capacity objective
+plus E1402's exact opaque binder-to-slot ownership loss, with decode fixed to
+component-edge weight 1 and ownership weight 4. This differs from E1412's
+rejected binary prefix-reference interaction. E1415 locks held-out n=5 and
+requires strict-v2 above E1399's 0.6 with no named-metric regression. The 25
+named AgentEvals graders are the tracked metrics; `@agentv/core` only
+executes/publishes them and is never an aggregate metric. The scratch
+checkpoint remains local-only and ineligible for sync, service, parentage, or
+promotion.
+
+E1414 completed its locked 354-step CPU scratch chain with `stopped_on: steps`,
+last loss 16.7857, and local checkpoint SHA
+`e8e2556dd93d7c7c6c2f94333f3eab2e9f40f426a8f820c9b0614cb94e2b721a`.
+It remains local-only; E1415 is its single preregistered held-out evaluation.
+
+E1415 rejects the exact-ownership interaction: prediction and every headline
+named metric exactly match E1413, including parse 1.0, meaningful-program 0.8,
+strict-v2 0.4, contract/fidelity recall 0.75, structure 0.47854, component
+recall 0.7429, reward 0.8758, two fallbacks, and zero timeouts. `@agentv/core`
+executed the 25 named graders with zero errors and no aggregate metric. Do not
+sweep component-edge or ownership weights; E1414 remains local-only and
+ineligible for sync, service, parentage, or promotion.
+
+E1416 is the matched current-v296 component-edge-only replay. It removes the
+two detached added heads from E1413/E1415 and holds the E1398 recipe plus E1417
+held-out n=5 endpoint fixed, distinguishing base-version drift from interaction
+interference. The 25 named AgentEvals graders are the tracked metrics;
+`@agentv/core` is runner/publisher only, never an aggregate metric. The run is
+local-only and ineligible for sync, service, parentage, or promotion.
+
+E1409's first capped CPU window reaches 36/354 steps and writes only a local
+full-state checkpoint. It is incomplete and unevaluable; resume only the same
+chain to the fixed endpoint.
+
+E1357 rejects a wider completion horizon. The same strict one-row Form probe at
+32 tokens has exactly the E1356 named metrics and prediction, with the same one
+compiler/certified fallback and one constrained dead end. Its 25 named graders
+ran through `@agentv/core` with zero errors and no aggregate metric. It raises
+decode time from 4395.235 ms to 9225.938 ms without a quality gain, so wider
+horizons are closed; the remaining target is the learned `b7 =` continuation.
+
+E1358 completed its locked 354-step CPU scratch chain (local SHA
+`ca45a3b442ffab03a06c1ee697077d27190dece1005dedf6fff3b776aff47b02`).
+E1359's strict one-row Form evaluation has exactly E1356's 25 named grader
+metrics and `root = TextContent(":slot_0")`: parse 1.0, strict-v2 0,
+fidelity/contract recall 0.1667, structure 0.1148, component recall 0.1429,
+reward 0.657, no timeout, and two fallbacks. `@agentv/core` executed the
+graders with zero errors and no aggregate metric. Semantic-exhaustive alignment
+made three of eight semantic-plan choice changes but did not repair the b7 dead
+end. Reject E1358; it remains local-only, unsynced, unpromoted, unserved,
+unresumed, and non-parentable.
+
+E1360 completed its locked 354-step CPU scratch chain (local SHA
+`a41d44dbdafad57daa4e0923d48e853b95b07f517e5f3845bf75c3fed855f465`).
+E1361's strict one-row Form evaluation exactly matches E1356/E1359's 25 named
+grader outputs and `root = TextContent(":slot_0")`: parse 1.0, strict-v2 0,
+fidelity/contract recall 0.1667, structure 0.1148, component recall 0.1429,
+reward 0.657, no timeout, and two fallbacks. `@agentv/core` executed the
+graders with zero errors and no aggregate metric. The margin restores five of
+eight semantic-plan choice changes, but does not repair b7. Reject E1360; it
+remains local-only, unsynced, unpromoted, unserved, unresumed, and non-parentable.
+
+E1362 is a fresh no-parent E1333 small-architecture control. The corpus audit
+already finds the necessary multi-binding Form ordering, so it retains
+semantic-exhaustive compiler alignment and changes only teacher-forced LTR CE
+weight from 0.5 to 1.0 to reinforce late declaration realization. Strict policy,
+named graders, grammar authority, and fallback behavior remain locked.
+
+E1362 completed its locked 354-step CPU scratch chain (local SHA
+`7bfbc9322fe631e15558bd086eea4237c1a1a368145f8e0200d3d635cc9dd82d`).
+E1363's strict one-row Form evaluation exactly matches E1356/E1359/E1361's 25
+named grader outputs and `root = TextContent(":slot_0")`: parse 1.0, strict-v2
+0, fidelity/contract recall 0.1667, structure 0.1148, component recall 0.1429,
+reward 0.657, no timeout, and two fallbacks. `@agentv/core` executed the
+graders with zero errors and no aggregate metric. Three semantic-plan choice
+changes still leave the b7 completion dead end. Reject E1362; it remains
+local-only, unsynced, unpromoted, unserved, unresumed, and non-parentable.
+
+E1343 separately tests a cap-feasible small scratch architecture (d_model 64,
+two heads, one context layer, two denoiser layers) on E1338. It is not causally
+comparable with full-width E1335, but it can yield valid terminal evidence where
+the full-width run cannot.
+It stopped at step 22 before its first checkpoint, so E1343 is invalid and
+unevaluable.

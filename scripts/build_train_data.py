@@ -35,6 +35,7 @@ def main(argv: list[str] | None = None) -> int:
             "rico+awwwards",
             "existing",
             "existing+fixture",
+            "existing+programspec",
             "programspec",
             "language_contract",
             "deconstruct",
@@ -59,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
         "--derive-from",
         type=Path,
         default=None,
-        help="Existing records.jsonl to use as roots when --source existing.",
+        help="Existing records.jsonl to use as roots when --source includes existing.",
     )
     parser.add_argument(
         "--rico-path",
@@ -86,6 +87,12 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/data/train"),
     )
     parser.add_argument("--version", default="v1")
+    parser.add_argument(
+        "--preserve-derived-records",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Keep --derive-from rows immutable while admitting new rows normally.",
+    )
     parser.add_argument(
         "--immutable",
         action="store_true",
@@ -117,6 +124,22 @@ def main(argv: list[str] | None = None) -> int:
         "--programspec-natural-prompts",
         action=argparse.BooleanOptionalAction,
         default=False,
+    )
+    parser.add_argument(
+        "--programspec-forward-reference-patterns",
+        default="",
+        help=(
+            "Comma-separated forward_reference_pattern facts to admit from "
+            "--programspec-path; every requested pattern must be present."
+        ),
+    )
+    parser.add_argument(
+        "--programspec-selected-source",
+        default=None,
+        help=(
+            "Dedicated source-family label for rows admitted by "
+            "--programspec-forward-reference-patterns."
+        ),
     )
     parser.add_argument(
         "--language-contract",
@@ -397,6 +420,7 @@ def main(argv: list[str] | None = None) -> int:
         else None,
         source=args.source,
         derive_from=args.derive_from,
+        preserve_derived_records=args.preserve_derived_records,
         output_root=args.output_root,
         version=args.version,
         immutable=args.immutable,
@@ -432,6 +456,12 @@ def main(argv: list[str] | None = None) -> int:
         programspec_count=args.programspec_count,
         programspec_seed=args.programspec_seed,
         programspec_natural_prompts=args.programspec_natural_prompts,
+        programspec_forward_reference_patterns=tuple(
+            item.strip()
+            for item in args.programspec_forward_reference_patterns.split(",")
+            if item.strip()
+        ),
+        programspec_selected_source=args.programspec_selected_source,
         include_language_contract=args.language_contract,
         documentize_expressions=args.documentize_expressions,
         target_kinds=(

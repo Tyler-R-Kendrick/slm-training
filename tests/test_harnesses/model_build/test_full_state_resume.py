@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import importlib
 from pathlib import Path
 
 import pytest
@@ -141,6 +142,8 @@ def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None
     assert part_b["last_loss"] == pytest.approx(full["last_loss"], abs=0.0)
     assert part_b["seen_target_tokens"] == full["seen_target_tokens"]
     assert part_b["seen_prompt_tokens"] == full["seen_prompt_tokens"]
+    assert part_b["replay"]["seen_primary_examples"] == full["replay"]["seen_primary_examples"]
+    assert part_b["replay"]["seen_replay_examples"] == full["replay"]["seen_replay_examples"]
 
     m_full = TwoTowerModel.from_checkpoint(
         tmp_path / "runs" / "full" / "checkpoints" / "last.pt"
@@ -153,6 +156,31 @@ def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None
     assert set(full_sd) == set(resumed_sd)
     for key, value in full_sd.items():
         assert torch.equal(value, resumed_sd[key]), key
+
+
+def test_periodic_full_state_checkpoint_saves_after_optimizer_steps(
+    train_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    full_state = importlib.import_module(
+        "slm_training.harnesses.model_build.full_state"
+    )
+    original_save = full_state.save_full_state
+    saved_steps: list[int] = []
+
+    def record_save(*args, **kwargs):
+        saved_steps.append(int(kwargs["step"]))
+        return original_save(*args, **kwargs)
+
+    monkeypatch.setattr(full_state, "save_full_state", record_save)
+    summary = train(
+        _cfg(train_dir, tmp_path, "periodic", 2, checkpoint_every_steps=1)
+    )
+
+    assert saved_steps == [1, 2, 2]
+    assert summary["stopped_on"] == "steps"
+    assert (
+        tmp_path / "runs" / "periodic" / "checkpoints" / "last_full_state.pt"
+    ).exists()
 
 
 def test_resume_rejects_different_corpus(train_dir: Path, tmp_path: Path) -> None:

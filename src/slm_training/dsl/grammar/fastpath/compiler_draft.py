@@ -522,6 +522,10 @@ def binder_reference_arities(
     tokenizer: Any, token_ids: list[int] | tuple[int, ...]
 ) -> tuple[tuple[int, int], ...]:
     """Return declaration binder and reference count from grammar token roles."""
+    try:
+        token_ids = tokenizer.expand_macros([int(token_id) for token_id in token_ids])
+    except (AttributeError, TypeError, ValueError):
+        return ()
     bind_ids = set(tokenizer.kind_ids("bind"))
     equal_id = int(tokenizer.token_to_id["="])
     newline_id = tokenizer.token_to_id.get("NL")
@@ -558,6 +562,73 @@ def binder_reference_arities(
     return tuple(arities)
 
 
+def bound_binder_slot_ids(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> dict[int, frozenset[int]]:
+    """Resolve opaque slot ordinals carried by each completed bound binder."""
+    try:
+        bind_ids = set(tokenizer.kind_ids("bind"))
+        root_id = int(tokenizer.bind_id(0))
+        equal_id = int(tokenizer.token_to_id["="])
+        newline_id = tokenizer.token_to_id.get("NL")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return {}
+    try:
+        token_ids = tokenizer.expand_macros([int(token_id) for token_id in token_ids])
+    except (AttributeError, TypeError, ValueError):
+        return {}
+    statements: list[list[int]] = []
+    current: list[int] = []
+    for raw_token_id in token_ids:
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            if current:
+                statements.append(current)
+            current = []
+        else:
+            current.append(token_id)
+    if current:
+        statements.append(current)
+
+    direct: dict[int, set[int]] = {}
+    references: dict[int, set[int]] = {}
+    for statement in statements:
+        declaration_at = next(
+            (
+                index
+                for index, token_id in enumerate(statement[:-1])
+                if token_id in bind_ids and statement[index + 1] == equal_id
+            ),
+            None,
+        )
+        if declaration_at is None:
+            continue
+        binder = statement[declaration_at]
+        if binder == root_id:
+            continue
+        body = statement[declaration_at + 2 :]
+        direct[binder] = {
+            int(slot)
+            for token_id in body
+            if (slot := tokenizer.sym_slot_of(token_id)) is not None and slot >= 0
+        }
+        references[binder] = {token_id for token_id in body if token_id in bind_ids}
+
+    resolved = {binder: set(slots) for binder, slots in direct.items()}
+    for _ in range(len(resolved)):
+        changed = False
+        for binder, dependencies in references.items():
+            carried = set(direct.get(binder, ()))
+            for dependency in dependencies:
+                carried.update(resolved.get(dependency, ()))
+            if carried != resolved[binder]:
+                resolved[binder] = carried
+                changed = True
+        if not changed:
+            break
+    return {binder: frozenset(slots) for binder, slots in resolved.items()}
+
+
 def active_declaration_reference_count(
     tokenizer: Any, prefix_ids: list[int]
 ) -> int | None:
@@ -567,6 +638,106 @@ def active_declaration_reference_count(
         return None
     arities = binder_reference_arities(tokenizer, prefix_ids)
     return next((count for binder, count in reversed(arities) if binder == active), 0)
+
+
+def bound_binder_reference_counts(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> dict[int, int]:
+    """Count each bound binder's uses across completed and active declarations."""
+    try:
+        token_ids = tokenizer.expand_macros([int(token_id) for token_id in token_ids])
+        bind_ids = set(tokenizer.kind_ids("bind"))
+        equal_id = int(tokenizer.token_to_id["="])
+        newline_id = tokenizer.token_to_id.get("NL")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return {}
+    counts: Counter[int] = Counter()
+    statement: list[int] = []
+
+    def count_references(tokens: list[int]) -> None:
+        declaration_at = next(
+            (
+                index
+                for index, token_id in enumerate(tokens[:-1])
+                if token_id in bind_ids and tokens[index + 1] == equal_id
+            ),
+            None,
+        )
+        if declaration_at is None:
+            return
+        counts.update(
+            token_id for token_id in tokens[declaration_at + 2 :] if token_id in bind_ids
+        )
+
+    for token_id in token_ids:
+        if newline_id is not None and token_id == int(newline_id):
+            count_references(statement)
+            statement = []
+        else:
+            statement.append(token_id)
+    count_references(statement)
+    return dict(counts)
+
+
+def bound_binder_reference_positions(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> tuple[tuple[int, int], ...]:
+    """Return emitted positions of non-root binder references.
+
+    Positions intentionally refer to the original token stream, so a caller can
+    construct a no-future decoder canvas ending immediately before the candidate.
+    Macro expansion is not used here because expanded positions would not align
+    with that canvas.
+    """
+    try:
+        bind_ids = set(tokenizer.kind_ids("bind"))
+        root_id = int(tokenizer.bind_id(0))
+        equal_id = int(tokenizer.token_to_id["="])
+        newline_id = tokenizer.token_to_id.get("NL")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return ()
+
+    positions: list[tuple[int, int]] = []
+    statement: list[tuple[int, int]] = []
+
+    def collect(tokens: list[tuple[int, int]]) -> None:
+        declaration_at = next(
+            (
+                index
+                for index, (_position, token_id) in enumerate(tokens[:-1])
+                if token_id in bind_ids and tokens[index + 1][1] == equal_id
+            ),
+            None,
+        )
+        if declaration_at is None:
+            return
+        for position, token_id in tokens[declaration_at + 2 :]:
+            if token_id not in bind_ids or token_id == root_id:
+                continue
+            positions.append((position, token_id))
+
+    for position, raw_token_id in enumerate(token_ids):
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            collect(statement)
+            statement = []
+        else:
+            statement.append((position, token_id))
+    collect(statement)
+    return tuple(positions)
+
+
+def repeated_bound_binder_reference_positions(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> tuple[tuple[int, int], ...]:
+    """Return the subset of bound references repeated in their emitted prefix."""
+    references: Counter[int] = Counter()
+    repeated: list[tuple[int, int]] = []
+    for position, binder_id in bound_binder_reference_positions(tokenizer, token_ids):
+        if references[binder_id] > 0:
+            repeated.append((position, binder_id))
+        references[binder_id] += 1
+    return tuple(repeated)
 
 
 def root_declaration_reference_arity_target(
@@ -891,6 +1062,51 @@ def _component_requires_available_content(component: str) -> bool:
         )
         for property_name, property_schema in properties.items()
     )
+
+
+def _required_child_content_group(
+    components: frozenset[str], schema: dict[str, Any]
+) -> frozenset[str]:
+    """Return child families that every typed declaration must eventually provide."""
+    definitions = schema.get("$defs") or {}
+    groups: list[frozenset[str]] = []
+    for component in components:
+        definition = definitions.get(component) or {}
+        properties = definition.get("properties") or {}
+        child_families: set[str] = set()
+        for name in definition.get("required") or ():
+            property_schema = properties.get(name)
+            if not isinstance(property_schema, dict) or property_schema.get("type") == "array":
+                continue
+            child_families.update(
+                child
+                for child in _schema_component_refs(property_schema, schema)
+                if _component_requires_available_content(child)
+            )
+        if not child_families:
+            return frozenset()
+        groups.append(frozenset(child_families))
+    return frozenset().union(*groups) if groups else frozenset()
+
+
+def _pending_required_child_content_lower_bound(
+    requirements: dict[int, frozenset[str]],
+    declared: dict[int, str],
+    active_array_references: frozenset[int],
+    schema: dict[str, Any],
+) -> int:
+    """Count a safe lower bound for distinct required child declarations."""
+    groups = {
+        group
+        for binder, components in requirements.items()
+        if binder not in declared and binder not in active_array_references
+        if (group := _required_child_content_group(components, schema))
+    }
+    disjoint: list[frozenset[str]] = []
+    for group in sorted(groups, key=lambda value: (len(value), tuple(sorted(value)))):
+        if all(group.isdisjoint(existing) for existing in disjoint):
+            disjoint.append(group)
+    return len(disjoint)
 
 
 @lru_cache(maxsize=2048)
@@ -1243,6 +1459,8 @@ def build_completion_forest(
     max_path_tokens: int = 8,
     min_content: int = 0,
     enforce_schema_component_types: bool = False,
+    reserved_content_slots: int = 0,
+    reserve_unresolved_content: bool = False,
     explain: bool = False,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
@@ -1515,10 +1733,70 @@ def build_completion_forest(
     type_terminals = _schema_type_terminals(schema_type)
     arity = _schema_call_arity(engine, schema) if schema else None
     current_started = arity[3] if arity is not None else False
+    nullable_slot = False
+    if schema is not None and schema_slot is not None:
+        active = _active_call(engine)
+        component = active[0] if active is not None else None
+        definition = (schema.get("$defs") or {}).get(component) or {}
+        nullable_slot = schema_slot not in set(definition.get("required") or ())
+    null_ids = (
+        allowed_id_set(tokenizer, frozenset({"NULL"})) or set()
+        if nullable_slot
+        else set()
+    )
+    if (
+        reserve_unresolved_content
+        and nullable_slot
+        and slot_contract
+        and schema is not None
+        and null_ids
+        and not current_started
+    ):
+        from slm_training.models.grammar import contract_allowed_token_ids
+
+        available = contract_allowed_token_ids(tokenizer, prefix_ids, slot_contract)
+        declared = _binder_component_types(tokenizer, prefix_ids)
+        pending = _forward_binder_component_requirements(tokenizer, prefix_ids, schema)
+        pending_content = sum(
+            1
+            for binder, components in pending.items()
+            if binder not in declared
+            and components
+            and all(_component_requires_available_content(component) for component in components)
+        )
+        if available is not None and len(available) <= pending_content + max(
+            0, reserved_content_slots
+        ):
+            before_stage = _snapshot()
+            candidates &= null_ids
+            _record_excluded(
+                ConstraintStage.SLOT_CONTRACT,
+                "reserved_required_content_capacity",
+                before_stage,
+            )
+    if (
+        schema is not None
+        and schema_slot is not None
+        and schema_type is None
+        and enum_sequences is None
+        and nullable_slot
+        and not current_started
+        and slot_contract
+    ):
+        # An optional untyped schema field carries no declared value authority
+        # under the honest slot contract.  In particular, do not let the
+        # expression grammar expand it into unbounded grouping/action syntax.
+        before_stage = _snapshot()
+        candidates &= null_ids
+        _record_excluded(
+            ConstraintStage.SLOT_CONTRACT,
+            "untyped_optional_slot_requires_null",
+            before_stage,
+        )
     if type_terminals is not None and enum_sequences is None and not current_started:
         before_stage = _snapshot()
         typed_ids = allowed_id_set(tokenizer, type_terminals) or set()
-        candidates &= typed_ids
+        candidates &= typed_ids | null_ids
         _record_excluded(ConstraintStage.SCHEMA, "schema_type_mismatch", before_stage)
         if schema_type == "string":
             before_stage = _snapshot()
@@ -1541,9 +1819,9 @@ def build_completion_forest(
                 }
                 if schema_slot in TEMPLATIZABLE_PROPS:
                     if slot_contract:
-                        candidates &= contract_ids
+                        candidates &= contract_ids | null_ids
                 elif schema_slot in STRUCTURAL_ID_PROPS:
-                    candidates &= structural_ids
+                    candidates &= structural_ids | null_ids
                     active = _active_call(engine)
                     if slot_contract and active is not None:
                         component, index, _ = active
@@ -1556,7 +1834,7 @@ def build_completion_forest(
                             if f"STR:{value}" in tokenizer.token_to_id
                         }
                 elif slot_contract:
-                    candidates.clear()
+                    candidates &= null_ids
             except Exception:  # noqa: BLE001
                 pass
             _record_excluded(
@@ -1618,6 +1896,7 @@ def build_completion_forest(
             tokenizer, prefix_ids
         )
         content_capacity_reached = False
+        allow_empty_capacity_close = False
         if array_item_components:
             bind_ids = set(tokenizer.kind_ids("bind"))
             binder_components = _binder_component_types(tokenizer, prefix_ids)
@@ -1646,13 +1925,49 @@ def build_completion_forest(
                     if pending_requirements.get(binder) is None
                     or bool(pending_requirements[binder] & array_item_components)
                 }
-                content_capacity_reached = (
-                    unused_symbols is not None
+                pending_content = sum(
+                    1
+                    for binder, components in pending_requirements.items()
+                    if binder not in binder_components
+                    and binder not in active_array_references
+                    and components
                     and all(
                         _component_requires_available_content(component)
-                        for component in array_item_components
+                        for component in components
                     )
-                    and len(active_array_references) >= len(unused_symbols)
+                )
+                if reserve_unresolved_content:
+                    pending_content += _pending_required_child_content_lower_bound(
+                        pending_requirements,
+                        binder_components,
+                        active_array_references,
+                        schema,
+                    )
+                if reserve_unresolved_content or reserved_content_slots:
+                    capacity = max(
+                        0, len(unused_symbols or ()) - max(0, reserved_content_slots)
+                    )
+                    content_capacity_reached = (
+                        unused_symbols is not None
+                        and all(
+                            _component_requires_available_content(component)
+                            for component in array_item_components
+                        )
+                        and len(active_array_references) + pending_content >= capacity
+                    )
+                else:
+                    content_capacity_reached = (
+                        unused_symbols is not None
+                        and all(
+                            _component_requires_available_content(component)
+                            for component in array_item_components
+                        )
+                        and len(active_array_references) >= len(unused_symbols)
+                    )
+                allow_empty_capacity_close = bool(
+                    reserve_unresolved_content
+                    and content_capacity_reached
+                    and pending_content > 0
                 )
                 if content_capacity_reached:
                     unknown_binders &= pending_requirements.keys()
@@ -1671,7 +1986,7 @@ def build_completion_forest(
             }
         if content_capacity_reached:
             candidates -= allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
-        if _active_array_is_empty(engine):
+        if _active_array_is_empty(engine) and not allow_empty_capacity_close:
             candidates -= allowed_id_set(tokenizer, frozenset({"RSQB"})) or set()
         _record_excluded(ConstraintStage.SCHEMA, "schema_array_children", before_stage)
 
@@ -1767,6 +2082,18 @@ def build_completion_forest(
                     if next_slot is not None
                     else set()
                 )
+                if slot_contract and _active_declaration_scope(
+                    tokenizer, prefix_ids
+                ) == "root":
+                    from slm_training.models.grammar import contract_allowed_token_ids
+
+                    if contract_allowed_token_ids(
+                        tokenizer, prefix_ids, slot_contract
+                    ) == set():
+                        # Root aggregation can still close or reuse an already
+                        # required binder, but cannot justify a new declaration
+                        # once every visible contract slot is consumed.
+                        forward = set()
                 scope = reusable | unresolved | forward
                 candidates = (candidates - bind_ids) | (candidates & scope)
             else:

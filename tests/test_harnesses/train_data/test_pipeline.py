@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -11,6 +12,7 @@ import pytest
 from slm_training.dsl import bridge_available
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
+from slm_training.data.quality import assess_record
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 from slm_training.harnesses.train_data.pipeline import _programspec_natural_prompt
 
@@ -46,9 +48,19 @@ def _seed_file(tmp_path: Path) -> Path:
 
 def test_programspec_natural_prompt_describes_components_and_layout() -> None:
     spec = SimpleNamespace(
-        components=("TextContent", "Form", "Input"),
+        components=("TextContent", "Form", "Input", "Slider", "SwitchGroup", "SwitchItem", "TextCallout"),
         facts={
-            "components": ["Buttons", "Form", "Input", "Stack", "TextContent"],
+            "components": [
+                "Buttons",
+                "Form",
+                "Input",
+                "Slider",
+                "Stack",
+                "SwitchGroup",
+                "SwitchItem",
+                "TextCallout",
+                "TextContent",
+            ],
             "viewport": "mobile",
             "render_state": "success",
             "width": 3,
@@ -63,8 +75,31 @@ def test_programspec_natural_prompt_describes_components_and_layout() -> None:
     assert "text content" in prompt
     assert "a form" in prompt
     assert "an input field" in prompt
+    assert "a slider" in prompt
+    assert "a switch group" in prompt
+    assert "a switch item" in prompt
+    assert "a text callout" in prompt
     assert "horizontal layout" in prompt
     assert "buttons" not in prompt
+
+
+def test_quality_accepts_schema_valid_switch_group_parent() -> None:
+    report = assess_record(
+        ExampleRecord(
+            id="switch_group",
+            prompt="Switch group with a labeled setting.",
+            openui=(
+                'root = SwitchGroup(":slot_0", [item])\n'
+                'item = SwitchItem(":slot_1", ":slot_2", "$0")'
+            ),
+            placeholders=[":slot_0", ":slot_1", ":slot_2"],
+            split="train",
+        ),
+        require_design_md=False,
+    )
+
+    assert report.ok
+    assert "unknown_components" not in report.reasons
 
 
 @pytest.mark.skipif(
@@ -268,6 +303,76 @@ def test_existing_corpus_can_be_supplemented_from_fixture_registry(
 
     rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
     assert {"t1", "t2", "supplement"} <= {row.id for row in rows}
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
+def test_existing_corpus_can_be_supplemented_from_programspec_roots(
+    tmp_path: Path,
+) -> None:
+    from slm_training.data.progspec.generate import (
+        GeneratorConfig,
+        generate_program_specs,
+    )
+
+    selected = generate_program_specs(
+        1,
+        config=GeneratorConfig(components=("Button",)),
+        seed=1308,
+    ).programs[0]
+    programs = (
+        replace(
+            selected,
+            facts={
+                **selected.facts,
+                "forward_reference_pattern": "selected_pattern",
+            },
+        ),
+        replace(
+            selected,
+            id="program_ignored_pattern",
+            facts={
+                **selected.facts,
+                "forward_reference_pattern": "ignored_pattern",
+            },
+        ),
+    )
+    programs_path = tmp_path / "programs.jsonl"
+    programs_path.write_text(
+        "\n".join(json.dumps(program.to_dict()) for program in programs) + "\n",
+        encoding="utf-8",
+    )
+
+    result = build_train_data(
+        TrainDataConfig(
+            source="existing+programspec",
+            derive_from=_seed_file(tmp_path),
+            programspec_path=programs_path,
+            output_root=tmp_path / "train_data",
+            version="supplemented_programspec",
+            synthesizer="none",
+            programspec_forward_reference_patterns=("selected_pattern",),
+            programspec_selected_source="paired_forward_reference",
+            include_frontier_artifacts=False,
+            include_language_contract=False,
+            include_edit_derivatives=False,
+            repairs_per_program=0,
+            include_design_md_contrastive=False,
+            include_scope_corpus=False,
+            preserve_derived_records=True,
+        )
+    )
+
+    rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
+    assert {"t1", "t2"} <= {row.id for row in rows}
+    selected_row = next(row for row in rows if row.id == selected.id)
+    assert selected_row.meta["programspec_facts"]["forward_reference_pattern"] == "selected_pattern"
+    assert selected_row.source == "paired_forward_reference"
+    assert selected_row.meta["source_family"] == "paired_forward_reference"
+    assert selected_row.meta["programspec_source"] == "programspec_generated"
+    assert "program_ignored_pattern" not in {row.id for row in rows}
 
 
 def test_unknown_fixture_selection_fails_closed(tmp_path: Path) -> None:

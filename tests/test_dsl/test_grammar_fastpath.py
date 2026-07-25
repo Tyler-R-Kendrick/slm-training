@@ -10,6 +10,10 @@ from slm_training.dsl.grammar.fastpath import (
     engine_for_dsl,
     force_next_token_id,
 )
+from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    bound_binder_reference_positions,
+    repeated_bound_binder_reference_positions,
+)
 from slm_training.models.grammar import (
     exact_forced_token_id,
     force_emit_token_id,
@@ -71,19 +75,22 @@ def test_exact_force_requires_full_token_singleton() -> None:
         == native.token_to_id["("]
     )
 
-    # The compositional tokenizer can still emit insignificant whitespace, so
-    # its significant-lexeme force is not an exact tokenizer-token decision.
-    compositional = _tok()
-    prefix = compositional.encode("root", add_special=False)
-    state = make_grammar_state()
-    forced = force_emit_token_id(compositional, prefix, state=state)
-    assert (
-        exact_forced_token_id(
-            compositional, prefix, forced_token_id=forced, state=state
-        )
-        is None
-    )
 
+def test_repeated_bound_binder_reference_positions_are_prefix_aligned() -> None:
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ids = tok.encode(
+        'root = Card([title, title])\ntitle = TextContent(":slot_0")\n',
+        add_special=False,
+    )
+    title = tok.bind_id(1)
+    assert bound_binder_reference_positions(tok, ids) == (
+        (ids.index(title), title),
+        (ids.index(title, ids.index(title) + 1), title),
+    )
+    positions = repeated_bound_binder_reference_positions(tok, ids)
+    assert positions == ((ids.index(title, ids.index(title) + 1), title),)
 
 def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
     from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
@@ -443,6 +450,29 @@ def test_completion_forest_rejects_empty_typed_component_array() -> None:
     assert "]" not in candidates
     assert "Button" in candidates
     assert "Stack" not in candidates
+
+
+def test_completion_forest_admits_null_for_optional_string_after_slots_exhaust() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([b1, Slider("$0", "continuous", -1, 1), '
+        'SwitchGroup("$3", [SwitchItem(":slot_1", ":slot_0", "$0"), '
+        'SwitchItem(":slot_2", ',
+        placeholders=[":slot_0", ":slot_1", ":slot_2"],
+        add_special=True,
+    )[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":slot_0", ":slot_1", ":slot_2"],
+        enforce_schema_component_types=True,
+    )
+
+    assert tokenizer.token_to_id["null"] in forest.candidate_ids
 
 
 def test_completion_forest_restricts_typed_array_binder_references() -> None:

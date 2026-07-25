@@ -52,10 +52,13 @@ class TrainDataConfig:
     rico_path: Path | None = Path(
         "src/slm_training/resources/rico/semantic_train.jsonl"
     )
-    # rico | fixture | existing | existing+fixture | both | awwwards | rico+awwwards | all
+    # rico | fixture | existing | existing+fixture | existing+programspec | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
     derive_from: Path | None = None
+    # Keep inherited rows byte-for-byte when building a controlled supplement.
+    # New rows still pass every normal admission gate.
+    preserve_derived_records: bool = False
     output_root: Path = Path("outputs/data/train")
     version: str = "v1"
     synthesizer: str = "quality"
@@ -116,6 +119,12 @@ class TrainDataConfig:
     programspec_count: int = 16
     programspec_seed: int = 0
     programspec_natural_prompts: bool = False
+    # Restrict a controlled ProgramSpec supplement to explicit generator facts.
+    # The selected facts remain in record provenance for post-build admission checks.
+    programspec_forward_reference_patterns: tuple[str, ...] = ()
+    # Optional dedicated source for the fact-filtered ProgramSpec rows. This
+    # makes an explicit, auditable mixture family without relabeling baseline rows.
+    programspec_selected_source: str | None = None
     include_language_contract: bool = True
     # Optional output-contract projection/selection for codec-specific corpora.
     # Projection is explicit and provenance-tagged; unselected kinds remain in
@@ -635,6 +644,24 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
                     f"{len(specs)}/{config.programspec_count} requested roots"
                 }
             )
+    if config.programspec_forward_reference_patterns:
+        requested = set(config.programspec_forward_reference_patterns)
+        available = {
+            str(spec.facts.get("forward_reference_pattern"))
+            for spec in specs
+            if spec.facts.get("forward_reference_pattern") is not None
+        }
+        missing = requested - available
+        if missing:
+            raise ValueError(
+                "requested ProgramSpec forward-reference patterns are absent: "
+                f"{sorted(missing)}"
+            )
+        specs = [
+            spec
+            for spec in specs
+            if str(spec.facts.get("forward_reference_pattern")) in requested
+        ]
     return specs, errors
 
 
@@ -648,6 +675,11 @@ def _records_from_progspec(
 
     specs, load_errors = preloaded if preloaded is not None else _load_progspecs(config)
     errors = list(load_errors)
+    selected_source = (
+        config.programspec_selected_source
+        if config.programspec_forward_reference_patterns
+        else None
+    )
     out: list[ExampleRecord] = []
     for spec in sorted(specs, key=lambda item: item.id):
         if spec.split != config.require_split:
@@ -668,8 +700,12 @@ def _records_from_progspec(
                 ),
                 task="generation",
                 record_id=spec.id,
-                source="programspec_generated",
-                meta={"source_kind": "program-first"},
+                source=selected_source or "programspec_generated",
+                meta={
+                    "source_kind": "program-first",
+                    "programspec_facts": dict(spec.facts),
+                    "programspec_source": "programspec_generated",
+                },
             )
             out.append(
                 stamp_record(record, VerificationContext(source_kind="program-first"))
@@ -693,9 +729,13 @@ def _programspec_natural_prompt(spec) -> str:
         "Buttons": "buttons",
         "Card": "a card",
         "Form": "a form",
+        "FormControl": "a form control",
         "Input": "an input field",
         "Slider": "a slider",
+        "SwitchGroup": "a switch group",
+        "SwitchItem": "a switch item",
         "Tabs": "tabs",
+        "TextCallout": "a text callout",
         "TextContent": "text content",
     }
     components = [
@@ -1192,6 +1232,7 @@ def _records_from_existing(
                     **record.meta,
                     "derivation_source": str(path),
                     "parent_id": (record.meta or {}).get("parent_id") or record.id,
+                    "immutable_baseline": bool(config.preserve_derived_records),
                 },
                 design_md=record.design_md,
                 target_kind=record.target_kind,
@@ -1271,12 +1312,12 @@ def build_train_data(
         aww_records, aww_errors = _records_from_awwwards(config)
         seeds.extend(aww_records)
         errors.extend(aww_errors)
-    if source in {"existing", "existing+fixture"}:
+    if source in {"existing", "existing+fixture", "existing+programspec"}:
         records, source_errors = _records_from_existing(config)
         seeds.extend(records)
         errors.extend(source_errors)
     scope_preference_pairs: list = []
-    if source in {"programspec", "integrated", "all"}:
+    if source in {"programspec", "existing+programspec", "integrated", "all"}:
         # One committed-file parse / seeded generation feeds both consumers;
         # each still reports the load errors it reported before.
         preloaded_specs = _load_progspecs(config)
@@ -1296,6 +1337,7 @@ def build_train_data(
         "all",
         "existing",
         "existing+fixture",
+        "existing+programspec",
     }:
         records, source_errors = _records_from_language_contract(config)
         seeds.extend(records)
@@ -1316,6 +1358,7 @@ def build_train_data(
         "awwwards",
         "existing",
         "existing+fixture",
+        "existing+programspec",
         "rico+awwwards",
         "programspec",
         "language_contract",
@@ -1371,6 +1414,7 @@ def build_train_data(
         synths.append(_FrozenArtifactBuildSynthesizer(config.frontier_artifact_root))
     if config.include_design_md_contrastive and source in {
         "programspec",
+        "existing+programspec",
         "integrated",
         "all",
     }:
@@ -1388,7 +1432,7 @@ def build_train_data(
             "generation",
         }:
             candidates.extend(synth.expand(seed))
-            if source in {"existing", "existing+fixture"} and (
+            if source in {"existing", "existing+fixture", "existing+programspec"} and (
                 config.include_edit_derivatives or config.repairs_per_program > 0
             ):
                 try:
@@ -1479,8 +1523,12 @@ def build_train_data(
 
     from slm_training.data.quality import filter_quality
 
+    immutable_baseline = [
+        record for record in verified if (record.meta or {}).get("immutable_baseline")
+    ]
+    quality_candidates = [record for record in verified if record not in immutable_baseline]
     quality_kept, quality_rejected = filter_quality(
-        verified,
+        quality_candidates,
         min_score=config.min_quality_score,
         require_design_md=config.require_design_md,
         max_openui_chars=config.max_openui_chars,
@@ -1544,7 +1592,10 @@ def build_train_data(
         deduped.append(record)
         return True
 
-    for record in quality_kept:
+    for record in immutable_baseline + quality_kept:
+        if (record.meta or {}).get("immutable_baseline"):
+            _accept_record(record)
+            continue
         structure_fp = fingerprint_openui_structure(record.openui)
         if structure_fp in reserved_test_structures:
             structure_reserved_rejected.append(
@@ -1736,7 +1787,7 @@ def build_train_data(
         # they bound exposure without evicting one another. Builds without
         # scope-corpus rows keep the original cross-family semantics.
         per_family=config.include_scope_corpus
-        and source in {"programspec", "integrated", "all"},
+        and source in {"programspec", "existing+programspec", "integrated", "all"},
     )
     _mirror_drops("exposure", parent_cap_dropped)
     deduped.sort(key=lambda r: r.id)
@@ -1797,6 +1848,19 @@ def build_train_data(
                 )
             contracted.append(replace(record, prompt=prompt))
         deduped = contracted
+
+    if config.preserve_derived_records:
+        if config.derive_from is None:
+            raise ValueError("preserve_derived_records requires --derive-from")
+        baseline = [
+            record
+            for record in load_jsonl(config.derive_from)
+            if record.split == config.require_split
+        ]
+        baseline_ids = {record.id for record in baseline}
+        # Preserve the control corpus exactly after all candidate-only gates.
+        deduped = baseline + [record for record in deduped if record.id not in baseline_ids]
+        deduped.sort(key=lambda record: record.id)
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.

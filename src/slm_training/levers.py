@@ -142,6 +142,9 @@ _COMPILER_PATH_DECODE_LEVERS: Final = (
     "component_edge_decode_weight",
     "binder_component_plan_decode_weight",
     "binder_topology_decode_weight",
+    "binder_slot_ownership_decode_weight",
+    "binder_slot_presence_decode_weight",
+    "binder_reference_presence_decode_weight",
     "binder_arity_decode_weight",
 )
 LEVER_REQUIREMENTS: Final = {
@@ -165,6 +168,11 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
     ),
     "binder_component_plan_decode_weight": ("binder_component_plan_loss_weight",),
     "binder_topology_decode_weight": ("binder_topology_loss_weight",),
+    "binder_slot_ownership_decode_weight": ("binder_slot_ownership_loss_weight",),
+    "binder_slot_presence_decode_weight": ("binder_slot_presence_loss_weight",),
+    "binder_reference_presence_decode_weight": (
+        "binder_reference_presence_loss_weight",
+    ),
     "binder_arity_decode_weight": ("binder_arity_loss_weight",),
     "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",),
     "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),

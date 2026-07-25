@@ -323,6 +323,7 @@ def validate_numeric_config(
         "suffix_rollback_window", "slot_component_owner_rare_threshold",
         "grammar_canvas_lookahead", "retrieval_k", "solver_max_wall_ms",
         "stability_min_persistence",
+        "ltr_tail_tokens",
     }
     positive_float_names = {"lr", "mdlm_eps"}
 

@@ -17,6 +17,9 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     active_declaration_reference_count,
     active_parent_component_ids,
     binder_reference_arities,
+    bound_binder_reference_counts,
+    repeated_bound_binder_reference_positions,
+    bound_binder_slot_ids,
     build_completion_forest,
     gold_compiler_decisions,
     gold_compiler_decision_positions,
@@ -2800,10 +2803,62 @@ def test_lexer_required_slot_root_completion_rejects_premature_close(
     assert selected == paths[1].token_ids
 
     covered = [*prefix, tokenizer.sym_id(0)]
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [1.0 if token_id == close_id else 5.0 for token_id in candidate_ids]
+        ),
+    )
     selected = model._select_compiler_path(
         covered, paths, ctx, ctx_pad, 32, tree=tree, slot_contract=[":label"], state=state
     )
     assert selected == paths[0].token_ids
+
+
+def test_required_slot_array_completion_rejects_nested_close_before_coverage() -> None:
+    model = _model(required_slot_array_completion=True)
+    tokenizer = model.tokenizer
+    close_id = tokenizer.token_to_id["]"]
+    comma_id = tokenizer.token_to_id[","]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Form(\"$1\", b1, [b2", add_special=False),
+    ]
+    paths = (
+        CompletionPath((close_id, tokenizer.token_to_id[")"]), "grammar_rsqb"),
+        CompletionPath((comma_id, tokenizer.bind_id(3)), "grammar_comma"),
+    )
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+
+    bias = model._required_slot_array_completion_path_bias(
+        prefix, paths, [":slot_0", ":slot_1"], state
+    )
+    assert bias == [-1e9, 0.0]
+
+    covered = [*prefix, tokenizer.sym_id(0), tokenizer.sym_id(1)]
+    assert (
+        model._required_slot_array_completion_path_bias(
+            covered, paths, [":slot_0", ":slot_1"], state
+        )
+        is None
+    )
+
+    root_prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([b1", add_special=False),
+    ]
+    root_state = make_grammar_state()
+    for token_id in root_prefix[1:]:
+        root_state.advance_token(tokenizer, token_id)
+    assert (
+        model._required_slot_array_completion_path_bias(
+            root_prefix, paths, [":slot_0", ":slot_1"], root_state
+        )
+        is None
+    )
 
 
 @pytest.mark.parametrize("tree", [False, True])
@@ -4610,7 +4665,10 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert forest.coverage == "complete"
     assert tokenizer.sym_id(0) in forest.candidate_ids
     assert tokenizer.sym_id(1) not in forest.candidate_ids
-    assert set(forest.candidate_ids) == {tokenizer.sym_id(0)}
+    assert set(forest.candidate_ids) == {
+        tokenizer.sym_id(0),
+        tokenizer.token_to_id["null"],
+    }
     # Every emitted edge is accepted by the grammar and has a reachable
     # continuation; candidate policy must come from parser state, not from
     # a list of forbidden punctuation or component names.
@@ -5112,6 +5170,64 @@ def test_completion_forest_enforces_direct_component_property_schema(
     )
 
 
+def test_completion_forest_closes_untyped_optional_action_to_null() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([Button(":slot_1", ', add_special=True
+    )[:-1]
+
+    control = build_completion_forest(tokenizer, prefix)
+    assert tokenizer.token_to_id["("] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=(":slot_0", ":slot_1"),
+        explain=True,
+    )
+    assert tokenizer.token_to_id["null"] in forest.candidate_ids
+    assert tokenizer.token_to_id["("] not in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SLOT_CONTRACT
+        and evidence.reason_code == "untyped_optional_slot_requires_null"
+        and evidence.candidate_id == tokenizer.token_to_id["("]
+        for evidence in forest.evidence
+    )
+
+
+def test_completion_forest_preserves_required_ref_binder_under_contract() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode('root = Form("$2", ', add_special=True)[:-1]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=tuple(f":slot_{index}" for index in range(6)),
+        enforce_schema_component_types=True,
+    )
+
+    assert tokenizer.bind_id(1) in forest.candidate_ids
+
+
+def test_root_list_does_not_admit_new_binder_after_slot_inventory_consumed() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([TextContent(":slot_0"), TextContent(":slot_1"), ',
+        add_special=True,
+    )[:-1]
+    next_binder = tokenizer.bind_id(1)
+
+    control = build_completion_forest(tokenizer, prefix)
+    assert next_binder in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=(":slot_0", ":slot_1"),
+    )
+    assert next_binder not in forest.candidate_ids
+
+
 def test_completion_forest_propagates_direct_component_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
@@ -5219,6 +5335,107 @@ def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
         and evidence.candidate_id == tokenizer.token_to_id[","]
         for evidence in forest.evidence
     )
+
+
+def test_completion_forest_reserves_slots_for_required_future_components() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Form("$0",b0,[b1,b2,b3,b4,b5', add_special=True
+    )[:-1]
+    contract = [f":slot_{index}" for index in range(6)]
+
+    control = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+    )
+    assert tokenizer.token_to_id[","] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+        reserved_content_slots=1,
+    )
+    assert tokenizer.token_to_id[","] not in forest.candidate_ids
+    assert tokenizer.token_to_id["]"] in forest.candidate_ids
+
+
+def test_completion_forest_reserves_unresolved_typed_binder_content() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([Form("$1", b1, [b2, b3, b4, b5, b6]), '
+        'Button(":slot_1", null)])\n'
+        'b1 = Buttons([b7, b8, b9, b10, b11], "row")\n'
+        'b2 = FormControl(":slot_2", b12)\n'
+        'b3 = FormControl(":slot_0", b12, ',
+        add_special=True,
+    )[:-1]
+    contract = [f":slot_{index}" for index in range(6)]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+        reserve_unresolved_content=True,
+    )
+    assert set(forest.candidate_ids) == {tokenizer.token_to_id["null"]}
+
+    after_null = build_completion_forest(
+        tokenizer,
+        [*prefix, tokenizer.token_to_id["null"]],
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+        reserve_unresolved_content=True,
+    )
+    assert tokenizer.token_to_id[")"] in after_null.candidate_ids
+
+
+def test_completion_forest_closes_empty_buttons_for_pending_form_capacity() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Stack([Form("$1",b1,[b2,b3,b4,b5,b6]),Button(":slot_0")])\n'
+        "b1=Buttons([",
+        add_special=True,
+    )[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[f":slot_{index}" for index in range(6)],
+        enforce_schema_component_types=True,
+        reserved_content_slots=1,
+        reserve_unresolved_content=True,
+    )
+    assert set(forest.candidate_ids) == {tokenizer.token_to_id["]"]}
+
+
+def test_completion_forest_reserves_required_child_content_before_array_item() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([Form("$1", b1, [b2, b3, b4, b5]), '
+        'Button(":slot_1", null, "tertiary")])\n'
+        "b1 = Buttons([",
+        add_special=True,
+    )[:-1]
+    default = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[f":slot_{index}" for index in range(6)],
+        enforce_schema_component_types=True,
+    )
+    assert tokenizer.token_to_id["<BIND_6>"] in default.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[f":slot_{index}" for index in range(6)],
+        enforce_schema_component_types=True,
+        reserve_unresolved_content=True,
+    )
+    assert set(forest.candidate_ids) == {tokenizer.token_to_id["]"]}
 
 
 def test_gold_decisions_follow_compiler_forest() -> None:
@@ -5631,6 +5848,183 @@ def test_lexer_root_reference_identity_trains_and_biases_unused_binders() -> Non
     assert bias[2] == 0
 
 
+def test_slot_alias_unique_decode_rejects_repeated_slot_carrying_binder() -> None:
+    model = _model(slot_alias_unique_decode=True)
+    tokenizer = model.tokenizer
+    prefix = tokenizer.encode(
+        'root = Card([title])\ntitle = TextContent(":slot_0")\nbody = Card([title,',
+        add_special=False,
+    )
+    slot_binder = next(
+        binder
+        for binder, slots in bound_binder_slot_ids(tokenizer, prefix).items()
+        if slots == frozenset({0})
+        and bound_binder_reference_counts(tokenizer, prefix).get(binder, 0) > 0
+    )
+    safe_binder = next(
+        binder
+        for binder in tokenizer.kind_ids("bind")
+        if binder not in {tokenizer.bind_id(0), slot_binder}
+    )
+    title = CompletionPath((slot_binder,), "bind_reference")
+    body = CompletionPath((safe_binder,), "bind_reference")
+    close = CompletionPath((tokenizer.token_to_id["]"],), "grammar_rsqb")
+    bias = model._slot_alias_unique_path_bias(
+        prefix, (title, body, close), [":slot_0", ":slot_1"]
+    )
+    assert bias == [-1e9, 0.0, 0.0]
+
+
+def test_binder_slot_ownership_trains_and_penalizes_repeated_reference() -> None:
+    model = _model(
+        binder_slot_ownership_loss_weight=1.0,
+        binder_slot_ownership_decode_weight=4.0,
+    )
+    record = ExampleRecord(
+        id="binder-slot-ownership",
+        prompt="card with title and body",
+        openui=(
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
+        ),
+        placeholders=[":slot_0", ":slot_1"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    assert model.binder_slot_ownership_head is not None
+    assert model.binder_slot_ownership_head.weight.grad is not None
+    assert model.binder_slot_ownership_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["binder_slot_ownership_rows"] == 2
+
+    tokenizer = model.tokenizer
+    binder_ids = model._binder_component_token_ids()
+    title = tokenizer.bind_id(1)
+    body = tokenizer.bind_id(2)
+    with torch.no_grad():
+        model.binder_slot_ownership_head.weight.zero_()
+        model.binder_slot_ownership_head.bias.fill_(-20.0)
+        model.binder_slot_ownership_head.bias[
+            binder_ids.index(title) * tokenizer.sym_slots
+        ] = 20.0
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    prefix = tokenizer.encode("root = Card([title, title,", add_special=False)
+    bias = model._binder_slot_ownership_path_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        (
+            CompletionPath((title,), "bind_reference_root"),
+            CompletionPath((body,), "bind_reference_root"),
+        ),
+        record.placeholders,
+    )
+    assert bias is not None
+    assert bias[0] < -3.9
+    assert bias[1] == 0.0
+
+
+def test_binder_slot_presence_trains_and_penalizes_repeated_reference() -> None:
+    model = _model(
+        binder_slot_presence_loss_weight=1.0,
+        binder_slot_presence_decode_weight=4.0,
+    )
+    record = ExampleRecord(
+        id="binder-slot-presence",
+        prompt="card with title and body",
+        openui=(
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
+        ),
+        placeholders=[":slot_0", ":slot_1"],
+        split="train",
+        source="fixture",
+    )
+    model.training_loss([record]).backward()
+    assert model.binder_slot_presence_head is not None
+    assert model.binder_slot_presence_head.weight.grad is not None
+    assert model.binder_slot_presence_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["binder_slot_presence_rows"] == 2
+
+    tokenizer = model.tokenizer
+    binder_ids = model._binder_component_token_ids()
+    title = tokenizer.bind_id(1)
+    body = tokenizer.bind_id(2)
+    with torch.no_grad():
+        model.binder_slot_presence_head.weight.zero_()
+        model.binder_slot_presence_head.bias.fill_(-20.0)
+        model.binder_slot_presence_head.bias[binder_ids.index(title)] = 20.0
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    prefix = tokenizer.encode("root = Card([title, title,", add_special=False)
+    bias = model._binder_slot_presence_path_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        (
+            CompletionPath((title,), "bind_reference_root"),
+            CompletionPath((body,), "bind_reference_root"),
+        ),
+    )
+    assert bias is not None
+    assert bias[0] < -3.9
+    assert bias[1] == 0.0
+
+
+def test_binder_reference_presence_trains_on_prefix_and_penalizes_repeated_reference() -> None:
+    model = _model(
+        binder_reference_presence_loss_weight=1.0,
+        binder_reference_presence_decode_weight=4.0,
+    )
+    record = ExampleRecord(
+        id="binder-reference-presence",
+        prompt="card with title and body",
+        openui=(
+            "root = Card([title, title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
+        ),
+        placeholders=[":slot_0", ":slot_1"],
+        split="train",
+        source="fixture",
+    )
+    model.training_loss([record]).backward()
+    assert model.binder_reference_presence_head is not None
+    assert model.binder_reference_presence_head.weight.grad is not None
+    assert model.binder_reference_presence_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["binder_reference_presence_rows"] == 3
+
+    tokenizer = model.tokenizer
+    binder_ids = model._binder_component_token_ids()
+    title = tokenizer.bind_id(1)
+    body = tokenizer.bind_id(2)
+    with torch.no_grad():
+        model.binder_reference_presence_head.weight.zero_()
+        model.binder_reference_presence_head.bias.fill_(-20.0)
+        model.binder_reference_presence_head.bias[binder_ids.index(title)] = 20.0
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    prefix = tokenizer.encode("root = Card([title, title,", add_special=False)
+    assert repeated_bound_binder_reference_positions(
+        tokenizer,
+        tokenizer.encode(record.openui, add_special=False),
+    )
+    bias = model._binder_reference_presence_path_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        (
+            CompletionPath((title,), "bind_reference_root"),
+            CompletionPath((body,), "bind_reference_root"),
+        ),
+        model.config.max_target_len,
+    )
+    assert bias is not None
+    assert bias[0] < -3.9
+    assert bias[1] == 0.0
+
+
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     model = _model(
         component_edge_loss_weight=1.0,
@@ -5824,6 +6218,45 @@ def test_binder_topology_supervises_and_biases_legal_references() -> None:
         prefix,
         candidates,
         ("bind_reference_root_children", "bind_reference_root_children"),
+    )
+    assert bias is not None
+    assert bias[1] > bias[0]
+
+
+def test_binder_topology_unique_decode_suppresses_repeated_child() -> None:
+    model = _model(
+        binder_topology_loss_weight=1.0,
+        binder_topology_decode_weight=2.0,
+        binder_topology_unique_decode=True,
+    )
+    tokenizer = model.tokenizer
+    binders = model._binder_component_token_ids()
+    parent = binders.index(tokenizer.bind_id(1))
+    repeated = binders.index(tokenizer.bind_id(2))
+    alternative = binders.index(tokenizer.bind_id(3))
+    with torch.no_grad():
+        assert model.binder_topology_head is not None
+        model.binder_topology_head.weight.zero_()
+        model.binder_topology_head.bias.zero_()
+        model.binder_topology_head.bias[parent * len(binders) + repeated] = 3.0
+        model.binder_topology_head.bias[parent * len(binders) + alternative] = 1.0
+    ctx, ctx_pad = model._encode_context(["card with title and body"])
+    prefix = [
+        tokenizer.bind_id(1),
+        tokenizer.token_to_id["="],
+        tokenizer.token_to_id["Card"],
+        tokenizer.token_to_id["("],
+        tokenizer.token_to_id["["],
+        tokenizer.bind_id(2),
+        tokenizer.token_to_id[","],
+    ]
+    candidates = (tokenizer.bind_id(2), tokenizer.bind_id(3))
+    bias = model._binder_topology_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        candidates,
+        ("bind_reference_bound_children", "bind_reference_bound_children"),
     )
     assert bias is not None
     assert bias[1] > bias[0]

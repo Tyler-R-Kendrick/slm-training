@@ -137,6 +137,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Skip writing last_full_state.pt (serving last.pt still written).",
     )
     parser.add_argument(
+        "--checkpoint-every-steps",
+        type=int,
+        default=0,
+        help="Write resumable full state every N optimizer steps (0 = terminal only).",
+    )
+    parser.add_argument(
         "--mixture-manifest",
         type=Path,
         default=None,
@@ -498,6 +504,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra weight for the first three LTR positions (root/early structure).",
     )
     parser.add_argument(
+        "--ltr-tail-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra weight for final real LTR tokens (late declarations/closures).",
+    )
+    parser.add_argument(
+        "--ltr-tail-tokens",
+        type=int,
+        default=32,
+        help="Number of final real LTR tokens eligible for tail weighting.",
+    )
+    parser.add_argument(
         "--compiler-alignment-loss-weight",
         type=float,
         default=0.0,
@@ -656,6 +674,42 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Bias legal binder references by active declaration topology.",
+    )
+    parser.add_argument(
+        "--binder-slot-ownership-loss-weight",
+        type=float,
+        default=0.0,
+        help="BCE weight for each binder's opaque request-slot ownership set.",
+    )
+    parser.add_argument(
+        "--binder-slot-ownership-decode-weight",
+        type=float,
+        default=0.0,
+        help="Down-rank repeated binders predicted to own request slots.",
+    )
+    parser.add_argument(
+        "--binder-slot-presence-loss-weight",
+        type=float,
+        default=0.0,
+        help="BCE weight for whether each binder carries any opaque request slot.",
+    )
+    parser.add_argument(
+        "--binder-slot-presence-decode-weight",
+        type=float,
+        default=0.0,
+        help="Down-rank repeated binders predicted to carry any request slot.",
+    )
+    parser.add_argument(
+        "--binder-reference-presence-loss-weight",
+        type=float,
+        default=0.0,
+        help="BCE weight for a repeated reference's opaque slot presence from its prefix.",
+    )
+    parser.add_argument(
+        "--binder-reference-presence-decode-weight",
+        type=float,
+        default=0.0,
+        help="Down-rank repeated binders using only their decoder prefix.",
     )
     parser.add_argument(
         "--binder-arity-loss-weight",
@@ -1180,6 +1234,8 @@ def main(argv: list[str] | None = None) -> int:
         emit_record_nll=bool(args.emit_record_nll),
         ltr_loss_weight=args.ltr_loss_weight,
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+        ltr_tail_loss_weight=args.ltr_tail_loss_weight,
+        ltr_tail_tokens=args.ltr_tail_tokens,
         compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
         compiler_alignment_margin=args.compiler_alignment_margin,
         compiler_alignment_stratified=args.compiler_alignment_stratified,
@@ -1213,6 +1269,16 @@ def main(argv: list[str] | None = None) -> int:
         binder_component_plan_decode_weight=(args.binder_component_plan_decode_weight),
         binder_topology_loss_weight=args.binder_topology_loss_weight,
         binder_topology_decode_weight=args.binder_topology_decode_weight,
+        binder_slot_ownership_loss_weight=args.binder_slot_ownership_loss_weight,
+        binder_slot_ownership_decode_weight=args.binder_slot_ownership_decode_weight,
+        binder_slot_presence_loss_weight=args.binder_slot_presence_loss_weight,
+        binder_slot_presence_decode_weight=args.binder_slot_presence_decode_weight,
+        binder_reference_presence_loss_weight=(
+            args.binder_reference_presence_loss_weight
+        ),
+        binder_reference_presence_decode_weight=(
+            args.binder_reference_presence_decode_weight
+        ),
         binder_arity_loss_weight=args.binder_arity_loss_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
@@ -1286,6 +1352,7 @@ def main(argv: list[str] | None = None) -> int:
         replay_fraction=args.replay_fraction,
         initialization_weight_retention=args.initialization_weight_retention,
         full_state_checkpoint=not bool(args.no_full_state_checkpoint),
+        checkpoint_every_steps=args.checkpoint_every_steps,
         mixture_manifest=args.mixture_manifest,
         mixture_min_quality_score=args.mixture_min_quality_score,
         mixture_sampling_policy=args.mixture_sampling_policy,

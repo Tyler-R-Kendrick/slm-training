@@ -14,6 +14,40 @@ parse, meaningful-program, binding-aware, contract, fidelity, structural,
 reward, AST, language, reference-graph, and target-quality metrics. A missing
 or mismatched named SDK result fails the evaluation publication.
 
+## Tracked grader metrics
+
+Every listed metric is executed and recorded through the pinned AgentV SDK.
+The runner itself is metadata, never a score. `null` means the grader found the
+metric inapplicable and its `metric_defined_n` denominator is zero.
+
+| Metric | What it measures |
+| --- | --- |
+| `parse_rate` | Official OpenUI parse success |
+| `meaningful_program_rate` | Meaningful-program verdict |
+| `binding_aware_meaningful_v2_rate_strict` | Strict binding-aware meaningfulness |
+| `binding_aware_meaningful_v2_rate_coverage_conditioned` | Strict meaningfulness where coverage is known |
+| `binding_aware_meaningful_v2_coverage` | Coverage of the strict meaningfulness contract |
+| `syntax_parse_rate` | Syntax parser success |
+| `raw_syntax_validity` | Raw generated syntax validity |
+| `contract_precision` | Correct emitted contract items |
+| `contract_recall` | Required contract-item coverage |
+| `placeholder_fidelity` | Exact visible-placeholder fidelity |
+| `placeholder_fidelity_normalized` | Canonicalized placeholder fidelity |
+| `placeholder_validity` | Placeholder legality |
+| `exact_match` | Exact canonical program match |
+| `structural_similarity` | Program structure similarity |
+| `tree_edit_similarity` | AST edit similarity |
+| `component_type_recall` | Required component-type coverage |
+| `reward_score` | Canonical composite quality reward |
+| `ast_node_f1` | AST node F1 |
+| `ast_edge_f1` | AST edge F1 |
+| `language_validity` | Language-contract validity |
+| `canonical_exact` | Canonical serialization exactness |
+| `ref_graph_exact` | Reference-graph exactness |
+| `target_correctness` | Target correctness |
+| `target_efficiency` | Target efficiency |
+| `target_composite` | Target composite quality |
+
 ## Flow
 
 1. Python evaluators produce the domain metric inputs using the existing harnesses.

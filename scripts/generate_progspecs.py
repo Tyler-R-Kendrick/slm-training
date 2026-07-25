@@ -27,6 +27,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated components that must co-occur in generated topology variants.",
     )
     parser.add_argument(
+        "--required-content-properties",
+        default="",
+        help=(
+            "Comma-separated Component.property content slots that every required "
+            "topology must realize."
+        ),
+    )
+    parser.add_argument(
+        "--forward-reference-patterns",
+        default="",
+        help="Comma-separated opt-in paired forward-reference coverage patterns.",
+    )
+    parser.add_argument(
         "--output", type=Path, default=Path("outputs/data/programspec/programs.jsonl")
     )
     parser.add_argument(
@@ -40,6 +53,16 @@ def main(argv: list[str] | None = None) -> int:
             or None,
             required_components=tuple(
                 item for item in args.required_components.split(",") if item
+            ),
+            required_content_properties=tuple(
+                tuple(item.split(".", maxsplit=1))
+                for item in args.required_content_properties.split(",")
+                if item
+            ),
+            forward_reference_patterns=tuple(
+                item
+                for item in args.forward_reference_patterns.split(",")
+                if item
             ),
             max_depth=args.max_depth,
             max_width=args.max_width,

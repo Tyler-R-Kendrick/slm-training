@@ -27,13 +27,28 @@
       ]
     },
     "config.levers": {
-      "version": "v40",
+      "version": "v43",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v43",
+          "date": "2026-07-24",
+          "note": "Register prefix-conditioned opaque repeated-binder presence decode"
+        },
+        {
+          "version": "v42",
+          "date": "2026-07-24",
+          "note": "Register trained opaque forward binder-slot presence decode on lexer compiler paths"
+        },
+        {
+          "version": "v41",
+          "date": "2026-07-24",
+          "note": "Register trained opaque forward binder-slot ownership decode on lexer compiler paths"
+        },
         {
           "version": "v40",
           "date": "2026-07-23",
@@ -932,12 +947,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v62",
+      "version": "v63",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v63",
+          "date": "2026-07-24",
+          "note": "Forbid SDK-runner aggregates by role rather than treating AgentV as a metric feature"
+        },
         {
           "version": "v62",
           "date": "2026-07-24",
@@ -2895,7 +2915,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v59",
+      "version": "v68",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2908,6 +2928,51 @@
         "scripts/run_agentv_eval.mjs"
       ],
       "history": [
+        {
+          "version": "v68",
+          "date": "2026-07-24",
+          "note": "Expose prefix-conditioned opaque repeated-binder presence through the canonical evaluator"
+        },
+        {
+          "version": "v67",
+          "date": "2026-07-24",
+          "note": "Expose trained opaque forward binder-slot presence through the canonical evaluator"
+        },
+        {
+          "version": "v66",
+          "date": "2026-07-24",
+          "note": "Expose trained opaque forward binder-slot ownership through the canonical evaluator"
+        },
+        {
+          "version": "v65",
+          "date": "2026-07-24",
+          "note": "Count opaque bound-subtree references globally so alias uniqueness reaches cross-declaration reuse"
+        },
+        {
+          "version": "v64",
+          "date": "2026-07-24",
+          "note": "Expose opaque bound-subtree slot-alias uniqueness through the canonical evaluator"
+        },
+        {
+          "version": "v63",
+          "date": "2026-07-24",
+          "note": "Expose opaque required-slot array completion through the canonical evaluator"
+        },
+        {
+          "version": "v62",
+          "date": "2026-07-24",
+          "note": "Expose opt-in nested binder-reference uniqueness decoding through the canonical evaluator"
+        },
+        {
+          "version": "v61",
+          "date": "2026-07-24",
+          "note": "Expose opt-in request-aware visible-slot reservation for strict compiler-tree evaluation"
+        },
+        {
+          "version": "v60",
+          "date": "2026-07-24",
+          "note": "Expose the existing compiler completion-forest draft horizon as an explicit evaluation override"
+        },
         {
           "version": "v59",
           "date": "2026-07-24",
@@ -3275,13 +3340,38 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v23",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-07-25",
+          "note": "Persist cumulative primary and replay example counters in full-state checkpoints so resumed replay runs remain auditable"
+        },
+        {
+          "version": "v27",
+          "date": "2026-07-24",
+          "note": "Record prefix-conditioned opaque repeated-binder presence recipe fields in canonical train summaries"
+        },
+        {
+          "version": "v26",
+          "date": "2026-07-24",
+          "note": "Record opaque forward binder-slot ownership and presence recipe fields in canonical train summaries"
+        },
+        {
+          "version": "v25",
+          "date": "2026-07-24",
+          "note": "Record opt-in LTR tail-loss recipe fields in canonical train summaries"
+        },
+        {
+          "version": "v24",
+          "date": "2026-07-24",
+          "note": "Support opt-in periodic bit-exact full-state checkpoints for cap-interrupted local training continuation"
+        },
         {
           "version": "v23",
           "date": "2026-07-23",
@@ -3610,7 +3700,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v32",
+      "version": "v48",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3628,7 +3718,75 @@
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
-      "history": [
+    "history": [
+    {"version":"v48","date":"2026-07-25","note":"Give fact-filtered ProgramSpec supplements an explicit provenance-preserving source family for auditable mixture sampling"},
+    {"version":"v47","date":"2026-07-25","note":"Select controlled ProgramSpec supplements by declared forward-reference fact and retain fact provenance on admitted rows"},
+    {"version":"v46","date":"2026-07-25","note":"Preserve derive-from baseline rows byte-for-byte in explicit controlled supplement builds while admitting only new rows through strict gates"},
+        {
+          "version": "v45",
+          "date": "2026-07-24",
+          "note": "Make the slot-free sharing arm independently quality-admissible with two non-shared TextContent slots"
+        },
+        {
+          "version": "v44",
+          "date": "2026-07-24",
+          "note": "Add opt-in paired ProgramSpec coverage for distinct slot-bearing and intentionally shared slot-free forward references"
+        },
+        {
+          "version": "v43",
+          "date": "2026-07-24",
+          "note": "Withdraw v42 topology-aware ProgramSpec prompts after E1337 reduced strict raw ProgramSpec retention from 13 to 5 rows"
+        },
+        {
+          "version": "v42",
+          "date": "2026-07-24",
+          "note": "Describe verified ProgramSpec topology, content class, and Form arity in natural prompts so strict dedup retains semantically distinct supervision"
+        },
+        {
+          "version": "v41",
+          "date": "2026-07-24",
+          "note": "Support immutable existing-plus-ProgramSpec source unions for focused strict baseline addendum builds"
+        },
+        {
+          "version": "v40",
+          "date": "2026-07-24",
+          "note": "Vary required typed reference-array arity from one through three so strict direct corpora retain bounded capacity diversity"
+        },
+        {
+          "version": "v39",
+          "date": "2026-07-24",
+          "note": "Resolve concrete anyOf references in typed ProgramSpecs so FormControl input topology is schema-valid and naturally described"
+        },
+        {
+          "version": "v38",
+          "date": "2026-07-24",
+          "note": "Allow required ProgramSpec topologies to force schema-checked free-form content properties, including direct multi-slot supervision without an unrelated container route"
+        },
+        {
+          "version": "v37",
+          "date": "2026-07-24",
+          "note": "Emit two legal reference-array items for required ProgramSpec topologies so the pinned canonical schema retains three content slots"
+        },
+        {
+          "version": "v36",
+          "date": "2026-07-24",
+          "note": "Limit required ProgramSpec topologies to one content property per component and nest SwitchItem under SwitchGroup for prompt-faithful three-slot supervision"
+        },
+        {
+          "version": "v35",
+          "date": "2026-07-24",
+          "note": "Jointly realize legal content properties and reference arrays for required ProgramSpec topologies so composite documents retain multi-slot supervision"
+        },
+        {
+          "version": "v34",
+          "date": "2026-07-24",
+          "note": "Emit content-bearing properties and nonempty reference arrays for explicitly required ProgramSpec topologies so strict quality gates retain schema-valid composite supervision"
+        },
+        {
+          "version": "v33",
+          "date": "2026-07-24",
+          "note": "Describe SwitchGroup and TextCallout naturally in ProgramSpec prompts so required-component supervision aligns with the prompt-facing component contract"
+        },
         {
           "version": "v32",
           "date": "2026-07-24",
@@ -4304,7 +4462,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v273",
+      "version": "v296",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4329,6 +4487,121 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v296",
+          "date": "2026-07-24",
+          "note": "Train and decode opaque repeated-binder slot presence from no-future compiler prefixes"
+        },
+        {
+          "version": "v295",
+          "date": "2026-07-24",
+          "note": "Train and decode binary opaque binder-slot presence for forward-reference alias disambiguation"
+        },
+        {
+          "version": "v294",
+          "date": "2026-07-24",
+          "note": "Train and decode opaque binder-to-slot ownership for forward-reference alias disambiguation"
+        },
+        {
+          "version": "v293",
+          "date": "2026-07-24",
+          "note": "Count opaque bound-subtree references globally so alias uniqueness reaches cross-declaration reuse"
+        },
+        {
+          "version": "v292",
+          "date": "2026-07-24",
+          "note": "Prevent repeated compiler references to completed bound subtrees that carry opaque request-slot ordinals"
+        },
+        {
+          "version": "v291",
+          "date": "2026-07-24",
+          "note": "Restrict opaque required-slot array continuation to nested non-root component arrays via the Lark parser value stack"
+        },
+        {
+          "version": "v290",
+          "date": "2026-07-24",
+          "note": "Keep compiler arrays open while opaque request slots remain absent and a legal continuation exists"
+        },
+        {
+          "version": "v289",
+          "date": "2026-07-24",
+          "note": "Suppress already emitted child binders within an active declaration under the trained topology ranker"
+        },
+        {
+          "version": "v288",
+          "date": "2026-07-24",
+          "note": "Reserve a schema-derived lower bound for required child declarations before admitting a typed-array binder"
+        },
+        {
+          "version": "v287",
+          "date": "2026-07-24",
+          "note": "Close optional typed arrays when unresolved root-plan binder demand exhausts visible content capacity"
+        },
+        {
+          "version": "v286",
+          "date": "2026-07-24",
+          "note": "Apply unresolved-binder optional-null reservation only before a value starts so grammar separators remain completable"
+        },
+        {
+          "version": "v285",
+          "date": "2026-07-24",
+          "note": "Keep unresolved typed-binder slot demand active after prompt-required components are already emitted"
+        },
+        {
+          "version": "v284",
+          "date": "2026-07-24",
+          "note": "Reserve capacity for prompt-required components and unresolved typed binders before optional content can exhaust strict decode"
+        },
+        {
+          "version": "v283",
+          "date": "2026-07-24",
+          "note": "Add opt-in LTR tail weighting for final real teacher-forced tokens, targeting late declaration and closure supervision"
+        },
+        {
+          "version": "v282",
+          "date": "2026-07-24",
+          "note": "Withdraw cross-property forward-binder reservation after E1329 converted the Form diagnostic into an empty timeout; restore the active-array capacity rule"
+        },
+        {
+          "version": "v281",
+          "date": "2026-07-24",
+          "note": "Reserve visible slot capacity for every unresolved schema-typed content binder, including sibling component properties"
+        },
+        {
+          "version": "v280",
+          "date": "2026-07-24",
+          "note": "Keep required schema-reference properties legal under the honest slot contract; optional untyped properties alone require null"
+        },
+        {
+          "version": "v279",
+          "date": "2026-07-24",
+          "note": "Make opt-in required-slot root completion force the certified root close after all visible slots are consumed"
+        },
+        {
+          "version": "v278",
+          "date": "2026-07-24",
+          "note": "Stop root aggregation from admitting new forward binders after the honest slot inventory is consumed"
+        },
+        {
+          "version": "v277",
+          "date": "2026-07-24",
+          "note": "Constrain optional untyped schema arguments to null under the honest slot contract, preventing unbounded grouped-expression decode"
+        },
+        {
+          "version": "v276",
+          "date": "2026-07-24",
+          "note": "Expose opt-in periodic full-state checkpoint cadence through ModelBuildConfig and train_model without changing default optimization behavior"
+        },
+        {
+          "version": "v275",
+          "date": "2026-07-24",
+          "note": "Admit null for optional schema string properties so exhausted slot contracts cannot create a false empty completion forest"
+        },
+        {
+          "version": "v274",
+          "date": "2026-07-24",
+          "note": "Recognize the schema-supported SwitchGroup parent in strict quality vocabulary; it was already used by SwitchItem fixtures and held-out Settings"
+        },
         {
           "version": "v273",
           "date": "2026-07-24",

@@ -705,6 +705,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         step = int(payload.get("step") or 0)
         seen_prompt_tokens = int(payload.get("seen_prompt_tokens") or 0)
         seen_target_tokens = int(payload.get("seen_target_tokens") or 0)
+        seen_primary_examples = int(payload.get("seen_primary_examples") or 0)
+        seen_replay_examples = int(payload.get("seen_replay_examples") or 0)
         if payload.get("best_weighted_nll") is not None:
             best_weighted_nll = float(payload["best_weighted_nll"])
         if payload.get("best_ship_score") is not None:
@@ -795,6 +797,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 step=step,
                 seen_prompt_tokens=seen_prompt_tokens,
                 seen_target_tokens=seen_target_tokens,
+                seen_primary_examples=seen_primary_examples,
+                seen_replay_examples=seen_replay_examples,
                 loop_rng=rng,
                 pending_batches=pending,
                 config=config,
@@ -975,6 +979,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         return row
 
     stopped_on = "steps"
+    checkpoint_every_steps = int(
+        getattr(config, "checkpoint_every_steps", 0) or 0
+    )
     mode = "a" if resumed_from else "w"
     with bind_telemetry(tel), metrics_path.open(mode, encoding="utf-8") as metrics_file:
         while step < config.steps:
@@ -1062,7 +1069,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     _emit_progress(step, last_loss)
                     did_eval = _maybe_eval(step)
                     did_loss_eval = _maybe_loss_eval(step)
-                    if did_eval or did_loss_eval:
+                    if did_eval or did_loss_eval or (
+                        checkpoint_every_steps > 0
+                        and step % checkpoint_every_steps == 0
+                    ):
                         _save_full_state_now()
             else:
                 with timed("forward"):
@@ -1248,6 +1258,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
+            "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),
             "compiler_alignment_loss_weight": getattr(
                 config, "compiler_alignment_loss_weight", 0.0
             ),
@@ -1331,6 +1343,24 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "binder_topology_decode_weight": getattr(
                 config, "binder_topology_decode_weight", 0.0
+            ),
+            "binder_slot_ownership_loss_weight": getattr(
+                config, "binder_slot_ownership_loss_weight", 0.0
+            ),
+            "binder_slot_ownership_decode_weight": getattr(
+                config, "binder_slot_ownership_decode_weight", 0.0
+            ),
+            "binder_slot_presence_loss_weight": getattr(
+                config, "binder_slot_presence_loss_weight", 0.0
+            ),
+            "binder_slot_presence_decode_weight": getattr(
+                config, "binder_slot_presence_decode_weight", 0.0
+            ),
+            "binder_reference_presence_loss_weight": getattr(
+                config, "binder_reference_presence_loss_weight", 0.0
+            ),
+            "binder_reference_presence_decode_weight": getattr(
+                config, "binder_reference_presence_decode_weight", 0.0
             ),
             "binder_arity_loss_weight": getattr(
                 config, "binder_arity_loss_weight", 0.0

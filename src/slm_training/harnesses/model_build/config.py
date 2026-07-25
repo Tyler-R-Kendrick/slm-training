@@ -101,6 +101,8 @@ class ModelBuildConfig:
     grammar_ltr_primary: bool = False
     grammar_finalize_validate: bool = False
     ltr_loss_weight: float = 0.5
+    ltr_tail_loss_weight: float = 0.0
+    ltr_tail_tokens: int = 32
     fidelity_loss_weight: float = 0.5
     # None = preserve checkpoint on load; factory defaults new models to True.
     design_md_in_context: bool | None = None
@@ -160,6 +162,9 @@ class ModelBuildConfig:
     initialization_weight_retention: float = 0.0
     # Write full training state (optimizer/RNG/sampler) alongside last.pt.
     full_state_checkpoint: bool = True
+    # Optional optimizer-step cadence for resumable full-state snapshots.
+    # Zero preserves terminal/evaluation-only checkpoint behavior.
+    checkpoint_every_steps: int = 0
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).
     eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).
@@ -185,6 +190,8 @@ class ModelBuildConfig:
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
     compiler_schema_component_types: bool = False
+    request_aware_slot_reservation: bool = False
+    slot_alias_unique_decode: bool = False
     compiler_decode_mode: str = "off"  # off | forced | restricted | tree
     compiler_search_mode: str = "greedy"  # greedy | lattice | ptrm | gram
     compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always
@@ -313,6 +320,7 @@ class ModelBuildConfig:
     semantic_role_schema_candidates: bool | None = None
     slot_coverage_close_decode_weight: float | None = None
     required_slot_root_completion: bool | None = None
+    required_slot_array_completion: bool = False
     schema_value_decode_weight: float | None = None
     schema_enum_close_decode_weight: float | None = None
     schema_open_decode_weight: float | None = None
@@ -345,6 +353,13 @@ class ModelBuildConfig:
     binder_component_plan_decode_weight: float | None = None
     binder_topology_loss_weight: float = 0.0
     binder_topology_decode_weight: float | None = None
+    binder_topology_unique_decode: bool = False
+    binder_slot_ownership_loss_weight: float = 0.0
+    binder_slot_ownership_decode_weight: float | None = None
+    binder_slot_presence_loss_weight: float = 0.0
+    binder_slot_presence_decode_weight: float | None = None
+    binder_reference_presence_loss_weight: float = 0.0
+    binder_reference_presence_decode_weight: float | None = None
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float | None = None
     root_reference_arity_loss_weight: float = 0.0
@@ -481,6 +496,8 @@ class ModelBuildConfig:
         )
 
         apply_evaluation_policy(self)
+        if self.checkpoint_every_steps < 0:
+            raise ValueError("checkpoint_every_steps must be non-negative")
         # SLM-242: fail-closed numeric/schedule gate.
         try:
             validate_model_build_config(self)

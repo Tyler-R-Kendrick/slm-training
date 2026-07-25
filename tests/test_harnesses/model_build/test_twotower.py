@@ -189,6 +189,24 @@ def test_ltr_suffix_always_masks_first_content_token() -> None:
     assert int(noisy[0, 1]) == model.tokenizer.mask_id
 
 
+def test_ltr_tail_mask_selects_only_final_real_suffix_tokens() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            ltr_tail_tokens=2,
+        ),
+        device="cpu",
+    )
+    target = torch.tensor([[model.tokenizer.bos_id, 7, 8, 9, model.tokenizer.pad_id]])
+    suffix = torch.tensor([[False, True, True, True, False]])
+    assert model._ltr_tail_mask(target, suffix).tolist() == [[False, False, True, True, False]]
+
+
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(

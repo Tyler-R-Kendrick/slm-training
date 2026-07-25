@@ -184,6 +184,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Override checkpoint: prefer greedy LTR decode.",
     )
     parser.add_argument(
+        "--grammar-draft-window",
+        type=int,
+        default=None,
+        help="Override the compiler completion-forest lookahead horizon.",
+    )
+    parser.add_argument(
         "--grammar-ltr-repair",
         action="store_true",
         default=None,
@@ -324,6 +330,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Constrain forward binder declarations from official typed-array use sites.",
     )
     parser.add_argument(
+        "--request-aware-slot-reservation",
+        action="store_true",
+        help="Reserve visible slots for prompt-required components not yet emitted.",
+    )
+    parser.add_argument(
+        "--slot-alias-unique-decode",
+        action="store_true",
+        help="Reject repeated references to bound subtrees carrying opaque request slots.",
+    )
+    parser.add_argument(
         "--visible-reference-decode-weight",
         type=float,
         default=None,
@@ -346,6 +362,29 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=None,
         help="Override the checkpoint's grammar-binder topology bias.",
+    )
+    parser.add_argument(
+        "--binder-topology-unique-decode",
+        action="store_true",
+        help="Suppress an already referenced binder within its active declaration.",
+    )
+    parser.add_argument(
+        "--binder-slot-ownership-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's forward binder-slot ownership bias.",
+    )
+    parser.add_argument(
+        "--binder-slot-presence-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's forward binder-slot presence bias.",
+    )
+    parser.add_argument(
+        "--binder-reference-presence-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's prefix-conditioned binder reference bias.",
     )
     parser.add_argument(
         "--binder-arity-decode-weight",
@@ -407,6 +446,11 @@ def main(argv: list[str] | None = None) -> int:
         "--slot-contract-constrained-decode",
         action="store_true",
         help="Override: constrain placeholder decode to slot contract.",
+    )
+    parser.add_argument(
+        "--required-slot-array-completion",
+        action="store_true",
+        help="Reject compiler-array closure while opaque request slots remain missing.",
     )
     parser.add_argument(
         "--honest-slot-contract",
@@ -649,11 +693,13 @@ def main(argv: list[str] | None = None) -> int:
             True if args.compiler_decode_mode != "off" else args.grammar_ltr_primary
         ),
         grammar_ltr_repair=args.grammar_ltr_repair,
+        grammar_draft_window=args.grammar_draft_window,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
         slot_contract_constrained_decode=(
             args.slot_contract_constrained_decode or args.ship_gates
         ),
+        required_slot_array_completion=args.required_slot_array_completion,
         honest_slot_contract=(args.honest_slot_contract or args.ship_gates),
         contract_template_fastpath=args.contract_template_fastpath,
         retrieval_k=args.retrieval_k,
@@ -708,10 +754,18 @@ def main(argv: list[str] | None = None) -> int:
         compiler_schema_component_types=(
             args.compiler_schema_component_types
         ),
+        request_aware_slot_reservation=args.request_aware_slot_reservation,
+        slot_alias_unique_decode=args.slot_alias_unique_decode,
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,
         binder_component_plan_decode_weight=(args.binder_component_plan_decode_weight),
         binder_topology_decode_weight=args.binder_topology_decode_weight,
+        binder_topology_unique_decode=args.binder_topology_unique_decode,
+        binder_slot_ownership_decode_weight=args.binder_slot_ownership_decode_weight,
+        binder_slot_presence_decode_weight=args.binder_slot_presence_decode_weight,
+        binder_reference_presence_decode_weight=(
+            args.binder_reference_presence_decode_weight
+        ),
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
         root_reference_identity_decode_weight=(

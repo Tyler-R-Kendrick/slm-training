@@ -319,6 +319,9 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    # Extra weight on the final real LTR tokens (late declarations/closures).
+    ltr_tail_loss_weight: float = 0.0
+    ltr_tail_tokens: int = 32
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
@@ -346,6 +349,8 @@ class TwoTowerConfig:
     # Reject a root-list close while its prompt-visible slot contract remains
     # incomplete, but only when the grammar offers another legal continuation.
     required_slot_root_completion: bool = False
+    # Extend the same opaque-slot completion rule to nested compiler arrays.
+    required_slot_array_completion: bool = False
     schema_value_decode_weight: float = 0.0
     schema_enum_close_decode_weight: float = 0.0
     schema_open_decode_weight: float = 0.0
@@ -383,6 +388,13 @@ class TwoTowerConfig:
     binder_component_plan_decode_weight: float = 0.0
     binder_topology_loss_weight: float = 0.0
     binder_topology_decode_weight: float = 0.0
+    binder_topology_unique_decode: bool = False
+    binder_slot_ownership_loss_weight: float = 0.0
+    binder_slot_ownership_decode_weight: float = 0.0
+    binder_slot_presence_loss_weight: float = 0.0
+    binder_slot_presence_decode_weight: float = 0.0
+    binder_reference_presence_loss_weight: float = 0.0
+    binder_reference_presence_decode_weight: float = 0.0
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
     root_reference_arity_loss_weight: float = 0.0
@@ -444,6 +456,8 @@ class TwoTowerConfig:
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
     compiler_schema_component_types: bool = False
+    request_aware_slot_reservation: bool = False
+    slot_alias_unique_decode: bool = False
     # Compiler-drafted decode: off | forced | restricted | tree.
     # Decode-only; ``off`` preserves existing checkpoint behavior.
     compiler_decode_mode: str = "off"
@@ -1503,6 +1517,64 @@ class TwoTowerModel(nn.Module):
             if binder_topology_enabled and binder_plan_ids
             else None
         )
+        binder_slot_ownership_enabled = (
+            float(
+                getattr(self.config, "binder_slot_ownership_loss_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "binder_slot_ownership_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.binder_slot_ownership_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    len(binder_plan_ids) * int(tokenizer.sym_slots),
+                ),
+                111,
+            )
+            if binder_slot_ownership_enabled and binder_plan_ids
+            else None
+        )
+        binder_slot_presence_enabled = (
+            float(getattr(self.config, "binder_slot_presence_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(
+                getattr(self.config, "binder_slot_presence_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.binder_slot_presence_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(self.config.d_model, len(binder_plan_ids)), 112
+            )
+            if binder_slot_presence_enabled and binder_plan_ids
+            else None
+        )
+        binder_reference_presence_enabled = (
+            float(
+                getattr(self.config, "binder_reference_presence_loss_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "binder_reference_presence_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.binder_reference_presence_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(self.config.d_model, len(binder_plan_ids)), 113
+            )
+            if binder_reference_presence_enabled and binder_plan_ids
+            else None
+        )
         binder_arity_enabled = (
             float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0) > 0.0
             or float(getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0)
@@ -1764,6 +1836,9 @@ class TwoTowerModel(nn.Module):
             "component_edge_head.",
             "binder_component_plan_head.",
             "binder_topology_head.",
+            "binder_slot_ownership_head.",
+            "binder_slot_presence_head.",
+            "binder_reference_presence_head.",
             "binder_arity_head.",
             "root_reference_arity_head.",
             "root_reference_identity_head.",
@@ -2367,6 +2442,17 @@ class TwoTowerModel(nn.Module):
                     noisy[i, j] = self.tokenizer.mask_id
         return noisy, predict_mask, ltr_suffix
 
+    def _ltr_tail_mask(
+        self, target_ids: torch.Tensor, ltr_suffix: torch.Tensor
+    ) -> torch.Tensor:
+        """Return the configured final real-token window within an LTR suffix."""
+        width = int(getattr(self.config, "ltr_tail_tokens", 0) or 0)
+        if width <= 0:
+            return torch.zeros_like(ltr_suffix)
+        real = target_ids.ne(self.tokenizer.pad_id)
+        reverse_rank = real.flip(1).cumsum(1).flip(1)
+        return ltr_suffix & real & reverse_rank.le(width)
+
     def _placeholder_ids(self) -> set[int]:
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
@@ -2771,6 +2857,12 @@ class TwoTowerModel(nn.Module):
                     content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
                     prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
                     weights = weights + (prefix_w * prefix.reshape(-1).float())
+                tail_w = float(
+                    getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0
+                )
+                if tail_w > 0.0:
+                    tail = self._ltr_tail_mask(target_ids, ltr_suffix)
+                    weights = weights + (tail_w * tail.reshape(-1).float())
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -4008,6 +4100,162 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        binder_slot_w = float(
+            getattr(self.config, "binder_slot_ownership_loss_weight", 0.0) or 0.0
+        )
+        if binder_slot_w > 0.0 and self.binder_slot_ownership_head is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                bound_binder_slot_ids,
+            )
+
+            binder_ids = self._binder_component_token_ids()
+            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            slot_count = int(self.tokenizer.sym_slots)
+            ownership_logits = self.binder_slot_ownership_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            ).view(len(batch), len(binder_ids), slot_count)
+            ownership_targets = ownership_logits.new_zeros(ownership_logits.shape)
+            ownership_rows = 0
+            for row in range(len(batch)):
+                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                for binder_id, slots in bound_binder_slot_ids(
+                    self.tokenizer, target_key
+                ).items():
+                    binder = binder_index.get(binder_id)
+                    if binder is None:
+                        continue
+                    for slot in slots:
+                        if slot < slot_count:
+                            ownership_targets[row, binder, slot] = 1.0
+                    ownership_rows += 1
+            ownership_loss = F.binary_cross_entropy_with_logits(
+                ownership_logits,
+                ownership_targets,
+                pos_weight=ownership_logits.new_full((slot_count,), 8.0),
+            )
+            mask_loss = mask_loss + binder_slot_w * ownership_loss
+            self.last_training_metrics.update(
+                {
+                    "binder_slot_ownership_loss": float(ownership_loss.detach().cpu()),
+                    "binder_slot_ownership_rows": ownership_rows,
+                }
+            )
+
+        binder_slot_presence_w = float(
+            getattr(self.config, "binder_slot_presence_loss_weight", 0.0) or 0.0
+        )
+        if (
+            binder_slot_presence_w > 0.0
+            and self.binder_slot_presence_head is not None
+        ):
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                bound_binder_slot_ids,
+            )
+
+            binder_ids = self._binder_component_token_ids()
+            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            presence_logits = self.binder_slot_presence_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            )
+            presence_targets = presence_logits.new_zeros(presence_logits.shape)
+            presence_rows = 0
+            for row in range(len(batch)):
+                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                for binder_id, slots in bound_binder_slot_ids(
+                    self.tokenizer, target_key
+                ).items():
+                    binder = binder_index.get(binder_id)
+                    if binder is None:
+                        continue
+                    presence_targets[row, binder] = float(bool(slots))
+                    presence_rows += 1
+            presence_loss = F.binary_cross_entropy_with_logits(
+                presence_logits,
+                presence_targets,
+                pos_weight=presence_logits.new_tensor(4.0),
+            )
+            mask_loss = mask_loss + binder_slot_presence_w * presence_loss
+            self.last_training_metrics.update(
+                {
+                    "binder_slot_presence_loss": float(presence_loss.detach().cpu()),
+                    "binder_slot_presence_rows": presence_rows,
+                }
+            )
+
+        binder_reference_presence_w = float(
+            getattr(self.config, "binder_reference_presence_loss_weight", 0.0)
+            or 0.0
+        )
+        if (
+            binder_reference_presence_w > 0.0
+            and self.binder_reference_presence_head is not None
+        ):
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                bound_binder_reference_positions,
+                bound_binder_slot_ids,
+            )
+
+            binder_ids = self._binder_component_token_ids()
+            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            rows: list[tuple[int, int, int, float]] = []
+            for row, target in enumerate(targets):
+                resolved = bound_binder_slot_ids(self.tokenizer, target)
+                for position, binder_id in bound_binder_reference_positions(
+                    self.tokenizer, target
+                ):
+                    binder = binder_index.get(binder_id)
+                    if binder is None or position >= target_ids.size(1):
+                        continue
+                    rows.append(
+                        (row, position, binder, float(bool(resolved.get(binder_id))))
+                    )
+            if rows:
+                canvas_length = int(target_ids.size(1))
+                canvases = torch.cat(
+                    [
+                        self._compiler_canvas(targets[row][:position], canvas_length)
+                        for row, position, _binder, _target in rows
+                    ],
+                    dim=0,
+                )
+                row_index = torch.as_tensor(
+                    [row for row, _position, _binder, _target in rows],
+                    device=ctx.device,
+                )
+                hidden = self._denoiser_hidden(
+                    canvases,
+                    ctx.index_select(0, row_index),
+                    ctx_pad.index_select(0, row_index),
+                )
+                features = torch.stack(
+                    [hidden[index, position] for index, (_row, position, _binder, _target) in enumerate(rows)]
+                ).detach()
+                reference_logits = self.binder_reference_presence_head(features)
+                selected = torch.as_tensor(
+                    [binder for _row, _position, binder, _target in rows],
+                    device=ctx.device,
+                )
+                logits = reference_logits.gather(1, selected[:, None]).squeeze(1)
+                reference_targets = logits.new_tensor(
+                    [target for _row, _position, _binder, target in rows]
+                )
+                reference_loss = F.binary_cross_entropy_with_logits(
+                    logits,
+                    reference_targets,
+                    pos_weight=logits.new_tensor(4.0),
+                )
+            else:
+                reference_loss = self.binder_reference_presence_head.weight.sum() * 0.0
+            mask_loss = mask_loss + binder_reference_presence_w * reference_loss
+            self.last_training_metrics.update(
+                {
+                    "binder_reference_presence_loss": float(
+                        reference_loss.detach().cpu()
+                    ),
+                    "binder_reference_presence_rows": len(rows),
+                }
+            )
+
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
             # Keep this span visible in train telemetry: a silently skipped
@@ -5216,6 +5464,53 @@ class TwoTowerModel(nn.Module):
             for expr_type in getattr(state, "section_types", ())
             if str(expr_type).startswith("element:")
         )
+
+    def _request_aware_slot_reservation(
+        self, row: int, state: Any, prefix: list[int]
+    ) -> int:
+        """Reserve slots for prompt-required string-bearing components not emitted."""
+        if not bool(getattr(self.config, "request_aware_slot_reservation", False)):
+            return 0
+        if not self._semantic_plan_action_counts or row >= len(
+            self._semantic_plan_action_counts
+        ):
+            return 0
+        from slm_training.dsl.lang_core import library_schema
+
+        family_token_ids = {
+            str(self.tokenizer.id_to_token.get(token_id, ""))
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        remaining = dict(self._semantic_plan_action_counts[row])
+        for token_id, count in self._semantic_plan_covered_counts(
+            state, prefix, family_token_ids
+        ).items():
+            if token_id in remaining:
+                remaining[token_id] = max(0, remaining[token_id] - count)
+        definitions = library_schema().get("$defs", {})
+        reserved = 0
+        for token_id, count in remaining.items():
+            family = next(
+                (
+                    name
+                    for name, component_id in family_token_ids.items()
+                    if component_id == token_id
+                ),
+                "",
+            )
+            definition = definitions.get(family, {})
+            required = set(definition.get("required", ()))
+            properties = definition.get("properties", {})
+            if count > 0 and any(
+                name in required
+                and isinstance(value, dict)
+                and value.get("type") == "string"
+                for name, value in properties.items()
+            ):
+                reserved += int(count)
+        return reserved
 
     @staticmethod
     def _semantic_role_joint_candidates(
@@ -8040,6 +8335,41 @@ class TwoTowerModel(nn.Module):
             close_id = int(self.tokenizer.token_to_id["]"])
         except (AttributeError, KeyError, TypeError, ValueError):
             return None
+        closes = [
+            bool(path.token_ids and int(path.token_ids[0]) == close_id)
+            for path in paths
+        ]
+        if not any(closes) or all(closes):
+            return None
+        if not required.difference(prefix):
+            # Once every request-visible slot has been emitted, continuing the
+            # direct root list cannot improve contract coverage. Prefer the
+            # grammar-certified close over an unbounded structural tail.
+            return [1e9 if closes[index] else 0.0 for index in range(len(paths))]
+        return [-1e9 if closes[index] else 0.0 for index in range(len(paths))]
+
+    def _required_slot_array_completion_path_bias(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+        state: Any,
+    ) -> list[float] | None:
+        """Keep a nested component array open while an opaque slot is missing."""
+        if not bool(getattr(self.config, "required_slot_array_completion", False)):
+            return None
+        if not slot_contract or len(paths) < 2:
+            return None
+        if self._active_compiler_array_component(state) in {None, "Stack"}:
+            return None
+        try:
+            required = {
+                int(self.tokenizer.sym_id(index))
+                for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
+            }
+            close_id = int(self.tokenizer.token_to_id["]"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
         if not required.difference(prefix):
             return None
         closes = [
@@ -8049,6 +8379,226 @@ class TwoTowerModel(nn.Module):
         if not any(closes) or all(closes):
             return None
         return [-1e9 if closes[index] else 0.0 for index in range(len(paths))]
+
+    def _slot_alias_unique_path_bias(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+    ) -> list[float] | None:
+        """Prevent reusing a bound subtree that carries an opaque request slot."""
+        if not bool(getattr(self.config, "slot_alias_unique_decode", False)):
+            return None
+        if not slot_contract:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            bound_binder_reference_counts,
+            bound_binder_slot_ids,
+        )
+
+        try:
+            required = set(range(min(len(slot_contract), int(self.tokenizer.sym_slots))))
+        except (AttributeError, TypeError, ValueError):
+            return None
+        try:
+            expanded_prefix = self.tokenizer.expand_macros(prefix)
+        except (AttributeError, TypeError, ValueError):
+            return None
+        carried = {
+            binder
+            for binder, slots in bound_binder_slot_ids(
+                self.tokenizer, expanded_prefix
+            ).items()
+            if slots.intersection(required)
+        }
+        if not carried:
+            return None
+        references = bound_binder_reference_counts(self.tokenizer, expanded_prefix)
+        conflicts: list[bool] = []
+        for path in paths:
+            binder = next(
+                (
+                    int(token_id)
+                    for token_id in path.token_ids
+                    if self.tokenizer.bind_slot_of(token_id) not in {None, 0}
+                ),
+                None,
+            )
+            conflicts.append(
+                bool(str(getattr(path, "kind", "")).startswith("bind_reference"))
+                and binder in carried
+                and references.get(binder, 0) > 0
+            )
+        if not any(conflicts) or all(conflicts):
+            return None
+        return [-1e9 if conflict else 0.0 for conflict in conflicts]
+
+    def _binder_slot_ownership_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+    ) -> list[float] | None:
+        """Down-rank repeated forward binders predicted to own request slots."""
+        weight = float(
+            getattr(self.config, "binder_slot_ownership_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.binder_slot_ownership_head is None or not slot_contract:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            bound_binder_reference_counts,
+        )
+
+        binder_ids = self._binder_component_token_ids()
+        binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+        try:
+            required_count = min(len(slot_contract), int(self.tokenizer.sym_slots))
+            references = bound_binder_reference_counts(self.tokenizer, prefix)
+        except (AttributeError, TypeError, ValueError):
+            return None
+        logits = self.binder_slot_ownership_head(self._pool_context(ctx, ctx_pad))[0]
+        logits = logits.view(len(binder_ids), int(self.tokenizer.sym_slots))
+        penalties: list[float] = []
+        for path in paths:
+            binder_id = next(
+                (
+                    int(token_id)
+                    for token_id in path.token_ids
+                    if self.tokenizer.bind_slot_of(token_id) not in {None, 0}
+                ),
+                None,
+            )
+            binder = binder_index.get(binder_id)
+            if (
+                not str(getattr(path, "kind", "")).startswith("bind_reference")
+                or binder is None
+                or references.get(binder_id, 0) <= 0
+            ):
+                penalties.append(0.0)
+                continue
+            ownership = torch.sigmoid(logits[binder, :required_count]).max()
+            penalties.append(-weight * float(ownership.detach().cpu()))
+        if not any(penalties) or all(penalty < 0.0 for penalty in penalties):
+            return None
+        return penalties
+
+    def _binder_slot_presence_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        paths: tuple,
+    ) -> list[float] | None:
+        """Down-rank repeated forward binders predicted to carry any slot."""
+        weight = float(
+            getattr(self.config, "binder_slot_presence_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.binder_slot_presence_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            bound_binder_reference_counts,
+        )
+
+        binder_ids = self._binder_component_token_ids()
+        binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+        references = bound_binder_reference_counts(self.tokenizer, prefix)
+        logits = self.binder_slot_presence_head(self._pool_context(ctx, ctx_pad))[0]
+        penalties: list[float] = []
+        for path in paths:
+            binder_id = next(
+                (
+                    int(token_id)
+                    for token_id in path.token_ids
+                    if self.tokenizer.bind_slot_of(token_id) not in {None, 0}
+                ),
+                None,
+            )
+            binder = binder_index.get(binder_id)
+            if (
+                not str(getattr(path, "kind", "")).startswith("bind_reference")
+                or binder is None
+                or references.get(binder_id, 0) <= 0
+            ):
+                penalties.append(0.0)
+                continue
+            penalties.append(-weight * float(torch.sigmoid(logits[binder]).detach().cpu()))
+        if not any(penalties) or all(penalty < 0.0 for penalty in penalties):
+            return None
+        return penalties
+
+    def _binder_reference_presence_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        paths: tuple,
+        length: int,
+    ) -> list[float] | None:
+        """Down-rank repeated binders using only the no-future decoder prefix."""
+        weight = float(
+            getattr(self.config, "binder_reference_presence_decode_weight", 0.0)
+            or 0.0
+        )
+        if weight <= 0.0 or self.binder_reference_presence_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            bound_binder_reference_counts,
+        )
+
+        binder_ids = self._binder_component_token_ids()
+        binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+        references = bound_binder_reference_counts(self.tokenizer, prefix)
+        candidates = [
+            next(
+                (
+                    int(token_id)
+                    for token_id in path.token_ids
+                    if self.tokenizer.bind_slot_of(token_id) not in {None, 0}
+                ),
+                None,
+            )
+            for path in paths
+        ]
+        active = [
+            str(getattr(path, "kind", "")).startswith("bind_reference")
+            and binder_index.get(binder_id) is not None
+            and references.get(binder_id, 0) > 0
+            for path, binder_id in zip(paths, candidates, strict=True)
+        ]
+        if not any(active) or all(active):
+            return None
+        canvas = self._compiler_canvas(prefix, length)
+        hidden = self._denoiser_hidden(canvas, ctx, ctx_pad)
+        logits = self.binder_reference_presence_head(hidden[0, len(prefix)].detach())
+        penalties: list[float] = []
+        for enabled, binder_id in zip(active, candidates, strict=True):
+            if not enabled:
+                penalties.append(0.0)
+                continue
+            probability = torch.sigmoid(logits[binder_index[binder_id]])
+            penalties.append(-weight * float(probability.detach().cpu()))
+        return penalties
+
+    @staticmethod
+    def _active_compiler_array_component(state: Any) -> str | None:
+        """Read the active component name from Lark's parsed value stack."""
+        try:
+            values = state.engine._ip.parser_state.value_stack
+            array_index = max(
+                index
+                for index, value in enumerate(values)
+                if getattr(value, "type", None) == "LSQB"
+            )
+            call = next(
+                value
+                for value in reversed(values[:array_index])
+                if str(getattr(value, "data", "")) == "call_name"
+            )
+            return str(call.children[0])
+        except (AttributeError, IndexError, StopIteration, ValueError):
+            return None
 
     def _semantic_plan_outer_group_target(
         self,
@@ -8833,13 +9383,36 @@ class TwoTowerModel(nn.Module):
             len(binder_ids), len(binder_ids)
         )[parent]
         bias = logits.new_zeros(len(candidate_ids))
+        used_children: set[int] = set()
+        if bool(getattr(self.config, "binder_topology_unique_decode", False)):
+            bind_ids = set(binder_ids)
+            equal_id = int(self.tokenizer.token_to_id["="])
+            declaration_index = max(
+                (
+                    index
+                    for index, token_id in enumerate(prefix[:-1])
+                    if int(token_id) in bind_ids
+                    and int(prefix[index + 1]) == equal_id
+                ),
+                default=-1,
+            )
+            if declaration_index >= 0:
+                used_children = {
+                    int(token_id)
+                    for token_id in prefix[declaration_index + 2 :]
+                    if int(token_id) in bind_ids
+                }
         applied = False
         for position, (token_id, kind) in enumerate(
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
             child = binder_index.get(token_id)
             if child is not None and kind.startswith("bind_reference"):
-                bias[position] = weight * logits[child]
+                bias[position] = (
+                    logits.new_tensor(-20.0)
+                    if int(token_id) in used_children
+                    else weight * logits[child]
+                )
                 applied = True
         return bias if applied else None
 
@@ -9612,6 +10185,30 @@ class TwoTowerModel(nn.Module):
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_root_identity
                 )
+        binder_slot_ownership_bias = self._binder_slot_ownership_path_bias(
+            ctx, ctx_pad, prefix, paths, slot_contract
+        )
+        if binder_slot_ownership_bias is not None:
+            path_scores = [
+                score + binder_slot_ownership_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+        binder_slot_presence_bias = self._binder_slot_presence_path_bias(
+            ctx, ctx_pad, prefix, paths
+        )
+        if binder_slot_presence_bias is not None:
+            path_scores = [
+                score + binder_slot_presence_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+        binder_reference_presence_bias = self._binder_reference_presence_path_bias(
+            ctx, ctx_pad, prefix, paths, length
+        )
+        if binder_reference_presence_bias is not None:
+            path_scores = [
+                score + binder_reference_presence_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
         coverage_close_bias = self._slot_coverage_close_path_bias(
             prefix, paths, slot_contract, path_scores
         )
@@ -9633,6 +10230,22 @@ class TwoTowerModel(nn.Module):
         if required_root_completion_bias is not None:
             path_scores = [
                 score + required_root_completion_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+        required_array_completion_bias = self._required_slot_array_completion_path_bias(
+            prefix, paths, slot_contract, state
+        )
+        if required_array_completion_bias is not None:
+            path_scores = [
+                score + required_array_completion_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+        slot_alias_unique_bias = self._slot_alias_unique_path_bias(
+            prefix, paths, slot_contract
+        )
+        if slot_alias_unique_bias is not None:
+            path_scores = [
+                score + slot_alias_unique_bias[index]
                 for index, score in enumerate(path_scores)
             ]
         path_candidates = tuple(int(path.token_ids[0]) for path in paths)
@@ -9910,6 +10523,14 @@ class TwoTowerModel(nn.Module):
                             self.config,
                             "compiler_schema_component_types",
                             False,
+                        )
+                    ),
+                    reserved_content_slots=self._request_aware_slot_reservation(
+                        _plan_row, state, prefix
+                    ),
+                    reserve_unresolved_content=bool(
+                        getattr(
+                            self.config, "request_aware_slot_reservation", False
                         )
                     ),
                 )

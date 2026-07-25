@@ -61,6 +61,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "best_of_n",
         "fidelity_loss_weight",
         "ltr_loss_weight",
+        "ltr_tail_loss_weight",
+        "ltr_tail_tokens",
         "gen_steps",
         "parallel_unmask",
         "remask_ratio",
@@ -71,6 +73,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_fastpath",
         "grammar_fastpath_mode",
         "grammar_draft_window",
+        "request_aware_slot_reservation",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -140,6 +143,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_role_schema_candidates",
         "slot_coverage_close_decode_weight",
         "required_slot_root_completion",
+        "required_slot_array_completion",
         "schema_value_decode_weight",
         "schema_enum_close_decode_weight",
         "schema_open_decode_weight",
@@ -159,10 +163,15 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_plan_typed_array_nonempty_margin_decode_weight",
         "semantic_plan_typed_array_item_margin_decode_weight",
         "compiler_schema_component_types",
+        "slot_alias_unique_decode",
         "visible_reference_decode_weight",
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
         "binder_topology_decode_weight",
+        "binder_topology_unique_decode",
+        "binder_slot_ownership_decode_weight",
+        "binder_slot_presence_decode_weight",
+        "binder_reference_presence_decode_weight",
         "binder_arity_decode_weight",
         "root_reference_arity_decode_weight",
         "root_reference_identity_decode_weight",
@@ -342,6 +351,10 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_ltr_stages=tuple(ltr_stages),
         grammar_finalize_validate=getattr(config, "grammar_finalize_validate", False),
         ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
+        ltr_tail_loss_weight=float(
+            getattr(config, "ltr_tail_loss_weight", 0.0) or 0.0
+        ),
+        ltr_tail_tokens=int(getattr(config, "ltr_tail_tokens", 32) or 0),
         fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
         grammar_ltr_primary=config.grammar_ltr_primary,
         design_md_in_context=(
@@ -385,6 +398,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_fastpath=getattr(config, "grammar_fastpath", True),
         grammar_fastpath_mode=getattr(config, "grammar_fastpath_mode", "hybrid"),
         grammar_draft_window=int(getattr(config, "grammar_draft_window", 8) or 8),
+        request_aware_slot_reservation=bool(
+            getattr(config, "request_aware_slot_reservation", False)
+        ),
+        slot_alias_unique_decode=bool(
+            getattr(config, "slot_alias_unique_decode", False)
+        ),
         compiler_decode_mode=str(
             getattr(config, "compiler_decode_mode", "off") or "off"
         ),
@@ -511,6 +530,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         required_slot_root_completion=bool(
             getattr(config, "required_slot_root_completion", False)
         ),
+        required_slot_array_completion=bool(
+            getattr(config, "required_slot_array_completion", False)
+        ),
         schema_value_decode_weight=float(
             getattr(config, "schema_value_decode_weight", 0.0) or 0.0
         ),
@@ -631,6 +653,27 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         binder_topology_decode_weight=float(
             getattr(config, "binder_topology_decode_weight", 0.0) or 0.0
+        ),
+        binder_topology_unique_decode=bool(
+            getattr(config, "binder_topology_unique_decode", False)
+        ),
+        binder_slot_ownership_loss_weight=float(
+            getattr(config, "binder_slot_ownership_loss_weight", 0.0) or 0.0
+        ),
+        binder_slot_ownership_decode_weight=float(
+            getattr(config, "binder_slot_ownership_decode_weight", 0.0) or 0.0
+        ),
+        binder_slot_presence_loss_weight=float(
+            getattr(config, "binder_slot_presence_loss_weight", 0.0) or 0.0
+        ),
+        binder_slot_presence_decode_weight=float(
+            getattr(config, "binder_slot_presence_decode_weight", 0.0) or 0.0
+        ),
+        binder_reference_presence_loss_weight=float(
+            getattr(config, "binder_reference_presence_loss_weight", 0.0) or 0.0
+        ),
+        binder_reference_presence_decode_weight=float(
+            getattr(config, "binder_reference_presence_decode_weight", 0.0) or 0.0
         ),
         binder_arity_loss_weight=float(
             getattr(config, "binder_arity_loss_weight", 0.0) or 0.0
