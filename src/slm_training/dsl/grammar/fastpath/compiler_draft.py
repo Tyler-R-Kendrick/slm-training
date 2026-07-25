@@ -173,6 +173,33 @@ def _literal_frame_is_open(tokenizer: Any, token_ids: list[int]) -> bool:
     return opened
 
 
+def literal_frame_is_open(tokenizer: Any, token_ids: list[int] | tuple[int, ...]) -> bool:
+    """Public view of :func:`_literal_frame_is_open` (DSH1-07 / SLM-359).
+
+    A prefix ending inside an open ``LIT_STR``/``LIT_NUM`` frame (before its
+    ``LIT_END``) is mid-opaque-marker: cutting there would split a lexical
+    token, which the partial-state classification contract
+    (``docs/design/verified-scope-solver.md``, DSH1-07) never permits.
+    """
+    return _literal_frame_is_open(tokenizer, list(int(tid) for tid in token_ids))
+
+
+def unresolved_binder_reference_pieces(
+    tokenizer: Any, prefix_ids: list[int] | tuple[int, ...]
+) -> tuple[str, ...]:
+    """Return surface pieces for binder references with no declaration yet.
+
+    Deterministic, order-independent (sorted) view over
+    :func:`_binder_scope`'s ``references - declarations`` set; used to record
+    the "required roles/binders" fact of a ``PartialStateClassV1`` PREFIX
+    (DSH1-07 / SLM-359).
+    """
+    ids = [int(tid) for tid in prefix_ids]
+    declarations, references, _active = _binder_scope(tokenizer, ids)
+    unresolved = sorted(set(references) - set(declarations))
+    return tuple(_token_piece(tokenizer, token_id) for token_id in unresolved)
+
+
 def _semantic_kind(tokenizer: Any, token_id: int) -> str:
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
@@ -1688,6 +1715,8 @@ __all__ = [
     "Coverage",
     "build_completion_forest",
     "gold_compiler_decisions",
+    "literal_frame_is_open",
     "semantic_component_edges",
     "gold_compiler_decision_positions",
+    "unresolved_binder_reference_pieces",
 ]

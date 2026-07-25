@@ -686,6 +686,25 @@
         }
       ]
     },
+    "dsl.solver.partial_state": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/solver/partial_state.py",
+        "src/slm_training/dsl/solver/openui_partial_state.py",
+        "tests/test_dsl/test_partial_state.py",
+        "tests/test_dsl/test_openui_partial_state.py",
+        "docs/design/dsh1-07-partial-state-classification-20260725.md",
+        "docs/design/dsh1-07-partial-state-classification-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-359 (DSH1-07): initial registration; PartialStateClassV1 (COMPLETE/FRAGMENT/PREFIX/INVALID) classifier plus the OpenUI live-fragment-parser/CompletionForest adapter. No decode-path integration, experiment, or checkpoint change."
+        }
+      ]
+    },
     "evals.agentv": {
       "version": "v4",
       "kind": "harness",
@@ -6289,7 +6308,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v236",
+      "version": "v237",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6318,6 +6337,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v237",
+          "date": "2026-07-25",
+          "note": "SLM-359: expose literal_frame_is_open and unresolved_binder_reference_pieces as public wrappers over existing private compiler_draft helpers for the DSH1-07 partial-state classifier; no change to any existing candidate/coverage/decision behavior"
+        },
         {
           "version": "v236",
           "date": "2026-07-24",
