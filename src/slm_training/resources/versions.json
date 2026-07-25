@@ -1618,7 +1618,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/legal_set_kl.py",
@@ -1626,21 +1626,31 @@
         "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/operator_decision_state.py",
         "src/slm_training/harnesses/distill/operator_teacher_ceiling.py",
+        "src/slm_training/harnesses/distill/operator_verifier_kd_defer.py",
         "scripts/run_spv2_05_semantic_repair_fixture.py",
         "scripts/run_dsh4_01_operator_decision_state_fixture.py",
         "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
+        "scripts/run_dsh4_03_operator_verifier_kd_defer_fixture.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
         "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
+        "tests/test_harnesses/distill/test_operator_verifier_kd_defer.py",
         "docs/design/iter-spv2-05-semantic-repair-20260720.md",
         "docs/design/iter-spv2-05-semantic-repair-20260720.json",
         "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
         "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
-        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json"
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.md",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.json"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "SLM-388 DSH4-03: accepted-set/verifier-backed operator distillation with DEFER -- matched arms (hard accepted-set, teacher argmax, offline conditional KD, verifier-ranking+KD, +DEFER) over DSH4-01/02's trace/ranking contracts, entropy/reliability-aware forward-KL-JS-vs-reverse-KL-pressure shaping, a disjoint-trained verifier(frequency) anchor, a fail-closed DEFER margin gate, and a held-out CAP2-proxy stop rule (fixture result: no_go_defer)"
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
