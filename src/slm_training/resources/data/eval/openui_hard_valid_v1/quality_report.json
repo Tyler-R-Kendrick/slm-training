@@ -1,0 +1,12 @@
+{
+  "schema": "semantic_contrast_quality/v1",
+  "pairs": 1206,
+  "mutation_classes": [
+    "binding_swap_symbol",
+    "binding_swap_symbol_reverse",
+    "content_invert_role",
+    "content_swap_family",
+    "contract_archetype_mismatch"
+  ],
+  "warnings": []
+}

@@ -77,3 +77,28 @@ def run_preview_verifier(
         return RuntimeEvidence.from_dict(json.loads(raw))
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"OpenUI preview verifier returned invalid JSON: {raw[:500]}") from exc
+
+
+def run_preview_verifier_many(
+    sources: tuple[str, ...], *, timeout_s: float = 170.0, root: Path | None = None
+) -> tuple[RuntimeEvidence, ...]:
+    """Render a bounded corpus in one local Chromium session."""
+    if not sources:
+        return ()
+    node = shutil.which("node")
+    if not node:
+        raise RuntimeError("Node.js is required for the OpenUI preview verifier")
+    root = root or repo_root()
+    script = root / "src" / "apps" / "openui_preview" / "verify.mjs"
+    proc = subprocess.run(
+        [node, str(script)], input=json.dumps({"sources": sources}), text=True,
+        capture_output=True, cwd=root, timeout=timeout_s, check=False,
+    )
+    raw = (proc.stdout or "").strip()
+    if proc.returncode or not raw:
+        detail = (proc.stderr or raw or f"exit {proc.returncode}").strip()
+        raise RuntimeError(f"OpenUI preview verifier failed: {detail[:500]}")
+    rows = json.loads(raw)
+    if not isinstance(rows, list) or len(rows) != len(sources):
+        raise RuntimeError("OpenUI preview verifier returned an invalid batch")
+    return tuple(RuntimeEvidence.from_dict(row) for row in rows)

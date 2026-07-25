@@ -198,13 +198,25 @@
       ]
     },
     "data.semantic_contrast": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/semantic_contrast/",
-        "scripts/build_semantic_contrasts.py"
+        "scripts/build_semantic_contrasts.py",
+        "src/apps/openui_preview/verify.mjs",
+        "src/slm_training/data/verify/runtime.py",
+        "scripts/verify_semantic_contrast_runtime.py",
+        "tests/test_scripts/test_verify_semantic_contrast_runtime.py",
+        "src/slm_training/resources/data/eval/openui_hard_valid_v1/",
+        "docs/design/semantic-contrast-corpus-v1.md",
+        "docs/design/iter-slm290-semantic-contrast-20260725.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "SLM-290 local runtime-backed hard-valid publication, source manifest, minimum corpus/class checks, and quality feedback ledger"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -5758,6 +5770,11 @@
         "docs/design/iter-slm289-corpus-certification-20260725.json"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: SLM-290 adds an eval-corpus runtime batch export under the shared verifier package; committed train-corpus certification behavior is unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
