@@ -478,6 +478,23 @@
         }
       ]
     },
+    "harness.experiments.slm365_frame_paraphrases": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/train_data/frame_paraphrases.py",
+        "tests/test_harnesses/train_data/test_frame_paraphrases.py",
+        "docs/design/iter-slm365-frame-paraphrases-20260725.md",
+        "docs/design/iter-slm365-frame-paraphrases-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial style-planned (concise/descriptive/imperative/compositional) prompt-only paraphrases from SemanticFrameV1 facts via the DSH2-03 provider contract, with a declared leak detector (DSL production forms, marker surfaces, answer digests, provenance fields), required/forbidden grounding floor with stop-rule style drops, lexical+structural diversity metrics, exact/near/template dedup within and across answer families, and canonical-answer fingerprint linking"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
@@ -1071,7 +1088,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -1957,7 +1974,7 @@
         {
           "version": "v31",
           "date": "2026-07-20",
-          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         },
         {
           "version": "v30",
@@ -1997,7 +2014,7 @@
         {
           "version": "v24",
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         },
         {
           "version": "v23",
@@ -2057,7 +2074,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -2166,7 +2183,7 @@
         {
           "version": "v1",
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
@@ -2394,7 +2411,7 @@
         {
           "version": "sde5-03-v1",
           "date": "2026-07-21",
-          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness"
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan \u00d7 grammar-mass \u00d7 high-debt exposure floor-escape matrix wiring/fixture harness"
         }
       ]
     },
@@ -2848,7 +2865,7 @@
         {
           "version": "v1",
           "date": "2026-07-20",
-          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         }
       ]
     },
@@ -3869,6 +3886,11 @@
       "history": [
         {
           "version": "v4",
+          "date": "2026-07-25",
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy \u2014 exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
+        },
+        {
+          "version": "v4",
           "date": "2026-07-24",
           "note": "no-bump: assert the wheel matches the existing Vercel exclusion for the offline SLM-230 corpus"
         },
@@ -4750,25 +4772,6 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; real X22 tree-edit reachability analyzer, suite audit CLI, and reachability-unproven gate input"
-        }
-      ]
-    },
-    "harness.experiments.slm301_prompt_observability": {
-      "version": "v1",
-      "kind": "harness",
-      "paths": [
-        "src/slm_training/harnesses/experiments/slm301_prompt_observability.py",
-        "scripts/run_slm301_prompt_observability.py",
-        "tests/test_harnesses/experiments/test_slm301_prompt_observability.py",
-        "docs/design/iter-slm301-prompt-observability-20260724.json",
-        "docs/design/iter-slm301-prompt-observability-20260724.md",
-        "docs/design/slm301-slot-observability-audit-20260724.json"
-      ],
-      "history": [
-        {
-          "version": "v1",
-          "date": "2026-07-24",
-          "note": "initial registration; SLM-301 LAR1-04 prompt-observability arms (as-is vs +inventory) with phase-0 coverage classification, AR/X22 baselines, paired predeclared-delta report"
         }
       ]
     },
@@ -6616,7 +6619,7 @@
         {
           "version": "v223",
           "date": "2026-07-22",
-        "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
+          "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
         },
         {
           "version": "v222",
