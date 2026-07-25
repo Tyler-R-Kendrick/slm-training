@@ -27,8 +27,8 @@ def cells(protocol: LockedPowerProtocol) -> list[dict]:
             "seed": seed,
             "backend": backend,
             "locked_eval_manifest_sha256": protocol.manifest_sha256,
-            "initial_tensor_sha256": f"{seed}{backend}".ljust(64, "0"),
-            "repeat_initial_tensor_sha256": f"{seed}{backend}".ljust(64, "0"),
+            "initial_tensor_sha256": f"seed-{seed}".ljust(64, "0"),
+            "repeat_initial_tensor_sha256": f"seed-{seed}".ljust(64, "0"),
             "records": {
                 "locked-1": {
                     variant: {
@@ -67,8 +67,29 @@ def test_rejects_nonidentical_repeat_initialization(protocol, cells) -> None:
         validate_cells(protocol, broken)
 
 
+def test_rejects_backend_pair_with_different_initialization(protocol, cells) -> None:
+    broken = deepcopy(cells)
+    broken[1]["initial_tensor_sha256"] = "b" * 64
+    broken[1]["repeat_initial_tensor_sha256"] = "b" * 64
+    with pytest.raises(ValueError, match="paired backends"):
+        validate_cells(protocol, broken)
+
+
 def test_rejects_missing_metric(protocol, cells) -> None:
     broken = deepcopy(cells)
     del broken[0]["records"]["locked-1"]["raw"][METRICS[0]]
     with pytest.raises(ValueError, match="missing"):
         validate_cells(protocol, broken)
+
+
+def test_mde_uses_observed_seed_and_target_effect_variance(protocol, cells) -> None:
+    varied = deepcopy(cells)
+    for cell in varied:
+        for record in cell["records"].values():
+            record["repaired"]["binding_aware_meaningful_v2"] = float(
+                cell["seed"] % 2 == 0 and cell["backend"] == BACKENDS[1]
+            )
+    result = summarize_cells(protocol, varied)
+    assert result["mde"]["sigma_seed"] > 0
+    assert result["mde"]["sigma_target"] == 0
+    assert result["paired"]["pairing"] == "record_id paired within seed; target-cluster bootstrap"

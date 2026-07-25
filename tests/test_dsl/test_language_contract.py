@@ -10,6 +10,7 @@ import pytest
 
 from slm_training.data.contract import GenerationRequest, RuntimeSymbol
 from slm_training.dsl import lang_core
+from slm_training.models import grammar
 from slm_training.dsl.language_contract import (
     LANG_SPEC,
     OUTPUT_CONTRACT_VERSION,
@@ -257,6 +258,35 @@ def test_library_schema_falls_back_to_committed_snapshot(monkeypatch) -> None:
         "description",
         "value",
     ]
+
+
+def test_bridge_deadline_is_not_retried_through_one_shot_fallback(monkeypatch) -> None:
+    monkeypatch.setattr(
+        lang_core,
+        "_invoke_repl",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(TimeoutError("deadline")),
+    )
+    monkeypatch.setattr(
+        lang_core,
+        "_invoke_once",
+        lambda *_args, **_kwargs: pytest.fail("timeout must not retry the bridge"),
+    )
+    with pytest.raises(TimeoutError, match="deadline"):
+        lang_core._invoke({"op": "parse", "source": "root = Stack([])"})
+
+
+def test_stream_filter_propagates_a_decode_deadline(monkeypatch) -> None:
+    monkeypatch.setattr(
+        grammar,
+        "stream_check",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(TimeoutError("deadline")),
+    )
+    with pytest.raises(TimeoutError, match="deadline"):
+        grammar.filter_ids_by_stream(
+            type("Tokenizer", (), {"decode": lambda *_args: "root"})(),
+            [0],
+            [0],
+        )
 
 
 def test_bridge_uses_matching_git_common_checkout_dependencies(

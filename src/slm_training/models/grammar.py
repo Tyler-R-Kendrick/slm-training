@@ -1275,6 +1275,9 @@ def filter_ids_by_stream(
     text = tokenizer.decode(token_ids)
     try:
         status = stream_check(text)
+    except TimeoutError:
+        # A harness deadline is a decode failure, never a clean stream probe.
+        raise
     except Exception:  # noqa: BLE001
         return []
     if not status.hard_error:

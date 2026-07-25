@@ -259,6 +259,14 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
     assert payload["strata"]["raw"]["semantic_factor"]["content"]["n"] == 1
     assert Path(payload["output"]).is_file()
 
+    selected = evaluate_grammar_leakage_audit(
+        config,
+        model=AuditModel(),
+        publish_agentv=False,
+        variant_names=("raw", "constrained", "repaired"),
+    )
+    assert set(selected["variants"]) == {"raw", "constrained", "repaired"}
+
 
 def test_evaluate_rejects_negative_offset(tmp_path: Path) -> None:
     test_dir = tmp_path / "eval"

@@ -261,6 +261,28 @@ def _build_markdown(payload: dict[str, Any], command: str) -> str:
                 "",
             ]
         )
+    if status == "interrupted_not_evidence" and "protocol" in payload:
+        protocol = payload["protocol"]
+        return "\n".join(
+            [
+                "# SLM-287: interrupted local locked-power execution",
+                "",
+                "**Claim class:** interrupted diagnostic; no numeric result is evidence.",
+                "",
+                f"- locked manifest: `{protocol['locked_eval_manifest_sha256']}`",
+                f"- requested locked records: `{len(protocol['record_ids'])}`",
+                f"- reason: `{payload['reason']}`",
+                "- ship gate: not evaluated; human ratings are not a gate.",
+                "",
+                "The runner rejects a timed-out cell before aggregation. No MDE, CI,",
+                "or candidate-selection conclusion was emitted.",
+                "",
+                "## Exact command",
+                "",
+                f"```bash\n{command}\n```",
+                "",
+            ]
+        )
     if status == "plan_only":
         manifest = ConfirmationSuiteManifest.from_dict(payload["manifest"])
         lines = [
@@ -424,6 +446,22 @@ def main(argv: list[str] | None = None) -> int:
             args.locked_manifest,
             args.locked_limit,
         )
+    except TimeoutError as exc:
+        protocol = load_locked_protocol(args.locked_manifest, limit=args.locked_limit)
+        payload = {
+            "schema": "Slm287LockedPowerProtocolAttemptV1",
+            "experiment_id": "slm287-locked-power-protocol",
+            "status": "interrupted_not_evidence",
+            "claim_class": "diagnostic",
+            "reason": str(exc),
+            "protocol": protocol.to_dict(),
+            "version_stamp": build_version_stamp(
+                "harness.experiments",
+                "evals.power_protocol",
+                "data.locked_eval_manifest",
+            ),
+        }
+        command = "python -m scripts.run_flow_power_protocol --mode locked-run"
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

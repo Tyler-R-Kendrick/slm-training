@@ -18,7 +18,7 @@ from typing import Any
 import numpy as np
 
 from slm_training.evals.power_protocol import (
-    bootstrap_paired_ci,
+    cluster_bootstrap_ci,
     exact_paired_binary_test,
     mde_simulation,
 )
@@ -106,6 +106,7 @@ def load_locked_protocol(
         record_ids=record_ids,
         recipe={
             "model_name": "twotower",
+            "output_tokenizer": "choice",
             "device": "cpu",
             "precision": "float32",
             "optimizer": "adamw",
@@ -134,11 +135,17 @@ def validate_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) -
     if observed != expected or len(cells) != len(expected):
         raise ValueError("locked power protocol requires exactly five seeds by two backends")
     ids = set(protocol.record_ids)
+    initial_by_seed: dict[int, str] = {}
     for cell in cells:
         if cell.get("locked_eval_manifest_sha256") != protocol.manifest_sha256:
             raise ValueError("cell locked manifest digest mismatch")
         if cell.get("initial_tensor_sha256") != cell.get("repeat_initial_tensor_sha256"):
             raise ValueError("identical initialization was not bit exact")
+        seed = int(cell["seed"])
+        initial = str(cell["initial_tensor_sha256"])
+        if seed in initial_by_seed and initial_by_seed[seed] != initial:
+            raise ValueError("paired backends must share bit-exact initialization")
+        initial_by_seed[seed] = initial
         records = cell.get("records")
         if not isinstance(records, dict) or set(records) != ids:
             raise ValueError("cell records are not the frozen locked record set")
@@ -168,23 +175,40 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
     control, candidate = BACKENDS
     left: list[float] = []
     right: list[float] = []
+    differences: list[float] = []
+    seed_ids: list[int] = []
+    target_ids: list[str] = []
     for seed in SEEDS:
         for record_id in protocol.record_ids:
-            left.append(
-                float(by_key[seed, control]["records"][record_id]["repaired"]["binding_aware_meaningful_v2"])
-            )
-            right.append(
-                float(by_key[seed, candidate]["records"][record_id]["repaired"]["binding_aware_meaningful_v2"])
-            )
+            left_value = float(by_key[seed, control]["records"][record_id]["repaired"]["binding_aware_meaningful_v2"])
+            right_value = float(by_key[seed, candidate]["records"][record_id]["repaired"]["binding_aware_meaningful_v2"])
+            left.append(left_value)
+            right.append(right_value)
+            differences.append(right_value - left_value)
+            seed_ids.append(seed)
+            target_ids.append(record_id)
+    seed_effects = [
+        float(np.mean([difference for difference, row_seed in zip(differences, seed_ids) if row_seed == seed]))
+        for seed in SEEDS
+    ]
+    target_effects = [
+        float(np.mean([difference for difference, row_target in zip(differences, target_ids) if row_target == record_id]))
+        for record_id in protocol.record_ids
+    ]
     paired = {
         "primary_metric": "binding_aware_meaningful_v2",
-        "bootstrap_ci": bootstrap_paired_ci(left, right, lambda a, b: float(np.mean(b) - np.mean(a))),
+        "bootstrap_ci": cluster_bootstrap_ci(
+            differences,
+            target_ids,
+            lambda values: float(np.mean(values)),
+        ),
         "exact_paired_test": exact_paired_binary_test([int(v) for v in left], [int(v) for v in right]),
+        "pairing": "record_id paired within seed; target-cluster bootstrap",
     }
     mde = mde_simulation(
         base_rate=float(np.mean(left)),
-        sigma_seed=float(np.std([np.mean(left[index::len(protocol.record_ids)]) for index in range(len(protocol.record_ids))], ddof=0)),
-        sigma_target=0.0,
+        sigma_seed=float(np.std(seed_effects, ddof=0)),
+        sigma_target=float(np.std(target_effects, ddof=0)),
         n_targets=len(protocol.record_ids),
         paths_per_target=1,
         n_seeds=len(SEEDS),
@@ -204,7 +228,9 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
         "ship_gate": "not_evaluated",
         "human_rating_gate": "not_required",
         "version_stamp": build_version_stamp(
-            "harness.experiments", "evals.power_protocol", "data.locked_eval_manifest"
+            "harness.experiments",
+            "evals.power_protocol",
+            "data.locked_eval_manifest",
         ),
     }
 
@@ -267,6 +293,7 @@ def execute_local_grid(
                 seed=seed,
                 device="cpu",
                 model_name="twotower",
+                output_tokenizer="choice",
                 d_model=32,
                 n_heads=4,
                 context_layers=1,
@@ -275,6 +302,7 @@ def execute_local_grid(
                 local_files_only=True,
                 design_md_in_context=bool(overrides["design_md_in_context"]),
                 grammar_ltr_max_tokens=32,
+                grammar_ltr_primary=True,
                 gen_steps=1,
                 decode_timeout_seconds=5.0,
                 run_class="scratch_matrix",
@@ -283,7 +311,12 @@ def execute_local_grid(
             initial = state_sha(model)
             repeated = state_sha(build_model(config, records))
             before_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-            audit = evaluate_grammar_leakage_audit(config, model=model, publish_agentv=True)
+            audit = evaluate_grammar_leakage_audit(
+                config,
+                model=model,
+                publish_agentv=False,
+                variant_names=VARIANTS,
+            )
             if any(
                 int(audit["variants"][variant].get("decode_timeout_count") or 0)
                 for variant in VARIANTS

@@ -649,13 +649,19 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
+        "src/slm_training/dsl/lang_core.py",
         "tests/test_dsl/test_language_contract.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Preserve hard decode-deadline cancellation through the symbolic LangCore surface"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -1513,12 +1519,32 @@
       ]
     },
     "harness.experiments": {
-      "version": "v91",
+      "version": "v95",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v95",
+          "date": "2026-07-25",
+          "note": "SLM-287 require cross-backend bit-exact initialization and derive paired cluster CIs plus observed seed and target variance"
+        },
+        {
+          "version": "v94",
+          "date": "2026-07-24",
+          "note": "SLM-287 use the canonical choice codec for bounded local constrained decode"
+        },
+        {
+          "version": "v93",
+          "date": "2026-07-24",
+          "note": "SLM-287 persist interrupted local executions as non-evidence artifacts"
+        },
+        {
+          "version": "v92",
+          "date": "2026-07-24",
+          "note": "SLM-287 use only preregistered raw constrained and repaired evaluation variants"
+        },
         {
           "version": "v91",
           "date": "2026-07-24",
@@ -3420,7 +3446,7 @@
       ]
     },
     "harness.experiments.slm183_power_protocol": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
@@ -3431,6 +3457,11 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-24",
+          "note": "Persist SLM-287 timeout outcomes through the shared power-protocol CLI"
+        },
         {
           "version": "v6",
           "date": "2026-07-24",
@@ -4665,7 +4696,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v55",
+      "version": "v56",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4678,6 +4709,11 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v56",
+          "date": "2026-07-24",
+          "note": "Allow callers to request an explicit validated subset of grammar-leakage variants"
+        },
         {
           "version": "v55",
           "date": "2026-07-24",
@@ -5556,6 +5592,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-24",
+          "note": "no-bump: refresh pinned symbolic-surface source hashes after decode-deadline regression coverage"
+        },
+        {
+          "version": "v2",
           "date": "2026-07-23",
           "note": "no-bump: refresh pinned pack, CAP0 plan, materialization, and disposition hashes after adding the independent Harness DSL boundary"
         },
@@ -6324,7 +6365,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v236",
+      "version": "v237",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6353,6 +6394,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v237",
+          "date": "2026-07-24",
+          "note": "Propagate hard evaluator deadlines through grammar stream probes"
+        },
         {
           "version": "v236",
           "date": "2026-07-24",
