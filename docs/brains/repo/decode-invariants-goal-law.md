@@ -48,7 +48,9 @@ different project. I14 exists to make that failure mode illegal.
   the successor (trie, learned ranker, campaign-approved successors).
 - An encoder-side shared `OPS_VOCAB` experiment measures no benefit → I13's
   current approach is falsified. e803 does **not** falsify it: e803 tested
-  decoder targets only.
+  decoder targets only. The vocabulary itself now exists and is gated
+  (`dsl/ops_vocab.py`, 19 ops derived from the live registries); what is
+  untested is conditioning the context tower on it.
 - A CRDT-converging merge is shown to lose information a conflict-rejecting
   merge preserves → I11's merge approach needs revision, and the divergence
   must be documented as a dated waiver, not as silence.
@@ -61,6 +63,8 @@ different project. I14 exists to make that failure mode illegal.
   checkpoint? (I4 counters answer this before the lever ships)
 - Is `reachable_fraction = 0.0` a seed problem or an edit-language problem?
   (I12 successor: reachability-aware seeds vs macro actions)
+- Does conditioning the context tower on the reserved ops vocabulary help, now
+  that both towers can name the same 19 ops at the same ids? (I13 successor)
 
 ## Links
 

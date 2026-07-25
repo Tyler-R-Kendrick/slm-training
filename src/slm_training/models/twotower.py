@@ -4884,6 +4884,60 @@ class TwoTowerModel(nn.Module):
         )
         return self._action_shortlist_vectors
 
+    def _grammar_checkpoints(
+        self,
+        ids: torch.Tensor,
+        t: int,
+        canvas: int,
+        need_model: list[int],
+        states: Any,
+    ) -> dict[int, int] | None:
+        """Prove where branching stops after ``t``, without a forward (I4).
+
+        For every row still needing the model, ask how many lexemes the grammar
+        forces after *each* of its legal candidates. The minimum across rows and
+        candidates is determined no matter what the model picks, so the forward
+        only needs to read up to it. Returns ``None`` (no claim) when the lever
+        is off or any probe budget is exceeded — the planner then falls back to
+        device-window sizing.
+        """
+        if str(getattr(self.config, "prefill_schedule", "off") or "off") == "off":
+            return None
+        if not need_model or states is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            build_completion_forest,
+        )
+        from slm_training.runtime.decode_schedule import common_forced_run
+
+        tok = self.tokenizer
+        rows = need_model[:4]  # probe budget: the batch, not the whole canvas
+        shortest: int | None = None
+        for bi in rows:
+            st = states[bi] if bi < len(states) else None
+            if st is None:
+                return None
+            prefix = ids[bi, :t].tolist()
+            try:
+                forest = build_completion_forest(
+                    tok, prefix, state=st, remaining_tokens=canvas - t
+                )
+            except Exception:  # noqa: BLE001 - an unprovable probe claims nothing
+                return None
+            if forest.coverage != "complete":
+                return None
+            run = common_forced_run(
+                prefix,
+                [path.token_ids for path in forest.paths if path.token_ids],
+                lambda working: force_emit_token_id(tok, working, state=None),
+            )
+            shortest = run if shortest is None else min(shortest, run)
+            if not shortest:
+                return None
+        if not shortest:
+            return None
+        return {t + 1: int(shortest)}
+
     def _schedule_backend(self) -> str:
         """Cached accelerator id used by the I4 prefill planner."""
         cached = getattr(self, "_schedule_backend_cache", None)
@@ -4913,13 +4967,10 @@ class TwoTowerModel(nn.Module):
                 )
             from slm_training.dsl.grammar.fastpath.speculative_rank import load_ranker
 
-            table = getattr(self.config, "speculative_rank_table", None)
-            if not table:
-                raise ValueError(
-                    "speculative_rank='ngram' requires speculative_rank_table"
-                )
+            # An unset table resolves to the committed default artifact, so the
+            # lever is reachable without a build step.
             ranker = load_ranker(
-                table,
+                getattr(self.config, "speculative_rank_table", None),
                 margin=float(getattr(self.config, "speculative_rank_margin", 0.0) or 0.0),
             )
         self._speculative_ranker_cache = ranker
@@ -10953,12 +11004,9 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "prefill_schedule_max_lookahead", 0) or 0
                     ),
                     backend=self._schedule_backend(),
-                    # No checkpoint input here: at plan time this loop has no
-                    # proof about positions *after* t — a forced run beyond the
-                    # current position only becomes provable once t is
-                    # committed, and the next iteration discovers it for free.
-                    # Callers that already hold a forced-run draft pass one.
-                    forced_run_lengths=None,
+                    forced_run_lengths=self._grammar_checkpoints(
+                        ids, t, canvas, need_model, states
+                    ),
                 )
                 record_plan(stats, plan)
                 step_lookahead = lookahead

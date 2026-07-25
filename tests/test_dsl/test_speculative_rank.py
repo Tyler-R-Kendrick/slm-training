@@ -192,8 +192,11 @@ def test_span_respects_its_token_budget() -> None:
     assert span.stop_reason == "budget"
 
 
-def test_load_ranker_is_none_when_unconfigured() -> None:
-    assert load_ranker(None) is None
+def test_load_ranker_falls_back_to_the_committed_table() -> None:
+    """An unnamed table is the committed default, not "no ranker"."""
+    ranker = load_ranker(None)
+    assert ranker is not None
+    assert ranker.table.sequences > 0
 
 
 def test_load_ranker_rejects_an_empty_table(tmp_path) -> None:
@@ -207,3 +210,48 @@ def test_load_ranker_rejects_an_empty_table(tmp_path) -> None:
 def test_unsupported_schema_is_rejected() -> None:
     with pytest.raises(ValueError, match="schema"):
         NgramTableV1.from_dict({"schema": "something/v9", "order": 2, "counts": []})
+
+
+def test_committed_table_is_loadable_and_train_only() -> None:
+    """I3 is reachable without a build step: the default table ships."""
+    from slm_training.dsl.grammar.fastpath.speculative_rank import (
+        COMMITTED_NGRAM_TABLE,
+    )
+
+    assert COMMITTED_NGRAM_TABLE.is_file()
+    ranker = load_ranker(None)
+    assert ranker is not None
+    assert ranker.table.order >= 2
+    assert ranker.table.sequences > 0
+    assert ranker.table.corpus_fingerprint
+
+
+def test_committed_table_matches_its_builder() -> None:
+    """A stale artifact would silently rank against a corpus nobody has."""
+    from scripts.build_speculative_ngram_table import main as build
+
+    assert build(["--check"]) == 0
+
+
+def test_committed_table_ranks_real_branch_points_confidently() -> None:
+    """The point of I3: pick the next-most-likely legal symbol, no forward."""
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        build_completion_forest,
+    )
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ranker = load_ranker(None, margin=0.5)
+    assert ranker is not None
+
+    prefix = list(tok.encode("root = ", add_special=False))
+    forest = build_completion_forest(tok, prefix, remaining_tokens=32)
+    paths = tuple(path for path in forest.paths if path.token_ids)
+    assert forest.coverage == "complete"
+    assert len(paths) > 1  # a genuine branch point, not a forced singleton
+
+    choice = ranker.choose(prefix, paths)
+    assert choice is not None
+    assert choice.confident
+    # The chosen path is one the forest offered — ranking never widens.
+    assert paths[choice.best_index] in paths

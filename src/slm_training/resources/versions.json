@@ -6623,7 +6623,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v242",
+      "version": "v243",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6640,7 +6640,6 @@
         "src/slm_training/models/semantic_contrast_loss.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
-        "src/slm_training/dsl/openui_tokens.py",
         "src/slm_training/data/quality.py",
         "src/slm_training/data/contract.py",
         "src/slm_training/models/adapters/",
@@ -6655,9 +6654,15 @@
         "src/slm_training/runtime/decode_schedule.py",
         "scripts/build_speculative_ngram_table.py",
         "tests/test_dsl/test_speculative_rank.py",
-        "tests/test_runtime/test_decode_schedule.py"
+        "tests/test_runtime/test_decode_schedule.py",
+        "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v243",
+          "date": "2026-07-25",
+          "note": "Commit the speculative-rank n-gram table and default to it; prove grammar checkpoints with common_forced_run so prefills truncate at determined positions; accept a sole-legal DFA proof when the native completion domain is horizon-limited rather than contradictory (decode invariants I2/I3/I4)"
+        },
         {
           "version": "v242",
           "date": "2026-07-25",
@@ -8298,7 +8303,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v1",
+      "version": "v2",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -8307,9 +8312,32 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "Certify the shared encoder/decoder ops vocabulary against its committed fingerprint and layering; record the closed I2 horizon gap and the reachable I3/I4 levers"
+        },
+        {
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial decode-invariant certificate: fail-closed canonical defaults, pinned strict policies, serving fail-closed markers, per-backend deterministic-bypass tests, agent-surface and canonical-doc reachability, reserved-op default-off"
+        }
+      ]
+    },
+    "ops.vocab": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/ops_vocab.py",
+        "src/slm_training/resources/ops_vocab_registry.json",
+        "src/slm_training/dsl/openui_tokens.py",
+        "src/slm_training/resources/tokenizer_layout_registry.json",
+        "tests/test_dsl/test_ops_vocab.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial reserved compute-ops vocabulary shared encoder<->decoder: 19 ops derived from the live local/topology/conversation registries across ast/graph/set/topology/history, reserved in the new `ops` token-id namespace above every codec range, one shared_token_ids() mapping, grammar layering assertion, content-addressed drift gate (decode invariant I13)"
         }
       ]
     }

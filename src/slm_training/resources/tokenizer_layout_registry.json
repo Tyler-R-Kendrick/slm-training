@@ -1,6 +1,6 @@
 {
   "schema": "tokenizer-layout-registry/v1",
-  "namespace_registry_version": 1,
+  "namespace_registry_version": 2,
   "codecs": {
     "choice_codec": {
       "version": 2,

@@ -1,0 +1,172 @@
+{
+  "count": 19,
+  "families": {
+    "ast": [
+      "openui.replace_node",
+      "openui.set_property",
+      "openui.unset_property"
+    ],
+    "graph": [
+      "openui.duplicate_subtree",
+      "openui.move_node",
+      "openui.reparent_node"
+    ],
+    "history": [
+      "conversation.ast_edit",
+      "conversation.checkout_state",
+      "conversation.copy_state",
+      "conversation.fork",
+      "conversation.redo",
+      "conversation.undo"
+    ],
+    "set": [
+      "openui.add_child",
+      "openui.remove_node",
+      "openui.reorder_children"
+    ],
+    "topology": [
+      "openui.contract_subtree",
+      "openui.expand_template",
+      "openui.unwrap_node",
+      "openui.wrap_node"
+    ]
+  },
+  "fingerprint": "77d4fd561caf88424e6e5b874219db707236a420bc0dac2e1abd8ce929ffabd3",
+  "namespace": "ops",
+  "schema": "ops_vocab/v1",
+  "symbols": [
+    {
+      "family": "ast",
+      "local_id": 0,
+      "op_id": "openui.replace_node",
+      "token": "<|op:openui.replace_node|>",
+      "token_id": 65536
+    },
+    {
+      "family": "ast",
+      "local_id": 1,
+      "op_id": "openui.set_property",
+      "token": "<|op:openui.set_property|>",
+      "token_id": 65537
+    },
+    {
+      "family": "ast",
+      "local_id": 2,
+      "op_id": "openui.unset_property",
+      "token": "<|op:openui.unset_property|>",
+      "token_id": 65538
+    },
+    {
+      "family": "graph",
+      "local_id": 3,
+      "op_id": "openui.duplicate_subtree",
+      "token": "<|op:openui.duplicate_subtree|>",
+      "token_id": 65539
+    },
+    {
+      "family": "graph",
+      "local_id": 4,
+      "op_id": "openui.move_node",
+      "token": "<|op:openui.move_node|>",
+      "token_id": 65540
+    },
+    {
+      "family": "graph",
+      "local_id": 5,
+      "op_id": "openui.reparent_node",
+      "token": "<|op:openui.reparent_node|>",
+      "token_id": 65541
+    },
+    {
+      "family": "history",
+      "local_id": 6,
+      "op_id": "conversation.ast_edit",
+      "token": "<|op:conversation.ast_edit|>",
+      "token_id": 65542
+    },
+    {
+      "family": "history",
+      "local_id": 7,
+      "op_id": "conversation.checkout_state",
+      "token": "<|op:conversation.checkout_state|>",
+      "token_id": 65543
+    },
+    {
+      "family": "history",
+      "local_id": 8,
+      "op_id": "conversation.copy_state",
+      "token": "<|op:conversation.copy_state|>",
+      "token_id": 65544
+    },
+    {
+      "family": "history",
+      "local_id": 9,
+      "op_id": "conversation.fork",
+      "token": "<|op:conversation.fork|>",
+      "token_id": 65545
+    },
+    {
+      "family": "history",
+      "local_id": 10,
+      "op_id": "conversation.redo",
+      "token": "<|op:conversation.redo|>",
+      "token_id": 65546
+    },
+    {
+      "family": "history",
+      "local_id": 11,
+      "op_id": "conversation.undo",
+      "token": "<|op:conversation.undo|>",
+      "token_id": 65547
+    },
+    {
+      "family": "set",
+      "local_id": 12,
+      "op_id": "openui.add_child",
+      "token": "<|op:openui.add_child|>",
+      "token_id": 65548
+    },
+    {
+      "family": "set",
+      "local_id": 13,
+      "op_id": "openui.remove_node",
+      "token": "<|op:openui.remove_node|>",
+      "token_id": 65549
+    },
+    {
+      "family": "set",
+      "local_id": 14,
+      "op_id": "openui.reorder_children",
+      "token": "<|op:openui.reorder_children|>",
+      "token_id": 65550
+    },
+    {
+      "family": "topology",
+      "local_id": 15,
+      "op_id": "openui.contract_subtree",
+      "token": "<|op:openui.contract_subtree|>",
+      "token_id": 65551
+    },
+    {
+      "family": "topology",
+      "local_id": 16,
+      "op_id": "openui.expand_template",
+      "token": "<|op:openui.expand_template|>",
+      "token_id": 65552
+    },
+    {
+      "family": "topology",
+      "local_id": 17,
+      "op_id": "openui.unwrap_node",
+      "token": "<|op:openui.unwrap_node|>",
+      "token_id": 65553
+    },
+    {
+      "family": "topology",
+      "local_id": 18,
+      "op_id": "openui.wrap_node",
+      "token": "<|op:openui.wrap_node|>",
+      "token_id": 65554
+    }
+  ]
+}

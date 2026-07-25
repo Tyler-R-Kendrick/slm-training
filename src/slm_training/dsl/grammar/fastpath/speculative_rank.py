@@ -41,6 +41,17 @@ PathKey = tuple[int, ...]
 NGRAM_TABLE_SCHEMA = "speculative_ngram_table/v1"
 SPECULATIVE_RANK_IMPL_VERSION = "speculative_rank/v1"
 
+# The committed default table, built train-split-only from the immutable
+# certified corpus by `scripts/build_speculative_ngram_table.py`. Setting
+# `speculative_rank="ngram"` without naming a table resolves to this artifact,
+# so the lever is reachable without a build step.
+COMMITTED_NGRAM_TABLE = (
+    Path(__file__).resolve().parents[3]
+    / "resources"
+    / "decode"
+    / "speculative_ngram_v1.json"
+)
+
 # Stupid-backoff discount (Brants et al. 2007). Deterministic and cheap; the
 # absolute value never matters, only the induced order and the margin.
 _BACKOFF = 0.4
@@ -340,14 +351,12 @@ def speculative_span(
 def load_ranker(
     table_path: Path | str | None, *, margin: float = 0.0
 ) -> SpeculativeRankerV1 | None:
-    """Load a committed table, or ``None`` when the lever is unconfigured.
+    """Load the named table, or the committed default when none is named.
 
     A configured-but-unreadable table is an error: silently decoding without
     the ranker a run claims to use would make the result uncomparable.
     """
-    if not table_path:
-        return None
-    table = NgramTableV1.load(table_path)
+    table = NgramTableV1.load(table_path or COMMITTED_NGRAM_TABLE)
     if table.is_empty:
         raise ValueError(f"speculative rank table is empty: {table_path}")
     return SpeculativeRankerV1(table=table, margin=float(margin))
