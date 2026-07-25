@@ -7033,8 +7033,7 @@
         "scripts/build_speculative_ngram_table.py",
         "tests/test_dsl/test_speculative_rank.py",
         "tests/test_runtime/test_decode_schedule.py",
-        "src/slm_training/resources/decode/speculative_ngram_v1.json",
-        "src/slm_training/dsl/openui_tokens.py"
+        "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
         {
