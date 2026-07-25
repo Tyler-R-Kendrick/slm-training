@@ -1737,6 +1737,11 @@
       "history": [
         {"version": "v111", "date": "2026-07-25", "note": "SLM-268 fail-closed activation audit for verified-data scaling"},
         {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "add SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
+        },
+        {
           "version": "v110",
           "date": "2026-07-25",
           "note": "SLM-300 self-context curriculum: validate manifest inside run_fixture_self_context_curriculum (trust-boundary hardening) and make _arm_label lossless for arbitrary caller-supplied rates (address CodeRabbit review on PR #895)"
