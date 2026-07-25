@@ -59,6 +59,7 @@ from slm_training.dsl.operators.merge import (
     BranchMergeConflictV1,
     BranchMergeDecisionV1,
     MergeConflictKind,
+    classify_merge_effects,
     merge_conversation_branches,
     replay_branch_merge,
 )
@@ -354,6 +355,7 @@ __all__ = [
     "build_openui_local_operator_library",
     "build_openui_topology_operator_context",
     "build_openui_topology_operator_library",
+    "classify_merge_effects",
     "build_operator_preference_group",
     "build_operator_transaction",
     "build_reference_table",

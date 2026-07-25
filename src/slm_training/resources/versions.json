@@ -348,13 +348,18 @@
       ]
     },
     "dsl.operators.contracts": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/",
         "tests/test_dsl/test_operator_contracts.py"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-25",
+          "note": "SLM-394: bind explicit consumed/produced NodeRef flow into ActionEffectV1 so exact merge conflict classification can distinguish removal from a transfer without operator-name heuristics"
+        },
         {
           "version": "v14",
           "date": "2026-07-25",
@@ -555,13 +560,20 @@
       ]
     },
     "dsl.operators.merge": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/merge.py",
-        "tests/test_dsl/test_operator_merge.py"
+        "tests/test_dsl/test_operator_merge.py",
+        "scripts/audit_merge_conflicts.py",
+        "tests/test_scripts/test_audit_merge_conflicts.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "SLM-394: classify merge conflicts from exact declaration/effect/node-flow lineage, with a registered local/topology audit and no production operator-name heuristic"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -662,13 +674,18 @@
       ]
     },
     "dsl.operators.local": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/local.py",
         "tests/test_dsl/test_local_operators.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "SLM-394: record REMOVE_NODE as explicit consumed NodeRef flow so effect-derived merge conflicts can prove a deletion without operator-name heuristics"
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
@@ -778,13 +795,18 @@
       ]
     },
     "dsl.operators.topology": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/topology.py",
         "tests/test_dsl/test_topology_operators.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "SLM-394: record move/reparent as balanced consumed/produced NodeRef flow so cardinality/topology changes cannot be mistaken for deletion"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
