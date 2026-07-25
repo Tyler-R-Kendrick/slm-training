@@ -1,0 +1,43 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "SLM-326/327 stay blocked. Reopens with SLM-319/321 when recursive_core_positive and a passing repair advancement screen exist.",
+  "failed_gates": [
+    "gate_lar3_01",
+    "gate_lar3_02"
+  ],
+  "gates": {
+    "gate_lar3_01": {
+      "evidence": "docs/design/iter-slm319-lar3-gate-closeout-20260725.json",
+      "issue": "SLM-319",
+      "observed_outcome": "closed not_authorized (LAR3 entry gates unmet)",
+      "passed": false,
+      "required_outcome": "LAR3-01 shared semantic core implemented"
+    },
+    "gate_lar3_02": {
+      "evidence": "docs/design/iter-slm321-lar3-gate-closeout-20260725.json",
+      "issue": "SLM-321",
+      "observed_outcome": "closed not_authorized (same gate evidence)",
+      "passed": false,
+      "required_outcome": "LAR3-02 update-mode disposition"
+    }
+  },
+  "issue": "SLM-324",
+  "matrix_set": "slm324-loop-lora",
+  "matrix_version": "slm324-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "SLM-324 requires the LAR3-01 shared core (blocked by LAR3-01) and the LAR3-02 update-mode outcome (blocked by LAR3-02). SLM-319 closed not_authorized (LAR3 entry gates unmet) and SLM-321 closed not_authorized on the same evidence, so neither prerequisite exists. Loop-specific LoRA/FiLM specialization has no shared core to attach to.",
+  "run_id": "slm324_gate_closeout",
+  "schema": "slm324_lar3_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "a783514e4f6419528738f8151d1e6f3979375eda",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T00:32:47.534377+00:00"
+  }
+}
