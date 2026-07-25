@@ -1,0 +1,47 @@
+{
+ "schema_version": "partial_states_fixture/v1",
+ "issue": "SLM-359",
+ "track": "DSH1-07",
+ "date": "2026-07-25",
+ "run_class": "contract_fixture",
+ "decision": "supported",
+ "partial_states_schema": "partial_states/v1",
+ "classifier_version": "v1",
+ "classes": [
+  "COMPLETE",
+  "FRAGMENT(start_symbol)",
+  "PREFIX(frontier)",
+  "INVALID"
+ ],
+ "version_stamp": {
+  "stamp_schema": "version_stamp/v1",
+  "code_commit": "de42f59ac786503ae9fcecd28cda217fc8ecfb7c",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments.slm359_partial_states": "v1",
+   "harness.train_data": "v23"
+  },
+  "stamped_at": "2026-07-25T02:41:49.493387+00:00"
+ },
+ "controls": {
+  "complete_fragment_prefix_invalid_classification": "passed",
+  "prefix_replays_to_verified_terminal": "passed",
+  "fragment_parses_under_declared_start_rule": "passed",
+  "no_cut_splits_token_or_marker": "passed",
+  "unknown_coverage_never_authorizes_pruning": "passed",
+  "unreachable_partial_invalidates_family_stop_rule": "passed",
+  "support_coverage_and_min_completion_cost_recorded": "passed",
+  "max_completion_edits_bounds_certificate": "passed",
+  "internal_hole_generation_excluded_from_cap0": "passed",
+  "determinism": "passed"
+ },
+ "commands": [
+  "python -m pytest -q tests/test_harnesses/train_data/test_partial_states.py",
+  "python -m pytest -q tests/test_harnesses/train_data tests/test_dsl",
+  "python -m scripts.verify_version_stamps --check",
+  "python -m scripts.repo_policy",
+  "python -m ruff check src/slm_training/harnesses/train_data/partial_states.py tests/test_harnesses/train_data/test_partial_states.py",
+  "git diff --check"
+ ],
+ "claim_limits": "fixture-scale contract evidence only; no corpus publication, no model evaluation, no ship-gate claim"
+}

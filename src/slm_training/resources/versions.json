@@ -5485,7 +5485,7 @@
    ]
   },
   "harness.train_data": {
-   "version": "v22",
+   "version": "v23",
    "kind": "harness",
    "paths": [
     "scripts/build_train_data.py",
@@ -5498,6 +5498,11 @@
     "src/slm_training/resources/frontier/"
    ],
    "history": [
+    {
+     "version": "v23",
+     "date": "2026-07-25",
+     "note": "add partial-state classifier with compiler certificates and coverage-gated pruning under harness.experiments.slm359_partial_states"
+    },
     {
      "version": "v22",
      "date": "2026-07-25",
@@ -8002,6 +8007,23 @@
      "version": "v1",
      "date": "2026-07-25",
      "note": "initial typed answer-composition registry (APPEND_STATEMENT / INSERT_CHILD / MAKE_LIST / WRAP_NODE / COMPOSE_DOCUMENT) with deterministic atomic alpha-renaming, fail-closed admission, and content-addressed lineage (SLM-358 / DSH1-06)"
+    }
+   ]
+  },
+  "harness.experiments.slm359_partial_states": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/train_data/partial_states.py",
+    "tests/test_harnesses/train_data/test_partial_states.py",
+    "docs/design/iter-slm359-partial-states-20260725.json",
+    "docs/design/iter-slm359-partial-states-20260725.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "initial partial-state classifier (COMPLETE / FRAGMENT(start) / PREFIX(frontier)+certificate / INVALID) with lexer/marker cut discipline, bounded accepting-completion certificates replayed to verified terminals, coverage-gated pruning guard, and family stop rule (SLM-359 / DSH1-07)"
     }
    ]
   }
