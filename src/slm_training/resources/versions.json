@@ -9398,6 +9398,24 @@
         }
       ]
     },
+    "harness.experiments.cap2_latent_causal_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/cap2_latent_causal_audit.py",
+        "scripts/run_cap2_latent_causal_audit.py",
+        "tests/test_harnesses/experiments/test_cap2_07_latent_causal_audit.py",
+        "docs/design/program-latent-causal-use.md",
+        "docs/design/program-latent-causal-use-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration: CAP2-07 oracle-latent causal-necessity/support/robustness/collapse audit (SLM-330/AP-031), reusing the AP-029/AP-030 codec/decoder and SLM-183 paired-CI stats helpers unchanged"
+        }
+      ]
+    },
     "evals.cap2_operator_policy_rebase": {
       "version": "v1",
       "kind": "gate",
