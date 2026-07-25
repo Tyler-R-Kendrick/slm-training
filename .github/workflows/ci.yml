@@ -111,6 +111,8 @@ jobs:
         run: python -m scripts.repo_policy
       - name: Certify decode invariants
         run: python -m scripts.verify_decode_invariants
+      - name: Certify every agent surface carries every repository law
+        run: python -m scripts.verify_agent_surfaces
       - run: ruff check .
       - run: python -m compileall -q src scripts tests
       - name: Verify checkpoint references are resolvable and provenanced

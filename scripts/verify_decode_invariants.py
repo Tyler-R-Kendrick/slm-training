@@ -12,7 +12,7 @@ side effect. It certifies six things:
    uncertified text (I6).
 4. Every registered decode backend has a deterministic-bypass test (I2).
 5. Every agent surface carries the invariants (I7), and every doc that must
-   link the canonical statement does (I8/I15).
+   link the canonical statement does (I15).
 6. The reserved operator-token channel has not drifted from default-off
    without a documented decision, and the shared encoder/decoder ops
    vocabulary matches its committed fingerprint (I13).
@@ -78,23 +78,13 @@ BYPASS_TESTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
 )
 
-# I7: every agent surface must carry the invariants, not merely exist.
-AGENT_SURFACES: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("AGENTS.md", ("Non-negotiable architecture invariants", CANONICAL_DOC)),
-    ("CLAUDE.md", ("Non-negotiable architecture invariants", CANONICAL_DOC)),
-    ("GEMINI.md", ("Non-negotiable architecture invariants", CANONICAL_DOC)),
-    (
-        ".github/copilot-instructions.md",
-        ("Non-negotiable architecture invariants", "AGENTS.md"),
-    ),
-    (".cursor/rules/decode-invariants.mdc", ("alwaysApply: true", CANONICAL_DOC)),
-    (".agents/skills/autotrain/SKILL.md", ("decode-invariants.md",)),
-    (".agents/skills/honest-ship-eval/SKILL.md", ("decode-invariants.md",)),
-    (".agents/skills/improve-openui-harnesses/SKILL.md", ("decode-invariants.md",)),
-    (".agents/skills/running-experiment-matrices/SKILL.md", ("decode-invariants.md",)),
-)
+# I7: every agent surface must carry the invariants, not merely exist. The
+# matrix itself lives in scripts.verify_agent_surfaces, which owns the same
+# check for every other repository law; keeping two copies is what let the
+# other laws drift in the first place.
+AGENT_SURFACE_OBLIGATION = "decode.invariants"
 
-# I8/I15: the canonical doc is only canonical if the docs that describe these
+# I15: the canonical doc is only canonical if the docs that describe these
 # subsystems point at it.
 LINKING_DOCS: tuple[str, ...] = (
     "README.md",
@@ -265,21 +255,18 @@ def check_bypass_tests() -> list[str]:
 
 def check_agent_surfaces() -> list[str]:
     """I7: every agent surface carries the invariants."""
-    checked: list[str] = []
-    for relative, markers in AGENT_SURFACES:
-        text = _read(relative)
-        for marker in markers:
-            if marker not in text:
-                raise DecodeInvariantError(
-                    f"{relative} does not carry {marker!r}; every agent surface "
-                    f"must enforce the invariants (see {CANONICAL_DOC})"
-                )
-        checked.append(relative)
-    return checked
+    from scripts.verify_agent_surfaces import AgentSurfaceError
+    from scripts.verify_agent_surfaces import check as check_surfaces
+
+    try:
+        checked = check_surfaces(obligation_id=AGENT_SURFACE_OBLIGATION)
+    except AgentSurfaceError as exc:
+        raise DecodeInvariantError(f"{exc} (see {CANONICAL_DOC})") from exc
+    return checked[AGENT_SURFACE_OBLIGATION]
 
 
 def check_docs_link_canonical() -> list[str]:
-    """I8/I15: the canonical doc exists and is reachable from every anchor."""
+    """I15: the canonical doc exists and is reachable from every anchor."""
     doc = _read(CANONICAL_DOC)
     for required in ("I2", "I3", "I4", "I6", "I11", "I12", "I13", "I14"):
         if f"### {required} " not in doc and f"### {required}b " not in doc:

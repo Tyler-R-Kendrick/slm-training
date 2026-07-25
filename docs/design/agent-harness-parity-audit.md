@@ -8,6 +8,23 @@ given with each finding.
 Canonical law under audit: [`AGENTS.md`](../../AGENTS.md) and
 [`decode-invariants.md`](decode-invariants.md).
 
+## Status
+
+**All four phases are implemented.** Findings are kept with their reproduction
+commands so the regressions stay recognisable; the fix that closed each one is
+recorded inline and in [Fix plan](#fix-plan). One further defect (A3) was found
+while verifying Phase 1 and is **not** fixed here — see its entry.
+
+| Guard | Covers |
+| --- | --- |
+| `python -m scripts.verify_agent_surfaces` | every repository law on every instruction surface, plus hook parity (B1–B3) |
+| `tests/test_dsl/test_tokenizer_grammar_invariants.py` | tokenizer layout, pinned without the Node bridge (A1, A2) |
+| `python -m scripts.verify_tokenizer_grammar_invariants` | full certificate incl. live-library agreement (A1) |
+| `scripts/repo_policy.py::validate_skill_mirrors` | skill mirrors in **both** directions (B6) |
+
+Both new checks run in CI's `python-static` job and, for changed surfaces, in
+`.githooks/check-changed`.
+
 ## Method
 
 - Ran every repository certificate (`repo_policy`, `verify_decode_invariants`,
@@ -48,7 +65,16 @@ Mechanism:
    `OpenUI`, `Component`, `Priority`, and `Za` — the last being a fragment of
    the `[A-Za-z0-9_]` character class — into a **model vocabulary**.
 
-Why this is an intent violation, not just a bug:
+**Fixed.** `models/dsl_tokenizer.py` now treats
+`dsl.openui_tokens.STRUCTURAL_TOKENS` as authoritative for the default DSL
+instead of re-deriving it from whichever backend is live; the backend seam
+survives only for a non-default `SLM_GRAMMAR_DSL`, where it fails closed.
+`lark_backend.structural_tokens()` no longer scrapes capitalised words out of
+the grammar text. `vocab_size` is now 569 with the bridge, without the bridge,
+and with `node_modules` deleted. `model.twotower` bumped to v246 — the layout
+is unchanged; the bump records that it is now pinned.
+
+Why this was an intent violation, not just a bug:
 
 - The docstring at `models/dsl_tokenizer.py:38-43` asserts the fallback is
   *"identical for the default OpenUI backend, so vocab layout is unchanged"*.
@@ -65,17 +91,68 @@ Why this is an intent violation, not just a bug:
   which would commit the corruption.
 - `tests/test_dsl/test_tokenizer_grammar_invariants.py::test_certified_tokenizer_grammar_invariants`
   fails locally for the same reason, with the same misleading message.
-- No test pins `vocab_size == 569`.
+- No test pinned `vocab_size == 569`. There is now one, plus a regression test
+  asserting the Lark fallback genuinely disagrees (which is why it must not be
+  consulted) and one asserting no grammar rule names leak into the token set.
 
-### A2 — The tokenizer certificate can only ever run in the node-enabled CI job
+### A2 — The tokenizer certificate could only ever run in the node-enabled CI job
 
 `verify_tokenizer_grammar_invariants` runs only in `ci.yml`'s `python` job,
 which does `npm --prefix src/apps/openui_bridge ci` first. The sibling
 certificates (`repo_policy`, `verify_decode_invariants`,
 `verify_version_stamps`, `verify_checkpoint_references`) all live in
-`python-static`, which installs no Node. So the one check that would catch A1
-is structurally incapable of observing the fallback path, and CI is green on
-`main` today with the drift latent.
+`python-static`, which installs no Node. So the one check that would catch A1 was
+structurally incapable of observing the fallback path, and CI was green on
+`main` with the drift latent.
+
+**Fixed.** The checkpoint-bound half of the contract — version, `vocab_size`,
+and layout SHA for both codecs — is now pinned by plain `pytest` with no Node
+required, and `check_changed` selects that file whenever anything under
+`src/slm_training/models/` changes. The full certificate still needs the bridge
+(it also verifies live-library agreement), so it skips locally with an
+actionable reason instead of failing with a misleading one; CI runs the script
+directly in the bridge-enabled job, where it cannot be skipped.
+
+### A3 — `pytest` rewrites committed `docs/design/` evidence, nondeterministically (found, NOT fixed)
+
+Found while verifying Phase 1. Running the test suite dirties the repository's
+durable experiment ledger:
+
+```bash
+git status --short docs/design            # clean
+pytest tests/test_scripts/test_run_slm157_flow_consistency_fixture.py
+git status --short docs/design            # M iter-slm157-flow-consistency-20260720.{json,md}
+```
+
+The test is well-behaved — it passes `--output-dir tmp_path`. The CLI is not:
+`scripts/run_slm157_flow_consistency_fixture.py` mirrors into
+`docs/design/iter-slm157-flow-consistency-20260720.{json,md}` under a bare
+`if args.mode == "fixture":`, ignoring that an explicit `--output-dir` was
+given — two lines below it even branches on `args.output_dir is not None` for
+the recorded command line.
+
+Two consequences:
+
+- The committed numbers change on every run. Re-running the fixture twice from
+  a clean tree produces different values for `E_discrete_flow_rate`,
+  `F_random_path_control`, and `G_ar_x22_hybrid_placeholder`, so the
+  headline table in a committed measured-results doc is **not reproducible** —
+  the opposite of what the iron law says `docs/design/` is for.
+- A full `pytest` run also creates ~20 *new* dated `iter-*.json` / `.md`
+  records from sibling fixtures with the same pattern, which an agent running
+  `git add -A` would commit as if they were real experiment evidence.
+
+**Not fixed here.** 54 of the 76 `scripts/run_*.py` runners share the
+mirror-plus-`--output-dir` shape, so this is a systemic change to the
+experiment-runner contract rather than a parity fix, and picking the right
+semantics (mirror only when `--output-dir` is absent? require an explicit
+`--publish`? seed the RNG?) is the experiment owners' call. Suggested minimal
+fix: gate the `docs/design/` mirror on `args.output_dir is None`, which makes
+the CLI honour the flag it already parses and leaves canonical runs unchanged.
+Whether the underlying nondeterminism is intended sampling is a separate
+question that a seed would answer.
+
+
 
 ## B. Cross-harness parity
 
@@ -84,8 +161,18 @@ is structurally incapable of observing the fallback path, and CI is green on
 `verify_decode_invariants.check_agent_surfaces()` enforces that `AGENTS.md`,
 `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` and
 `.cursor/rules/decode-invariants.mdc` each carry the decode law. That check
-works — every surface carries it. **No other repository law has an equivalent
-check, and every one of them has drifted.**
+worked — every surface carried it. **No other repository law had an equivalent
+check, and every one of them had drifted.** The table below is the state at
+audit time; every ❌ is now ✅ and certified.
+
+**Fixed.** `scripts/verify_agent_surfaces.py` owns a declarative
+obligation × surface matrix covering twelve laws plus hook parity;
+`verify_decode_invariants.check_agent_surfaces()` delegates to it rather than
+keeping a second copy. Missing laws were backfilled into `CLAUDE.md`,
+`GEMINI.md`, `.github/copilot-instructions.md`, a new
+`.cursor/rules/repo-laws.mdc` (`alwaysApply: true`), and the Grok workflow
+header. Surfaces now cite the canonical `I*` ids (B7), and I7 is a documented
+invariant section rather than a phantom id.
 
 | Obligation (AGENTS.md) | AGENTS | CLAUDE | GEMINI | Copilot | Cursor rules |
 | --- | :-: | :-: | :-: | :-: | :-: |
@@ -106,9 +193,9 @@ check, and every one of them has drifted.**
 ¹ Copilot's only `versions.json` mention is incidental, inside the decode-invariant
 text (`decode.invariants` bump). The general version-stamp law is absent.
 
-Net effect: a Gemini, Copilot, or Cursor agent can complete a training run and
-never be told to update `docs/design/`, the model card, or a component version —
-all three of which `AGENTS.md` calls non-optional.
+Net effect at audit time: a Gemini, Copilot, or Cursor agent could complete a
+training run and never be told to update `docs/design/`, the model card, or a
+component version — all three of which `AGENTS.md` calls non-optional.
 
 ### B2 — Grok is a recognized harness with no instruction surface
 
@@ -119,6 +206,12 @@ location and `.grok` is in `repo_policy.ALLOWED_ROOTS`, but "Grok" appears
 "Cursor, Claude Code, Codex, Gemini, Copilot / GHCP" and omits it.
 `.grok/workflows/autotrain.rhai` restates the contracts in its own header
 comment — a fourth independent copy of the law with no parity check.
+
+**Fixed.** `.grok/workflows/autotrain.rhai` now names `AGENTS.md` and
+`docs/design/decode-invariants.md` in its required-reading and contracts
+header, Grok is listed in `AGENTS.md`'s agent line, and the workflow is a
+certified surface in the parity matrix for the laws an orchestration script can
+act on (canonical AGENTS.md, decode invariants, run cap, iron law, model card).
 
 ### B3 — README overstates hook coverage; the Copilot hook is an empty stub
 
@@ -145,6 +238,16 @@ checkout). Separately, `AGENTS.md` § Normalized component versioning claims the
 bump rule is enforced by "CI, pre-commit, **agent hooks**" — true only for
 Claude Code.
 
+**Fixed.** `.github/hooks/changed-tests.json` now carries the post-edit
+dashboard-parity and version-stamp hooks, and the same pair was mirrored into
+`.codex/hooks.json`, so all three hook-capable harnesses run the identical set.
+Hook parity is itself certified — `hooks.raw-mv-guard` and
+`hooks.post-edit-checks` are obligations in the matrix, so a one-sided hook edit
+fails CI. A Claude Code `SessionStart` hook arms `core.hooksPath .githooks` when
+it is unset. `README.md` no longer claims the agent hooks run the changed-file
+checker; it carries a per-harness coverage table instead, and Cursor's and
+Gemini's lack of a hook mechanism is stated in their own instruction surfaces.
+
 ### B4 — MCP server sets diverge across harnesses
 
 | Config | Serena | Playwright | Hugging Face | Linear |
@@ -159,6 +262,15 @@ server; the `autoresearch` skill's "file ideas as Linear issues" step only works
 under Claude Code. `AGENTS.md`'s client table presents Codex's Serena as
 configured, but `.codex/config.toml` only sets `[features] hooks = true` — the
 Serena block is an `.example` requiring a manual copy to `~/.codex/config.toml`.
+
+**Fixed (documented, deliberately not equalised).** `AGENTS.md` now carries an
+"MCP servers are not uniform across harnesses" table naming which server each
+client has and why: Linear is Claude-only because `autoresearch` issue filing
+runs there; Playwright and the HF Hub server are Cursor-only because both have
+first-class CLIs (`npx playwright`, `hf`) that every other harness uses instead.
+Codex's Serena block moved from a manual-copy `.example` into the committed
+`.codex/config.toml`, with the global-copy path kept as a fallback note for
+older builds. The divergence was never the defect — being undocumented was.
 
 ### B5 — The documented skill-refresh commands produce a state `repo_policy` rejects
 
@@ -182,12 +294,23 @@ headroom-helpers note, `AGENTS.md` does not. `organize-repository` forbids
 exactly this ("Do not add a second helper, schema, config, or guide for an
 existing concern").
 
+**Fixed.** The refresh block is deleted from `AGENTS.md`, which now points at
+`.agents/skills/README.md` as the single owner. The surviving copy drops
+`-a codex`, and its normalisation loop covers every canonical skill (not a
+hand-maintained list), removes any `.codex/skills/` tree, and ends in
+`python -m scripts.repo_policy` so following the documented procedure leaves the
+repo green. The `hf skills add --dest=` copy path points at the same loop.
+
 ### B6 — `validate_skill_mirrors` only checks one direction
 
 It walks `.claude/skills/` and `.cursor/skills/` looking for orphans and copies,
 but never asserts that every `.agents/skills/<name>` **has** a mirror. A newly
 added canonical skill stays invisible to Claude Code and Cursor with a green
 policy check. Latent today (54/54 mirrored), but nothing prevents it.
+
+**Fixed.** `validate_skill_mirrors` now walks canonical → discovery as well,
+reporting `unmirrored skill: <root>/<name> is missing`, with test coverage for
+both directions.
 
 ### B7 — Invariant numbering is inconsistent between the canonical doc and every agent surface
 
@@ -205,104 +328,116 @@ same list `1–15` in a **different order**:
 "Invariant 11" therefore means two different things depending on which file the
 reader has open, in a document set whose entire purpose is unambiguous citation.
 
+**Fixed.** All five agent surfaces now cite the canonical `I*` ids, with an
+explicit instruction not to renumber locally. `I7` is a real section in
+`decode-invariants.md` (it has an enforcing script now), and the phantom `I8`
+citations in `verify_decode_invariants` were folded into `I15`, which is where
+the doc already covered them. `decode.invariants` bumped to v3.
+
 ## Fix plan
 
-Ordered by risk. Each phase is independently shippable.
+All four phases shipped. Deviations from the plan as first written are called
+out, since the plan was drafted before the fixes were attempted.
 
-### Phase 1 — Close the tokenizer fallback (A1, A2)
+### Phase 1 — Close the tokenizer fallback (A1, A2) — done
 
-1. **Make the backend seam fail closed.** Replace the bare `except Exception`
-   in `models/dsl_tokenizer.py:_active_structural_tokens()` with either an
-   explicit raise, or — preferred, since the tokenizer must build in torch-free
-   contexts — a check that the backend-derived set is a superset-free match for
-   `openui_tokens.STRUCTURAL_TOKENS`, raising when it is not. The vocabulary is
-   a frozen contract; deriving it from a *fallback* backend is the defect.
-2. **Stop the Lark backend leaking grammar internals.** `lark_backend
-   .component_names()` returning rule/terminal names (`AST`, `NAME`, `Za`) is
-   wrong independent of the tokenizer; restrict it to the declared component
-   set.
-3. **Pin the layout in a test**, not only in the registry:
-   `assert DSLNativeTokenizer.build().vocab_size == 569` plus the layout sha,
-   so the drift is caught by `pytest` and by `.githooks/check-changed`, not only
-   by a node-enabled CI job.
-4. **Fix the misleading assertion text** in
-   `verify_tokenizer_grammar_invariants.py:71` — when the bridge is absent it
-   must say so ("OpenUI bridge unavailable; run `npm --prefix
-   src/apps/openui_bridge ci`") rather than inviting a registry bump.
-5. **Move the certificate into `python-static`** (adding the bridge install
-   there), or fail it loudly when the bridge is missing. Today it cannot
-   observe the failure mode it exists to catch.
-6. Bump the tokenizer/decode components in `resources/versions.json` per the
-   version-stamp contract and record the result in a dated
-   `docs/design/` measured-results note.
+1. **Backend seam no longer decides the vocabulary.** The plan proposed
+   comparing the backend-derived set against the constant and raising on
+   mismatch. That would have made every torch-free import of
+   `models.dsl_tokenizer` require Node. Implemented instead: for the default
+   `openui` DSL the `dsl.openui_tokens` constant *is* authoritative, so the
+   frozen contract is deterministic by construction. The backend seam survives
+   only for a non-default `SLM_GRAMMAR_DSL`, where it fails closed rather than
+   handing back the OpenUI vocabulary for a different grammar. The
+   backend-agreement assertion moved to the certificate, which is the right
+   place for a check that legitimately needs the live library.
+2. **Lark no longer leaks grammar internals.** The leak was in
+   `structural_tokens()`, not `component_names()` as the plan assumed — a
+   `\b([A-Z][A-Za-z0-9]+)\b` scrape of the raw grammar text. It now extracts
+   quoted literals, which is what a surface token actually is.
+3. **Layout pinned by test** for both codecs (version, `vocab_size`, layout
+   SHA), with no Node required. `check_changed` selects the file for any change
+   under `src/slm_training/models/`.
+4. **Assertion text fixed.** A missing bridge now says so and names
+   `npm --prefix src/apps/openui_bridge ci`; a genuine layout change says the
+   registry records what checkpoints were trained against, so an accidental
+   layout must not be written into it.
+5. **Certificate left in the node-enabled job**, rather than adding ~30s of
+   `npm ci` to `python-static` for no new coverage: the bridge-free pins now
+   carry the checkpoint-bound half, and the certificate skips locally with an
+   actionable reason while CI runs the script directly where it cannot skip.
+6. `model.twotower` v245 → v246.
 
-### Phase 2 — One enforcement mechanism for cross-surface parity (B1, B2, B6, B7)
+A3 was found during this phase's verification and is deliberately left open.
 
-The `check_agent_surfaces()` pattern already works; the problem is that it
-covers exactly one law. Generalize rather than add a second checker:
+### Phase 2 — One enforcement mechanism for cross-surface parity (B1, B2, B6, B7) — done
 
-1. Add `scripts/verify_agent_surfaces.py` holding a **declarative
-   obligation × surface matrix** — obligation id, required marker strings, and
-   the surfaces that must carry it (including `.grok/workflows/autotrain.rhai`).
-2. Have `verify_decode_invariants.check_agent_surfaces()` delegate to it so the
-   decode law stays enforced through one owner, not two.
-3. Wire it into `ci.yml`'s `python-static` job and into
-   `scripts/check_changed.check()` next to the existing `verify_version_stamps`
-   call, so pre-commit catches it too.
-4. Backfill the missing obligations into `GEMINI.md`,
-   `.github/copilot-instructions.md`, and a new
-   `.cursor/rules/repo-laws.mdc` (`alwaysApply: true`) until the matrix is
-   green. Keep each surface a *pointer* to `AGENTS.md`, not a third copy of the
-   prose — the marker strings should be the skill names and script names, which
-   is what actually needs to reach the agent.
-5. Extend `repo_policy.validate_skill_mirrors` with the reverse direction:
-   every `.agents/skills/<name>` must have a symlink under both discovery roots.
-6. Renumber the agent-surface invariant lists to the canonical `I*` ids from
-   `decode-invariants.md` (or renumber the doc — either way, one scheme), and
-   add the id strings to the parity matrix so they cannot drift again.
+1. `scripts/verify_agent_surfaces.py` holds the declarative
+   obligation × surface matrix — twelve instruction laws plus two hook laws.
+2. `verify_decode_invariants.check_agent_surfaces()` delegates to it.
+3. Wired into `ci.yml`'s `python-static` job and into `check_changed.check()`,
+   which re-certifies whenever any surface file changes.
+4. Backfilled `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, and
+   a new `.cursor/rules/repo-laws.mdc` (`alwaysApply: true`). Markers are skill
+   and script names, so surfaces stay pointers rather than a third copy of the
+   prose.
+5. `repo_policy.validate_skill_mirrors` gained the reverse direction.
+6. Surfaces renumbered to the canonical `I*` ids; `I7` promoted from a phantom
+   id cited only in Python docstrings to a documented section; `I8` folded into
+   `I15` where the doc already covered it. `decode.invariants` v2 → v3.
 
-### Phase 3 — Level the hooks (B3)
+### Phase 3 — Level the hooks (B3) — done
 
-1. Either implement `.github/hooks/changed-tests.json` and add equivalent
-   `PostToolUse` entries to `.codex/hooks.json`, **or** correct `README.md:379`
-   and `AGENTS.md` to describe what the hooks actually do. Do not leave the
-   claim and the stub both in place.
-2. Mirror Claude Code's `PostToolUse` pair (`validate_page_dsl.py --changed`,
-   `verify_version_stamps --post-tool-use`) into `.codex/hooks.json`. These are
-   the two laws with automated feedback; restricting them to one harness is the
-   single largest behavioural difference between agents.
-3. Add a `SessionStart` hook (or document the step) that sets
-   `core.hooksPath .githooks`, so the changed-file checker is actually armed in
-   a fresh clone.
-4. Cursor has no hook surface; state that explicitly in `AGENTS.md` rather than
-   implying uniform coverage.
+Both halves, not either/or: the hooks were implemented **and** the README claim
+corrected. `.github/hooks/changed-tests.json` and `.codex/hooks.json` now carry
+the same `PostToolUse` pair as `.claude/settings.json`; hook parity is itself
+certified by the `hooks.raw-mv-guard` and `hooks.post-edit-checks` obligations,
+so a one-sided hook edit fails CI. A Claude Code `SessionStart` hook arms
+`core.hooksPath .githooks` when unset. `README.md` carries a per-harness
+coverage table, and Cursor's and Gemini's lack of a hook mechanism is stated in
+their own instruction surfaces rather than only in `AGENTS.md`.
 
-### Phase 4 — De-duplicate and correct the install instructions (B4, B5)
+### Phase 4 — De-duplicate and correct the install instructions (B4, B5) — done
 
-1. Delete the refresh block from `AGENTS.md` and link
-   `.agents/skills/README.md` as the single owner (or the reverse) — the two
-   copies have already diverged.
-2. Fix the surviving copy: drop `-a codex` (Codex reads `.agents/skills/`, and
-   `.codex/skills/` is policy-rejected), and fold the re-symlink loop and
-   `hf skills add --dest=.cursor/skills` copy-cleanup into the same block, so
-   following the documented procedure leaves `repo_policy` green.
-3. Decide MCP parity deliberately: either add Playwright + Hugging Face to
-   `.mcp.json` and Linear to `.cursor/mcp.json`, or document in `AGENTS.md`
-   which skills are harness-limited. Today the divergence is undocumented.
-4. Promote `.codex/serena.config.toml.example` to a committed project-local
-   `.codex/config.toml` block, or mark it clearly as manual in the client table.
+1. Refresh block deleted from `AGENTS.md`; `.agents/skills/README.md` is the
+   single owner.
+2. The surviving copy drops `-a codex`, and its normalisation loop iterates
+   every canonical skill rather than a hand-maintained list, removes any
+   `.codex/skills/` tree, and ends in `python -m scripts.repo_policy`.
+3. MCP divergence documented rather than equalised — each server is where it is
+   for a reason, and the defect was that the reason was unwritten.
+4. Codex's Serena block promoted into the committed `.codex/config.toml`, with
+   the `~/.codex/config.toml` copy kept as a fallback note for older builds.
+
+### Open — A3
+
+Not part of the four phases; see [A3](#a3--pytest-rewrites-committed-docsdesign-evidence-nondeterministically-found-not-fixed).
+Suggested minimal fix is recorded there.
 
 ## Verification
 
 ```bash
 python -m scripts.repo_policy
+python -m scripts.verify_agent_surfaces
 python -m scripts.verify_decode_invariants
 python -m scripts.verify_version_stamps --check
-python -m scripts.verify_tokenizer_grammar_invariants   # requires the Node bridge today
-npm --prefix src/apps/openui_bridge ci                  # ...which is the point of A1
+python -m scripts.verify_checkpoint_references --check
 python scripts/validate_page_dsl.py --check
-.githooks/check-changed
+pytest tests/test_scripts tests/test_dsl tests/test_models tests/test_harnesses/model_build
+
+# Needs the Node bridge; that is the point of A1, and it now says so when absent
+npm --prefix src/apps/openui_bridge ci
+python -m scripts.verify_tokenizer_grammar_invariants
 ```
 
-Status at audit time: all green **except** `verify_tokenizer_grammar_invariants`,
-which fails without the Node bridge and passes with it.
+The A1 regression, reproducible on any clone:
+
+```bash
+mv src/apps/openui_bridge/node_modules /tmp/nm
+python -c "from slm_training.models.dsl_tokenizer import DSLNativeTokenizer as T; print(T.build().vocab_size)"
+mv /tmp/nm src/apps/openui_bridge/node_modules
+# was: 605 without the bridge, 569 with it. now: 569 either way.
+```
+
+After running the suite, check `git status --short docs/design` — A3 means a
+plain `pytest` run leaves the evidence ledger dirty.
