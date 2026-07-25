@@ -28,6 +28,7 @@ from slm_training.harnesses.annotations import (
 )
 from slm_training.harnesses.annotations.store import AnnotationStore, FileAnnotationStore
 from slm_training.dsl.parser import ParseError, stream_check, validate
+from slm_training.levers import require_constrained_production_config
 from slm_training.models.checkpoint_resolve import (
     ResolvedCheckpoint,
     resolve_serving_checkpoint,
@@ -58,6 +59,38 @@ class GenerateResult:
     stream: dict[str, Any]
     serialized: str | None
     attempts: list[dict[str, Any]]
+    # Decode invariant I6 (docs/design/decode-invariants.md): an unconstrained
+    # decode is a diagnostic control. It may still parse, but it is never
+    # certified, never gated on, and never counted as a serving sample.
+    constrained: bool = True
+
+    @property
+    def certified(self) -> bool:
+        return bool(self.valid and self.constrained)
+
+
+class SubstitutedGeneration(RuntimeError):
+    """The backend returned a certified stand-in, not a real model decode."""
+
+
+def _raise_on_substituted_generation(model: Any) -> None:
+    """Fail the attempt when the backend substituted a certified fallback.
+
+    Decode invariant I6 keeps output legal, and a backend is free to satisfy
+    that by returning a certified deterministic program instead of an invalid
+    one. That is not a successful generation, and the serving harness — which
+    persists every attempt as annotation evidence — must not record it as one.
+    Backends that expose no evidence channel are unaffected.
+    """
+    consume = getattr(model, "consume_generation_evidence", None)
+    if not callable(consume):
+        return
+    for row in consume() or ():
+        if isinstance(row, dict) and row.get("fallback_used"):
+            raise SubstitutedGeneration(
+                "backend substituted a certified fallback program for a failed "
+                "constrained decode"
+            )
 
 
 class GenerationExhausted(RuntimeError):
@@ -320,6 +353,12 @@ class PlaygroundService:
             cfg.generate_max_attempts = 3
         if int(cfg.grammar_ltr_max_tokens or 0) < 128:
             cfg.grammar_ltr_max_tokens = 192
+        # I6/I2: a serving config may never be able to emit uncertified output
+        # or spend a forward on a proven singleton. Checked after every
+        # override above so a checkpoint's own declared config cannot smuggle
+        # a weakening lever into the playground.
+        cfg.allow_unconstrained_fallback = False
+        require_constrained_production_config(cfg, context="playground serving config")
         return self._model
 
     def next_prompt(self, session_id: str | None = None) -> dict[str, str]:
@@ -544,7 +583,13 @@ class PlaygroundService:
         decode_meta = {
             "marker_inventory": marker_inventory,
             "decode_contract": {
-                "mode": "compiler_tree",
+                # I6: unconstrained requests are diagnostic controls. Stamp
+                # every persisted attempt so a control sample can never be
+                # mistaken later for a certified serving generation.
+                "mode": "compiler_tree" if grammar_constrained else "unconstrained_control",
+                "grammar_constrained": bool(grammar_constrained),
+                "diagnostic_control": not bool(grammar_constrained),
+                "certifiable": bool(grammar_constrained),
                 "slot_contract": "prompt_or_design_inventory",
                 "template_fill_decode": False,
             },
@@ -627,6 +672,13 @@ class PlaygroundService:
                         grammar_constrained=grammar_constrained,
                         design_md=design_md,
                     )
+                    # I6 honesty: a backend may satisfy "never emit invalid
+                    # grammar" by substituting a certified deterministic
+                    # program (ONNX does). That program parses, so without
+                    # reading the evidence the harness would record a failed
+                    # decode as a successful real-model attempt and feed it to
+                    # the annotation store. Treat it as the failure it is.
+                    _raise_on_substituted_generation(model)
                 except Exception as exc:  # noqa: BLE001
                     last_error = str(exc)
                     if grammar_constrained:
@@ -765,6 +817,7 @@ class PlaygroundService:
             },
             serialized=serialized,
             attempts=attempt_summaries,
+            constrained=bool(grammar_constrained),
         )
 
     def server_attempt(
@@ -825,6 +878,8 @@ class PlaygroundService:
             "openui": result.openui,
             "serialized": result.serialized,
             "valid": result.valid,
+            "certified": result.certified,
+            "constrained": result.constrained,
             "error": result.error,
             "session_id": sid,
             "source": "server",
@@ -891,6 +946,8 @@ class PlaygroundService:
             "prompt": result.prompt,
             "openui": result.openui,
             "valid": result.valid,
+            "certified": result.certified,
+            "constrained": result.constrained,
             "error": result.error,
             "stream": result.stream,
             "serialized": result.serialized,

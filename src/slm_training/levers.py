@@ -47,6 +47,70 @@ CAPABILITY_LEVER_MINIMUMS: Final = {
 }
 
 
+# Decode invariants I1/I2/I6 (docs/design/decode-invariants.md). Ranking is a
+# lever; legality is not. Every lever below can only ever make output *less*
+# constrained or spend a forward where a deterministic proof existed, so each
+# one is registered with its fail-closed value and the invariant it protects.
+# A production / serving / ship-gated configuration must hold every safe value;
+# diagnostic control arms may deviate and their output is never certified.
+CONSTRAINT_WEAKENING_LEVERS: Final = {
+    "grammar_constrained": {
+        "safe_value": True,
+        "invariant": "I6",
+        "effect": "legality",
+        "note": "unconstrained decode may emit invalid grammar",
+    },
+    "allow_unconstrained_fallback": {
+        "safe_value": False,
+        "invariant": "I6",
+        "effect": "legality",
+        "note": "retries a failed constrained decode with token filtering off",
+    },
+    "grammar_fastpath": {
+        "safe_value": True,
+        "invariant": "I2",
+        "effect": "bypass",
+        "note": "disables DFA force-emit, so proven singletons cost a forward",
+    },
+}
+
+
+def constraint_weakening_violations(config: Any) -> dict[str, dict[str, Any]]:
+    """Return registered weakening levers this config sets to an unsafe value."""
+    violations: dict[str, dict[str, Any]] = {}
+    for name, spec in CONSTRAINT_WEAKENING_LEVERS.items():
+        if not hasattr(config, name):
+            continue
+        value = getattr(config, name)
+        if value is None or bool(value) == bool(spec["safe_value"]):
+            continue
+        violations[name] = {**spec, "value": value}
+    return violations
+
+
+def require_constrained_production_config(
+    config: Any, *, context: str = "config"
+) -> None:
+    """Fail before execution when a production path weakens constrained decode.
+
+    Diagnostic control arms must not call this; they are the one place a
+    weakening lever is legitimate, and their output is never certified.
+    """
+    violations = constraint_weakening_violations(config)
+    if not violations:
+        return
+    detail = "; ".join(
+        f"{name}={spec['value']!r} (safe {spec['safe_value']!r}, "
+        f"weakens {spec['invariant']})"
+        for name, spec in sorted(violations.items())
+    )
+    raise ValueError(
+        f"{context} weakens constrained decoding: {detail}; "
+        "see docs/design/decode-invariants.md — production and ship-gated "
+        "configurations must hold every safe value"
+    )
+
+
 def require_capability_lever_profile(config: Any, capability: Capability) -> None:
     """Reject active levers introduced above the requested capability."""
 
@@ -358,6 +422,17 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
                 _requirement_json(requirement)
                 for requirement in LEVER_COMPANION_REQUIREMENTS[item.name]
             ]
+        if item.name in CONSTRAINT_WEAKENING_LEVERS:
+            spec = CONSTRAINT_WEAKENING_LEVERS[item.name]
+            catalog[item.name].update(
+                {
+                    "weakens_constraint": True,
+                    "constraint_safe_value": _json_value(spec["safe_value"]),
+                    "constraint_invariant": spec["invariant"],
+                    "constraint_effect": spec["effect"],
+                    "diagnostic_only": True,
+                }
+            )
         if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]

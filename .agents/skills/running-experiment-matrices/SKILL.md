@@ -77,3 +77,15 @@ Do not add matrix rows without a runnable script path.
 - [ ] Measured-results markdown updated
 - [ ] Ship/perf pass-fail stated with caveats
 - [ ] No silent gold channels on honest rows
+
+## Decode invariants (matrix arms)
+
+`AGENTS.md` § Non-negotiable architecture invariants is goal law; canonical
+expansion: [decode-invariants.md](../../../docs/design/decode-invariants.md).
+
+- An arm may swap the **speculative technique** (n-gram ↔ trie ↔ learned
+  ranker) or the prefill schedule; no arm may swap whether output is legal.
+- Unconstrained control arms are allowed, must be named as controls, and their
+  rows never feed a ship or promotion decision.
+- Arms that set a `weakens_constraint` lever are diagnostic by construction —
+  label them, and never promote a champion from one.

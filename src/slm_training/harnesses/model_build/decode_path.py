@@ -206,7 +206,10 @@ _CURRENT_NATIVE = DecodePathSpec(
     path_id="current_native",
     description=(
         "Current production model-native decode with current bug fixes, "
-        "preserving the checkpoint's own output representation."
+        "preserving the checkpoint's own output representation. Constrained "
+        "end to end: it inherits MANDATORY_GENERATION_POLICY, so there is no "
+        "unconstrained retry (decode invariant I6, "
+        "docs/design/decode-invariants.md)."
     ),
     generation_entry="model_native_greedy_ltr",
     completion_kind="greedy",

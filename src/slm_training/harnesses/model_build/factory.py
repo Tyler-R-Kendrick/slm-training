@@ -240,6 +240,11 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "speculative_successor",
         "speculative_fanout",
         "speculative_overlap",
+        "speculative_rank",
+        "speculative_rank_table",
+        "speculative_rank_margin",
+        "prefill_schedule",
+        "prefill_schedule_max_lookahead",
     ):
         if allowed is not None and key not in allowed:
             continue
@@ -771,7 +776,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "grammar_finalize_on_last_attempt_only", False)
         ),
         allow_unconstrained_fallback=bool(
-            getattr(config, "allow_unconstrained_fallback", True)
+            getattr(config, "allow_unconstrained_fallback", False)
         ),
         stability_min_persistence=int(
             getattr(config, "stability_min_persistence", 0) or 0
@@ -791,6 +796,15 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         speculative_successor=bool(getattr(config, "speculative_successor", False)),
         speculative_fanout=int(getattr(config, "speculative_fanout", 2) or 2),
         speculative_overlap=bool(getattr(config, "speculative_overlap", False)),
+        speculative_rank=str(getattr(config, "speculative_rank", "off") or "off"),
+        speculative_rank_table=getattr(config, "speculative_rank_table", None),
+        speculative_rank_margin=float(
+            getattr(config, "speculative_rank_margin", 0.0) or 0.0
+        ),
+        prefill_schedule=str(getattr(config, "prefill_schedule", "off") or "off"),
+        prefill_schedule_max_lookahead=int(
+            getattr(config, "prefill_schedule_max_lookahead", 0) or 0
+        ),
         seed=config.seed,
     )
 

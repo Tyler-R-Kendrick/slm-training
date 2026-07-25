@@ -57,3 +57,20 @@ An improvement is incomplete until the relevant invariant has a focused test and
 when execution occurred, the canonical JSON plus markdown record states recipe,
 suite size, result, and honest pass/fail. A self-improvement claim additionally
 needs frozen evaluation cases, held-out results, and explicit human promotion.
+
+## Decode invariants (harness edits may not weaken them)
+
+`AGENTS.md` § Non-negotiable architecture invariants is goal law; canonical
+expansion: [decode-invariants.md](../../../docs/design/decode-invariants.md).
+For harness changes specifically:
+
+- Never remove or bypass the deterministic singleton bypass (I2) or constrained
+  legality (I6) from any decode path. A new decode path merges only with a
+  `forwards_count == 0` bypass test.
+- Ranking, speculation technique, and batching are levers; legality is not. A
+  change that can widen the legal set is not a lever, it is a regression.
+- New weakening levers must be registered in
+  `levers.CONSTRAINT_WEAKENING_LEVERS` with their fail-closed value.
+- A rejected experiment closes an *approach*, never a *goal* (I14). When a
+  harness change abandons an approach to an open invariant, file the successor
+  approach in the same measured-results doc.

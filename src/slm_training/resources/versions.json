@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-25",
+          "note": "Register constraint-weakening levers with fail-closed safe values and a production-config gate (decode invariants I2/I6)"
+        },
         {
           "version": "v20",
           "date": "2026-07-23",
@@ -328,13 +333,18 @@
       ]
     },
     "dsl.operators.contracts": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/",
         "tests/test_dsl/test_operator_contracts.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-07-25",
+          "note": "Export the COPY_STATE conversation operation from the operators package (decode invariant I11)"
+        },
         {
           "version": "v12",
           "date": "2026-07-23",
@@ -398,13 +408,18 @@
       ]
     },
     "dsl.operators.conversation": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/conversation.py",
         "tests/test_dsl/test_operator_conversation.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "Add the COPY_STATE conversation operation with branch-scoped source validation and exact replay (decode invariant I11)"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -1542,6 +1557,11 @@
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v104",
+          "date": "2026-07-25",
+          "note": "no-bump: follow the canonical allow_unconstrained_fallback default to False in the e228 recipe fallback; every shipped arm already sets it explicitly"
+        },
         {
           "version": "v104",
           "date": "2026-07-25",
@@ -4165,6 +4185,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: README and MODEL_CARD gained decode-invariant links and the I10 ladder table; no spectral-disposition claim, evidence, or artifact changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "no-bump: add the SLM-287 local diagnostic checkpoint evidence to shared README and model card without changing the SLM-228 disposition"
         },
         {
@@ -4755,23 +4780,9 @@
       "history": [
         {
           "version": "v1",
-          "date": "2026-07-24",
-          "note": "initial registration; SLM-301 LAR1-04 prompt-observability arms (as-is vs +inventory) with phase-0 coverage classification, AR/X22 baselines, paired predeclared-delta report"
-        }
-      ]
-    },
-    "harness.experiments.slm301_prompt_observability": {
-      "version": "v1",
-      "kind": "harness",
-      "paths": [
-        "src/slm_training/harnesses/experiments/slm301_prompt_observability.py",
-        "scripts/run_slm301_prompt_observability.py",
-        "tests/test_harnesses/experiments/test_slm301_prompt_observability.py",
-        "docs/design/iter-slm301-prompt-observability-20260724.json",
-        "docs/design/iter-slm301-prompt-observability-20260724.md",
-        "docs/design/slm301-slot-observability-audit-20260724.json"
-      ],
-      "history": [
+          "date": "2026-07-25",
+          "note": "no-bump: drop an exact duplicate JSON key for this component; parsers already kept only one copy, so no watched behavior changes"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
@@ -4798,7 +4809,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v57",
+      "version": "v58",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4811,6 +4822,11 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v58",
+          "date": "2026-07-25",
+          "note": "Gate every evaluation policy on require_constrained_production_config and add the I3 speculative-rank and I4 prefill-schedule decode counters (decode invariants I2/I3/I4/I6)"
+        },
         {
           "version": "v57",
           "date": "2026-07-25",
@@ -6525,7 +6541,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v240",
+      "version": "v241",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6552,9 +6568,19 @@
         "src/slm_training/models/twotower_numeric_gates.py",
         "tests/test_models/test_twotower_numeric_gates.py",
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.json",
-        "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
+        "docs/design/iter-slm242-twotower-numeric-gates-20260721.md",
+        "src/slm_training/dsl/grammar/fastpath/speculative_rank.py",
+        "src/slm_training/runtime/decode_schedule.py",
+        "scripts/build_speculative_ngram_table.py",
+        "tests/test_dsl/test_speculative_rank.py",
+        "tests/test_runtime/test_decode_schedule.py"
       ],
       "history": [
+        {
+          "version": "v241",
+          "date": "2026-07-25",
+          "note": "Add deterministic speculative ranking over the symbol table and a symbol-table prefill planner, both default-off levers, with their DecodeStats counters (decode invariants I3/I4)"
+        },
         {
           "version": "v240",
           "date": "2026-07-25",
@@ -6653,7 +6679,7 @@
         {
           "version": "v223",
           "date": "2026-07-22",
-        "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
+          "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
         },
         {
           "version": "v222",
@@ -8181,6 +8207,22 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; byte-preserving archived harness replay records"
+        }
+      ]
+    },
+    "decode.invariants": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "docs/design/decode-invariants.md",
+        "scripts/verify_decode_invariants.py",
+        "tests/test_scripts/test_verify_decode_invariants.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial decode-invariant certificate: fail-closed canonical defaults, pinned strict policies, serving fail-closed markers, per-backend deterministic-bypass tests, agent-surface and canonical-doc reachability, reserved-op default-off"
         }
       ]
     }

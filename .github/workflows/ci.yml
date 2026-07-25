@@ -109,6 +109,8 @@ jobs:
             "lark>=1.1,<2" "PyYAML>=6,<7"
       - name: Validate repository organization
         run: python -m scripts.repo_policy
+      - name: Certify decode invariants
+        run: python -m scripts.verify_decode_invariants
       - run: ruff check .
       - run: python -m compileall -q src scripts tests
       - name: Verify checkpoint references are resolvable and provenanced

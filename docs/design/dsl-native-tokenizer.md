@@ -1,5 +1,9 @@
 # DSL-native output tokenization (V5)
 
+> **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) —
+> constrained decoding is the product, deterministic singleton bypass outranks
+> learned scores, and a rejected approach never closes a goal.
+
 Design note for replacing textual / string-piece tokenization on the
 **output** side with a reversible compiler-derived intermediate representation.
 

@@ -54,6 +54,14 @@ def apply_evaluation_policy(config: object) -> None:
         ) from exc
     for field, value in policy.items():
         setattr(config, field, value)
+    # Every policy carries MANDATORY_GENERATION_POLICY, so every one of them is
+    # a path that must not be able to emit uncertified output (I6) or spend a
+    # forward on a proven singleton (I2). Fail before the run, not during it.
+    from slm_training.levers import require_constrained_production_config
+
+    require_constrained_production_config(
+        config, context=f"evaluation_policy {policy_id!r}"
+    )
 
 
 def apply_strict_compiler_tree_policy(config: object) -> None:

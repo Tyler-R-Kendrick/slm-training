@@ -3,6 +3,14 @@
 Follow **[AGENTS.md](AGENTS.md)** — the canonical instructions for every coding
 agent in this repo.
 
+Obey **AGENTS.md § Non-negotiable architecture invariants** — constrained
+decoding is the product, deterministic/singleton bypass outranks any learned
+score, speculation ranks only over forward-calculated symbol tables and always
+verifies before commit, symbol tables schedule prefills, the ops vocabulary is
+shared encoder↔decoder, and multi-turn is a CRDT event store. Never weaken
+them; a rejected experiment closes an approach, never a goal. Canonical
+expansion: [`docs/design/decode-invariants.md`](docs/design/decode-invariants.md).
+
 Activate skills from `.agents/skills/`. After any train / eval / benchmark /
 matrix run, use `documenting-experiment-results`. Token stack: `ponytail`,
 `caveman`, `headroom`, `rtk` (see `AGENTS.md` / `RTK.md`). Hugging Face pack:
