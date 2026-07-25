@@ -53,6 +53,7 @@ class RefKind(str, Enum):
     VALUE = "value"
     SYMBOL = "symbol"
     TEMPLATE = "template"
+    SELECTOR = "selector"
 
 
 class BindingPhase(str, Enum):
@@ -129,8 +130,15 @@ class TemplateRef(_OpaqueRef):
     KIND: ClassVar[RefKind] = RefKind.TEMPLATE
 
 
+@dataclass(frozen=True)
+class SelectorRef(_OpaqueRef):
+    """Opaque handle for one exact finite compiler-owned target set (DSH5-01)."""
+
+    KIND: ClassVar[RefKind] = RefKind.SELECTOR
+
+
 OperatorRef: TypeAlias = (
-    NodeRef | RoleRef | IndexRef | ValueRef | SymbolRef | TemplateRef
+    NodeRef | RoleRef | IndexRef | ValueRef | SymbolRef | TemplateRef | SelectorRef
 )
 
 
