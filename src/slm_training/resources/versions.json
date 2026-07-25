@@ -1716,7 +1716,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v115",
+      "version": "v116",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1725,6 +1725,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v116",
+          "date": "2026-07-25",
+          "note": "register SLM-257 LOT4-01 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2/LOT3 chain"
+        },
         {
           "version": "v115",
           "date": "2026-07-25",
@@ -2386,7 +2391,7 @@
       ]
     },
     "harness.experiments.lot_downstream_gate": {
-      "version": "v5",
+      "version": "v6",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
@@ -2402,9 +2407,16 @@
         "docs/design/iter-slm255-lot3-02-not-authorized-20260725.json",
         "docs/design/iter-slm255-lot3-02-not-authorized-20260725.md",
         "docs/design/iter-slm256-lot2-03-not-authorized-20260725.json",
-        "docs/design/iter-slm256-lot2-03-not-authorized-20260725.md"
+        "docs/design/iter-slm256-lot2-03-not-authorized-20260725.md",
+        "docs/design/iter-slm257-lot4-01-not-authorized-20260725.json",
+        "docs/design/iter-slm257-lot4-01-not-authorized-20260725.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-25",
+          "note": "add SLM-257 LOT4-01 registry entry + not_authorized iter docs (lotus-openui-compute-frontier-v1)"
+        },
         {
           "version": "v5",
           "date": "2026-07-25",

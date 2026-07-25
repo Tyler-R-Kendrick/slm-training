@@ -134,6 +134,20 @@ DOWNSTREAM_ISSUES: dict[str, DownstreamIssueSpec] = {
             "selected supervision routing/timing/grounding contract."
         ),
     ),
+    "SLM-257": DownstreamIssueSpec(
+        linear_issue="SLM-257",
+        alias="LOT4-01",
+        title="Measure the equal-quality end-to-end accuracy, throughput, FLOPs, memory, energy, and training-cost frontier",
+        gate_contract_id="lotus-openui-compute-frontier-v1",
+        slug="lot4-01-compute-frontier",
+        activation_requirement=(
+            "SLM-251 supplies faithful treatment and continued explicit "
+            "checkpoints with fairness manifests; SLM-252/253/256 select "
+            "the objective/readout/workspace or explicitly close those "
+            "branches; SLM-254 defines allowed causal-use language; "
+            "SLM-255 defines accepted-equivalence evaluation."
+        ),
+    ),
 }
 
 
