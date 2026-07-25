@@ -5485,7 +5485,7 @@
    ]
   },
   "harness.train_data": {
-   "version": "v24",
+   "version": "v25",
    "kind": "harness",
    "paths": [
     "scripts/build_train_data.py",
@@ -5498,6 +5498,11 @@
     "src/slm_training/resources/frontier/"
    ],
    "history": [
+    {
+     "version": "v25",
+     "date": "2026-07-25",
+     "note": "add CAP0 eval-suite freeze + anti-collapse gates (six immutable subsuites, zero-tolerance invariants, preregistered-n gates) under harness.experiments.slm361_cap0_eval_freeze"
+    },
     {
      "version": "v24",
      "date": "2026-07-25",
@@ -8046,6 +8051,23 @@
      "version": "v1",
      "date": "2026-07-25",
      "note": "initial CAP0 QA views: capped diagnostic IDENTITY rows, DSH1-05 CANONICALIZE pairs, accepted-set COMPLETE_SUFFIX rows with verified-terminal replay and separate canonical preference, both anti-identity hard-negative kinds, atomic-production nonidentity coverage guard, no-single-gold-where-multi audit, and identity-baseline stop rule (SLM-360 / DSH1-08)"
+    }
+   ]
+  },
+  "harness.experiments.slm361_cap0_eval_freeze": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/train_data/cap0_eval_freeze.py",
+    "tests/test_harnesses/train_data/test_cap0_eval_freeze.py",
+    "docs/design/iter-slm361-cap0-eval-freeze-20260725.json",
+    "docs/design/iter-slm361-cap0-eval-freeze-20260725.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "initial CAP0 eval-suite freeze: six immutable subsuites (atomic coverage, expanded canonicalization, compositional held-out, prefix completion, marker permutation, anti-identity) with sha256 rows + tamper-evident manifest, zero-tolerance audit invariants with rejection artifacts, stop rules (leakage / unproven prefix / incomplete-shortest reward), versioned anti-collapse gates with preregistered n + Wilson bounds (fixture n reports insufficient_n, never CERT_CAP0), and identity/unchanged-input/empty-trivial baselines that cannot pass (SLM-361 / DSH1-09)"
     }
    ]
   }
