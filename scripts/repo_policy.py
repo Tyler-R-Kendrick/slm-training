@@ -23,6 +23,7 @@ ALLOWED_ROOTS = {
     ".githooks",
     ".github",
     ".gitignore",
+    ".grok",
     ".mcp.json",
     ".nvmrc",
     ".python-version",

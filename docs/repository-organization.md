@@ -19,6 +19,7 @@ Keep one obvious owner for every tracked file. Before adding a path, search with
 | Self-contained Node/frontend packages | `src/apps/` |
 | Canonical agent skills | `.agents/skills/` |
 | Client discovery links and hooks | `.claude/`, `.cursor/`, `.codex/`, `.github/hooks/` |
+| Grok Build project workflows (Rhai orchestration) | `.grok/workflows/` |
 
 The repository root is an allowlist for required manifests and cross-agent
 instructions. Application code and owned resources belong below `src/`; generated
