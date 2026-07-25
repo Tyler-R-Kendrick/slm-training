@@ -1540,11 +1540,13 @@ def build_completion_forest(
                 cache[cache_key] = domain
     except Exception:  # noqa: BLE001 - constrained callers fail closed below
         return CompletionForest((), "none")
-    if isinstance(domain, UnsupportedCapabilityV1) or domain.status != "complete":
-        return CompletionForest((), "none", tuple(getattr(domain, "terminals", ())) )
+    if isinstance(domain, UnsupportedCapabilityV1):
+        return CompletionForest((), "none", tuple(getattr(domain, "terminals", ())))
+    if domain.status not in ("complete", "partial"):
+        return CompletionForest((), "none", tuple(getattr(domain, "terminals", ())))
     return CompletionForest(
         tuple(CompletionPath(item.token_ids, item.kind) for item in domain.candidates),
-        "complete",
+        domain.status,
         domain.terminals,
     )
 

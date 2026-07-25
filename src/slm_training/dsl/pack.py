@@ -441,6 +441,29 @@ def _openui_completion_domain(request: Any) -> Any:
             )
         )
     if not candidates:
+        # Horizon-limited, not contradictory: the structural forest proved
+        # exactly one legal next action, but the remaining decode budget was
+        # too short to enumerate a terminal witness reaching EOS. That is a
+        # proof of "no witness within horizon", distinct from "witness
+        # disagrees" (0 or >1 structural paths). A sole-legal structural
+        # proof stands on its own — see decode-invariants.md I2.
+        if len(initial.paths) == 1:
+            (sole,) = initial.paths
+            tokens = tuple(int(token_id) for token_id in sole.token_ids)
+            if tokens:
+                return CompletionDomainV1(
+                    status="partial",
+                    candidates=(
+                        CompletionDomainCandidateV1(
+                            token_ids=tokens,
+                            kind=sole.kind,
+                            terminal_witness=(),
+                        ),
+                    ),
+                    scope_fingerprint=fingerprint,
+                    terminals=initial.terminals,
+                    reason="terminal_witness_horizon_limited",
+                )
         return CompletionDomainV1(
             status="incomplete",
             scope_fingerprint=fingerprint,

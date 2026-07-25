@@ -447,13 +447,18 @@
       ]
     },
     "dsl.grammar_capabilities": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar_capabilities.py",
         "tests/test_dsl/test_grammar_capabilities.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "add a partial CompletionDomainStatus for horizon-limited (not contradictory) sole-legal proofs (decode invariants I2)"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -535,7 +540,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -543,6 +548,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "let a sole-legal completion-forest proof stand when the terminal witness is only horizon-limited, not contradictory (decode invariants I2)"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -6541,7 +6551,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v241",
+      "version": "v242",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6569,6 +6579,8 @@
         "tests/test_models/test_twotower_numeric_gates.py",
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.json",
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md",
+        "docs/design/i2-horizon-limited-bypass-20260725.json",
+        "docs/design/i2-horizon-limited-bypass-20260725.md",
         "src/slm_training/dsl/grammar/fastpath/speculative_rank.py",
         "src/slm_training/runtime/decode_schedule.py",
         "scripts/build_speculative_ngram_table.py",
@@ -6576,6 +6588,11 @@
         "tests/test_runtime/test_decode_schedule.py"
       ],
       "history": [
+        {
+          "version": "v242",
+          "date": "2026-07-25",
+          "note": "Close the I2 short-horizon repair gap: exact_forced_token_id accepts a horizon-limited (partial) sole-legal completion-forest proof for DSL-native tokenizers, so test_repair_exact_token_skips_forward_and_records_authority passes (docs/design/decode-invariants.md I2 known gap)"
+        },
         {
           "version": "v241",
           "date": "2026-07-25",
@@ -8219,6 +8236,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: record the I2 short-horizon repair gap as closed (was 'Known gap', now 'Closed gap') and drop its row from the open-goals table; the certificate's own requirements (scripts/verify_decode_invariants.py) are unchanged. Actual behavior change is stamped on dsl.grammar_capabilities v4, dsl.operators.registry v4, model.twotower v242 (docs/design/i2-horizon-limited-bypass-20260725.md)"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

@@ -40,10 +40,11 @@ preference scores.
 | `models/twotower.py` LTR / batched / MaskGIT loops | commit forced rows with the row removed from the forward |
 | `models/onnx_inference.py` | derives the completion forest before every forward; a singleton domain commits with no denoiser run |
 
-**Status: implemented in all backends, with one open efficiency gap.** ONNX was
-the last structural gap — it forwarded first and consulted force-emit
-afterwards; it now proves the singleton before the session runs. The remaining
-gap is short-horizon repair losing an otherwise-proven bypass; see I2 below.
+**Status: implemented in all backends.** ONNX was the last structural gap — it
+forwarded first and consulted force-emit afterwards; it now proves the
+singleton before the session runs. Short-horizon repair losing an
+otherwise-proven bypass was the remaining efficiency gap; see I2 below (closed
+2026-07-25).
 
 ### I2 — Forced bypass on singletons
 
@@ -64,29 +65,35 @@ canonical shape is the `forwards_count == 0` assertion in
 has no such test. That gate is static — it proves the assertion exists; pytest
 proves it holds.
 
-#### Known gap — short-horizon repair loses the bypass
+#### Closed gap — short-horizon repair loses the bypass
 
-`test_repair_exact_token_skips_forward_and_records_authority` is **red on
-`main`** (it predates this document; confirmed at `d77dfa0`, and still red
+`test_repair_exact_token_skips_forward_and_records_authority` was **red on
+`main`** (it predated this document; confirmed at `d77dfa0`, and still red
 after the `995813d` constrained-decoding work merged in). Diagnosis: in
 `_constrained_ltr_repair` the state carries `remaining_tokens = length -
-len(prefix)`. For a DSL-native tokenizer, `exact_forced_token_id` requires the
-compiler forest on top of the DFA proof, and `build_completion_forest` returns
-`coverage="none"` when the horizon is too short to enumerate a terminal witness
-(measured: `none` at `remaining_tokens ≤ 4`, `complete` at `8`). The DFA has
-already proven `=` is the sole legal lexeme, but the stricter proof fails closed
-and a forward runs.
+len(prefix)`. For a DSL-native tokenizer, `exact_forced_token_id` required the
+compiler forest to prove a *complete* terminal witness on top of the DFA
+proof, and `build_completion_forest` returned `coverage="none"` when the
+horizon was too short to enumerate that witness even though the
+budget-independent structural forest had already proven exactly one legal
+next action.
 
-This is **not** a legality violation — output stays legal — it is an I1/I2
-efficiency loss: inference runs where a deterministic answer existed. Failing
-closed on a partial proof is the correct rule; the gap is that a *complete* DFA
-proof is being discarded because a *second, horizon-limited* proof could not be
-completed. **Successor approach:** let a sole-legal DFA proof
-(`dfa_allowed == {forced}` plus the whitespace-competition check) stand on its
-own when the compiler forest is horizon-limited rather than contradictory, and
-distinguish "no witness within horizon" from "witness disagrees" in
-`CompletionForest.coverage`. That changes decode behavior, so it needs measured
-evidence and does not ride along with a documentation change.
+This was **not** a legality violation — output stayed legal — it was an
+I1/I2 efficiency loss: inference ran where a deterministic answer existed.
+**Closed** (2026-07-25, `docs/design/i2-horizon-limited-bypass-20260725.md`):
+`CompletionDomainStatus` gained a `"partial"` value; `_openui_completion_domain`
+(`src/slm_training/dsl/pack.py`) now returns it — carrying the sole structural
+action as its one candidate — when the terminal-witness search finds zero
+witnesses within budget but the structural forest has exactly one legal
+action (horizon-limited, not contradictory). Zero or multiple structural
+actions still return `"incomplete"` (witness disagrees) and keep failing
+closed. `exact_forced_token_id`'s DSL-native branch accepts
+`coverage in ("complete", "partial")` for a singleton candidate; every other
+`CompletionForest.coverage` reader still requires `"complete"` literally and
+is unaffected. Measured evidence — before/after test results, a singleton
+probe, and an ambiguity-control probe proving non-singleton positions still
+fail closed — is in
+[`i2-horizon-limited-bypass-20260725.md`](i2-horizon-limited-bypass-20260725.md).
 
 ### I3 — Speculative completion from forward-calculated symbol tables
 
@@ -357,7 +364,6 @@ Open goals with named successors, at a glance:
 | I12 | patch-as-default-target (SLM-299/305) | reachability-aware seeds / macro actions / certified pairs |
 | I11 | — (never attempted) | CRDT-converging merge, replacing conflict rejection |
 | I10 | — (rung unbuilt) | simplified-NL inventory as the bridge to complex NL |
-| I2 | — (pre-existing gap) | let a sole-legal DFA proof stand when the compiler forest is horizon-limited, not contradictory |
 | I3 | — (machinery new) | certify the n-gram ranker by campaign, then default-on for serving |
 | I4 | — (machinery new) | certify checkpoint scheduling by campaign, then default-on for serving |
 

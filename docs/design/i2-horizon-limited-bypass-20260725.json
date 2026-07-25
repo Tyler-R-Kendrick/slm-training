@@ -1,0 +1,81 @@
+{
+  "schema": "decode_invariant_gap_closure/v1",
+  "invariant": "I2",
+  "gap_title": "short-horizon repair loses the bypass",
+  "gap_source": "docs/design/decode-invariants.md#i2--forced-bypass-on-singletons",
+  "regression_test": "tests/test_models/test_inference_speed.py::test_repair_exact_token_skips_forward_and_records_authority",
+  "generated_at": "2026-07-25T06:50:05Z",
+  "code_commit_base": "993a70cc57505a2c4e5ea49fa4e7f888f387e8f6",
+  "diagnosis": "In `_constrained_ltr_repair`, `st.remaining_tokens = length - len(prefix)` shrinks every step. For a DSL-native (lexer) tokenizer, `exact_forced_token_id` only asked `build_completion_forest` for a *complete* terminal witness reaching EOS within that budget. When the budget was too small to enumerate a witness (`_openui_completion_domain` in `src/slm_training/dsl/pack.py` returning `status=\"incomplete\", reason=\"terminal_witness_unavailable\"`), the proof was discarded even when the structural completion forest (`_build_openui_completion_forest`, budget-independent) had already proven exactly one legal next action. `CompletionForest.coverage` collapsed both cases -- 'no witness within horizon' and 'witness disagrees/contradictory' -- to the same value \"none\", so `exact_forced_token_id` returned None and the repair loop ran an avoidable forward.",
+  "fix": {
+    "summary": "Distinguish 'no witness within horizon' from 'witness disagrees' in CompletionForest.coverage, and let a sole-legal structural proof stand on its own when only the terminal-witness search is horizon-limited.",
+    "changes": [
+      {
+        "file": "src/slm_training/dsl/grammar_capabilities.py",
+        "change": "CompletionDomainStatus gains \"partial\" alongside \"complete\" | \"incomplete\" | \"unsupported\"."
+      },
+      {
+        "file": "src/slm_training/dsl/pack.py",
+        "change": "_openui_completion_domain: when the witnessed-candidates loop finds zero witnesses within budget AND the structural forest (`initial.paths`, computed independent of budget) has exactly one legal action, return status=\"partial\" with that single action as the sole candidate (empty terminal_witness) and reason=\"terminal_witness_horizon_limited\". Zero or more-than-one structural paths still return status=\"incomplete\"/reason=\"terminal_witness_unavailable\" (contradictory or genuinely ambiguous -- unchanged, fails closed)."
+      },
+      {
+        "file": "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+        "change": "build_completion_forest maps domain.status \"partial\" to CompletionForest.coverage=\"partial\" (carrying the domain's one candidate); only UnsupportedCapabilityV1 or a status outside {\"complete\",\"partial\"} collapses to coverage=\"none\"."
+      },
+      {
+        "file": "src/slm_training/models/grammar.py",
+        "change": "exact_forced_token_id (DSL-native branch): accepts forest.coverage in (\"complete\", \"partial\") when exactly one candidate id is present, instead of requiring strictly \"complete\"."
+      }
+    ],
+    "blast_radius": "Every other consumer of CompletionForest.coverage (src/slm_training/dsl/grammar/fastpath/speculative_rank.py, src/slm_training/dsl/solver/decode.py, src/slm_training/models/onnx_inference.py, src/slm_training/models/twotower.py forward-admission checks, src/slm_training/models/grammar.py pick_constrained_token._compiler_admits) still requires coverage==\"complete\" verbatim and therefore still fails closed (forwards/rejects) on \"partial\" exactly as it already did on \"none\". Only exact_forced_token_id's DSL-native bypass check was widened."
+  },
+  "measurements": {
+    "target_test_before": {
+      "command": "python -m pytest tests/test_models/test_inference_speed.py -k test_repair_exact_token_skips_forward_and_records_authority -x -q",
+      "result": "FAILED",
+      "failure": "AssertionError: forwarded, raised from the monkeypatched _denoiser_forward at tests/test_models/test_inference_speed.py:645, propagating out of _constrained_ltr_repair (src/slm_training/models/twotower.py:4525) because exact_forced_token_id returned None (build_completion_forest coverage=\"none\" at remaining_tokens=1).",
+      "summary_line": "1 failed, 21 deselected in 2.95s"
+    },
+    "target_test_after": {
+      "command": "python -m pytest tests/test_models/test_inference_speed.py -k test_repair_exact_token_skips_forward_and_records_authority -x -q",
+      "result": "PASSED",
+      "summary_line": "1 passed, 21 deselected in 2.31s"
+    },
+    "full_file_after": {
+      "command": "python -m pytest tests/test_models/test_inference_speed.py -q",
+      "result": "PASSED",
+      "summary_line": "22 passed in 95.56s"
+    },
+    "singleton_probe": {
+      "description": "build_completion_forest on the SAMPLE row's 'root' prefix (output_tokenizer=\"lexer\"), which has exactly one legal next lexeme ('='), at several decode-horizon budgets.",
+      "rows": [
+        {"prefix": "root", "remaining_tokens": 1, "coverage": "partial", "n_paths": 1},
+        {"prefix": "root", "remaining_tokens": 8, "coverage": "partial", "n_paths": 1}
+      ],
+      "note": "coverage stays \"partial\" even at remaining_tokens=8 for this grammar because the full Card(\":t.x\") terminal witness needs more than 8 tokens to reach EOS -- exactly the horizon-limited case I2 names. The fix forces the single legal next token regardless; it never claims full-witness completeness."
+    },
+    "ambiguity_control_probe": {
+      "description": "build_completion_forest on the SAMPLE row's 'root =' prefix, which has 19-40 legal next component choices, at the same small budgets -- proves the fix does not widen the bypass to genuinely ambiguous positions.",
+      "rows": [
+        {"prefix": "root =", "remaining_tokens": 1, "coverage": "none", "n_paths": 0},
+        {"prefix": "root =", "remaining_tokens": 2, "coverage": "none", "n_paths": 0},
+        {"prefix": "root =", "remaining_tokens": 4, "coverage": "none", "n_paths": 0},
+        {"prefix": "root =", "remaining_tokens": 8, "coverage": "complete", "n_paths": 19},
+        {"prefix": "root =", "remaining_tokens": 20, "coverage": "complete", "n_paths": 40}
+      ],
+      "note": "unchanged from pre-fix behavior: coverage=\"none\" at small budgets here because 0 or >1 structural paths exist, so exact_forced_token_id still returns None and a forward still runs. This is the 'witness disagrees'/contradictory case the doc says must keep failing closed."
+    }
+  },
+  "invariant_compliance": "Not a legality violation: the forced token was already the unique legal continuation under the DFA/compiler-forest proof before this change; only the (over-strict) requirement to also prove full termination-reachability within the current truncated budget is relaxed. Certainty is never downgraded into a soft preference -- the ambiguity_control_probe shows genuinely non-singleton positions still fail closed.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "993a70cc57505a2c4e5ea49fa4e7f888f387e8f6",
+    "code_dirty": true,
+    "components": {
+      "dsl.grammar_capabilities": "v4",
+      "dsl.operators.registry": "v4",
+      "model.twotower": "v242"
+    },
+    "stamped_at": "2026-07-25T06:50:05Z"
+  }
+}

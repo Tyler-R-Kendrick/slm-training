@@ -66,7 +66,7 @@ class GrammarWitnessCandidateV1:
     runtime_symbols: tuple[Any, ...] = ()
 
 
-CompletionDomainStatus = Literal["complete", "incomplete", "unsupported"]
+CompletionDomainStatus = Literal["complete", "partial", "incomplete", "unsupported"]
 
 
 @dataclass(frozen=True)

@@ -387,7 +387,11 @@ def exact_forced_token_id(
                 runtime_symbols=runtime_symbols,
             )
             candidates = set(forest.candidate_ids)
-            if forest.coverage != "complete" or len(candidates) != 1:
+            # "partial" here means the structural forest proved a sole legal
+            # next action but the decode horizon was too short to witness a
+            # full path to EOS — horizon-limited, not contradictory (I2). A
+            # singleton candidate still forces; anything else fails closed.
+            if forest.coverage not in ("complete", "partial") or len(candidates) != 1:
                 return None
             return next(iter(candidates))
         except Exception:  # noqa: BLE001 - incomplete proof must fail closed
