@@ -1,6 +1,7 @@
 # SLM-287: locked five-seed × two-config local baseline
 
-**Claim class:** completed local trained diagnostic; not a ship or promotion result.
+**Claim class:** completed local trained diagnostic; not a ship or promotion
+result.
 
 - locked manifest: `b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48`
 - locked test records: `226`
@@ -9,23 +10,39 @@
 - paired 95% bootstrap CI: `[0.000000, 0.000000]`
 - no best seed was selected; human ratings are not a gate.
 
-Each cell trained a CPU float32 scratch Choice TwoTower checkpoint on the
-strict 97-record `slm230_symbol_only_v1` snapshot to its frozen 5,000-token
-budget (53 steps for the seed-0 control), then evaluated all 226 locked rows.
-All quality endpoints remained zero, with zero observed seed/target variance,
-so the preregistered log-odds power curve has no finite MDE. This is valid
-negative evidence for the trained local baseline, but it does **not** satisfy
-the AP-007 numeric-MDE acceptance criterion.
+Each of the ten cells trained a CPU float32 scratch Choice TwoTower checkpoint
+from its independently seeded initialization on the strict 97-record
+`slm230_symbol_only_v1` snapshot, with a frozen 5,000-token budget (53 steps
+for seed 0).  Each was then evaluated over every locked record by 16 isolated
+shards (160 total); every shard emitted an AgentV bundle.  The campaign lock is
+`652658eb…7ef4bcf` and the protocol lock is `ee6df865…db14664`.
+
+| Variant | Meaning-v2 | Binder/reference F1 | Latency (ms) | Compute proxy | Peak RSS (bytes) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| raw | 0.000000 | 0.000000 | 350.57 | 0.0 | 273,093,836.8 |
+| constrained | 0.000000 | 0.000000 | 571.34 | 0.0 | 273,093,836.8 |
+| repaired | 0.000000 | 0.000000 | 554.65 | 0.0 | 273,093,836.8 |
+
+The paired design-on minus design-off primary delta is 0.000000 (target
+cluster bootstrap 95% CI [0.000000, 0.000000]; exact McNemar p=1.0,
+0/0 discordant pairs over 1,130 seed-record pairs).  All quality endpoints are
+zero, so this is negative evidence, not a best-seed selection or promotion.
+
+The separately locked power analysis uses **absolute probability points**,
+not log odds, because the observed base rate is zero.  Its numeric MDE is
+**0.0200 absolute probability points** at 80% simulated power (100
+simulations, five seeds, 226 targets).  This is a sensitivity statement about
+this local diagnostic sample, not an observed gain.  The paired latency deltas
+(design-on minus design-off) are raw +26.14 ms (95% CI [15.78, 37.05]),
+constrained +29.43 ms ([14.63, 45.75]), and repaired +16.75 ms ([3.36, 28.15]);
+quality remains zero in every variant.
 
 The originally selected 480-record E297 snapshot was rejected before training
-because it contains free-form strings forbidden by the active `symbol_only/v2`
-output contract; no E297 checkpoint or result was emitted. The current-contract
-SLM-230 snapshot replaced it without weakening that gate. A separately locked
-absolute-probability MDE analysis is required before this issue can close.
-
-All cells used the canonical evaluator's raw, constrained, and repaired
-variants over the full 226-record locked holdout. This is local CPU scratch
-evidence only, not a ship or promotion result.
+because free-form strings violate the active `symbol_only/v2` output contract;
+no E297 checkpoint or result was emitted.  Replacing it with the valid current
+contract corpus did not weaken the gate.  All checkpoint paths are local and
+explicitly no-sync; this completed diagnostic is **not ship-grade** and makes
+no production or promotion claim.
 
 ## Exact command
 

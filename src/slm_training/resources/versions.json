@@ -4147,6 +4147,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: add the SLM-287 local diagnostic checkpoint evidence to shared README and model card without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-24",
           "note": "no-bump: document repository-wide LangSmith summary telemetry without changing the SLM-228 disposition"
         },
