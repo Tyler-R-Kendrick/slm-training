@@ -1,0 +1,35 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "SLM-344 and the DSH2 line (CAP1 grounding, SemanticFrame, paraphrase providers, two-pack CAP1 evals, CERT_CAP1) stay closed until a powered CAP0 rerun issues CERT_CAP0.",
+  "failed_gates": [
+    "gate_cert_cap0"
+  ],
+  "gates": {
+    "gate_cert_cap0": {
+      "evidence": "docs/design/iter-slm362-cap0-experiment-20260725.json",
+      "issue": "SLM-362",
+      "observed_outcome": "CERT_CAP0 rejected (prediction_identical, copy_dominated, structurally_regressive, underpowered); insufficient_n at fixture scale",
+      "passed": false,
+      "required_outcome": "CERT_CAP0 issued"
+    }
+  },
+  "issue": "SLM-343",
+  "matrix_set": "cap1-gen-01-grounding-contract",
+  "matrix_version": "slm343-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "This issue is blocked on CERT_CAP0 evidence from SLM-362. The matched CAP0 curriculum experiment ran on 2026-07-25 and REJECTED CERT_CAP0 on four stop rules (prediction_identical, copy_dominated, structurally_regressive, underpowered), with the DSH1-09 gate reporting insufficient_n for every arm. Per the stop rule, CAP1/CAP2 training stays closed: the generic NL<->DSL grounding contract must not be implemented.",
+  "run_id": "slm343_gate_closeout",
+  "schema": "slm343_cap1_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "944ebc11c2a22a493fc163350c53fb5ced9f8a2f",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T06:35:00.720308+00:00"
+  }
+}
