@@ -1823,6 +1823,7 @@ def evaluate_grammar_leakage_audit(
     checkpoint: Path | None = None,
     *,
     publish_agentv: bool = True,
+    variant_names: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     """Evaluate identical checkpoints under explicit raw/grammar controls.
 
@@ -1832,7 +1833,7 @@ def evaluate_grammar_leakage_audit(
     from contextlib import contextmanager
     from dataclasses import replace
 
-    variants = {
+    all_variants = {
         "raw": {
             "grammar_constrained": False,
             "grammar_ltr_repair": False,
@@ -1854,6 +1855,10 @@ def evaluate_grammar_leakage_audit(
             "grammar_uniform_at_unforced": True,
         },
     }
+    selected_names = variant_names or tuple(all_variants)
+    if "raw" not in selected_names or not set(selected_names).issubset(all_variants):
+        raise ValueError("grammar leakage audit variants must include raw")
+    variants = {name: all_variants[name] for name in selected_names}
 
     @contextmanager
     def _temporary_plugin_config(overrides: dict[str, bool]):

@@ -51,6 +51,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| SLM-287 five-seed locked baseline | `slm287-trained-local-v13-20260725` (10 cells) | `outputs/runs/…` (local, no-sync) | CPU float32 Choice TwoTower; 97-record strict train snapshot, 5k-token budget, five seeds × scratch design off/on, 226-record locked holdout and AgentV per shard. Meaning-v2/binder F1 stay 0; absolute-probability MDE 2.0 pp. Diagnostic only, not promoted or ship |
 | SLM-230 bounded recurrence diagnostic | `slm230_bounded_recursive_r4_r2/last.pt` | `outputs/runs/…` (local) | R=4 scratch checkpoint: SLM-230 is `stagnant`; SLM-231 is `expansive_unstable`; SLM-232 finds z0 rank 2.1054 but rank 0 after context/position removal and vacuous bounded ablations (`unstable`). Rejected, not ship |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1/last.pt` | `outputs/runs/…` (local) | Removes impossible class-41 tail prediction, but weight 0/1 smoke quality remains identical and strict-v2 0.0 — fix retained, checkpoint rejected |
 | E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1/last.pt` | `outputs/runs/…` (local) | Proposed lever has zero reachable decode applications; config now rejects lexer identity before artifacts — checkpoint invalidated |

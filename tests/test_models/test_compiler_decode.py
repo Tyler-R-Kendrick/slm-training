@@ -40,6 +40,17 @@ from slm_training.harnesses.preference.local_decisions import events_from_trace
 from slm_training.levers import SLOT_CONTRACT_DECODE_LEVERS
 
 
+def test_canonical_valid_openui_propagates_decode_deadline(monkeypatch) -> None:
+    import slm_training.dsl.parser as parser
+
+    def _deadline(_text: str):
+        raise TimeoutError("decode deadline")
+
+    monkeypatch.setattr(parser, "validate", _deadline)
+    with pytest.raises(TimeoutError, match="decode deadline"):
+        TwoTowerModel._canonical_valid_openui("root = Separator()")
+
+
 def _model(**config_overrides) -> TwoTowerModel:
     record = ExampleRecord(
         id="compiler",

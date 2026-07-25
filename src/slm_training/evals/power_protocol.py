@@ -409,12 +409,14 @@ def mde_simulation(
     power: float = 0.8,
     n_simulations: int = 200,
     effect_sizes: Sequence[float] | None = None,
+    effect_scale: str = "log_odds",
     seed: int = 0,
 ) -> dict[str, Any]:
     """Simulate statistical power across effect sizes under seed + target variance.
 
     Binary outcomes are generated from a mixed-effects logit model with target
-    and seed random effects.  Power is estimated as the rejection rate of a
+    and seed random effects. ``effect_scale='absolute_probability'`` treats
+    each effect as an absolute probability-point delta. Power is estimated as the rejection rate of a
     one-sided paired z-test on target-level mean differences between treatment
     and control.  The z-test uses only stdlib + numpy (no scipy).
     """
@@ -428,6 +430,12 @@ def mde_simulation(
     if effect_sizes is None:
         effect_sizes = [0.0, 0.02, 0.05, 0.08, 0.10, 0.12, 0.15, 0.20]
     effect_sizes = [float(e) for e in effect_sizes]
+    if effect_scale not in {"log_odds", "absolute_probability"}:
+        raise ValueError("effect_scale must be log_odds or absolute_probability")
+    if effect_scale == "absolute_probability" and any(
+        not 0.0 <= effect <= 1.0 for effect in effect_sizes
+    ):
+        raise ValueError("absolute-probability effects must be in [0, 1]")
 
     rng = np.random.default_rng(seed)
     base_logit = math.log(base_rate / (1.0 - base_rate))
@@ -441,9 +449,12 @@ def mde_simulation(
             seed_effects = rng.normal(0.0, sigma_seed, size=n_seeds)
             for s in range(n_seeds):
                 logit_c = base_logit + target_effects[t] + seed_effects[s]
-                logit_t = logit_c + effect
                 p_c = 1.0 / (1.0 + math.exp(-logit_c))
-                p_t = 1.0 / (1.0 + math.exp(-logit_t))
+                p_t = (
+                    min(1.0, p_c + effect)
+                    if effect_scale == "absolute_probability"
+                    else 1.0 / (1.0 + math.exp(-(logit_c + effect)))
+                )
                 control[t, s, :] = rng.random(paths_per_target) < p_c
                 treatment[t, s, :] = rng.random(paths_per_target) < p_t
         control_mean = control.mean(axis=(1, 2))
@@ -488,6 +499,7 @@ def mde_simulation(
         "paths_per_target": paths_per_target,
         "n_seeds": n_seeds,
         "alpha": alpha,
+        "effect_scale": effect_scale,
         "target_power": power,
         "n_simulations": n_simulations,
         "curve": curve,
