@@ -5101,7 +5101,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -5116,6 +5116,11 @@
       ],
       "history": [
         {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "VAR1-01 (SLM-424): add set_property_action() and component_widen_action() hypothetical ExtraAction factories plus matching capability gates in _check_invariants ('set_property', 'component_widen'); thread an optional extra_actions_for hook through run_slm299_reachability_audit's analyze_record/_summarize_records/build_report (default None preserves prior behavior exactly). No production action space, TreeEditSpace, or checkpoint change; what-if lanes only, re-validated through the real parser and marked uses_synthetic_actions."
+        },
+        {
           "version": "v3",
           "date": "2026-07-24",
           "note": "Certify tree-edit generation outputs and emit a tagged deterministic valid fallback on unexpected invalid states"
@@ -5129,6 +5134,23 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; real X22 tree-edit reachability analyzer, suite audit CLI, and reachability-unproven gate input"
+        }
+      ]
+    },
+    "harness.experiments.var1_01_set_property_probe": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_var1_01_set_property_probe.py",
+        "tests/test_harnesses/experiments/test_var1_01_set_property_probe.py",
+        "docs/design/var1-01-set-property-probe-20260725.json",
+        "docs/design/var1-01-set-property-probe-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-424 (VAR1-01): four-arm hypothetical property-mutation/component-widening reachability probe over the SLM-299 suite corpora (A baseline, B set_property, C component_widen, D both). hypothetical=true throughout; no production action space change. node_budget reduced from the issue's suggested 120 to 15 to fit the repository's MAX_RUN_MINUTES=3 hard cap -- see the report's methodology note."
         }
       ]
     },
