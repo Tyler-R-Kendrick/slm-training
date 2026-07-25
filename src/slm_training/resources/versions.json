@@ -1519,12 +1519,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v99",
+      "version": "v100",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v100",
+          "date": "2026-07-25",
+          "note": "SLM-287 isolate every concurrent local shard evaluator workspace"
+        },
         {
           "version": "v99",
           "date": "2026-07-25",

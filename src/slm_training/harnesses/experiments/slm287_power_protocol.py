@@ -61,6 +61,13 @@ def _sha(value: object) -> str:
     return hashlib.sha256(_canonical(value).encode("utf-8")).hexdigest()
 
 
+def locked_eval_root(
+    output_dir: Path, *, seed: int, backend: str, shard_index: int
+) -> Path:
+    """Return the evaluator workspace owned by exactly one local shard."""
+    return output_dir / "locked_eval" / f"seed{seed}_{backend}_shard{shard_index}"
+
+
 @dataclass(frozen=True)
 class LockedPowerProtocol:
     manifest_sha256: str
@@ -508,7 +515,12 @@ def execute_local_shard(
     records = [record_by_id[record_id] for record_id in shard_ids]
     if backend not in BACKENDS or seed not in SEEDS:
         raise ValueError("locked shard must name a declared seed and backend")
-    suite_dir = output_dir / "locked_eval" / "suites" / f"locked_power_{seed}_{backend}_{shard_index}"
+    # Every shard owns its evaluator root.  Concurrent local cells must never
+    # race on a shared manifest and accidentally score another shard's records.
+    eval_root = locked_eval_root(
+        output_dir, seed=seed, backend=backend, shard_index=shard_index
+    )
+    suite_dir = eval_root / "suites" / f"locked_power_{seed}_{backend}_{shard_index}"
     suite_dir.mkdir(parents=True, exist_ok=True)
     records_path = suite_dir / "records.jsonl"
     records_path.write_text(
@@ -516,7 +528,7 @@ def execute_local_shard(
         encoding="utf-8",
     )
     suite_name = f"locked_power_{seed}_{backend}_{shard_index}"
-    (output_dir / "locked_eval" / "manifest.json").write_text(
+    (eval_root / "manifest.json").write_text(
         json.dumps({"suites": {suite_name: str(records_path)}}, indent=2) + "\n",
         encoding="utf-8",
     )
@@ -532,7 +544,7 @@ def execute_local_shard(
     overrides = protocol.recipe["backends"][backend]
     config = ModelBuildConfig(
         train_dir=output_dir / "empty_train",
-        test_dir=output_dir / "locked_eval",
+        test_dir=eval_root,
         suite=suite_name,
         run_root=output_dir,
         run_id=f"{EXPERIMENT_ID}/{backend}/seed{seed}/shard{shard_index}",

@@ -13,11 +13,23 @@ from slm_training.harnesses.experiments.slm287_power_protocol import (
     VARIANTS,
     LockedPowerProtocol,
     build_locked_campaign,
+    locked_eval_root,
     locked_shard_ids,
     merge_locked_shards,
     summarize_cells,
     validate_cells,
 )
+
+
+def test_locked_shards_have_disjoint_evaluator_workspaces(tmp_path) -> None:
+    first = locked_eval_root(
+        tmp_path, seed=0, backend="scratch_design_off", shard_index=0
+    )
+    second = locked_eval_root(
+        tmp_path, seed=1, backend="scratch_design_off", shard_index=0
+    )
+    assert first != second
+    assert first.parent == second.parent == tmp_path / "locked_eval"
 
 
 @pytest.fixture
