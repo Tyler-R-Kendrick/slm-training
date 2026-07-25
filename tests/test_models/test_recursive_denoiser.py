@@ -512,7 +512,11 @@ def test_weight_sharing_across_recursions() -> None:
 def test_recursive_diagnostics_as_is_is_bit_identical_and_deterministic() -> None:
     torch.manual_seed(282)
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
         recursive_steps=3,
     )
     tower.eval()
@@ -526,12 +530,20 @@ def test_recursive_diagnostics_as_is_is_bit_identical_and_deterministic() -> Non
     with torch.no_grad():
         baseline = tower.recursive_outputs(noisy, ctx, pad_id=0)
         first = tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
-            diagnostic_targets=targets, diagnostic_mask=mask,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
+            diagnostic_targets=targets,
+            diagnostic_mask=mask,
         )
         second = tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
-            diagnostic_targets=targets, diagnostic_mask=mask,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
+            diagnostic_targets=targets,
+            diagnostic_mask=mask,
         )
 
     assert "diagnostics" not in baseline
@@ -541,9 +553,7 @@ def test_recursive_diagnostics_as_is_is_bit_identical_and_deterministic() -> Non
     ):
         assert torch.equal(expected, actual)
     assert len(first["diagnostics"]) == len(second["diagnostics"]) == 3
-    for left, right in zip(
-        first["diagnostics"], second["diagnostics"], strict=True
-    ):
+    for left, right in zip(first["diagnostics"], second["diagnostics"], strict=True):
         assert isinstance(left, RecursiveDepthDiagnosticsV1)
         for field_name in left.__dataclass_fields__:
             left_value = getattr(left, field_name)
@@ -557,7 +567,11 @@ def test_recursive_diagnostics_as_is_is_bit_identical_and_deterministic() -> Non
 def test_recursive_diagnostics_schema_shapes_metrics_and_ratios() -> None:
     torch.manual_seed(282)
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
         recursive_steps=2,
     )
     noisy = torch.randint(1, 23, (2, 5))
@@ -566,8 +580,12 @@ def test_recursive_diagnostics_schema_shapes_metrics_and_ratios() -> None:
         [[True, True, False, True, False], [True, False, True, True, True]]
     )
     out = tower.recursive_outputs(
-        noisy, torch.randn(2, 3, 16), pad_id=0, diagnostics=True,
-        diagnostic_targets=targets, diagnostic_mask=mask,
+        noisy,
+        torch.randn(2, 3, 16),
+        pad_id=0,
+        diagnostics=True,
+        diagnostic_targets=targets,
+        diagnostic_mask=mask,
     )
 
     records = out["diagnostics"]
@@ -583,20 +601,30 @@ def test_recursive_diagnostics_schema_shapes_metrics_and_ratios() -> None:
         assert record.z_update.shape == (2, 5, 16)
         assert torch.equal(record.target_count, mask.sum(dim=1))
         tensor_fields = (
-            record.y, record.z, record.y_update, record.z_update,
-            record.y_norm, record.z_norm, record.y_update_norm,
-            record.z_update_norm, record.y_update_state_ratio,
-            record.z_update_state_ratio, record.cross_entropy, record.accuracy,
-            record.entropy, record.kl_to_final,
+            record.y,
+            record.z,
+            record.y_update,
+            record.z_update,
+            record.y_norm,
+            record.z_norm,
+            record.y_update_norm,
+            record.z_update_norm,
+            record.y_update_state_ratio,
+            record.z_update_state_ratio,
+            record.cross_entropy,
+            record.accuracy,
+            record.entropy,
+            record.kl_to_final,
         )
         assert all(value is not None for value in tensor_fields)
         assert all(torch.isfinite(value).all() for value in tensor_fields)
         assert all(not value.requires_grad for value in tensor_fields)
         y_before = record.y - record.y_update
         expected_ratio = record.y_update.float().flatten(1).norm(dim=1) / (
-            y_before.float().flatten(1).norm(dim=1).clamp_min(
-                torch.finfo(torch.float32).eps
-            )
+            y_before.float()
+            .flatten(1)
+            .norm(dim=1)
+            .clamp_min(torch.finfo(torch.float32).eps)
         )
         torch.testing.assert_close(record.y_update_state_ratio, expected_ratio)
     assert records[0].kl_to_next is not None
@@ -617,18 +645,26 @@ def test_recursive_diagnostics_schema_shapes_metrics_and_ratios() -> None:
 def test_recursive_residual_delta_removes_empty_f_layer_identity_update() -> None:
     torch.manual_seed(282)
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
-        recursive_steps=1, recursive_transition_layers=1,
+        vocab_size=23,
+        d_model=16,
+        n_layers=1,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=1,
+        recursive_transition_layers=1,
     )
     tower.eval()
     noisy = torch.randint(1, 23, (2, 5))
     ctx = torch.randn(2, 3, 16)
     with torch.no_grad():
-        as_is = tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True
-        )["diagnostics"][0]
+        as_is = tower.recursive_outputs(noisy, ctx, pad_id=0, diagnostics=True)[
+            "diagnostics"
+        ][0]
         residual_delta = tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
             diagnostic_update_mode="residual_delta",
         )["diagnostics"][0]
 
@@ -644,14 +680,24 @@ def test_recursive_residual_delta_removes_empty_f_layer_identity_update() -> Non
 def test_recursive_update_default_is_exact_historical_current_v1() -> None:
     torch.manual_seed(243)
     implicit = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
         recursive_steps=2,
     )
     torch.manual_seed(243)
     explicit = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=2, update_mode="current_v1",
-        empty_f_mode="pass_through", norm_mode="shared",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=2,
+        update_mode="current_v1",
+        empty_f_mode="pass_through",
+        norm_mode="shared",
     )
     assert implicit.state_dict().keys() == explicit.state_dict().keys()
     for key in implicit.state_dict():
@@ -667,24 +713,38 @@ def test_recursive_update_default_is_exact_historical_current_v1() -> None:
 def test_recursive_true_empty_f_zero_is_independent_of_outer_update() -> None:
     torch.manual_seed(243)
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
-        recursive_steps=1, recursive_transition_layers=1,
-        update_mode="current_v1", empty_f_mode="zero",
+        vocab_size=23,
+        d_model=16,
+        n_layers=1,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=1,
+        recursive_transition_layers=1,
+        update_mode="current_v1",
+        empty_f_mode="zero",
     )
     initial = tower.initial_transition_state(
         torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 16), pad_id=0
     )
     step = tower.transition_step(
-        initial["y"], initial["z"], torch.randn(2, 3, 16),
+        initial["y"],
+        initial["z"],
+        torch.randn(2, 3, 16),
         initial["self_pad_mask"],
     )
     assert step["z_update"] is not None
     assert torch.equal(step["z_update"], torch.zeros_like(step["z_update"]))
 
     nonempty = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=1, recursive_transition_layers=2,
-        update_mode="current_v1", empty_f_mode="zero",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=1,
+        recursive_transition_layers=2,
+        update_mode="current_v1",
+        empty_f_mode="zero",
     )
     assert len(nonempty._f_layers) == 1
 
@@ -693,13 +753,17 @@ def test_recursive_true_empty_f_zero_is_independent_of_outer_update() -> None:
 def test_recursive_repair_updates_are_finite_and_trainable(update_mode: str) -> None:
     torch.manual_seed(243)
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=8, n_layers=2, n_heads=1, max_len=16,
-        recursive_steps=8, update_mode=update_mode, empty_f_mode="zero",
+        vocab_size=23,
+        d_model=8,
+        n_layers=2,
+        n_heads=1,
+        max_len=16,
+        recursive_steps=8,
+        update_mode=update_mode,
+        empty_f_mode="zero",
         norm_mode="private" if update_mode == "gated" else "shared",
     )
-    output = tower(
-        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 8), pad_id=0
-    )
+    output = tower(torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 8), pad_id=0)
     assert torch.isfinite(output).all()
     output.square().mean().backward()
     assert all(
@@ -708,17 +772,21 @@ def test_recursive_repair_updates_are_finite_and_trainable(update_mode: str) -> 
         if "update_" in name
     )
     if update_mode == "layerscale":
-        assert torch.allclose(
-            tower.f_update_scale.detach(), torch.full((8,), 1e-3)
-        )
+        assert torch.allclose(tower.f_update_scale.detach(), torch.full((8,), 1e-3))
     if update_mode == "gated":
         assert float(torch.sigmoid(tower.f_update_gate).max()) < 0.02
 
 
 def test_recursive_private_norms_are_distinct_and_receive_gradients() -> None:
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=8, n_layers=2, n_heads=1, max_len=16,
-        recursive_steps=2, update_mode="gated", norm_mode="private",
+        vocab_size=23,
+        d_model=8,
+        n_layers=2,
+        n_heads=1,
+        max_len=16,
+        recursive_steps=2,
+        update_mode="gated",
+        norm_mode="private",
     )
     assert tower.f_norm is not tower.g_norm
     assert tower.f_norm is not tower.norm
@@ -747,11 +815,18 @@ def test_recursive_repair_modes_fail_closed(field: str, value: str) -> None:
 
 def test_recursive_diagnostics_y_only_uses_nullable_z_fields() -> None:
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=2, z_state_mode="y_only",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=2,
+        z_state_mode="y_only",
     )
     out = tower.recursive_outputs(
-        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 16), pad_id=0,
+        torch.randint(1, 23, (2, 5)),
+        torch.randn(2, 3, 16),
+        pad_id=0,
         diagnostics=True,
     )
     for record in out["diagnostics"]:
@@ -770,7 +845,11 @@ def test_recursive_diagnostics_y_only_uses_nullable_z_fields() -> None:
 
 def test_recursive_diagnostics_reject_invalid_inputs() -> None:
     tower = SharedRecursiveDenoiserTower(
-        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
     )
     noisy = torch.randint(1, 23, (2, 5))
     ctx = torch.randn(2, 3, 16)
@@ -781,32 +860,51 @@ def test_recursive_diagnostics_reject_invalid_inputs() -> None:
         )
     with pytest.raises(ValueError, match="not one of"):
         tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
             diagnostic_update_mode="unknown",
         )
     with pytest.raises(ValueError, match="requires diagnostic_targets"):
         tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
             diagnostic_mask=torch.ones_like(noisy, dtype=torch.bool),
         )
     with pytest.raises(ValueError, match="shape must match"):
         tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
             diagnostic_targets=targets[:, :-1],
         )
     with pytest.raises(TypeError, match="dtype torch.long"):
         tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
             diagnostic_targets=targets.float(),
         )
     with pytest.raises(TypeError, match="dtype torch.bool"):
         tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
-            diagnostic_targets=targets, diagnostic_mask=torch.ones_like(targets),
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
+            diagnostic_targets=targets,
+            diagnostic_mask=torch.ones_like(targets),
         )
     with pytest.raises(ValueError, match="at least one target per example"):
         tower.recursive_outputs(
-            noisy, ctx, pad_id=0, diagnostics=True,
+            noisy,
+            ctx,
+            pad_id=0,
+            diagnostics=True,
             diagnostic_targets=targets,
             diagnostic_mask=torch.zeros_like(targets, dtype=torch.bool),
         )
@@ -1263,9 +1361,9 @@ def test_fixture_metrics_agree_with_manual_calculation() -> None:
 
     correction = report["depth_supervision_arithmetic_correction"]
     l0, final = correction["raw_depth_losses"]
-    assert correction["old_buggy_unweighted_sum_divided_by_weight_sum"] == pytest.approx(
-        (l0 + final) / 1.5
-    )
+    assert correction[
+        "old_buggy_unweighted_sum_divided_by_weight_sum"
+    ] == pytest.approx((l0 + final) / 1.5)
     assert correction["corrected_historical_weighted_mean"] == pytest.approx(
         (0.5 * l0 + final) / 1.5
     )
@@ -1452,7 +1550,10 @@ def test_r1_intermediate_only_reduces_to_primary_only() -> None:
     primary-only (rather than being rejected); a non-empty tuple still
     raises the usual length-mismatch (0 expected, none eligible)."""
     validated = validate_recursive_depth_supervision(
-        weights=(), num_depths=1, supports_recursive_outputs=True, mode="intermediate_only"
+        weights=(),
+        num_depths=1,
+        supports_recursive_outputs=True,
+        mode="intermediate_only",
     )
     assert validated.enabled is False
     assert validated.mode == "intermediate_only"
@@ -1531,7 +1632,9 @@ def test_migrate_recursive_depth_aux_config_deterministic() -> None:
     assert migrate_recursive_depth_aux_config(already_migrated) == already_migrated
 
 
-def test_resolve_recursive_depth_aux_mode_requires_explicit_weighted_semantics() -> None:
+def test_resolve_recursive_depth_aux_mode_requires_explicit_weighted_semantics() -> (
+    None
+):
     assert resolve_recursive_depth_aux_mode(None, ()) == "off"
     with pytest.raises(ValueError, match="explicit.*recursive_depth_aux_mode"):
         resolve_recursive_depth_aux_mode(None, (0.5, 1.0))
@@ -1685,7 +1788,8 @@ def test_rsc_a03_extra_harmless_probe_does_not_change_training_values() -> None:
         == with_extra["deep_supervision_metrics"]
     )
     assert (
-        without_extra["post_update_verification"] == with_extra["post_update_verification"]
+        without_extra["post_update_verification"]
+        == with_extra["post_update_verification"]
     )
 
 
@@ -1763,7 +1867,9 @@ def test_rsc_a03_restoring_only_torch_rng_is_insufficient_without_model() -> Non
 
 # Test 4: different declared training-corruption seeds change the intended
 # corruption-dependent fields and no others.
-def test_rsc_a03_different_training_corruption_seed_changes_only_corruption_fields() -> None:
+def test_rsc_a03_different_training_corruption_seed_changes_only_corruption_fields() -> (
+    None
+):
     default_seed = _run_fixture(allow_dirty=True)
     other_seed = _run_fixture(training_corruption_seed=999_999, allow_dirty=True)
 
@@ -1785,14 +1891,13 @@ def test_rsc_a03_different_training_corruption_seed_changes_only_corruption_fiel
     assert default_seed["stacked_params"] == other_seed["stacked_params"]
     assert default_seed["forward_shapes"] == other_seed["forward_shapes"]
     assert (
-        default_seed["recursive_weight_sharing"] == other_seed["recursive_weight_sharing"]
+        default_seed["recursive_weight_sharing"]
+        == other_seed["recursive_weight_sharing"]
     )
     assert (
         default_seed["checkpoint_roundtrip_ok"] == other_seed["checkpoint_roundtrip_ok"]
     )
-    assert (
-        default_seed["provenance_hashes"] == other_seed["provenance_hashes"]
-    )
+    assert default_seed["provenance_hashes"] == other_seed["provenance_hashes"]
 
 
 # Test 5: global RNG state before/after the fixture changes only according to
@@ -1867,9 +1972,8 @@ def test_rsc_a03_fixture_version_stamp_matches_registry() -> None:
     report = _run_fixture(allow_dirty=True)
     stamp = report["version_stamp"]
     assert stamp["stamp_schema"] == STAMP_SCHEMA
-    assert (
-        stamp["components"]["model.recursive_denoiser"]
-        == component_version("model.recursive_denoiser")
+    assert stamp["components"]["model.recursive_denoiser"] == component_version(
+        "model.recursive_denoiser"
     )
 
 
@@ -1960,9 +2064,7 @@ def test_slm282_recurrence_health_pair_is_matched_anytime_finite_and_determinist
             assert len(depth["examples"]) == 2
             assert all(
                 math.isfinite(
-                    example[
-                        "finite_difference_initial_state_directional_gain"
-                    ]
+                    example["finite_difference_initial_state_directional_gain"]
                 )
                 for example in depth["examples"]
             )
@@ -2047,11 +2149,7 @@ def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
     # aggregate still improves. No example average or counterfactual arm may
     # rescue the primary disposition.
     for row in curves:
-        if (
-            row["arm"] == "as_is"
-            and row["seed"] == 1
-            and row["recursive_steps"] == 4
-        ):
+        if row["arm"] == "as_is" and row["seed"] == 1 and row["recursive_steps"] == 4:
             row["depths"][-1]["examples"][0]["cross_entropy"] = 4.0
             row["depths"][-1]["examples"][1]["cross_entropy"] = 1.0
             row["depths"][-1]["token_weighted_cross_entropy"] = 2.5
@@ -2066,8 +2164,7 @@ def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
     assert negative["residual_delta_can_promote"] is False
     assert negative["passed_seed_count"] == 1
     assert [
-        (failure["arm"], failure["seed"], failure["example_id"])
-        for failure in failures
+        (failure["arm"], failure["seed"], failure["example_id"]) for failure in failures
     ] == [("as_is", 1, "a")]
 
     incomplete, _ = _evaluate_recurrence_preregistration(
@@ -2086,9 +2183,7 @@ def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
     malformed_cases.append((missing_depth, controls))
 
     duplicate_depth = deepcopy(curves)
-    duplicate_depth[4]["depths"].insert(
-        1, deepcopy(duplicate_depth[4]["depths"][0])
-    )
+    duplicate_depth[4]["depths"].insert(1, deepcopy(duplicate_depth[4]["depths"][0]))
     malformed_cases.append((duplicate_depth, controls))
 
     missing_example = deepcopy(curves)
@@ -2164,9 +2259,7 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
     published = {}
 
     def fake_publish(run_dir, *, name, claim, cases):
-        published.update(
-            run_dir=run_dir, name=name, claim=claim, cases=cases
-        )
+        published.update(run_dir=run_dir, name=name, claim=claim, cases=cases)
         artifact_root = Path(run_dir)
         return {
             "format": "AgentEvals JSONL",
@@ -2178,12 +2271,8 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
             "summary": {"passed": len(cases), "executionErrors": 0},
         }
 
-    monkeypatch.setattr(
-        fixture_mod, "_run_recurrence_health_pair", fake_pair
-    )
-    monkeypatch.setattr(
-        fixture_mod, "publish_agentv_evaluation", fake_publish
-    )
+    monkeypatch.setattr(fixture_mod, "_run_recurrence_health_pair", fake_pair)
+    monkeypatch.setattr(fixture_mod, "publish_agentv_evaluation", fake_publish)
     report = fixture_mod._run_recurrence_health(
         output_dir=tmp_path, base_seed=9, optimizer_steps=1
     )
@@ -2198,20 +2287,249 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
     assert published["name"] == "slm282-recurrence-health"
     assert published["claim"] == "fixture_recurrence_health_not_ship"
     assert report["agentv"]["spec"] == "output-dir://agentv/fixture.eval.jsonl"
-    assert (
-        report["agentv"]["artifacts"]["runDir"]
-        == "output-dir://agentv/fixture"
-    )
+    assert report["agentv"]["artifacts"]["runDir"] == "output-dir://agentv/fixture"
     assert [case["id"] for case in published["cases"]] == [
         "matched-controls",
         "finite-complete-telemetry",
         "as-is-seed-9",
         "as-is-seed-10",
     ]
-    assert (
-        report["version_stamp"]["components"]["model.recursive_denoiser"]
-        == "v18"
+    assert report["version_stamp"]["components"]["model.recursive_denoiser"] == "v19"
+
+
+# ---------------------------------------------------------------------------
+# SLM-321 (LAR0-04): powered rerun of the SLM-282 recurrence-health screen.
+# The original passed_seeds>=2/2 rule is thin evidence (n=2). power_rule adds
+# an additive, default-off Wilson-interval decision instead of changing the
+# historical default path.
+# ---------------------------------------------------------------------------
+
+
+def _power_rule_curves(pass_pattern: list[bool]) -> tuple[list[dict], list[dict]]:
+    """Build minimal complete curves/controls for len(pass_pattern) seeds.
+
+    A "pass" seed has a strictly non-increasing as_is CE curve at every
+    eligible depth; a "fail" seed regresses at the final depth-4 step, the
+    same failure shape the real SLM-282 seed-1 regression had.
+    """
+
+    def curve(arm: str, seed: int, recursive_steps: int, ces: list[float]) -> dict:
+        return {
+            "arm": arm,
+            "seed": seed,
+            "recursive_steps": recursive_steps,
+            "depths": [
+                {
+                    "step": step,
+                    "token_weighted_cross_entropy": ce,
+                    "ratios_finite": True,
+                    "all_finite": True,
+                    "examples": [
+                        {"id": "a", "cross_entropy": ce},
+                        {"id": "b", "cross_entropy": ce},
+                    ],
+                }
+                for step, ce in enumerate(ces, start=1)
+            ],
+        }
+
+    curves = []
+    controls = []
+    for seed, should_pass in enumerate(pass_pattern):
+        depth4 = [4.0, 3.5, 3.0, 2.5] if should_pass else [4.0, 3.5, 3.0, 3.5]
+        for arm in ("as_is", "residual_delta"):
+            curves.extend(
+                [
+                    curve(arm, seed, 1, [4.0]),
+                    curve(arm, seed, 2, [4.0, 3.0]),
+                    curve(arm, seed, 4, depth4),
+                ]
+            )
+        controls.extend(
+            {
+                "seed": seed,
+                "recursive_steps": depth,
+                "matched": True,
+                "batches_matched": True,
+            }
+            for depth in (1, 2, 4)
+        )
+    return curves, controls
+
+
+@pytest.mark.parametrize(
+    "pass_pattern,expected_disposition",
+    [
+        pytest.param([True] * 9 + [False], "recursive_core_positive", id="9-of-10"),
+        pytest.param([True] + [False] * 9, "recursive_core_negative", id="1-of-10"),
+        pytest.param(
+            [True] * 6 + [False] * 4, "inconclusive_underpowered", id="6-of-10"
+        ),
+    ],
+)
+def test_slm282_power_rule_wilson_dispositions(
+    pass_pattern: list[bool], expected_disposition: str
+) -> None:
+    curves, controls = _power_rule_curves(pass_pattern)
+    seeds = tuple(range(len(pass_pattern)))
+    summary, _ = _evaluate_recurrence_preregistration(
+        curves,
+        seeds=seeds,
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+        expected_example_ids=("a", "b"),
+        power_rule={"min_pass_rate": 0.5},
     )
+    assert summary["disposition"] == expected_disposition
+    assert summary["seed_count"] == len(pass_pattern)
+    assert summary["passed_seed_count"] == sum(pass_pattern)
+    assert summary["required_seed_passes"] is None
+    assert summary["power_rule"]["min_pass_rate"] == 0.5
+    assert summary["power_rule"]["interval"]["n"] == len(pass_pattern)
+
+
+def test_slm282_power_rule_none_preserves_legacy_two_seed_disposition() -> None:
+    """power_rule=None (the default) must reproduce the exact original
+    passed_seeds>=2/2 rule -- historical SLM-282 evidence stays interpretable
+    under unchanged code."""
+    curves, controls = _power_rule_curves([True, True])
+    positive, _ = _evaluate_recurrence_preregistration(
+        curves,
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+        expected_example_ids=("a", "b"),
+    )
+    assert positive["disposition"] == "recursive_core_positive"
+    assert positive["required_seed_passes"] == 2
+    assert "power_rule" not in positive
+
+    curves, controls = _power_rule_curves([True, False])
+    negative, _ = _evaluate_recurrence_preregistration(
+        curves,
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+        expected_example_ids=("a", "b"),
+    )
+    assert negative["disposition"] == "recursive_core_negative"
+
+
+def test_slm282_power_rule_rejects_out_of_range_min_pass_rate() -> None:
+    curves, controls = _power_rule_curves([True, True])
+    with pytest.raises(ValueError, match="min_pass_rate"):
+        _evaluate_recurrence_preregistration(
+            curves,
+            seeds=(0, 1),
+            recursive_steps=(1, 2, 4),
+            matched_controls=controls,
+            expected_example_ids=("a", "b"),
+            power_rule={"min_pass_rate": 1.5},
+        )
+
+
+def test_slm282_runner_seed_count_and_power_rule_thread_through(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """`_run_recurrence_health(seed_count=..., power_rule=...)` builds the
+    right seed range and reaches the Wilson-based disposition end to end."""
+    import scripts.run_slm138_recursive_denoiser_fixture as fixture_mod
+
+    calls = []
+
+    def fake_pair(
+        *,
+        seed: int,
+        recursive_steps: int,
+        optimizer_steps: int,
+        epsilon: float = 1e-3,
+    ) -> tuple[dict, list[dict]]:
+        calls.append((seed, recursive_steps))
+        # Every seed in range passes (matches slm282's original all-pass
+        # fixed-grid test data); this exercises the runner's seed_count/
+        # power_rule plumbing end to end, not the Wilson math itself (see
+        # test_slm282_power_rule_wilson_dispositions for that).
+        ces = [5.0 - step for step in range(1, recursive_steps + 1)]
+        curves = [
+            {
+                "arm": arm,
+                "seed": seed,
+                "recursive_steps": recursive_steps,
+                "depths": [
+                    {
+                        "step": step,
+                        "token_weighted_cross_entropy": ce,
+                        "ratios_finite": True,
+                        "all_finite": True,
+                        "examples": [
+                            {"id": example_id, "cross_entropy": ce}
+                            for example_id in ("a", "b")
+                        ],
+                    }
+                    for step, ce in enumerate(ces, start=1)
+                ],
+            }
+            for arm in ("as_is", "residual_delta")
+        ]
+        return {
+            "seed": seed,
+            "recursive_steps": recursive_steps,
+            "matched": True,
+            "batches_matched": True,
+        }, curves
+
+    def fake_publish(run_dir, *, name, claim, cases):
+        return {
+            "format": "AgentEvals JSONL",
+            "sdk": "@agentv/core",
+            "spec": str(Path(run_dir) / "agentv" / "fixture.eval.jsonl"),
+            "artifacts": {"runDir": str(Path(run_dir) / "agentv" / "fixture")},
+            "summary": {"passed": len(cases), "executionErrors": 0},
+        }
+
+    monkeypatch.setattr(fixture_mod, "_run_recurrence_health_pair", fake_pair)
+    monkeypatch.setattr(fixture_mod, "publish_agentv_evaluation", fake_publish)
+
+    report = fixture_mod._run_recurrence_health(
+        output_dir=tmp_path,
+        base_seed=100,
+        seed_count=6,
+        power_rule={"min_pass_rate": 0.5},
+        optimizer_steps=1,
+        issue="SLM-TEST",
+    )
+
+    assert calls == [
+        (seed, recursive_steps)
+        for seed in range(100, 106)
+        for recursive_steps in (1, 2, 4)
+    ]
+    assert report["issue"] == "SLM-TEST"
+    assert report["preregistration"]["seeds"] == list(range(100, 106))
+    assert report["preregistration"]["required_seed_passes"] is None
+    assert report["preregistration"]["power_rule"] == {"min_pass_rate": 0.5}
+    # All 6 seeds pass -> Wilson(6, 6) lower bound clears 0.5.
+    assert report["summary"]["disposition"] == "recursive_core_positive"
+    assert report["summary"]["passed_seed_count"] == 6
+    assert report["summary"]["seed_count"] == 6
+
+
+def test_slm282_run_recurrence_health_rejects_empty_seed_count() -> None:
+    import scripts.run_slm138_recursive_denoiser_fixture as fixture_mod
+
+    with pytest.raises(ValueError, match="seed_count"):
+        fixture_mod._run_recurrence_health(output_dir=Path("/tmp"), seed_count=0)
+
+
+def test_slm282_cli_requires_min_pass_rate_for_nondefault_seed_count(
+    capsys,
+) -> None:
+    import scripts.run_slm138_recursive_denoiser_fixture as fixture_mod
+
+    with pytest.raises(SystemExit):
+        fixture_mod.main(["--mode", "recurrence-health", "--seed-count", "5"])
+    captured = capsys.readouterr()
+    assert "--min-pass-rate" in captured.err
 
 
 # ---------------------------------------------------------------------------
@@ -2223,7 +2541,11 @@ def test_zstate_mode_rejects_unknown_value() -> None:
     """Fail closed on a typo'd z_state_mode -- never silently fall back."""
     with pytest.raises(ValueError, match="z_state_mode"):
         SharedRecursiveDenoiserTower(
-            vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+            vocab_size=23,
+            d_model=16,
+            n_layers=1,
+            n_heads=2,
+            max_len=32,
             z_state_mode="bogus",  # type: ignore[arg-type]
         )
 
@@ -2236,9 +2558,12 @@ def test_denoiser_arch_rejects_unknown_value() -> None:
         TwoTowerModel.from_records(
             records,
             config=TwoTowerConfig(
-                d_model=16, n_heads=2, denoiser_layers=1,
+                d_model=16,
+                n_heads=2,
+                denoiser_layers=1,
                 denoiser_arch="bogus_arch",  # type: ignore[arg-type]
-                grammar_constrained=False, seed=0,
+                grammar_constrained=False,
+                seed=0,
             ),
             device="cpu",
         )
@@ -2249,8 +2574,14 @@ def test_arm_c_d_have_no_zstate_parameters(arm_id: str) -> None:
     """Requirement #4: C/D must contain no undeclared z-state parameters --
     no ``z_latent``/``ctx_proj`` name at all, not merely a zeroed tensor."""
     tower = construct_arm_tower(
-        arm_id, vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=2, recursive_transition_layers=2,
+        arm_id,
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=2,
+        recursive_transition_layers=2,
     )
     names = dict(tower.named_parameters())
     assert not any(name.split(".")[0] in {"z_latent", "ctx_proj"} for name in names)
@@ -2265,11 +2596,22 @@ def test_arm_c_d_parameter_count_matches_stacked_baseline(arm_id: str) -> None:
     exactly zero parameters over A (no z-state bank of any kind) -- verified
     against real constructed towers, not assumed."""
     stacked = construct_arm_tower(
-        "A", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        "A",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
     )
     arm = construct_arm_tower(
-        arm_id, vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=3, recursive_transition_layers=2,
+        arm_id,
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=3,
+        recursive_transition_layers=2,
     )
     stacked_total = sum(p.numel() for p in stacked.parameters())
     arm_total = sum(p.numel() for p in arm.parameters())
@@ -2281,8 +2623,14 @@ def test_arm_g_is_r1_shared_recursive_and_not_behaviorally_equivalent() -> None:
     recursive_steps forced to 1 regardless of the requested value, and (per
     SLM-240's already-established framing) not behaviorally equivalent to A."""
     g_tower = construct_arm_tower(
-        "G", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=5, recursive_transition_layers=2,
+        "G",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=5,
+        recursive_transition_layers=2,
     )
     assert isinstance(g_tower, SharedRecursiveDenoiserTower)
     assert g_tower.recursive_steps == 1
@@ -2290,12 +2638,23 @@ def test_arm_g_is_r1_shared_recursive_and_not_behaviorally_equivalent() -> None:
 
     torch.manual_seed(0)
     stacked = construct_arm_tower(
-        "A", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        "A",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
     )
     torch.manual_seed(0)
     g_again = construct_arm_tower(
-        "G", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=1, recursive_transition_layers=2,
+        "G",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=1,
+        recursive_transition_layers=2,
     )
     noisy = torch.randint(1, 23, (2, 6))
     ctx = torch.randn(2, 3, 16)
@@ -2314,14 +2673,24 @@ def test_deferred_arms_fail_closed_not_silently_built(arm_id: str) -> None:
     NotImplementedError until a future iteration actually builds them."""
     with pytest.raises(NotImplementedError, match=arm_id):
         construct_arm_tower(
-            arm_id, vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+            arm_id,
+            vocab_size=23,
+            d_model=16,
+            n_layers=2,
+            n_heads=2,
+            max_len=32,
         )
 
 
 def test_construct_arm_tower_rejects_unknown_arm_id() -> None:
     with pytest.raises(ValueError, match="unknown control arm"):
         construct_arm_tower(
-            "Z", vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+            "Z",
+            vocab_size=23,
+            d_model=16,
+            n_layers=1,
+            n_heads=2,
+            max_len=32,
         )
 
 
@@ -2334,9 +2703,16 @@ def test_control_arm_table_reports_every_built_arm_no_parity_or_winner() -> None
     ctx = torch.randn(2, 3, d_model)
     reports = build_control_arm_table(
         BUILT_ARM_IDS,
-        vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=3, recursive_transition_layers=n_layers,
-        noisy_ids=noisy, context=ctx, pad_id=0,
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=3,
+        recursive_transition_layers=n_layers,
+        noisy_ids=noisy,
+        context=ctx,
+        pad_id=0,
     )
     assert {r.arm_id for r in reports} == set(BUILT_ARM_IDS)
     by_id = {r.arm_id: r for r in reports}
@@ -2371,7 +2747,10 @@ def test_control_arm_table_reports_every_built_arm_no_parity_or_winner() -> None
     )
     # F: block-evaluation-matched against B by construction, but MORE real
     # measured parameters than B -- never reported as parameter-matched.
-    assert by_id["F"].block_evaluations_per_forward == by_id["B"].block_evaluations_per_forward
+    assert (
+        by_id["F"].block_evaluations_per_forward
+        == by_id["B"].block_evaluations_per_forward
+    )
     assert by_id["F"].parameter_count_total > by_id["B"].parameter_count_total
     assert not by_id["F"].within_matching_tolerance
     assert by_id["F"].undeclared_zstate_parameter_names == ()
@@ -2379,7 +2758,10 @@ def test_control_arm_table_reports_every_built_arm_no_parity_or_winner() -> None
     # its parameter delta over A equals recursive_zstate_parameter_delta
     # exactly (same formula B/G's delta matches), never A's own zero-delta
     # target (that's C's/D's kind of match, not E's).
-    assert by_id["E"].block_evaluations_per_forward == by_id["A"].block_evaluations_per_forward
+    assert (
+        by_id["E"].block_evaluations_per_forward
+        == by_id["A"].block_evaluations_per_forward
+    )
     assert by_id["E"].parameter_count_delta_vs_baseline == expected_delta
     assert by_id["E"].undeclared_zstate_parameter_names == ()
     # H: gradient-flow-only variant of B -- identical construction, so its
@@ -2444,12 +2826,17 @@ def test_deep_supervision_works_for_arm_c_and_d() -> None:
         model = TwoTowerModel.from_records(
             records,
             config=TwoTowerConfig(
-                d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+                d_model=32,
+                n_heads=2,
+                context_layers=1,
+                denoiser_layers=2,
                 denoiser_arch=arch,  # type: ignore[arg-type]
-                recursive_steps=2, recursive_transition_layers=2,
+                recursive_steps=2,
+                recursive_transition_layers=2,
                 recursive_depth_supervision_weights=weights,
                 recursive_depth_aux_mode="all_depths",
-                grammar_constrained=False, seed=0,
+                grammar_constrained=False,
+                seed=0,
             ),
             device="cpu",
         )
@@ -2473,10 +2860,16 @@ def test_arm_c_d_train_one_step_and_roundtrip_checkpoint(
     model = TwoTowerModel.from_records(
         records,
         config=TwoTowerConfig(
-            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=2,
             denoiser_arch=arch,  # type: ignore[arg-type]
-            recursive_steps=2, recursive_transition_layers=2,
-            grammar_constrained=False, gen_steps=2, seed=0,
+            recursive_steps=2,
+            recursive_transition_layers=2,
+            grammar_constrained=False,
+            gen_steps=2,
+            seed=0,
         ),
         device="cpu",
     )
@@ -2518,8 +2911,13 @@ def test_recursive_control_initialization_common_tensors_match_and_seeds_disjoin
     for arm_id in arm_ids:
         torch.manual_seed(derive_seed(base_seed, "model_initialization"))
         towers[arm_id] = construct_arm_tower(
-            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
-            n_heads=2, max_len=max_len, recursive_steps=2,
+            arm_id,
+            vocab_size=vocab,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=2,
+            max_len=max_len,
+            recursive_steps=2,
             recursive_transition_layers=n_layers,
         )
     report = build_recursive_control_initialization(
@@ -2549,13 +2947,23 @@ def test_recursive_control_initialization_rejects_mismatched_common_tensors() ->
     vocab, d_model, n_layers, max_len = 23, 16, 2, 32
     torch.manual_seed(0)
     tower_a = construct_arm_tower(
-        "A", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        "A",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
         max_len=max_len,
     )
     torch.manual_seed(1)  # deliberately different seed -- no reseed discipline
     tower_b = construct_arm_tower(
-        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+        "B",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=2,
+        recursive_transition_layers=n_layers,
     )
     with pytest.raises(ValueError, match="common_tensor_hashes_match_across_arms"):
         build_recursive_control_initialization(
@@ -2575,8 +2983,14 @@ def test_arm_f_is_unshared_depth_matched_tower_with_no_zstate() -> None:
     with recursive_steps * recursive_transition_layers independent blocks --
     not the shared-object SharedRecursiveDenoiserTower."""
     tower = construct_arm_tower(
-        "F", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=3, recursive_transition_layers=2,
+        "F",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=3,
+        recursive_transition_layers=2,
     )
     assert isinstance(tower, DenoiserTower)
     assert not hasattr(tower, "recursive_steps")
@@ -2598,13 +3012,23 @@ def test_arm_f_block_evaluations_match_arm_b_verified_by_hook_count() -> None:
     recursive_steps, recursive_transition_layers = 3, 2
 
     f_tower = construct_arm_tower(
-        "F", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=recursive_steps,
+        "F",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=recursive_steps,
         recursive_transition_layers=recursive_transition_layers,
     )
     b_tower = construct_arm_tower(
-        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=recursive_steps,
+        "B",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=recursive_steps,
         recursive_transition_layers=recursive_transition_layers,
     )
 
@@ -2636,12 +3060,24 @@ def test_arm_f_parameter_count_exceeds_arm_b_real_measured() -> None:
     reported as parameter-matched."""
     vocab, d_model, n_layers, max_len = 23, 32, 2, 256
     b_tower = construct_arm_tower(
-        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+        "B",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=2,
+        recursive_transition_layers=n_layers,
     )
     f_tower = construct_arm_tower(
-        "F", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+        "F",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=2,
+        recursive_transition_layers=n_layers,
     )
     b_total = sum(p.numel() for p in b_tower.parameters())
     f_total = sum(p.numel() for p in f_tower.parameters())
@@ -2660,9 +3096,15 @@ def test_build_arm_f_dual_view_reports_honest_residuals() -> None:
     ctx = torch.randn(2, 3, d_model)
 
     dual = build_arm_f_dual_view(
-        vocab_size=vocab, d_model=d_model, n_heads=2, max_len=max_len,
-        recursive_steps=recursive_steps, recursive_transition_layers=n_layers,
-        noisy_ids=noisy, context=ctx, pad_id=0,
+        vocab_size=vocab,
+        d_model=d_model,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=recursive_steps,
+        recursive_transition_layers=n_layers,
+        noisy_ids=noisy,
+        context=ctx,
+        pad_id=0,
     )
 
     target_block_evals = recursive_steps * n_layers
@@ -2671,7 +3113,9 @@ def test_build_arm_f_dual_view_reports_honest_residuals() -> None:
 
     # Block-evaluation-matched view: exact block-eval match, nonzero
     # parameter residual vs B (never hidden).
-    assert block_matched["report"]["block_evaluations_per_forward"] == target_block_evals
+    assert (
+        block_matched["report"]["block_evaluations_per_forward"] == target_block_evals
+    )
     assert block_matched["parameter_count_delta_vs_target_arm_b"] > 0
 
     # Parameter-nearest view: real measured total closer to B than the
@@ -2701,10 +3145,16 @@ def test_arm_f_denoiser_arch_wired_through_twotower_config_and_roundtrips(
     model = TwoTowerModel.from_records(
         records,
         config=TwoTowerConfig(
-            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=2,
             denoiser_arch="stacked_depth_matched",  # type: ignore[arg-type]
-            recursive_steps=2, recursive_transition_layers=2,
-            grammar_constrained=False, gen_steps=2, seed=0,
+            recursive_steps=2,
+            recursive_transition_layers=2,
+            grammar_constrained=False,
+            gen_steps=2,
+            seed=0,
         ),
         device="cpu",
     )
@@ -2735,8 +3185,13 @@ def test_recursive_control_initialization_includes_arm_f_with_disjoint_seed() ->
     for arm_id in arm_ids:
         torch.manual_seed(derive_seed(base_seed, "model_initialization"))
         towers[arm_id] = construct_arm_tower(
-            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
-            n_heads=2, max_len=max_len, recursive_steps=2,
+            arm_id,
+            vocab_size=vocab,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=2,
+            max_len=max_len,
+            recursive_steps=2,
             recursive_transition_layers=n_layers,
         )
     report = build_recursive_control_initialization(
@@ -2749,7 +3204,10 @@ def test_recursive_control_initialization_includes_arm_f_with_disjoint_seed() ->
     # F's extra unshared blocks (layers.2/.3, beyond the shared prefix) are
     # architecture-specific to F alone.
     f_specific = report.architecture_specific_tensor_names_and_shapes["F"]
-    assert any(name.startswith("layers.2") or name.startswith("layers.3") for name in f_specific)
+    assert any(
+        name.startswith("layers.2") or name.startswith("layers.3")
+        for name in f_specific
+    )
     seeds = report.architecture_specific_seeds
     assert seeds["F"] not in {v for k, v in seeds.items() if k != "F"}
     assert len(set(seeds.values())) == len(seeds)
@@ -2765,7 +3223,12 @@ def test_arm_e_is_unshared_non_recursive_tower_with_matched_state() -> None:
     count as arm A) plus its own state/state_ctx_proj -- never B's
     z_latent/ctx_proj names, never a SharedRecursiveDenoiserTower."""
     tower = construct_arm_tower(
-        "E", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        "E",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
     )
     assert isinstance(tower, StackedMatchedStateDenoiserTower)
     assert not hasattr(tower, "recursive_steps")
@@ -2789,11 +3252,19 @@ def test_arm_e_block_evaluations_match_arm_a_verified_by_hook_count() -> None:
     just a structural len(layers) claim."""
     vocab, d_model, n_layers, max_len = 23, 16, 2, 32
     e_tower = construct_arm_tower(
-        "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        "E",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
         max_len=max_len,
     )
     a_tower = construct_arm_tower(
-        "A", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        "A",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
         max_len=max_len,
     )
 
@@ -2823,16 +3294,30 @@ def test_arm_e_parameter_count_matches_zstate_delta_formula_exactly() -> None:
     state/state_ctx_proj tensors are shape-matched to B's z_latent/ctx_proj."""
     vocab, d_model, n_layers, n_heads, max_len = 23, 32, 3, 2, 256
     stacked = construct_arm_tower(
-        "A", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+        "A",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=n_heads,
         max_len=max_len,
     )
     e_tower = construct_arm_tower(
-        "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+        "E",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=n_heads,
         max_len=max_len,
     )
     b_tower = construct_arm_tower(
-        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
-        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+        "B",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=n_heads,
+        max_len=max_len,
+        recursive_steps=2,
+        recursive_transition_layers=n_layers,
     )
     stacked_total = sum(p.numel() for p in stacked.parameters())
     e_total = sum(p.numel() for p in e_tower.parameters())
@@ -2854,7 +3339,11 @@ def test_arm_e_consumes_matched_state_and_receives_gradients() -> None:
     computation (not merely declared with the right shape)."""
     vocab, d_model, n_layers, n_heads, max_len = 23, 16, 2, 2, 32
     tower = construct_arm_tower(
-        "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+        "E",
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=n_heads,
         max_len=max_len,
     )
     noisy = torch.randint(1, vocab, (2, 6))
@@ -2872,8 +3361,12 @@ def test_arm_e_consumes_matched_state_and_receives_gradients() -> None:
     # --- ablation: zeroing the matched state changes the forward output ---
     with torch.no_grad():
         zeroed = construct_arm_tower(
-            "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers,
-            n_heads=n_heads, max_len=max_len,
+            "E",
+            vocab_size=vocab,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=n_heads,
+            max_len=max_len,
         )
         zeroed.load_state_dict(tower.state_dict())
         zeroed.state.zero_()
@@ -2897,9 +3390,14 @@ def test_arm_e_denoiser_arch_wired_through_twotower_config_and_roundtrips(
     model = TwoTowerModel.from_records(
         records,
         config=TwoTowerConfig(
-            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=2,
             denoiser_arch="stacked_matched_state",  # type: ignore[arg-type]
-            grammar_constrained=False, gen_steps=2, seed=0,
+            grammar_constrained=False,
+            gen_steps=2,
+            seed=0,
         ),
         device="cpu",
     )
@@ -2933,8 +3431,13 @@ def test_recursive_control_initialization_includes_arm_e_with_disjoint_seed() ->
     for arm_id in arm_ids:
         torch.manual_seed(derive_seed(base_seed, "model_initialization"))
         towers[arm_id] = construct_arm_tower(
-            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
-            n_heads=2, max_len=max_len, recursive_steps=2,
+            arm_id,
+            vocab_size=vocab,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=2,
+            max_len=max_len,
+            recursive_steps=2,
             recursive_transition_layers=n_layers,
         )
     report = build_recursive_control_initialization(
@@ -2970,14 +3473,24 @@ def _seeded_bh_towers(
     RecursiveControlInitializationV1 documents)."""
     torch.manual_seed(seed)
     b_tower = construct_arm_tower(
-        "B", vocab_size=23, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=recursive_steps,
+        "B",
+        vocab_size=23,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=recursive_steps,
         recursive_transition_layers=n_layers,
     )
     torch.manual_seed(seed)
     h_tower = construct_arm_tower(
-        "H", vocab_size=23, d_model=d_model, n_layers=n_layers, n_heads=2,
-        max_len=max_len, recursive_steps=recursive_steps,
+        "H",
+        vocab_size=23,
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=recursive_steps,
         recursive_transition_layers=n_layers,
     )
     return b_tower, h_tower
@@ -2988,8 +3501,14 @@ def test_arm_h_is_gradient_flow_only_variant_of_arm_b() -> None:
     z_state_mode) plus detach_between_steps=True -- no new tower class, no
     new parameter, no shape change."""
     tower = construct_arm_tower(
-        "H", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
-        recursive_steps=2, recursive_transition_layers=2,
+        "H",
+        vocab_size=23,
+        d_model=16,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=2,
+        recursive_transition_layers=2,
     )
     assert isinstance(tower, SharedRecursiveDenoiserTower)
     assert tower.z_state_mode == "full"
@@ -3007,7 +3526,9 @@ def test_arm_h_parameter_count_and_block_evaluations_match_arm_b_exactly() -> No
     vocab, d_model, max_len = 23, 16, 32
     recursive_steps, recursive_transition_layers = 3, 2
     b_tower, h_tower = _seeded_bh_towers(
-        d_model=d_model, n_layers=recursive_transition_layers, max_len=max_len,
+        d_model=d_model,
+        n_layers=recursive_transition_layers,
+        max_len=max_len,
         recursive_steps=recursive_steps,
     )
     b_total = sum(p.numel() for p in b_tower.parameters())
@@ -3042,7 +3563,10 @@ def test_arm_h_forward_values_identical_to_arm_b_before_backward() -> None:
     no forward computation whatsoever."""
     vocab, d_model, n_layers, max_len = 23, 16, 2, 32
     b_tower, h_tower = _seeded_bh_towers(
-        d_model=d_model, n_layers=n_layers, max_len=max_len, recursive_steps=3,
+        d_model=d_model,
+        n_layers=n_layers,
+        max_len=max_len,
+        recursive_steps=3,
     )
     b_tower.eval()
     h_tower.eval()
@@ -3094,16 +3618,17 @@ def test_arm_h_blocks_cross_step_gradient_flow_that_arm_b_has() -> None:
     """
     vocab, d_model, n_layers, max_len = 23, 16, 2, 32
     b_tower, h_tower = _seeded_bh_towers(
-        d_model=d_model, n_layers=n_layers, max_len=max_len, recursive_steps=2,
+        d_model=d_model,
+        n_layers=n_layers,
+        max_len=max_len,
+        recursive_steps=2,
     )
     noisy = torch.randint(1, vocab, (2, 6))
     ctx = torch.randn(2, 3, d_model)
 
     def _run(tower: SharedRecursiveDenoiserTower) -> tuple[list, torch.Tensor]:
         tower.zero_grad(set_to_none=True)
-        out = tower.recursive_outputs(
-            noisy, ctx, pad_id=0, return_step_boundaries=True
-        )
+        out = tower.recursive_outputs(noisy, ctx, pad_id=0, return_step_boundaries=True)
         boundary = out["step_boundaries"][0]  # end of recursion step 1
         y1 = boundary["y"]
         assert y1.requires_grad
@@ -3137,7 +3662,10 @@ def test_arm_h_shared_weights_still_receive_same_step_gradient() -> None:
     the shared weights stop training altogether."""
     vocab, d_model, n_layers, max_len = 23, 16, 2, 32
     _, h_tower = _seeded_bh_towers(
-        d_model=d_model, n_layers=n_layers, max_len=max_len, recursive_steps=2,
+        d_model=d_model,
+        n_layers=n_layers,
+        max_len=max_len,
+        recursive_steps=2,
     )
     noisy = torch.randint(1, vocab, (2, 6))
     ctx = torch.randn(2, 3, d_model)
@@ -3161,11 +3689,17 @@ def test_arm_h_denoiser_arch_wired_through_twotower_config_and_roundtrips(
     model = TwoTowerModel.from_records(
         records,
         config=TwoTowerConfig(
-            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=2,
             denoiser_arch="shared_recursive",
-            recursive_steps=2, recursive_transition_layers=2,
+            recursive_steps=2,
+            recursive_transition_layers=2,
             recursive_detach_between_steps=True,
-            grammar_constrained=False, gen_steps=2, seed=0,
+            grammar_constrained=False,
+            gen_steps=2,
+            seed=0,
         ),
         device="cpu",
     )
@@ -3200,8 +3734,13 @@ def test_recursive_control_initialization_excludes_arm_h_when_arm_b_present() ->
     for arm_id in ("B", "H"):
         torch.manual_seed(derive_seed(base_seed, "model_initialization"))
         towers[arm_id] = construct_arm_tower(
-            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
-            n_heads=2, max_len=max_len, recursive_steps=2,
+            arm_id,
+            vocab_size=vocab,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=2,
+            max_len=max_len,
+            recursive_steps=2,
             recursive_transition_layers=n_layers,
         )
     with pytest.raises(ValueError, match="pairwise disjoint"):
@@ -3226,8 +3765,13 @@ def test_recursive_control_initialization_includes_arm_h_excluding_arm_b() -> No
     for arm_id in arm_ids:
         torch.manual_seed(derive_seed(base_seed, "model_initialization"))
         towers[arm_id] = construct_arm_tower(
-            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
-            n_heads=2, max_len=max_len, recursive_steps=2,
+            arm_id,
+            vocab_size=vocab,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=2,
+            max_len=max_len,
+            recursive_steps=2,
             recursive_transition_layers=n_layers,
         )
     report = build_recursive_control_initialization(
