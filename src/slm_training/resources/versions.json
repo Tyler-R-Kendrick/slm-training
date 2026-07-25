@@ -1716,7 +1716,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v110",
+      "version": "v111",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1725,6 +1725,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "add generic LOT2+ downstream launch-gate evaluator (lot_downstream_gate.py) closing SLM-252 LOT2-01 not_authorized off the unmet LOT1-02 launch gate; no campaign code"
+        },
         {
           "version": "v110",
           "date": "2026-07-25",
@@ -2357,6 +2362,25 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-251 LOT1-02 launch-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts and the LOT1-01 not_authorized disposition"
+        }
+      ]
+    },
+    "harness.experiments.lot_downstream_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
+        "scripts/evaluate_lot_downstream_gate.py",
+        "tests/test_harnesses/experiments/test_lot_downstream_gate.py",
+        "tests/test_scripts/test_evaluate_lot_downstream_gate.py",
+        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json",
+        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; generic LOT2+ downstream gate closes SLM-252 LOT2-01 not_authorized against the real upstream contracts"
         }
       ]
     },
