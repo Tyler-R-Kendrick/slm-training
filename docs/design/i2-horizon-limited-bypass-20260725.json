@@ -67,15 +67,17 @@
     }
   },
   "invariant_compliance": "Not a legality violation: the forced token was already the unique legal continuation under the DFA/compiler-forest proof before this change; only the (over-strict) requirement to also prove full termination-reachability within the current truncated budget is relaxed. Certainty is never downgraded into a soft preference -- the ambiguity_control_probe shows genuinely non-singleton positions still fail closed.",
+  "post_review_fix": "Per PR #889 review: _openui_completion_domain's horizon-limited singleton branch now also requires len(tokens) <= budget before returning \"partial\" (previously unguarded), so a sole structural action that itself does not fit the remaining decode budget still falls through to the existing \"incomplete\" fail-closed path instead of forcing a token beyond the horizon. Re-verified: target test and full test_inference_speed.py/test_onnx_inference.py suites still pass after the guard (the regression case has len(tokens)=1 <= budget=1).",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "993a70cc57505a2c4e5ea49fa4e7f888f387e8f6",
+    "code_commit": "8dd4794a7cea10f1fe9732e5bb25d198b810fc22",
     "code_dirty": true,
+    "code_dirty_note": "true because this evidence file is itself part of the uncommitted diff being measured (self-referential stamps for a file that documents its own commit cannot honestly claim clean); code_commit records the real merge base (origin/main tip) the measurements and this review-fix were taken against.",
     "components": {
       "dsl.grammar_capabilities": "v4",
       "dsl.operators.registry": "v4",
       "model.twotower": "v242"
     },
-    "stamped_at": "2026-07-25T06:50:05Z"
+    "stamped_at": "2026-07-25T07:20:00Z"
   }
 }

@@ -41,7 +41,7 @@ preference scores.
 | `models/onnx_inference.py` | derives the completion forest before every forward; a singleton domain commits with no denoiser run |
 
 **Status: implemented in all backends.** ONNX was the last structural gap — it
-forwarded first and consulted force-emit afterwards; it now proves the
+forwarded first and consulted force-emit afterward; it now proves the
 singleton before the session runs. Short-horizon repair losing an
 otherwise-proven bypass was the remaining efficiency gap; see I2 below (closed
 2026-07-25).
@@ -51,9 +51,15 @@ otherwise-proven bypass was the remaining efficiency gap; see I2 below (closed
 When the scope-aware symbol table (DFA domain / `CompletionDomainV1` /
 choice-codec state) shows **exactly one** valid next symbol, that symbol is
 committed with **no neural forward and no ranking**, in every decode path and
-every backend. A partial proof refuses to bypass — `exact_forced_token_id`
-fails closed unless the exact authorities prove one continuation, and the ONNX
-loop requires `coverage == "complete"` before it will read the domain at all.
+every backend. An ambiguous or empty proof refuses to bypass —
+`exact_forced_token_id` fails closed unless the exact authorities prove one
+singleton continuation. A horizon-limited proof (`coverage == "partial"`, see
+I2's closed gap below) may still bypass in `exact_forced_token_id`'s
+DSL-native branch when that singleton condition holds; it is a horizon limit
+on the *termination* witness, not an ambiguity in the *next-token* proof.
+Every other reader — including the ONNX loop, which requires
+`coverage == "complete"` before it will read the domain at all — still treats
+`"partial"` like `"none"` and fails closed.
 
 Certainty is never downgraded into a soft preference.
 

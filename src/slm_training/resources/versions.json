@@ -540,7 +540,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -548,6 +548,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "PR review fix: require the sole structural action itself to fit the remaining decode budget (len(tokens) <= budget) before returning a horizon-limited partial proof, so a too-long action still falls through to the incomplete/fail-closed path instead of forcing beyond the horizon"
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -4819,7 +4824,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v58",
+      "version": "v59",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4828,10 +4833,24 @@
         "src/slm_training/models/decode_stats.py",
         "src/slm_training/harnesses/quality/retrieval.py",
         "scripts/evaluate_model.py",
+        "scripts/run_slm293_property_role_saturation.py",
+        "tests/test_scripts/test_run_slm293_property_role_saturation.py",
+        "docs/design/iter-slm293-property-role-saturation-20260725.json",
+        "docs/design/iter-slm293-property-role-saturation-20260725.md",
         "src/slm_training/runtime/telemetry/trace.py",
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v59",
+          "date": "2026-07-25",
+          "note": "no-bump: regenerate SLM-293 local evidence after rebase so its stamp names the merged v59/v242 constraints; harness behavior is unchanged"
+        },
+        {
+          "version": "v59",
+          "date": "2026-07-25",
+          "note": "SLM-293: add component-inventory decoder telemetry plus bounded paired frozen-base capacity and connector-disposition evidence"
+        },
         {
           "version": "v58",
           "date": "2026-07-25",
@@ -6551,7 +6570,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v242",
+      "version": "v243",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6588,6 +6607,11 @@
         "tests/test_runtime/test_decode_schedule.py"
       ],
       "history": [
+        {
+          "version": "v243",
+          "date": "2026-07-25",
+          "note": "SLM-293: instrument component-inventory decode applications and argmax changes (merged from main; renumbered v242→v243 to resolve a concurrent version collision with the I2 fix below)"
+        },
         {
           "version": "v242",
           "date": "2026-07-25",
@@ -8236,6 +8260,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: reconcile the I2 prose with the new partial-coverage bypass -- an ambiguous/empty proof still fails closed, a horizon-limited singleton proof may bypass in exact_forced_token_id only; the ONNX loop and every other coverage reader are called out as still requiring strictly 'complete'. Wording-only per PR #889 review; the certificate's own requirements (scripts/verify_decode_invariants.py) are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

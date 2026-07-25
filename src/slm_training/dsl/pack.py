@@ -450,7 +450,7 @@ def _openui_completion_domain(request: Any) -> Any:
         if len(initial.paths) == 1:
             (sole,) = initial.paths
             tokens = tuple(int(token_id) for token_id in sole.token_ids)
-            if tokens:
+            if tokens and len(tokens) <= budget:
                 return CompletionDomainV1(
                     status="partial",
                     candidates=(
