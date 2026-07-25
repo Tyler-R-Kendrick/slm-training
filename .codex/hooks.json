@@ -10,6 +10,21 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/validate_page_dsl.py --changed"
+          },
+          {
+            "type": "command",
+            "command": "python3 -m scripts.verify_version_stamps --post-tool-use"
+          }
+        ]
+      }
     ]
   }
 }

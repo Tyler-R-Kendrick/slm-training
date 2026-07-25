@@ -4526,6 +4526,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: README change is the agent-hook coverage table and parity audit link only; no metric, gate, or experiment behavior touched"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "no-bump: add the SLM-383 (DSH3-15) hierarchical-operator-head-baseline and updated DSH3-17 disposition lineage entries to research-lineage.md without changing the SLM-228 spectral disposition"
         },
         {
@@ -7053,7 +7058,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v247",
+      "version": "v248",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7088,6 +7093,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v248",
+          "date": "2026-07-25",
+          "note": "Make the default-DSL output vocabulary backend-independent: dsl.openui_tokens.STRUCTURAL_TOKENS is authoritative for openui instead of being re-derived from whichever grammar backend is live. Routing it through the backend let vocab_size swing 569<->605 (Lark fallback vs lang-core) with DSL_TOKENIZER_VERSION unchanged, silently producing incompatible checkpoints. Layout is unchanged at 569 -- this pins the certified layout, it does not alter it. See docs/design/agent-harness-parity-audit.md"
+        },
         {
           "version": "v247",
           "date": "2026-07-25",
@@ -8773,7 +8783,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v2",
+      "version": "v3",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -8781,6 +8791,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "Document I7 (every agent surface carries the law) as a canonical section now that scripts.verify_agent_surfaces enforces it, and drop the phantom I8 citation (folded into I15). Renumber the agent-surface invariant lists to the canonical I* ids so 'I13' means one thing everywhere. verify_decode_invariants delegates its agent-surface check to the shared matrix instead of keeping a second copy. No invariant is weakened or removed."
+        },
         {
           "version": "v2",
           "date": "2026-07-25",

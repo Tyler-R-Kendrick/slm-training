@@ -376,9 +376,23 @@ pytest -m training
 ```
 
 Enable the tracked pre-commit hook once per clone with
-`git config core.hooksPath .githooks`. Claude Code, Codex, and Copilot CLI
-hooks run the same changed-file checker automatically and reject raw `mv` for
-tracked paths. See [`docs/repository-organization.md`](docs/repository-organization.md).
+`git config core.hooksPath .githooks` (a Claude Code `SessionStart` hook arms it
+when it is unset). That hook is what runs the changed-file checker.
+
+Agent hooks are narrower and are certified identical across harnesses by
+`python -m scripts.verify_agent_surfaces`:
+
+| Harness | Config | Blocks raw `mv` | Post-edit parity + version-stamp checks |
+| --- | --- | :-: | :-: |
+| Claude Code | [`.claude/settings.json`](.claude/settings.json) | yes | yes |
+| Codex | [`.codex/hooks.json`](.codex/hooks.json) | yes | yes |
+| Copilot CLI | [`.github/hooks/`](.github/hooks/) | yes | yes |
+| Cursor, Gemini CLI | — (no hook mechanism configured) | no | no |
+
+Agents on a harness without hooks run `python -m scripts.repo_policy` and
+`.githooks/check-changed` themselves. CI remains authoritative either way. See
+[`docs/repository-organization.md`](docs/repository-organization.md) and
+[`docs/design/agent-harness-parity-audit.md`](docs/design/agent-harness-parity-audit.md).
 
 ## OpenUI Lang
 
