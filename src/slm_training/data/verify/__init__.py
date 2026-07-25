@@ -1,6 +1,6 @@
 """Layered OpenUI record verification and confidence tiers."""
 
-from slm_training.data.verify.runtime import RuntimeEvidence, run_preview_verifier
+from slm_training.data.verify.runtime import RuntimeEvidence, run_preview_verifier, run_preview_verifier_many
 from slm_training.data.verify.corpus import (
     CertifiedRow,
     certify_snapshots,
@@ -32,6 +32,7 @@ __all__ = [
     "certify_snapshots",
     "core_records",
     "run_preview_verifier",
+    "run_preview_verifier_many",
     "stamp_record",
     "verify_record",
     "write_certified_snapshot",

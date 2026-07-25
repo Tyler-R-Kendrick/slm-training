@@ -1,5 +1,44 @@
 # SPV2-01: Semantic-contrast corpus v1
 
+## SLM-290 published corpus (2026-07-25)
+
+[`openui_hard_valid_v1`](../../src/slm_training/resources/data/eval/openui_hard_valid_v1/)
+is the canonical immutable local corpus. It contains **1,206 admitted pairs**
+from 210 deterministic typed-generator sources (2,412 record sides), above the
+1,000-pair requirement. The five admitted mutation classes are
+`binding_swap_symbol`, `binding_swap_symbol_reverse`, `content_invert_role`,
+`content_swap_family`, and `contract_archetype_mismatch`.
+
+Every admitted pair has parser/schema/reference/canonical verifier evidence,
+positive `binding_aware_meaningful_v2` pass, negative meaningful-program fail,
+and local Chromium runtime evidence. Runtime evidence is persisted in 29
+source-hash-bound shards and the finalizer rejects missing or conflicting rows.
+Each strict negative changes exactly one declared plan factor (the whole-plan
+`exact` hash is identity evidence, not a semantic factor). The corpus is still
+data/evaluation evidence, **not** a trained-model ship claim.
+
+Two independent local structural regenerations from the committed seed/config
+were byte-identical: `pairs.jsonl` SHA-256
+`23701984b768a1093780697a90a44720adcbb734941c0d4c06a8723b06782db8` and
+`records.jsonl` SHA-256
+`a0d60ffbe0df7f8bb11d7cf29d451be071c95f42af8b803112d6129ab533b82a`.
+
+The stale human-audit wording in the original ticket is intentionally not a
+gate: G12 remains `skip` unless separately supplied. Admission is fully
+hands-off and deterministic; no human ratings were collected or required.
+
+Recipe and durable measurements: [`iter-slm290-semantic-contrast-20260725.json`](iter-slm290-semantic-contrast-20260725.json).
+
+```bash
+# local structural build, then local Chromium shards and fail-closed finalization
+python -m scripts.build_semantic_contrasts --dataset-id openui_hard_valid_v1 \
+  --source-count 210 --wide-source-grid --strict-delta
+python -m scripts.verify_semantic_contrast_runtime --dataset-dir \
+  outputs/data/eval/openui_hard_valid_v1 --start 0 --count 100
+python -m scripts.verify_semantic_contrast_runtime --dataset-dir \
+  outputs/data/eval/openui_hard_valid_v1 --finalize
+```
+
 A versioned, hard-valid semantic-contrast corpus for OpenUI.  Every record is
 parser / schema / reference valid, but the negative side is semantically wrong
 with respect to an explicit prompt-component contract.  The corpus is built on
