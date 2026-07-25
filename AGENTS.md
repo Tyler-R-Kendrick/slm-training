@@ -115,6 +115,30 @@ expansion with file pointers, current status, and open goals:
     (reachability-certified). Full-AST output is the bootstrap mode, not the
     end state; reachability blockers are open goals, not closed questions.
 
+### VI. Parameter-efficiency law (capability is not bought with size)
+
+16. **The deliverable is the smartest output at the smallest model.** Quality
+    rises with capacity on its own, so a quality win from a larger model is
+    not evidence about the change under test. Model size is a **budget that is
+    spent and charged**, never a free knob. Capacity levers are registered in
+    `levers.CAPACITY_SCALING_LEVERS` with their baseline value.
+17. **Growth must pay for itself.** Parameters are a first-class cost axis
+    (`scaling_fit.CostKey` includes `params`). A candidate with more trainable
+    parameters than its baseline is promotable only with a size-normalized
+    gain — `EG_params` LCB ≥ 1 (`PromotionCriteria.eg_params_lcb_min`).
+    Unmeasured growth **fails closed**: wall-time parity is not a size budget,
+    because a wider model can hold its latency and still buy its loss.
+18. **Promote the smallest sufficient model.** Selecting the lowest loss over
+    a ladder that spans widths promotes the widest rung by construction. Rank
+    by loss, then take the *smallest* model within the noise band
+    (`promotion_engine.select_smallest_sufficient`).
+19. **Scaling is a diagnostic control arm, never a default lever.** Arms
+    compared to attribute a quality delta must be size-matched
+    (`levers.require_size_matched_arms`) or charge the difference. Growing the
+    model to green a gate is the size-analogue of weakening a gate, and is
+    equally forbidden. A capacity deviation is legal only when it is the
+    declared subject of a preregistered experiment.
+
 ### V. Goal-drift guard
 
 14. **Goals are non-negotiable; approaches are disposable.** A rejected
@@ -477,6 +501,9 @@ which revision of the constraints produced it. Contract:
   Historical default-off name-aware experiment modes may remain for checkpoint and
   evidence compatibility, but must not become a production default or new authority.
 - Say fixture-demo vs ship. Do not weaken ship gates to green CI.
+- Do not grow the model to green a gate. Report trainable parameters beside
+  every quality number, size-match compared arms, and charge capacity growth
+  with `EG_params` (goal invariant VI).
 - Match existing style; no unrelated drive-by refactors.
 - Before adding or relocating tracked paths, use `organize-repository`, follow
   `docs/repository-organization.md`, and use `git mv` rather than `mv` for moves.

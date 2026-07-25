@@ -7,7 +7,10 @@ Obey **AGENTS.md § Non-negotiable architecture invariants** — constrained
 decoding is the product, deterministic/singleton bypass outranks any learned
 score, speculation ranks only over forward-calculated symbol tables and always
 verifies before commit, symbol tables schedule prefills, the ops vocabulary is
-shared encoder↔decoder, and multi-turn is a CRDT event store. Never weaken
+shared encoder↔decoder, and multi-turn is a CRDT event store. Capability is
+never bought with parameters: size is a charged budget, growth needs
+`EG_params` ≥ 1, promote the smallest sufficient model, and scaling is a
+diagnostic control arm — never a default lever. Never weaken
 them; a rejected experiment closes an approach, never a goal. Canonical
 expansion: [`docs/design/decode-invariants.md`](docs/design/decode-invariants.md).
 

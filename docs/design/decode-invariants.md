@@ -337,6 +337,75 @@ patch-as-default-target.
 
 ---
 
+## V. Parameter-efficiency law
+
+### I16 — The deliverable is the smartest output at the smallest model
+
+Quality rises with capacity on its own. A quality win produced by a larger
+model is therefore not evidence about the change under test — it is evidence
+that parameters were added. Model size is a **budget that is spent and
+charged**, never a free knob.
+
+Capacity levers are registered in `levers.CAPACITY_SCALING_LEVERS` with their
+baseline value and axis (width / depth / backbone), mirroring
+`CONSTRAINT_WEAKENING_LEVERS`. Unlike weakening levers these have no forbidden
+value: growth is legal when it is **declared and charged**. What is forbidden
+is growing *silently*.
+
+### I17 — Growth must pay for itself (EG_params)
+
+`scaling_fit.CostKey` includes `params`, so trainable parameter count is a
+first-class cost alongside time / FLOPs / NFE. `efficiency_gain(...,
+cost_key="params")` yields the size-normalized gain; `EG_params ≤ 1` means the
+candidate reached its loss by spending capacity the baseline curve would have
+spent less of — a scaling purchase, not a capability gain.
+
+A candidate with more trainable parameters than its baseline is promotable
+only with `EG_params` LCB ≥ 1 (`PromotionCriteria.eg_params_lcb_min`, checked
+by `promotion_engine.check_parameter_efficiency`). Holding or shrinking
+capacity always passes — this never penalizes a smaller model. Growth without
+a measured size-normalized gain **fails closed**.
+
+Wall-time parity is not a size budget. A wider model can hold its latency —
+especially on a GPU — and still buy its loss with parameters. Charging only
+`EG_time` (the prior behavior) let exactly that through.
+
+### I18 — Promote the smallest sufficient model
+
+Selecting the lowest loss across a ladder that spans widths promotes the
+widest rung by construction. `promotion_engine.select_smallest_sufficient`
+takes the best achieved loss, admits every candidate within the tolerance
+band, and returns the **smallest** admitted model, so capacity is spent only
+where it buys something outside the noise.
+
+`check_rank_stability` orders ladder points numerically (`_point_order_key`);
+a lexical sort ranked `"d96" > "d64" > "d192"` and silently compared the wrong
+two rungs.
+
+### I19 — Scaling is a diagnostic control arm, never a default lever
+
+Arms compared to attribute a quality delta must be size-matched
+(`levers.require_size_matched_arms`) or must charge the difference. Growing
+the model to green a gate is the size-analogue of weakening a gate, and is
+equally forbidden.
+
+A capacity deviation is legal only when it is the **declared subject** of a
+preregistered experiment (a capacity ladder is a legitimate experiment; a
+champion recipe that quietly carries a wider geometry is not).
+
+Machine enforcement: `_capacity_levers()` in
+`scripts/verify_decode_invariants.py` fails CI if the registry is deleted,
+emptied, or loses its `baseline_value` / `axis` fields.
+
+**Open goals (approach state, not waivers):** `run_quality_matrix.py` splices
+a `capacity` dict (`d_model=192`) into the V3+ champion recipes, and
+`ladder.scratch_ladder_default` sets the token budget ∝ `d_model²`, giving
+wider rungs more data. Both are pre-existing, are now visible rather than
+silent, and must be re-baselined or declared under I19 — neither may be cited
+as reason the invariant does not apply (I14).
+
+---
+
 ## IV. Goal-drift guard
 
 ### I14 — Goals are non-negotiable; approaches are disposable
@@ -390,3 +459,6 @@ So agents do not over-correct:
 - Diagnostic unconstrained control arms in eval harnesses — allowed, clearly
   named, never shipped.
 - Deferring NL surface polish — allowed and encouraged; NL is fluff by design.
+- Growing the model — allowed as a **declared, charged** experiment subject
+  (capacity ladders, equal-byte ladders), never as a default lever, a champion
+  recipe's silent geometry, or a way to clear a gate (I16–I19).

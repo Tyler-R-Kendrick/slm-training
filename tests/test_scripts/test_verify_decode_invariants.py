@@ -45,6 +45,11 @@ def sandbox(tmp_path, monkeypatch):
         ' "invariant": "I6", "effect": "legality", "note": ""},\n'
         '    "grammar_fastpath": {"safe_value": True, "invariant": "I2",'
         ' "effect": "bypass", "note": ""},\n'
+        "}\n"
+        "CAPACITY_SCALING_LEVERS = {\n"
+        '    "d_model": {"baseline_value": 128, "axis": "width", "note": ""},\n'
+        '    "denoiser_layers": {"baseline_value": 4, "axis": "depth",'
+        ' "note": ""},\n'
         "}\n",
     )
     config_body = (
