@@ -1,0 +1,89 @@
+{
+  "arms": [
+    {
+      "arm_id": "control",
+      "config_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "role": "control"
+    },
+    {
+      "arm_id": "candidate",
+      "config_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "role": "candidate"
+    }
+  ],
+  "artifact_requirements": [
+    {
+      "kind": "version_stamp",
+      "minimum_count": 1
+    }
+  ],
+  "author": "slm338-fixture",
+  "budget": {
+    "max_experiments": 1,
+    "max_gpu_hours": 0.0,
+    "max_wall_minutes": 2.0
+  },
+  "campaign_id": "ap-037-fixture",
+  "claim_class": "diagnostic",
+  "controls": [
+    {
+      "control_id": "random-plan",
+      "description": "Random plan must underperform.",
+      "kind": "negative"
+    }
+  ],
+  "created_at": "2026-07-25T00:00:00Z",
+  "decision": "Diagnose only; no promotion claim from fixture scale.",
+  "endpoints": [
+    {
+      "direction": "increase",
+      "endpoint_id": "meaning",
+      "metric": "binder_reference_f1",
+      "minimum_effect": 0.01,
+      "role": "primary"
+    }
+  ],
+  "experiment_id": "e001",
+  "hypothesis": "Candidate planning improves the locked primary endpoint.",
+  "multiplicity_families": [
+    {
+      "alpha": 0.05,
+      "family_id": "primary",
+      "hypothesis_ids": [
+        "meaning"
+      ],
+      "method": "holm"
+    }
+  ],
+  "negative_controls": [
+    "random-plan"
+  ],
+  "promotion_gates": [
+    {
+      "endpoint_id": "meaning",
+      "gate_id": "meaning-improves",
+      "operator": "ge",
+      "threshold": 0.01
+    }
+  ],
+  "requires_rl": false,
+  "rl_evaluation_sha256": null,
+  "rl_readiness_report_sha256": null,
+  "rollback_gates": [
+    {
+      "endpoint_id": "meaning",
+      "gate_id": "meaning-regresses",
+      "operator": "le",
+      "threshold": -0.01
+    }
+  ],
+  "schema_version": "ExperimentCampaignV1",
+  "seeds": [
+    7
+  ],
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source_dirty": false,
+  "stopping_rules": [
+    "Stop after the declared seed finishes."
+  ]
+}

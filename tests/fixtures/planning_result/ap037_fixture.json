@@ -1,0 +1,124 @@
+{
+  "agentv": {
+    "calibration_version": "agentv-cal-v3",
+    "n": 24,
+    "path": "outputs/ap037/agentv.jsonl"
+  },
+  "campaign_id": "ap-037-fixture",
+  "campaign_manifest_sha256": "00601c6d1c08dbe7ca22a3402f2c9e93d9178d9634018e0c6db29baef3215f41",
+  "checkpoint": {
+    "name": "ap037_fixture.pt",
+    "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "size_bytes": 1024,
+    "uri": "outputs/runs/ap037_fixture/checkpoints/last.pt"
+  },
+  "claim_class": "diagnostic",
+  "controls": [
+    {
+      "description": "Gold plan oracle ceiling.",
+      "kind": "oracle",
+      "metrics": {
+        "binder_reference_f1": 0.9583
+      },
+      "n": 24
+    },
+    {
+      "description": "Random plan negative control.",
+      "kind": "random",
+      "metrics": {
+        "binder_reference_f1": 0.2083
+      },
+      "n": 24
+    },
+    {
+      "description": "Empty plan negative control.",
+      "kind": "empty",
+      "metrics": {
+        "binder_reference_f1": 0.1667
+      },
+      "n": 24
+    },
+    {
+      "description": "Shuffled step-order negative control.",
+      "kind": "shuffled",
+      "metrics": {
+        "binder_reference_f1": 0.2292
+      },
+      "n": 24
+    }
+  ],
+  "data_snapshot_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "human_audit": {
+    "calibration_version": "human-cal-v1",
+    "n": 12,
+    "path": "outputs/ap037/human_audit.md"
+  },
+  "interventions": [
+    {
+      "delta": -0.4375,
+      "description": "Shuffle plan step order",
+      "intervention_id": "shuffle-steps",
+      "metric": "binder_reference_f1"
+    }
+  ],
+  "latency": {
+    "generation_seconds": 41.5,
+    "p95_seconds": 58.2,
+    "plan_seconds": 3.25,
+    "total_seconds": 51.5,
+    "verification_seconds": 6.75
+  },
+  "metrics": [
+    {
+      "artifact": {
+        "name": "raw.jsonl",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "size_bytes": 2048,
+        "uri": "outputs/ap037/raw.jsonl"
+      },
+      "binder_reference_f1": 0.4583,
+      "meaning_v2": 0.3125,
+      "n": 24,
+      "parse_rate": 0.625,
+      "path": "raw"
+    },
+    {
+      "artifact": {
+        "name": "constrained.jsonl",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "size_bytes": 2048,
+        "uri": "outputs/ap037/constrained.jsonl"
+      },
+      "binder_reference_f1": 0.6667,
+      "meaning_v2": 0.5417,
+      "n": 24,
+      "parse_rate": 1.0,
+      "path": "constrained"
+    },
+    {
+      "artifact": {
+        "name": "repaired.jsonl",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "size_bytes": 2048,
+        "uri": "outputs/ap037/repaired.jsonl"
+      },
+      "binder_reference_f1": 0.7083,
+      "meaning_v2": 0.5833,
+      "n": 24,
+      "parse_rate": 1.0,
+      "path": "repaired"
+    }
+  ],
+  "schema": "AbstractPlanningResultV1",
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source_dirty": false,
+  "verifier_gates": [
+    {
+      "gate_id": "meaning-improves",
+      "observed": 0.2084,
+      "passed": true,
+      "threshold": 0.01
+    }
+  ],
+  "version_stamp": {}
+}
