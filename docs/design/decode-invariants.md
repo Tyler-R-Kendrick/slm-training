@@ -40,10 +40,10 @@ preference scores.
 | `models/twotower.py` LTR / batched / MaskGIT loops | commit forced rows with the row removed from the forward |
 | `models/onnx_inference.py` | derives the completion forest before every forward; a singleton domain commits with no denoiser run |
 
-**Status: implemented in all backends, with one open efficiency gap.** ONNX was
-the last structural gap — it forwarded first and consulted force-emit
-afterwards; it now proves the singleton before the session runs. The remaining
-gap is short-horizon repair losing an otherwise-proven bypass; see I2 below.
+**Status: implemented, all backends.** ONNX was the last structural gap — it
+forwarded first and consulted force-emit afterwards; it now proves the
+singleton before the session runs. Short-horizon repair used to discard an
+otherwise-proven bypass; that is closed too (see I2).
 
 ### I2 — Forced bypass on singletons
 
@@ -64,29 +64,26 @@ canonical shape is the `forwards_count == 0` assertion in
 has no such test. That gate is static — it proves the assertion exists; pytest
 proves it holds.
 
-#### Known gap — short-horizon repair loses the bypass
+#### Horizon-limited domains are not contradictions
 
-`test_repair_exact_token_skips_forward_and_records_authority` is **red on
-`main`** (it predates this document; confirmed at `d77dfa0`, and still red
-after the `995813d` constrained-decoding work merged in). Diagnosis: in
-`_constrained_ltr_repair` the state carries `remaining_tokens = length -
-len(prefix)`. For a DSL-native tokenizer, `exact_forced_token_id` requires the
-compiler forest on top of the DFA proof, and `build_completion_forest` returns
-`coverage="none"` when the horizon is too short to enumerate a terminal witness
-(measured: `none` at `remaining_tokens ≤ 4`, `complete` at `8`). The DFA has
-already proven `=` is the sole legal lexeme, but the stricter proof fails closed
-and a forward runs.
+`exact_forced_token_id` proves a singleton two ways. For the DSL-native codec
+it reads the pack's completion domain, which is scope-aware and therefore
+catches semantic singletons the DFA cannot see. That domain needs budget: with
+a short `remaining_tokens` it cannot enumerate a terminal witness and returns
+`coverage="none"`.
 
-This is **not** a legality violation — output stays legal — it is an I1/I2
-efficiency loss: inference runs where a deterministic answer existed. Failing
-closed on a partial proof is the correct rule; the gap is that a *complete* DFA
-proof is being discarded because a *second, horizon-limited* proof could not be
-completed. **Successor approach:** let a sole-legal DFA proof
-(`dfa_allowed == {forced}` plus the whitespace-competition check) stand on its
-own when the compiler forest is horizon-limited rather than contradictory, and
-distinguish "no witness within horizon" from "witness disagrees" in
-`CompletionForest.coverage`. That changes decode behavior, so it needs measured
-evidence and does not ride along with a documentation change.
+`"none"` means *nothing was proven*, not *the singleton was refuted*, so the
+DFA proof is consulted instead of throwing the decision away. A **complete**
+domain naming more than one candidate does refute a singleton, and still
+refuses. The whitespace veto in the DFA proof is skipped for the native codec,
+because the native completion domain already excludes insignificant whitespace
+from its candidate set — applying it only in the fallback would make the same
+position disagree with itself depending on remaining budget. Whitespace is not
+a symbol under the symbol-only contract, and emitting the forced lexeme in its
+place cannot make a program illegal.
+
+This closed `test_repair_exact_token_skips_forward_and_records_authority`,
+which was red on `main` from before this document existed.
 
 ### I3 — Speculative completion from forward-calculated symbol tables
 
@@ -118,10 +115,25 @@ genuinely skips inference. Levers: `speculative_rank` (`off` | `ngram`),
 nothing in that module can add a candidate. And speculation verifies against
 the grammar oracle before it commits.
 
-**Status: machinery shipped, default `off`.** Turning it on for serving needs a
-preregistered `ExperimentCampaignV1` with the table's `corpus_fingerprint`
-bound to the run. The technique itself is a lever: n-gram ↔ trie ↔ learned
-ranker may be swapped by campaign, as long as verification gates every commit.
+**The committed table.** `src/slm_training/resources/decode/speculative_ngram_v1.json`
+is built train-split-only from the immutable certified corpus
+(`openui_verified_v1`, 1682 records, 89,415 native tokens, order 3, 523
+contexts). Targets are templatized first, so the table is keyed on symbols and
+placeholders and never on free-form string content. Setting
+`speculative_rank="ngram"` without naming a table resolves to it, so the lever
+is reachable with no build step. `scripts/build_speculative_ngram_table.py
+--check` fails when the artifact and its builder disagree.
+
+It ranks real branch points confidently: after `root = ` (27 legal candidates)
+it picks `Stack(` at margin 1.0, and after `root = Stack([` (25 candidates) it
+picks `<BIND_1>` at margin 1.59 — both decided from the symbol table with no
+forward.
+
+**Status: machinery shipped and reachable, default `off`.** Turning it on for
+serving needs a preregistered `ExperimentCampaignV1` binding the table's
+`corpus_fingerprint` to the run. The technique itself is a lever: n-gram ↔ trie
+↔ learned ranker may be swapped by campaign, as long as verification gates
+every commit.
 
 ### I4 — Symbol tables schedule compute
 
@@ -145,21 +157,24 @@ pure — it returns a `PrefillPlanV1` and never runs a forward.
 - Counters: `scheduled_prefills`, `scheduled_rows_skipped`,
   `scheduled_prefill_tokens_saved`, `schedule_checkpoint_hits`.
 
-**Where the checkpoint input comes from.** The batched LTR loop passes
-`forced_run_lengths=None`: at plan time it has no proof about positions *after*
-`t`, because a forced run beyond the current position only becomes provable
-once `t` is committed — and the next iteration then discovers it for free via
-the ordinary bypass. So in that loop the planner contributes minimal-row
-compaction plus device-window sizing, and `schedule_checkpoint_hits` stays 0.
-Callers that already hold a forced-run draft (`draft_forced_ids`) pass one and
-get boundary truncation; that is the seam for extending checkpoint scheduling
-to the repair and ONNX paths.
+**Where the checkpoint input comes from.** `common_forced_run` answers the one
+thing the grammar can prove about positions beyond `t` before `t` is decided:
+if *every* legal candidate at `t` leads into the same length of forced lexemes,
+those positions are determined no matter what the model picks. That makes
+`t + 1` a real checkpoint, and the forward only needs to reach it.
 
-**Status: planner shipped, default `off`** (`prefill_schedule`,
-`prefill_schedule_max_lookahead`). With the lever off the planner reproduces
-the caller's legacy budget exactly, so it is observational until a campaign
-turns it on. Utilization regressions are measured from those counters, never
-asserted.
+The probe walks the DFA force-emit oracle (far cheaper than a completion
+forest) from each candidate, and is bounded on both axes — at most 8 candidates
+and 4 lexemes deep, over at most 4 batch rows, taking the minimum across all of
+them. Exceeding any budget returns 0, which claims nothing and leaves the
+planner on device-window sizing. `TwoTowerModel._grammar_checkpoints` runs it
+only when the lever is on, so the default path pays nothing.
+
+**Status: planner shipped and fed by the symbol table, default `off`**
+(`prefill_schedule`, `prefill_schedule_max_lookahead`). With the lever off the
+planner reproduces the caller's legacy budget exactly and the probe never runs,
+so it is observational until a campaign turns it on. Utilization regressions
+are measured from those counters, never asserted.
 
 ### I5 — The speculative technique may evolve
 
@@ -277,20 +292,45 @@ versioned `OPS_VOCAB`, content-addressed, both towers). Grammar symbols layer
 on top of that shared ops base. NL vocabulary sits above grammar symbols and is
 strictly optional.
 
-**Status: open goal.** A reserved op-token channel exists decoder-side and
-default-off (`dsl/operators/reserved_tokens.py`) with fail-closed checkpoint
-compatibility. The towers still use different vocabularies
-([`dsl-native-tokenizer.md`](dsl-native-tokenizer.md) frames the interface as
-deliberately asymmetric), and nothing ops-like exists encoder-side.
+Implementation: `src/slm_training/dsl/ops_vocab.py`, reserved in the versioned
+`ops` token-id namespace (`0x10000`–`0x11000`, above every existing codec
+range, so no stored embedding row moves).
 
-**Rejected approach, live goal.** e803 measured and rejected
-*decoder-target* op tokens on this corpus
-([`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md)).
-That experiment says nothing about *encoder-side* ops sharing, which is what
-I13 actually requires. **Successor approach:** define `OPS_VOCAB v1` as a
-reserved, content-addressed op-token set shared by both towers, and preregister
-an encoder-conditioned campaign before training. Until such an experiment
-falsifies it, the invariant stands.
+Two properties make this a vocabulary rather than one more list to keep in sync:
+
+- **Derived, not authored.** Every entry comes from a live operator registry
+  (`operators.local`, `operators.topology`, `operators.conversation`). An op
+  cannot be in the model's vocabulary without an implementation, and cannot be
+  implemented without appearing here — `build_ops_vocab` raises on either.
+- **One mapping, not two conventions.** `shared_token_ids()` is the only source
+  of op token ids. "Shared encoder↔decoder" is not something both towers are
+  asked to honor; it is the same function called twice, and
+  `assert_shared_across_towers` rejects a tower that is missing an op or
+  renumbers one.
+
+| Family | Ops |
+| --- | --- |
+| `ast` (node-local value edits) | `replace_node`, `set_property`, `unset_property` |
+| `graph` (edge rewiring) | `move_node`, `reparent_node`, `duplicate_subtree` |
+| `set` (child membership/order) | `add_child`, `remove_node`, `reorder_children` |
+| `topology` (subtree shape) | `wrap_node`, `unwrap_node`, `expand_template`, `contract_subtree` |
+| `history` (the event store itself) | `ast_edit`, `undo`, `redo`, `checkout_state`, `fork`, `copy_state` |
+
+19 ops, content-addressed, pinned in
+`src/slm_training/resources/ops_vocab_registry.json` and gated by
+`verify_decode_invariants`. `assert_layering` proves grammar symbols sit in
+their own namespaces above the reserved base and never inside it. Natural
+language is absent by construction — that is the point: it is optional fluff
+above the grammar layer and must never become load-bearing.
+
+**Status: vocabulary reserved and shared; tower wiring is the open rung.** The
+contract, the ids, the drift gate, and the layering proof exist. What remains
+is conditioning the context tower on these tokens and training against them —
+a preregistered campaign, distinct from e803, which measured and rejected
+*decoder-target* op tokens
+([`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md))
+and said nothing about encoder-side sharing. The decoder-side reserved-token
+channel (`dsl/operators/reserved_tokens.py`) stays default-off until then.
 
 ### I11 — Multi-turn is a CRDT event store
 
@@ -353,13 +393,12 @@ Open goals with named successors, at a glance:
 
 | Invariant | Rejected approach | Successor approach |
 | --- | --- | --- |
-| I13 | e803 decoder-target op tokens | shared `OPS_VOCAB v1`, encoder-conditioned campaign |
+| I13 | e803 decoder-target op tokens | `OPS_VOCAB v1` now reserved + shared; next is an encoder-conditioned campaign |
 | I12 | patch-as-default-target (SLM-299/305) | reachability-aware seeds / macro actions / certified pairs |
 | I11 | — (never attempted) | CRDT-converging merge, replacing conflict rejection |
 | I10 | — (rung unbuilt) | simplified-NL inventory as the bridge to complex NL |
-| I2 | — (pre-existing gap) | let a sole-legal DFA proof stand when the compiler forest is horizon-limited, not contradictory |
-| I3 | — (machinery new) | certify the n-gram ranker by campaign, then default-on for serving |
-| I4 | — (machinery new) | certify checkpoint scheduling by campaign, then default-on for serving |
+| I3 | — (machinery new) | certify the committed n-gram table by campaign, then default-on for serving |
+| I4 | — (machinery new) | certify checkpoint-aligned prefills by campaign, then default-on for serving |
 
 ### I15 — Everything is documented
 

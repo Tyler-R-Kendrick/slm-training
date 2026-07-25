@@ -71,7 +71,8 @@ expansion with file pointers, current status, and open goals:
 6. **Speculative completion from forward-calculated symbol tables:** symbol
    tables are computed *before* the model; at non-singleton branch points, rank
    legal symbols with a deterministic scorer
-   (`dsl/grammar/fastpath/speculative_rank.py`) and speculatively commit
+   (`dsl/grammar/fastpath/speculative_rank.py`, committed train-only n-gram
+   table at `resources/decode/speculative_ngram_v1.json`) and speculatively commit
    multi-token spans that stay inside the certified domain (lookahead-then-
    verify, arXiv:2602.00612; intersection-witness completions,
    arXiv:2508.10111). The **technique** is a lever — swap it by preregistered
@@ -79,9 +80,10 @@ expansion with file pointers, current status, and open goals:
    before commit.
 7. **Symbol tables schedule compute:** use them to plan subsequent prefills —
    compact ambiguous rows into minimal forwards, place prefill boundaries at
-   grammar checkpoints, route by detected device
-   (`runtime/decode_schedule.py`). Record scheduled-prefill and
-   forwards-avoided counters in `DecodeStats`; utilization regressions are
+   grammar checkpoints proven by `common_forced_run` (what the grammar forces
+   after *every* legal candidate is determined before the model picks), route
+   by detected device (`runtime/decode_schedule.py`). Record scheduled-prefill
+   and forwards-avoided counters in `DecodeStats`; utilization regressions are
    measured, never vibes.
 
 ### III. What the model is (and is not)
@@ -100,10 +102,16 @@ expansion with file pointers, current status, and open goals:
 
 11. **The encoder vocabulary MUST reserve a compute-ops vocabulary** —
     AST/graph/set/topology operations — **known and shared by the decoder
-    vocabulary** (one versioned `OPS_VOCAB`, content-addressed, both towers).
-    Grammar symbols layer on top; NL sits above and is strictly optional. e803
-    rejected *decoder-target* op tokens and says nothing about encoder-side
-    sharing; the invariant stands until an encoder-side experiment falsifies it.
+    vocabulary**. That vocabulary is `dsl/ops_vocab.py`: derived from the live
+    operator registries (an op cannot be in it without an implementation, or
+    implemented without being in it), reserved in the versioned `ops` token-id
+    namespace, and exposed through the single `shared_token_ids()` mapping both
+    towers call. Grammar symbols layer on top via `assert_layering`; NL sits
+    above and is strictly optional. Adding, removing, or reclassifying an
+    operator changes the fingerprint and fails
+    `verify_decode_invariants` until `resources/ops_vocab_registry.json` is
+    rebuilt and `ops.vocab` is bumped. e803 rejected *decoder-target* op tokens
+    and says nothing about encoder-side sharing; that campaign is the open rung.
 12. **Multi-turn = CRDT event store.** Append-only, content-addressed events
     over the conversation AST (`ConversationTraceV1`). Turn inputs are ops on
     that AST; ops include **copy/undo/redo**. Merge must converge (CRDT

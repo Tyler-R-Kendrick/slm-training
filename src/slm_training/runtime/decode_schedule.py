@@ -59,6 +59,48 @@ class PrefillPlanV1:
         }
 
 
+def common_forced_run(
+    prefix: Sequence[int],
+    candidates: Sequence[Sequence[int]],
+    forced_next: Any,
+    *,
+    max_candidates: int = 8,
+    max_depth: int = 4,
+) -> int:
+    """Forced-run length guaranteed *after every* candidate at this position.
+
+    This is the one thing the grammar can prove about positions beyond ``t``
+    before ``t`` is decided: if every legal continuation leads into the same
+    length of forced lexemes, those positions are determined no matter what the
+    model picks. That makes ``t + 1 + run`` a real checkpoint — the forward
+    only needs to reach it, not the end of the canvas.
+
+    ``forced_next(ids) -> int | None`` is the DFA force-emit probe. It is far
+    cheaper than a completion forest, but still per-candidate, so the search is
+    bounded on both axes and returns ``0`` (claim nothing) when either budget
+    is exceeded.
+    """
+    live = [tuple(int(token) for token in candidate) for candidate in candidates]
+    live = [candidate for candidate in live if candidate]
+    if not live or len(live) > max(1, int(max_candidates)):
+        return 0
+    base = [int(token) for token in prefix]
+    shortest = max(0, int(max_depth))
+    for candidate in live:
+        working = base + list(candidate)
+        depth = 0
+        while depth < shortest:
+            forced = forced_next(working)
+            if forced is None:
+                break
+            working.append(int(forced))
+            depth += 1
+        shortest = depth
+        if shortest == 0:
+            return 0
+    return shortest
+
+
 def next_grammar_checkpoint(
     position: int,
     canvas: int,
@@ -174,6 +216,7 @@ def schedule_backend(preferred: str | None = None) -> str:
 __all__ = [
     "PREFILL_SCHEDULE_IMPL_VERSION",
     "PrefillPlanV1",
+    "common_forced_run",
     "next_grammar_checkpoint",
     "plan_prefill",
     "record_plan",

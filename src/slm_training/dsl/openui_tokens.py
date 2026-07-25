@@ -6,12 +6,18 @@ from __future__ import annotations
 # embedding rows.  Native, choice, and legacy tokenizers all retain their
 # historical 0-based ids for checkpoint compatibility; consumers that combine
 # token families must use these disjoint logical ranges instead.
-TOKEN_ID_NAMESPACE_REGISTRY_VERSION = 1
+TOKEN_ID_NAMESPACE_REGISTRY_VERSION = 2
 TOKEN_ID_NAMESPACE_RANGES = {
     "control": range(0x0000, 0x1000),
     "openui": range(0x1000, 0x4000),
     "abstract_plan": range(0x4000, 0x7000),
     "model_native": range(0x7000, 0x10000),
+    # Decode invariant I13 (docs/design/decode-invariants.md): the reserved
+    # compute-ops vocabulary, known and shared by the encoder and the decoder.
+    # Grammar symbols layer on top of it in their own namespaces above; natural
+    # language sits above those and is strictly optional. Placed past the
+    # existing codec ranges so no stored embedding row moves.
+    "ops": range(0x10000, 0x11000),
 }
 
 

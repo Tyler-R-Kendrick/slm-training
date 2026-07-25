@@ -70,10 +70,13 @@ agent instructions: `AGENTS.md`.
 ## IV. Encoder/decoder vocabulary law
 
 11. **The encoder vocabulary reserves a compute-ops vocabulary shared with the
-    decoder** (one versioned `OPS_VOCAB`, content-addressed, both towers).
-    Grammar symbols layer on top; NL sits above and is strictly optional. e803
-    rejected *decoder-target* op tokens only — encoder-side sharing is untested,
-    not falsified.
+    decoder** — `dsl/ops_vocab.py`, derived from the live operator registries,
+    reserved in the versioned `ops` token-id namespace, exposed through the one
+    `shared_token_ids()` mapping both towers call. Grammar symbols layer on top
+    (`assert_layering`); NL sits above and is strictly optional. Changing an
+    operator changes the fingerprint and fails `verify_decode_invariants` until
+    the registry is rebuilt. e803 rejected *decoder-target* op tokens only —
+    the encoder-conditioned campaign is the open rung.
 12. **Multi-turn = CRDT event store.** Append-only, content-addressed events
     over the conversation AST (`ConversationTraceV1`); ops include
     copy/undo/redo. Merge must converge — conflict rejection is a documented

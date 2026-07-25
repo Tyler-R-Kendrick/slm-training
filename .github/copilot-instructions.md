@@ -95,7 +95,8 @@ Canonical expansion with file pointers and current status:
    → simplified-NL-2-AST → complex-NL-2-AST. `CERT_CAP*` gates stay.
 10. **Calculator/solver enhanced with inference** — not a chat model.
 11. **Encoder vocabulary reserves a compute-ops vocabulary shared with the
-    decoder** (one versioned `OPS_VOCAB`, both towers). Grammar symbols layer
+    decoder** — `dsl/ops_vocab.py`, derived from the live operator registries
+    and exposed through one `shared_token_ids()` mapping. Grammar symbols layer
     on top; NL sits above and is optional.
 12. **Multi-turn = CRDT event store** over the conversation AST, with
     copy/undo/redo; the AST artifact materializes the full history.

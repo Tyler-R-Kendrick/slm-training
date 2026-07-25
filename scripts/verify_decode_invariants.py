@@ -14,7 +14,8 @@ side effect. It certifies six things:
 5. Every agent surface carries the invariants (I7), and every doc that must
    link the canonical statement does (I8/I15).
 6. The reserved operator-token channel has not drifted from default-off
-   without a documented decision (I13).
+   without a documented decision, and the shared encoder/decoder ops
+   vocabulary matches its committed fingerprint (I13).
 
 Run: ``python -m scripts.verify_decode_invariants``
 """
@@ -311,6 +312,61 @@ def check_reserved_ops_default_off() -> str:
     return "reserved_operator_tokens=default_off"
 
 
+def check_ops_vocab() -> dict[str, Any]:
+    """I13: the shared ops vocabulary is derived, pinned, and layered.
+
+    This one check imports, because the vocabulary's whole point is that it is
+    derived from the live operator registries rather than authored. A pure text
+    check could not tell a real derivation from a stale copy of one.
+    """
+    try:
+        from slm_training.dsl.ops_vocab import (
+            OPS_NAMESPACE,
+            assert_layering,
+            fingerprint,
+            load_registry,
+            manifest,
+        )
+        from slm_training.dsl.openui_tokens import (
+            TOKEN_ID_NAMESPACE_RANGES,
+            logical_token_id,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(f"ops vocabulary is unimportable: {exc}") from exc
+
+    if OPS_NAMESPACE not in TOKEN_ID_NAMESPACE_RANGES:
+        raise DecodeInvariantError(
+            f"token-id namespace {OPS_NAMESPACE!r} is gone; the reserved ops "
+            f"vocabulary has no home (see {CANONICAL_DOC})"
+        )
+    try:
+        committed = load_registry()
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(
+            f"committed ops-vocab registry is unreadable: {exc}"
+        ) from exc
+    live = manifest()
+    if committed.get("fingerprint") != fingerprint():
+        raise DecodeInvariantError(
+            "ops vocabulary drifted from its committed registry; an operator "
+            "was added, removed, or reclassified. Rebuild with "
+            "`python -c 'from slm_training.dsl.ops_vocab import write_registry;"
+            " write_registry()'` and bump `ops.vocab` in versions.json "
+            f"(see {CANONICAL_DOC})"
+        )
+    if committed != live:
+        raise DecodeInvariantError("committed ops-vocab registry is stale")
+    if not live["count"]:
+        raise DecodeInvariantError("reserved ops vocabulary is empty")
+
+    # Grammar symbols must layer above ops, never inside the reserved range.
+    grammar_ids = {
+        f"openui:{index}": logical_token_id("openui", index) for index in range(64)
+    }
+    assert_layering(grammar_ids)
+    return {"fingerprint": live["fingerprint"], "count": live["count"]}
+
+
 def certify() -> dict[str, Any]:
     levers = _weakening_levers()
     return {
@@ -323,6 +379,7 @@ def certify() -> dict[str, Any]:
         "agent_surfaces": check_agent_surfaces(),
         "linking_docs": check_docs_link_canonical(),
         "reserved_ops": check_reserved_ops_default_off(),
+        "ops_vocab": check_ops_vocab(),
     }
 
 
