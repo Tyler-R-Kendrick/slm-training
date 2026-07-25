@@ -532,6 +532,24 @@
         }
       ]
     },
+    "harness.experiments.slm368_cap1_experiment": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm368_cap1_experiment.py",
+        "scripts/run_slm368_cap1_experiment.py",
+        "tests/test_harnesses/experiments/test_slm368_cap1_experiment.py",
+        "docs/design/iter-slm368-cap1-experiment-20260725.md",
+        "docs/design/iter-slm368-cap1-experiment-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial matched CAP1 grounding experiment (DSH2-08): sha-locked preregistration (arms NL_NO_SCHEMA / SCHEMA_UNFILTERED / SCHEMA_FILTERED_SINGLE / SCHEMA_FILTERED_MULTI, seeds, exposure accounting, preregistered min effect + paired n, stop rules), two-pack train roots split-disjoint from the SLM-367 frozen suite with equal family/target/compute exposure and ambiguity-filtered schema-conditioned arm corpora, identical tiny tree-edit training per arm/seed, frozen two-pack adjudication with original/empty/contradictory/reordered/irrelevant schema replay probes + counterfactuals + marker permutations + ambiguity/determinacy + mandatory CAP0 retention, paired Wilson + exact McNemar evidence of filtered arms vs schema-absent and unfiltered/style controls, symbol-only declared-marker target audit, and CapabilityCertificateV1 CERT_CAP1 issue/reject with coded stop rules (ignores_schema, fails_hard_contrasts, cap0_regression, underpowered, contaminated, prediction_identical)"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
