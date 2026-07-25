@@ -956,18 +956,14 @@ def evaluate(
     def _request_for(record: ExampleRecord) -> GenerationRequest:
         schema = _eval_schema()
         request = GenerationRequest.from_record(record, schema=schema)
-        # Historical evaluation checkpoints use visible placeholder suffixes as
-        # semantic-role features. Declare that compatibility authority explicitly;
-        # opaque production requests still require caller-provided typed symbols.
+        # Template markers are opaque codec surfaces (TEMPLATE_MARKERS_ARE_OPAQUE /
+        # RuntimeSymbol law). Never derive semantic_role from placeholder text.
+        # Typed authority must come from caller-declared metadata elsewhere.
         data = request.to_dict()
         data["runtime_symbols"] = [
             RuntimeSymbol(
                 surface=slot,
                 role="external_entity",
-                semantic_role=(
-                    re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
-                    or "value"
-                ),
             ).to_dict()
             for slot in request.slot_contract
         ]
