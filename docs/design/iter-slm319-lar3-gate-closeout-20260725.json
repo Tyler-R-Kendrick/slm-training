@@ -1,0 +1,49 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "SLM-321/324/326/327 (LAR3-02..05) stay blocked on SLM-319. Reopen only when a recurrence-health audit returns recursive_core_positive AND a valid-state repair advancement screen passes its value gate.",
+  "failed_gates": [
+    "gate_lar0_02",
+    "gate_lar2_06"
+  ],
+  "gates": {
+    "gate_lar0_01": {
+      "issue": "SLM-279",
+      "observed_outcome": "Done (correction-only); neutral for entry",
+      "passed": true,
+      "required_outcome": "canonical depth-supervision objective defined"
+    },
+    "gate_lar0_02": {
+      "evidence": "docs/design/iter-slm282-recurrence-health-20260723.json",
+      "issue": "SLM-282",
+      "observed_outcome": "recursive_core_negative (1 of 2 required seed passes)",
+      "passed": false,
+      "required_outcome": "recursive_core_positive (>=2 seed passes)"
+    },
+    "gate_lar2_06": {
+      "evidence": "docs/design/iter-slm317-repair-hybrid-20260724.json",
+      "issue": "SLM-317",
+      "observed_outcome": "inconclusive; safety PASS, value FAIL (0/16, Wilson [0.0, 0.194] vs 0.05); LAR3 open but NOT advanced",
+      "passed": false,
+      "required_outcome": "advancement screen passes safety + value gates"
+    }
+  },
+  "issue": "SLM-319",
+  "matrix_set": "slm319-prelude-coda-core",
+  "matrix_version": "slm319-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "LAR3 entry prerequisites are not met: SLM-282 (LAR0-02) returned recursive_core_negative (1 of 2 required seed passes on the preregistered recurrence-health condition), and SLM-317 (LAR2-06) returned inconclusive with LAR3 explicitly 'open but NOT advanced' after the value gate failed (0/16 improvements, Wilson [0.0, 0.194] vs 0.05). Per the program's own advancement rules, the untied prelude/shared-core/coda architecture must not be implemented.",
+  "run_id": "slm319_gate_closeout",
+  "schema": "slm319_lar3_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "48e5cadc13f9e6e431491da615badb4a0614c17a",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T00:27:51.049596+00:00"
+  }
+}
