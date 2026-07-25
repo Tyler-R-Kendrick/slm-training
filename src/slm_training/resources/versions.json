@@ -343,11 +343,6 @@
         {
           "version": "v13",
           "date": "2026-07-25",
-          "note": "no-bump: re-export the new SLM-383 (DSH3-15) hierarchical_head module from the operators package; no behavior change to any existing export"
-        },
-        {
-          "version": "v13",
-          "date": "2026-07-25",
           "note": "Export the COPY_STATE conversation operation from the operators package (decode invariant I11)"
         },
         {
@@ -617,21 +612,6 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial exact bounded operator-action enumeration with complete/partial coverage, brute-force shadow controls, and reserved hierarchical serialization"
-        }
-      ]
-    },
-    "dsl.operators.hierarchical_head": {
-      "version": "v1",
-      "kind": "harness",
-      "paths": [
-        "src/slm_training/dsl/operators/hierarchical_head.py",
-        "tests/test_dsl/test_hierarchical_operator_head.py"
-      ],
-      "history": [
-        {
-          "version": "v1",
-          "date": "2026-07-25",
-          "note": "SLM-383 (DSH3-15) wiring-only, default-off two-stage compiler-masked operator action head reusing the SLM-168 DynamicPointerScorer seam; candidates drawn solely from OperatorLegalSetV1, typed features from ActionEffectV1 only. No causal-improvement claim: DSH3-14/SLM-382 (E803) rejected the decoder-visible-token hypothesis this head's own Decision text gates on, and cap2_disposition.py's HIERARCHICAL_HEAD verdict remains UNRUN_CONDITIONAL pending a follow-up multi-seed causal-attribution experiment"
         }
       ]
     },
