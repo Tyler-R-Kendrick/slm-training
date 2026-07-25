@@ -8070,6 +8070,24 @@
      "note": "initial CAP0 eval-suite freeze: six immutable subsuites (atomic coverage, expanded canonicalization, compositional held-out, prefix completion, marker permutation, anti-identity) with sha256 rows + tamper-evident manifest, zero-tolerance audit invariants with rejection artifacts, stop rules (leakage / unproven prefix / incomplete-shortest reward), versioned anti-collapse gates with preregistered n + Wilson bounds (fixture n reports insufficient_n, never CERT_CAP0), and identity/unchanged-input/empty-trivial baselines that cannot pass (SLM-361 / DSH1-09)"
     }
    ]
+  },
+  "harness.experiments.slm362_cap0_experiment": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/experiments/slm362_cap0_experiment.py",
+    "scripts/run_slm362_cap0_experiment.py",
+    "tests/test_harnesses/experiments/test_slm362_cap0_experiment.py",
+    "docs/design/iter-slm362-cap0-experiment-20260725.json",
+    "docs/design/iter-slm362-cap0-experiment-20260725.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "initial registration; SLM-362 DSH1-10 matched CAP0 curriculum experiment with preregistered arms, exposure accounting, paired evidence, and CERT_CAP0 issue/reject"
+    }
+   ]
   }
  }
 }

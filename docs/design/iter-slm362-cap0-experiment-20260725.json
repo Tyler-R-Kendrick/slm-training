@@ -1,0 +1,2150 @@
+{
+  "agentv_diagnostic": {
+    "artifacts": {
+      "benchmarkPath": "outputs/experiments/slm362-cap0/agentv/slm362-cap0-experiment/benchmark.json",
+      "indexPath": "outputs/experiments/slm362-cap0/agentv/slm362-cap0-experiment/index.jsonl",
+      "runDir": "outputs/experiments/slm362-cap0/agentv/slm362-cap0-experiment",
+      "timingPath": "outputs/experiments/slm362-cap0/agentv/slm362-cap0-experiment/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 1,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "cap0-certificate-decision:status_declared",
+          "expected": true,
+          "id": "cap0-certificate-decision:status_declared",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 1
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "outputs/experiments/slm362-cap0/agentv/slm362-cap0-experiment.eval.jsonl",
+    "summary": {
+      "durationMs": 106,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 1,
+      "total": 1
+    }
+  },
+  "arms": {
+    "ATOMIC_ONLY": {
+      "corpus": {
+        "accounting": {
+          "levers": {
+            "atomic_witnesses": true,
+            "canonical_answers": false,
+            "composition": false,
+            "equivalence_preferences": false,
+            "prefix_completion": false
+          },
+          "records_by_lever": {
+            "atomic_witnesses": 16
+          },
+          "records_total": 16,
+          "source_families": [
+            "cap0-train-0",
+            "cap0-train-1",
+            "cap0-train-2",
+            "cap0-train-3",
+            "cap0-train-5",
+            "cap0-train-7",
+            "cap0-train-8",
+            "cap0-train-9"
+          ],
+          "target_chars_total": 553,
+          "unique_targets": 16
+        },
+        "arm_id": "ATOMIC_ONLY",
+        "sha256": "b8136bd19adf7bf56badba5e21fba740688df7ce0360650288964acd11a66905"
+      },
+      "seeds": [
+        {
+          "checkpoint_sha256": "d4fdceeb593a8b7aa067abb34148e1fe15218c2f46989fceb28ef9bfafd8b5ad",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.43448246478317465,
+                "low": 2.7755575615628914e-17,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([], \"column\")",
+            "12a95f42795d4047_cap0eval": "root = Stack([], \"column\")",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([], \"column\")",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([], \"column\")",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([], \"column\")",
+            "2134e8334714c106_cap0eval": "root = Stack([], \"column\")",
+            "275357fb4d31e700_cap0eval": "root = Stack([], \"column\")",
+            "275f41ce74281dfe_cap0eval": "root = Stack([], \"column\")",
+            "278379c4cc079f55_cap0eval": "root = Stack([], \"column\")",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([], \"column\")",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([], \"column\")",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([], \"column\")",
+            "490e25c3c2b27017_cap0eval": "root = Stack([], \"column\")",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([], \"column\")",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([], \"column\")",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([], \"column\")",
+            "76a045d11e3eb293_cap0eval": "root = Stack([], \"column\")",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([], \"column\")",
+            "7a8823b9a4586155_cap0eval": "root = Stack([], \"column\")",
+            "7c55426276d64911_cap0eval": "root = Stack([], \"column\")",
+            "887dbe48f1075c41_cap0eval": "root = Stack([], \"column\")",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([], \"column\")",
+            "9a609a732b64ee51_cap0eval": "root = Stack([], \"column\")",
+            "a1e1323069881ec6_cap0eval": "root = Stack([], \"column\")",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([], \"column\")",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([], \"column\")",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([], \"column\")",
+            "d7d4014c9f191335_cap0eval": "root = Stack([], \"column\")",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([], \"column\")",
+            "de547980ff12db47_cap0eval": "root = Stack([], \"column\")",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([], \"column\")",
+            "f1801888a438be4b_cap0eval": "root = Stack([], \"column\")",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([], \"column\")"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.0,
+              "diversity": 0.030303030303030304,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.0,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 0
+        },
+        {
+          "checkpoint_sha256": "67b62c780d17c9d26ae4acf57323fd0367b3d5fe295ca8e41a74be92cddcc698",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.43448246478317465,
+                "low": 2.7755575615628914e-17,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([], \"column\")",
+            "12a95f42795d4047_cap0eval": "root = Stack([], \"column\")",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([], \"column\")",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([], \"column\")",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([], \"column\")",
+            "2134e8334714c106_cap0eval": "root = Stack([], \"column\")",
+            "275357fb4d31e700_cap0eval": "root = Stack([], \"column\")",
+            "275f41ce74281dfe_cap0eval": "root = Stack([], \"column\")",
+            "278379c4cc079f55_cap0eval": "root = Stack([], \"column\")",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([], \"column\")",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([], \"column\")",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([], \"column\")",
+            "490e25c3c2b27017_cap0eval": "root = Stack([], \"column\")",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([], \"column\")",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([], \"column\")",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([], \"column\")",
+            "76a045d11e3eb293_cap0eval": "root = Stack([], \"column\")",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([], \"column\")",
+            "7a8823b9a4586155_cap0eval": "root = Stack([], \"column\")",
+            "7c55426276d64911_cap0eval": "root = Stack([], \"column\")",
+            "887dbe48f1075c41_cap0eval": "root = Stack([], \"column\")",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([], \"column\")",
+            "9a609a732b64ee51_cap0eval": "root = Stack([], \"column\")",
+            "a1e1323069881ec6_cap0eval": "root = Stack([], \"column\")",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([], \"column\")",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([], \"column\")",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([], \"column\")",
+            "d7d4014c9f191335_cap0eval": "root = Stack([], \"column\")",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([], \"column\")",
+            "de547980ff12db47_cap0eval": "root = Stack([], \"column\")",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([], \"column\")",
+            "f1801888a438be4b_cap0eval": "root = Stack([], \"column\")",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([], \"column\")"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.0,
+              "diversity": 0.030303030303030304,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.0,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 1
+        }
+      ]
+    },
+    "BASE": {
+      "corpus": {
+        "accounting": {
+          "levers": {
+            "atomic_witnesses": false,
+            "canonical_answers": true,
+            "composition": false,
+            "equivalence_preferences": false,
+            "prefix_completion": false
+          },
+          "records_by_lever": {
+            "canonical_answers": 16
+          },
+          "records_total": 16,
+          "source_families": [
+            "cap0-train-0",
+            "cap0-train-1",
+            "cap0-train-2",
+            "cap0-train-3",
+            "cap0-train-5",
+            "cap0-train-7",
+            "cap0-train-8",
+            "cap0-train-9"
+          ],
+          "target_chars_total": 1612,
+          "unique_targets": 8
+        },
+        "arm_id": "BASE",
+        "sha256": "b8221773690fdbe72a13da52b24b4d8aa79c551cb641784622452e130bf2d468"
+      },
+      "seeds": [
+        {
+          "checkpoint_sha256": "5797696cd9211ad98cb99b42c3a393f0d3fe82ac142db9bbd6b5da2a22673d23",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.2,
+                "high": 0.6244653702374745,
+                "low": 0.03622410863243014,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([], \"column\")",
+            "12a95f42795d4047_cap0eval": "root = Stack([], \"column\")",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([], \"column\")",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([], \"column\")",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "2134e8334714c106_cap0eval": "root = Stack([], \"column\")",
+            "275357fb4d31e700_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "275f41ce74281dfe_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "278379c4cc079f55_cap0eval": "root = Stack([], \"column\")",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([], \"column\")",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([], \"column\")",
+            "490e25c3c2b27017_cap0eval": "root = Stack([], \"column\")",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([], \"column\")",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([], \"column\")",
+            "76a045d11e3eb293_cap0eval": "root = Stack([], \"column\")",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([], \"column\")",
+            "7a8823b9a4586155_cap0eval": "root = Stack([], \"column\")",
+            "7c55426276d64911_cap0eval": "root = Stack([], \"column\")",
+            "887dbe48f1075c41_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":hero.cta\")",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "9a609a732b64ee51_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "a1e1323069881ec6_cap0eval": "root = Stack([], \"column\")",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([], \"column\")",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([], \"column\")",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([], \"column\")",
+            "d7d4014c9f191335_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":cta.label\")",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([], \"column\")",
+            "de547980ff12db47_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "f1801888a438be4b_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.22727272727272727,
+              "diversity": 0.12121212121212122,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.2,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 0
+        },
+        {
+          "checkpoint_sha256": "83a3fe4196017b7e2b8a5dc0befc7a43086f72eac85c78266a79e2942ec08f5b",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.43448246478317465,
+                "low": 2.7755575615628914e-17,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "12a95f42795d4047_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "2134e8334714c106_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "275357fb4d31e700_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "275f41ce74281dfe_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "278379c4cc079f55_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "490e25c3c2b27017_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "76a045d11e3eb293_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "7a8823b9a4586155_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "7c55426276d64911_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "887dbe48f1075c41_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "9a609a732b64ee51_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "a1e1323069881ec6_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "d7d4014c9f191335_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "de547980ff12db47_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "f1801888a438be4b_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.0,
+              "diversity": 0.030303030303030304,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.0,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 1
+        }
+      ]
+    },
+    "STAGED_FULL": {
+      "corpus": {
+        "accounting": {
+          "levers": {
+            "atomic_witnesses": true,
+            "canonical_answers": false,
+            "composition": true,
+            "equivalence_preferences": true,
+            "prefix_completion": true
+          },
+          "records_by_lever": {
+            "atomic_witnesses": 1,
+            "composition": 7,
+            "equivalence_preferences": 7,
+            "prefix_completion": 1
+          },
+          "records_total": 16,
+          "source_families": [
+            "cap0-train-0",
+            "cap0-train-1",
+            "cap0-train-2",
+            "cap0-train-3",
+            "cap0-train-5",
+            "cap0-train-7",
+            "cap0-train-8",
+            "cap0-train-9"
+          ],
+          "target_chars_total": 2144,
+          "unique_targets": 16
+        },
+        "arm_id": "STAGED_FULL",
+        "sha256": "c54923e187fcce44c6d45801576f6bf5d37f2f1dde17b70b8ea3ab905659803d"
+      },
+      "seeds": [
+        {
+          "checkpoint_sha256": "65901cdf02e549c029364475e088c54eb645d878e930f8474d418f2db3ba7121",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.43448246478317465,
+                "low": 2.7755575615628914e-17,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([], \"column\")",
+            "12a95f42795d4047_cap0eval": "root = Stack([], \"column\")",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([], \"column\")",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([], \"column\")",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([], \"column\")",
+            "2134e8334714c106_cap0eval": "root = Stack([], \"column\")",
+            "275357fb4d31e700_cap0eval": "root = Stack([], \"column\")",
+            "275f41ce74281dfe_cap0eval": "root = Stack([], \"column\")",
+            "278379c4cc079f55_cap0eval": "root = Stack([], \"column\")",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([], \"column\")",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([], \"column\")",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([], \"column\")",
+            "490e25c3c2b27017_cap0eval": "root = Stack([], \"column\")",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([], \"column\")",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([], \"column\")",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([], \"column\")",
+            "76a045d11e3eb293_cap0eval": "root = Stack([], \"column\")",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([], \"column\")",
+            "7a8823b9a4586155_cap0eval": "root = Stack([], \"column\")",
+            "7c55426276d64911_cap0eval": "root = Stack([], \"column\")",
+            "887dbe48f1075c41_cap0eval": "root = Stack([], \"column\")",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([], \"column\")",
+            "9a609a732b64ee51_cap0eval": "root = Stack([], \"column\")",
+            "a1e1323069881ec6_cap0eval": "root = Stack([], \"column\")",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([], \"column\")",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([], \"column\")",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([], \"column\")",
+            "d7d4014c9f191335_cap0eval": "root = Stack([], \"column\")",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([], \"column\")",
+            "de547980ff12db47_cap0eval": "root = Stack([], \"column\")",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([], \"column\")",
+            "f1801888a438be4b_cap0eval": "root = Stack([], \"column\")",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([], \"column\")"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.0,
+              "diversity": 0.030303030303030304,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.0,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 0
+        },
+        {
+          "checkpoint_sha256": "a567c6fd4bc8bbdbb8d624b6df5ef7e6d4dc38a095525999175800448a687f1d",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.43448246478317465,
+                "low": 2.7755575615628914e-17,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([], \"column\")",
+            "12a95f42795d4047_cap0eval": "root = Stack([], \"column\")",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([], \"column\")",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([], \"column\")",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([], \"column\")",
+            "2134e8334714c106_cap0eval": "root = Stack([], \"column\")",
+            "275357fb4d31e700_cap0eval": "root = Stack([], \"column\")",
+            "275f41ce74281dfe_cap0eval": "root = Stack([], \"column\")",
+            "278379c4cc079f55_cap0eval": "root = Stack([], \"column\")",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([], \"column\")",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([], \"column\")",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([], \"column\")",
+            "490e25c3c2b27017_cap0eval": "root = Stack([], \"column\")",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([], \"column\")",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([], \"column\")",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([], \"column\")",
+            "76a045d11e3eb293_cap0eval": "root = Stack([], \"column\")",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([], \"column\")",
+            "7a8823b9a4586155_cap0eval": "root = Stack([], \"column\")",
+            "7c55426276d64911_cap0eval": "root = Stack([], \"column\")",
+            "887dbe48f1075c41_cap0eval": "root = Stack([], \"column\")",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([], \"column\")",
+            "9a609a732b64ee51_cap0eval": "root = Stack([], \"column\")",
+            "a1e1323069881ec6_cap0eval": "root = Stack([], \"column\")",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([], \"column\")",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([], \"column\")",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([], \"column\")",
+            "d7d4014c9f191335_cap0eval": "root = Stack([], \"column\")",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([], \"column\")",
+            "de547980ff12db47_cap0eval": "root = Stack([], \"column\")",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([], \"column\")",
+            "f1801888a438be4b_cap0eval": "root = Stack([], \"column\")",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([], \"column\")"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.0,
+              "diversity": 0.030303030303030304,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.0,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 1
+        }
+      ]
+    },
+    "STAGED_NO_PREFERENCE": {
+      "corpus": {
+        "accounting": {
+          "levers": {
+            "atomic_witnesses": true,
+            "canonical_answers": false,
+            "composition": true,
+            "equivalence_preferences": false,
+            "prefix_completion": true
+          },
+          "records_by_lever": {
+            "atomic_witnesses": 8,
+            "composition": 7,
+            "prefix_completion": 1
+          },
+          "records_total": 16,
+          "source_families": [
+            "cap0-train-0",
+            "cap0-train-1",
+            "cap0-train-2",
+            "cap0-train-3",
+            "cap0-train-5",
+            "cap0-train-7",
+            "cap0-train-8",
+            "cap0-train-9"
+          ],
+          "target_chars_total": 1777,
+          "unique_targets": 16
+        },
+        "arm_id": "STAGED_NO_PREFERENCE",
+        "sha256": "763dec0579b9c741351306c03bd448e5c1828fc093a227291fa330d6e38d4903"
+      },
+      "seeds": [
+        {
+          "checkpoint_sha256": "04b386a161a54576bfaba000cad57b1f1fe840924a62fe72f3cb39665d2af041",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.43448246478317465,
+                "low": 2.7755575615628914e-17,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "12a95f42795d4047_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "2134e8334714c106_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "275357fb4d31e700_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "275f41ce74281dfe_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "278379c4cc079f55_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "490e25c3c2b27017_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "76a045d11e3eb293_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "7a8823b9a4586155_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "7c55426276d64911_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "887dbe48f1075c41_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "9a609a732b64ee51_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "a1e1323069881ec6_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "d7d4014c9f191335_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "de547980ff12db47_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "f1801888a438be4b_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([], \"column\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.0,
+              "diversity": 0.030303030303030304,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.0,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 0
+        },
+        {
+          "checkpoint_sha256": "9f2d01d46c820e1c0e0803256511a229d6a29e65f0cfc0151b90d3f46a6f46c7",
+          "gate": {
+            "certificate": null,
+            "checks": {
+              "accepted_set_mass": false,
+              "binding_aware": false,
+              "canonical_equivalence": false,
+              "diversity": false,
+              "empty_trivial_rate": true,
+              "identity_baseline_score": true,
+              "production_coverage": false,
+              "structure": true
+            },
+            "confidence_bounds": {
+              "anti_identity": {
+                "confidence_level": 0.95,
+                "estimate": 1.0,
+                "high": 1.0,
+                "low": 0.20654931437723745,
+                "n": 1
+              },
+              "atomic_coverage": {
+                "confidence_level": 0.95,
+                "estimate": 0.4,
+                "high": 0.769275718723987,
+                "low": 0.11762077423264794,
+                "n": 5
+              },
+              "prefix_completion": {
+                "confidence_level": 0.95,
+                "estimate": 0.0,
+                "high": 0.39033428790216523,
+                "low": 0.0,
+                "n": 6
+              }
+            },
+            "gate": {
+              "confidence_level": 0.95,
+              "gate_version": "cap0_gate/v1",
+              "max_empty_trivial_rate": 0.05,
+              "max_identity_baseline_score": 0.5,
+              "min_accepted_set_mass": 0.9,
+              "min_binding_aware": 0.9,
+              "min_canonical_equivalence": 0.95,
+              "min_diversity": 0.5,
+              "min_production_coverage": 1.0,
+              "min_structure": 0.9,
+              "preregistered_n": {
+                "anti_identity": 100,
+                "atomic_coverage": 200,
+                "compositional_held_out": 100,
+                "expanded_canonicalization": 400,
+                "marker_permutation": 100,
+                "prefix_completion": 200
+              },
+              "retention_policy": "cap0_gate_retention/v1"
+            },
+            "insufficient_n": {
+              "anti_identity": {
+                "actual": 1,
+                "required": 100
+              },
+              "atomic_coverage": {
+                "actual": 5,
+                "required": 200
+              },
+              "compositional_held_out": {
+                "actual": 3,
+                "required": 100
+              },
+              "expanded_canonicalization": {
+                "actual": 17,
+                "required": 400
+              },
+              "marker_permutation": {
+                "actual": 1,
+                "required": 100
+              },
+              "prefix_completion": {
+                "actual": 6,
+                "required": 200
+              }
+            },
+            "passed": false,
+            "status": "insufficient_n"
+          },
+          "predictions": {
+            "07f75902bd9f1d52_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "12a95f42795d4047_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "14dd2e2f975bc2b4_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "1cc02a178a3ae857_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "1e18c0ccbb4a9e3d_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "2134e8334714c106_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":p9f8631.title\")",
+            "275357fb4d31e700_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "275f41ce74281dfe_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "278379c4cc079f55_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":pe9dc9e.title\")",
+            "29e9e9e77ad23383_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "2d5a957aed27dad4_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":pca46a0.title\")",
+            "48f105d24dcb29ed_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "490e25c3c2b27017_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "59fe3361bf72b92e_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "6aa26c52dd835be5_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "6c9a2a7e067418f4_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "76a045d11e3eb293_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":pec95fe.title\")",
+            "77e41eab49fc66b8_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "7a8823b9a4586155_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "7c55426276d64911_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "887dbe48f1075c41_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":hero.cta\")",
+            "89a5f6143a1d9d7b_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "9a609a732b64ee51_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "a1e1323069881ec6_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "a7357c9c81ec7502_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":p7a9ad5.title\")",
+            "aa0a1cc009650b2d_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "cce9e2331e1c01f2_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":pa1b0d4.title\")",
+            "d7d4014c9f191335_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":cta.label\")",
+            "dc68f2cbae34d223_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":w.text\")",
+            "de547980ff12db47_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "efbc21b646ecb5e0_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "f1801888a438be4b_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")",
+            "fbb0b15ce8680f99_cap0eval": "root = Stack([n0], \"column\")\nn0 = TextContent(\":smoke.hero.title\")"
+          },
+          "score": {
+            "compositional_success": [
+              0,
+              0,
+              0
+            ],
+            "copy_hits": 0,
+            "marker_fidelity": 1.0,
+            "metrics": {
+              "accepted_set_mass": 0.0,
+              "binding_aware": 0.0,
+              "canonical_equivalence": 0.45454545454545453,
+              "diversity": 0.30303030303030304,
+              "empty_trivial_rate": 0.0,
+              "identity_baseline_score": 0.0,
+              "n_by_subsuite": {
+                "anti_identity": 1,
+                "atomic_coverage": 5,
+                "compositional_held_out": 3,
+                "expanded_canonicalization": 17,
+                "marker_permutation": 1,
+                "prefix_completion": 6
+              },
+              "production_coverage": 0.4,
+              "structure": 1.0
+            },
+            "parse_valid_rate": 1.0,
+            "prefix_success": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "seed": 1
+        }
+      ]
+    }
+  },
+  "baselines": {
+    "empty_trivial": {
+      "certificate": null,
+      "checks": {
+        "accepted_set_mass": false,
+        "binding_aware": false,
+        "canonical_equivalence": false,
+        "diversity": false,
+        "empty_trivial_rate": false,
+        "identity_baseline_score": false,
+        "production_coverage": false,
+        "structure": false
+      },
+      "confidence_bounds": {
+        "anti_identity": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.7934506856227626,
+          "low": 0.0,
+          "n": 1
+        },
+        "atomic_coverage": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.43448246478317465,
+          "low": 2.7755575615628914e-17,
+          "n": 5
+        },
+        "prefix_completion": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.39033428790216523,
+          "low": 0.0,
+          "n": 6
+        }
+      },
+      "gate": {
+        "confidence_level": 0.95,
+        "gate_version": "cap0_gate/v1",
+        "max_empty_trivial_rate": 0.05,
+        "max_identity_baseline_score": 0.5,
+        "min_accepted_set_mass": 0.9,
+        "min_binding_aware": 0.9,
+        "min_canonical_equivalence": 0.95,
+        "min_diversity": 0.5,
+        "min_production_coverage": 1.0,
+        "min_structure": 0.9,
+        "preregistered_n": {
+          "anti_identity": 100,
+          "atomic_coverage": 200,
+          "compositional_held_out": 100,
+          "expanded_canonicalization": 400,
+          "marker_permutation": 100,
+          "prefix_completion": 200
+        },
+        "retention_policy": "cap0_gate_retention/v1"
+      },
+      "insufficient_n": {
+        "anti_identity": {
+          "actual": 1,
+          "required": 100
+        },
+        "atomic_coverage": {
+          "actual": 5,
+          "required": 200
+        },
+        "compositional_held_out": {
+          "actual": 3,
+          "required": 100
+        },
+        "expanded_canonicalization": {
+          "actual": 17,
+          "required": 400
+        },
+        "marker_permutation": {
+          "actual": 1,
+          "required": 100
+        },
+        "prefix_completion": {
+          "actual": 6,
+          "required": 200
+        }
+      },
+      "passed": false,
+      "status": "insufficient_n"
+    },
+    "identity": {
+      "certificate": null,
+      "checks": {
+        "accepted_set_mass": false,
+        "binding_aware": false,
+        "canonical_equivalence": false,
+        "diversity": false,
+        "empty_trivial_rate": true,
+        "identity_baseline_score": false,
+        "production_coverage": false,
+        "structure": false
+      },
+      "confidence_bounds": {
+        "anti_identity": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.7934506856227626,
+          "low": 0.0,
+          "n": 1
+        },
+        "atomic_coverage": {
+          "confidence_level": 0.95,
+          "estimate": 0.2,
+          "high": 0.6244653702374745,
+          "low": 0.03622410863243014,
+          "n": 5
+        },
+        "prefix_completion": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.39033428790216523,
+          "low": 0.0,
+          "n": 6
+        }
+      },
+      "gate": {
+        "confidence_level": 0.95,
+        "gate_version": "cap0_gate/v1",
+        "max_empty_trivial_rate": 0.05,
+        "max_identity_baseline_score": 0.5,
+        "min_accepted_set_mass": 0.9,
+        "min_binding_aware": 0.9,
+        "min_canonical_equivalence": 0.95,
+        "min_diversity": 0.5,
+        "min_production_coverage": 1.0,
+        "min_structure": 0.9,
+        "preregistered_n": {
+          "anti_identity": 100,
+          "atomic_coverage": 200,
+          "compositional_held_out": 100,
+          "expanded_canonicalization": 400,
+          "marker_permutation": 100,
+          "prefix_completion": 200
+        },
+        "retention_policy": "cap0_gate_retention/v1"
+      },
+      "insufficient_n": {
+        "anti_identity": {
+          "actual": 1,
+          "required": 100
+        },
+        "atomic_coverage": {
+          "actual": 5,
+          "required": 200
+        },
+        "compositional_held_out": {
+          "actual": 3,
+          "required": 100
+        },
+        "expanded_canonicalization": {
+          "actual": 17,
+          "required": 400
+        },
+        "marker_permutation": {
+          "actual": 1,
+          "required": 100
+        },
+        "prefix_completion": {
+          "actual": 6,
+          "required": 200
+        }
+      },
+      "passed": false,
+      "status": "insufficient_n"
+    },
+    "unchanged_input": {
+      "certificate": null,
+      "checks": {
+        "accepted_set_mass": false,
+        "binding_aware": false,
+        "canonical_equivalence": true,
+        "diversity": true,
+        "empty_trivial_rate": true,
+        "identity_baseline_score": false,
+        "production_coverage": false,
+        "structure": false
+      },
+      "confidence_bounds": {
+        "anti_identity": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.7934506856227626,
+          "low": 0.0,
+          "n": 1
+        },
+        "atomic_coverage": {
+          "confidence_level": 0.95,
+          "estimate": 1.0,
+          "high": 1.0,
+          "low": 0.5655175352168254,
+          "n": 5
+        },
+        "prefix_completion": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.39033428790216523,
+          "low": 0.0,
+          "n": 6
+        }
+      },
+      "gate": {
+        "confidence_level": 0.95,
+        "gate_version": "cap0_gate/v1",
+        "max_empty_trivial_rate": 0.05,
+        "max_identity_baseline_score": 0.5,
+        "min_accepted_set_mass": 0.9,
+        "min_binding_aware": 0.9,
+        "min_canonical_equivalence": 0.95,
+        "min_diversity": 0.5,
+        "min_production_coverage": 1.0,
+        "min_structure": 0.9,
+        "preregistered_n": {
+          "anti_identity": 100,
+          "atomic_coverage": 200,
+          "compositional_held_out": 100,
+          "expanded_canonicalization": 400,
+          "marker_permutation": 100,
+          "prefix_completion": 200
+        },
+        "retention_policy": "cap0_gate_retention/v1"
+      },
+      "insufficient_n": {
+        "anti_identity": {
+          "actual": 1,
+          "required": 100
+        },
+        "atomic_coverage": {
+          "actual": 5,
+          "required": 200
+        },
+        "compositional_held_out": {
+          "actual": 3,
+          "required": 100
+        },
+        "expanded_canonicalization": {
+          "actual": 17,
+          "required": 400
+        },
+        "marker_permutation": {
+          "actual": 1,
+          "required": 100
+        },
+        "prefix_completion": {
+          "actual": 6,
+          "required": 200
+        }
+      },
+      "passed": false,
+      "status": "insufficient_n"
+    }
+  },
+  "baselines_fail_gate": true,
+  "certificate": {
+    "artifact": {
+      "artifact_type": "certificate",
+      "binding": {
+        "checkpoint_sha256": "65901cdf02e549c029364475e088c54eb645d878e930f8474d418f2db3ba7121",
+        "code_commit": "f84232180d4bf56a5cebd34fb01790da137866e0",
+        "config_sha256": "52119d803914ae6b897faaec8c9ed6bed59417180f8810bf0ff1a2b8e235e7ce",
+        "corpus_sha256": "2236124f927433f8ceb2f8aa43e8b2b7e2a9c9bef187276368ba4e413dc3b7f0",
+        "evidence_json_uri": "docs/design/iter-slm362-cap0-experiment-20260725.json",
+        "evidence_md_uri": "docs/design/iter-slm362-cap0-experiment-20260725.md",
+        "gate_version": "cap0_gate/v1",
+        "suite_sha256": "311b5247e3a28aa1f8c4b3ee0126da1cd22eaa24068b1ddb6651c2e9e28b5f75"
+      },
+      "capability": "CAP0_GRAMMAR",
+      "certificate_id": "b8739cb949c23bb30bf7c2b66ee5795a16e2dac5111b6cebd9900db58e3fe20a",
+      "gate_process": {
+        "code_sha256": "23759997b3c59884dc4c0ff5320d6301b0e7f63bf0f6483a7b54d7d43bc5ccd1",
+        "config_sha256": "d3e96a3bf6627c262cb15c1c37b1b88ab3850911509513057032e9ff20dc8e40",
+        "process_id": "slm362-cap0-experiment",
+        "process_version": "cap0_gate/v1"
+      },
+      "passed": false,
+      "plan_id": "slm362-cap0-experiment",
+      "plan_sha256": "52119d803914ae6b897faaec8c9ed6bed59417180f8810bf0ff1a2b8e235e7ce",
+      "qa_pair_ids": [
+        "c31886083475e934f15e27af9a431654a54dfbe4aa797249f2f013383504d8b6"
+      ],
+      "regressions_vs_base": {
+        "binding_aware": 0.0,
+        "canonical_equivalence": 0.22727272727272727,
+        "empty_trivial_rate": 0.0,
+        "marker_fidelity": 0.0,
+        "parse_valid_rate": 0.0
+      },
+      "rejection_codes": [
+        "copy_dominated",
+        "prediction_identical",
+        "structurally_regressive",
+        "underpowered"
+      ],
+      "schema_version": "capability_artifacts/v1",
+      "validation_report_ids": [
+        "5dea342f158bd45de896fc5c097359875c8db9b6627549d5a04ea64f29237ad9",
+        "7202717e016b50575714bde3234c89309a19da9b04e47a6c516498a898f62cad"
+      ]
+    },
+    "certificate": null,
+    "rejection_codes": [
+      "prediction_identical",
+      "copy_dominated",
+      "structurally_regressive",
+      "underpowered"
+    ],
+    "status": "rejected"
+  },
+  "claim_class": "fixture",
+  "corpus_sha256": "2236124f927433f8ceb2f8aa43e8b2b7e2a9c9bef187276368ba4e413dc3b7f0",
+  "elapsed_seconds": 20.036,
+  "experiment_id": "slm362-cap0-experiment",
+  "exposure": {
+    "compute_exposure": "identical steps/batch_size/lr/batch-order per seed",
+    "equal_record_count": true,
+    "equal_source_family_exposure": true,
+    "per_arm": {
+      "ATOMIC_ONLY": {
+        "families_missing": [],
+        "family_coverage": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "records_total": 16,
+        "source_families": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "target_chars_total": 553
+      },
+      "BASE": {
+        "families_missing": [],
+        "family_coverage": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "records_total": 16,
+        "source_families": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "target_chars_total": 1612
+      },
+      "STAGED_FULL": {
+        "families_missing": [],
+        "family_coverage": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "records_total": 16,
+        "source_families": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "target_chars_total": 2144
+      },
+      "STAGED_NO_PREFERENCE": {
+        "families_missing": [],
+        "family_coverage": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "records_total": 16,
+        "source_families": [
+          "cap0-train-0",
+          "cap0-train-1",
+          "cap0-train-2",
+          "cap0-train-3",
+          "cap0-train-5",
+          "cap0-train-7",
+          "cap0-train-8",
+          "cap0-train-9"
+        ],
+        "target_chars_total": 1777
+      }
+    }
+  },
+  "paired_evidence": {
+    "compositional_held_out": [
+      {
+        "candidate_rate": 0.0,
+        "candidate_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.39033428790216523,
+          "low": 0.0,
+          "n": 6
+        },
+        "control_rate": 0.0,
+        "control_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.39033428790216523,
+          "low": 0.0,
+          "n": 6
+        },
+        "label": "compositional_held_out:STAGED_FULL_vs_BASE",
+        "mcnemar": {
+          "candidate_only": 0,
+          "control_only": 0,
+          "discordant": 0,
+          "effect": 0.0,
+          "method": "two_sided_exact_mcnemar",
+          "n": 6,
+          "p_value": 1.0,
+          "schema": "exact_paired_binary_test/v1"
+        },
+        "meets_preregistered_effect": false,
+        "n": 6
+      },
+      {
+        "candidate_rate": 0.0,
+        "candidate_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.39033428790216523,
+          "low": 0.0,
+          "n": 6
+        },
+        "control_rate": 0.0,
+        "control_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.39033428790216523,
+          "low": 0.0,
+          "n": 6
+        },
+        "label": "compositional_held_out:STAGED_FULL_vs_ATOMIC_ONLY",
+        "mcnemar": {
+          "candidate_only": 0,
+          "control_only": 0,
+          "discordant": 0,
+          "effect": 0.0,
+          "method": "two_sided_exact_mcnemar",
+          "n": 6,
+          "p_value": 1.0,
+          "schema": "exact_paired_binary_test/v1"
+        },
+        "meets_preregistered_effect": false,
+        "n": 6
+      }
+    ],
+    "prefix_completion": [
+      {
+        "candidate_rate": 0.0,
+        "candidate_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.2424940066552408,
+          "low": 0.0,
+          "n": 12
+        },
+        "control_rate": 0.0,
+        "control_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.2424940066552408,
+          "low": 0.0,
+          "n": 12
+        },
+        "label": "prefix_completion:STAGED_FULL_vs_BASE",
+        "mcnemar": {
+          "candidate_only": 0,
+          "control_only": 0,
+          "discordant": 0,
+          "effect": 0.0,
+          "method": "two_sided_exact_mcnemar",
+          "n": 12,
+          "p_value": 1.0,
+          "schema": "exact_paired_binary_test/v1"
+        },
+        "meets_preregistered_effect": false,
+        "n": 12
+      },
+      {
+        "candidate_rate": 0.0,
+        "candidate_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.2424940066552408,
+          "low": 0.0,
+          "n": 12
+        },
+        "control_rate": 0.0,
+        "control_wilson": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.2424940066552408,
+          "low": 0.0,
+          "n": 12
+        },
+        "label": "prefix_completion:STAGED_FULL_vs_ATOMIC_ONLY",
+        "mcnemar": {
+          "candidate_only": 0,
+          "control_only": 0,
+          "discordant": 0,
+          "effect": 0.0,
+          "method": "two_sided_exact_mcnemar",
+          "n": 12,
+          "p_value": 1.0,
+          "schema": "exact_paired_binary_test/v1"
+        },
+        "meets_preregistered_effect": false,
+        "n": 12
+      }
+    ]
+  },
+  "preregistration": {
+    "arm_levers": {
+      "ATOMIC_ONLY": {
+        "atomic_witnesses": true,
+        "canonical_answers": false,
+        "composition": false,
+        "equivalence_preferences": false,
+        "prefix_completion": false
+      },
+      "BASE": {
+        "atomic_witnesses": false,
+        "canonical_answers": true,
+        "composition": false,
+        "equivalence_preferences": false,
+        "prefix_completion": false
+      },
+      "STAGED_FULL": {
+        "atomic_witnesses": true,
+        "canonical_answers": false,
+        "composition": true,
+        "equivalence_preferences": true,
+        "prefix_completion": true
+      },
+      "STAGED_NO_PREFERENCE": {
+        "atomic_witnesses": true,
+        "canonical_answers": false,
+        "composition": true,
+        "equivalence_preferences": false,
+        "prefix_completion": true
+      }
+    },
+    "arms": [
+      "BASE",
+      "ATOMIC_ONLY",
+      "STAGED_NO_PREFERENCE",
+      "STAGED_FULL"
+    ],
+    "batch_size": 4,
+    "experiment_id": "slm362-cap0-experiment",
+    "exposure_policy": "equal_source_family_exposure: every arm derives from the same train root families; equal_target_compute_exposure: every arm is deterministically sized to records_per_arm and trained with identical steps/batch order/optimizer per seed",
+    "gate_version": "cap0_gate/v1",
+    "lr": 0.003,
+    "max_p_value": 0.1,
+    "min_effect": 0.0,
+    "model_config": {
+      "architecture": "tree_edit_diffusion",
+      "beam_width": 2,
+      "context_backend": "scratch",
+      "context_layers": 1,
+      "d_model": 64,
+      "denoiser_layers": 2,
+      "expand_per_state": 2,
+      "max_chain": 3,
+      "max_search_steps": 2,
+      "optimizer": "adam",
+      "torch_num_threads": 1,
+      "value_label_mode": "mutation_count"
+    },
+    "records_per_arm": 16,
+    "regression_tolerance": 1e-09,
+    "schema_version": "slm362_cap0_experiment/v1",
+    "seeds": [
+      0,
+      1
+    ],
+    "steps": 8,
+    "stop_rules": [
+      "prediction_identical",
+      "copy_dominated",
+      "structurally_regressive",
+      "contaminated",
+      "underpowered"
+    ],
+    "suite_seed": 7
+  },
+  "preregistration_sha256": "52119d803914ae6b897faaec8c9ed6bed59417180f8810bf0ff1a2b8e235e7ce",
+  "schema": "Slm362Cap0ExperimentReportV1",
+  "schema_version": "slm362_cap0_experiment/v1",
+  "status": "fixture",
+  "suite": {
+    "contamination_findings": [],
+    "manifest": {
+      "eval_splits": [
+        "test"
+      ],
+      "generator_version": "v1",
+      "root_families": [
+        "cap0-eval-11",
+        "cap0-eval-2",
+        "cap0-eval-39",
+        "cap0-eval-51",
+        "cap0-eval-57",
+        "composite:cap0-eval-39:a5a44bba711260a1:3",
+        "composite:cap0-eval-39:c8e6b4b93aead520:7",
+        "composite:cap0-eval-57:5bdb55ab14681742:1"
+      ],
+      "rows_by_subsuite": {
+        "anti_identity": 1,
+        "atomic_coverage": 5,
+        "compositional_held_out": 3,
+        "expanded_canonicalization": 17,
+        "marker_permutation": 1,
+        "prefix_completion": 6
+      },
+      "rows_sha256": "311b5247e3a28aa1f8c4b3ee0126da1cd22eaa24068b1ddb6651c2e9e28b5f75",
+      "rows_total": 33,
+      "schema_version": "cap0_eval_freeze/v1",
+      "seed": 7,
+      "split_policy": "root_family_split/v1",
+      "subsuite_sha256": {
+        "anti_identity": "c6dd7868d8dfaf6cbbd1c83071416328626a7cab4432eb237baf7e9010dcf243",
+        "atomic_coverage": "526c470160bc5bbffd371d65620f32aab4f7df9e0e314cb2a30e320440f7764e",
+        "compositional_held_out": "dbbe42201cc923b874460340c05513f293396d918254694d8fe2e17183b07818",
+        "expanded_canonicalization": "8dbc57ef09d557d75dd2adf13ce7f5e6528ce41ec3b06933096e961bcb176d40",
+        "marker_permutation": "21b6e18695e37a873613d6b0399502c1ed2cd5fb3d234a2186f52731e501971c",
+        "prefix_completion": "97dae44b5843d400fb1e6ef644ae8a2ef77db0e70c4ef118af9137abb0e56815"
+      }
+    },
+    "seed": 7,
+    "valid": true
+  },
+  "timestamp": "2026-07-25T06:23:53.100278Z",
+  "version_stamp": {
+    "code_commit": "f84232180d4bf56a5cebd34fb01790da137866e0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v83",
+      "harness.experiments.slm362_cap0_experiment": "v1",
+      "harness.train_data": "v25"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T06:23:53.100248+00:00"
+  }
+}
