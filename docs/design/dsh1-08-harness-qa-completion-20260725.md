@@ -21,19 +21,25 @@ already-canonical machinery rather than inventing new parsing or scoring:
 
 - **`AcceptedCompletionSetV1` / `build_accepted_completion_set` /
   `statement_prefix_boundaries`** — splits a canonical multi-statement
-  document at a legal statement-line boundary. Both the prefix and the
-  canonical suffix independently re-validate through
-  `slm_training.dsl.parser.validate` (confirmed empirically: OpenUI documents
-  serialize one top-level statement per line, and any interior line-count
-  split leaves both halves independently valid — no tokenizer or decode-time
-  `CompletionForest` is needed for this document-level split). The accepted
-  set starts with the canonical suffix and adds: verified surface variants of
-  it via the existing, byte-for-byte reused
+  document at a legal statement-line boundary (OpenUI documents serialize one
+  top-level statement per line). The prefix is accepted as shown even when it
+  contains a forward reference not yet defined in it (e.g. `root =
+  Stack([hero, cta], ...)` before `hero`/`cta` are declared) — the real
+  `@openuidev/lang-core` backend parses that without error, it just cannot
+  resolve the reference from the prefix alone; `COMPLETE_SUFFIX` payloads are
+  legal-shaped prefixes, not necessarily closed/reference-resolved documents.
+  The accepted set starts with the canonical suffix and adds: verified
+  surface variants of it via the existing, byte-for-byte reused
   `scope_corpus.decanonicalize_variants` round-trip check; and any
   caller-supplied `peer_suffixes` (completions observed elsewhere in the
-  corpus for the same literal prefix) that independently validate against
-  that exact prefix. A peer suffix that does not legally continue the prefix
-  is dropped, never accepted unverified.
+  corpus for the same literal prefix) accepted only when `prefix + "\n" +
+  peer_suffix` **round-trips byte-exact** through the parser. A plain
+  "doesn't raise" check is not enough here: an *unresolved* reference is
+  silently pruned by the real backend rather than rejected (e.g. an
+  unreferenced multi-statement fragment collapses to just its first
+  statement), so a weaker check would wrongly accept a peer whose content was
+  actually discarded. `tests/test_harnesses/train_data/test_harness_qa.py::test_peer_suffix_that_parses_but_silently_drops_content_is_rejected`
+  pins this directly.
 - **`accepted_completion_outputs` / `complete_suffix_record`** — persists the
   *full* accepted set through the schema's existing
   `ExampleRecord.accepted_outputs` field: `openui` carries the canonical
@@ -66,10 +72,16 @@ already-canonical machinery rather than inventing new parsing or scoring:
   (`slm_training.data.corrupt.oracle.build_scoped_corruptions`) to produce a
   same-vocabulary, differently-structured decoy for one `IDENTITY` row,
   rather than inventing new mutation logic.
-- **`matched_structure_permuted_markers_negative`** — a same-shape decoy with
-  its declared runtime markers (`runtime_symbols_for_payload`) cyclically
-  permuted within role, in one simultaneous regex pass (so no marker chains
-  into another's target).
+- **`matched_structure_permuted_markers_negative`** — a same-skeleton decoy
+  with its declared runtime markers (`runtime_symbols_for_payload`) cyclically
+  permuted within role, in one simultaneous regex pass (longest surface
+  first, so a shorter marker is never matched inside a longer one it is a
+  substring of, and no marker chains into another's target). A cyclic
+  permutation among same-role markers of different surface lengths does not
+  preserve total byte length (documented directly in the docstring after an
+  initial version wrongly assumed byte-length invariance and a test caught
+  it) — only the statement/skeleton shape and marker identity are what
+  change.
 
 ## Acceptance criteria: how this increment satisfies them
 
@@ -95,29 +107,48 @@ already-canonical machinery rather than inventing new parsing or scoring:
 
 ## Verification and claim limits
 
-`pytest tests/test_harnesses/train_data/test_harness_qa.py -q` → 21 passed.
-`ruff check` on both added files passes. `python -m scripts.verify_version_stamps --check`
-is clean (bumps `harness.train_data` to v20 — `harness_qa.py` lives under
-that component's already-registered `src/slm_training/harnesses/train_data/`
-directory prefix, so no new component was needed).
+This sandbox initially fell back to the pure-Python Lark backend because the
+`@openuidev/lang-core` Node bridge's `node_modules` weren't installed
+(`src/apps/openui_bridge/` had no `npm install` run yet — `bridge_available()`
+false, `OpenUIHybridBackend` silently falls back to Lark). That fallback does
+**not** perform the real backend's unreferenced-binding pruning or carry its
+full component/enum schema, so it gave two rounds of false local confidence:
+an under-referenced first-draft fixture (three independent, non-cross-
+referencing statements) kept all three statements locally but the real
+backend correctly collapsed it to one on push, and a peer-suffix check that
+only tested "does this parse" (not "does it round-trip byte-exact") looked
+correct locally for the same reason. Running `npm install` in
+`src/apps/openui_bridge/` (`node`/`npm` are present in this container; just
+not yet wired for this pack) fixed both classes of false-confidence at the
+source instead of working around them: with the bridge available,
+`tests/test_harnesses/train_data/test_scope_corpus.py` — previously seen
+failing with `symbolic_surface_policy/v1 rejected staged target:
+open_string:'"column"'` — passes cleanly, confirming that failure actually
+was an environment gap, not a real code issue, and giving every new test
+below a faithful, non-fallback run:
 
-This sandbox lacks `torch` and (apparently) the full `openui` DSL pack schema
-authority (its native `lang-core`/`openui_langcore` bridge): the **existing**,
-already-merged `tests/test_harnesses/train_data/test_scope_corpus.py` and
-several `test_staged_materialization.py` cases independently fail here with
-`symbolic_surface_policy/v1 rejected staged target: open_string:'"column"'`
-and `DSL pack version mismatch` — reproduced with none of this change's diff
-applied, so it is a pre-existing local-environment gap, not a regression from
-this change (mirrors the same class of gap DSH1-07/SLM-359 documented). All
-new fixtures in this change were built and independently verified against
-placeholder-only surfaces (`":scope.field"`-style) that this sandbox's
-degraded pack authority *does* admit, so the new tests are real, verified
-runs — not skipped or fixture-mocked. No corpus build, train, model
-evaluation, benchmark, checkpoint, AgentEvals publication, capability
-certificate, or ship claim was produced. `COMPLETE_SUFFIX` payloads use the
-document-level statement-boundary split only; a tokenizer/decode-time
-`CompletionForest`-backed prefix split (matching DSH1-07's `PartialKind.PREFIX`)
-is follow-up work, not attempted here.
+- `pytest tests/test_harnesses/train_data/test_harness_qa.py -q` → 22 passed.
+- `pytest tests/test_harnesses/train_data/ -q` → 115 passed, 3 pre-existing
+  failures in `test_staged_materialization.py`, all
+  `generator version mismatch for 'pack.corpus_generator': plan='v18',
+  active='v21'` — reproduced identically checking out the pre-this-PR base
+  commit (`34c70de1`) into a clean worktree with an unmodified `versions.json`
+  (`active='v19'` there, still `!= plan='v18'`): a stale hardcoded plan
+  fixture, unrelated to and predating this PR.
+- `ruff check` on both added files passes.
+- `python -m scripts.verify_version_stamps --check --staged` is clean (bumps
+  `harness.train_data` to v21 — `harness_qa.py` lives under that component's
+  already-registered `src/slm_training/harnesses/train_data/` directory
+  prefix, so no new component was needed; v20 was this same change's first
+  draft, v21 is the peer-suffix round-trip fix plus the corrected
+  cross-referencing test fixture, both on this same PR before merge).
+
+No corpus build, train, model evaluation, benchmark, checkpoint, AgentEvals
+publication, capability certificate, or ship claim was produced.
+`COMPLETE_SUFFIX` payloads use the document-level statement-boundary split
+only; a tokenizer/decode-time `CompletionForest`-backed prefix split
+(matching DSH1-07's `PartialKind.PREFIX`) is follow-up work, not attempted
+here.
 
 ## Reopen conditions
 
@@ -126,10 +157,10 @@ is follow-up work, not attempted here.
   prefixes), this module's document-level split does not cover that — it
   would need the `CompletionForest`/`PartialKind.PREFIX` machinery from
   DSH1-07 instead.
-- If this sandbox's `openui` pack schema authority gap above turns out to be
-  a real regression (not an environment gap), the `docs/design/dsh1-03-*` and
-  `dsh1-07-*` claim limits should be revisited too, since they hit the same
-  symptom independently.
+- The `test_staged_materialization.py` stale-plan-version failure noted above
+  should be filed and fixed separately (bump the fixture's hardcoded
+  `pack.corpus_generator` plan version, or derive it from the live registry)
+  — out of scope here since it predates and is unrelated to this change.
 
 ## Research lineage
 

@@ -5575,7 +5575,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -5590,6 +5590,11 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-25",
+          "note": "SLM-360 (DSH1-08) follow-up: require peer_suffixes to round-trip byte-exact (not merely parse) so an unresolved-reference silently-pruned peer is never accepted as faithfully preserved; fix the test fixture to use a cross-referencing multi-statement document so real (non-Lark-fallback) canonicalization keeps every statement instead of eliminating unreferenced ones"
+        },
         {
           "version": "v20",
           "date": "2026-07-25",

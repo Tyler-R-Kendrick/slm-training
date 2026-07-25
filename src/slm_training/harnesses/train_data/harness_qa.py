@@ -123,9 +123,12 @@ def build_accepted_completion_set(
     existing canonical-pair machinery) are added only when they independently
     parse. ``peer_suffixes`` — completions observed for this exact prefix
     elsewhere in the corpus — are added only when ``prefix + "\\n" +
-    peer_suffix`` independently validates; a peer suffix that does not
-    legally continue this prefix is silently dropped, never accepted
-    unverified.
+    peer_suffix`` round-trips byte-exact through the parser (not merely
+    parses without error — an unresolved forward reference silently prunes
+    rather than raising, so a weaker "doesn't raise" check would wrongly
+    accept a peer whose content was actually discarded); a peer suffix that
+    does not legally, faithfully continue this prefix is dropped, never
+    accepted unverified.
     """
     lines = canonical.splitlines()
     if not (0 < cut < len(lines)):
@@ -152,9 +155,18 @@ def build_accepted_completion_set(
     for peer in peer_suffixes:
         if not peer or peer in accepted:
             continue
+        candidate = f"{prefix}\n{peer}"
         try:
-            validate(f"{prefix}\n{peer}")
+            program = validate(candidate)
         except ParseError:
+            continue
+        # Not just "doesn't raise": a peer that silently loses content to
+        # unresolved-reference pruning (the same mechanism that collapses an
+        # unreferenced multi-statement fragment down to its first statement)
+        # must not be accepted — only a byte-exact round trip proves the
+        # peer's exact text is genuinely reachable when joined to this
+        # prefix.
+        if (program.serialized or candidate.strip()) != candidate:
             continue
         accepted.append(peer)
 
@@ -455,13 +467,18 @@ def _permute_marker_swap(text: str) -> dict[str, str]:
 def matched_structure_permuted_markers_negative(
     identity_record: ExampleRecord,
 ) -> AntiIdentityNegative | None:
-    """A same-shape decoy with its runtime markers cyclically permuted.
+    """A same-skeleton decoy with its runtime markers cyclically permuted.
 
-    Structure is byte-identical apart from marker identity: every occurrence
-    of each declared runtime marker (:func:`runtime_symbols_for_payload`) is
-    whole-word-swapped for another declared marker of the same role, in a
-    single simultaneous pass so no marker chains into another's target.
-    Returns ``None`` when fewer than two same-role markers exist to permute.
+    Every occurrence of each declared runtime marker
+    (:func:`runtime_symbols_for_payload`) is swapped for another declared
+    marker of the same role, in a single simultaneous regex pass (longest
+    surface first) so no marker chains into another's target and a shorter
+    marker name never gets matched inside a longer one it is a substring of.
+    A cyclic permutation among same-role markers of different surface
+    lengths does not preserve total byte length (e.g. swapping a 3-
+    and a 4-character binder name) — only the statement/skeleton shape and
+    marker *identity* change, not necessarily the byte count. Returns
+    ``None`` when fewer than two same-role markers exist to permute.
     """
     _require_identity(identity_record)
     text = identity_record.openui

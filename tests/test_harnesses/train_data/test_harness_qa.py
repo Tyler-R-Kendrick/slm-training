@@ -28,9 +28,9 @@ from slm_training.harnesses.train_data.scope_corpus import (
 )
 
 SOURCE = (
-    'hero = Card(":hero.title")\n'
-    'cta = Card(":cta.title")\n'
-    'info = Card(":info.title")'
+    'root = Stack([hero, cta], "column")\n'
+    'hero = TextContent(":hero.title")\n'
+    'cta = Button(":cta.label", true)'
 )
 
 
@@ -90,19 +90,36 @@ def test_unrelated_peer_suffix_is_dropped_never_accepted_unverified(canonical) -
 
 
 def test_legally_continuing_peer_suffix_is_accepted(canonical) -> None:
-    # A distinct but independently-valid continuation of the same prefix.
-    peer = 'zzz = Card(":zzz.title")\ninfo = Card(":info.title")'
+    # A distinct but independently-valid continuation of the same prefix:
+    # same binder names ``root`` needs (hero, cta), different content.
+    peer = 'hero = TextContent(":alt.hero")\ncta = Button(":alt.cta", false)'
     completion_set = build_accepted_completion_set(
         canonical, cut=1, peer_suffixes=(peer,)
     )
     assert peer in completion_set.accepted
 
 
-def test_accepted_completion_outputs_excludes_only_the_canonical_member() -> None:
+def test_peer_suffix_that_parses_but_silently_drops_content_is_rejected(
+    canonical,
+) -> None:
+    # This peer *parses* without error -- an unresolved reference is pruned,
+    # not rejected -- but everything the peer added is silently discarded
+    # once joined with the prefix (``root`` never references zzz/info, so
+    # they're dead bindings). A weaker "doesn't raise" check would wrongly
+    # accept it; only the byte-exact round-trip requirement catches this.
+    peer = 'zzz = Card(":zzz.title")\ninfo = Card(":info.title")'
     completion_set = build_accepted_completion_set(
-        'a = Card(":a.t")\nb = Card(":b.t")\nc = Card(":c.t")',
-        cut=1,
-        peer_suffixes=('z = Card(":z.t")\nc = Card(":c.t")',),
+        canonical, cut=1, peer_suffixes=(peer,)
+    )
+    assert peer not in completion_set.accepted
+
+
+def test_accepted_completion_outputs_excludes_only_the_canonical_member(
+    canonical,
+) -> None:
+    peer = 'hero = TextContent(":alt.hero")\ncta = Button(":alt.cta", false)'
+    completion_set = build_accepted_completion_set(
+        canonical, cut=1, peer_suffixes=(peer,)
     )
     assert len(completion_set.accepted) >= 2
     outputs = accepted_completion_outputs(completion_set)
@@ -251,7 +268,7 @@ def test_same_symbols_different_structure_negative_reuses_the_corruption_oracle(
     assert found
 
 
-def test_matched_structure_permuted_markers_negative_keeps_shape_swaps_markers(
+def test_matched_structure_permuted_markers_negative_swaps_markers_not_content(
     corpus,
 ) -> None:
     records, _ = corpus
@@ -263,7 +280,11 @@ def test_matched_structure_permuted_markers_negative_keeps_shape_swaps_markers(
         found = True
         assert negative.chosen == record.openui
         assert negative.rejected != negative.chosen
-        assert len(negative.rejected) == len(negative.chosen)
+        # Only marker tokens were substituted -- statement count and
+        # structural punctuation (parens/brackets) are untouched.
+        assert negative.rejected.count("\n") == negative.chosen.count("\n")
+        assert negative.rejected.count("(") == negative.chosen.count("(")
+        assert negative.rejected.count("[") == negative.chosen.count("[")
     assert found
 
 
