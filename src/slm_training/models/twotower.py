@@ -109,13 +109,18 @@ from slm_training.dsl.action_shortlist import (
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
 from slm_training.dsl.abstract_plan import AbstractPlanV1
-from slm_training.models.abstract_plan_head import AbstractPlanHead, AbstractPlanTrace
+from slm_training.models.abstract_plan_head import (
+    AbstractPlanHead,
+    AbstractPlanMode,
+    AbstractPlanTrace,
+)
 from slm_training.models.tokenizer import (
     OpenUITokenizer,
     load_tokenizer_sidecar,
     tokenize_text,
 )
 
+_ABSTRACT_PLAN_MODES: tuple[str, ...] = tuple(mode.value for mode in AbstractPlanMode)
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
     "twotower_opaque_projection_models",
     default=frozenset(),
@@ -694,6 +699,14 @@ class TwoTowerConfig:
                 raise ValueError(
                     f"{field_name}={value!r} is not one of {supported!r}"
                 )
+        # AP-023 (SLM-315): reject typo'd/unknown modes early so an invalid
+        # value can never silently take the "enabled" branch in __init__ and
+        # break the disabled-by-default bit-exact guarantee.
+        if self.abstract_plan_mode not in _ABSTRACT_PLAN_MODES:
+            raise ValueError(
+                f"abstract_plan_mode={self.abstract_plan_mode!r} is not one of "
+                f"{_ABSTRACT_PLAN_MODES!r}"
+            )
         if self.denoiser_arch not in SHARED_RECURSIVE_ARCH_Z_STATE_MODES and any(
             value != default for value, _, default in repair_modes.values()
         ):

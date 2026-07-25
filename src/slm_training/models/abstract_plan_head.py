@@ -104,6 +104,26 @@ class AbstractPlanHead(nn.Module):
 
         batch_size = context.size(0)
         device = context.device
+
+        if target_plan_ids is not None:
+            expected_shape = (batch_size, self.plan.rounds)
+            if tuple(target_plan_ids.shape) != expected_shape:
+                raise ValueError(
+                    f"target_plan_ids shape {tuple(target_plan_ids.shape)} != "
+                    f"expected {expected_shape}"
+                )
+            if bool(
+                ((target_plan_ids < 0) | (target_plan_ids >= self.plan.slot_count)).any()
+            ):
+                raise ValueError("target_plan_ids contains out-of-range indices")
+        if generator is not None and torch.device(generator.device) != torch.device(
+            device
+        ):
+            raise ValueError(
+                f"generator device {generator.device!r} does not match context "
+                f"device {device!r}; construct the generator on the same device"
+            )
+
         hidden_states = _masked_mean_pool(context, context_pad_mask)
 
         logits: torch.Tensor | None = None

@@ -94,6 +94,36 @@ def test_teacher_forced_and_oracle_require_target_plan_ids() -> None:
             head(context, pad_mask, mode=mode)
 
 
+def test_rejects_wrong_shaped_target_plan_ids() -> None:
+    plan = _plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+    wrong_shape = torch.zeros(BATCH, plan.rounds + 1, dtype=torch.long)
+    with pytest.raises(ValueError, match="shape"):
+        head(context, pad_mask, mode="oracle", target_plan_ids=wrong_shape)
+
+
+def test_rejects_out_of_range_target_plan_ids() -> None:
+    plan = _plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+    out_of_range = torch.full((BATCH, plan.rounds), plan.slot_count, dtype=torch.long)
+    with pytest.raises(ValueError, match="out-of-range"):
+        head(context, pad_mask, mode="oracle", target_plan_ids=out_of_range)
+
+
+def test_rejects_device_mismatched_generator() -> None:
+    plan = _plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+
+    class _FakeCudaGenerator:
+        device = "cuda"
+
+    with pytest.raises(ValueError, match="device"):
+        head(context, pad_mask, mode="random", generator=_FakeCudaGenerator())
+
+
 def test_oracle_mode_is_a_pure_bypass_with_no_logits() -> None:
     plan = _plan()
     head = AbstractPlanHead(D_MODEL, plan)
@@ -171,6 +201,22 @@ def test_deterministic_with_seeded_generator() -> None:
         context, pad_mask, mode="sampled", generator=torch.Generator().manual_seed(42)
     )
     assert torch.equal(trace_1.plan_tokens, trace_2.plan_tokens)
+
+
+def test_twotower_config_rejects_unknown_abstract_plan_mode() -> None:
+    """TwoTowerConfig.__post_init__ must reject a typo'd mode instead of
+    silently taking the "enabled" branch in __init__ (AP-023 review fix)."""
+    from slm_training.models.twotower import TwoTowerConfig
+
+    with pytest.raises(ValueError, match="abstract_plan_mode"):
+        TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            abstract_plan_mode="dissabled",  # typo: must not silently enable
+        )
 
 
 def test_masked_mean_pool_ignores_padded_positions() -> None:

@@ -7099,12 +7099,14 @@
       ]
     },
     "model.twotower": {
-      "version": "v249",
+      "version": "v250",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
         "src/slm_training/models/abstract_plan_head.py",
         "tests/test_models/test_abstract_plan_head.py",
+        "tests/test_harnesses/model_build/test_twotower.py",
+        "docs/design/abstract-plan-head-v1.md",
         "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
@@ -7136,6 +7138,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v250",
+          "date": "2026-07-25",
+          "note": "SLM-315 (AP-023) review follow-up: validate TwoTowerConfig.abstract_plan_mode against the AbstractPlanMode enum in __post_init__ (a typo previously took the 'enabled' branch silently, undermining the disabled-by-default bit-exact guarantee); validate AbstractPlanHead.forward's caller-supplied target_plan_ids shape/bounds and reject a generator whose device does not match the context tensor's device, instead of a deep, confusing torch RuntimeError. No default-path behavior change."
+        },
         {
           "version": "v249",
           "date": "2026-07-25",
