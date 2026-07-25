@@ -1907,6 +1907,30 @@ It authorizes a follow-up to define the OpenUI target-trace and control
 contract, but it authorizes no model, training, checkpoint, semantic-quality,
 latency, or adoption claim.
 
+## OpenUI target-trace contract (LOT0-02 / SLM-249)
+
+**Fidelity label: docs/spec + bounded probe, no model or training claim.**
+[`compiler-reasoning-trace-v1.md`](compiler-reasoning-trace-v1.md) (machine-readable:
+[`compiler-reasoning-trace-v1.json`](compiler-reasoning-trace-v1.json)) defines
+`CompilerReasoningTraceV1` and its typed step schema
+(`src/slm_training/data/progspec/compiler_reasoning_trace.py`), a deterministic
+extractor reusing `SemanticPlanV1` and the production codec's canonical statement
+order (`src/slm_training/data/semantic_plan/compiler_reasoning_trace_extract.py`,
+no new compiler/parser/evaluator), and a lossless visible serialization. A bounded
+n=16 fixture probe
+([`compiler-reasoning-trace-coverage/coverage_report.md`](compiler-reasoning-trace-coverage/coverage_report.md))
+gives a provisional K=6/c=479-char budget. The oracle ceiling experiment that would
+justify LOT1's actual K×c model implementation is fully specified (arms, matching
+rules, measurements) but deliberately **not run** — GPU training and corpus
+generation are out of scope for this issue per the LOT0-01 authorization. A
+`causal_latent_use` falsification test is defined (not run) in
+`src/slm_training/models/causal_trace.py`
+(`CausalLatentUseFalsificationSpecV1`), reusing the existing
+`replay_causal_action`/`capture_raw_steps` counterfactual-replay machinery.
+
+The gate verdict is `inconclusive`: it authorizes no semantic-quality,
+oracle-ceiling, or causal-latent-use claim, and no LOT1 model implementation.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
