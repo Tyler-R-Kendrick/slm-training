@@ -478,6 +478,25 @@
         }
       ]
     },
+    "harness.experiments.slm379_operator_frames": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operator_frame.py",
+        "src/slm_training/harnesses/train_data/operator_nl_turns.py",
+        "tests/test_dsl/test_operator_frame.py",
+        "tests/test_harnesses/train_data/test_operator_nl_turns.py",
+        "docs/design/iter-slm379-operator-frames-20260725.md",
+        "docs/design/iter-slm379-operator-frames-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial schema-grounded NL operator edit turns: OperatorFrameV1 (required/forbidden edit facts + descriptor-table state references with argument/effect provenance), offline fixture provider over the reused CAP1 DSH2-03 provenance contract, legal-set/accepted-set admission with coded rejections (ambiguous_state_reference, compatible_with_non_equivalent, missing_legal_membership, not_in_accepted_set, accepted_set_not_named, leak), symbol-only targets, per-family disambiguation report with symbolic_cap2_only stop-rule disposition"
+        }
+      ]
+    },
     "harness.experiments.slm365_frame_paraphrases": {
       "version": "v1",
       "kind": "harness",
@@ -5856,6 +5875,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-25",
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified — the new module is versioned under harness.experiments.slm379_operator_frames v1"
+        },
         {
           "version": "v19",
           "date": "2026-07-23",
