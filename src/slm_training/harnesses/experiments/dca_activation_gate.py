@@ -126,6 +126,20 @@ DCA_ISSUES: dict[str, DcaIssueSpec] = {
             "BlockConversionActivationV1 is not_activated."
         ),
     ),
+    "SLM-275": DcaIssueSpec(
+        linear_issue="SLM-275",
+        alias="DCA2-02",
+        title="Gate and run diffusion-native coupled-GRPO with static-analysis rewards and training-only AST hints",
+        gate_contract_id="diffusion-rl-activation-v1",
+        slug="dca2-02-diffusion-rl",
+        activation_requirement=(
+            "SLM-260 scorer oracle clean; SLM-272 offline program "
+            "preference disposition; SLM-274 selected diffusion SFT parent "
+            "and rollout implementation; plus a nonzero semantic baseline "
+            "with usable within-group reward variance. Otherwise close "
+            "reward_variance_insufficient without training."
+        ),
+    ),
 }
 
 

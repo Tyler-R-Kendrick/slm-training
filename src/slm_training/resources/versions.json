@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v119",
+      "version": "v120",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1775,6 +1775,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v120",
+          "date": "2026-07-25",
+          "note": "register SLM-275 DCA2-02 in the DCA activation gate registry; closes blocked/reward_variance_insufficient off unqualified prerequisites"
+        },
         {
           "version": "v119",
           "date": "2026-07-25",
@@ -2442,7 +2447,7 @@
       ]
     },
     "harness.experiments.dca_activation_gate": {
-      "version": "v5",
+      "version": "v6",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/experiments/dca_activation_gate.py",
@@ -2458,9 +2463,16 @@
         "docs/design/iter-slm273-dca1-02-activation-20260725.json",
         "docs/design/iter-slm273-dca1-02-activation-20260725.md",
         "docs/design/iter-slm274-dca2-01-activation-20260725.json",
-        "docs/design/iter-slm274-dca2-01-activation-20260725.md"
+        "docs/design/iter-slm274-dca2-01-activation-20260725.md",
+        "docs/design/iter-slm275-dca2-02-activation-20260725.json",
+        "docs/design/iter-slm275-dca2-02-activation-20260725.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-25",
+          "note": "add SLM-275 DCA2-02 registry entry + blocked iter docs (diffusion-rl-activation-v1)"
+        },
         {
           "version": "v5",
           "date": "2026-07-25",

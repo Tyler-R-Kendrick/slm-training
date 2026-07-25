@@ -103,3 +103,10 @@ def test_slm274_real_artifacts_are_blocked() -> None:
 
     assert contract.verdict == "blocked"
     assert contract.contract_id == "block-conversion-activation-v1"
+
+
+def test_slm275_real_artifacts_are_blocked() -> None:
+    contract = evaluate_dca_gate(DCA_ISSUES["SLM-275"], REPO_ROOT)
+
+    assert contract.verdict == "blocked"
+    assert contract.contract_id == "diffusion-rl-activation-v1"
