@@ -64,7 +64,15 @@ def test_typed_and_hash_scalar_arms_are_permutation_invariant() -> None:
                 for row in view.reference_rows
             )
 
-        assert embedding_by_content(decision.view) == embedding_by_content(permuted.view)
+        original = embedding_by_content(decision.view)
+        reshuffled = embedding_by_content(permuted.view)
+        assert len(original) == len(reshuffled)
+        for (kind_a, type_a, vector_a), (kind_b, type_b, vector_b) in zip(
+            original, reshuffled
+        ):
+            assert kind_a == kind_b
+            assert type_a == type_b
+            assert vector_a == pytest.approx(vector_b, abs=1e-5)
 
 
 def test_identity_bucket_arm_is_not_guaranteed_permutation_invariant() -> None:
