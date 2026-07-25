@@ -586,6 +586,24 @@
         }
       ]
     },
+    "harness.experiments.slm391_portfolio_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm391_portfolio_disposition.py",
+        "scripts/run_slm391_portfolio_disposition.py",
+        "tests/test_harnesses/experiments/test_slm391_portfolio_disposition.py",
+        "docs/design/iter-slm391-portfolio-disposition-20260725.md",
+        "docs/design/iter-slm391-portfolio-disposition-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial staged DSL harness portfolio disposition (DSH4-06): StagedDslHarnessDispositionV1 with a fixed six-claim registry (cap0_grammar, cap1_semantics, cap2_operators, distillation, efficiency, trace_evals) x verdict (supported | rejected | invalid | unknown); per-claim artifact binding (path + sha256 + schema + identities); stop rule classifies missing/incomparable artifacts unknown and never normalizes by assumption; runs the frozen two-pack CAP1 gates (schema-consuming oracle ceiling + abstain/constant controls), the SLM-368 matched-control experiment at reduced fixture scale, the DSH3 operator legal-set suite, the SLM-390 trace-eval lifecycle, strict-v2/binding-aware checks, and an AgentV diagnostic; negative/invalid/timeout/no-effect/contaminated/prediction-identical outcomes stay first-class rows; guards: supported claims name code/suite/config/hardware identities, fixture-only rows never support model-capability/ship claims, unknown claims carry no measured bounds, efficiency claims require a complete workload identity; deduplicated evidence-grounded follow-ups only; no promotion"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
@@ -3872,6 +3890,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: SLM-391 appends its own DSH4-06 portfolio-disposition section to docs/design/quality-experiment-matrix.md (append-only); slm197 harness behavior is unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-24",
           "note": "no-bump: append corrected historical E615 fixture evidence to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
@@ -4292,6 +4315,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: SLM-391 inserts its own DSH4-06 portfolio-disposition entry into docs/design/research-lineage.md before the honesty-rules footer (append-only); slm228 harness behavior is unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -5895,7 +5923,7 @@
         {
           "version": "v19",
           "date": "2026-07-25",
-          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified — the new module is versioned under harness.experiments.slm379_operator_frames v1"
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified \u2014 the new module is versioned under harness.experiments.slm379_operator_frames v1"
         },
         {
           "version": "v19",

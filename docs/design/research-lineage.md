@@ -1907,6 +1907,29 @@ It authorizes a follow-up to define the OpenUI target-trace and control
 contract, but it authorizes no model, training, checkpoint, semantic-quality,
 latency, or adoption claim.
 
+## DSH4-06 staged DSL harness portfolio disposition (SLM-391)
+
+**Fidelity label: disposition audit / governance closeout, not a new capability.**
+[`StagedDslHarnessDispositionV1`](iter-slm391-portfolio-disposition-20260725.md)
+binds every DSH portfolio claim to its compatible code/suite/config/hardware
+identities on this lineage:
+
+| Claim | Scope | Verdict |
+| --- | --- | --- |
+| cap0_grammar | model_capability | unknown |
+| cap1_semantics | model_capability | rejected |
+| cap2_operators | harness_contract | supported |
+| distillation | model_capability | unknown |
+| efficiency | model_capability | unknown |
+| trace_evals | harness_contract | supported |
+
+Fixture-scale wiring supports only the `harness_contract` claims
+(cap2_operators, trace_evals) with explicit bounds. Held-out semantic
+capability (cap1_semantics) stays **rejected** under the preregistered stop
+codes; cap0_grammar, distillation, and efficiency are **unknown** because
+their evidence artifacts are absent on this lineage or no normalized
+matched-baseline measurement exists. Nothing is promoted.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

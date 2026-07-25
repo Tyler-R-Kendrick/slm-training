@@ -6452,3 +6452,26 @@ because it incorrectly compared initialization hashes across different seeds.
 The latter was repaired and versioned as campaign component v2; neither failed
 attempt is accepted as evidence. Full clean evidence:
 [`iter-slm233-recursive-campaign-20260724.md`](iter-slm233-recursive-campaign-20260724.md).
+
+# DSH4-06 — staged DSL harness portfolio disposition (2026-07-25)
+
+Publish the staged DSL harness portfolio disposition at fixture scale. The
+frozen two-pack CAP1 suite gates pass only under the schema-consuming oracle
+ceiling; the matched SLM-368 experiment preserves its CERT_CAP1 rejection
+(stop codes first-class, including underpowered at fixture n); the DSH3
+operator legal-set suite reproduces exact bounded enumeration; the SLM-390
+trace-eval lifecycle verifies end to end with the undeidentifiable trace held
+in quarantine; strict-v2/binding-aware metric checks agree with the frozen
+adversarial corpus. Claim verdicts: cap0_grammar=unknown, cap1_semantics=rejected, cap2_operators=supported, distillation=unknown, efficiency=unknown, trace_evals=supported.
+
+CAP0 (SLM-361/362) and DSH4-01/02 distillation artifacts are absent on this
+lineage and classify `unknown` per the stop rule — never normalized by
+assumption. No efficiency claim is supported: workload/hardware/batch
+identity is recorded but no matched-baseline measurement exists. Negative,
+invalid, contaminated, and prediction-identical outcomes remain first-class
+rows. No fixture-only row supports a capability or ship claim; no promotion,
+checkpoint, or model-card change results.
+
+Recommended follow-ups (deduplicated, evidence-grounded): Scale CERT_CAP1 paired evidence beyond fixture n; Port the SLM-361/SLM-362 frozen CAP0 suite onto this lineage; Land DSH4-01/DSH4-02 distillation artifacts, then reclassify; Run a normalized matched-baseline efficiency measurement.
+Full evidence:
+[`iter-slm391-portfolio-disposition-20260725.md`](iter-slm391-portfolio-disposition-20260725.md).
