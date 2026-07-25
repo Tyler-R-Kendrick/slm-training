@@ -3983,6 +3983,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: append retired E1211 topology-dose evidence and E1213 preregistration to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "no-bump: append SLM-298 bounded local diagnostic evidence to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -4417,6 +4422,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: add E1211 scratch diagnostic checkpoint rows to shared README and model card without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

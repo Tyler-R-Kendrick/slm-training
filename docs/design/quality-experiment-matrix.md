@@ -6464,3 +6464,13 @@ seed-2 cells repeatedly hit the derived 170-second cap and are non-evidence,
 not zero-filled. No checkpoint is promoted and no ship claim is made. Full
 recipe, data-quality feedback, raw-artifact pointers, and caveats:
 [`iter-slm298-capacity-context-curriculum-20260725.md`](iter-slm298-capacity-context-curriculum-20260725.md).
+
+## E1211-E1214 retired seed-7 topology/slot-component controls
+
+E1211's quarter-strength binder-topology loss is quality-neutral on the locked
+strict held `n=5` endpoint: it exactly matches E1182/E1200 and does not reduce
+three timeout-empty rows. Together with E1209's unit-weight regression, this
+rejects topology supervision as a seed-7 stabilizer. E1213/E1214 is preregistered
+as the remaining decode-off slot-component replication; it is local scratch only
+and cannot make a ship claim. Full recipe, AgentEvals/AgentV evidence, version
+stamp, and scorecard: [E1211-E1214 result](iter-e1211-e1214-seed7-topology-slot-component-20260725.md).
