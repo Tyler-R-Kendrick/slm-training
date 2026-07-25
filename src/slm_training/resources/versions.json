@@ -358,6 +358,16 @@
         {
           "version": "v14",
           "date": "2026-07-25",
+          "note": "no-bump: stop re-exporting hierarchical_head from operators package init so ops_vocab/decode-invariant checks stay torch-free on python-static"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
+          "note": "no-bump: re-export the SLM-383 (DSH3-15) hierarchical_head module from the operators package alongside the DSH5-01 SelectorRef exports; no behavior change to any existing export"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
           "note": "no-bump: DSH5-05 re-exports OperatorTransactionCommitV1/commit_operator_transaction/compose_operator_transaction/merge_ast_value transaction-executor and shared ast_merge symbols from operators/__init__.py (new dsl.operators.transaction_executor component); no change to contracts.py itself"
         },
         {
@@ -712,6 +722,31 @@
         }
       ]
     },
+    "dsl.operators.hierarchical_head": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/hierarchical_head.py",
+        "tests/test_dsl/test_hierarchical_operator_head.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: consumers import hierarchical_head submodule directly; package init no longer eagerly loads torch"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-383 (DSH3-15) wiring-only, default-off two-stage compiler-masked operator action head reusing the SLM-168 DynamicPointerScorer seam; candidates drawn solely from OperatorLegalSetV1, typed features from ActionEffectV1 only. No causal-improvement claim: DSH3-14/SLM-382 (E803) rejected the decoder-visible-token hypothesis this head's own Decision text gates on, and cap2_disposition.py's HIERARCHICAL_HEAD verdict remains UNRUN_CONDITIONAL pending a follow-up multi-seed causal-attribution experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: drop an unused legal_set import in hierarchical_head.py (ruff F401); no behavior change. The follow-up causal-attribution experiment referenced above now exists in harness.experiments.hierarchical_operator_head_baseline and has flipped cap2_disposition.py's HIERARCHICAL_HEAD verdict from UNRUN_CONDITIONAL"
+        }
+      ]
+    },
     "dsl.operators.reserved_tokens": {
       "version": "v1",
       "kind": "harness",
@@ -924,7 +959,7 @@
       ]
     },
     "evals.cap2_disposition": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/cap2_disposition.py",
@@ -932,6 +967,11 @@
         "tests/test_evals/test_cap2_disposition.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "SLM-383 (DSH3-15) follow-up: build_cap2_disposition now requires a hierarchical_head_report and flips HIERARCHICAL_HEAD from unrun_conditional to rejected (evidence SLM-383.hierarchical_operator_head_baseline) since the head ties the token baseline instead of causally improving beyond it. CERT_CAP2/DSH4 disposition unchanged (still rejected/closed)."
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -1726,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v110",
+      "version": "v113",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1735,6 +1775,26 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v113",
+          "date": "2026-07-25",
+          "note": "SLM-328 AP-030 CAP2-06 program-factor latent size/width/codec rate-distortion sweep wiring/fixture harness"
+        },
+        {
+          "version": "v112",
+          "date": "2026-07-25",
+          "note": "SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
+        },
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed activation audit for verified-data scaling"
+        },
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "add SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
+        },
         {
           "version": "v110",
           "date": "2026-07-25",
@@ -3762,6 +3822,27 @@
         }
       ]
     },
+    "harness.experiments.hierarchical_operator_head_baseline": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/hierarchical_operator_head_baseline.py",
+        "scripts/run_hierarchical_operator_head_baseline.py",
+        "tests/test_harnesses/experiments/test_hierarchical_operator_head_baseline.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: import HierarchicalOperator* from hierarchical_head submodule instead of package init (torch-free ops_vocab path)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-383 (DSH3-15) follow-up to E803: capacity-matched token-baseline vs. weight-zero (frozen no-op) vs. enabled hierarchical-operator-action-head causal experiment over a typed-candidate-group-size fixture corpus, with causal choice-change and compiler-membership evidence"
+        }
+      ]
+    },
     "harness.experiments.slm183_power_protocol": {
       "version": "v13",
       "kind": "harness",
@@ -4450,6 +4531,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: add the SLM-383 (DSH3-15) hierarchical-operator-head-baseline and updated DSH3-17 disposition lineage entries to research-lineage.md without changing the SLM-228 spectral disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "no-bump: add E1211 scratch diagnostic checkpoint rows to shared README and model card without changing the SLM-228 disposition"
         },
         {
@@ -5089,7 +5175,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -5106,6 +5192,16 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-25",
+          "note": "eval_runner RuntimeSymbol construction: stop deriving semantic_role from template-marker surface text (opaque markers / TEMPLATE_MARKERS_ARE_OPAQUE)"
+        },
+        {
+          "version": "v60",
+          "date": "2026-07-25",
+          "note": "Fail-closed evaluate_model: always pass allow_unconstrained_fallback=False (matches ModelBuildConfig post_init / decode invariants); --no-unconstrained-fallback is a deprecated no-op"
+        },
         {
           "version": "v59",
           "date": "2026-07-25",
@@ -5678,6 +5774,29 @@
         }
       ]
     },
+    "harness.experiments.slm268_verified_data_activation": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm268_verified_data_activation.py",
+        "scripts/audit_verified_data_scaling_activation.py",
+        "tests/test_harnesses/experiments/test_slm268_verified_data_activation.py",
+        "docs/design/iter-slm268-verified-data-scaling-activation-20260725.json",
+        "docs/design/iter-slm268-verified-data-scaling-activation-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: regenerated the deterministic SLM-268 activation report after rebase"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed local verified-data scaling activation audit"
+        }
+      ]
+    },
     "harness.experiments.slm267_programspec_coverage_scaling": {
       "version": "v1",
       "kind": "harness",
@@ -6153,7 +6272,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -6166,6 +6285,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-25",
+          "note": "Sample capacity-aware mixture cycles through one weighted random permutation instead of rebuilding the weighted pool per draw"
+        },
         {
           "version": "v19",
           "date": "2026-07-25",
@@ -6934,7 +7058,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v246",
+      "version": "v248",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6970,9 +7094,34 @@
       ],
       "history": [
         {
-          "version": "v246",
+          "version": "v248",
           "date": "2026-07-25",
           "note": "Make the default-DSL output vocabulary backend-independent: dsl.openui_tokens.STRUCTURAL_TOKENS is authoritative for openui instead of being re-derived from whichever grammar backend is live. Routing it through the backend let vocab_size swing 569<->605 (Lark fallback vs lang-core) with DSL_TOKENIZER_VERSION unchanged, silently producing incompatible checkpoints. Layout is unchanged at 569 -- this pins the certified layout, it does not alter it. See docs/design/agent-harness-parity-audit.md"
+        },
+        {
+          "version": "v247",
+          "date": "2026-07-25",
+          "note": "Wire missing ModelBuildConfig fields already passed by evaluate_model CLI: required_slot_array/root_completion, request_aware_slot_reservation, slot_alias_unique_decode, binder_topology_unique_decode, compiler_schema_component_types (defaults off)"
+        },
+        {
+          "version": "v247",
+          "date": "2026-07-25",
+          "note": "Default max_wall_minutes to MAX_HARNESS_WALL_MINUTES so factory configs pass train_loop's harness cap (reserves interrupt+finalize headroom)"
+        },
+        {
+          "version": "v247",
+          "date": "2026-07-25",
+          "note": "Wire missing ModelBuildConfig fields already passed by train_model CLI: binder_slot_ownership/presence, binder_reference_presence loss+decode weights, checkpoint_every_steps (defaults 0 / off)"
+        },
+        {
+          "version": "v246",
+          "date": "2026-07-25",
+          "note": "AP-016 (SLM-302) CodeRabbit fix: reject abstract_plan_slots outside [0, MAX_ABSTRACT_PLAN_SLOTS] in dsl_tokenizer.py/choice_tokenizer.py build() and load()"
+        },
+        {
+          "version": "v246",
+          "date": "2026-07-25",
+          "note": "no-bump: AP-016 (SLM-302) added an optional abstract_plan_slots=0 default-off reserved codebook block to dsl_tokenizer.py/choice_tokenizer.py/openui_tokens.py; default build() output is byte-identical"
         },
         {
           "version": "v245",
@@ -8673,6 +8822,11 @@
         {
           "version": "v2",
           "date": "2026-07-25",
+          "note": "no-bump: AP-016 (SLM-302) reserves ABSTRACT_PLAN_BEGIN/END + abstract_slot(i) markers in openui_tokens.py for the default-off AbstractPlanV1 codebook; ops vocabulary fingerprint and shared_token_ids() mapping are unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
           "note": "no-bump: refresh checked-in dsl_native + choice_codec tokenizer layout registry fingerprints after STRUCTURAL_ID_ATOMS vocab expansion (main #920 CI unblock); ops token-id namespace unchanged"
         },
         {
@@ -8727,6 +8881,26 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-300 AP-015 self-context exposure-bias curriculum plan/fixture CLI"
+        }
+      ]
+    },
+    "dsl.abstract_plan": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/abstract_plan.py",
+        "tests/test_dsl/test_abstract_plan.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "CodeRabbit review on PR #899: require canonical begin_token/end_token and exact codebook_version (a plan can no longer claim a mapping its V1 ids do not back), and preserve padding_idx/max_norm/norm_type/scale_grad_by_freq/sparse/requires_grad (not just row values) in resize_embedding_preserving_rows"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "AP-016 (SLM-302): initial registration -- collision-free AbstractPlanV1 latent-plan token codebook contract (reserved <beginabstract>/<endabstract> + M-slot pool), default-off in every consuming tokenizer, plus embedding-resize migration helpers"
         }
       ]
     }

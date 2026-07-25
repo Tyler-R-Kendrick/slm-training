@@ -29,9 +29,13 @@ from slm_training.dsl.language_contract import (
     grammar_string_literals,
 )
 from slm_training.dsl.openui_tokens import (
+    ABSTRACT_PLAN_BEGIN,
+    ABSTRACT_PLAN_END,
+    MAX_ABSTRACT_PLAN_SLOTS,
     # Canonical for the default DSL — not a fallback; see
     # _active_structural_tokens below.
     STRUCTURAL_TOKENS as _CANONICAL_STRUCTURAL_TOKENS,
+    abstract_plan_slot_token,
 )
 from slm_training.models.tokenizer import validate_token_layout
 
@@ -81,6 +85,9 @@ STRUCTURAL_TOKENS = _active_structural_tokens()
 
 # Bump when serialization / vocab layout changes.
 # v4: removed the free-form string literal opener.
+# AP-016 (SLM-302): optional default-off abstract_plan_slots=0 reserved
+# block. Default build() remains byte-identical to the current layout;
+# DSL_TOKENIZER_VERSION only bumps when the default enables it.
 DSL_TOKENIZER_VERSION = 5
 SYMBOL_TABLE_VERSION = 3
 
@@ -108,6 +115,17 @@ NL = "NL"
 _BYTE_PREFIX = "B:"
 
 
+
+def _validate_abstract_plan_slots(value: int) -> int:
+    """Fail closed on out-of-range abstract_plan_slots (AP-016/SLM-302)."""
+    value = int(value)
+    if not 0 <= value <= MAX_ABSTRACT_PLAN_SLOTS:
+        raise ValueError(
+            f"abstract_plan_slots must be within [0, {MAX_ABSTRACT_PLAN_SLOTS}], "
+            f"got {value}"
+        )
+    return value
+
 class TokenKind(str, Enum):
     SPECIAL = "special"
     STRUCT = "struct"
@@ -119,6 +137,7 @@ class TokenKind(str, Enum):
     LIT = "lit"
     BYTE = "byte"
     MACRO = "macro"
+    ABSTRACT = "abstract"
 
 
 # Fixed-vocabulary kinds a macro expansion may contain (C3). Dynamic
@@ -505,6 +524,9 @@ class DSLNativeTokenizer:
     # <MACRO_i> for its expansion, decode splices the expansion back before
     # rendering. One level only (expansions never contain macro tokens).
     macro_expansions: tuple[tuple[str, ...], ...] = ()
+    # AP-016 (SLM-302): reserved abstract-plan slot count. 0 (default) adds no
+    # rows and preserves prior vocab/ids exactly; see dsl.abstract_plan.AbstractPlanV1.
+    abstract_plan_slots: int = 0
     # Overflow counter (byte-path used when symbol table is full).
     overflow_count: int = 0
 
@@ -572,6 +594,29 @@ class DSLNativeTokenizer:
         if tok.startswith("<MACRO_") and tok.endswith(">"):
             try:
                 return int(tok[7:-1])
+            except ValueError:
+                return None
+        return None
+
+    def is_abstract_id(self, tid: int) -> bool:
+        return self.kind_of(tid) == TokenKind.ABSTRACT
+
+    @property
+    def abstract_begin_id(self) -> int | None:
+        return self.token_to_id.get(ABSTRACT_PLAN_BEGIN)
+
+    @property
+    def abstract_end_id(self) -> int | None:
+        return self.token_to_id.get(ABSTRACT_PLAN_END)
+
+    def abstract_slot_id(self, slot: int) -> int:
+        return self.token_to_id[abstract_plan_slot_token(slot)]
+
+    def abstract_slot_of(self, tid: int) -> int | None:
+        tok = self.id_to_token.get(int(tid), "")
+        if tok.startswith("<ABS_") and tok.endswith(">"):
+            try:
+                return int(tok[5:-1])
             except ValueError:
                 return None
         return None
@@ -709,6 +754,7 @@ class DSLNativeTokenizer:
         state_slots: int = DEFAULT_STATE_SLOTS,
         bind_encoding: str = "absolute",
         macro_slots: int = DEFAULT_MACRO_SLOTS,
+        abstract_plan_slots: int = 0,
     ) -> DSLNativeTokenizer:
         """Build the fixed corpus-independent vocabulary."""
         vocab: list[str] = []
@@ -761,6 +807,15 @@ class DSLNativeTokenizer:
         # C3: macro rows appended last so all prior ids are unchanged.
         for i in range(macro_slots):
             _add(_macro_token(i), TokenKind.MACRO)
+        # AP-016 (SLM-302): reserved abstract-plan block, appended last (after
+        # macro rows) so all prior ids are unchanged. Default-off: 0 slots
+        # adds nothing and leaves build() output byte-identical to before.
+        abstract_plan_slots = _validate_abstract_plan_slots(abstract_plan_slots)
+        if abstract_plan_slots:
+            _add(ABSTRACT_PLAN_BEGIN, TokenKind.ABSTRACT)
+            _add(ABSTRACT_PLAN_END, TokenKind.ABSTRACT)
+            for i in range(abstract_plan_slots):
+                _add(abstract_plan_slot_token(i), TokenKind.ABSTRACT)
 
         token_to_id = {t: i for i, t in enumerate(vocab)}
         id_to_token = {i: t for t, i in token_to_id.items()}
@@ -778,6 +833,7 @@ class DSLNativeTokenizer:
             state_slots=state_slots,
             bind_encoding=bind_encoding,
             macro_slots=macro_slots,
+            abstract_plan_slots=abstract_plan_slots,
         )
 
     # --- surface lexing / canonicalize ---------------------------------
@@ -1281,6 +1337,7 @@ class DSLNativeTokenizer:
                     "bind_encoding": self.bind_encoding,
                     "macro_slots": self.macro_slots,
                     "macro_expansions": [list(exp) for exp in self.macro_expansions],
+                    "abstract_plan_slots": self.abstract_plan_slots,
                     "token_to_id": self.token_to_id,
                     "id_to_kind": {str(k): v for k, v in self.id_to_kind.items()},
                 },
@@ -1335,6 +1392,9 @@ class DSLNativeTokenizer:
             macro_expansions=tuple(
                 tuple(str(tok) for tok in exp)
                 for exp in data.get("macro_expansions") or ()
+            ),
+            abstract_plan_slots=_validate_abstract_plan_slots(
+                data.get("abstract_plan_slots") or 0
             ),
         )
 

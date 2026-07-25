@@ -1632,19 +1632,42 @@ and legal-set identity but no edit intent, so the experiment does not add a
 hidden target channel to make the treatment pass. Evidence and scope:
 [`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md).
 
+## Hierarchical operator action head causal baseline (DSH3-15 / SLM-383)
+
+**Fidelity label: adapted repository experiment.** E803 rejected only the
+*decoder-visible* discrete-token hypothesis; per AGENTS.md IV.11 that left the
+encoder-side/masked scoring mechanism -- what the SLM-168 `DynamicPointerScorer`-based
+hierarchical head implements -- untested. This is the follow-up multi-seed
+causal-attribution experiment DSH3-15's own acceptance criteria require.
+
+| | |
+| --- | --- |
+| **Arms** | token baseline (decoder-visible), weight-zero (frozen no-op capacity control), enabled (trained) |
+| **Authority** | candidates drawn solely from a live, compiler-verified `OperatorLegalSetV1`; typed features from `ActionEffectV1` counts only, never opaque ids/display names |
+| **Corpus** | a small fixed vocabulary of candidate-group-size "shapes" recurring across independently-constructed fixture states, so gold depends only on a typed feature |
+| **Matched result** | enabled and token baseline both reach 1.000 operator accuracy (ceiling); weight-zero stays at 0.500 (tie-break); zero false legal admissions across all arms/seeds |
+| **Decision** | reject: the enabled head strictly beats its own weight-zero capacity control (it is trainable, not a dead architecture) but ties exactly with the token baseline, so it does not causally improve beyond it |
+
+Stage-1 (operator-kind) only; stage-2 (typed-argument) selection has no
+distinguishing typed-feature signal under the current hash-scalar candidate
+features (SLM-398's declared follow-up) and is out of scope here. Evidence and
+scope:
+[`dsh3-15-hierarchical-operator-head-baseline-20260725/summary.md`](dsh3-15-hierarchical-operator-head-baseline-20260725/summary.md).
+
 ## Terminal CAP2 capability disposition (DSH3-17 / SLM-385)
 
 **Fidelity label: repository evidence disposition.** This terminal ledger adds
 no paper-derived mechanism. It preserves the adapted evidence boundaries from
-DSH3-13 and E803 while preventing compiler correctness, unavailable evidence,
-or unrun conditional branches from being reported as learned capability.
+DSH3-13, E803, and SLM-383 while preventing compiler correctness, unavailable
+evidence, or unrun conditional branches from being reported as learned
+capability.
 
 | | |
 | --- | --- |
 | **Capabilities** | symbolic transform, NL transform, discrete-token action, hierarchical head, topology application, bounded merge, efficiency |
 | **Positive boundary** | no learned capability has implemented benefit; symbolic transform and bounded merge remain compiler contracts only |
-| **Negative boundary** | E803 rejects discrete-token action benefit; CAP1-dependent NL and exact-hardware efficiency evidence are unavailable |
-| **Unrun boundary** | hierarchical head and topology application remain explicit unrun conditionals after their prerequisite failed |
+| **Negative boundary** | E803 rejects discrete-token action benefit; SLM-383 rejects the hierarchical head (ties the token baseline); CAP1-dependent NL and exact-hardware efficiency evidence are unavailable |
+| **Unrun boundary** | topology application remains an explicit unrun conditional because no accepted hierarchical-head arm exists |
 | **Decision** | reject `CERT_CAP2`; close DSH4 action distillation; no checkpoint or ship claim |
 
 The disposition is machine-checkable, records exact evidence identities, and
