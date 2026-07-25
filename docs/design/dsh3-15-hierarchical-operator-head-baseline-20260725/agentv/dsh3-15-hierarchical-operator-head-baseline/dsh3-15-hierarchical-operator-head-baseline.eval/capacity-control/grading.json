@@ -1,7 +1,7 @@
 {
   "assertions": [
     {
-      "text": "cert-cap2-rejected:domain_criterion",
+      "text": "capacity-control:domain_criterion",
       "passed": true,
       "evidence": "actual=True operator=eq expected=True"
     }
@@ -19,7 +19,7 @@
   },
   "graders": [
     {
-      "name": "cert-cap2-rejected:domain_criterion",
+      "name": "capacity-control:domain_criterion",
       "type": "code-grader",
       "score": 1,
       "reasoning": "",
@@ -27,13 +27,13 @@
       "verdict": "pass",
       "assertions": [
         {
-          "text": "cert-cap2-rejected:domain_criterion",
+          "text": "capacity-control:domain_criterion",
           "passed": true,
           "evidence": "actual=True operator=eq expected=True"
         }
       ],
       "details": {
-        "criterion_id": "cert-cap2-rejected:domain_criterion",
+        "criterion_id": "capacity-control:domain_criterion",
         "actual": true,
         "operator": "eq",
         "expected": true
