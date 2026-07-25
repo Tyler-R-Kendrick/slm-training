@@ -15,19 +15,31 @@ from typing import Any, Final
 
 from slm_training.harnesses.staged import Capability
 
-
 # The CI changed-test fan-out includes dependency setup; three minutes is the
 # repository-wide hard ceiling and lets that completed test suite report cleanly.
 MAX_RUN_MINUTES: Final = 3
 KILL_GRACE_SECONDS: Final = 10
 MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
+# Harnesses must finalize checkpoints and metadata before the command-level
+# interrupt fires.
+HARNESS_FINALIZATION_RESERVE_SECONDS: Final = 15
+MAX_HARNESS_WALL_SECONDS: Final = (
+    INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS
+)
+MAX_HARNESS_WALL_MINUTES: Final = MAX_HARNESS_WALL_SECONDS / 60
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 CHANGED_TEST_WORKERS: Final = 4
 VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "docs/design/*.json",
     "docs/MODEL_CARD.md",
     "src/slm_training/resources/checkpoints/playground_demo/**",
+)
+VERCEL_FUNCTION_EXCLUDE_FILES: Final = (
+    "{.venv,.vercel,node_modules,outputs,tests,src/apps}/**",
+    "docs/design/{*-agentv-*/**,iter-slm200-*.json}",
+    "**/governance/records.jsonl",
+    "src/slm_training/{flow/{samplers,targets}.py,harnesses/experiments/**,models/legal_edit_flow.py}",
 )
 
 # Capability profiles are deliberately expressed as deviations from the

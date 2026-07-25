@@ -933,7 +933,6 @@ def default_base_weights() -> dict[str, float]:
         "scope_contract": 0.02,
         "prompt_paraphrase": 0.03,
         "layout_augment": 0.025,
-        "namespace_augment": 0.015,
         "stress_adversarial": 0.025,
         "self_distilled_success": 0.02,
         "self_distilled_repair": 0.02,

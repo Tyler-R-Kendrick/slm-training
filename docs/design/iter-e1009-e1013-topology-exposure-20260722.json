@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1009-E1013",
+  "date": "2026-07-22",
+  "decision": "reject_compose_path_and_generic_exposure_sampling",
+  "runs": {
+    "E1009": {
+      "status": "invalid_not_trained",
+      "dataset": "e1009_role_safe_topology_single_v1",
+      "records": 117,
+      "collected": 820,
+      "parent_cap_dropped": 490,
+      "reason": "max-records-per-parent 1 collapsed immutable E937"
+    },
+    "E1010": {
+      "status": "invalid_not_trained",
+      "dataset": "e1010_role_safe_topology_single_v2",
+      "records": 372,
+      "collected": 820,
+      "parent_cap_dropped": 236,
+      "reason": "existing+fixture re-expanded and re-deduplicated immutable E937"
+    },
+    "E1011": {
+      "status": "completed_rejected",
+      "run_id": "e1011-role-safe-exposure450-r1",
+      "train_data": "e937_role_safe_all_targets_v2",
+      "sampling_policy": "exposure_targeted",
+      "exposure_target_profile": "e1011-role-topology-existing",
+      "total_decision_budget": 32,
+      "per_root_cap": 2,
+      "per_template_cap": 2,
+      "max_importance_weight": 4.0,
+      "steps": 450,
+      "elapsed_wall_seconds": 87.11423668700081,
+      "last_loss": 4.264355659484863,
+      "checkpoint_sha256": "788a485a9646a6572594402dad26d89b4e22d7c44b4d4e65b4b506b9e8a159a2",
+      "checkpoint_sync": "disabled_scratch",
+      "initialized_from": null
+    },
+    "E1012": {
+      "status": "completed_rejected",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 0.6666666666666666,
+      "fidelity": 0.7777777777777778,
+      "structural_similarity": 0.4397,
+      "component_recall": 0.6666666666666666,
+      "reward": 0.8843333333333333,
+      "decode_timeouts": 0,
+      "fallback_count": 2,
+      "agentv": "0/1"
+    },
+    "E1013": {
+      "status": "completed_rejected",
+      "suite": "held_out",
+      "n": 5,
+      "parse": 1.0,
+      "meaning_v1": 0.4,
+      "strict_v2": 0.0,
+      "fidelity": 0.47000000000000003,
+      "structural_similarity": 0.24572,
+      "component_recall": 0.49523809523809526,
+      "reward": 0.7767999999999999,
+      "decode_timeouts": 0,
+      "fallback_count": 6,
+      "agentv": "0/1"
+    }
+  },
+  "disposition": {
+    "checkpoint_promoted": false,
+    "checkpoint_parentable": false,
+    "checkpoint_synced": false,
+    "next_hypothesis": "use a topology-specific objective rather than generic rare-action exposure"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e05b2ed58e6a114718cbc0d113ab5493b114d7b8",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v26",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v56",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v266"
+    }
+  }
+}

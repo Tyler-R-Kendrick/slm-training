@@ -123,7 +123,15 @@ def _configure_cpu_threads(num: int | None = None) -> int:
     import torch
 
     cpus = os.cpu_count() or 1
-    n = int(num or max(1, cpus))
+    requested = num
+    if requested is None:
+        raw = os.environ.get("OMP_NUM_THREADS")
+        try:
+            requested = int(raw) if raw else None
+        except ValueError:
+            requested = None
+    n = int(requested or max(1, cpus))
+    n = max(1, n)
     # Leave one core for Node grammar bridge / OS when possible.
     if cpus >= 4:
         n = min(n, cpus - 1)

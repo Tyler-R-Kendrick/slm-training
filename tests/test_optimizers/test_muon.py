@@ -21,7 +21,7 @@ from slm_training.optimizers.muon import (
     newton_schulz_orthogonalize,
 )
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
+HERO = 'root = Stack([b1], "column")\nb1 = Card([b2, b3])\nb2 = TextContent(":slot_0")\nb3 = TextContent(":slot_1")'
 
 
 def _write_train_dir(path: Path, records: list[ExampleRecord]) -> None:

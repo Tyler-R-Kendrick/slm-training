@@ -92,6 +92,7 @@ def test_local_probes_and_regression_propose() -> None:
 
 def test_default_mix_and_probes_cover_new_families() -> None:
     base = default_base_weights()
+    assert "namespace_augment" not in base
     assert set(NEW_FAMILIES) <= set(base)
     assert set(KNOWN_FAMILIES) <= set(base)
     probes = local_probe_candidates(base, task_weights=DEFAULT_TASK_WEIGHTS)
@@ -508,7 +509,7 @@ def test_exposure_targeted_increases_rare_action_exposure() -> None:
         ExampleRecord(
             id=f"rare_{i}",
             prompt=f"r{i}",
-            openui='root = Map(":x")',
+            openui="root = Map()",
             meta={"source_family": "fixture"},
         )
         for i in range(3)

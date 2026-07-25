@@ -15,8 +15,8 @@ from slm_training.models.grammar_diffusion import (
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     "hero = Card([hero_title, hero_body])"
 )
 
@@ -25,10 +25,10 @@ def test_generate_ignores_gold_placeholders() -> None:
     records = [
         ExampleRecord(
             id="a",
-            prompt="Build a hero.\nPlaceholders: :hero.title, :hero.body",
+            prompt="Build a hero.\nPlaceholders: :slot_0, :slot_1",
             openui=HERO,
             split="train",
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         )
     ]
     model = GrammarDiffusionModel.from_records(
@@ -39,15 +39,15 @@ def test_generate_ignores_gold_placeholders() -> None:
     # Poisoned gold inventory must not leak into decode when honest.
     poisoned = ExampleRecord(
         id="evil",
-        prompt="Build a hero.\nPlaceholders: :hero.title, :hero.body",
+        prompt="Build a hero.\nPlaceholders: :slot_0, :slot_1",
         openui=HERO,
         split="smoke",
-        placeholders=[":evil.secret", ":evil.leak"],
+        placeholders=[":slot_2", ":slot_3"],
     )
     assert model.config.honest_slot_contract is True
     out = model.generate(poisoned.prompt, gold=poisoned)
-    assert ":evil.secret" not in out
-    assert ":evil.leak" not in out
+    assert ":slot_2" not in out
+    assert ":slot_3" not in out
 
 
 def test_generate_batch_requests_fills_inventory_from_prompt() -> None:
@@ -55,9 +55,9 @@ def test_generate_batch_requests_fills_inventory_from_prompt() -> None:
         ExampleRecord(
             id="a",
             prompt="CTA button",
-            openui='root = Stack([cta])\ncta = Button(":cta.label")',
+            openui='root = Stack([cta])\ncta = Button(":slot_0")',
             split="train",
-            placeholders=[":cta.label"],
+            placeholders=[":slot_0"],
         )
     ]
     model = GrammarDiffusionModel.from_records(
@@ -68,8 +68,8 @@ def test_generate_batch_requests_fills_inventory_from_prompt() -> None:
     texts = model.generate_batch_requests(
         [
             GenerationRequest(
-                prompt="Make a CTA.\nPlaceholders: :cta.label",
-                slot_contract=(),
+                prompt="Make a CTA.",
+                slot_contract=(":slot_0",),
             )
         ]
     )

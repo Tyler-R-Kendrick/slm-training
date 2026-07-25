@@ -125,6 +125,7 @@ def _valid_build_config(**overrides: object) -> ModelBuildConfig:
     defaults: dict[str, object] = {
         "train_dir": Path("outputs/data/train"),
         "run_id": "slm242-test",
+        "evaluation_policy": "checkpoint_declared",
     }
     defaults.update(overrides)
     return ModelBuildConfig(**defaults)  # type: ignore[arg-type]
@@ -187,11 +188,9 @@ def test_model_build_config_accepts_valid_schedules_and_weights() -> None:
     [
         "root_reference_arity_loss_weight",
         "root_reference_arity_decode_weight",
-        "root_reference_identity_loss_weight",
-        "root_reference_identity_decode_weight",
     ],
 )
-def test_model_build_config_rejects_choice_only_reference_weights_for_lexer(
+def test_model_build_config_rejects_root_arity_weights_without_compiler_decode(
     weight_name: str,
 ) -> None:
     with pytest.raises(ValueError, match="unsupported enabled levers"):
@@ -246,26 +245,14 @@ def test_model_build_config_accepts_lexer_levers_with_tree_decode() -> None:
     assert cfg.binder_arity_decode_weight == 1.0
 
 
-@pytest.mark.parametrize(
-    "weight_name",
-    [
-        "root_reference_identity_loss_weight",
-        "root_reference_identity_decode_weight",
-    ],
-)
-def test_model_build_config_rejects_unreachable_lexer_identity_before_artifacts(
-    tmp_path: Path, weight_name: str
-) -> None:
-    run_root = tmp_path / "runs"
-    with pytest.raises(ValueError, match="unsupported enabled levers"):
-        _valid_build_config(
-            run_root=run_root,
-            run_id="must-not-exist",
-            output_tokenizer="lexer",
-            compiler_decode_mode="tree",
-            **{weight_name: 1.0},
-        )
-    assert not run_root.exists()
+def test_model_build_config_accepts_lexer_identity_with_tree_decode() -> None:
+    cfg = _valid_build_config(
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        root_reference_identity_loss_weight=1.0,
+        root_reference_identity_decode_weight=1.0,
+    )
+    assert cfg.root_reference_identity_decode_weight == 1.0
 
 
 def test_twotower_rejects_untrained_root_arity_decode_head() -> None:
@@ -340,11 +327,11 @@ def test_model_build_config_rejects_choice_only_schema_lever_for_lexer() -> None
         )
 
 
-def test_model_build_config_rejects_missing_decode_companions_before_artifacts(
+def test_model_build_config_rejects_prohibited_semantic_marker_lever_before_artifacts(
     tmp_path: Path,
 ) -> None:
     run_root = tmp_path / "runs"
-    with pytest.raises(ValueError, match="requires one companion configuration"):
+    with pytest.raises(ValueError, match="template markers are opaque"):
         _valid_build_config(
             run_root=run_root,
             run_id="must-not-exist",

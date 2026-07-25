@@ -363,7 +363,7 @@ def _default_feature_set() -> ProxyFeatureSet:
             "suite_metadata",
         ),
         forbidden_features=(
-            "agentv_score",
+            "runner_sdk_aggregate",
             "external_judge_score",
             "full_gate_result",
             "gold_action_trace",

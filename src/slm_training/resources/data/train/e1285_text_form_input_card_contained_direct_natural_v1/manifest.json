@@ -1,0 +1,216 @@
+{
+  "version": "e1285_text_form_input_card_contained_direct_natural_v1",
+  "kind": "train",
+  "profile": "strict",
+  "source": "programspec",
+  "records": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/stats.json",
+  "quality_report": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/quality_report.json",
+  "rejected": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/rejected.jsonl",
+  "synthesis_feedback": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/synthesis_feedback.json",
+  "record_count": 7,
+  "ids": [
+    "program_31273dda01fe85db",
+    "program_35018bec1ba5046b",
+    "program_502dd3e2220cd879",
+    "program_534cba5d397e67a5",
+    "program_6510ea6cd7ae679a",
+    "program_9b667d70b7d35810",
+    "program_e67ba497f3c471bc"
+  ],
+  "split_group_ids": [
+    "group_436b33784108",
+    "group_4b78779dc856",
+    "group_5e2af87ef34f",
+    "group_aca0be286402",
+    "group_c38108ff3de3",
+    "group_f14511072b54",
+    "group_f22c8a7175cc"
+  ],
+  "prompt_fingerprints": [
+    "138044dc241d42dc050695cbf3f9dc01cfbc4be617185edf5c24b4d4b17ed3fe",
+    "37fee11a3a450f3dd8c0919df6cccd508ee6e7326e13a97d38e6a900da41fec3",
+    "3f329a118b36293d39c3abe0378fec47f672cdbc38614d97dfbc7e0b90f4b71f",
+    "657b878b441962963b0bea39e71ec3ce6d79f8c56608ef5cbac348d96677f434",
+    "994b8901521dbb07f5c1410abdacc558bc88f5479e5fb06b068fab87751abdc4",
+    "a4d59cfbba49ac271964d6d6dbeadb4d867b5d849fd5b029a684a3638354497a",
+    "a7e51e54e069ca736e0f1a77edba34a1fca1aa8893d9ed55edc7f6a9f14d29f0"
+  ],
+  "openui_fingerprints": [
+    "17299f36d435b7e13a0f6af99f3559478e9f0746bc9bff8376e434fa5a0784e9",
+    "19c08aee3075153b7c4b4e7122182eb5e8aa1f3f2f460588b6cbbd20cfaca93f",
+    "40fdf793b54a2b3d8a710434a1dcafd39317c88369df292e3160b544c0b6daf4",
+    "bd217649bf04770487b0b9d5e9b1130771766984b64c1a24e6649e4d779390cd",
+    "bfa344a2c1f6e4c42bcdff5c60c9a8d9093351ad6594cb81dcf32f73fd14f553",
+    "c97f6d558e22138444a228d89676e2e70ad22c7a61994068a61ca57fa44a5545",
+    "fbbe3db350beffcc886c63693a15ca5b35f53b83dc2fe5b2b3a1adc4490c62b1"
+  ],
+  "structure_fingerprints": [
+    "2bc2e9125cd0bdd7ee801cd72f379bdefd1650f607f8ce92daf41596068ef327",
+    "6f7bf6339ebdd683a035d005d9006c7e829f0af1a173b1a2a70cb306307d49d0",
+    "88a89304b6fc18268790fc34206382199b334c57ea00b0fac28e6fd337cf0558",
+    "9f9ff069b480e432110640a6bfd66a87aa7837f85ff0fa352c165225370fc643",
+    "a5749ea9925e94e97ef065a7dd7dd28966caf988a991626402d7f4671f4f8554",
+    "cd52a14908f4d29b55db805ed7c60b4ddbc79a92c982950dd1bcac76040072c2",
+    "e1121613c9b548f96d48198de982b7bd85aa55bd3d8c7d34fee49ed8b7c7841d"
+  ],
+  "pair_fingerprints": [
+    "513dadb2e5877959e2d3d0f60945ad1600b14ddc0a7c136672cfe4d869059257",
+    "65f3ec1eca406609febb543d54d8348992a5638f2d9e157064c7991f7ed2165a",
+    "a01cecbcfe4b83d9f422e274c55899ab3f1ae3bc55292b10da0d2f8ee388a99f",
+    "a4843c99ee98aae29cb975b180758b5f09ea45257439910ccecc994dcfb229b1",
+    "cfa21a4484669406eee75e37c76a7dbced075e7ec9b519337d5278b2fe14151e",
+    "d5374d7f9c25388a30d4e7bcef1d5a06623873a39cde552ee58629d58f871386",
+    "dc6f8ed79b22adb4090487c5a2f74959ab3c07da405a71e94e430b018a005e5a"
+  ],
+  "design_md_fingerprints": [
+    "0b466b83a89d4dff28e52b797420603134e482d7b465c10073ccd95a7f97c9ad",
+    "158e3b63ecb70f265d74af02534b93e1496c018d3e0b3bf747eb5a4e1552e1d0",
+    "1fc544e3cd46dbf135ce04877e40b4295f78d7737ea8ded961fc5f6bf9098838",
+    "79139f236d006188f48f36ec53df0c6035e36d720704c0369ad1b6b9534e5a81",
+    "ad49549632a9276659e310a279e9883704ff5eecdc629e2c15a387076f29c887",
+    "c07997d82ada7b3dfc9be1f95eb83e9b3b7304e6d4a516242ab0d8dab5d327fb",
+    "f8ee5d4f0fc3bca8fa6252a17908da426501c9872134ae6a9246ce25dd00c635"
+  ],
+  "content_fingerprint": "84b746db9d1cf25b5558132d0fb88295c619a3e118fce0a8761d88ecf6be83f9",
+  "source_families": {
+    "families": {
+      "programspec_generated": {
+        "unique_records": 7,
+        "unique_root_parents": 7,
+        "prompt_chars": 893,
+        "target_chars": 1036,
+        "target_tokens": 604,
+        "records_per_root_parent": {
+          "max": 1,
+          "p50": 1,
+          "p95": 1
+        }
+      }
+    },
+    "total_records": 7,
+    "unique_root_parents": 7,
+    "records_per_root_parent": {
+      "max": 1,
+      "p50": 1,
+      "p95": 1
+    },
+    "cluster_exposure": {
+      "unique_clusters": 7,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    }
+  },
+  "governance": {
+    "croissant.json": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/governance/dataset.spdx.json"
+  },
+  "mixture": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e1285_text_form_input_card_contained_direct_natural_v1/synthesis_telemetry.jsonl",
+  "synthesis_telemetry_sha256": "f6475acb64556fcd69ead6928337f6b00d39fe8bf286199039bc0822034d724d",
+  "diffusion_online": {
+    "policies": [
+      "uniform",
+      "contiguous",
+      "statement",
+      "ast_subtree",
+      "reference",
+      "edit_local",
+      "disjoint",
+      "all_mask",
+      "expansion",
+      "contraction",
+      "reorder",
+      "macro_substitution"
+    ],
+    "mask_min": 0.15,
+    "mask_max": 0.85,
+    "overallocate": 8,
+    "length_buckets": [
+      32,
+      64,
+      96,
+      128,
+      192,
+      256,
+      384,
+      512
+    ],
+    "max_length": null
+  },
+  "built_at": "2026-07-24T07:21:23.268636+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v32"
+    },
+    "stamped_at": "2026-07-24T07:21:23.291980+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e1285_text_form_input_card_contained_direct_natural_v1",
+  "immutable": true,
+  "trace_id": "1f6254e41204a84e3c99053cb7b705c3",
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "fd3bedf02ea97ec32ee49628ecba95780239a013ab007a11a621aacc2a4c0e9c",
+      "size": 2550
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "b45425e3bc4f5d894b3f7e5343b2b0612d9e0505d7ffe553a554e8e3dc244a85",
+      "size": 440
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "f3d1a643e08e59e03e0802e29bb3bfb3bf647e01561effcff6c11a30f70b8c4b",
+      "size": 1052
+    },
+    {
+      "path": "governance/records.jsonl",
+      "sha256": "cfb299d8b37ca44adea936f85c424336087d1f78c0a7d306c18089a2dd086969",
+      "size": 50827
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "dbbf1fc69a197b2e6b5010861a493102585dcded80946be4121c44c7892eb9e0",
+      "size": 3909
+    },
+    {
+      "path": "quality_report.json",
+      "sha256": "90134165b8c9dc3f3aa93b8af09308688d0a895fb92afc3bc97e0c600db22d2f",
+      "size": 5522
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "eb07fddc7687fff0dcf5017a8a14b0ac0bcb2a2cd4736492df6df780afef0353",
+      "size": 53200
+    },
+    {
+      "path": "rejected.jsonl",
+      "sha256": "29e4a1500d544965c6ee7f96c9d750a5730e33e2554c6b871af12f99cc150ebd",
+      "size": 2537
+    },
+    {
+      "path": "stats.json",
+      "sha256": "33649b742afdaedab52d57b841bb478193d70eafa7d4349bb2ed35380b297a0c",
+      "size": 10216
+    },
+    {
+      "path": "synthesis_feedback.json",
+      "sha256": "740d623e0fd930b492bbb8f9b5a0e26a50a2d87255956e6c6dd9c6febd1b874d",
+      "size": 2032
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "f6475acb64556fcd69ead6928337f6b00d39fe8bf286199039bc0822034d724d",
+      "size": 199
+    }
+  ]
+}
