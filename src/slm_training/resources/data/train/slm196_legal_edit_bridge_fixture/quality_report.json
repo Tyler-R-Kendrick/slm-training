@@ -1,0 +1,14 @@
+{
+  "candidate_reconstruction_rate": 1.0,
+  "confirmation_rows": 0,
+  "failure_reasons": [],
+  "forbidden_model_input_fields": 0,
+  "publishable": false,
+  "reachability_rate": 1.0,
+  "replay_rate": 1.0,
+  "rows": 4,
+  "schema": "LegalEditBridgeQualityReportV1",
+  "split_safe": true,
+  "status": "pass",
+  "unknown_is_negative": false
+}

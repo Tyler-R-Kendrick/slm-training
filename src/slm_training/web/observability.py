@@ -34,6 +34,11 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
+from slm_training.harnesses.model_build.feature_flags import (
+    catalog as feature_flag_catalog,
+    feature_flags as model_build_feature_flags,
+)
+from slm_training.harnesses.model_build.feature_flags import load_snapshot
 from slm_training.autoresearch.run_insights import (
     RunInsightSubmission,
     enrich_with_openai,
@@ -432,6 +437,7 @@ class Readers:
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
         self.outputs = self.root / "outputs"
         self.fixtures = self.root / "src" / "slm_training" / "resources"
+        self.feature_flag_history = self.fixtures / "experiment_feature_flag_history.json"
         self.data_store = DataStore(self.root)
         self.published_train_root = self.data_store.published_root / "train"
         self.dashboard_snapshot = self.root / "src" / "slm_training" / "web" / "static" / "dashboard_snapshot.json"
@@ -519,6 +525,48 @@ class Readers:
                 )
                 for name, member in suites.items()
             }
+        return self._link_scoreboard_resources(out, run_dir=run_dir)
+
+    def _link_scoreboard_resources(
+        self, row: dict[str, Any], *, run_dir: Path | None = None
+    ) -> dict[str, Any]:
+        """Attach model-card parameters / checkpoint path onto a scoreboard row."""
+        out = {**row}
+        run_id = str(out.get("run_id") or "")
+        if not out.get("parameters") and run_id:
+            for card_row in self._model_card_rows()[0]:
+                if _plain_markdown(card_row.get("run id")) != run_id:
+                    continue
+                declared = _plain_markdown(card_row.get("parameters"))
+                if declared and declared != "—":
+                    out["parameters"] = declared
+                if not out.get("checkpoint"):
+                    location = _plain_markdown(card_row.get("location"))
+                    if location:
+                        out["checkpoint"] = location.split(" ", 1)[0]
+                break
+        if run_dir is not None:
+            if not out.get("parameters"):
+                summary = _read_json(run_dir / "train_summary.json") or {}
+                track = (
+                    summary.get("track")
+                    if isinstance(summary.get("track"), dict)
+                    else {}
+                )
+                counts = [track.get("trainable_params"), track.get("frozen_params")]
+                if any(isinstance(value, int) for value in counts):
+                    out["parameters"] = _format_parameters(
+                        sum(value for value in counts if isinstance(value, int))
+                    )
+            if not out.get("checkpoint"):
+                ckpt = run_dir / "checkpoints" / "last.pt"
+                if not ckpt.exists():
+                    ckpt = run_dir / "last.pt"
+                if ckpt.exists():
+                    try:
+                        out["checkpoint"] = ckpt.relative_to(self.root).as_posix()
+                    except ValueError:
+                        out["checkpoint"] = ckpt.as_posix()
         return out
 
     def _load_live_matrix_rows(self) -> list[dict[str, Any]]:
@@ -678,12 +726,16 @@ class Readers:
             raw_gate_pass = gate_pass
             if claim_class == "branch_only_diagnostic":
                 gate_pass = False
-            agentv = (
-                payload.get("agentv")
-                or evaluation.get("agentv")
-                or context.get("agentv")
+            evals = (
+                payload.get("evals")
+                or evaluation.get("evals")
+                or context.get("evals")
             )
-            agentv = agentv if isinstance(agentv, dict) else {}
+            evals = evals if isinstance(evals, dict) else {}
+            eval_criteria = evals.get("criteria")
+            eval_criteria = (
+                eval_criteria if isinstance(eval_criteria, dict) else {}
+            )
             scoreboard_path = payload.get("scoreboard") or evaluation.get("scoreboard")
             run_dir = (
                 str(Path(scoreboard_path).parent)
@@ -708,7 +760,7 @@ class Readers:
                     "claim_class": claim_class,
                     "suites": record["suites"],
                     "source_schema": record["source_schema"],
-                    "agentv": agentv,
+                    "eval_criteria": eval_criteria,
                     "trace_id": train_result.get("trace_id") or train.get("trace_id"),
                     "run_dir": run_dir,
                     "source": f"docs/design/{path.name}",
@@ -766,6 +818,7 @@ class Readers:
                 self._research_results(), self._live_rows_for_kind(kind)
             )
             results = self._append_live_training_rows(results)
+            results = [self._link_scoreboard_resources(row) for row in results]
             if any(row.get("provenance") == "live" for row in results):
                 provenance = "live"
             unparsed = getattr(self, "last_unparsed", [])
@@ -809,6 +862,7 @@ class Readers:
         results, provenance = self._merge_scoreboard_rows(
             results, self._live_rows_for_kind(kind)
         )
+        results = [self._link_scoreboard_resources(row) for row in results]
         meta = {k: v for k, v in (payload or {}).items() if k != "results"} if isinstance(
             payload, dict
         ) else {}
@@ -841,6 +895,262 @@ class Readers:
                 }
             )
         return index
+
+    # ---- experiment feature flags ------------------------------------------
+
+    def _feature_history(self) -> dict[str, dict[str, Any]]:
+        payload = _read_json(self.feature_flag_history) or {}
+        rows = payload.get("runs") if isinstance(payload, dict) else []
+        if not isinstance(rows, list):
+            rows = []
+        return {
+            str(row["run_id"]): row
+            for row in rows
+            if isinstance(row, dict) and isinstance(row.get("run_id"), str)
+        }
+
+    def experiment_flags(self) -> dict[str, Any]:
+        def compute() -> dict[str, Any]:
+            payload = feature_flag_catalog()
+            history = self._feature_history()
+            payload["history_runs"] = len(history)
+            payload["provenance"] = "live" if self.feature_flag_history.exists() else "missing"
+            return payload
+
+        return self._fresh("experiment_flags", [self.feature_flag_history], compute)
+
+    def _flag_description(self, config_field: str) -> str:
+        """Use the config's nearby prose; never maintain a second lever registry."""
+        path = self.root / "src/slm_training/harnesses/model_build/config.py"
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        field_line = next(
+            (
+                index
+                for index, line in enumerate(lines)
+                if re.match(rf"\s*{re.escape(config_field)}\s*:", line)
+            ),
+            None,
+        )
+        if field_line is not None:
+            comments: list[str] = []
+            for line in reversed(lines[:field_line]):
+                stripped = line.strip()
+                if stripped.startswith("#"):
+                    comments.append(stripped.removeprefix("#").strip())
+                    continue
+                if not stripped:
+                    continue
+                break
+            if comments:
+                return " ".join(reversed(comments))
+        return (
+            f"Controls the {config_field.replace('_', ' ')} model-build setting. "
+            "OpenFeature resolves it before training and evaluation."
+        )
+
+    def _flag_implementation(self, config_field: str) -> list[dict[str, Any]]:
+        """Return small, local source excerpts for the selected flag on demand."""
+        paths = (
+            "src/slm_training/harnesses/model_build/config.py",
+            "src/slm_training/harnesses/model_build/feature_flags.py",
+            "src/slm_training/harnesses/model_build/factory.py",
+            "src/slm_training/harnesses/model_build/eval_runner.py",
+            "src/slm_training/harnesses/model_build/train_loop.py",
+            "src/slm_training/harnesses/model_build/decode_path.py",
+        )
+        match = re.compile(rf"\b{re.escape(config_field)}\b")
+        locations: list[dict[str, Any]] = []
+        for relative in paths:
+            path = self.root / relative
+            try:
+                lines = path.read_text(encoding="utf-8").splitlines()
+            except OSError:
+                continue
+            for index, line in enumerate(lines):
+                if not match.search(line):
+                    continue
+                start, end = max(0, index - 2), min(len(lines), index + 3)
+                locations.append(
+                    {
+                        "path": relative,
+                        "line": index + 1,
+                        "snippet": "\n".join(
+                            f"{number + 1}: {text}"
+                            for number, text in enumerate(lines[start:end], start)
+                        ),
+                    }
+                )
+                if len(locations) >= 8:
+                    return locations
+        return locations
+
+    @staticmethod
+    def _comparison_outcomes(
+        baseline: dict[str, Any], treatment: dict[str, Any]
+    ) -> list[str]:
+        metrics = (
+            "meaningful_program_rate",
+            "syntax_parse_rate",
+            "parse_rate",
+            "structural_similarity",
+            "placeholder_fidelity",
+            "reward_score",
+        )
+        baseline_suites = baseline.get("suites") or {}
+        treatment_suites = treatment.get("suites") or {}
+        outcomes: list[str] = []
+        for suite in sorted(set(baseline_suites) & set(treatment_suites)):
+            before = baseline_suites.get(suite) or {}
+            after = treatment_suites.get(suite) or {}
+            for metric in metrics:
+                left, right = before.get(metric), after.get(metric)
+                if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                    outcomes.append(f"{suite} {metric}: {right - left:+.3f}")
+        return outcomes
+
+    def experiment_flag(self, key: str) -> dict[str, Any] | None:
+        """Detail for one canonical OpenFeature key and its recorded evidence."""
+        flag = next((row for row in model_build_feature_flags() if row.key == key), None)
+        if flag is None:
+            return None
+        history = self._feature_history()
+        run_index = {str(row.get("run_id")): row for row in self.runs()["runs"]}
+        evidence: list[dict[str, Any]] = []
+        for run_id, record in history.items():
+            values = record.get("values") or {}
+            if key not in values:
+                continue
+            run = run_index.get(run_id)
+            value = values[key]
+            evidence.append(
+                {
+                    "run_id": run_id,
+                    "date": (run or {}).get("date"),
+                    "value": value,
+                    "state": self._flag_state(value, flag.default, flag.type),
+                    "pass": (run or {}).get("pass"),
+                    "suites": (run or {}).get("suites") or {},
+                    "sources": [source.get("path") for source in record.get("sources") or [] if isinstance(source, dict)],
+                }
+            )
+        evidence.sort(key=lambda row: (str(row.get("date") or ""), row["run_id"]))
+
+        def baseline(row: dict[str, Any]) -> bool:
+            return not bool(row["value"]) if flag.type == "boolean" else row["value"] == flag.default
+
+        comparisons: list[dict[str, Any]] = []
+        previous_baseline: dict[str, Any] | None = None
+        for row in evidence:
+            if baseline(row):
+                previous_baseline = row
+                continue
+            if previous_baseline is None:
+                continue
+            outcomes = self._comparison_outcomes(previous_baseline, row)
+            comparisons.append(
+                {
+                    "baseline_run_id": previous_baseline["run_id"],
+                    "baseline_value": previous_baseline["value"],
+                    "run_id": row["run_id"],
+                    "value": row["value"],
+                    "date": row.get("date"),
+                    "outcomes": outcomes,
+                    "outcome_summary": "; ".join(outcomes) or "No shared numeric suite metrics recorded.",
+                }
+            )
+        return {
+            "key": key,
+            "type": flag.type,
+            "default": flag.default,
+            "description": self._flag_description(flag.config_field),
+            "implementation": self._flag_implementation(flag.config_field),
+            "evidence": list(reversed(evidence[-100:])),
+            "comparisons": list(reversed(comparisons[-50:])),
+            "comparison_note": (
+                "Each row compares a recorded enabled or overridden value with the previous "
+                "recorded disabled or default value. Other settings may differ; this is not causal evidence."
+            ),
+            "provenance": "committed" if history else "missing",
+        }
+
+    @staticmethod
+    def _flag_state(value: Any, default: Any, kind: str) -> str:
+        if kind == "boolean":
+            return "enabled" if bool(value) else "disabled"
+        return "default" if value == default else "overridden"
+
+    def run_feature_flags(self, run_id: str, run_dir: Path) -> dict[str, Any]:
+        registry = feature_flag_catalog()
+        live = load_snapshot(run_dir)
+        history = self._feature_history().get(run_id)
+        snapshots = live.get("snapshots", {}) if isinstance(live, dict) else {}
+        phases = ["training", "evaluation"] if snapshots else ["historical"]
+        rows: list[dict[str, Any]] = []
+        for flag in registry["flags"]:
+            key = str(flag["key"])
+            cells: dict[str, dict[str, Any]] = {}
+            for phase in phases:
+                source = snapshots.get(phase, {}) if isinstance(snapshots, dict) else {}
+                source_rows = source.get("flags", []) if isinstance(source, dict) else []
+                recorded = next(
+                    (
+                        item
+                        for item in source_rows
+                        if isinstance(item, dict) and item.get("key") == key
+                    ),
+                    None,
+                )
+                if isinstance(recorded, dict):
+                    cells[phase] = {
+                        "recorded": True,
+                        "value": recorded.get("value"),
+                        "state": recorded.get("state"),
+                        "source": "live",
+                    }
+                elif phase == "historical" and isinstance(history, dict):
+                    conflicts = history.get("conflicts") or {}
+                    values = history.get("values") or {}
+                    if key in conflicts:
+                        cells[phase] = {
+                            "recorded": False,
+                            "value": None,
+                            "state": "conflict",
+                            "source": "committed",
+                        }
+                    elif key in values:
+                        value = values[key]
+                        cells[phase] = {
+                            "recorded": True,
+                            "value": value,
+                            "state": self._flag_state(value, flag["default"], flag["type"]),
+                            "source": "committed",
+                        }
+                    else:
+                        cells[phase] = {
+                            "recorded": False,
+                            "value": None,
+                            "state": "not_recorded",
+                            "source": "committed",
+                        }
+                else:
+                    cells[phase] = {
+                        "recorded": False,
+                        "value": None,
+                        "state": "not_recorded",
+                        "source": "missing",
+                    }
+            rows.append({**flag, "cells": cells})
+        return {
+            "schema": registry["schema"],
+            "registry_revision": registry["revision"],
+            "provenance": "live" if snapshots else "committed" if history else "missing",
+            "phases": phases,
+            "rows": rows,
+            "history_sources": (history or {}).get("sources", []),
+        }
 
     # ---- runs (lineage + per-run artifacts) -----------------------------------
 
@@ -885,6 +1195,12 @@ class Readers:
                 )
                 if not normalized_suites:
                     continue
+                matched_evals = matched.get("evals") or payload.get("evals") or {}
+                matched_criteria = (
+                    matched_evals.get("criteria")
+                    if isinstance(matched_evals, dict)
+                    else {}
+                )
                 rows.append(
                     {
                         "id": run_id,
@@ -895,7 +1211,11 @@ class Readers:
                         or _stem_date(path.stem),
                         "pass": gate_pass,
                         "suites": normalized_suites,
-                        "agentv": matched.get("agentv") or payload.get("agentv"),
+                        "eval_criteria": (
+                            matched_criteria
+                            if isinstance(matched_criteria, dict)
+                            else {}
+                        ),
                         "source_schema": "matched_runs@experiment",
                         "checkpoint": matched.get("checkpoint_sha256"),
                         "source": f"docs/design/{path.name}",
@@ -1192,6 +1512,7 @@ class Readers:
             "scoreboard": scoreboard,
             "insights": insights,
             "training_data": self.run_training_data(run_id),
+            "feature_flags": self.run_feature_flags(run_id, run_dir),
             **artifacts,
         }
 
@@ -1333,7 +1654,14 @@ class Readers:
         }
 
     def _checkpoint_resource_metrics(
-        self, *, run_id: str, role: str, kind: str, location: str, status: str
+        self,
+        *,
+        run_id: str,
+        role: str,
+        kind: str,
+        location: str,
+        status: str,
+        declared_parameters: str = "",
     ) -> dict[str, str]:
         evidence = " ".join((role, kind, location, status)).casefold()
         architecture = (
@@ -1345,6 +1673,7 @@ class Readers:
             if "grammar" in evidence
             else "TwoTower · scratch"
         )
+        declared = _plain_markdown(declared_parameters)
 
         checkpoint: Path | None = None
         raw_path = _plain_markdown(location).split(" ", 1)[0]
@@ -1399,6 +1728,8 @@ class Readers:
                 "parameters": (
                     _format_parameters(parameter_count)
                     if parameter_count
+                    else declared
+                    if declared and declared != "—"
                     else _format_parameters(
                         comparable.get("parameter_count"), estimated=True
                     )
@@ -1428,6 +1759,22 @@ class Readers:
                 "resource_basis": (
                     f"Measured from local {', '.join(measured)}; missing fields "
                     "use the marked comparable architecture estimate."
+                ),
+            }
+
+        if declared and declared != "—":
+            return {
+                "architecture": architecture,
+                "parameters": declared,
+                "model_size": (
+                    "≈270 MB BF16"
+                    if architecture == "TwoTower · frozen HF"
+                    else "—"
+                ),
+                "throughput": "—",
+                "resource_basis": (
+                    "Parameter size from the model-card roster; checkpoint "
+                    "footprint and throughput were not measured locally."
                 ),
             }
 
@@ -1479,8 +1826,60 @@ class Readers:
                 kind=str(row.get("kind") or ""),
                 location=str(row.get("location") or ""),
                 status=str(row.get("status") or ""),
+                declared_parameters=str(row.get("parameters") or ""),
             ),
         }
+
+    def _attach_linked_metrics(self, row: dict[str, Any]) -> dict[str, Any]:
+        """Join scoreboard/eval evidence onto a checkpoint or reference row."""
+        run_id = str(row.get("run_id") or "")
+        scoreboard = self._scoreboard_row(run_id) if run_id else None
+        metrics, suite_n = _suite_metrics((scoreboard or {}).get("suites"))
+        agentv = (scoreboard or {}).get("agentv")
+        if not isinstance(agentv, dict):
+            agentv = {}
+        prior_metrics = row.get("metrics") if isinstance(row.get("metrics"), dict) else {}
+        if scoreboard is None:
+            evaluation_status = str(
+                row.get("evaluation_status") or "no linked experiment"
+            )
+            gate_pass = row.get("gate_pass")
+        elif metrics:
+            evaluation_status = "evaluated"
+            gate_pass = scoreboard.get("pass")
+        else:
+            evaluation_status = str(
+                row.get("evaluation_status")
+                or ("evaluated" if prior_metrics else "no suite metrics")
+            )
+            gate_pass = (
+                scoreboard.get("pass")
+                if scoreboard.get("pass") is not None
+                else row.get("gate_pass")
+            )
+        linked = {
+            **row,
+            "experiment_id": (scoreboard or {}).get("id") or row.get("experiment_id"),
+            "matrix": (scoreboard or {}).get("matrix") or row.get("matrix"),
+            "gate_pass": gate_pass,
+            "evaluation_status": evaluation_status,
+            "metrics": metrics or prior_metrics,
+            "suite_n": suite_n or row.get("suite_n") or 0,
+            "agentv": agentv or row.get("agentv") or {},
+            "suites": (scoreboard or {}).get("suites") or row.get("suites") or {},
+        }
+        checkpoint = (scoreboard or {}).get("checkpoint") or row.get("checkpoint")
+        if checkpoint:
+            linked["checkpoint"] = checkpoint
+        # Prefer train_summary params when the scoreboard row carried a live train.
+        training = (scoreboard or {}).get("training")
+        if isinstance(training, dict) and isinstance(training.get("track"), dict):
+            track = training["track"]
+            counts = [track.get("trainable_params"), track.get("frozen_params")]
+            if any(isinstance(value, int) for value in counts):
+                total = sum(value for value in counts if isinstance(value, int))
+                linked["parameters"] = _format_parameters(total)
+        return linked
 
     def _local_run_checkpoints(self) -> list[dict[str, Any]]:
         """Scan ``outputs/runs/*/`` for train summaries / bucket sidecars."""
@@ -1616,6 +2015,7 @@ class Readers:
                     "kind": row.get("kind", ""),
                     "location": row.get("location", ""),
                     "status": row.get("status", ""),
+                    "parameters": row.get("parameters", ""),
                     "source": "model_card",
                     "provenance": "committed",
                 }
@@ -1663,7 +2063,10 @@ class Readers:
         else:
             aggregate = "committed"
         return {
-            "checkpoints": [self._with_resource_metrics(row) for row in roster],
+            "checkpoints": [
+                self._attach_linked_metrics(self._with_resource_metrics(row))
+                for row in roster
+            ],
             "provenance": aggregate,
             "sources": sources,
             "bucket": {
@@ -2331,6 +2734,8 @@ class Readers:
             run_id = _plain_markdown(row.get("run id"))
             if "champion" not in role.casefold() or run_id in live_run_ids:
                 continue
+            scoreboard = self._scoreboard_row(run_id)
+            metrics, suite_n = _suite_metrics((scoreboard or {}).get("suites"))
             references.append(
                 {
                     "role": role,
@@ -2339,9 +2744,12 @@ class Readers:
                     "kind": _plain_markdown(row.get("kind")),
                     "location": _plain_markdown(row.get("location")),
                     "status": _plain_markdown(row.get("status")),
-                    "evaluation_status": "evaluation not attached",
-                    "metrics": {},
-                    "suite_sizes": {},
+                    "parameters": _plain_markdown(row.get("parameters")),
+                    "evaluation_status": (
+                        "evaluated" if metrics else "evaluation not attached"
+                    ),
+                    "metrics": metrics,
+                    "suite_sizes": {"all": suite_n} if suite_n else {},
                     "created_at": None,
                     "provenance": "committed",
                 }
@@ -2376,6 +2784,7 @@ class Readers:
                         or _plain_markdown(matched.get("location")),
                         "status": _plain_markdown(matched.get("status"))
                         or _plain_markdown(newest.get("notes")),
+                        "parameters": _plain_markdown(matched.get("parameters")),
                         "evaluation_status": "evaluated" if metrics else "not evaluated",
                         "metrics": metrics,
                         "suite_sizes": {"all": suite_n} if suite_n else {},
@@ -2386,17 +2795,23 @@ class Readers:
 
         if not references and roster:
             row = roster[0]
+            run_id = _plain_markdown(row.get("run id"))
+            scoreboard = self._scoreboard_row(run_id) if run_id else None
+            metrics, suite_n = _suite_metrics((scoreboard or {}).get("suites"))
             references.append(
                 {
                     "role": _plain_markdown(row.get("role")),
                     "track": "twotower",
-                    "run_id": _plain_markdown(row.get("run id")),
+                    "run_id": run_id,
                     "kind": _plain_markdown(row.get("kind")),
                     "location": _plain_markdown(row.get("location")),
                     "status": _plain_markdown(row.get("status")),
-                    "evaluation_status": "evaluation not attached",
-                    "metrics": {},
-                    "suite_sizes": {},
+                    "parameters": _plain_markdown(row.get("parameters")),
+                    "evaluation_status": (
+                        "evaluated" if metrics else "evaluation not attached"
+                    ),
+                    "metrics": metrics,
+                    "suite_sizes": {"all": suite_n} if suite_n else {},
                     "created_at": None,
                     "provenance": "committed",
                 }
@@ -2421,7 +2836,10 @@ class Readers:
                 ),
             }
         )
-        return [self._with_resource_metrics(row) for row in references], identity
+        return [
+            self._attach_linked_metrics(self._with_resource_metrics(row))
+            for row in references
+        ], identity
 
     def _performance_rows(
         self, references: list[dict[str, Any]]

@@ -1,0 +1,204 @@
+{
+  "claim_class": "wiring_fixture",
+  "confirmation_rows": 0,
+  "construction": {
+    "cache_reuse": 0,
+    "wall_seconds": 0.29705962099978933
+  },
+  "content_fingerprint": "e9248b29ffdd0029d589c9472092914e5e66ef03cfe74d49ab3217446d874389",
+  "counts": {
+    "candidate_sets": 4,
+    "failures": 0,
+    "records": 2,
+    "rows": 4
+  },
+  "dataset_id": "slm196_legal_edit_bridge_fixture",
+  "diagnostics": {
+    "bridge_lengths": {
+      "2": 4
+    },
+    "candidate_set_size": {
+      "histogram": {
+        "9": 1,
+        "10": 1,
+        "16": 1,
+        "19": 1
+      },
+      "max": 19,
+      "mean": 13.5,
+      "min": 9
+    },
+    "coverage_comparison": {
+      "solver_traces": {
+        "delta": null,
+        "reason": "no hash-pinned solver-trace manifest supplied",
+        "status": "unavailable"
+      },
+      "x22_local_corruption": {
+        "delta": null,
+        "reason": "no hash-pinned X22 baseline manifest supplied",
+        "status": "unavailable"
+      }
+    },
+    "edit_family_coverage": {
+      "InsertChild": 2,
+      "InsertStatement": 2
+    },
+    "independent_targets": 2,
+    "multi_positive_rate": 1.0,
+    "paths": 2,
+    "planner_failure_reasons": {},
+    "progress_values": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "rows": 4,
+    "singleton_ratio": 0.0,
+    "source_policy_breakdown": {
+      "declared_request_contract": 4
+    },
+    "target_cluster_icc_inputs": {
+      "cta": [
+        {
+          "candidate_count": 10,
+          "positive_count": 8,
+          "progress": 0.0,
+          "row_id": "row_a84197a7ad1177e34778ea00"
+        },
+        {
+          "candidate_count": 9,
+          "positive_count": 8,
+          "progress": 0.5,
+          "row_id": "row_d19f8fa3006745c6e4b59102"
+        }
+      ],
+      "hero": [
+        {
+          "candidate_count": 19,
+          "positive_count": 12,
+          "progress": 0.0,
+          "row_id": "row_e1b12fbbd7d2d4bc4e5cb90e"
+        },
+        {
+          "candidate_count": 16,
+          "positive_count": 13,
+          "progress": 0.5,
+          "row_id": "row_d0b680a4645c282f4b388668"
+        }
+      ]
+    },
+    "target_clusters": 2,
+    "unique_candidate_sets": 4,
+    "unique_state_fingerprints": 4,
+    "unknown_prevalence": 0.24074074074074073
+  },
+  "honest_caveats": [
+    "Fixture evidence validates wiring only; it is not production bridge coverage.",
+    "X22 and solver coverage deltas remain unavailable until hash-pinned baselines are supplied.",
+    "No confirmation rows, model loss, checkpoint, or winner selection is included."
+  ],
+  "planner_manifest": {
+    "claim_manifest_digest": "sha256:slm184-dev-fixture-no-confirmation",
+    "path": "tests/fixtures/slm196_legal_edit_bridge/planner_manifest.json",
+    "selected_arm": "canonical_greedy",
+    "sha256": "3d36193468c4fc9ca8797578e6b4a78826f80e6b8359aa64fdcd6fe86dad763c",
+    "source_policy": "declared_request_contract"
+  },
+  "publishable": false,
+  "records_source": {
+    "count": 2,
+    "path": "tests/fixtures/slm196_legal_edit_bridge/records.jsonl",
+    "sha256": "041346aad479a27b210cb76ef594c8f811bb711dfff39ae5fde6e261211a574a"
+  },
+  "schema": "LegalEditBridgeCorpusManifestV1",
+  "split_policy": "target_cluster_sha20_train_dev",
+  "status": "fixture_complete",
+  "task_balance": {
+    "document": 4
+  },
+  "validation": {
+    "candidate_reconstruction_rate": 1.0,
+    "forbidden_model_input_fields": 0,
+    "replay_rate": 1.0,
+    "rows": 4,
+    "split_safe": true
+  },
+  "version_stamp": {
+    "code_commit": "ec71b590efd4b37fe2a28e321ca921f51b3a25d1",
+    "code_dirty": true,
+    "components": {
+      "data.flow.legal_edit_bridge_corpus": "v2",
+      "model.legal_edit_batch": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T00:00:00+00:00"
+  },
+  "schema_version": 2,
+  "kind": "train",
+  "immutable": true,
+  "trace_id": "slm196-f048b5102ce76066",
+  "artifacts": [
+    {
+      "path": "bridge_rows.jsonl",
+      "sha256": "7c8d016a1622d84e94efb639ec23e85806de72699a3f363d15f44e8bedebfbec",
+      "size": 23477
+    },
+    {
+      "path": "candidate_sets/b5982253b56d2302b9c8b8590da58b10af4a01e92c28078238d2c580c22c9548.json",
+      "sha256": "7c0e0b8e8bf9df24ce9bbb4dca7e5de5290a78acae3db4fd105d4fff6c40c4f6",
+      "size": 58158
+    },
+    {
+      "path": "candidate_sets/f55b2157e39267fa083ba769c0557f8817cb57b3f841986d3fd245ac24abead3.json",
+      "sha256": "c5ad824d727cbdc2cb08bdfa99448b087050bd333753b7628f3e39820d86519c",
+      "size": 27109
+    },
+    {
+      "path": "candidate_sets/f62a855dd3614c55fbdc8ff8bdb6970bfed784680d4bf6f4a2c73569d9cbd23d.json",
+      "sha256": "fbd308b99d39c8182388d17657535ca98a432daddda035f9b13af4a51c290414",
+      "size": 49788
+    },
+    {
+      "path": "candidate_sets/fd47a7ccb6acf4953acb15c1de5e8124e4d83fca20c03f885085b5f01b4f202b.json",
+      "sha256": "c849250f536aa55715b6706d54d0a741a7bd7bfc7bc3583e62da6b572d1fd172",
+      "size": 29810
+    },
+    {
+      "path": "quality_report.json",
+      "sha256": "920c0c4d69c48b3bdd11d6422fdc900afbaac9084c7259d96014762ab5db68a1",
+      "size": 338
+    },
+    {
+      "path": "rejected.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "states/25d4a1ff5a0df7f1b6d5ad3741417524c42877e19a1778208e209bd07fa7312b.json",
+      "sha256": "9ff2942467f0f45ee30dfcda93df4e49b48dfdb47ddaceffeb2f99754d67e659",
+      "size": 350
+    },
+    {
+      "path": "states/38c97bead59ebbc179530ace0f6c9c418c28117e32f8cbfee7e4cf1a06277fb3.json",
+      "sha256": "bd620d706706035e36d1a3016cfd5df228e85399ae146ddc807bf03a073be420",
+      "size": 306
+    },
+    {
+      "path": "states/431742f6ea40c09f7a98491db36d041c1f92868fd74571ce76fcd0baaf04ae09.json",
+      "sha256": "c0ffc9afbb343d363c8b922c314d675dbc9622fab9213b1c2cede7f6920b1d95",
+      "size": 391
+    },
+    {
+      "path": "states/a7d5e8892fe732a863e982556f106a2eb792726486b846466c42ab5d5bf4fe24.json",
+      "sha256": "d108c97fc52834b5fc6879559c46e4b15028181b35120d82444d441b87a0dc38",
+      "size": 336
+    },
+    {
+      "path": "synthesis_feedback.json",
+      "sha256": "ce5543c7f844c447159c1379b298173899d46cb3eb1bd7c4c58ecdbf6f315c1c",
+      "size": 2011
+    }
+  ]
+}

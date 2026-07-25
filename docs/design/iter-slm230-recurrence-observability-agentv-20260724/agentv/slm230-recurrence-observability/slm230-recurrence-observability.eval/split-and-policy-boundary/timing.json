@@ -1,0 +1,21 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "code_commit": "ea27ecfea76eb76cb1d6ef98cc0a50cfeae22027",
+    "code_dirty": false,
+    "components": {
+      "evals.scoring": "v22",
+      "harness.experiments.slm230_recurrence_observability": "v11",
+      "model.recursive_denoiser": "v15"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T02:50:00.992282+00:00"
+  }
+}

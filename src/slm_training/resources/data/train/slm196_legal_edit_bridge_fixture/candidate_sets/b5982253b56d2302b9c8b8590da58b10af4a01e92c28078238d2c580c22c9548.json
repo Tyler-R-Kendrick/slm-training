@@ -1,0 +1,1546 @@
+{
+  "candidate_set_digest": "b5982253b56d2302b9c8b8590da58b10af4a01e92c28078238d2c580c22c9548",
+  "candidates": [
+    {
+      "candidate_id": "edit_1b11e3192952827f678b08e6",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": "hero",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "column",
+        "edit_id": "edit_1b11e3192952827f678b08e6",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Stack",
+        "slot": null,
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": "column",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 3,
+        "production": "Stack",
+        "slot_pointer": null,
+        "successor_fingerprint": "4658ca7ee3413db1f98165228bbcbdbcd73cff21df00cf28d692cc126ea4738f"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "4658ca7ee3413db1f98165228bbcbdbcd73cff21df00cf28d692cc126ea4738f",
+      "transition_certificate": {
+        "certificate_digest": "62e70a8fe6cbe9a3b0928f266437a2359623f00d366e3f0247933d726009a56c",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": "hero",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "column",
+          "edit_id": "edit_1b11e3192952827f678b08e6",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Stack",
+          "slot": null,
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "4658ca7ee3413db1f98165228bbcbdbcd73cff21df00cf28d692cc126ea4738f",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = Stack([hero], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_1d169684d554b2ff4a002926",
+      "edit": {
+        "action": "SetEnum",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "row",
+        "edit_id": "edit_1d169684d554b2ff4a002926",
+        "index": null,
+        "inverse_action": "SetEnum",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "hero"
+      },
+      "features": {
+        "action_kind": "SetEnum",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": "row",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 2,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "51f67d37114e67b8977c90224c3abdb7c5504f80bec1290e995c229079f20051"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "51f67d37114e67b8977c90224c3abdb7c5504f80bec1290e995c229079f20051",
+      "transition_certificate": {
+        "certificate_digest": "d52b9b9935fbaf689d61bf1e81436909d89b4d2600e286300929e42ba9d9067d",
+        "edit": {
+          "action": "SetEnum",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "row",
+          "edit_id": "edit_1d169684d554b2ff4a002926",
+          "index": null,
+          "inverse_action": "SetEnum",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "hero"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "51f67d37114e67b8977c90224c3abdb7c5504f80bec1290e995c229079f20051",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"row\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_1f6dcaf36913fcd43c0eb767",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_1f6dcaf36913fcd43c0eb767",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "TextContent",
+        "slot": ":hero.body",
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 3,
+        "production": "TextContent",
+        "slot_pointer": 0,
+        "successor_fingerprint": "8aa96a6b24864f8c72ba26a19bca4b752c319c9aa776bd880390cc3f0990ad53"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "8aa96a6b24864f8c72ba26a19bca4b752c319c9aa776bd880390cc3f0990ad53",
+      "transition_certificate": {
+        "certificate_digest": "4a2a6c1697c64c3e0b52613e407dba4b6cc55d9f4f5475d8542b5e05c5dabe8d",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_1f6dcaf36913fcd43c0eb767",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "TextContent",
+          "slot": ":hero.body",
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "8aa96a6b24864f8c72ba26a19bca4b752c319c9aa776bd880390cc3f0990ad53",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = TextContent(\":hero.body\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_42f2b1c5fc03c76b1b11e585",
+      "edit": {
+        "action": "DeleteStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_42f2b1c5fc03c76b1b11e585",
+        "index": null,
+        "inverse_action": "InsertStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "hero"
+      },
+      "features": {
+        "action_kind": "DeleteStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 2,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "ff3151354993df74ec888e7bc9aa3b1d94bfbf097de99216c46ff3ecb32df540"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "ff3151354993df74ec888e7bc9aa3b1d94bfbf097de99216c46ff3ecb32df540",
+      "transition_certificate": {
+        "certificate_digest": "1f40e111fabf168443a8daaa953c0a6ae698dac048d72032351b9514eeda6bca",
+        "edit": {
+          "action": "DeleteStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_42f2b1c5fc03c76b1b11e585",
+          "index": null,
+          "inverse_action": "InsertStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "hero"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "ff3151354993df74ec888e7bc9aa3b1d94bfbf097de99216c46ff3ecb32df540",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nroot = Stack([], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_4adabca067138c3ec3ca1843",
+      "edit": {
+        "action": "SetEnum",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "row",
+        "edit_id": "edit_4adabca067138c3ec3ca1843",
+        "index": null,
+        "inverse_action": "SetEnum",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "root"
+      },
+      "features": {
+        "action_kind": "SetEnum",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": "row",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 5,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "16ddf3ea625579daa8a33a1a5e1fb087e340a54d9b8158e436525c9a4d4afe6f"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "16ddf3ea625579daa8a33a1a5e1fb087e340a54d9b8158e436525c9a4d4afe6f",
+      "transition_certificate": {
+        "certificate_digest": "c86fa2aee0d28d49b857aead80f9ad4a546ad3669c44674ee1af13f5f03c02aa",
+        "edit": {
+          "action": "SetEnum",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "row",
+          "edit_id": "edit_4adabca067138c3ec3ca1843",
+          "index": null,
+          "inverse_action": "SetEnum",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "root"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "16ddf3ea625579daa8a33a1a5e1fb087e340a54d9b8158e436525c9a4d4afe6f",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"row\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_4ae56fa9cdae8ab7563acd33",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_4ae56fa9cdae8ab7563acd33",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Button",
+        "slot": ":hero.title",
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 3,
+        "production": "Button",
+        "slot_pointer": 1,
+        "successor_fingerprint": "6458677101149a222775a22149d6e409a4e83abf02a54f0eb9afc60261fc6e70"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "6458677101149a222775a22149d6e409a4e83abf02a54f0eb9afc60261fc6e70",
+      "transition_certificate": {
+        "certificate_digest": "3077095092cdea8f3c32baa0be3aba8c532f3ee447b89073ed08e9aeaf4f59bf",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_4ae56fa9cdae8ab7563acd33",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Button",
+          "slot": ":hero.title",
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "6458677101149a222775a22149d6e409a4e83abf02a54f0eb9afc60261fc6e70",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = Button(\":hero.title\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_7627fc58407e26bd68d46441",
+      "edit": {
+        "action": "DeleteChild",
+        "affected_node_ids": [],
+        "child_name": "hero",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_7627fc58407e26bd68d46441",
+        "index": null,
+        "inverse_action": "InsertChild",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "root"
+      },
+      "features": {
+        "action_kind": "DeleteChild",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 5,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "e9f7a684735d816daf6c474ea23a465dd729c35bd84a6abcd15d052fe1156160"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "e9f7a684735d816daf6c474ea23a465dd729c35bd84a6abcd15d052fe1156160",
+      "transition_certificate": {
+        "certificate_digest": "15dfb78c9c1b98d3b555c0698bbf4648f9535c3b00b941a71dd8d91077523f0e",
+        "edit": {
+          "action": "DeleteChild",
+          "affected_node_ids": [],
+          "child_name": "hero",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_7627fc58407e26bd68d46441",
+          "index": null,
+          "inverse_action": "InsertChild",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "root"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "e9f7a684735d816daf6c474ea23a465dd729c35bd84a6abcd15d052fe1156160",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_7cddb455cc038316112bd830",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": "hero_title",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "column",
+        "edit_id": "edit_7cddb455cc038316112bd830",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Card",
+        "slot": null,
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": "column",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 3,
+        "production": "Card",
+        "slot_pointer": null,
+        "successor_fingerprint": "72949e3ffa1966066c9d0e1d15d2e50f3963492205981fa7f6ccf4d3a38b1287"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "72949e3ffa1966066c9d0e1d15d2e50f3963492205981fa7f6ccf4d3a38b1287",
+      "transition_certificate": {
+        "certificate_digest": "5d8c1a9659e018981c611ab27207ca7608bb6d1762c656a2f4764117b8045fd8",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": "hero_title",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "column",
+          "edit_id": "edit_7cddb455cc038316112bd830",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Card",
+          "slot": null,
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "72949e3ffa1966066c9d0e1d15d2e50f3963492205981fa7f6ccf4d3a38b1287",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_80a5ef572091f8f177bdf751",
+      "edit": {
+        "action": "InsertChild",
+        "affected_node_ids": [],
+        "child_name": "hero_title",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_80a5ef572091f8f177bdf751",
+        "index": null,
+        "inverse_action": "DeleteChild",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "root"
+      },
+      "features": {
+        "action_kind": "InsertChild",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 5,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "2e8cabbe567c83ddd9d5e2b72a8135f9f8202b30b706fe1c25bac1df020c51e7"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "2e8cabbe567c83ddd9d5e2b72a8135f9f8202b30b706fe1c25bac1df020c51e7",
+      "transition_certificate": {
+        "certificate_digest": "280e2d04340e774504b3cc5824e9182cab98c5ec61d79a5b018fd2bd5f6c14c4",
+        "edit": {
+          "action": "InsertChild",
+          "affected_node_ids": [],
+          "child_name": "hero_title",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_80a5ef572091f8f177bdf751",
+          "index": null,
+          "inverse_action": "DeleteChild",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "root"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "2e8cabbe567c83ddd9d5e2b72a8135f9f8202b30b706fe1c25bac1df020c51e7",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero, hero_title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_84dd70d1f875b6617ff0a4c7",
+      "edit": {
+        "action": "ReplaceProduction",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_84dd70d1f875b6617ff0a4c7",
+        "index": null,
+        "inverse_action": "ReplaceProduction",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Stack",
+        "slot": null,
+        "target_name": "hero"
+      },
+      "features": {
+        "action_kind": "ReplaceProduction",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 2,
+        "production": "Stack",
+        "slot_pointer": null,
+        "successor_fingerprint": "ec896c4dda3a98949254b3af64372019e90a815a5582dbe3a0cc60b603343983"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "ec896c4dda3a98949254b3af64372019e90a815a5582dbe3a0cc60b603343983",
+      "transition_certificate": {
+        "certificate_digest": "86b0c4158b7731c5bbb4ddfadf1881e93f667a13d8452a30d4f17ffd718813aa",
+        "edit": {
+          "action": "ReplaceProduction",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_84dd70d1f875b6617ff0a4c7",
+          "index": null,
+          "inverse_action": "ReplaceProduction",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Stack",
+          "slot": null,
+          "target_name": "hero"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "ec896c4dda3a98949254b3af64372019e90a815a5582dbe3a0cc60b603343983",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Stack([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_9693e908824d720655eedc0c",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": "hero",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "column",
+        "edit_id": "edit_9693e908824d720655eedc0c",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Card",
+        "slot": null,
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": "column",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 3,
+        "production": "Card",
+        "slot_pointer": null,
+        "successor_fingerprint": "5ba5db7b57f74a12a377e62d36b4f18cfc50e615582c2861d15859532151c1bc"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "5ba5db7b57f74a12a377e62d36b4f18cfc50e615582c2861d15859532151c1bc",
+      "transition_certificate": {
+        "certificate_digest": "70dc2ec9e660a0a40293aa5203cd6b45c3b83323b04f9a2490bfb5a3abb1bc61",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": "hero",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "column",
+          "edit_id": "edit_9693e908824d720655eedc0c",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Card",
+          "slot": null,
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "5ba5db7b57f74a12a377e62d36b4f18cfc50e615582c2861d15859532151c1bc",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = Card([hero], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_a88e37fe2b79c8655650c425",
+      "edit": {
+        "action": "BindSlotPointer",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_a88e37fe2b79c8655650c425",
+        "index": null,
+        "inverse_action": "BindSlotPointer",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": ":hero.body",
+        "target_name": "hero_title"
+      },
+      "features": {
+        "action_kind": "BindSlotPointer",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 4,
+        "production": null,
+        "slot_pointer": 0,
+        "successor_fingerprint": "707c25b457e723b3dd8a120c9d4679d540c5d7d6575498d61d6a83c5e47024fb"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "707c25b457e723b3dd8a120c9d4679d540c5d7d6575498d61d6a83c5e47024fb",
+      "transition_certificate": {
+        "certificate_digest": "9e9d00004fc1fdb831a18479664066050a3b6ec1b8dcdb76d16905368f73f9ec",
+        "edit": {
+          "action": "BindSlotPointer",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_a88e37fe2b79c8655650c425",
+          "index": null,
+          "inverse_action": "BindSlotPointer",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": ":hero.body",
+          "target_name": "hero_title"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "707c25b457e723b3dd8a120c9d4679d540c5d7d6575498d61d6a83c5e47024fb",
+        "target_program": "hero_title = TextContent(\":hero.body\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_b9f6bb77a3bb6cd416f115ec",
+      "edit": {
+        "action": "DeleteChild",
+        "affected_node_ids": [],
+        "child_name": "hero_title",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_b9f6bb77a3bb6cd416f115ec",
+        "index": null,
+        "inverse_action": "InsertChild",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "hero"
+      },
+      "features": {
+        "action_kind": "DeleteChild",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 2,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "00acad44c1f26b85e5c993ed6df10202ad16aeaa6ef6360c48d99be4366586d0"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "00acad44c1f26b85e5c993ed6df10202ad16aeaa6ef6360c48d99be4366586d0",
+      "transition_certificate": {
+        "certificate_digest": "296677373f18cf11262aa0b8c16b31f82d408bd92683fce89bd82c81aeadc8ba",
+        "edit": {
+          "action": "DeleteChild",
+          "affected_node_ids": [],
+          "child_name": "hero_title",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_b9f6bb77a3bb6cd416f115ec",
+          "index": null,
+          "inverse_action": "InsertChild",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "hero"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "00acad44c1f26b85e5c993ed6df10202ad16aeaa6ef6360c48d99be4366586d0",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_d51927c8a7716412f54e1aaf",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_d51927c8a7716412f54e1aaf",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Button",
+        "slot": ":hero.body",
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 3,
+        "production": "Button",
+        "slot_pointer": 0,
+        "successor_fingerprint": "16032bd95e0ff3eb4085824cb2884a35edfa9f570a24972c6d60677f011610b4"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "16032bd95e0ff3eb4085824cb2884a35edfa9f570a24972c6d60677f011610b4",
+      "transition_certificate": {
+        "certificate_digest": "644ec9b4cd863a43e23107c45eba02b8e1f09b82ebbad2e44239cfecfbd5b965",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_d51927c8a7716412f54e1aaf",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Button",
+          "slot": ":hero.body",
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "16032bd95e0ff3eb4085824cb2884a35edfa9f570a24972c6d60677f011610b4",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = Button(\":hero.body\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_dc166477d44eeed7418b43b8",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_dc166477d44eeed7418b43b8",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "TextContent",
+        "slot": ":hero.title",
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 3,
+        "production": "TextContent",
+        "slot_pointer": 1,
+        "successor_fingerprint": "33a4259864fea24134aef90cb5e2f75ed03eb7e3fa402409156d7b003cfc040a"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "33a4259864fea24134aef90cb5e2f75ed03eb7e3fa402409156d7b003cfc040a",
+      "transition_certificate": {
+        "certificate_digest": "098afd946c8d2538857bda526cbab63b56afad2588112a8aeb406efddd2b8913",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_dc166477d44eeed7418b43b8",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "TextContent",
+          "slot": ":hero.title",
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "33a4259864fea24134aef90cb5e2f75ed03eb7e3fa402409156d7b003cfc040a",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = TextContent(\":hero.title\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_dfdbfa0a6dd1bd47f468b2ec",
+      "edit": {
+        "action": "DeleteStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_dfdbfa0a6dd1bd47f468b2ec",
+        "index": null,
+        "inverse_action": "InsertStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "hero_title"
+      },
+      "features": {
+        "action_kind": "DeleteStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 4,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "38595806b216f225ab808035d87cee707a048cc94ce0cbe28fed316124e2545f"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "38595806b216f225ab808035d87cee707a048cc94ce0cbe28fed316124e2545f",
+      "transition_certificate": {
+        "certificate_digest": "16d6c763ee8e728c5463c8618f32cb7e8667ead5bbf6aad43b9dad02421884af",
+        "edit": {
+          "action": "DeleteStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_dfdbfa0a6dd1bd47f468b2ec",
+          "index": null,
+          "inverse_action": "InsertStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "hero_title"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "38595806b216f225ab808035d87cee707a048cc94ce0cbe28fed316124e2545f",
+        "target_program": "hero = Card([], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_e08b96229fd88657d1a91fa9",
+      "edit": {
+        "action": "ReplaceProduction",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_e08b96229fd88657d1a91fa9",
+        "index": null,
+        "inverse_action": "ReplaceProduction",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Button",
+        "slot": null,
+        "target_name": "hero_title"
+      },
+      "features": {
+        "action_kind": "ReplaceProduction",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 4,
+        "production": "Button",
+        "slot_pointer": null,
+        "successor_fingerprint": "e57bac8d275022f82e790b8bc0a1bf7adcae3ed44d7efcee2266afe28688aa53"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "e57bac8d275022f82e790b8bc0a1bf7adcae3ed44d7efcee2266afe28688aa53",
+      "transition_certificate": {
+        "certificate_digest": "0ed0b69977ce6584353dfa50eab246f58dfb7d0327e5ecae4b1d9def001eade9",
+        "edit": {
+          "action": "ReplaceProduction",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_e08b96229fd88657d1a91fa9",
+          "index": null,
+          "inverse_action": "ReplaceProduction",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Button",
+          "slot": null,
+          "target_name": "hero_title"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "e57bac8d275022f82e790b8bc0a1bf7adcae3ed44d7efcee2266afe28688aa53",
+        "target_program": "hero_title = Button(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_f2e8005d114594df9c872f2f",
+      "edit": {
+        "action": "ReplaceProduction",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_f2e8005d114594df9c872f2f",
+        "index": null,
+        "inverse_action": "ReplaceProduction",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Card",
+        "slot": null,
+        "target_name": "root"
+      },
+      "features": {
+        "action_kind": "ReplaceProduction",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 5,
+        "production": "Card",
+        "slot_pointer": null,
+        "successor_fingerprint": "7a9476a72acd12c773927d55ce25c291242c0d47c20d727057ef37bc0d555dc3"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "7a9476a72acd12c773927d55ce25c291242c0d47c20d727057ef37bc0d555dc3",
+      "transition_certificate": {
+        "certificate_digest": "df5e50e4d0e708f8df587c8f810e10963488d4e30f4e65d5dda58050a15e9cb6",
+        "edit": {
+          "action": "ReplaceProduction",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_f2e8005d114594df9c872f2f",
+          "index": null,
+          "inverse_action": "ReplaceProduction",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Card",
+          "slot": null,
+          "target_name": "root"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "7a9476a72acd12c773927d55ce25c291242c0d47c20d727057ef37bc0d555dc3",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Card([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_fc63a4200d114d821185052f",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": "hero_title",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "column",
+        "edit_id": "edit_fc63a4200d114d821185052f",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Stack",
+        "slot": null,
+        "target_name": "hero_body"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": "column",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 3,
+        "production": "Stack",
+        "slot_pointer": null,
+        "successor_fingerprint": "16cc43ff0257aaab2f4942b52deda7ce79c844ac3934f84da1686ff5d3518909"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "16cc43ff0257aaab2f4942b52deda7ce79c844ac3934f84da1686ff5d3518909",
+      "transition_certificate": {
+        "certificate_digest": "5342a90ae4e952e6501f782c18e2024b2361118a73d8c0ac54a7a0dee4dcec02",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": "hero_title",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "column",
+          "edit_id": "edit_fc63a4200d114d821185052f",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Stack",
+          "slot": null,
+          "target_name": "hero_body"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e",
+        "source_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "target_fingerprint": "16cc43ff0257aaab2f4942b52deda7ce79c844ac3934f84da1686ff5d3518909",
+        "target_program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nhero_body = Stack([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    }
+  ],
+  "schema": "ExactLegalEditCandidateSetV1",
+  "state_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e"
+}

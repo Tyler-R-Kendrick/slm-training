@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "bridge_curriculum_fixture_contract", "failures": [], "result": {"confirmation": {"reasons": ["the committed SLM-196 corpus is a non-publishable four-row fixture", "the train split contains only one target and two decision rows", "no powered long-bridge or deep-structure confirmation slice exists", "uniform-target balance and staged curricula are indistinguishable here"], "selected_arm": null, "status": "blocked"}, "verdict": "reject_curriculum_fixture_indistinguishable"}}

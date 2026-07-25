@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-import scripts.run_flow_power_protocol as _runner_module
 from scripts.run_flow_power_protocol import main
 
 
@@ -32,6 +30,14 @@ def test_plan_only_writes_manifest(tmp_path) -> None:
     assert "manifest" in data
 
 
+def test_locked_plan_writes_the_immutable_five_by_two_protocol(tmp_path) -> None:
+    assert main(["--mode", "locked-plan", "--output-dir", str(tmp_path)]) == 0
+    data = json.loads((tmp_path / "slm287_locked_power_protocol_report.json").read_text())
+    assert data["claim_class"] == "diagnostic"
+    assert data["protocol"]["seeds"] == [0, 1, 2, 3, 4]
+    assert len(data["protocol"]["backends"]) == 2
+
+
 def test_fixture_writes_design_docs(tmp_path) -> None:
     assert (
         main(
@@ -46,6 +52,8 @@ def test_fixture_writes_design_docs(tmp_path) -> None:
                 "2",
                 "--n-seeds",
                 "2",
+                "--seeds",
+                "0,1",
             ]
         )
         == 0
@@ -58,14 +66,12 @@ def test_fixture_writes_design_docs(tmp_path) -> None:
     assert data["cells"]
     assert data["version_stamp"]
 
-    root = Path(_runner_module.__file__).resolve().parents[1]
-    design_json = root / "docs/design/iter-slm183-power-protocol-20260720.json"
-    design_md = root / "docs/design/iter-slm183-power-protocol-20260720.md"
-    assert design_json.exists()
-    assert design_md.exists()
-    design_data = json.loads(design_json.read_text())
-    assert design_data["status"] == "fixture"
-    assert design_data["experiment_id"] == "slm183-power-protocol"
+    assert data["experiment_campaign"]["seeds"] == [0, 1]
+    assert {cell["seed"] for cell in data["cells"]} == {0, 1}
+    assert {cell["arm_id"] for cell in data["cells"]} == {
+        "synthetic_control",
+        "synthetic_candidate",
+    }
 
 
 def test_analyze_existing_writes_report(tmp_path) -> None:

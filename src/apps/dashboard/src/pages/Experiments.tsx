@@ -21,8 +21,13 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const [kind, setKind] = useState("research");
   const [jobId, setJobId] = useState<string | null>(null);
   const board = usePoll<any>(`/api/scoreboards/${kind}`, 30000);
+  const flags = usePoll<any>("/api/experiment-flags", 15000);
 
   const results = board.data?.results ?? [];
+  const flagRows = (flags.data?.flags ?? []).map((flag: any) => ({
+    ...flag,
+    href: `/experiments/flags/${encodeURIComponent(flag.key)}`,
+  }));
   const metricColumns = board.data?.metric_columns ?? [];
   const passed = results.filter((r: any) => r.pass === true).length;
 
@@ -43,7 +48,8 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
         <h1 className="page-title">Experiments</h1>
         <p className="page-sub">
           Ablation matrices — each row is one lever with a stable id. Cells are per-suite
-          metrics against ship gates. Rows are evidence, not deployable models. Values
+          metrics against ship gates, with parameter size and checkpoint path joined from
+          the model card when available. Rows are evidence, not deployable models. Values
           marked * come from legacy pre-split boards where parse_rate stood in for meaningful.
         </p>
       </div>
@@ -55,6 +61,31 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
       </div>
 
       <ErrorNote error={board.error} />
+      <ErrorNote error={flags.error} />
+
+      <Grid min="190px">
+        <StatTile label="Feature flags" value={flags.data?.count ?? "—"} accent="moss" />
+        <StatTile label="Boolean flags" value={flags.data?.boolean_count ?? "—"} />
+        <StatTile label="Historical runs" value={flags.data?.history_runs ?? "—"} />
+        <StatTile label="Registry" value={flags.data?.revision?.slice(0, 8) ?? "—"} />
+      </Grid>
+
+      <Card title="All feature flags" right={<ProvenanceBadge provenance={flags.data?.provenance} />}>
+        <DataTable
+          searchable
+          searchPlaceholder="Search feature flags"
+          columns={[
+            { key: "key", label: "OpenFeature flag" },
+            { key: "type", label: "type" },
+            { key: "default", label: "default" },
+          ]}
+          rows={flagRows}
+          render={{
+            key: (r) => <a className="mono runlink" title="open feature flag detail" onClick={() => navigate(r.href)}>{r.key}</a>,
+            default: (r) => <span className="mono">{typeof r.default === "object" ? JSON.stringify(r.default) : fmt(r.default)}</span>,
+          }}
+        />
+      </Card>
 
       <Grid min="190px">
         <StatTile label="Experiments" value={results.length} accent="moss" />
@@ -70,10 +101,15 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "id", label: "id" },
+            { key: "run_id", label: "run" },
+            { key: "parameters", label: "params", align: "right" },
             { key: "date", label: "date" },
             { key: "description", label: "experiment" },
             { key: "pass", label: "gate" },
             ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" as const })),
+            { key: "agentv", label: "AgentV", align: "right" },
+            { key: "eval_criteria", label: "Eval criteria", align: "right" },
+            { key: "checkpoint", label: "checkpoint" },
             { key: "trace", label: "trace", align: "right" },
           ]}
           rows={results}
@@ -83,11 +119,34 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
                 {r.id}
               </a>
             ),
+            run_id: (r) =>
+              r.run_id ? (
+                <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id)}`)} title="open run detail">
+                  {r.run_id}
+                </a>
+              ) : (
+                <span className="hint">—</span>
+              ),
+            parameters: (r) => <span className="mono">{r.parameters || "—"}</span>,
             description: (r) => <span style={{ color: "var(--text-dim)" }}>{(r.description || "").slice(0, 70)}</span>,
             pass: (r) => (r.pass === undefined ? <span className="hint">—</span> : <StatusPill value={r.pass} label={r.pass ? "pass" : "fail"} />),
             ...Object.fromEntries(
               metricColumns.map((c: any) => [c.key, (r: any) => suiteMetric(r, c.suite, c.metric)]),
             ),
+            agentv: (r) => r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+            eval_criteria: (r) => r.eval_criteria?.total === undefined ? "—" : `${r.eval_criteria.passed ?? 0}/${r.eval_criteria.total}`,
+            checkpoint: (r) =>
+              r.checkpoint ? (
+                <a
+                  className="mono runlink"
+                  onClick={() => navigate("/checkpoints")}
+                  title="open checkpoints roster"
+                >
+                  {String(r.checkpoint).split("/").slice(-2).join("/")}
+                </a>
+              ) : (
+                <span className="hint">—</span>
+              ),
             trace: (r) => <span className="mono">{r.trace_id?.slice(0, 12) ?? "—"}</span>,
           }}
         />

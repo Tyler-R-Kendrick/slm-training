@@ -2,10 +2,9 @@
 
 The inputs and expected payloads below were captured from
 ``evaluate_ship_gates`` on 2026-07-19 *before* the generic check loop moved to
-``slm_training.harness_core.gate_engine``. The OpenUI policy owner
-(``slm_training.harnesses.model_build.ship_gates``) must keep producing these
-payloads byte-for-byte; any diff means the extraction stopped being purely
-structural (docs/design/harness-core.md).
+``slm_training.harness_core.gate_engine``. The v2 expectation adds only the
+explicit preview authority and policy-version marker; gate checks, failures,
+and values remain byte-pinned (docs/design/harness-core.md).
 """
 
 from __future__ import annotations
@@ -163,6 +162,7 @@ CASES = json.loads(r"""
 EXPECTED = json.loads(r"""
 {
   "default_mixed": {
+    "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
     "policy": {
       "smoke": {
         "meaningful_program_rate": 0.66,
@@ -195,14 +195,14 @@ EXPECTED = json.loads(r"""
     },
     "meaningful_metric_policy": {
       "active_primary": "meaningful_program_v1",
-      "threshold_version": "openui_ship_gates_v1",
+      "threshold_version": "openui_ship_gates_v2",
       "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
         "thresholds": "DEFAULT_SHIP_GATES"
       },
       "binding_aware_meaningful_v2": {
-        "version": "2.0.0",
+        "version": "2.13.0",
         "thresholds": null,
         "status": "candidate_pending_calibration"
       }
@@ -267,6 +267,7 @@ EXPECTED = json.loads(r"""
     "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
   },
   "default_fallback_and_legacy": {
+    "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
     "policy": {
       "smoke": {
         "meaningful_program_rate": 0.66,
@@ -299,14 +300,14 @@ EXPECTED = json.loads(r"""
     },
     "meaningful_metric_policy": {
       "active_primary": "meaningful_program_v1",
-      "threshold_version": "openui_ship_gates_v1",
+      "threshold_version": "openui_ship_gates_v2",
       "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
         "thresholds": "DEFAULT_SHIP_GATES"
       },
       "binding_aware_meaningful_v2": {
-        "version": "2.0.0",
+        "version": "2.13.0",
         "thresholds": null,
         "status": "candidate_pending_calibration"
       }
@@ -430,6 +431,7 @@ EXPECTED = json.loads(r"""
     "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
   },
   "custom_thresholds": {
+    "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
     "policy": {
       "smoke": {
         "meaningful_program_rate": 0.5,
@@ -449,7 +451,7 @@ EXPECTED = json.loads(r"""
         "thresholds": "request_thresholds"
       },
       "binding_aware_meaningful_v2": {
-        "version": "2.0.0",
+        "version": "2.13.0",
         "thresholds": null,
         "status": "candidate_pending_calibration"
       }
@@ -492,16 +494,29 @@ def test_case_names_match() -> None:
     assert set(CASES) == set(EXPECTED)
 
 
+def _legacy_payload(payload: dict) -> dict:
+    """Project additive diagnostics away from the pre-extraction payload pin."""
+    additive = {
+        "evidence_volume_failures",
+        "measurement_integrity_failures",
+        "quality_threshold_failures",
+        "runtime_failures",
+    }
+    return {key: value for key, value in payload.items() if key not in additive}
+
+
 def test_payloads_match_pre_extraction_golden() -> None:
     for name, case in CASES.items():
         payload = evaluate_ship_gates(case["suites"], thresholds=case["thresholds"])
-        assert payload == EXPECTED[name], f"payload drifted for case {name!r}"
+        assert _legacy_payload(payload) == EXPECTED[name], (
+            f"payload drifted for case {name!r}"
+        )
 
 
 def test_payload_json_bytes_stable() -> None:
     """Key order and value formatting must survive, not just dict equality."""
     for name, case in CASES.items():
         payload = evaluate_ship_gates(case["suites"], thresholds=case["thresholds"])
-        got = json.dumps(payload, indent=2)
+        got = json.dumps(_legacy_payload(payload), indent=2)
         want = json.dumps(EXPECTED[name], indent=2)
         assert got == want, f"serialized payload drifted for case {name!r}"

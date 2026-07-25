@@ -1,0 +1,45 @@
+{
+  "schema": "cap2_operator_suite_manifest/v1",
+  "suite_version": "cap2_operator_v1",
+  "source_record_ids": [
+    "held_out_form_01",
+    "held_out_dual_card_01"
+  ],
+  "source_records_fingerprint": "f18b2fa1d9e271fcb8789c766cbb3717262353d1bbddfd37c5a1b85bca16a00e",
+  "operator_corpus_fingerprint": "5ee0d27141a3fa72be35bedbdec347f97f513c0e7af672ca4be580e5b982682e",
+  "suite_hash": "16f210786bac7fd5f5edb64d13888c3cc7d634330a81b5065150e7a41fcb1d4d",
+  "marker_permutation_seed": 97,
+  "generation": {
+    "actions_per_state": 2,
+    "max_combinations_per_operator": 32
+  },
+  "required_strata": [
+    "held_out_transition",
+    "held_out_composition",
+    "history_branch_isolation",
+    "history_undo_redo",
+    "sequential_vs_collapsed",
+    "reordered_noncommuting",
+    "stale_reference",
+    "merge_replay",
+    "merge_conflict",
+    "marker_permutation"
+  ],
+  "thresholds": {
+    "accepted_legal_action_mass_min": 0.9,
+    "case_wilson_lower_min": 0.75,
+    "dimension_wilson_lower_min": 0.2
+  },
+  "contract_inventory": {
+    "intermediate_legality": "conversation_trace/v1 replay",
+    "undo_redo": "exact parent/child state identity",
+    "branch_isolation": "branch-local reference tables and state IDs",
+    "merge_success": "branch_merge/v1 replay",
+    "merge_conflict": "typed merge_conflict/v1 refusal",
+    "sequential_vs_collapsed": "collapsed_instruction/v1 replay",
+    "marker_permutation": "semantic action identity under opaque marker permutation",
+    "stale_reference": "typed ref.stale_state/ref.missing refusal",
+    "cap0_retention": "diagnostic until a learned checkpoint is supplied",
+    "cap1_retention": "unavailable until CERT_CAP1 exists"
+  }
+}

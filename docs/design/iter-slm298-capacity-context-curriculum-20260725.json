@@ -1,0 +1,99 @@
+{
+  "schema": "Slm298CapacityContextCurriculumResultsV1",
+  "issue": "SLM-298",
+  "experiment_id": "slm298-capacity-context-curriculum",
+  "claim_class": "bounded_local_diagnostic",
+  "disposition": "rejected_no_semantic_signal",
+  "protocol": {
+    "protocol_sha256": "f893e183a9c53b993c1219ddff17436f199383fa045eefe35e2e150bdf646032",
+    "train_manifest_sha256": "a118e70fc737089fc21d12fe70f94467a497a5ba59740fd5fb490602cff1eabc",
+    "train_records": 520,
+    "locked_eval_manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+    "locked_eval_n": 1,
+    "capacities": [32, 64],
+    "contexts": ["scratch_trainable", "scratch_frozen"],
+    "curricula": ["flat", "complexity_ordered"],
+    "seeds": [0, 1, 2],
+    "target_token_budget": 5000,
+    "device": "cpu",
+    "backend": "scratch",
+    "output_tokenizer": "lexer",
+    "grammar_ltr_primary": false,
+    "honesty_mode": "symbol_only; locked eval disjoint; no human-rating gate",
+    "agentv": "published per completed cell"
+  },
+  "data_quality_feedback": {
+    "strict_build": "outputs/data/train/slm298_verified_symbolonly_v2",
+    "no_gate_was_weakened": true,
+    "warnings": [
+      "high_rejection_rate",
+      "eval_overlap_flagged=9",
+      "placeholder_contract_violations=27"
+    ],
+    "follow_up": "Audit leakage-prone source families and low-yield scope-identity producer separately; this matrix did not admit rejected rows."
+  },
+  "completion": {
+    "planned_cells": 24,
+    "completed_cells": 20,
+    "completed_cell_ids": [
+      "d32-scratch_trainable-flat-s0",
+      "d32-scratch_trainable-flat-s1",
+      "d32-scratch_trainable-complexity_ordered-s0",
+      "d32-scratch_trainable-complexity_ordered-s1",
+      "d32-scratch_frozen-flat-s0",
+      "d32-scratch_frozen-flat-s1",
+      "d32-scratch_frozen-complexity_ordered-s0",
+      "d32-scratch_frozen-complexity_ordered-s1",
+      "d64-scratch_trainable-flat-s0",
+      "d64-scratch_trainable-flat-s1",
+      "d64-scratch_trainable-flat-s2",
+      "d64-scratch_trainable-complexity_ordered-s0",
+      "d64-scratch_trainable-complexity_ordered-s1",
+      "d64-scratch_trainable-complexity_ordered-s2",
+      "d64-scratch_frozen-flat-s0",
+      "d64-scratch_frozen-flat-s1",
+      "d64-scratch_frozen-flat-s2",
+      "d64-scratch_frozen-complexity_ordered-s0",
+      "d64-scratch_frozen-complexity_ordered-s1",
+      "d64-scratch_frozen-complexity_ordered-s2"
+    ],
+    "non_evidence_cap_failures": [
+      "d32-scratch_trainable-flat-s2",
+      "d32-scratch_trainable-complexity_ordered-s2",
+      "d32-scratch_frozen-flat-s2",
+      "d32-scratch_frozen-complexity_ordered-s2"
+    ],
+    "cap": "MAX_RUN_MINUTES=3; derived interrupt 170s and 10s kill grace",
+    "raw_results": "outputs/runs/slm298_local_factorial*/cells/*.json"
+  },
+  "metrics": {
+    "primary": "meaningful_program_rate_strict / binder_reference_f1",
+    "completed_cell_syntax_parse_rate": 1.0,
+    "completed_cell_meaningful_program_rate": 0.0,
+    "completed_cell_binder_reference_f1": 0.0,
+    "completed_cell_decode_timeouts": 0,
+    "ship_gates": "not run; bounded locked n=1 diagnostic is not a ship evaluation"
+  },
+  "effect_estimates": {
+    "d64_trainable_ordered_minus_flat_meaningful_rate": 0.0,
+    "d64_trainable_ordered_minus_flat_95_ci": [0.0, 0.0],
+    "d64_frozen_ordered_minus_flat_meaningful_rate": 0.0,
+    "d64_frozen_ordered_minus_flat_95_ci": [0.0, 0.0],
+    "d64_trainable_minus_frozen_meaningful_rate": 0.0,
+    "d64_trainable_minus_frozen_95_ci": [0.0, 0.0],
+    "d32_effect_status": "two completed paired seeds (0,1), all zero; seed 2 is cap-censored, so no three-seed capacity estimate is claimed"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "86212e9ab2338bb9cf5ab135e85e3d3d4e7d21b5",
+    "code_dirty": true,
+    "components": {
+      "data.locked_eval_manifest": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "harness.experiments": "v106",
+      "harness.model_build.eval": "v59",
+      "harness.model_build.train": "v25"
+    },
+    "stamped_at": "2026-07-25T09:14:50.665457+00:00"
+  }
+}

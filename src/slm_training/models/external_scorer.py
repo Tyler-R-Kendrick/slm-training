@@ -124,6 +124,17 @@ class ExternalLegalActionScorer(ABC):
     @abstractmethod
     def diagnostics(self) -> dict[str, Any]: ...
 
+    def generate(self, prompt: str, *, max_new_tokens: int = 384) -> str:
+        """Greedy free generation for frontier ceiling arms (SLM-294)."""
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support free generation"
+        )
+
+    @property
+    def resolved_revision(self) -> str:
+        """Actual revision in effect (commit SHA once the model is loaded)."""
+        return self._config.revision
+
 
 class TransformersCausalLMScorer(ExternalLegalActionScorer):
     """Transformers causal-LM adapter with prefix caching and batch scoring."""
@@ -270,12 +281,54 @@ class TransformersCausalLMScorer(ExternalLegalActionScorer):
             for cand, score in zip(candidates, scores)
         }
 
+    def generate(self, prompt: str, *, max_new_tokens: int = 384) -> str:
+        """Greedy (do_sample=False) generation for a raw user prompt.
+
+        Uses the same system prompt and chat template as the scoring path so
+        frontier ceiling arms and constrained scoring stay comparable.
+        """
+        import torch
+
+        model, tokenizer = self._lazy_load()
+        system = "Return only one valid OpenUI program using placeholder content."
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+        if hasattr(tokenizer, "apply_chat_template"):
+            input_ids = tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True, return_tensors="pt"
+            )
+        else:
+            text = f"{system}\n{prompt}\n"
+            input_ids = tokenizer(text, return_tensors="pt")["input_ids"]
+        input_ids = input_ids.to(self._config.device)
+        pad_token_id = getattr(tokenizer, "eos_token_id", None)
+        with torch.inference_mode():
+            output_ids = model.generate(
+                input_ids,
+                do_sample=False,
+                max_new_tokens=max_new_tokens,
+                pad_token_id=pad_token_id,
+            )
+        new_ids = output_ids[0][input_ids.shape[1] :]
+        return tokenizer.decode(new_ids, skip_special_tokens=True)
+
+    @property
+    def resolved_revision(self) -> str:
+        if self._model is not None:
+            commit = getattr(self._model.config, "_commit_hash", None)
+            if commit:
+                return str(commit)
+        return self._config.revision
+
     def artifact_identity(self) -> dict[str, str]:
         tokenizer_payload: dict[str, Any] = {}
         if self._tokenizer is not None:
             tokenizer_payload = getattr(self._tokenizer, "init_kwargs", {}) or {}
         return {
             **self._config.identity(),
+            "resolved_revision": self.resolved_revision,
             "tokenizer_sha": content_sha(tokenizer_payload),
         }
 
@@ -350,6 +403,12 @@ class FakeExternalScorer(ExternalLegalActionScorer):
 
     def artifact_identity(self) -> dict[str, str]:
         return {**self._config.identity(), "kind": "fake_scorer"}
+
+    def generate(self, prompt: str, *, max_new_tokens: int = 384) -> str:
+        """Deterministic torch-free generation for tests and fixtures."""
+        self._diag["calls"] += 1
+        digest = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+        return f'root = Stack([v0])\nv0 = TextContent(":{digest[:8]}")'
 
     def compatibility_fingerprint(self) -> str:
         return hashlib.sha256(

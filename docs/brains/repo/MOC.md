@@ -28,6 +28,13 @@ the *thesis*, the open questions, and the falsification boundary. Seed notes:
 - _(seed)_ Valid-edit flow attribution — link project + `docs/design/` rows
 - _(seed)_ Semantic planning & valid-state learning
 - _(seed)_ Calculated arity & adaptive precision
+- [[gate-reachability-and-power]] — separate evidence volume and measurement
+  integrity from model quality; freeze power inputs before confirmation.
+- [[preregistered-experiment-campaigns]] — bind execution and promotion to one
+  decision-complete pre-outcome manifest; keep deviations exploratory.
+- [[decode-invariants-goal-law]] — constrained decoding, deterministic bypass,
+  symbol tables as ranker *and* scheduler, shared ops vocab, CRDT multi-turn;
+  a rejected approach never closes a goal.
 
 > Add a note with `templates/concept-note.md` and wikilink it here when a thesis
 > becomes active. Do not restate the Linear project — link it and record what the
@@ -41,6 +48,8 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
 
 - _(seed)_ Does discrete flow matching add anything beyond the legal-edit state
   space + complete bridge supervision? (see valid-edit flow project)
+- [[recursive-depth-supervision-objective]] — arithmetic/compatibility contract
+  is supported; real-suite mode selection remains open.
 
 ## Dead ends (do not re-propose)
 
@@ -49,3 +58,5 @@ hypothesis loop's novelty audit can exclude them.
 
 - _(seed)_ E249 / E252 local-preference chain — negative; see
   [`research-lineage.md`](../../design/research-lineage.md) "Exact-state local decision preference".
+- [[recursive-recurrence-health]] — negative: seed 1 / R=4 / example `b`
+  regressed at the final depth, so the LAR3 activation prerequisite failed.

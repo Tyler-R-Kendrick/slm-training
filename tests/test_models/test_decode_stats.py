@@ -81,6 +81,16 @@ def test_decode_stats_aggregates_root_reference_arity_counts() -> None:
     assert summary["root_reference_arity_choice_changes_sum"] == 2.0
 
 
+def test_decode_stats_aggregates_component_inventory_choice_counts() -> None:
+    stats = DecodeStats(
+        component_inventory_applications=7,
+        component_inventory_choice_changes=2,
+    )
+    summary = aggregate_stats([stats])
+    assert summary["component_inventory_applications_sum"] == 7.0
+    assert summary["component_inventory_choice_changes_sum"] == 2.0
+
+
 def test_decode_stats_aggregates_required_slot_margin_counts() -> None:
     """E627: root-cause instrumentation counters for E626's required_slot_margin_decode_weight."""
     stats = DecodeStats(

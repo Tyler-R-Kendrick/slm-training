@@ -96,3 +96,21 @@ Then update [`docs/MODEL_CARD.md`](../../../docs/MODEL_CARD.md) **and** the
 README “Model card (summary)” with run id, URI, suite metrics, and claim level
 (demo / scratch matrix / production HF). Ship claims without a card+summary
 update are incomplete.
+
+## Decode invariants (never gate on unconstrained output)
+
+`AGENTS.md` § Non-negotiable architecture invariants is goal law; canonical
+expansion: [decode-invariants.md](../../../docs/design/decode-invariants.md).
+For evals and gates specifically:
+
+- An unconstrained arm (`--unconstrained-control`, HTTP
+  `grammar_constrained=false`, the `current_native` decode-path spec) is a
+  **diagnostic control**. Its output is never certified, never a ship claim,
+  and never a gate input — even when it happens to parse.
+- Ship-gated configs hold every safe value in
+  `levers.CONSTRAINT_WEAKENING_LEVERS`; `require_constrained_production_config`
+  fails the run before it starts otherwise. Do not route around it.
+- A gate is never weakened to accommodate a decode that could not stay legal.
+  Fix the decode.
+- Readiness claims state the ladder rung (I10) they hold at. A rung that is
+  unbuilt is unbuilt — never report it as passed by a lower rung's evidence.

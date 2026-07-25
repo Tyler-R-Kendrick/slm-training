@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from slm_training.autoresearch.experiment_campaign import (
+    CampaignResultV1,
+    campaign_manifest_sha256,
+)
 from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
 from slm_training.harnesses.experiments.ladder import (
     capacity_ladder_pair,
@@ -23,6 +29,10 @@ from slm_training.harnesses.experiments.scaling_fit import (
     invert_loss,
     predict_loss,
 )
+from slm_training.harnesses.experiments.slm183_power_protocol import (
+    build_experiment_campaign,
+)
+from slm_training.harnesses.model_build import ModelBuildConfig, train
 
 
 def test_proportional_depths_and_scratch_ladder() -> None:
@@ -132,13 +142,13 @@ def test_promotion_checks(tmp_path: Path) -> None:
         rankings={"z": ["cand"], "y": ["cand"]},
         eg_time_by_seed=[1.2, 1.3, 1.1],
     )
-    assert result["promotable"]
+    assert result["promotable"] is False
+    assert "campaign_governance_missing" in result["failures"]
 
     src = tmp_path / "last.pt"
     src.write_bytes(b"ckpt")
-    dest = register_promoted_checkpoint(tmp_path / "ckpts", source=src, meta={"ok": True})
-    assert dest.exists()
-    assert (tmp_path / "ckpts" / "promoted.json").exists()
+    with pytest.raises(ValueError, match="campaign-governed"):
+        register_promoted_checkpoint(tmp_path / "ckpts", source=src, meta={"ok": True})
 
 
 def test_integrity_alone_cannot_promote() -> None:
@@ -147,4 +157,54 @@ def test_integrity_alone_cannot_promote() -> None:
     )
 
     assert result["promotable"] is False
-    assert result["failures"] == ["sufficient_evidence"]
+    assert result["failures"] == [
+        "sufficient_evidence",
+        "campaign_governance_missing",
+    ]
+
+
+def test_registration_rejects_forged_governance_result(tmp_path: Path) -> None:
+    forged = {
+        "promotable": True,
+        "checks": {
+            "campaign_governance": {
+                "pass": True,
+                "manifest_sha256": "a" * 64,
+            }
+        },
+    }
+    with pytest.raises(ValueError, match="campaign-governed"):
+        register_promoted_checkpoint(
+            tmp_path / "ckpts",
+            promotion_result=forged,
+        )
+
+
+def test_training_promotion_requires_governance_before_data_load(
+    tmp_path: Path,
+) -> None:
+    config = ModelBuildConfig(
+        train_dir=tmp_path / "missing",
+        run_root=tmp_path,
+        run_id="governance_preflight",
+        register_promoted=True,
+    )
+
+    with pytest.raises(ValueError, match="campaign manifest"):
+        train(config)
+
+
+def test_wiring_claim_cannot_satisfy_promotion_governance() -> None:
+    manifest = build_experiment_campaign(seeds=(0,))
+    result = CampaignResultV1(
+        campaign_id=manifest.campaign_id,
+        experiment_id=manifest.experiment_id,
+        manifest_sha256=campaign_manifest_sha256(manifest),
+        claim_class="wiring",
+    )
+    promotion = evaluate_promotion(
+        integrity={"pass": True, "failures": []},
+        campaign_manifest=manifest,
+        campaign_result=result,
+    )
+    assert "claim_class_not_promotable" in promotion["failures"]

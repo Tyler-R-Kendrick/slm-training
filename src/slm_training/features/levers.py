@@ -1,4 +1,4 @@
-"""Product experiment levers — bridge ML matrix levers to OpenFeature flags.
+"""Product experiment flags and their rollout metadata.
 
 ML quality-matrix rows (E*, X*, P*) are batch training ablations. Product levers
 here are the *runtime rollout* surface: the same hypothesis may eventually ship
@@ -22,11 +22,10 @@ ProviderAffinity = Literal["any", "launchdarkly", "posthog", "in_memory"]
 
 
 @dataclass(frozen=True)
-class ProductExperimentLever:
-    """Maps a research lever id to its product-flag rollout contract."""
+class ProductFeatureFlag:
+    """Metadata for one canonical OpenFeature flag."""
 
-    lever_id: str
-    flag_key: str
+    key: str
     kind: LeverKind
     description: str
     matrix_ref: str | None = None
@@ -35,40 +34,35 @@ class ProductExperimentLever:
 
 
 # ponytail: static registry; extend when a matrix lever gains a runtime flag.
-PRODUCT_EXPERIMENT_LEVERS: tuple[ProductExperimentLever, ...] = (
-    ProductExperimentLever(
-        lever_id="dashboard-renderer",
-        flag_key=DASHBOARD_DEFAULT_RENDERER,
+PRODUCT_FEATURE_FLAGS: tuple[ProductFeatureFlag, ...] = (
+    ProductFeatureFlag(
+        key=DASHBOARD_DEFAULT_RENDERER,
         kind="ui",
         description="Default compiled vs interpreted dashboard renderer for new sessions.",
         provider_affinity="any",
     ),
-    ProductExperimentLever(
-        lever_id="vss-decode",
-        flag_key=VSS_DECODE_ENABLED,
+    ProductFeatureFlag(
+        key=VSS_DECODE_ENABLED,
         kind="decode",
         description="Enable verified-scope-solver participation in decode (VSS roadmap).",
         matrix_ref="docs/design/verified-scope-solver.md",
         provider_affinity="launchdarkly",
     ),
-    ProductExperimentLever(
-        lever_id="playground-grammar-default",
-        flag_key=PLAYGROUND_GRAMMAR_CONSTRAINED_DEFAULT,
+    ProductFeatureFlag(
+        key=PLAYGROUND_GRAMMAR_CONSTRAINED_DEFAULT,
         kind="ui",
         description="Default grammar-constrained generation in the playground.",
         provider_affinity="posthog",
     ),
-    ProductExperimentLever(
-        lever_id="E1-constrained-decode",
-        flag_key="decode.grammar-ltr-repair",
+    ProductFeatureFlag(
+        key="decode.grammar-ltr-repair",
         kind="decode",
         description="Roll out grammar LTR repair decode lever (quality matrix E1).",
         matrix_ref="docs/design/quality-experiment-matrix.md#e1",
         provider_affinity="launchdarkly",
     ),
-    ProductExperimentLever(
-        lever_id="E4-schema-conditioning",
-        flag_key="decode.schema-in-context",
+    ProductFeatureFlag(
+        key="decode.schema-in-context",
         kind="decode",
         description="Roll out schema-in-context decode lever (quality matrix E4).",
         matrix_ref="docs/design/quality-experiment-matrix.md#e4",
@@ -77,24 +71,23 @@ PRODUCT_EXPERIMENT_LEVERS: tuple[ProductExperimentLever, ...] = (
 )
 
 
-def lever_registry_payload() -> dict[str, Any]:
+def feature_flag_registry_payload() -> dict[str, Any]:
     return {
-        "levers": [
+        "flags": [
             {
-                "lever_id": lever.lever_id,
-                "flag_key": lever.flag_key,
-                "kind": lever.kind,
-                "description": lever.description,
-                "matrix_ref": lever.matrix_ref,
-                "provider_affinity": lever.provider_affinity,
+                "key": flag.key,
+                "kind": flag.kind,
+                "description": flag.description,
+                "matrix_ref": flag.matrix_ref,
+                "provider_affinity": flag.provider_affinity,
             }
-            for lever in PRODUCT_EXPERIMENT_LEVERS
+            for flag in PRODUCT_FEATURE_FLAGS
         ]
     }
 
 
-def lever_by_flag(flag_key: str) -> ProductExperimentLever | None:
-    for lever in PRODUCT_EXPERIMENT_LEVERS:
-        if lever.flag_key == flag_key:
-            return lever
+def feature_flag_by_key(key: str) -> ProductFeatureFlag | None:
+    for flag in PRODUCT_FEATURE_FLAGS:
+        if flag.key == key:
+            return flag
     return None

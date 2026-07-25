@@ -27,7 +27,7 @@
       ]
     },
     "config.levers": {
-      "version": "v43",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
@@ -35,134 +35,24 @@
       ],
       "history": [
         {
-          "version": "v43",
-          "date": "2026-07-24",
-          "note": "Register prefix-conditioned opaque repeated-binder presence decode"
-        },
-        {
-          "version": "v42",
-          "date": "2026-07-24",
-          "note": "Register trained opaque forward binder-slot presence decode on lexer compiler paths"
-        },
-        {
-          "version": "v41",
-          "date": "2026-07-24",
-          "note": "Register trained opaque forward binder-slot ownership decode on lexer compiler paths"
-        },
-        {
-          "version": "v40",
-          "date": "2026-07-23",
-          "note": "Advertise trained root-reference identity supervision and decode on lexer compiler paths"
-        },
-        {
-          "version": "v39",
-          "date": "2026-07-22",
-          "note": "Withdraw component-parent-scoped binder ownership after E995 introduced a Tabs timeout"
-        },
-        {
-          "version": "v38",
-          "date": "2026-07-22",
-          "note": "Advertise opt-in component-parent-scoped binder ownership on lexer compiler decode"
-        },
-        {
-          "version": "v37",
-          "date": "2026-07-22",
-          "note": "Withdraw the unique-binder-reference lever after E992 regressed strict quality and fallbacks"
-        },
-        {
-          "version": "v36",
-          "date": "2026-07-22",
-          "note": "Advertise the opt-in lexer compiler unique-binder-reference constraint"
-        },
-        {
-          "version": "v35",
-          "date": "2026-07-22",
-          "note": "Withdraw lexer visible-reference capability after E974-E975 showed its first choice flip regressed strict quality"
-        },
-        {
-          "version": "v34",
-          "date": "2026-07-22",
-          "note": "Advertise visible-reference decode weighting on both choice and lexer compiler paths"
-        },
-        {
-          "version": "v33",
-          "date": "2026-07-22",
-          "note": "Default training and evaluation to E935/E936 after auditing primary and alternate targets for schema-role safety"
-        },
-        {
-          "version": "v32",
-          "date": "2026-07-22",
-          "note": "Default training and evaluation to role-audited corpora with opaque structural identifiers and content-only slots"
-        },
-        {
-          "version": "v31",
-          "date": "2026-07-22",
-          "note": "Advertise the opt-in lexer compiler path that enforces official component-valued property and forward-binder typed-array schemas"
-        },
-        {
-          "version": "v30",
-          "date": "2026-07-22",
-          "note": "Advertise the existing typed-array item margin on lexer restricted and tree compiler paths now that the path executes it"
-        },
-        {
-          "version": "v29",
-          "date": "2026-07-22",
-          "note": "Use non-nested Vercel exclusion globs so legacy corpora are actually removed from the function bundle"
-        },
-        {
-          "version": "v28",
-          "date": "2026-07-22",
-          "note": "Compact Vercel bundle exclusions within the platform's 256-character function-glob limit"
-        },
-        {
-          "version": "v27",
-          "date": "2026-07-22",
-          "note": "Centralize Vercel bundle exclusions and omit superseded semantic/schema-role training corpora from the deployed runtime"
-        },
-        {
-          "version": "v26",
-          "date": "2026-07-22",
-          "note": "Make structural AST-plan decode weights atomic members of the strict compiler-tree evaluation policy so callers cannot silently omit them"
-        },
-        {
-          "version": "v25",
-          "date": "2026-07-22",
-          "note": "Centralize the difficulty easy-tail selection fraction so scored rebuilds have one discoverable policy value"
-        },
-        {
-          "version": "v24",
-          "date": "2026-07-22",
-          "note": "Prohibit namespace augmentation so opaque marker canonicalization remains exclusively harness-owned"
-        },
-        {
-          "version": "v23",
-          "date": "2026-07-22",
-          "note": "Make scratch the single local-first context backend default; require explicit hf selection"
-        },
-        {
-          "version": "v22",
-          "date": "2026-07-22",
-          "note": "Point every canonical eval entrypoint at the harness-owned opaque-slot snapshot"
-        },
-        {
           "version": "v21",
-          "date": "2026-07-22",
-          "note": "Centralize the only eligible default train and eval corpus paths beside all other run levers"
+          "date": "2026-07-25",
+          "note": "Register constraint-weakening levers with fail-closed safe values and a production-config gate (decode invariants I2/I6)"
         },
         {
           "version": "v20",
-          "date": "2026-07-22",
-          "note": "Centralize the fail-closed evaluation policy and make strict compiler-tree decoding the canonical run default"
+          "date": "2026-07-23",
+          "note": "Narrow the canonical Vercel evidence bundle to top-level design JSON consumed by the deployed observability reader"
         },
         {
           "version": "v19",
-          "date": "2026-07-22",
-          "note": "Centralize symbol-only tokenizer and bounded decode defaults with the two-minute run policy"
+          "date": "2026-07-23",
+          "note": "Add fail-closed CAP0, CAP1, and CAP2 lever profiles with separate teacher and distillation permission"
         },
         {
           "version": "v18",
-          "date": "2026-07-22",
-          "note": "Centralize the opaque-template-marker policy and prohibit every marker-label semantic lever plus disabling symbol anonymization"
+          "date": "2026-07-23",
+          "note": "Raise the canonical run cap to the permitted three minutes so changed-test CI can complete after dependency setup"
         },
         {
           "version": "v17",
@@ -266,7 +156,7 @@
       ]
     },
     "data.flow.bridge_planner": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/flow/bridge_planner.py",
@@ -274,9 +164,41 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "make every bridge transition certificate independently replayable and replace unconditional verifier acceptance with canonical validation"
+        },
+        {
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-189 FFE2-01 bridge planner protocols and deterministic engine wiring/fixture"
+        }
+      ]
+    },
+    "data.flow.legal_edit_bridge_corpus": {
+      "version": "v2",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/flow/bridge_corpus.py",
+        "scripts/build_legal_edit_bridges.py",
+        "tests/test_data/flow/test_bridge_corpus.py",
+        "tests/test_scripts/test_build_legal_edit_bridges.py",
+        "tests/fixtures/slm196_legal_edit_bridge/",
+        "src/slm_training/resources/data/train/slm196_legal_edit_bridge_fixture/",
+        "docs/design/legal-edit-bridge-corpus.md",
+        "docs/design/iter-slm196-legal-edit-bridge-20260723.json",
+        "docs/design/iter-slm196-legal-edit-bridge-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "remove planner-selected edit focus and dependency fields from the model-facing row view while retaining them only as diagnostics"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-196 replay-exact full-bridge rows, content-addressed live candidate sets, quality gates, and fixture builder"
         }
       ]
     },
@@ -285,15 +207,20 @@
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/semantic_contrast/",
-        "src/slm_training/data/semantic_plan/seed.py",
-        "tests/test_data/test_semantic_plan_extraction/test_seed.py",
-        "scripts/build_semantic_contrasts.py"
+        "scripts/build_semantic_contrasts.py",
+        "src/apps/openui_preview/verify.mjs",
+        "src/slm_training/data/verify/runtime.py",
+        "scripts/verify_semantic_contrast_runtime.py",
+        "tests/test_scripts/test_verify_semantic_contrast_runtime.py",
+        "src/slm_training/resources/data/eval/openui_hard_valid_v1/",
+        "docs/design/semantic-contrast-corpus-v1.md",
+        "docs/design/iter-slm290-semantic-contrast-20260725.json"
       ],
       "history": [
         {
           "version": "v2",
-          "date": "2026-07-22",
-          "note": "Project generated source programs to opaque ordinal slots before plan extraction so semantic-contrast records satisfy the canonical marker contract"
+          "date": "2026-07-25",
+          "note": "SLM-290 local runtime-backed hard-valid publication, source manifest, minimum corpus/class checks, and quality feedback ledger"
         },
         {
           "version": "v1",
@@ -303,7 +230,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v10",
+      "version": "v6",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -312,29 +239,14 @@
       ],
       "history": [
         {
-          "version": "v10",
-          "date": "2026-07-22",
-          "note": "Reject placeholders and open literals in non-content properties instead of disguising identifiers as eval completion slots"
-        },
-        {
-          "version": "v9",
-          "date": "2026-07-22",
-          "note": "Fail invalid fixture normalization and assert opaque markers before persisting eval suites"
-        },
-        {
-          "version": "v8",
-          "date": "2026-07-22",
-          "note": "Default test-data builds to the canonical opaque-marker train manifest"
-        },
-        {
-          "version": "v7",
-          "date": "2026-07-22",
-          "note": "Keep metadata-only opaque values out of the model completion inventory while sanitizing them out of band"
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "no-bump: clarify that the preceding v6 entry was misattributed registry metadata from SLM-230 and made no test-data builder behavior change"
         },
         {
           "version": "v6",
-          "date": "2026-07-22",
-          "note": "Canonicalize every persisted eval marker and nested contract field to opaque ordinal slot identities"
+          "date": "2026-07-23",
+          "note": "pin committed evidence stamps during reproduction and exclude elapsed runtime noise from the scientific report hash"
         },
         {
           "version": "v5",
@@ -360,6 +272,33 @@
           "version": "v1",
           "date": "2026-07-18",
           "note": "initial registration (eval/smoke suite builder; snapshot data versions remain DataStore's contract)"
+        }
+      ]
+    },
+    "data.locked_eval_manifest": {
+      "version": "v3",
+      "kind": "data_builder",
+      "paths": [
+        "scripts/build_locked_promotion_manifest.py",
+        "scripts/measure_locked_manifest_arity.py",
+        "src/slm_training/data/locked_eval_manifest.py",
+        "tests/test_data/test_locked_eval_manifest.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "SLM-298 export AST/reference complexity and strata as the shared curriculum authority"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-285 measure exact compiler-owned legal-action entropy on one locked record per observed complexity stratum"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "SLM-285 immutable all-view decontaminated promotion manifest with optional non-gating human-audit partition"
         }
       ]
     },
@@ -398,6 +337,422 @@
         }
       ]
     },
+    "dsl.operators.contracts": {
+      "version": "v14",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/",
+        "tests/test_dsl/test_operator_contracts.py"
+      ],
+      "history": [
+        {
+          "version": "v14",
+          "date": "2026-07-25",
+          "note": "no-bump: DSH5-04 re-exports OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 transaction symbols from operators/__init__.py (new dsl.operators.transactions component); no change to contracts.py itself"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
+          "note": "no-bump: DSH5-02 re-exports openui.map_set_property bulk-operator symbols from operators/__init__.py (new dsl.operators.bulk component); no change to contracts.py itself"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
+          "note": "DSH5-01: add RefKind.SELECTOR and the opaque SelectorRef opaque-reference class"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-25",
+          "note": "Export the COPY_STATE conversation operation from the operators package (decode invariant I11)"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "add the default-off versioned reserved operator target codec, live legal-set application boundary, and checkpoint compatibility contract"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "export replay-authoritative ordered conversation collapse decisions and reordered hard-negative evidence"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "persist bounded typed rejection applications with exact legal-set evidence for symbolic operator corpus generation"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-23",
+          "note": "export conservative replayable branch merge decisions with exact structural composition and typed conflicts"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-23",
+          "note": "export immutable replayable conversation state graphs, explicit history operations, and branch-local reference cloning"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "export semantic-first equivalent-outcome preference costs, sequence diagnostics, and bounded deterministic preference groups"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "export bounded exact operator legal-set enumeration, reserved typed serialization, and conservative forcing APIs"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "export the exact topology and template-alias operator context and composed library APIs"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "export the exact OpenUI core local operator family and preserve stable executor rejection codes"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "export state-bound permutation-invariant reference table and descriptor APIs"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "validate bound operator arguments against required declaration slots and reference kinds before pack execution"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial compiler-owned AST operator, typed reference, action-effect, and application proof contracts"
+        }
+      ]
+    },
+    "dsl.operators.conversation": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/conversation.py",
+        "tests/test_dsl/test_operator_conversation.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "Add the COPY_STATE conversation operation with branch-scoped source validation and exact replay (decode invariant I11)"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "test exact multi-turn collapse, history refusal, cycle refusal, and equivalent reorder preservation"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial immutable conversation state DAG with exact operator replay, undo, redo, checkout, fork, and branch-local reference invalidation"
+        }
+      ]
+    },
+    "dsl.operators.collapse": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/collapse.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial exact ordered trace collapse with typed refusal and verified reordered hard negatives"
+        }
+      ]
+    },
+    "dsl.grammar_capabilities": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/grammar_capabilities.py",
+        "tests/test_dsl/test_grammar_capabilities.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "declare typed pack-owned finite completion domains with scope fingerprints and terminal witnesses"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "add exact Lark production occurrence traces and pack-owned witness candidate and unsupported authorities"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial pack-owned exact grammar capability adapter with typed unsupported results, analyses, fingerprints, and shared conformance"
+        }
+      ]
+    },
+    "dsl.harness_dsl": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/harness_dsl.py",
+        "src/slm_training/dsl/grammars/harness.lark",
+        "tests/test_dsl/test_harness_dsl.py",
+        "docs/design/dsh1-03-symbolic-harness-dsl-20260723.json",
+        "docs/design/dsh1-03-symbolic-harness-dsl-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial closed versioned Harness DSL with reserved CAP0 operations, typed payloads, pack validation, declared markers, artifact refs, and canonical fingerprinted framing"
+        }
+      ]
+    },
+    "dsl.minimal_witnesses": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/minimal_witnesses.py",
+        "tests/test_dsl/test_minimal_witnesses.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial per-start reachable productive alternative basis with lexicographic witnesses, exact focus traces, typed gaps, and fail-closed admission"
+        }
+      ]
+    },
+    "dsl.operators.merge": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/merge.py",
+        "tests/test_dsl/test_operator_merge.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial bounded three-way branch merge with fork-ref lineage, pack revalidation, deterministic replay, and typed conflict artifacts"
+        }
+      ]
+    },
+    "dsl.operators.references": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/references.py",
+        "tests/test_dsl/test_operator_references.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "DSH5-01 review follow-up: normalize SelectorDescriptorV1.compiler_facts at construction so from_dict(to_dict(x)) == x for unsorted/duplicate facts, and dedupe descriptors by fingerprint in attach_selectors so re-attaching an identical selector is idempotent instead of raising ref.duplicate"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "DSH5-01: add SelectorKind/SelectorFact/SelectorDescriptorV1/SelectorEntryV1, embed selectors in ReferenceTableV1 (schema v2, migrate legacy v1 payloads / reject unknown schemas), and add resolve_selector/attach_selectors"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial state-bound opaque typed reference descriptors, stable resolution failures, ordered-parent index guards, and permutation controls"
+        }
+      ]
+    },
+    "dsl.operators.selectors": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/selectors.py",
+        "tests/test_dsl/test_operator_selectors.py",
+        "docs/design/dsh5-01-selector-refs.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: DSH5-01 review follow-up adds entry-ref-stability, re-attach-idempotence, cardinality-mismatch, and type-incompatible regression tests plus registers the design doc under this component's paths; no change to selectors.py behavior"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "DSH5-01: initial exact finite SelectorRefV1 builder/resolver over compiler-owned target sets, with bounded-scan UNKNOWN truncation and a defensive-copy context resolver"
+        }
+      ]
+    },
+    "dsl.operators.registry": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/registry.py",
+        "src/slm_training/dsl/pack.py",
+        "tests/test_dsl/test_operator_registry.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "bind OpenUI scoped completion domains to the pack contract instead of shared decoder policy"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: populate the existing fragment-parser slot for OpenUI without changing operator registry behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: add pack-owned witness candidates and unsupported alternative reasons without changing operator registry behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: add an independent grammar capability authority slot without changing operator registry behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "preserve stable executor rejection codes and failed preconditions through pack-owned application evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial pack-owned immutable operator registry with pure apply, dry-run authority validation, typed rejection, and exact replay"
+        }
+      ]
+    },
+    "dsl.operators.local": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/local.py",
+        "tests/test_dsl/test_local_operators.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "DSH5-02: add OpenUILocalOperatorContextV1.resolve_selector, the first consumer of the DSH5-01 SelectorRef contract, resolving one selector to its exact freshly-reconfirmed target refs for the new bulk operator layer"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "expose core registered entries for composition into the pack-owned topology library"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial exact OpenUI add, remove, replace, property, and child-order operator family"
+        }
+      ]
+    },
+    "dsl.operators.bulk": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/bulk.py",
+        "tests/test_dsl/test_bulk_operators.py",
+        "docs/design/dsh5-02-bulk-set-property.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
+        }
+      ]
+    },
+    "dsl.operators.legal_set": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/legal_set.py",
+        "tests/test_dsl/test_operator_legal_set.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "retain bounded deterministic rejected application samples alongside complete rejection counts"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial exact bounded operator-action enumeration with complete/partial coverage, brute-force shadow controls, and reserved hierarchical serialization"
+        }
+      ]
+    },
+    "dsl.operators.reserved_tokens": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/reserved_tokens.py",
+        "tests/test_dsl/test_reserved_operator_tokens.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial default-off v1 reserved target framing with closed parsing, exact live legal-set membership, compiler application, typed defer/reject reasons, and checkpoint incompatibility guards"
+        }
+      ]
+    },
+    "dsl.operators.preference": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/preference.py",
+        "tests/test_dsl/test_operator_preference.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial semantic-gated lexicographic AST and operator-sequence preference contract with simplify/expand direction and explicit defect policy"
+        }
+      ]
+    },
+    "dsl.operators.topology": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/topology.py",
+        "tests/test_dsl/test_topology_operators.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial exact move, reparent, wrap, unwrap, duplicate, expand, and contract operator family"
+        }
+      ]
+    },
+    "dsl.operators.transactions": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/transactions.py",
+        "tests/test_dsl/test_operator_transactions.py",
+        "docs/design/dsh5-04-operator-transactions.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "DSH5-04 review follow-up: normalize OperatorTransactionProofV1.checks (dedupe + sort) at construction so from_dict(to_dict(x)) == x, matching the DSH5-01 review fix for the same bug shape"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
+        }
+      ]
+    },
     "dsl.scope_env": {
       "version": "v1",
       "kind": "harness",
@@ -410,6 +765,27 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; Torch-free persistent typed ScopeEnv with opaque ordinal IDs, separate surface aliases, and explicit shadowing/forward-reference policies"
+        }
+      ]
+    },
+    "dsl.symbolic_surface": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/language_contract.py",
+        "src/slm_training/dsl/lang_core.py",
+        "tests/test_dsl/test_language_contract.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Preserve hard decode-deadline cancellation through the symbolic LangCore surface"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial pack-authoritative SymbolicSurfacePolicyV1 with declared runtime markers, typed spans and decisions, and alpha/opaque-ID permutation controls"
         }
       ]
     },
@@ -433,6 +809,71 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; VSS3-03 topology finite-domain adapter/solver seam (referenced by SLM-187 parity fixture; no behavior change in this commit)"
+        }
+      ]
+    },
+    "evals.agentv": {
+      "version": "v4",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/agentv.py",
+        "scripts/run_agentv_eval.mjs",
+        "tests/test_evals/test_agentv.py"
+      ],
+      "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Replace the optional Node LangSmith SDK with bounded native fetch so Vercel does not bundle CLI-only dependencies"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "publish summary-only LangSmith AgentV child traces correlated to the canonical W3C run trace without changing AgentEvals authority"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Make raw AgentEvals criteria code-graded authority and derive verdicts from AgentV's published artifact index"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; independently enforce named case checks and attach canonical version stamps to AgentV result artifacts"
+        }
+      ]
+    },
+    "evals.cap2_operator": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/cap2_operator.py",
+        "src/slm_training/resources/evals/cap2_operator_v1.json",
+        "scripts/run_cap2_operator_eval_fixture.py",
+        "tests/test_evals/test_cap2_operator.py",
+        "tests/test_scripts/test_run_cap2_operator_eval_fixture.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial frozen CAP2 symbolic operator suite with replayed held-out composition, confidence bounds, telemetry, and anti-cheat controls"
+        }
+      ]
+    },
+    "evals.cap2_disposition": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/cap2_disposition.py",
+        "scripts/publish_cap2_disposition.py",
+        "tests/test_evals/test_cap2_disposition.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial typed terminal CAP2 capability ledger with exact evidence identities, CERT_CAP2 rejection, and DSH4 action-distillation closure"
         }
       ]
     },
@@ -562,13 +1003,48 @@
       ]
     },
     "evals.power_protocol": {
-      "version": "v1",
+      "version": "v8",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/power_protocol.py",
         "tests/test_evals/test_power_protocol.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-25",
+          "note": "SLM-287 add preregisterable absolute-probability MDE sensitivity scale"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "Add exact paired-binary inference for preregistered shared-draw control and candidate arms"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Add deterministic Holm step-down correction for prospectively declared hypothesis families"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "Reject boolean and floating-point preregistration sidedness values"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "Reject duplicate, boolean, and non-integer preregistration seed identifiers"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "Add prospective one-proportion sample-size planning with separate per-seed analyses and no observed-power inputs"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Add configurable fail-closed Wilson intervals and canonical binomial rate-evidence metadata"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -597,16 +1073,51 @@
       ]
     },
     "evals.scoring": {
-      "version": "v15",
+      "version": "v22",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
         {
+          "version": "v22",
+          "date": "2026-07-23",
+          "note": "Add the terminal CAP2 capability disposition and fail-closed certificate decision"
+        },
+        {
+          "version": "v21",
+          "date": "2026-07-23",
+          "note": "Add the frozen CAP2 operator, history, collapse, permutation, and anti-cheat scoring contract"
+        },
+        {
+          "version": "v20",
+          "date": "2026-07-23",
+          "note": "Add exact paired-binary inference for governed campaign endpoint evidence"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-23",
+          "note": "Add deterministic Holm family-wise correction with complete per-hypothesis evidence"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-23",
+          "note": "Fail closed on non-integer prospective power sidedness"
+        },
+        {
+          "version": "v17",
+          "date": "2026-07-23",
+          "note": "Fail closed on malformed prospective power seed identifiers"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-23",
+          "note": "Add prospective binomial power preregistration metadata without post-hoc observed-power claims"
+        },
+        {
           "version": "v15",
-          "date": "2026-07-22",
-          "note": "Use opaque structural identifiers in metric-gaming golds so names and values are never learned as content slots or English atoms"
+          "date": "2026-07-23",
+          "note": "Add count-provenanced configurable Wilson evidence for canonical evaluator binomial rates"
         },
         {
           "version": "v14",
@@ -760,19 +1271,66 @@
       ]
     },
     "features.openfeature": {
-      "version": "v2",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
         "src/slm_training/features/defaults.py",
         "src/slm_training/features/levers.py",
         "src/slm_training/features/runtime.py",
+        "src/slm_training/web/observability.py",
+        "src/slm_training/web/app.py",
         "src/slm_training/web/routes.py",
         "src/apps/dashboard/src/features/keys.ts",
         "src/apps/dashboard/src/features/runtime.ts",
+        "src/apps/dashboard/src/interpret/library.tsx",
+        "src/apps/dashboard/src/interpret/toolProvider.ts",
+        "src/apps/dashboard/src/main.tsx",
+        "src/apps/dashboard/src/pages/Experiments.tsx",
+        "src/apps/dashboard/src/pages/ExperimentFlagDetail.tsx",
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "Expose AgentEvals authoritative criterion summaries beside AgentV runner status on experiment scoreboards"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-24",
+          "note": "Link committed model-card parameters and checkpoint evidence to dashboard scoreboards and roster metrics"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-24",
+          "note": "Expose the isolated research-harness OpenFeature capability and OFREP read endpoints beside product flags"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "no-bump: route the promotion endpoint through the frozen core so the Vercel bundle excludes offline experiment runners without changing the API contract"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Add OpenFeature flag detail evidence, source excerpts, and outcome comparisons to the experiment dashboard"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "Use canonical OpenFeature keys in product feature metadata and bootstrap payloads"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "Expose the generated model-build OpenFeature lever registry through the experiment dashboard API"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "Accept and fail-closed validate campaign governance evidence in the promotion evaluation API"
+        },
         {
           "version": "v2",
           "date": "2026-07-21",
@@ -791,13 +1349,43 @@
       ]
     },
     "gates.ship": {
-      "version": "openui_ship_gates_v1",
+      "version": "openui_ship_gates_v4",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/model_build/ship_gates.py",
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v4",
+          "date": "2026-07-24",
+          "note": "no-bump: mirror the existing v4 gate version in meaningful-metric provenance; thresholds and gate decisions are unchanged"
+        },
+        {
+          "version": "openui_ship_gates_v4",
+          "date": "2026-07-24",
+          "note": "Fail closed on audited X22 suite reachability below 1.0 as a measurement-integrity failure"
+        },
+        {
+          "version": "openui_ship_gates_v3",
+          "date": "2026-07-24",
+          "note": "Make raw AgentEvals assertions the canonical ship-gate authority while retaining strict integrity and runtime policy"
+        },
+        {
+          "version": "openui_ship_gates_v2",
+          "date": "2026-07-23",
+          "note": "no-bump: mirror the already-versioned v2 runtime and integrity policy in the meaningful-metric provenance descriptor"
+        },
+        {
+          "version": "openui_ship_gates_v2",
+          "date": "2026-07-23",
+          "note": "Fail closed on malformed measurement values and explicit decode timeouts while preserving evidence and quality categories"
+        },
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add failure-category diagnostics without changing thresholds, gate checks, or pass decisions"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-22",
@@ -896,13 +1484,84 @@
         }
       ]
     },
+    "harness.autoresearch.experiment_campaign": {
+      "version": "v5",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/autoresearch/experiment_campaign.py",
+        "src/slm_training/autoresearch/schemas.py",
+        "src/slm_training/autoresearch/storage.py",
+        "src/slm_training/autoresearch/engine.py",
+        "src/slm_training/autoresearch/rl_gate.py",
+        "src/slm_training/autoresearch/__init__.py",
+        "tests/test_autoresearch/test_experiment_campaign.py",
+        "tests/test_autoresearch/test_harness.py"
+      ],
+      "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-24",
+          "note": "SLM-285 require immutable locked promotion-manifest digest agreement for promotion and ship claims"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Require AgentEvals-authoritative ship criteria rather than a self-reported AgentV boolean for RL readiness"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "Verify authoritative artifacts, outcome-boundary event binding, portable RL evidence, and atomic campaign locks"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Reject boolean seed identifiers in governed result evidence before promotion completeness checks"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "SLM-337 immutable preregistered campaigns, pre-start digest binding, exploratory deviations, complete promotion claims, and verified RL evidence"
+        }
+      ]
+    },
     "harness.core": {
-      "version": "v3",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "add SLM-291 EvidenceBundleV1, pluggable content-addressed evidence store, and PreregisteredClaimBarV1"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-23",
+          "note": "add SLM-193 DSL-agnostic bit-exact state, candidate, closure, and bridge cache primitives"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "Keep explicit historical result blocks visible while rejecting arbitrary nested metrics from malformed canonical records"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Expose deterministic JSON pointers from the canonical historical experiment-record normalizer"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "Validate finite real metrics and non-negative integral evidence counts before gate comparisons"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "Return an exact evidence, integrity, quality, and runtime failure partition from the generic gate engine"
+        },
         {
           "version": "v3",
           "date": "2026-07-22",
@@ -917,6 +1576,44 @@
           "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration; frozen DSL-agnostic core extracted structurally (versioning, lineage, checkpoint_reference, gate/promotion engines, scaling math, record_schema/eval_cache/score_policy) with behavior pinned by tests/test_harness_core"
+        }
+      ]
+    },
+    "harness.flags": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flags/",
+        "src/slm_training/harnesses/model_build/experiment_flags.py",
+        "docs/design/openfeature-research-levers.md",
+        "tests/test_flags/test_openfeature_experiments.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "SLM-342: add isolated OpenFeature-compatible research-lever evaluation, assignment metadata, and OFREP read surface"
+        }
+      ]
+    },
+    "harness_core.evidence_bundle": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harness_core/evidence_bundle.py",
+        "src/slm_training/harnesses/model_build/evidence_bundle_census.py",
+        "scripts/verify_evidence_bundles.py",
+        "tests/test_harness_core/test_evidence_bundle.py",
+        "tests/test_scripts/test_verify_evidence_bundles.py",
+        "docs/design/iter-slm291-evidence-bundles-20260724.json",
+        "docs/design/iter-slm291-evidence-bundles-20260724.md",
+        "docs/design/slm291-evidence-bar-adjudications-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-291 content-addressed EvidenceBundleV1 + CAS store, fail-closed verifier and model-card census, PreregisteredClaimBarV1, append-only retroactive adjudications"
         }
       ]
     },
@@ -947,26 +1644,269 @@
       ]
     },
     "harness.experiments": {
-      "version": "v63",
+      "version": "v108",
       "kind": "harness",
       "paths": [
-        "src/slm_training/harnesses/experiments/"
+        "src/slm_training/harnesses/experiments/",
+        "scripts/run_slm298_capacity_context_curriculum.py",
+        "tests/test_harnesses/experiments/test_slm298_capacity_context_curriculum.py",
+        "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
         {
-          "version": "v63",
+          "version": "v108",
+          "date": "2026-07-25",
+          "note": "SLM-296 bounded verifier-filtered teacher-admission wiring evidence, family-independence, and locked-set decontamination controls"
+        },
+        {
+          "version": "v107",
+          "date": "2026-07-25",
+          "note": "SLM-267 bounded uniform-vs-coverage-targeted ProgramSpec sampling wiring evidence and deterministic shard-seed primitive"
+        },
+        {
+          "version": "v106",
+          "date": "2026-07-25",
+          "note": "SLM-298 preserve every ExampleRecord output contract field while materializing complexity curriculum views"
+        },
+        {
+          "version": "v105",
+          "date": "2026-07-25",
+          "note": "SLM-298 preregistered bounded local capacity x frozen-context x complexity-curriculum factorial"
+        },
+        {
+          "version": "v104",
+          "date": "2026-07-25",
+          "note": "no-bump: follow the canonical allow_unconstrained_fallback default to False in the e228 recipe fallback; every shipped arm already sets it explicitly"
+        },
+        {
+          "version": "v104",
+          "date": "2026-07-25",
+          "note": "Replace the locked power protocol's emitted raw variants with mandatory constrained native and compiler comparisons while preserving historical evidence"
+        },
+        {
+          "version": "v103",
+          "date": "2026-07-25",
+          "note": "SLM-287 preregister absolute-probability MDE sensitivity in the locked local protocol"
+        },
+        {
+          "version": "v102",
+          "date": "2026-07-25",
+          "note": "SLM-287 replace rejected historical E297 input with the current-contract locked SLM-230 corpus"
+        },
+        {
+          "version": "v101",
+          "date": "2026-07-25",
+          "note": "SLM-287 train one local E297 checkpoint per locked seed/backend cell and require shards to reuse its immutable manifest"
+        },
+        {
+          "version": "v100",
+          "date": "2026-07-25",
+          "note": "SLM-287 isolate every concurrent local shard evaluator workspace"
+        },
+        {
+          "version": "v99",
+          "date": "2026-07-25",
+          "note": "SLM-287 freeze AP-007 campaign manifest bytes across local shard invocations"
+        },
+        {
+          "version": "v98",
+          "date": "2026-07-25",
+          "note": "SLM-287 freeze the bounded local choice decoder at eight tokens"
+        },
+        {
+          "version": "v97",
+          "date": "2026-07-25",
+          "note": "SLM-287 balance deterministic locked shards so every capped shard contains evidence"
+        },
+        {
+          "version": "v96",
+          "date": "2026-07-25",
+          "note": "SLM-287 add deterministic per-cell local shards and fail-closed exact-union merge with cell-scoped telemetry"
+        },
+        {
+          "version": "v95",
+          "date": "2026-07-25",
+          "note": "SLM-287 require cross-backend bit-exact initialization and derive paired cluster CIs plus observed seed and target variance"
+        },
+        {
+          "version": "v94",
           "date": "2026-07-24",
-          "note": "Forbid SDK-runner aggregates by role rather than treating AgentV as a metric feature"
+          "note": "SLM-287 use the canonical choice codec for bounded local constrained decode"
+        },
+        {
+          "version": "v93",
+          "date": "2026-07-24",
+          "note": "SLM-287 persist interrupted local executions as non-evidence artifacts"
+        },
+        {
+          "version": "v92",
+          "date": "2026-07-24",
+          "note": "SLM-287 use only preregistered raw constrained and repaired evaluation variants"
+        },
+        {
+          "version": "v91",
+          "date": "2026-07-24",
+          "note": "SLM-287 reject any local cell with a decode timeout instead of aggregating empty output"
+        },
+        {
+          "version": "v90",
+          "date": "2026-07-24",
+          "note": "SLM-287 publish AgentEvals and AgentV bundles for every local protocol evaluation"
+        },
+        {
+          "version": "v89",
+          "date": "2026-07-24",
+          "note": "SLM-287 execute the fail-closed local zero-update five-seed by two-config protocol through the canonical evaluator"
+        },
+        {
+          "version": "v88",
+          "date": "2026-07-24",
+          "note": "SLM-287 add fail-closed locked five-seed by two-config power protocol"
+        },
+        {
+          "version": "v87",
+          "date": "2026-07-24",
+          "note": "SLM-285 persist the governed locked promotion-manifest digest with promoted anchors"
+        },
+        {
+          "version": "v86",
+          "date": "2026-07-24",
+          "note": "bind every SLM-266 raw-attempt event to its generation manifest experiment"
+        },
+        {
+          "version": "v85",
+          "date": "2026-07-24",
+          "note": "record interrupted SLM-266 execution and pass an explicit local generation attention mask"
+        },
+        {
+          "version": "v84",
+          "date": "2026-07-24",
+          "note": "bind SLM-266 teacher execution to a matching preregistered campaign lock"
+        },
+        {
+          "version": "v83",
+          "date": "2026-07-24",
+          "note": "Implement SLM-294 frontier chunked execution and scoring pass in the external-ceiling harness"
+        },
+        {
+          "version": "v82",
+          "date": "2026-07-24",
+          "note": "add pinned offline-only Transformers transport for SLM-266 local teacher generation"
+        },
+        {
+          "version": "v81",
+          "date": "2026-07-24",
+          "note": "no-bump: correct SLM-262 completed-job test isolation and export history metadata without changing harness behavior"
+        },
+        {
+          "version": "v81",
+          "date": "2026-07-24",
+          "note": "no-bump: add SLM-262 lazy experiment exports without changing existing experiment behavior"
+        },
+        {
+          "version": "v81",
+          "date": "2026-07-24",
+          "note": "require durable cross-family automatic judge evidence for SLM-266 deep admission"
+        },
+        {
+          "version": "v80",
+          "date": "2026-07-24",
+          "note": "add preflighted provider executor and immutable campaign raw-attempt archive for SLM-266"
+        },
+        {
+          "version": "v79",
+          "date": "2026-07-24",
+          "note": "materialize deep SLM-266 admission into canonical train snapshots with raw archive pointers"
+        },
+        {
+          "version": "v78",
+          "date": "2026-07-24",
+          "note": "remove human-audit gate from SLM-266 hands-off principal admission"
+        },
+        {
+          "version": "v77",
+          "date": "2026-07-24",
+          "note": "add fail-closed SLM-266 teacher-program request and admission harness"
+        },
+        {
+          "version": "v76",
+          "date": "2026-07-24",
+          "note": "add deterministic SLM-207 valid-edit-flow closeout harness"
+        },
+        {
+          "version": "v75",
+          "date": "2026-07-23",
+          "note": "add SLM-194 legality-neutral candidate proposal and exact-fallback amortization fixture"
+        },
+        {
+          "version": "v74",
+          "date": "2026-07-23",
+          "note": "integrate SLM-193 FFE3-02 bit-exact flow-cache fixture harness on current main"
+        },
+        {
+          "version": "v73",
+          "date": "2026-07-23",
+          "note": "integrate SLM-192 FFE3-01 flow-pipeline cost-profile fixture harness on current main"
+        },
+        {
+          "version": "v72",
+          "date": "2026-07-23",
+          "note": "add SLM-230 bounded recurrence observability and evaluation-only exit contracts"
+        },
+        {
+          "version": "v71",
+          "date": "2026-07-23",
+          "note": "publish SLM-228 SpectralDispositionV1 and guard lineage/promotion from rejected spectral mechanisms"
+        },
+        {
+          "version": "v70",
+          "date": "2026-07-23",
+          "note": "add SLM-226 width and finite-size null boundary with fail-closed AbsoluteSpectralTargetGateV1"
+        },
+        {
+          "version": "v69",
+          "date": "2026-07-23",
+          "note": "add SLM-220 activation-side causal restriction energy, exact and JVP estimators, null controls, and fail-closed fixture retrospective"
+        },
+        {
+          "version": "v68",
+          "date": "2026-07-23",
+          "note": "add SLM-219 deterministic prefix checkpoint trajectory, canonical spectral diagnostics, pinned WeightWatcher comparison, and fail-closed warning retrospective"
+        },
+        {
+          "version": "v67",
+          "date": "2026-07-23",
+          "note": "add SLM-218 cross-attention and parent-child subspace retrospective owners"
+        },
+        {
+          "version": "v66",
+          "date": "2026-07-23",
+          "note": "add exact-state decision-conditioned functional spectral diagnostics for SLM-217"
+        },
+        {
+          "version": "v65",
+          "date": "2026-07-23",
+          "note": "add the bounded SLM-216 fixed-token spectral regime matrix and fail-closed gate"
+        },
+        {
+          "version": "v64",
+          "date": "2026-07-23",
+          "note": "publish the fail-closed SLM-213 semantic-floor claim authorization gate"
+        },
+        {
+          "version": "v63",
+          "date": "2026-07-23",
+          "note": "repair canonical InsertStatement application for replay-exact SLM-196 bridge corpus construction"
         },
         {
           "version": "v62",
-          "date": "2026-07-24",
-          "note": "Remove the synthetic AgentV aggregate from external-ceiling experiment records"
+          "date": "2026-07-23",
+          "note": "Derive promotion decisions from independently verified campaign results and plumb governance through canonical entrypoints"
         },
         {
           "version": "v61",
-          "date": "2026-07-22",
-          "note": "Use opaque ordinal slot contracts in the external ceiling fixture requests"
+          "date": "2026-07-23",
+          "note": "Require campaign-governed promotion, integrity-check legacy frozen manifests, and bridge the power-protocol fixture to ExperimentCampaignV1"
         },
         {
           "version": "v60",
@@ -1300,8 +2240,30 @@
         }
       ]
     },
-    "harness.experiments.ast_sketch_retrieval": {
+    "harness.experiments.external_ceiling": {
       "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/external_scorer.py",
+        "scripts/run_external_ceiling.py",
+        "src/slm_training/harnesses/experiments/external_ceiling_matrix.py",
+        "tests/test_scripts/test_run_external_ceiling_frontier.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "add arm-A tiny-baseline chunk runner, locked-threshold disposition mode with EvidenceBundleV1 plus AgentV, per-arm dtype and max_new_tokens controls"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-294 external-ceiling frontier execution (chunked resume, atomic raw JSONL, Wilson scoreboard) and scorer generate()"
+        }
+      ]
+    },
+    "harness.experiments.ast_sketch_retrieval": {
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/ast_sketch_retrieval_factorial.py",
@@ -1310,6 +2272,16 @@
         "tests/test_scripts/test_run_ast_sketch_retrieval_factorial.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "no-bump: mock unavailable AgentV SDK in the CLI regression test; production local diagnostic still publishes AgentV evidence"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "add an isolated SLM-295 verified-patch-local mode while retaining the SLM-133 fixture interface"
+        },
         {
           "version": "v2",
           "date": "2026-07-21",
@@ -1363,7 +2335,7 @@
       ]
     },
     "harness.experiments.claim_manifest": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/claim_manifest.py",
@@ -1375,9 +2347,43 @@
       ],
       "history": [
         {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "Permit idempotent replay of an identical intact frozen manifest while rejecting mutation and tampering"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Make frozen claim manifests create-once and verify their canonical content digest before confirmation access"
+        },
+        {
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.semantic_floor_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/semantic_floor_gate.py",
+        "scripts/publish_semantic_floor_gate.py",
+        "tests/test_harnesses/experiments/test_semantic_floor_gate.py",
+        "tests/test_scripts/test_publish_semantic_floor_gate.py",
+        "docs/design/semantic-floor-gate-v1.json",
+        "docs/design/semantic-floor-gate-v1.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "normalize the component version and refresh registered identities while preserving the evidence timestamp"
+        },
+        {
+          "version": "sde5-06-v1",
+          "date": "2026-07-23",
+          "note": "initial SLM-213 SemanticFloorGateV1 evidence aggregation and claim authorization"
         }
       ]
     },
@@ -1921,6 +2927,23 @@
         }
       ]
     },
+    "harness.retrieval.verified_patch": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/retrieval/verified_patch_v1.py",
+        "tests/test_harnesses/retrieval/test_verified_patch_v1.py",
+        "docs/design/iter-slm295-verified-patch-v1-20260725.json",
+        "docs/design/iter-slm295-verified-patch-v1-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration of the local verified retrieval and grammar-patch baseline"
+        }
+      ]
+    },
     "harness.experiments.slm148_x22_conflict_campaign": {
       "version": "v1",
       "kind": "harness",
@@ -1976,17 +2999,26 @@
       ]
     },
     "harness.experiments.slm155_factorization_comparison": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm155_factorization_comparison.py",
         "scripts/run_slm155_factorization_comparison_fixture.py",
+        "scripts/run_slm297_unified_rescore.py",
         "tests/test_harnesses/experiments/test_slm155_factorization_comparison.py",
         "tests/test_scripts/test_run_slm155_factorization_comparison_fixture.py",
+        "tests/test_scripts/test_run_slm297_unified_rescore.py",
         "docs/design/iter-slm155-factorization-comparison-20260720.json",
-        "docs/design/iter-slm155-factorization-comparison-20260720.md"
+        "docs/design/iter-slm155-factorization-comparison-20260720.md",
+        "docs/design/iter-slm297-unified-rescore-20260724.json",
+        "docs/design/iter-slm297-unified-rescore-20260724.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-297: retain per-example final programs in FactorizationRecord (AR via _program_from_actions, X22 seed + program_note, hybrid source), add FinalProgramOutcomeV1 unified final-program scoring + transition/paired-table helpers, run_fixture_campaign_with_records, and the run_slm297_unified_rescore CLI; aggregate rows unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2622,8 +3654,24 @@
         }
       ]
     },
-    "harness.experiments.slm183_power_protocol": {
+    "harness.experiments.reserved_operator_baseline": {
       "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/reserved_operator_baseline.py",
+        "scripts/run_reserved_operator_baseline.py",
+        "tests/test_harnesses/experiments/test_reserved_operator_baseline.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial E803 capacity-matched result-only, operator-only, and operator-plus-result hashed-token experiment with causal choice and compiler-membership evidence"
+        }
+      ]
+    },
+    "harness.experiments.slm183_power_protocol": {
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
@@ -2634,6 +3682,66 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-07-25",
+          "note": "SLM-287 lock the current-contract local training corpus before the trained baseline grid"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-25",
+          "note": "SLM-287 expose the locked local E297 trained-cell protocol through the shared power-protocol CLI"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-25",
+          "note": "SLM-287 reuse an existing validated campaign spec despite unordered allowed-knob serialization"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-25",
+          "note": "SLM-287 reuse the same immutable campaign spec for every local shard"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-25",
+          "note": "SLM-287 bind shard events to the locked AP-007 campaign experiment"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-25",
+          "note": "SLM-287 expose deterministic local shard and merge modes through the shared power-protocol CLI"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-24",
+          "note": "Persist SLM-287 timeout outcomes through the shared power-protocol CLI"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-24",
+          "note": "Render SLM-287 bounded local-grid evidence through the shared CLI"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-24",
+          "note": "Expose the SLM-287 local executor on the shared power-protocol CLI"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Make SLM-183 fixture doc writes opt-in while sharing the power-protocol CLI with SLM-287"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "Run exact paired control and candidate arms under a pre-start campaign lock with opt-in canonical doc writes"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Embed the canonical ExperimentCampaignV1 preregistration with binder-reference fallback and Holm family metadata"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2690,7 +3798,7 @@
       ]
     },
     "harness.experiments.slm188_edit_algebra": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm188_edit_algebra.py",
@@ -2701,6 +3809,11 @@
         "docs/design/iter-slm188-edit-algebra-20260721.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "apply missing-statement insertions with typed leaf or container payloads instead of rejecting them before dispatch"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
@@ -2755,6 +3868,270 @@
         }
       ]
     },
+    "harness.experiments.slm262_gpu_reference_run": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm262_gpu_reference.py",
+        "scripts/run_gpu_reference.py",
+        "tests/test_harnesses/experiments/test_slm262_gpu_reference.py",
+        "tests/test_scripts/test_run_gpu_reference.py",
+        "docs/design/gpu-reference-run.md",
+        "docs/design/iter-slm262-gpu-reference-run-20260721.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: isolate completed-job reconciliation unit test from external bucket tooling"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-262 durable GPU train checkpoint eval reference-run manifest and adapter"
+        }
+      ]
+    },
+    "harness.experiments.slm197_direct_bridge_policy": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm197_direct_bridge_policy.py",
+        "src/slm_training/models/legal_edit_scorer.py",
+        "scripts/run_direct_bridge_policy_matrix.py",
+        "tests/test_models/test_legal_edit_scorer.py",
+        "tests/test_harnesses/experiments/test_slm197_direct_bridge_policy.py",
+        "tests/test_scripts/test_run_direct_bridge_policy_matrix.py",
+        "docs/design/iter-slm197-direct-bridge-policy-20260723.json",
+        "docs/design/iter-slm197-direct-bridge-policy-20260723.md",
+        "docs/design/iter-slm197-direct-bridge-policy-agentv-20260723/",
+        "docs/design/quality-experiment-matrix.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: append SLM-298 bounded local diagnostic evidence to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: append corrected historical E615 fixture evidence to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: append the SLM-236 blocked RSC4 disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: append the SLM-233 gate-bounded matched recursive campaign to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-243 measured recursive-update architecture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-232 measured latent-state disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-231 measured recurrence-dynamics disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-230 measured recurrence disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-200 measured fixture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: append SLM-199 measured-results pointer to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: append SLM-198 measured-results pointer to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-197 exact-candidate direct policy, set-mass loss, matched time encodings, checkpoint migration, free-running decode, and honest D0-D5 fixture matrix"
+        }
+      ]
+    },
+    "harness.experiments.slm198_bridge_curriculum": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm198_bridge_curriculum.py",
+        "scripts/run_bridge_curriculum_matrix.py",
+        "tests/test_harnesses/experiments/test_slm198_bridge_curriculum.py",
+        "tests/test_scripts/test_run_bridge_curriculum_matrix.py",
+        "docs/design/iter-slm198-bridge-curriculum-20260723.json",
+        "docs/design/iter-slm198-bridge-curriculum-20260723.md",
+        "docs/design/iter-slm198-bridge-curriculum-agentv-20260723/"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Deduplicate per-seed manifests, retain decode trace digests instead of repeated traces, and compact deployable evidence without changing measured metrics"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-198 target-first bridge curriculum manifest, deterministic scheduling features, exposure proofs, resumable sampler, and honest fixture matrix"
+        }
+      ]
+    },
+    "harness.experiments.slm199_legal_edit_flow": {
+      "version": "v4",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
+        "src/slm_training/models/legal_edit_flow.py",
+        "src/slm_training/flow/targets.py",
+        "src/slm_training/flow/samplers.py",
+        "scripts/run_legal_edit_flow_fixture.py",
+        "scripts/train_legal_edit_flow.py",
+        "tests/test_harnesses/experiments/test_slm199_legal_edit_flow.py",
+        "tests/test_models/test_legal_edit_flow.py",
+        "tests/test_flow/test_targets.py",
+        "tests/test_flow/test_samplers.py",
+        "tests/test_scripts/test_run_legal_edit_flow_fixture.py",
+        "tests/test_scripts/test_vercel_bundle_policy.py",
+        "vercel.json",
+        ".vercelignore",
+        "docs/design/iter-slm199-legal-edit-flow-20260723.json",
+        "docs/design/iter-slm199-legal-edit-flow-20260723.md",
+        "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
+      ],
+      "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "no-bump: route the Vercel slim dependency set through installCommand + src/slm_training/web/requirements-vercel.txt (repo policy bars a top-level requirements.txt) and lock the new exclusions in the bundle policy test"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy \u2014 exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "no-bump: assert the wheel matches the existing Vercel exclusion for the offline SLM-230 corpus"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "no-bump: exclude offline experiment harness modules from the Vercel function bundle without changing deployed web behavior"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "no-bump: exclude the offline SLM-233 campaign runner from Vercel source upload without changing deployed web behavior"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "move nested AgentV evidence exclusion to Vercel source-upload policy after live previews proved the function-level glob did not remove those files"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "exclude SLM-243 offline matrix code from the Vercel source upload while retaining its compact dashboard result JSON"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: replace the ineffective SLM-230 function glob with a source-upload ignore for the offline corpus without changing web runtime behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: exclude SLM-230 offline corpus and evidence directories from the Vercel function bundle without changing web runtime behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: generalize the offline Vercel harness exclusion to SLM-199/200 and exclude the SLM-200 top-level experiment report while preserving measured experiment behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: regenerate SLM-199 evidence from clean v2 code with field-level AgentV checks and stamped result artifacts"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "enforce field-level AgentV checks, restricted checkpoint loading, contained certificate failures, and canonical shared run budgets"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: compact equivalent Vercel exclusions below the 256-character schema limit after preview validation rejected the expanded spelling"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: exclude offline-only SLM-199 train and experiment modules from the Vercel runtime bundle without changing rate, sampler, or evidence behavior"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-199 exact finite-graph rate targets, UNKNOWN-safe adapted bridge targets, positive-rate model, exact Gillespie oracle, bounded production sampler, and honest fixture evidence"
+        }
+      ]
+    },
+    "harness.experiments.slm200_flow_objective_attribution": {
+      "version": "v4",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm200_flow_objective_attribution.py",
+        "scripts/run_flow_objective_attribution.py",
+        "tests/test_harnesses/experiments/test_slm200_flow_objective_attribution.py",
+        "tests/test_scripts/test_run_flow_objective_attribution.py"
+      ],
+      "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "no-bump: make the portable-path helper recognize its stable artifact-directory marker so the existing worktree-independent contract is testable on CI"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "rewrite AgentV artifact paths and encoded projection identities to portable agentv-dir references before committing evidence"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "restrict AgentV primary-parity checks to named booleans while retaining numeric parameter and initialization evidence in the result payload"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "fix normalized version-stamp construction in the SLM-200 publisher before measured evidence generation"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-200 A0-A9 matched objective registry, exact-oracle control, parity validation, powered-protocol pins, confirmation firewall, and honest fixture-screen disposition"
+        }
+      ]
+    },
     "harness.experiments.slm209_debt_targeted_curriculum": {
       "version": "v3",
       "kind": "harness",
@@ -2799,11 +4176,6 @@
       "history": [
         {
           "version": "v1",
-          "date": "2026-07-22",
-          "note": "no-bump: replace named test-only training markers and binders with opaque ordinals; output-head behavior is unchanged"
-        },
-        {
-          "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-211 SDE5-04 default-on output-head tying control, copy-init untied arm, explicit checkpoint migration, optimizer deduplication, and spectral/Cactus metadata"
         }
@@ -2826,7 +4198,7 @@
       ]
     },
     "harness.experiments.slm214_spectral_snapshot": {
-      "version": "v2",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py",
@@ -2838,6 +4210,16 @@
         ".agents/skills/autotrain/references/inspect.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "expose canonical scale-invariant spectral trap projection for SLM-219 without a parallel SVD owner"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "make Xavier and Kaiming null draws deterministic with supported generator-aware uniform sampling"
+        },
         {
           "version": "v2",
           "date": "2026-07-21",
@@ -2856,7 +4238,7 @@
       ]
     },
     "harness.experiments.slm215_spectral_atlas": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm215_spectral_atlas.py",
@@ -2868,9 +4250,334 @@
       ],
       "history": [
         {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "no-bump: pin the custom gate-path regression to the current honest verdict"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "no-bump: assert that custom gate references and hashes identify the same loaded artifact"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "record the actual caller-supplied SemanticFloorGateV1 path in atlas manifests"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "bind NCS atlas manifests to SemanticFloorGateV1 and keep strict meaning-v2 separate from legacy meaningful rate"
+        },
+        {
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-215 NCS0-02 SpectralAtlasV1 fixture harness for null-calibrated checkpoint atlas and outcome joins"
+        }
+      ]
+    },
+    "harness.experiments.slm216_spectral_regime": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm216_spectral_regime.py",
+        "scripts/run_spectral_regime_matrix.py",
+        "tests/test_harnesses/experiments/test_slm216_spectral_regime.py",
+        "tests/test_scripts/test_run_spectral_regime_matrix.py",
+        "docs/design/iter-slm216-spectral-regime-20260723.json",
+        "docs/design/iter-slm216-spectral-regime-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial SLM-216 fixed-token batch/data-scale matrix and SpectralRegimeGateV1"
+        }
+      ]
+    },
+    "harness.experiments.slm226_absolute_spectral_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm226_absolute_spectral_gate.py",
+        "scripts/run_absolute_spectral_gate.py",
+        "tests/test_harnesses/experiments/test_slm226_absolute_spectral_gate.py",
+        "tests/test_scripts/test_run_absolute_spectral_gate.py",
+        "docs/design/iter-slm226-absolute-spectral-gate-20260723.json",
+        "docs/design/iter-slm226-absolute-spectral-gate-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh measured docs from the clean provenance-pinning implementation commit"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: pin check-mode provenance to the clean evidence commit across docs-only follow-up commits"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial finite-size null and scratch-width matrix plus AbsoluteSpectralTargetGateV1"
+        }
+      ]
+    },
+    "harness.experiments.slm228_spectral_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm228_spectral_disposition.py",
+        "scripts/publish_spectral_disposition.py",
+        "scripts/model_cycle.py",
+        "tests/test_harnesses/experiments/test_slm228_spectral_disposition.py",
+        "tests/test_scripts/test_publish_spectral_disposition.py",
+        "docs/design/null-calibrated-spectral-learning-disposition.json",
+        "docs/design/null-calibrated-spectral-learning-disposition.md",
+        "docs/design/research-lineage.md",
+        "docs/MODEL_CARD.md",
+        "README.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: add SLM-298 local diagnostic checkpoint rows to shared README and model card without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: README and MODEL_CARD gained decode-invariant links and the I10 ladder table; no spectral-disposition claim, evidence, or artifact changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: add the SLM-287 local diagnostic checkpoint evidence to shared README and model card without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: document repository-wide LangSmith summary telemetry without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: add the SLM-294 diagnostic checkpoint row to the shared model card without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: add SLM-248 research-intake contract to shared lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: cross-link the SLM-236 blocked RSC4 disposition in shared README, model-card, and lineage docs without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add SLM-194 adapted proposal-amortization evidence to shared research lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: record the SLM-234 not_authorized gate closeout in shared research lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: add the SLM-233 repository-diagnostic evidence to shared research lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add the SLM-243 adapted recursive-update evidence to shared research lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add the SLM-232 bounded latent-state evidence to shared roster and lineage docs without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add the SLM-231 bounded recurrence-dynamics evidence to shared roster, operating reference, and lineage docs without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add the SLM-230 rejected checkpoint and adapted recurrence evidence to shared roster and lineage docs without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh the generated disposition with its clean provenance-pinning implementation commit"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial final spectral disposition, evidence hashes, narrative, and promotion guards"
+        }
+      ]
+    },
+    "harness.experiments.slm230_recurrence_observability": {
+      "version": "v12",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
+        "scripts/run_slm230_recurrence_observability.py",
+        "tests/test_harnesses/experiments/test_slm230_recurrence_observability.py",
+        "tests/test_scripts/test_run_slm230_recurrence_observability.py",
+        "docs/design/iter-slm230-recurrence-observability-20260724.json",
+        "docs/design/iter-slm230-recurrence-observability-20260724.md",
+        "docs/design/iter-slm230-recurrence-observability-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "run reproduction AgentV publishing in a temporary directory so check mode never rewrites committed evidence artifacts"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible report and pinned AgentV bundle for the already-versioned v11 harness"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "render AgentV summaries and policy rows in canonical key order so Markdown is stable across JSON serialization"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "preserve the committed dirty-evidence policy during reproduction instead of changing the hashed allow_dirty gate in check mode"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-23",
+          "note": "seed every record-depth free-running decode independently so exact reproduction is invariant to preceding process RNG state"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-23",
+          "note": "retain measured CPU latency in reports while excluding nondeterministic timing fields from exact scientific reproduction hashes"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "centralize the scientific report hash so generation and validation share runtime-noise exclusions while preserving the pinned evidence stamp"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "pin committed evidence stamps during reproduction and exclude elapsed runtime noise from the scientific report hash"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "count canonical recursive_outputs calls directly so every recurrence block evaluation is charged"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "bound free-running depth evaluation to two records per split and one hashed 32-token decoder policy under the hard run cap"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "bind heldout evaluation to the committed symbol-only suite and record the canonical three-minute run cap"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "bind the runner to the clean retry checkpoint and the measured 97-record strict corpus"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial RecurrenceObservabilityV1, RecurrenceExitPolicyV1, bounded checkpoint audit, and anytime controls"
+        }
+      ]
+    },
+    "harness.experiments.slm217_functional_spectra": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm217_functional_spectra.py",
+        "scripts/run_functional_spectral_fixture.py",
+        "tests/test_harnesses/experiments/test_slm217_functional_spectra.py",
+        "tests/test_scripts/test_run_functional_spectral_fixture.py",
+        "docs/design/iter-slm217-functional-spectra-20260723.json",
+        "docs/design/iter-slm217-functional-spectra-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial FunctionalSpectralSnapshotV1 exact-state contract and bounded fixture"
+        }
+      ]
+    },
+    "harness.experiments.slm218_cross_attention_retention": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm218_cross_attention_retention.py",
+        "scripts/run_cross_attention_retention.py",
+        "tests/test_harnesses/experiments/test_slm218_cross_attention_retention.py",
+        "tests/test_scripts/test_run_cross_attention_retention.py",
+        "docs/design/iter-slm218-cross-attention-retention-20260723.json",
+        "docs/design/iter-slm218-cross-attention-retention-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial CrossAttentionRetentionReportV1 geometry and fail-closed family coverage"
+        }
+      ]
+    },
+    "harness.experiments.slm219_correlation_traps": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm219_correlation_traps.py",
+        "scripts/collect_correlation_trap_evidence.py",
+        "scripts/run_correlation_trap_retrospective.py",
+        "tests/test_harnesses/experiments/test_slm219_correlation_traps.py",
+        "tests/test_scripts/test_run_correlation_trap_retrospective.py",
+        "docs/design/iter-slm219-correlation-trap-evidence-20260723.json",
+        "docs/design/iter-slm219-correlation-trap-agentv-20260723/",
+        "docs/design/iter-slm219-correlation-trap-20260723.json",
+        "docs/design/iter-slm219-correlation-trap-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial CorrelationTrapReportV1 with deterministic six-checkpoint prefix evidence, independent collapse preregistration, confirmation-timed warnings, native and WeightWatcher controls, and fail-closed decision"
+        }
+      ]
+    },
+    "harness.experiments.slm220_causal_subspace": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm220_causal_subspace.py",
+        "scripts/run_causal_subspace_fixture.py",
+        "tests/test_harnesses/experiments/test_slm220_causal_subspace.py",
+        "tests/test_scripts/test_run_causal_subspace_fixture.py",
+        "docs/design/iter-slm220-causal-subspace-20260723.json",
+        "docs/design/iter-slm220-causal-subspace-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial CausalSubspaceSnapshotV1 activation-side restriction estimator and rejected fixture-only retrospective"
         }
       ]
     },
@@ -2891,7 +4598,7 @@
       ]
     },
     "harness.experiments.slm229_looped_latent_differentiation": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm229_looped_latent_differentiation.py",
@@ -2902,6 +4609,21 @@
         "docs/design/iter-slm229-looped-latent-differentiation-20260721.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "derive learned-latent authorization narratives from the resolved semantic floor verdict"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: add explicit design output paths so fixture tests do not rewrite canonical docs; report semantics are unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "resolve the RSC learned-latent prerequisite through the authoritative SemanticFloorGateV1 hash"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
@@ -2914,134 +4636,438 @@
         }
       ]
     },
+    "harness.gate_census": {
+      "version": "v8",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/model_build/evidence_census.py",
+        "scripts/census_ship_evidence.py",
+        "tests/test_harnesses/model_build/test_evidence_census.py"
+      ],
+      "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-23",
+          "note": "Preserve root metric-block JSON pointers and supersede their legacy normalized placeholders"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "Normalize legacy root and result scoreboard pointers when superseding preserved adjudication events"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Report executing revision and canonical historical selection in the deterministic markdown renderer"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "Append a superseding adjudication when the replayed gate policy changes for an unchanged source scoreboard"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "Exclude prior ship-gate census artifacts from recursive self-census"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "Reuse canonical historical normalization, preserve verified ledger prefixes, stamp executing code, and compute exact-count interval overlap"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Hash-chain append-only historical adjudications with deterministic supersession fields"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "Initial deterministic no-write committed-scoreboard census and append-only adjudication schema"
+        }
+      ]
+    },
+    "harness.experiment_feature_flags": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/model_build/feature_flags.py",
+        "scripts/backfill_experiment_feature_flags.py",
+        "src/slm_training/resources/experiment_feature_flag_history.json"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Preserve explicit optional checkpoint feature values while resolving OpenFeature overrides"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Persist experiment feature snapshots and historical evidence by canonical OpenFeature key"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "Initial OpenFeature-backed model-build lever registry, run snapshots, and historical evidence backfill"
+        }
+      ]
+    },
+    "harness.experiments.slm231_recurrence_dynamics": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm231_recurrence_dynamics.py",
+        "scripts/run_slm231_recurrence_dynamics.py",
+        "tests/test_harnesses/experiments/test_slm231_recurrence_dynamics.py",
+        "tests/test_scripts/test_run_slm231_recurrence_dynamics.py",
+        "docs/design/iter-slm231-recurrence-dynamics-20260724.json",
+        "docs/design/iter-slm231-recurrence-dynamics-20260724.md",
+        "docs/design/iter-slm231-recurrence-dynamics-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible SLM-231 report and AgentV bundle generated against implementation commit 9d22aa81"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial residual-correct increment, composite, trajectory-product, FTLE, and cross-depth alignment diagnostics with synthetic, fixture, and bounded-checkpoint evidence"
+        }
+      ]
+    },
+    "harness.experiments.slm232_latent_state_use": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm232_latent_state_use.py",
+        "scripts/run_slm232_latent_state_use.py",
+        "tests/test_harnesses/experiments/test_slm232_latent_state_use.py",
+        "tests/test_scripts/test_run_slm232_latent_state_use.py",
+        "docs/design/iter-slm232-latent-state-use-20260724.json",
+        "docs/design/iter-slm232-latent-state-use-20260724.md",
+        "docs/design/iter-slm232-latent-state-use-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible SLM-232 report and AgentV bundle generated against implementation commit 051c1c5d"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial bounded z-state rank, context decomposition, causal ablation, matched y-only/nuisance control, prior-join, and fail-closed disposition gate"
+        }
+      ]
+    },
+    "harness.experiments.slm243_recursive_update_gate": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py",
+        "scripts/run_slm243_recursive_update_gate.py",
+        "tests/test_harnesses/experiments/test_slm243_recursive_update_gate.py",
+        "tests/test_scripts/test_run_slm243_recursive_update_gate.py",
+        "docs/design/iter-slm243-recursive-update-gate-20260724.json",
+        "docs/design/iter-slm243-recursive-update-gate-20260724.md",
+        "docs/design/iter-slm243-recursive-update-gate-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the compact dashboard report and hash-bound raw matrix generated cleanly against implementation commit 62726d66"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "split full 90-cell telemetry into a hash-bound raw matrix under the Vercel-excluded AgentV directory while retaining all gate inputs and semantic aggregates in dashboard JSON"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "deduplicate triangular depth telemetry and retain raw semantic rows at R=8 so dashboard evidence stays deployable without changing any gate input or verdict"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible SLM-243 report and AgentV bundle generated against implementation commit c926cb05"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: make check mode replay the committed version stamp so durable evidence remains reproducible after its docs-only commit"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: serialize AgentV paths relative to the durable evidence directory so reports are machine-portable"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add deterministic mechanism fixtures proving historical empty-F pass-through, exact true-empty zero, near-identity scales and gates, and private norm identity"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial six-arm, five-depth, three-paired-seed recurrence update, empty-F, and private-norm architecture gate"
+        }
+      ]
+    },
+    "harness.experiments.slm233_recursive_campaign": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm233_recursive_campaign.py",
+        "scripts/run_slm233_recursive_campaign.py",
+        "tests/test_harnesses/experiments/test_slm233_recursive_campaign.py",
+        "tests/test_scripts/test_run_slm233_recursive_campaign.py",
+        "docs/design/iter-slm233-recursive-campaign-20260724.json",
+        "docs/design/iter-slm233-recursive-campaign-20260724.md",
+        "docs/design/iter-slm233-recursive-campaign-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "no-bump: remove Markdown hard-break trailing spaces so repository diff validation remains clean"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "no-bump: make Markdown rendering stable across in-memory tuples and JSON-reloaded lists without changing scientific payloads"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "no-bump: publish the clean compact report, raw matrix, AgentV bundle, and measured-results narrative generated against implementation commit 6852e2cb"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "scope common initialization hash equality within each paired seed instead of incorrectly requiring different seed initializations to be identical"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial five-arm, three-paired-seed, gate-bounded matched recursive-depth campaign with fairness, exposure, test-depth, cost, resume, AgentV, and RecursiveCoreGateV2 evidence"
+        }
+      ]
+    },
+    "harness.experiments.slm236_recurrent_latent_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm236_recurrent_latent_disposition.py",
+        "scripts/publish_recurrent_latent_disposition.py",
+        "tests/test_harnesses/experiments/test_slm236_recurrent_latent_disposition.py",
+        "tests/test_scripts/test_publish_recurrent_latent_disposition.py",
+        "docs/design/iter-slm236-recurrent-latent-disposition-20260724.json",
+        "docs/design/recurrent-semantic-computation-looped-latent-disposition.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial fail-closed RSC4 disposition assembled from merged gate evidence"
+        }
+      ]
+    },
+    "harness.experiments.slm288_meaningful_validation": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_slm288_meaningful_validation.py",
+        "tests/test_scripts/test_run_slm288_meaningful_validation.py",
+        "src/slm_training/resources/evals/slm288_annotation_packet_v1.json",
+        "src/slm_training/resources/evals/slm288_meaningful_rubric_v1.md",
+        "docs/design/iter-slm288-meaningful-validation-20260724.json",
+        "docs/design/iter-slm288-meaningful-validation-20260724.md",
+        "docs/design/slm288-annotation-labels-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-288 reason-code histograms, frozen blinded annotation packet, agent-rater agreement analysis, and metric disposition"
+        }
+      ]
+    },
+    "harness.experiments.slm299_edit_reachability": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
+        "scripts/run_slm299_reachability_audit.py",
+        "tests/test_harnesses/experiments/test_slm299_edit_reachability.py",
+        "docs/design/iter-slm299-edit-reachability-20260724.json",
+        "docs/design/iter-slm299-edit-reachability-20260724.md",
+        "src/slm_training/models/tree_edit_diffusion.py",
+        "docs/design/iter-slm305-edit-language-20260724.json",
+        "docs/design/iter-slm305-edit-language-20260724.md",
+        "tests/test_models/test_tree_edit_diffusion.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Certify tree-edit generation outputs and emit a tagged deterministic valid fallback on unexpected invalid states"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-305: extend the valid-state edit language (ADD_CONTAINER/REMOVE_CONTAINER, INSERT/REPLACE_SUBTREE, V0.5 statement edits, BIND_PLACEHOLDER) with inverses, parser-backed validation, checkpoint format 2 + migration, and extended reachability mode"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; real X22 tree-edit reachability analyzer, suite audit CLI, and reachability-unproven gate input"
+        }
+      ]
+    },
+    "harness.experiments.slm301_prompt_observability": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm301_prompt_observability.py",
+        "scripts/run_slm301_prompt_observability.py",
+        "tests/test_harnesses/experiments/test_slm301_prompt_observability.py",
+        "docs/design/iter-slm301-prompt-observability-20260724.json",
+        "docs/design/iter-slm301-prompt-observability-20260724.md",
+        "docs/design/slm301-slot-observability-audit-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: drop an exact duplicate JSON key for this component; parsers already kept only one copy, so no watched behavior changes"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-301 LAR1-04 prompt-observability arms (as-is vs +inventory) with phase-0 coverage classification, AR/X22 baselines, paired predeclared-delta report"
+        }
+      ]
+    },
+    "harness.experiments.slm303_decode_budget_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_slm303_decode_budget_audit.py",
+        "tests/test_harnesses/model_build/test_decode_outcome.py",
+        "tests/test_scripts/test_run_slm303_decode_budget_audit.py",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.json",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-303 decode-budget audit with hash pins, preregistered budget sweep, and taxonomy disposition"
+        }
+      ]
+    },
     "harness.model_build.eval": {
-      "version": "v68",
+      "version": "v59",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
         "src/slm_training/harnesses/model_build/eval_runner.py",
         "src/slm_training/harnesses/model_build/eval_policy.py",
-        "src/slm_training/evals/agentv.py",
         "src/slm_training/models/decode_stats.py",
         "src/slm_training/harnesses/quality/retrieval.py",
         "scripts/evaluate_model.py",
-        "scripts/run_agentv_eval.mjs"
+        "scripts/run_slm293_property_role_saturation.py",
+        "tests/test_scripts/test_run_slm293_property_role_saturation.py",
+        "docs/design/iter-slm293-property-role-saturation-20260725.json",
+        "docs/design/iter-slm293-property-role-saturation-20260725.md",
+        "src/slm_training/runtime/telemetry/trace.py",
+        "tests/test_runtime_trace.py"
       ],
       "history": [
         {
-          "version": "v68",
-          "date": "2026-07-24",
-          "note": "Expose prefix-conditioned opaque repeated-binder presence through the canonical evaluator"
-        },
-        {
-          "version": "v67",
-          "date": "2026-07-24",
-          "note": "Expose trained opaque forward binder-slot presence through the canonical evaluator"
-        },
-        {
-          "version": "v66",
-          "date": "2026-07-24",
-          "note": "Expose trained opaque forward binder-slot ownership through the canonical evaluator"
-        },
-        {
-          "version": "v65",
-          "date": "2026-07-24",
-          "note": "Count opaque bound-subtree references globally so alias uniqueness reaches cross-declaration reuse"
-        },
-        {
-          "version": "v64",
-          "date": "2026-07-24",
-          "note": "Expose opaque bound-subtree slot-alias uniqueness through the canonical evaluator"
-        },
-        {
-          "version": "v63",
-          "date": "2026-07-24",
-          "note": "Expose opaque required-slot array completion through the canonical evaluator"
-        },
-        {
-          "version": "v62",
-          "date": "2026-07-24",
-          "note": "Expose opt-in nested binder-reference uniqueness decoding through the canonical evaluator"
-        },
-        {
-          "version": "v61",
-          "date": "2026-07-24",
-          "note": "Expose opt-in request-aware visible-slot reservation for strict compiler-tree evaluation"
-        },
-        {
-          "version": "v60",
-          "date": "2026-07-24",
-          "note": "Expose the existing compiler completion-forest draft horizon as an explicit evaluation override"
+          "version": "v59",
+          "date": "2026-07-25",
+          "note": "no-bump: regenerate SLM-293 local evidence after rebase so its stamp names the merged v59/v242 constraints; harness behavior is unchanged"
         },
         {
           "version": "v59",
-          "date": "2026-07-24",
-          "note": "Expose the opt-in deterministic required-slot root-completion decoder constraint"
+          "date": "2026-07-25",
+          "note": "SLM-293: add component-inventory decoder telemetry plus bounded paired frozen-base capacity and connector-disposition evidence"
         },
         {
           "version": "v58",
-          "date": "2026-07-24",
-          "note": "Preserve partial decoder counters and constrained-choice traces when the evaluator's signal timeout interrupts batch generation"
+          "date": "2026-07-25",
+          "note": "Gate every evaluation policy on require_constrained_production_config and add the I3 speculative-rank and I4 prefill-schedule decode counters (decode invariants I2/I3/I4/I6)"
         },
         {
           "version": "v57",
-          "date": "2026-07-24",
-          "note": "Record named domain metrics from @agentv/core SDK graders; remove the synthetic AgentV aggregate"
+          "date": "2026-07-25",
+          "note": "Make constrained deterministic generation mandatory, replace raw emitted audit arms with constraint-shadow-safe decoder comparisons, and report singleton/prefill work"
         },
         {
           "version": "v56",
-          "date": "2026-07-22",
-          "note": "Withdraw the scoped binder ownership evaluation switch after E995 rejection"
+          "date": "2026-07-24",
+          "note": "Allow callers to request an explicit validated subset of grammar-leakage variants"
         },
         {
           "version": "v55",
-          "date": "2026-07-22",
-          "note": "Expose and record the component-parent-scoped binder ownership evaluation switch"
+          "date": "2026-07-24",
+          "note": "SLM-284: add raw constrained repaired and uniform grammar leakage audit scorecards with meaningful-v2 and binder/reference evidence"
         },
         {
           "version": "v54",
-          "date": "2026-07-22",
-          "note": "Withdraw the unique-binder-reference evaluation switch after E992 rejection"
+          "date": "2026-07-24",
+          "note": "load simple local LANGSMITH .env key-value configuration with the standard library when the optional dotenv package is absent"
         },
         {
           "version": "v53",
-          "date": "2026-07-22",
-          "note": "Expose and record the opt-in compiler unique-binder-reference evaluation switch"
+          "date": "2026-07-24",
+          "note": "publish curated summary-only LangSmith evaluation spans and honor bounded standard OTLP export configuration through the shared W3C trace"
+        },
+        {
+          "version": "v53",
+          "date": "2026-07-24",
+          "note": "Add SLM-303 per-record decode outcome taxonomy and suite outcome counts without changing existing gate inputs"
         },
         {
           "version": "v52",
-          "date": "2026-07-22",
-          "note": "Expose and record the opt-in official component-schema compiler evaluation switch"
+          "date": "2026-07-24",
+          "note": "Add typed meaningful-program v1 reason reports while preserving the existing verdict and legacy reason strings"
         },
         {
           "version": "v51",
-          "date": "2026-07-22",
-          "note": "Score only harness-owned opaque slot identities and stop rewarding prohibited semantic marker namespaces"
+          "date": "2026-07-24",
+          "note": "Publish AgentEvals-authoritative criteria with every policy evaluation and route CLI ship outcomes through that evidence"
         },
         {
           "version": "v50",
-          "date": "2026-07-22",
-          "note": "Remove prohibited semantic template-label controls from the evaluation CLI"
+          "date": "2026-07-24",
+          "note": "SLM-342: overlay explicit OpenFeature research-lever assignments on evaluation config and persist them in emitted results"
         },
         {
           "version": "v49",
-          "date": "2026-07-22",
-          "note": "Default evaluation and tokenizer rebuilds to source-controlled opaque-marker corpora"
+          "date": "2026-07-24",
+          "note": "Persist suite harness provenance and explicit raw, constrained, and repaired lineage IDs on every evaluation detail"
         },
         {
           "version": "v48",
-          "date": "2026-07-22",
-          "note": "Default canonical evaluation to strict symbol-only decoding and persist the actual opaque slot request inventory"
+          "date": "2026-07-23",
+          "note": "Resolve and persist OpenFeature evaluation-lever snapshots in scoreboards"
         },
         {
           "version": "v47",
-          "date": "2026-07-22",
-          "note": "Bound every decode and the cumulative eval deadline so result finalization precedes the two-minute command interrupt"
+          "date": "2026-07-23",
+          "note": "Keep power utilities off the import path, complete exact-match evidence, and represent non-binomial decode telemetry without invalid Wilson counts"
         },
         {
           "version": "v46",
-          "date": "2026-07-22",
-          "note": "Stop synthesizing RuntimeSymbol semantic roles from evaluation marker suffixes"
+          "date": "2026-07-23",
+          "note": "Attach numerator, denominator, seed count, Wilson interval, and evidence class to canonical binomial rates"
         },
         {
           "version": "v45",
@@ -3306,31 +5332,16 @@
       ]
     },
     "harness.model_build.data": {
-      "version": "v5",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/data.py"
       ],
       "history": [
         {
-          "version": "v5",
-          "date": "2026-07-22",
-          "note": "Apply the role-safe output guard to every accepted alternate target as well as the primary target"
-        },
-        {
-          "version": "v4",
-          "date": "2026-07-22",
-          "note": "Reject content slots and English-looking strings in structural schema properties before train or eval records reach a model"
-        },
-        {
-          "version": "v3",
-          "date": "2026-07-22",
-          "note": "Reject noncanonical marker identities anywhere in persisted train or eval records including nested metadata"
-        },
-        {
           "version": "v2",
-          "date": "2026-07-22",
-          "note": "Reject explicit template semantic-role labels in shared train and eval record loading before model construction or artifacts"
+          "date": "2026-07-23",
+          "note": "reject malformed or metadata-divergent Harness DSL prompts before train or eval records reach model input construction"
         },
         {
           "version": "v1",
@@ -3340,7 +5351,7 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v28",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
@@ -3348,44 +5359,29 @@
       ],
       "history": [
         {
-          "version": "v28",
-          "date": "2026-07-25",
-          "note": "Persist cumulative primary and replay example counters in full-state checkpoints so resumed replay runs remain auditable"
-        },
-        {
-          "version": "v27",
-          "date": "2026-07-24",
-          "note": "Record prefix-conditioned opaque repeated-binder presence recipe fields in canonical train summaries"
-        },
-        {
-          "version": "v26",
-          "date": "2026-07-24",
-          "note": "Record opaque forward binder-slot ownership and presence recipe fields in canonical train summaries"
-        },
-        {
           "version": "v25",
-          "date": "2026-07-24",
-          "note": "Record opt-in LTR tail-loss recipe fields in canonical train summaries"
+          "date": "2026-07-25",
+          "note": "SLM-292 pair-preserving hard-valid semantic-contrast mixer with score-only negative sides and auditable recipe metadata"
         },
         {
           "version": "v24",
-          "date": "2026-07-24",
-          "note": "Support opt-in periodic bit-exact full-state checkpoints for cap-interrupted local training continuation"
+          "date": "2026-07-23",
+          "note": "Reject disposition-forbidden spectral controls before direct ship evaluation or promoted training"
         },
         {
           "version": "v23",
           "date": "2026-07-23",
-          "note": "Select strict-subset root-reference identity records through the now-reachable lexer-native target"
+          "note": "Fail staged training before corpus or model initialization when capability certificates or lever permissions are invalid"
         },
         {
           "version": "v22",
-          "date": "2026-07-22",
-          "note": "Warm-start filtered corpora by remapping shared context-token embeddings while preserving the current corpus tokenizer"
+          "date": "2026-07-23",
+          "note": "Persist resolved OpenFeature training-lever snapshots"
         },
         {
           "version": "v21",
-          "date": "2026-07-22",
-          "note": "Reserve finalization time inside the two-minute hard cap so capped runs serialize their checkpoint and summary before command interruption"
+          "date": "2026-07-23",
+          "note": "Fail before training when explicit checkpoint promotion lacks valid campaign governance evidence"
         },
         {
           "version": "v20",
@@ -3512,13 +5508,195 @@
         "scripts/audit_gold_scoring.py",
         "tests/test_evals/test_oracle_scoring_replay.py",
         "docs/design/oracle-scoring-replay.md",
-        "docs/design/iter-slm260-oracle-scoring-replay-20260721.json"
+        "docs/design/iter-slm260-oracle-scoring-replay-20260721.json",
+        "docs/design/iter-slm260-oracle-scoring-replay-20260724.json"
       ],
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: record a local 66-row oracle replay under unchanged scorer and harness behavior"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-260 VSD0-01 oracle scoring replay harness and audit CLI"
+        }
+      ]
+    },
+    "harness.eval.semantic_failure_census": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/semantic_failure.py",
+        "scripts/audit_semantic_failures.py",
+        "tests/test_evals/test_semantic_failure.py",
+        "tests/test_scripts/test_audit_semantic_failures.py",
+        "docs/design/semantic-failure-census.md",
+        "docs/design/iter-slm263-semantic-failure-census-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-263 deterministic first-semantic-failure taxonomy and immutable-generation census"
+        }
+      ]
+    },
+    "harness.experiments.slm265_domain_shift_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm265_domain_shift_audit.py",
+        "scripts/audit_domain_shift.py",
+        "tests/test_harnesses/experiments/test_slm265_domain_shift_audit.py",
+        "docs/design/rico-domain-shift-audit.md",
+        "docs/design/iter-slm265-domain-shift-audit-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-265 outcome-blind domain-shift strata and coverage-gap audit"
+        }
+      ]
+    },
+    "harness.experiments.slm267_programspec_coverage_scaling": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm267_programspec_coverage_scaling.py",
+        "scripts/generate_programspec_corpus.py",
+        "tests/test_harnesses/experiments/test_slm267_programspec_coverage_scaling.py",
+        "tests/test_scripts/test_generate_programspec_corpus.py",
+        "docs/design/programspec-coverage-scaling.md",
+        "docs/design/iter-slm267-programspec-coverage-scaling-20260725.json",
+        "docs/design/iter-slm267-programspec-coverage-scaling-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: reran the deterministic SLM-267 fixture during rebase validation; regenerated only its version-stamped JSON evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-267 bounded uniform-vs-coverage-targeted ProgramSpec sampling wiring evidence and deterministic shard-seed primitive"
+        }
+      ]
+    },
+    "harness.experiments.slm296_verified_teacher_admission": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm296_verified_teacher_admission.py",
+        "scripts/run_verified_teacher_admission.py",
+        "tests/test_harnesses/experiments/test_slm296_verified_teacher_admission.py",
+        "tests/test_scripts/test_run_verified_teacher_admission.py",
+        "docs/design/verified-teacher-admission.md",
+        "docs/design/iter-slm296-verified-teacher-admission-20260725.json",
+        "docs/design/iter-slm296-verified-teacher-admission-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: reran the deterministic SLM-296 fixture during rebase validation; regenerated only its version-stamped JSON evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-296 bounded verifier-filtered teacher-admission wiring evidence, family-independence and locked-set decontamination controls"
+        }
+      ]
+    },
+    "harness.experiments.slm266_teacher_programs": {
+      "version": "v10",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/teacher_programs.py",
+        "scripts/build_teacher_program_generation_manifest.py",
+        "scripts/admit_teacher_programs.py",
+        "scripts/generate_teacher_programs.py",
+        "scripts/materialize_teacher_programs.py",
+        "tests/test_harnesses/experiments/test_teacher_programs.py",
+        "docs/design/teacher-program-data.md"
+      ],
+      "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-25",
+          "note": "normalize pinned local teacher attempts into raw-artifact-bound candidates for deterministic independent-judge admission"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "no-bump: document the measured local-only SLM-266 yield bottleneck; harness behavior is unchanged"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "bind every teacher raw-attempt event to its SLM-266 experiment ID"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-24",
+          "note": "record interrupted execution and explicit local attention masks for SLM-266 teacher generation"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-24",
+          "note": "require an archive-verified ExperimentCampaignV1 lock before SLM-266 execution"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-24",
+          "note": "add revision-pinned local-only Transformers teacher transport and CLI execution mode"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-24",
+          "note": "bind deep teacher admission G11 to persisted cross-family automatic judge evidence"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "execute locked teacher requests through budgeted provider transport with content-addressed raw attempt archive"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "materialize only deep-admitted teacher rows as canonical train snapshots with immutable raw archive pointer"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "make G12 optional evidence and derive Silver admission only from automated deep verification"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-266 fail-closed teacher-program request and offline admission contracts"
+        }
+      ]
+    },
+    "harness.eval.semantic_trajectory": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/semantic_trajectory.py",
+        "scripts/collect_semantic_trajectory.py",
+        "tests/test_evals/test_semantic_trajectory.py",
+        "src/slm_training/resources/evals/slm264_trajectory_fixture.jsonl",
+        "docs/design/semantic-collapse-telemetry.md",
+        "docs/design/iter-slm264-semantic-collapse-telemetry-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-264 default-off semantic trajectory schema and evidence inventory"
         }
       ]
     },
@@ -3560,6 +5738,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: scripts/autoresearch.py adds independent campaign-lock enforcement; remine campaign behavior is unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-07-21",
@@ -3685,6 +5868,59 @@
         }
       ]
     },
+    "harness.capability_artifacts": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/capability_artifacts.py",
+        "tests/test_harnesses/test_capability_artifacts.py",
+        "docs/design/dsh0-04-capability-artifacts-20260723.json",
+        "docs/design/dsh0-04-capability-artifacts-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial content-addressed answer, question, QA-set, derivation, validation, and capability-certificate schemas with publication lineage checks"
+        }
+      ]
+    },
+    "harness.capability_gates": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/capability_gates.py",
+        "scripts/manage_capability_certificate.py",
+        "tests/test_harnesses/test_capability_gates.py",
+        "docs/design/dsh0-07-capability-gates-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "Add immutable capability gate specs, results, certificates, retention and prerequisite enforcement, and explicit promotion commands"
+        }
+      ]
+    },
+    "harness.artifact_graph": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/train_data/artifact_graph.py",
+        "src/slm_training/harnesses/train_data/split_policy.py",
+        "scripts/explain_artifact_overlaps.py",
+        "tests/test_harnesses/train_data/test_artifact_graph.py",
+        "docs/design/dsh0-05-artifact-graph-20260723.json",
+        "docs/design/dsh0-05-artifact-graph-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial append-only dataset artifact graph, root-family split inheritance, cross-split leakage quarantine, traversal, and explain CLI"
+        }
+      ]
+    },
     "harness.solver_bench": {
       "version": "v1",
       "kind": "harness",
@@ -3699,208 +5935,169 @@
         }
       ]
     },
+    "harness.staged": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/staged.py",
+        "tests/test_harnesses/test_staged.py",
+        "scripts/verify_foundation_disposition.py",
+        "docs/design/dsh0-01-staged-harness-baseline-20260723.json",
+        "docs/design/dsh0-01-staged-harness-baseline-20260723.md",
+        "docs/design/dsh0-02-symbolic-surface-policy-20260723.json",
+        "docs/design/dsh0-02-symbolic-surface-policy-20260723.md",
+        "docs/design/dsh0-08-foundation-disposition-20260723.json",
+        "docs/design/dsh0-08-foundation-disposition-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "no-bump: refresh pinned symbolic-surface source hashes after decode-deadline regression coverage"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh pinned pack, CAP0 plan, materialization, and disposition hashes after adding the independent Harness DSL boundary"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh pinned DslPack hashes after adding independent minimal-witness authority"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh pinned DslPack source hashes after adding the independent grammar capability authority slot"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Add the typed fail-closed G0 foundation disposition, current-artifact verification, and exact CAP0 identity freeze"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial staged DSL capability taxonomy and fail-closed StagedHarnessBaselineV1 evidence identity contract"
+        }
+      ]
+    },
+    "harness.synthesis_plan": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/synthesis_plan.py",
+        "src/slm_training/resources/synthesis_plans/",
+        "tests/test_harnesses/test_synthesis_plan.py",
+        "docs/design/dsh0-03-synthesis-plan-20260723.json",
+        "docs/design/dsh0-03-synthesis-plan-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh the executable CAP0 fixture to the v18 symbolic task materialization contract"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "refresh the executable CAP0 fixture to the v17 train-data materialization contract and preserve its prior identity as historical evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial checked-in SynthesisPlanV1, pack-authoritative component preflight, and executable capability transition state machine"
+        }
+      ]
+    },
+    "data.corpus_certification": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/verify/",
+        "scripts/audit_data_corpora.py",
+        "tests/test_data/test_corpus_certification.py",
+        "tests/test_scripts/test_audit_data_corpora.py",
+        "src/slm_training/resources/data/train/openui_verified_v1/",
+        "docs/design/corpus-certification.md",
+        "docs/design/iter-slm289-corpus-certification-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: SLM-290 adds an eval-corpus runtime batch export under the shared verifier package; committed train-corpus certification behavior is unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "introduce immutable G0-G12 certification for committed train snapshots"
+        }
+      ]
+    },
     "harness.train_data": {
-      "version": "v48",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
         "src/slm_training/harnesses/train_data/",
-        "src/slm_training/data/mixture.py",
-        "src/slm_training/data/dedup.py",
-        "src/slm_training/data/semantic_dedup.py",
-        "src/slm_training/data/progspec/",
-        "src/slm_training/data/awwwards/",
-        "src/slm_training/data/corrupt/",
         "src/slm_training/data/language_contract/",
-        "src/slm_training/data/rico/",
+        "src/slm_training/dsl/renderability.py",
+        "src/slm_training/data/mixture.py",
         "src/slm_training/dsl/packs/openui.py",
-        "src/slm_training/dsl/analysis/templatize.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
-    "history": [
-    {"version":"v48","date":"2026-07-25","note":"Give fact-filtered ProgramSpec supplements an explicit provenance-preserving source family for auditable mixture sampling"},
-    {"version":"v47","date":"2026-07-25","note":"Select controlled ProgramSpec supplements by declared forward-reference fact and retain fact provenance on admitted rows"},
-    {"version":"v46","date":"2026-07-25","note":"Preserve derive-from baseline rows byte-for-byte in explicit controlled supplement builds while admitting only new rows through strict gates"},
+      "history": [
         {
-          "version": "v45",
-          "date": "2026-07-24",
-          "note": "Make the slot-free sharing arm independently quality-admissible with two non-shared TextContent slots"
-        },
-        {
-          "version": "v44",
-          "date": "2026-07-24",
-          "note": "Add opt-in paired ProgramSpec coverage for distinct slot-bearing and intentionally shared slot-free forward references"
-        },
-        {
-          "version": "v43",
-          "date": "2026-07-24",
-          "note": "Withdraw v42 topology-aware ProgramSpec prompts after E1337 reduced strict raw ProgramSpec retention from 13 to 5 rows"
-        },
-        {
-          "version": "v42",
-          "date": "2026-07-24",
-          "note": "Describe verified ProgramSpec topology, content class, and Form arity in natural prompts so strict dedup retains semantically distinct supervision"
-        },
-        {
-          "version": "v41",
-          "date": "2026-07-24",
-          "note": "Support immutable existing-plus-ProgramSpec source unions for focused strict baseline addendum builds"
-        },
-        {
-          "version": "v40",
-          "date": "2026-07-24",
-          "note": "Vary required typed reference-array arity from one through three so strict direct corpora retain bounded capacity diversity"
-        },
-        {
-          "version": "v39",
-          "date": "2026-07-24",
-          "note": "Resolve concrete anyOf references in typed ProgramSpecs so FormControl input topology is schema-valid and naturally described"
-        },
-        {
-          "version": "v38",
-          "date": "2026-07-24",
-          "note": "Allow required ProgramSpec topologies to force schema-checked free-form content properties, including direct multi-slot supervision without an unrelated container route"
-        },
-        {
-          "version": "v37",
-          "date": "2026-07-24",
-          "note": "Emit two legal reference-array items for required ProgramSpec topologies so the pinned canonical schema retains three content slots"
-        },
-        {
-          "version": "v36",
-          "date": "2026-07-24",
-          "note": "Limit required ProgramSpec topologies to one content property per component and nest SwitchItem under SwitchGroup for prompt-faithful three-slot supervision"
-        },
-        {
-          "version": "v35",
-          "date": "2026-07-24",
-          "note": "Jointly realize legal content properties and reference arrays for required ProgramSpec topologies so composite documents retain multi-slot supervision"
-        },
-        {
-          "version": "v34",
-          "date": "2026-07-24",
-          "note": "Emit content-bearing properties and nonempty reference arrays for explicitly required ProgramSpec topologies so strict quality gates retain schema-valid composite supervision"
-        },
-        {
-          "version": "v33",
-          "date": "2026-07-24",
-          "note": "Describe SwitchGroup and TextCallout naturally in ProgramSpec prompts so required-component supervision aligns with the prompt-facing component contract"
-        },
-        {
-          "version": "v32",
-          "date": "2026-07-24",
-          "note": "Compose schema-valid Card containment around required topology components instead of emitting Card as a sibling"
-        },
-        {
-          "version": "v31",
-          "date": "2026-07-24",
-          "note": "Flatten required-component superset combinations so every configured topology order is available to the coverage generator"
-        },
-        {
-          "version": "v30",
-          "date": "2026-07-24",
-          "note": "Generate configured required-component supersets so strict topology corpora can add structural diversity without relaxing admission"
-        },
-        {
-          "version": "v29",
-          "date": "2026-07-24",
-          "note": "Keep implicit Form helper components out of natural ProgramSpec prompts so the independent judge sees only requested UI components"
-        },
-        {
-          "version": "v28",
-          "date": "2026-07-24",
-          "note": "Make required ProgramSpec components a hard root-topology constraint rather than a permutation-only hint"
-        },
-        {
-          "version": "v27",
-          "date": "2026-07-24",
-          "note": "Add ordered required-component ProgramSpec topologies and deterministic natural prompt realization"
-        },
-        {
-          "version": "v26",
-          "date": "2026-07-22",
-          "note": "no-bump: reject and remove E1005 Form and Tabs producer fixtures after matched held-out strict-v2 and fidelity regressed"
-        },
-        {
-          "version": "v26",
-          "date": "2026-07-22",
-          "note": "Canonicalize OpenUI pack-generated template markers and reject role-unsafe generated targets before returning records"
-        },
-        {
-          "version": "v25",
-          "date": "2026-07-22",
-          "note": "Preserve raw positional style arguments during role-contract validation so style removal cannot shift a legal enum into the preceding property"
-        },
-        {
-          "version": "v24",
-          "date": "2026-07-22",
-          "note": "no-bump: expose the existing templatizable and structural property sets for decoder reuse without changing synthesis behavior"
-        },
-        {
-          "version": "v24",
-          "date": "2026-07-22",
-          "note": "Use schema-role-aware templatization for document-kind alternate targets and correct opaque structural fixture identities"
-        },
-        {
-          "version": "v23",
-          "date": "2026-07-22",
-          "note": "Templatize only user-facing content properties so open identifiers and actions are rejected instead of mislabeled as completion slots"
-        },
-        {
-          "version": "v22",
-          "date": "2026-07-22",
-          "note": "Delete semantic namespace paths; preserve derived contract rows; make difficulty-scored rebuilds reject the easy NLL tail as selection instead of writing unused metadata or false producer feedback"
-        },
-        {
-          "version": "v21",
-          "date": "2026-07-22",
-          "note": "Remove namespace augmentation from the canonical train-data CLI"
-        },
-        {
-          "version": "v20",
-          "date": "2026-07-22",
-          "note": "Remove the ineffective two-action fixture after matched smoke regressed structure and strict meaning"
+          "version": "v19",
+          "date": "2026-07-25",
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified \u2014 the new module is versioned under harness.experiments.slm379_operator_frames v1"
         },
         {
           "version": "v19",
-          "date": "2026-07-22",
-          "note": "Add a structurally disjoint two-action Buttons producer fixture"
+          "date": "2026-07-23",
+          "note": "add runtime-renderability repairs and chosen-over-rejected preference pairs for structural-only OpenUI roots"
         },
         {
           "version": "v18",
-          "date": "2026-07-22",
-          "note": "Rejected a standalone one-action fixture after test-structure decontamination; fixture removed"
+          "date": "2026-07-23",
+          "note": "emit identity and canonical CAP0 scope rows as validated symbolic Harness DSL while preserving legacy repair and typed-map semantics"
         },
         {
           "version": "v17",
-          "date": "2026-07-22",
-          "note": "Select explicit canonical fixture supplements when composing an existing corpus"
+          "date": "2026-07-23",
+          "note": "materialize synthesis-plan artifact graphs through canonical ExampleRecord, validation, preference, quality, leakage, and publication paths"
         },
         {
           "version": "v16",
-          "date": "2026-07-22",
-          "note": "Compose immutable existing corpora with canonical fixture supplements through one train-data source"
+          "date": "2026-07-23",
+          "note": "add staged dataset artifact-graph sidecars and root-family cross-split leakage firewall"
         },
         {
           "version": "v15",
-          "date": "2026-07-22",
-          "note": "Add canonical three-item FormControl and SwitchItem producer fixtures for repeated typed collections"
+          "date": "2026-07-23",
+          "note": "validate optional checked-in SynthesisPlanV1 before loading any train-data producer and record its exact identity in the manifest"
         },
         {
           "version": "v14",
-          "date": "2026-07-22",
-          "note": "Declare only target-used opaque slots as completion inventory and keep metadata-only values out of supervision"
+          "date": "2026-07-23",
+          "note": "remove the train_text_only_01 source fixture after strict sanitization proved it structurally duplicates the reserved adv_empty_prompt_01 test fallback"
         },
         {
           "version": "v13",
-          "date": "2026-07-22",
-          "note": "Canonicalize caller marker names atomically across train targets prompts and nested verification metadata before admission"
+          "date": "2026-07-23",
+          "note": "emit symbol-only collapsed multi-instruction operator records with exact trace and hard-negative evidence"
         },
         {
           "version": "v12",
-          "date": "2026-07-22",
-          "note": "Reject semantic template-role prompt projection and explicit semantic-role labels before synthesis or training"
+          "date": "2026-07-23",
+          "note": "no-bump: pin operator contract and legal-set component versions in the sibling report stamp; generated corpus behavior is unchanged"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "generate replay-verified symbolic single-turn, next-turn, and sibling-fork operator datasets from admitted exact AST roots"
         },
         {
           "version": "v11",
@@ -4084,8 +6281,8 @@
       "history": [
         {
           "version": "v2",
-          "date": "2026-07-22",
-          "note": "Default every grammar-matrix data arm to canonical opaque-marker corpora"
+          "date": "2026-07-23",
+          "note": "Persist OpenFeature training/evaluation flag snapshots in grammar-matrix rows"
         },
         {
           "version": "v1",
@@ -4103,8 +6300,8 @@
       "history": [
         {
           "version": "v2",
-          "date": "2026-07-22",
-          "note": "Default performance evaluation to the canonical opaque-marker eval corpus"
+          "date": "2026-07-24",
+          "note": "Add serial and bounded device-aware compiler speculative-prefill comparison arms with utilization telemetry"
         },
         {
           "version": "v1",
@@ -4114,31 +6311,21 @@
       ]
     },
     "matrix.quality": {
-      "version": "v9",
+      "version": "v7",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
         {
-          "version": "v9",
-          "date": "2026-07-24",
-          "note": "Carry strict compiler-tree semantic-plan decode weights through the typed quality-matrix experiment contract"
-        },
-        {
-          "version": "v8",
-          "date": "2026-07-24",
-          "note": "Expose named SDK-graded domain metrics rather than an AgentV aggregate in quality-matrix records"
-        },
-        {
           "version": "v7",
-          "date": "2026-07-22",
-          "note": "Remove the prohibited semantic namespace augmentation arm and its data build path"
+          "date": "2026-07-24",
+          "note": "Retain authoritative evaluation criteria and runner provenance in quality-matrix summaries"
         },
         {
           "version": "v6",
-          "date": "2026-07-22",
-          "note": "Default every quality-matrix data arm to canonical opaque-marker corpora"
+          "date": "2026-07-23",
+          "note": "Persist OpenFeature training/evaluation flag snapshots in quality-matrix rows"
         },
         {
           "version": "v5",
@@ -4221,6 +6408,11 @@
       "history": [
         {
           "version": "ffe2-03-v1",
+          "date": "2026-07-23",
+          "note": "no-bump: minify the unchanged measured JSON payload to restore Vercel function-size headroom; semantic JSON content and matrix behavior are identical"
+        },
+        {
+          "version": "ffe2-03-v1",
           "date": "2026-07-21",
           "note": "no-bump: CLI test passes --no-write-design-docs so committed design docs are not overwritten during pytest; matrix semantics unchanged"
         },
@@ -4297,6 +6489,26 @@
         }
       ]
     },
+    "model.legal_edit_batch": {
+      "version": "v2",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/legal_edit_batch.py",
+        "tests/test_models/test_legal_edit_batch.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "add label-free runtime packing that preserves exact candidate membership and marks every inference candidate UNKNOWN until independently certified"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; objective-neutral exact dynamic candidate ragged batch, masks, multi-positive targets, padding, and gathered projection seam"
+        }
+      ]
+    },
     "model.quantization": {
       "version": "v5",
       "kind": "harness",
@@ -4333,7 +6545,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v11",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -4351,13 +6563,99 @@
         "docs/design/iter-rsc-a04-parity-claim-correction-20260721.md",
         "src/slm_training/models/recursive_control_arms.py",
         "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.json",
-        "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md"
+        "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md",
+        "docs/design/iter-slm138-recursive-denoiser-20260723.json",
+        "docs/design/iter-slm138-recursive-denoiser-20260723.md",
+        "docs/design/iter-slm279-depth-supervision-correction-20260723.json",
+        "docs/design/iter-slm279-depth-supervision-correction-20260723.md",
+        "docs/design/iter-slm282-recurrence-health-20260723.json",
+        "docs/design/iter-slm282-recurrence-health-20260723.md"
       ],
       "history": [
         {
+          "version": "v18",
+          "date": "2026-07-23",
+          "note": "add default-preserving SLM-243 current, delta-only, LayerScale, gated, true-empty-F, and private-norm recurrence controls"
+        },
+        {
+          "version": "v17",
+          "date": "2026-07-23",
+          "note": "expose the exact additive z0 components and default-off evaluation-only recurrence path cuts for SLM-232 without changing the default transition"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-23",
+          "note": "extract the canonical recurrence into mutation-free initial_transition_state and transition_step APIs so state Jacobians use the exact normal forward math and fixed runtime-symbol conditioning"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "no-bump: register the clean squash-merged v15 SLM-282 negative recurrence-health JSON and markdown, superseding the withdrawn unmerged v14 positive artifact after raw-example gating exposed the seed-1 regression"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "no-bump: make the v15 raw-example gate fail inconclusive on missing or duplicate curve depths, example ids, curves, or matched-control records; experiment and disposition semantics are unchanged"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "SLM-282 preregistration correction: evaluate the exact CE(final) <= CE(previous) <= CE(r=1) condition independently for every raw example and record example ids on adjacent-depth failures, preventing token-weighted aggregation from averaging away a later-depth regression"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-23",
+          "note": "no-bump: preserve external --output-dir support by using output-dir URIs when AgentV artifacts are outside the repository; this completes the v14 portable-path correction without changing experiment semantics"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-23",
+          "note": "SLM-282 evidence-writer correction: serialize AgentV spec and artifact paths relative to the repository before mirroring recurrence-health reports into docs/design, while retaining absolute paths for the runtime SDK invocation"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-23",
+          "note": "SLM-282 (LAR0-02) recurrence-health audit: add the fixed as_is versus fixture-only residual_delta matched-control runner at logical depths 1/2/4 and two disjoint corruption schedules, canonical final-depth-only training with a separate evaluation draw, actual target/noisy/mask digest matching, one-forward anytime curves, seeded detached finite-difference directional gains, exact preregistered disposition, raw failure persistence, and AgentV fixture-not-ship publication"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "SLM-282 (LAR0-02) diagnostics foundation: add opt-in RecursiveDepthDiagnosticsV1 records with detached per-example y/z states, actual updates, norms, pre-state update ratios, and masked CE/accuracy/entropy/KL curves; add a diagnostics-gated fixture-only residual_delta transition mode while preserving the historical as_is forward path and all production constructor/forward defaults"
+        },
+        {
           "version": "v11",
-          "date": "2026-07-22",
-          "note": "Replace recursive training fixtures with opaque slots and canonical binder ordering, and isolate concurrent checkpoint round trips"
+          "date": "2026-07-23",
+          "note": "no-bump: refresh only the clean fixture code_commit and timestamp after replaying the evidence stack onto squash-merged main; all measured arithmetic and objective fields are byte-identical"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "no-bump: register the clean committed SLM-138 rerun and dedicated SLM-279 correction-only JSON and markdown produced by the v11 fixture contract"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "SLM-279: make the SLM-138 fixture use the canonical final-primary plus intermediate-only auxiliary objective, emit the complete objective decomposition and recipe, and project dedicated correction-only old-buggy versus corrected arithmetic evidence"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "no-bump: isolate the SLM-138 fixture checkpoint in a process-unique temporary directory so concurrent changed-test shards cannot read a partially written archive; objective math and emitted evidence are unchanged"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "no-bump: isolate the SLM-138 fixture checkpoint in a process-unique temporary directory so concurrent changed-test shards cannot read a partially written archive; objective math and emitted evidence are unchanged"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "no-bump: make SLM-138 fixture and recursive-depth tests explicitly name their existing all-depth semantics while preserving their objective arithmetic"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "no-bump: extract the behavior-identical normalized recursive-depth loss reduction into a pure helper and make the production objective plus exact arithmetic and gradient-isolation tests share it"
         },
         {
           "version": "v10",
@@ -4461,20 +6759,42 @@
         }
       ]
     },
+    "harness.experiments.slm292_semantic_contrast_objective": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm292_semantic_contrast_objective.py",
+        "scripts/run_slm292_semantic_contrast_objective.py",
+        "tests/test_models/test_semantic_contrast_loss.py",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.json",
+        "docs/design/iter-slm292-semantic-contrast-objective-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-292 bounded local semantic-contrast objective wiring control"
+        }
+      ]
+    },
     "model.twotower": {
-      "version": "v296",
+      "version": "v243",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
+        "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/tokenizer.py",
+        "src/slm_training/models/dsl_tokenizer.py",
+        "src/slm_training/models/grammar.py",
+        "src/slm_training/models/onnx_inference.py",
         "src/slm_training/models/checkpoint_migrate.py",
         "src/slm_training/models/template_fill.py",
+        "src/slm_training/models/semantic_contrast_loss.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
-        "src/slm_training/dsl/language_contract.py",
         "src/slm_training/data/quality.py",
         "src/slm_training/data/contract.py",
         "src/slm_training/models/adapters/",
@@ -4484,373 +6804,114 @@
         "src/slm_training/models/twotower_numeric_gates.py",
         "tests/test_models/test_twotower_numeric_gates.py",
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.json",
-        "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
+        "docs/design/iter-slm242-twotower-numeric-gates-20260721.md",
+        "src/slm_training/dsl/grammar/fastpath/speculative_rank.py",
+        "src/slm_training/runtime/decode_schedule.py",
+        "scripts/build_speculative_ngram_table.py",
+        "tests/test_dsl/test_speculative_rank.py",
+        "tests/test_runtime/test_decode_schedule.py",
+        "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
         {
-          "version": "v296",
-          "date": "2026-07-24",
-          "note": "Train and decode opaque repeated-binder slot presence from no-future compiler prefixes"
-        },
-        {
-          "version": "v295",
-          "date": "2026-07-24",
-          "note": "Train and decode binary opaque binder-slot presence for forward-reference alias disambiguation"
-        },
-        {
-          "version": "v294",
-          "date": "2026-07-24",
-          "note": "Train and decode opaque binder-to-slot ownership for forward-reference alias disambiguation"
-        },
-        {
-          "version": "v293",
-          "date": "2026-07-24",
-          "note": "Count opaque bound-subtree references globally so alias uniqueness reaches cross-declaration reuse"
-        },
-        {
-          "version": "v292",
-          "date": "2026-07-24",
-          "note": "Prevent repeated compiler references to completed bound subtrees that carry opaque request-slot ordinals"
-        },
-        {
-          "version": "v291",
-          "date": "2026-07-24",
-          "note": "Restrict opaque required-slot array continuation to nested non-root component arrays via the Lark parser value stack"
-        },
-        {
-          "version": "v290",
-          "date": "2026-07-24",
-          "note": "Keep compiler arrays open while opaque request slots remain absent and a legal continuation exists"
-        },
-        {
-          "version": "v289",
-          "date": "2026-07-24",
-          "note": "Suppress already emitted child binders within an active declaration under the trained topology ranker"
-        },
-        {
-          "version": "v288",
-          "date": "2026-07-24",
-          "note": "Reserve a schema-derived lower bound for required child declarations before admitting a typed-array binder"
-        },
-        {
-          "version": "v287",
-          "date": "2026-07-24",
-          "note": "Close optional typed arrays when unresolved root-plan binder demand exhausts visible content capacity"
-        },
-        {
-          "version": "v286",
-          "date": "2026-07-24",
-          "note": "Apply unresolved-binder optional-null reservation only before a value starts so grammar separators remain completable"
-        },
-        {
-          "version": "v285",
-          "date": "2026-07-24",
-          "note": "Keep unresolved typed-binder slot demand active after prompt-required components are already emitted"
-        },
-        {
-          "version": "v284",
-          "date": "2026-07-24",
-          "note": "Reserve capacity for prompt-required components and unresolved typed binders before optional content can exhaust strict decode"
-        },
-        {
-          "version": "v283",
-          "date": "2026-07-24",
-          "note": "Add opt-in LTR tail weighting for final real teacher-forced tokens, targeting late declaration and closure supervision"
-        },
-        {
-          "version": "v282",
-          "date": "2026-07-24",
-          "note": "Withdraw cross-property forward-binder reservation after E1329 converted the Form diagnostic into an empty timeout; restore the active-array capacity rule"
-        },
-        {
-          "version": "v281",
-          "date": "2026-07-24",
-          "note": "Reserve visible slot capacity for every unresolved schema-typed content binder, including sibling component properties"
-        },
-        {
-          "version": "v280",
-          "date": "2026-07-24",
-          "note": "Keep required schema-reference properties legal under the honest slot contract; optional untyped properties alone require null"
-        },
-        {
-          "version": "v279",
-          "date": "2026-07-24",
-          "note": "Make opt-in required-slot root completion force the certified root close after all visible slots are consumed"
-        },
-        {
-          "version": "v278",
-          "date": "2026-07-24",
-          "note": "Stop root aggregation from admitting new forward binders after the honest slot inventory is consumed"
-        },
-        {
-          "version": "v277",
-          "date": "2026-07-24",
-          "note": "Constrain optional untyped schema arguments to null under the honest slot contract, preventing unbounded grouped-expression decode"
-        },
-        {
-          "version": "v276",
-          "date": "2026-07-24",
-          "note": "Expose opt-in periodic full-state checkpoint cadence through ModelBuildConfig and train_model without changing default optimization behavior"
-        },
-        {
-          "version": "v275",
-          "date": "2026-07-24",
-          "note": "Admit null for optional schema string properties so exhausted slot contracts cannot create a false empty completion forest"
-        },
-        {
-          "version": "v274",
-          "date": "2026-07-24",
-          "note": "Recognize the schema-supported SwitchGroup parent in strict quality vocabulary; it was already used by SwitchItem fixtures and held-out Settings"
-        },
-        {
-          "version": "v273",
-          "date": "2026-07-24",
-          "note": "Reject premature root-list closure while an explicit visible slot contract remains incomplete and another compiler-legal continuation exists"
-        },
-        {
-          "version": "v272",
-          "date": "2026-07-23",
-          "note": "Generalize learned root-reference identity targets and path ranking to lexer-native binders"
-        },
-        {
-          "version": "v271",
-          "date": "2026-07-23",
-          "note": "Restrict generic binder-arity supervision and decode bias to bound declarations because root-list arity has a dedicated head"
-        },
-        {
-          "version": "v270",
-          "date": "2026-07-22",
-          "note": "Train binder-component plans over schema-compatible use-site component classes instead of all 35 library components"
-        },
-        {
-          "version": "v269",
-          "date": "2026-07-22",
-          "note": "Apply the trained binder-component plan at typed bind-vs-inline declaration choices using schema-compatible probability mass so the plan is reachable before the bound declaration exists"
-        },
-        {
-          "version": "v268",
-          "date": "2026-07-22",
-          "note": "Detach binder-component auxiliary inputs from pooled prompt features so the uncalibrated planner trains its own head without changing base-model gradients"
-        },
-        {
-          "version": "v267",
-          "date": "2026-07-22",
-          "note": "Extract binder-component training targets with a linear grammar-token declaration scan instead of replaying the full compiler forest; focused parity tests cover Form and Tabs while decode behavior and candidate labels remain unchanged"
-        },
-        {
-          "version": "v266",
-          "date": "2026-07-22",
-          "note": "Withdraw component-parent-scoped binder filtering after E995 regressed held strict quality"
-        },
-        {
-          "version": "v265",
-          "date": "2026-07-22",
-          "note": "Filter binder reuse only when lexical component-parent stacks differ, preserving same-parent references"
-        },
-        {
-          "version": "v264",
-          "date": "2026-07-22",
-          "note": "Withdraw decoder-only unique binder filtering after E992 collapsed Form and Tabs coverage"
-        },
-        {
-          "version": "v263",
-          "date": "2026-07-22",
-          "note": "Add a decoder-only tree constraint that filters already referenced binders without changing training supervision"
-        },
-        {
-          "version": "v262",
-          "date": "2026-07-22",
-          "note": "Withdraw typed-binder slot reservation after E977-E978 regressed strict quality and preserve v259 decoder behavior"
-        },
-        {
-          "version": "v261",
-          "date": "2026-07-22",
-          "note": "Reserve actual content-symbol tokens for pending typed binder obligations, including optional consumers"
-        },
-        {
-          "version": "v260",
-          "date": "2026-07-22",
-          "note": "Reserve required content-slot capacity for undeclared binders with proven official-schema component obligations"
-        },
-        {
-          "version": "v259",
-          "date": "2026-07-22",
-          "note": "Remove the disproven generic lexer binder-reuse penalty while retaining opaque training-fixture cleanup"
-        },
-        {
-          "version": "v258",
-          "date": "2026-07-22",
-          "note": "Allow the visible-reference lever through the honest lexer-compiler runtime guard after capability validation"
-        },
-        {
-          "version": "v257",
-          "date": "2026-07-22",
-          "note": "Extend visible-reference ranking to lexer compiler paths as a soft repeated-child penalty without removing legal topology supervision"
-        },
-        {
-          "version": "v256",
-          "date": "2026-07-22",
-          "note": "Fail closed on named template markers and role-unsafe strings at direct model construction and training-loss entrypoints"
-        },
-        {
-          "version": "v255",
-          "date": "2026-07-22",
-          "note": "Reject reuse of an opaque structural identifier within the same component property role during slot-contracted compiler decode"
-        },
-        {
-          "version": "v254",
-          "date": "2026-07-22",
-          "note": "Bound recursive inline container nesting to the maximum observed in the role-safe train corpus while retaining leaf components and binder references"
-        },
-        {
-          "version": "v253",
-          "date": "2026-07-22",
-          "note": "Terminate compiler-tree documents once the root is complete and every reference is resolved so unused top-level declaration tails are not legal"
-        },
-        {
-          "version": "v252",
-          "date": "2026-07-22",
-          "note": "Resize learned scratch-context position rows by shared prefix during warm starts across corpus-derived context-length changes"
-        },
-        {
-          "version": "v251",
-          "date": "2026-07-22",
-          "note": "Remap shared output-token embedding rows by token identity during warm start while retaining initialized rows for newly introduced role-safe tokens"
-        },
-        {
-          "version": "v250",
-          "date": "2026-07-22",
-          "note": "Make schema string roles authoritative during compiler decode so request content slots cannot occupy structural identifiers and natural-language literals cannot replace opaque structural atoms"
-        },
-        {
-          "version": "v249",
-          "date": "2026-07-22",
-          "note": "Represent required structural string identifiers with opaque dollar ordinals instead of borrowed natural-language atoms"
-        },
-        {
-          "version": "v248",
-          "date": "2026-07-22",
-          "note": "Bound fresh forward binders in typed content-bearing arrays by the remaining opaque slot capacity"
-        },
-        {
-          "version": "v247",
-          "date": "2026-07-22",
-          "note": "Reject unresolved binders at typed component use sites when their accumulated official-schema requirements are disjoint"
-        },
-        {
-          "version": "v246",
-          "date": "2026-07-22",
-          "note": "Restrict opt-in component-valued properties to compatible components or binders and propagate direct property types to forward declarations"
-        },
-        {
-          "version": "v245",
-          "date": "2026-07-22",
-          "note": "Remove impossible trailing-comma branches after a closed array fills the final official-schema component argument"
-        },
-        {
-          "version": "v244",
-          "date": "2026-07-22",
-          "note": "Use opt-in official schema typing to prefer the unique recursive inline item before its slot resources are consumed by a forward declaration"
-        },
-        {
           "version": "v243",
-          "date": "2026-07-22",
-          "note": "Add opt-in official component-valued property enforcement and propagate typed-array requirements from forward use sites to later declarations"
+          "date": "2026-07-25",
+          "note": "Commit the speculative-rank n-gram table and default to it; prove grammar checkpoints with common_forced_run so prefills truncate at determined positions; accept a sole-legal DFA proof when the native completion domain is horizon-limited rather than contradictory (decode invariants I2/I3/I4)"
         },
         {
           "version": "v242",
-          "date": "2026-07-22",
-          "note": "Abstain from schema-forced typed items whose required public-schema fields recursively require components"
+          "date": "2026-07-25",
+          "note": "SLM-293: instrument component-inventory decode applications and argmax changes"
         },
         {
           "version": "v241",
-          "date": "2026-07-22",
-          "note": "Apply the explicit lexer typed-item margin when schema validation has already removed the empty-array close candidate"
+          "date": "2026-07-25",
+          "note": "Add deterministic speculative ranking over the symbol table and a symbol-table prefill planner, both default-off levers, with their DecodeStats counters (decode invariants I3/I4)"
         },
         {
           "version": "v240",
-          "date": "2026-07-22",
-          "note": "Extend the explicit typed-array item margin to lexer compiler paths and prefer a unique public-schema item without semantic marker labels"
+          "date": "2026-07-25",
+          "note": "SLM-292 default-off hard-valid pairwise sequence-margin objective and explicit train-loop plumbing"
         },
         {
           "version": "v239",
-          "date": "2026-07-22",
-          "note": "Activate lexer typed-array item margins from planned schema item families instead of requiring the container family itself"
+          "date": "2026-07-25",
+          "note": "Make exact scope-aware singletons inference-free, batch only ambiguous compiler prefills under device-aware bounds, and prohibit unconstrained generation fallbacks"
         },
         {
           "version": "v238",
-          "date": "2026-07-22",
-          "note": "Prefer schema-certified inline item components over unresolved binders at planned typed-array starts while retaining legal forward references"
+          "date": "2026-07-25",
+          "note": "Propagate decode deadlines through canonical OpenUI validation and constrained LTR recovery"
         },
         {
           "version": "v237",
-          "date": "2026-07-22",
-          "note": "Reject unresolved forward binder references in schema-typed arrays until their component type is certified"
+          "date": "2026-07-24",
+          "note": "Propagate hard evaluator deadlines through grammar stream probes"
         },
         {
           "version": "v236",
-          "date": "2026-07-22",
-          "note": "Union parent and current scratch context vocabularies during warm-start so filtered corpora cannot discard learned token rows"
+          "date": "2026-07-24",
+          "note": "SLM-284: record legal-mass raw-top1 override traces and add seeded uniform-at-unforced compiler controls"
         },
         {
           "version": "v235",
-          "date": "2026-07-22",
-          "note": "Warm-start across filtered corpus vocabularies by remapping shared context embedding rows and preserving the current tokenizer"
+          "date": "2026-07-24",
+          "note": "SLM-283: fail closed on ambiguous tokenizer sidecars and certify pinned native/choice tokenizer layouts against grammar round trips"
         },
         {
           "version": "v234",
-          "date": "2026-07-22",
-          "note": "no-bump: expose the existing opaque marker predicate for evaluator reuse without changing model behavior"
-        },
-        {
-          "version": "v234",
-          "date": "2026-07-22",
-          "note": "Consume the centralized local-first context backend in training and model-build defaults"
+          "date": "2026-07-24",
+          "note": "Persist exact parameter count and serialized FP32 weight-byte estimate in TwoTower checkpoint metadata"
         },
         {
           "version": "v233",
-          "date": "2026-07-22",
-          "note": "Consume harness-owned opaque slot contracts without model-side marker conversion or semantic-name inference"
+          "date": "2026-07-24",
+          "note": "expose existing decode-time model-build levers through the train CLI so periodic evaluation receives the configured values"
         },
         {
           "version": "v232",
-          "date": "2026-07-22",
-          "note": "Default training to the canonical source-controlled opaque-marker corpus"
+          "date": "2026-07-24",
+          "note": "require budgeted pack-owned completion domains for compiler tree, LTR, and one-hole constrained decoding"
         },
         {
           "version": "v231",
-          "date": "2026-07-22",
-          "note": "Reject the v230 all-path plan margin after held-out timeouts and restore component-only comparison"
+          "date": "2026-07-23",
+          "note": "persist and validate SLM-243 recurrence update, empty-F, and norm modes while migrating old checkpoints to historical defaults"
+        },
+        {
+          "version": "v231",
+          "date": "2026-07-23",
+          "note": "serve compiler-tree slot contracts through runtime feature tables so prompt-derived OpenUI template markers stay the model output contract"
         },
         {
           "version": "v230",
-          "date": "2026-07-22",
-          "note": "Floor still-required grammar component paths above unneeded binder references"
+          "date": "2026-07-23",
+          "note": "Constrain configured optimizers to the supported AdamW and scratch-only Muon hybrid choices"
         },
         {
           "version": "v229",
-          "date": "2026-07-22",
-          "note": "Close active structural arrays when prompt component counts and opaque marker coverage are complete"
+          "date": "2026-07-23",
+          "note": "judge symbolic Harness identity rows from their parsed payload instead of the retired English input delimiter"
         },
         {
           "version": "v228",
-          "date": "2026-07-22",
-          "note": "Make duplicate binder references within one structural array compiler-illegal"
+          "date": "2026-07-23",
+          "note": "Expose explicit staged capability, prior-certificate, and distillation preflight inputs through model-build configuration and train CLI"
         },
         {
           "version": "v227",
-          "date": "2026-07-22",
-          "note": "no-bump: reference the centralized evaluation-policy identifier from ModelBuildConfig without changing model behavior"
-        },
-        {
-          "version": "v227",
-          "date": "2026-07-22",
-          "note": "Reject named marker records and request contracts instead of converting marker names inside model construction or generation"
+          "date": "2026-07-23",
+          "note": "Plumb immutable campaign manifest, result, store, and artifact roots through explicit model-promotion configuration"
         },
         {
           "version": "v226",
-          "date": "2026-07-22",
-          "note": "Make external template markers opaque across TwoTower and grammar-diffusion context encoding, runtime metadata, pseudo-embeddings, slot heads, and deterministic template fill"
+          "date": "2026-07-23",
+          "note": "SLM-279: require new configs with non-empty recursive-depth weights to name intermediate_only, all_depths, or legacy_all_depths explicitly; keep empty configs primary-only and migrate pre-field checkpoint/config loads to legacy_all_depths, including tokenizer and stacked-to-recursive migration paths"
+        },
+        {
+          "version": "v225",
+          "date": "2026-07-23",
+          "note": "no-bump: extract the existing normalized recursive-depth loss arithmetic into a pure reducer without changing objective semantics or telemetry"
         },
         {
           "version": "v225",
@@ -4865,7 +6926,7 @@
         {
           "version": "v223",
           "date": "2026-07-22",
-        "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
+          "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
         },
         {
           "version": "v222",
@@ -6181,6 +8242,257 @@
           "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"
+        }
+      ]
+    },
+    "harness.experiments.slm192_profile_flow_pipeline": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm192_profile_flow_pipeline.py",
+        "tests/test_harnesses/experiments/test_slm192_profile_flow_pipeline.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-192 FFE3-01 stage-accurate cost profiler for valid-edit bridge, training, decode, closure, and verification"
+        }
+      ]
+    },
+    "matrix.slm192_profile_flow_pipeline": {
+      "version": "ffe3-01-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/profile_flow_pipeline.py",
+        "tests/test_scripts/test_profile_flow_pipeline.py",
+        "docs/design/iter-slm192-profile-flow-pipeline-20260721.json",
+        "docs/design/iter-slm192-profile-flow-pipeline-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe3-01-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-192 FFE3-01 flow-pipeline cost-profile fixture matrix CLI"
+        }
+      ]
+    },
+    "harness.experiments.slm193_flow_caches": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm193_flow_caches.py",
+        "src/slm_training/harness_core/flow_cache.py",
+        "tests/test_harnesses/experiments/test_slm193_flow_caches.py",
+        "tests/test_harness_core/test_flow_cache.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-193 FFE3-02 bit-exact state, candidate, closure, and bridge cache fixture harness"
+        }
+      ]
+    },
+    "matrix.slm193_flow_caches": {
+      "version": "ffe3-02-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/bench_flow_caches.py",
+        "tests/test_scripts/test_bench_flow_caches.py",
+        "docs/design/iter-slm193-flow-caches-20260721.json",
+        "docs/design/iter-slm193-flow-caches-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe3-02-v1",
+          "date": "2026-07-21",
+          "note": "no-bump: regenerate SLM-193 design artifact timings after githook fixture run; matrix CLI behavior unchanged"
+        },
+        {
+          "version": "ffe3-02-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-193 FFE3-02 bit-exact flow-cache fixture matrix CLI"
+        }
+      ]
+    },
+    "flow.proposals": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flow/proposals.py",
+        "tests/test_flow/test_proposals.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; legality-neutral dynamic candidate proposal prefixes with mandatory exact fallback"
+        }
+      ]
+    },
+    "harness.experiments.slm194_candidate_proposals": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm194_candidate_proposals.py",
+        "tests/test_harnesses/experiments/test_slm194_candidate_proposals.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-194 FFE3-03 candidate proposal recall, fallback, parity, and wall-cost fixture"
+        }
+      ]
+    },
+    "harness.experiments.valid_edit_flow_closeout": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/valid_edit_flow_closeout.py",
+        "tests/test_harnesses/experiments/test_valid_edit_flow_closeout.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "expand the deterministic closeout to the required 18-lever causal table and explicit authorities"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "stamp the closeout with its dedicated harness and matrix component versions"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; fail-closed SLM-207 evidence lock and causal disposition"
+        }
+      ]
+    },
+    "matrix.valid_edit_flow_closeout": {
+      "version": "vfa3-04-v3",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_valid_edit_flow_closeout.py",
+        "tests/test_scripts/test_run_valid_edit_flow_closeout.py",
+        "docs/design/valid-edit-flow-closeout.json",
+        "docs/design/valid-edit-flow-closeout.md",
+        "docs/design/valid-edit-flow-selected-stack.json",
+        "docs/design/adr-valid-edit-flow-closeout.md",
+        "docs/design/valid-edit-flow-architecture.md"
+      ],
+      "history": [
+        {
+          "version": "vfa3-04-v3",
+          "date": "2026-07-24",
+          "note": "emit ADR, selected-stack inventory, and hard-soft authority map with the complete causal table"
+        },
+        {
+          "version": "vfa3-04-v2",
+          "date": "2026-07-24",
+          "note": "isolate design-output destination so closeout verification tests do not mutate committed evidence"
+        },
+        {
+          "version": "vfa3-04-v1",
+          "date": "2026-07-24",
+          "note": "initial registration; deterministic VFA program closeout"
+        }
+      ]
+    },
+    "matrix.slm194_candidate_proposals": {
+      "version": "ffe3-03-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_candidate_proposal_matrix.py",
+        "tests/test_scripts/test_run_candidate_proposal_matrix.py",
+        "docs/design/iter-slm194-candidate-proposals-20260724.json",
+        "docs/design/iter-slm194-candidate-proposals-20260724.md",
+        "docs/design/iter-slm194-candidate-proposals-agentv-20260724/",
+        "docs/design/perf-experiment-matrix.md"
+      ],
+      "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-24",
+          "note": "no-bump: append unrelated C9-C10 compiler-prefill evidence without changing the SLM-194 candidate-proposal matrix"
+        },
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-23",
+          "note": "no-bump: regenerate measured evidence after final prerequisite squash lineage without changing matrix behavior"
+        },
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-194 FFE3-03 k-grid and true-wall proposal amortization matrix"
+        }
+      ]
+    },
+    "harness.eval.replay": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/eval/harness_replay.py",
+        "scripts/replay_harness_failures.py",
+        "tests/test_harnesses/eval/test_harness_replay.py",
+        "docs/design/harness-artifact-audit.md"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Run deterministic five-suite local byte-reverification with production scoring, parser cascade, runtime evidence, and automatic evidence-only architecture blocking"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Represent missing causal perturbation traces as unknown rather than fabricated zero label flips"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; byte-preserving archived harness replay records"
+        }
+      ]
+    },
+    "decode.invariants": {
+      "version": "v2",
+      "kind": "gate",
+      "paths": [
+        "docs/design/decode-invariants.md",
+        "scripts/verify_decode_invariants.py",
+        "tests/test_scripts/test_verify_decode_invariants.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "Certify the shared encoder/decoder ops vocabulary against its committed fingerprint and layering; record the closed I2 horizon gap and the reachable I3/I4 levers"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial decode-invariant certificate: fail-closed canonical defaults, pinned strict policies, serving fail-closed markers, per-backend deterministic-bypass tests, agent-surface and canonical-doc reachability, reserved-op default-off"
+        }
+      ]
+    },
+    "ops.vocab": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/ops_vocab.py",
+        "src/slm_training/resources/ops_vocab_registry.json",
+        "src/slm_training/dsl/openui_tokens.py",
+        "src/slm_training/resources/tokenizer_layout_registry.json",
+        "tests/test_dsl/test_ops_vocab.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial reserved compute-ops vocabulary shared encoder<->decoder: 19 ops derived from the live local/topology/conversation registries across ast/graph/set/topology/history, reserved in the new `ops` token-id namespace above every codec range, one shared_token_ids() mapping, grammar layering assertion, content-addressed drift gate (decode invariant I13)"
         }
       ]
     }

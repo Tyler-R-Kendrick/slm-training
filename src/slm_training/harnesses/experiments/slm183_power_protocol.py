@@ -9,6 +9,7 @@ No model is trained and no GPU is required.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 from dataclasses import asdict, dataclass, field
 from collections.abc import Sequence
@@ -17,13 +18,17 @@ from typing import Any
 
 import numpy as np
 
+from slm_training.autoresearch.experiment_campaign import (
+    ExperimentCampaignV1,
+)
 from slm_training.evals.power_protocol import (
-    benjamini_hochberg,
     bootstrap_paired_ci,
     classify_power,
     cluster_bootstrap_ci,
     exact_binomial_interval,
+    exact_paired_binary_test,
     intraclass_correlation,
+    holm_bonferroni,
     mde_simulation,
     wilson_interval,
 )
@@ -37,6 +42,7 @@ __all__ = [
     "PowerProtocolReport",
     "analyze_existing_iter",
     "build_default_manifest",
+    "build_experiment_campaign",
     "render_markdown",
     "run_variance_fixture",
 ]
@@ -290,6 +296,94 @@ def build_default_manifest(
     )
 
 
+def build_experiment_campaign(
+    seeds: tuple[int, ...] = _DEFAULT_SEEDS,
+) -> ExperimentCampaignV1:
+    """Bridge the legacy fixture manifest to canonical campaign governance."""
+    endpoint = "paired_binary_success_delta"
+
+    def digest(value: str) -> str:
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    return ExperimentCampaignV1(
+        campaign_id=EXPERIMENT_ID,
+        experiment_id=EXPERIMENT_ID,
+        hypothesis=(
+            "A paired candidate changes the locked primary endpoint relative "
+            "to the unchanged control."
+        ),
+        decision="Keep this fixture wiring-only; never promote from synthetic outcomes.",
+        endpoints=(
+            {
+                "endpoint_id": endpoint,
+                "metric": endpoint,
+                "role": "primary",
+                "direction": "increase",
+                "minimum_effect": 0.08,
+            },
+        ),
+        arms=(
+            {
+                "arm_id": "synthetic_control",
+                "role": "control",
+                "config_sha256": digest("slm183:synthetic-control"),
+            },
+            {
+                "arm_id": "synthetic_candidate",
+                "role": "candidate",
+                "config_sha256": digest("slm183:synthetic-candidate"),
+            },
+        ),
+        seeds=seeds,
+        budget={
+            "max_experiments": 1,
+            "max_gpu_hours": 0.0,
+            "max_wall_minutes": 2.0,
+        },
+        stopping_rules=("Stop after every declared fixture seed is reported.",),
+        controls=(
+            {
+                "control_id": "synthetic_control",
+                "description": "The unchanged fixture control must remain neutral.",
+                "kind": "negative",
+            },
+        ),
+        negative_controls=("synthetic_control",),
+        multiplicity_families=(
+            {
+                "family_id": "primary",
+                "hypothesis_ids": (endpoint,),
+                "alpha": 0.05,
+                "method": "holm",
+            },
+        ),
+        promotion_gates=(
+            {
+                "gate_id": "fixture_endpoint_reachable",
+                "endpoint_id": endpoint,
+                "operator": "ge",
+                "threshold": 0.08,
+            },
+        ),
+        rollback_gates=(
+            {
+                "gate_id": "fixture_endpoint_regression",
+                "endpoint_id": endpoint,
+                "operator": "le",
+                "threshold": -0.08,
+            },
+        ),
+        artifact_requirements=(
+            {"kind": "version_stamp", "minimum_count": 1},
+        ),
+        claim_class="wiring",
+        source_commit="0" * 40,
+        source_dirty=True,
+        author="SLM-183 fixture bridge",
+        created_at="2026-07-23T00:00:00Z",
+    )
+
+
 def run_variance_fixture(
     n_targets: int = 50,
     paths_per_target: int = 3,
@@ -298,11 +392,20 @@ def run_variance_fixture(
     run_id: str = "slm183-power-protocol",
     output_dir: Path | None = None,
     seed: int = 0,
+    seeds: tuple[int, ...] | None = None,
 ) -> PowerProtocolReport:
     """Generate synthetic outcomes with known seed + target variance and report."""
     n_targets = max(1, int(n_targets))
     paths_per_target = max(1, int(paths_per_target))
     n_seeds = max(1, int(n_seeds))
+    executed_seeds = seeds if seeds is not None else tuple(range(n_seeds))
+    if not executed_seeds:
+        raise ValueError("seeds must not be empty")
+    if len(executed_seeds) != len(set(executed_seeds)):
+        raise ValueError("seeds must be unique")
+    if any(isinstance(value, bool) or not isinstance(value, int) for value in executed_seeds):
+        raise TypeError("seeds must contain only integer identifiers")
+    n_seeds = len(executed_seeds)
     rng = np.random.default_rng(seed)
 
     base_rate = 0.70
@@ -317,34 +420,51 @@ def run_variance_fixture(
     all_cluster_ids: list[str] = []
     per_target_means: dict[int, list[float]] = {}
     per_seed_means: dict[int, list[float]] = {}
+    paired_control: list[int] = []
+    paired_candidate: list[int] = []
 
     for t in range(n_targets):
         target_effect = float(rng.normal(0.0, sigma_target))
-        for s in range(n_seeds):
+        for s in executed_seeds:
             seed_effect = float(rng.normal(0.0, sigma_seed))
-            logit = base_logit + target_effect + seed_effect
-            prob = 1.0 / (1.0 + math.exp(-logit))
-            outcomes = (rng.random(paths_per_target) < prob).astype(float).tolist()
-            mean_outcome = sum(outcomes) / len(outcomes)
-            cell_id = f"target{t:03d}_seed{s}"
-            cells.append(
-                {
-                    "cell_id": cell_id,
-                    "target_id": t,
-                    "seed": s,
-                    "n": paths_per_target,
-                    "successes": int(sum(outcomes)),
-                    "mean": float(mean_outcome),
-                    "wilson": wilson_interval(int(sum(outcomes)), paths_per_target),
-                    "exact": exact_binomial_interval(
-                        int(sum(outcomes)), paths_per_target
-                    ),
-                }
-            )
-            all_values.extend(outcomes)
-            all_cluster_ids.extend([f"target_{t}"] * len(outcomes))
-            per_target_means.setdefault(t, []).append(mean_outcome)
-            per_seed_means.setdefault(s, []).append(mean_outcome)
+            base = base_logit + target_effect + seed_effect
+            draws = rng.random(paths_per_target)
+            arm_outcomes: dict[str, list[float]] = {}
+            for arm_id, effect in (
+                ("synthetic_control", 0.0),
+                ("synthetic_candidate", true_mde),
+            ):
+                probability = 1.0 / (1.0 + math.exp(-(base + effect)))
+                outcomes = (draws < probability).astype(float).tolist()
+                arm_outcomes[arm_id] = outcomes
+                mean_outcome = sum(outcomes) / len(outcomes)
+                cell_id = f"target{t:03d}_seed{s}_{arm_id}"
+                cells.append(
+                    {
+                        "cell_id": cell_id,
+                        "target_id": t,
+                        "seed": s,
+                        "arm_id": arm_id,
+                        "n": paths_per_target,
+                        "successes": int(sum(outcomes)),
+                        "mean": float(mean_outcome),
+                        "wilson": wilson_interval(
+                            int(sum(outcomes)), paths_per_target
+                        ),
+                        "exact": exact_binomial_interval(
+                            int(sum(outcomes)), paths_per_target
+                        ),
+                    }
+                )
+            control_outcomes = arm_outcomes["synthetic_control"]
+            candidate_outcomes = arm_outcomes["synthetic_candidate"]
+            paired_control.extend(int(value) for value in control_outcomes)
+            paired_candidate.extend(int(value) for value in candidate_outcomes)
+            control_mean = sum(control_outcomes) / len(control_outcomes)
+            all_values.extend(control_outcomes)
+            all_cluster_ids.extend([f"target_{t}"] * len(control_outcomes))
+            per_target_means.setdefault(t, []).append(control_mean)
+            per_seed_means.setdefault(s, []).append(control_mean)
 
     # Aggregate variance components.
     target_means = [np.mean(v) for v in per_target_means.values()]
@@ -379,20 +499,23 @@ def run_variance_fixture(
     # ICC.
     icc_result = intraclass_correlation(all_values, all_cluster_ids)
 
-    # Demonstrate paired bootstrap on a synthetic contrast.
-    left = [cell["mean"] for cell in cells if cell["seed"] == 0]
-    right = [cell["mean"] for cell in cells if cell["seed"] == 1]
+    # Paired candidate/control analysis uses the same target/seed/path draws.
+    left = [
+        cell["mean"] for cell in cells if cell["arm_id"] == "synthetic_candidate"
+    ]
+    right = [
+        cell["mean"] for cell in cells if cell["arm_id"] == "synthetic_control"
+    ]
     seed_contrast = bootstrap_paired_ci(
         left, right, lambda a, b: float(np.mean(a) - np.mean(b)), seed=seed
     )
 
-    # BH demonstration on cell p-values (two-sided via Wilson center).
-    p_values = [
-        2.0 * min(cell["wilson"]["estimate"], 1.0 - cell["wilson"]["estimate"])
-        for cell in cells
-    ]
-    bh = benjamini_hochberg(p_values, alpha=0.05)
-    n_rejected = sum(1 for e in bh if e["rejected"])
+    paired_test = exact_paired_binary_test(paired_control, paired_candidate)
+    holm = holm_bonferroni(
+        (("paired_binary_success_delta", paired_test["p_value"]),),
+        alpha=0.05,
+    )
+    n_rejected = sum(1 for entry in holm if entry["rejected"])
 
     conclusions = [
         {
@@ -417,9 +540,18 @@ def run_variance_fixture(
             "classification": "decidable",
         },
         {
-            "name": "bh_rejections",
+            "name": "holm_rejections",
             "value": n_rejected,
             "classification": "decidable",
+        },
+        {
+            "name": "paired_binary_success_delta",
+            "value": paired_test["effect"],
+            "classification": classify_power(
+                paired_test["p_value"] <= 0.05,
+                true_mde,
+                abs(paired_test["effect"]),
+            ),
         },
     ]
 
@@ -470,6 +602,7 @@ def run_variance_fixture(
             "nested clusters are not modeled here.",
         ],
         version_stamp=build_version_stamp(
+            "harness.autoresearch.experiment_campaign",
             "harness.experiments",
             "harness.experiments.slm183_power_protocol",
             "evals.power_protocol",
@@ -523,19 +656,21 @@ def render_markdown(report: PowerProtocolReport) -> str:
             "",
             "## Sample cells",
             "",
-            "| cell_id | target | seed | n | successes | mean | wilson_low | wilson_high |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| cell_id | target | seed | arm | n | successes | mean | wilson_low | wilson_high |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
     for cell in report.cells[:8]:
         wilson = cell["wilson"]
         lines.append(
             f"| {cell['cell_id']} | {cell['target_id']} | {cell['seed']} | "
-            f"{cell['n']} | {cell['successes']} | {cell['mean']:.3f} | "
+            f"{cell['arm_id']} | {cell['n']} | {cell['successes']} | {cell['mean']:.3f} | "
             f"{wilson['low']:.3f} | {wilson['high']:.3f} |"
         )
     if len(report.cells) > 8:
-        lines.append(f"| ... | | | | | | | | ({len(report.cells) - 8} more cells) |")
+        lines.append(
+            f"| ... | | | | | | | | | ({len(report.cells) - 8} more cells) |"
+        )
 
     lines.extend(
         [

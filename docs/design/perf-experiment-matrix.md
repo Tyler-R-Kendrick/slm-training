@@ -278,6 +278,30 @@ python -m scripts.run_perf_matrix --only C5,C6,C7,C8 --list
 No C5-C8 latency or quality result exists. Reported speedups in CFGzip,
 XGrammar-2, WGrammar, TruncProof, or related papers are external evidence only.
 
+## C9-C10 bounded compiler prefills (2026-07-24, measured negative)
+
+Same-checkpoint CPU diagnostic on
+`slm230_bounded_recursive_r4_r2/checkpoints/last.pt`, one smoke row, no warmup,
+and an eight-token canvas. The run was capped by the repository run policy and
+wrote [the version-stamped result](perf-matrix-results.json) plus AgentEvals and
+AgentV artifacts.
+
+| ID | prefill policy | mean ms | neural forwards | prefill batches / states / tokens | exact semantic bypasses | raw syntax | meaningful parse | fidelity |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| C0 | non-compiler constrained control | 20,574.96 | 1 | 0 / 0 / 0 | 1 | 1.0 | 0.0 | 0.0 |
+| C9 | serial, max one ambiguous state | 20,600.54 | 2 | 2 / 2 / 16 | 1 | 1.0 | 0.0 | 0.0 |
+| C10 | device-aware auto bound | 20,851.49 | 2 | 2 / 2 / 16 | 1 | 1.0 | 0.0 | 0.0 |
+
+This is negative, non-promotable evidence. All outputs were syntactically valid,
+but the intentionally tiny canvas omitted the requested placeholder, so the C0
+quality anchor was invalid and all three AgentV criteria failed. C10 was 0.99×
+as fast as C9 in this single draw, and both saw only one ambiguous state per
+forecast and therefore issued the same two one-state batches. The result does
+not demonstrate batching utilization or a quality-preserving speedup. Keep the
+device-aware bound implemented and instrumented; require a larger, valid
+same-run quality anchor with forests containing multiple ambiguous future
+states before promotion.
+
 ## E289 exact choice-state cache (2026-07-17)
 
 The production choice decoder now caches exact legal sets by immutable symbolic
@@ -357,3 +381,25 @@ time out, fidelity falls 1.0→0.3333, structure 0.0963→0.0359, and recall
 extra token budget. Reject 128 and close this interpolation; keep 96 as a local
 smoke/performance observation only. See
 [E719 evidence](iter-e719-ltr-canvas128-20260721.md).
+
+## FFE3-03 exact-fallback candidate proposals (SLM-194, 2026-07-23)
+
+The CPU fixture compared complete cached enumeration, grammar partitioning,
+SLM-176-style description retrieval, tiny MLP, low-rank cross-attention,
+direct-policy logits, flow-rate logits, and an oracle over
+`k={1,2,4,8,16,all}`. All arms consumed the same exact SLM-196 dynamic
+candidate interface and the committed SLM-192/193 profile/cache manifests.
+
+No non-oracle arm cleared the joint gate of at least 95% target and acceptable
+recall plus 30% warm-p50 improvement. Arms reached complete recall only as `k`
+approached or equaled the complete 9–10 candidate development sets; mandatory
+fallback restored every omitted candidate, leaving zero final projections,
+verifier calls, or support calls avoided. Exact membership/output parity stayed
+true and UNKNOWN candidates were never negatives, but proposal overhead did not
+amortize.
+
+Decision: **retain exact cached enumeration**. This is a four-row,
+two-target-cluster wiring screen; confirmation was not touched, no checkpoint
+was written, and no production/default claim is supported. AgentV passed 5/5
+with no execution errors. Full k-grid, confidence intervals, work attribution,
+and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).

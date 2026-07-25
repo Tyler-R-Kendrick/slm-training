@@ -117,6 +117,42 @@ def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
     )
 
 
+def test_scope_aware_semantic_singleton_bypasses_without_structural_force(
+    monkeypatch,
+) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        CompletionForest,
+        CompletionPath,
+    )
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode("root =", add_special=False)
+    component_id = tokenizer.token_to_id["Card"]
+    runtime_symbol = object()
+    captured: dict[str, object] = {}
+
+    def forest(*_args, **kwargs):
+        captured["runtime_symbols"] = kwargs["runtime_symbols"]
+        return CompletionForest(
+            (CompletionPath((component_id,), "component"),), "complete"
+        )
+
+    monkeypatch.setattr(compiler_draft, "build_completion_forest", forest)
+    assert (
+        exact_forced_token_id(
+            tokenizer,
+            prefix,
+            state=make_grammar_state(),
+            remaining_tokens=8,
+            runtime_symbols=(runtime_symbol,),
+        )
+        == component_id
+    )
+    assert captured["runtime_symbols"] == (runtime_symbol,)
+
+
 def test_pick_constrained_honors_forced_id() -> None:
     import torch
 

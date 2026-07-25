@@ -142,6 +142,53 @@ from slm_training.models.blocks import DenoiserTower, RMSNorm, TransformerBlock
 #: point of a matched-control campaign that needs *no* z-state parameters for
 #: arms C/D.
 Z_STATE_MODES: tuple[str, ...] = ("full", "y_only", "parameter_free")
+RECURSIVE_UPDATE_MODES: tuple[str, ...] = (
+    "current_v1",
+    "delta_only",
+    "layerscale",
+    "gated",
+)
+RECURSIVE_EMPTY_F_MODES: tuple[str, ...] = ("pass_through", "zero")
+RECURSIVE_NORM_MODES: tuple[str, ...] = ("shared", "private")
+RECURSIVE_DIAGNOSTIC_UPDATE_MODES: tuple[str, ...] = ("as_is", "residual_delta")
+RECURSIVE_STATE_PATH_ABLATIONS: tuple[str, ...] = (
+    "none",
+    "detach_z_to_y",
+    "detach_y_to_z",
+)
+
+
+@dataclass(frozen=True)
+class RecursiveDepthDiagnosticsV1:
+    """Detached, per-example recurrence health at one logical depth.
+
+    State/update tensors have shape ``[B, T, D]``. Norms are per-example
+    Frobenius norms over ``[T, D]``; each update/state ratio divides the update
+    norm by the corresponding *pre-update* state norm (clamped at machine
+    epsilon). Task metrics are per-example masked-token means. KL uses
+    ``KL(p_depth || p_reference)``; the final depth therefore has zero
+    ``kl_to_final`` and no ``kl_to_next``.
+    """
+
+    contract_version: str
+    step: int
+    update_mode: str
+    y: torch.Tensor
+    z: torch.Tensor | None
+    y_update: torch.Tensor
+    z_update: torch.Tensor | None
+    y_norm: torch.Tensor
+    z_norm: torch.Tensor | None
+    y_update_norm: torch.Tensor
+    z_update_norm: torch.Tensor | None
+    y_update_state_ratio: torch.Tensor
+    z_update_state_ratio: torch.Tensor | None
+    target_count: torch.Tensor | None
+    cross_entropy: torch.Tensor | None
+    accuracy: torch.Tensor | None
+    entropy: torch.Tensor | None
+    kl_to_next: torch.Tensor | None
+    kl_to_final: torch.Tensor | None
 
 
 class SharedRecursiveDenoiserTower(nn.Module):
@@ -163,6 +210,9 @@ class SharedRecursiveDenoiserTower(nn.Module):
         tie_output_embedding: bool = True,
         z_state_mode: str = "full",
         detach_between_steps: bool = False,
+        update_mode: str = "current_v1",
+        empty_f_mode: str = "pass_through",
+        norm_mode: str = "shared",
     ) -> None:
         super().__init__()
         if z_state_mode not in Z_STATE_MODES:
@@ -170,6 +220,22 @@ class SharedRecursiveDenoiserTower(nn.Module):
                 f"z_state_mode={z_state_mode!r} is not one of {Z_STATE_MODES!r}"
             )
         self.z_state_mode = z_state_mode
+        if update_mode not in RECURSIVE_UPDATE_MODES:
+            raise ValueError(
+                f"update_mode={update_mode!r} is not one of {RECURSIVE_UPDATE_MODES!r}"
+            )
+        if empty_f_mode not in RECURSIVE_EMPTY_F_MODES:
+            raise ValueError(
+                f"empty_f_mode={empty_f_mode!r} is not one of "
+                f"{RECURSIVE_EMPTY_F_MODES!r}"
+            )
+        if norm_mode not in RECURSIVE_NORM_MODES:
+            raise ValueError(
+                f"norm_mode={norm_mode!r} is not one of {RECURSIVE_NORM_MODES!r}"
+            )
+        self.update_mode = update_mode
+        self.empty_f_mode = empty_f_mode
+        self.norm_mode = norm_mode
         # SLM-241 (RSC-A05) arm H: stop-gradient recurrence. Purely a
         # backward-graph flag -- adds no parameter, changes no forward
         # computation. See the module docstring above for the exact
@@ -205,9 +271,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
 
         self.layers = nn.ModuleList(
             [
-                TransformerBlock(
-                    d_model, n_heads, dropout=dropout, cross_attn=True
-                )
+                TransformerBlock(d_model, n_heads, dropout=dropout, cross_attn=True)
                 for _ in range(self.recursive_transition_layers)
             ]
         )
@@ -219,6 +283,15 @@ class SharedRecursiveDenoiserTower(nn.Module):
         self._g_layers = self.layers[f_end:]
 
         self.norm = RMSNorm(d_model)
+        if self.norm_mode == "private":
+            self.f_norm = RMSNorm(d_model)
+            self.g_norm = RMSNorm(d_model)
+        if self.update_mode == "layerscale":
+            self.f_update_scale = nn.Parameter(torch.full((d_model,), 1e-3))
+            self.g_update_scale = nn.Parameter(torch.full((d_model,), 1e-3))
+        elif self.update_mode == "gated":
+            self.f_update_gate = nn.Parameter(torch.full((d_model,), -4.0))
+            self.g_update_gate = nn.Parameter(torch.full((d_model,), -4.0))
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         self.tie_output_embedding = bool(tie_output_embedding)
         if self.tie_output_embedding:
@@ -293,6 +366,214 @@ class SharedRecursiveDenoiserTower(nn.Module):
             return x, attn
         return x
 
+    def initial_transition_components(
+        self,
+        noisy_ids: torch.Tensor,
+        context: torch.Tensor,
+        pad_id: int,
+        ctx_pad_mask: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor | bool | None]:
+        """Materialize the exact additive initial-state components.
+
+        Keeping learned-latent, pooled-context, and position terms separate
+        lets evaluation-only ablations remove exactly one declared path
+        without mutating checkpoint parameters.
+        """
+        bsz, seq = noisy_ids.shape
+        if seq > self.max_len:
+            noisy_ids = noisy_ids[:, : self.max_len]
+            seq = self.max_len
+        pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
+        runtime_features = self._features_for_batch(bsz)
+        y = self.tok(noisy_ids) + self.pos(pos)
+        if runtime_features is not None:
+            row = torch.arange(bsz, device=noisy_ids.device).unsqueeze(1)
+            y = (
+                y
+                + runtime_features[
+                    row, noisy_ids.clamp(0, runtime_features.size(1) - 1)
+                ]
+            )
+        if self.kind is not None:
+            safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
+            y = y + self.kind(self.kind_lookup[safe])
+
+        if ctx_pad_mask is None:
+            pooled = context.mean(dim=1)
+        else:
+            mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
+            pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
+
+        z_latent_component: torch.Tensor | None = None
+        z_context_component: torch.Tensor | None = None
+        z_position_component: torch.Tensor | None = None
+        if self.z_state_mode == "full":
+            z_latent_component = self.z_latent[pos]
+            z_context_component = self.ctx_proj(pooled).unsqueeze(1).expand(-1, seq, -1)
+            z_position_component = self.pos(pos)
+        elif self.z_state_mode == "parameter_free":
+            z_context_component = pooled.unsqueeze(1).expand(-1, seq, -1)
+        return {
+            "y": y,
+            "z_latent_component": z_latent_component,
+            "z_context_component": z_context_component,
+            "z_position_component": z_position_component,
+            "context_projection_applied": self.z_state_mode == "full",
+            "self_pad_mask": noisy_ids.eq(pad_id),
+            "runtime_symbol_features": runtime_features,
+        }
+
+    def initial_transition_state(
+        self,
+        noisy_ids: torch.Tensor,
+        context: torch.Tensor,
+        pad_id: int,
+        ctx_pad_mask: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor | None]:
+        """Materialize the exact state and fixed conditioning for recurrence."""
+        components = self.initial_transition_components(
+            noisy_ids, context, pad_id, ctx_pad_mask
+        )
+        z_terms = [
+            components[key]
+            for key in (
+                "z_latent_component",
+                "z_context_component",
+                "z_position_component",
+            )
+            if isinstance(components[key], torch.Tensor)
+        ]
+        return {
+            "y": components["y"],
+            "z": sum(z_terms[1:], z_terms[0]) if z_terms else None,
+            "self_pad_mask": components["self_pad_mask"],
+            "runtime_symbol_features": components["runtime_symbol_features"],
+        }
+
+    def transition_step(
+        self,
+        y: torch.Tensor,
+        z: torch.Tensor | None,
+        context: torch.Tensor,
+        self_pad_mask: torch.Tensor | None,
+        ctx_pad_mask: torch.Tensor | None = None,
+        *,
+        runtime_symbol_features: torch.Tensor | None = None,
+        return_attn: bool = False,
+        update_mode: str | None = None,
+        state_path_ablation: str = "none",
+    ) -> dict[str, torch.Tensor | None]:
+        """Apply one canonical shared recurrence transition without mutation."""
+        effective_update_mode = self.update_mode if update_mode is None else update_mode
+        supported_update_modes = (
+            *RECURSIVE_UPDATE_MODES,
+            *RECURSIVE_DIAGNOSTIC_UPDATE_MODES,
+        )
+        if effective_update_mode not in supported_update_modes:
+            raise ValueError(
+                f"update_mode={effective_update_mode!r} is not one of "
+                f"{supported_update_modes!r}"
+            )
+        if state_path_ablation not in RECURSIVE_STATE_PATH_ABLATIONS:
+            raise ValueError(
+                f"state_path_ablation={state_path_ablation!r} is not one of "
+                f"{RECURSIVE_STATE_PATH_ABLATIONS!r}"
+            )
+        if state_path_ablation != "none" and z is None:
+            raise ValueError(
+                f"{state_path_ablation} requires an explicit z state"
+            )
+        y_before = y
+        z_before = z
+        f_norm = self.f_norm if self.norm_mode == "private" else self.norm
+        g_norm = self.g_norm if self.norm_mode == "private" else self.norm
+
+        def update_from_stack(
+            output: torch.Tensor,
+            stack_input: torch.Tensor,
+            *,
+            branch: str,
+        ) -> torch.Tensor:
+            mode = {
+                "as_is": "current_v1",
+                "residual_delta": "delta_only",
+            }.get(effective_update_mode, effective_update_mode)
+            if mode == "current_v1":
+                return output
+            delta = output - stack_input
+            if mode == "delta_only":
+                return delta
+            if mode == "layerscale":
+                scale = (
+                    self.f_update_scale
+                    if branch == "f"
+                    else self.g_update_scale
+                )
+                return delta * scale
+            gate = (
+                self.f_update_gate if branch == "f" else self.g_update_gate
+            )
+            return delta * torch.sigmoid(gate)
+
+        if z is None:
+            f_in = f_norm(y)
+            if not self._f_layers and self.empty_f_mode == "zero":
+                f_update = torch.zeros_like(f_in)
+            else:
+                f_out = self._apply_layers(
+                    f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
+                )
+                assert isinstance(f_out, torch.Tensor)
+                f_update = update_from_stack(f_out, f_in, branch="f")
+            y = y + f_update
+            g_in = g_norm(y)
+        else:
+            f_in = f_norm(z if state_path_ablation == "detach_y_to_z" else z + y)
+            if not self._f_layers and self.empty_f_mode == "zero":
+                f_update = torch.zeros_like(f_in)
+            else:
+                f_out = self._apply_layers(
+                    f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
+                )
+                assert isinstance(f_out, torch.Tensor)
+                f_update = update_from_stack(f_out, f_in, branch="f")
+            z = z + f_update
+            g_in = g_norm(
+                y if state_path_ablation == "detach_z_to_y" else y + z
+            )
+
+        g_out = self._apply_layers(
+            g_in,
+            self._g_layers,
+            self_pad_mask,
+            context,
+            ctx_pad_mask,
+            return_last_attn=return_attn,
+        )
+        attn: torch.Tensor | None = None
+        if return_attn:
+            assert isinstance(g_out, tuple)
+            g_out, attn = g_out
+        else:
+            assert isinstance(g_out, torch.Tensor)
+        g_update = update_from_stack(g_out, g_in, branch="g")
+        y = y + g_update
+        hidden = self.norm(y)
+        logits = self.lm_head(hidden)
+        if runtime_symbol_features is not None:
+            logits = logits + torch.einsum(
+                "btd,bvd->btv", hidden, runtime_symbol_features
+            )
+        return {
+            "y": y,
+            "z": z,
+            "y_update": y - y_before,
+            "z_update": None if z is None else z - z_before,
+            "hidden": hidden,
+            "logits": logits,
+            "attn": attn,
+        }
+
     def recursive_outputs(
         self,
         noisy_ids: torch.Tensor,
@@ -303,7 +584,11 @@ class SharedRecursiveDenoiserTower(nn.Module):
         return_hidden: bool = False,
         return_attn: bool = False,
         return_step_boundaries: bool = False,
-    ) -> dict[str, torch.Tensor | list[torch.Tensor]]:
+        diagnostics: bool = False,
+        diagnostic_update_mode: str | None = None,
+        diagnostic_targets: torch.Tensor | None = None,
+        diagnostic_mask: torch.Tensor | None = None,
+    ) -> dict[str, Any]:
         """
         Run the full recursive recurrence and expose per-depth outputs.
 
@@ -323,95 +608,135 @@ class SharedRecursiveDenoiserTower(nn.Module):
             actually reaches that point (arm B/G: yes; arm H: no, once the
             detach has replaced what the *next* step actually consumes).
             Never used by ``forward``/``encode`` -- opt-in and additive only.
+          - ``diagnostics``: (only if ``diagnostics=True``) detached
+            :class:`RecursiveDepthDiagnosticsV1` records. ``"as_is"`` uses
+            the historical residualized block output as the outer update.
+            Fixture-only ``"residual_delta"`` instead subtracts each layer
+            stack's input from its output before the existing outer addition.
+            Targets enable per-example masked CE, accuracy, entropy, and KL
+            curves; an omitted mask selects every non-pad target.
         """
+        if not isinstance(diagnostics, bool):
+            raise TypeError("diagnostics must be a bool")
+        if (
+            diagnostic_update_mode is not None
+            and diagnostic_update_mode not in RECURSIVE_DIAGNOSTIC_UPDATE_MODES
+        ):
+            raise ValueError(
+                f"diagnostic_update_mode={diagnostic_update_mode!r} is not one of "
+                f"{RECURSIVE_DIAGNOSTIC_UPDATE_MODES!r}"
+            )
+        if not diagnostics and (
+            diagnostic_update_mode is not None
+            or diagnostic_targets is not None
+            or diagnostic_mask is not None
+        ):
+            raise ValueError(
+                "diagnostic update modes, targets, and masks require diagnostics=True"
+            )
+        if diagnostic_mask is not None and diagnostic_targets is None:
+            raise ValueError("diagnostic_mask requires diagnostic_targets")
+        if diagnostic_targets is not None:
+            if diagnostic_targets.shape != noisy_ids.shape:
+                raise ValueError(
+                    "diagnostic_targets shape must match noisy_ids: "
+                    f"{tuple(diagnostic_targets.shape)} != {tuple(noisy_ids.shape)}"
+                )
+            if diagnostic_targets.dtype != torch.long:
+                raise TypeError("diagnostic_targets must have dtype torch.long")
+            if diagnostic_targets.device != noisy_ids.device:
+                raise ValueError("diagnostic_targets must be on noisy_ids.device")
+            vocab_size = self.lm_head.weight.size(0)
+            if diagnostic_targets.numel() and (
+                diagnostic_targets.min().item() < 0
+                or diagnostic_targets.max().item() >= vocab_size
+            ):
+                raise ValueError(f"diagnostic_targets must be in [0, {vocab_size})")
+            if diagnostic_mask is not None:
+                if diagnostic_mask.shape != noisy_ids.shape:
+                    raise ValueError(
+                        "diagnostic_mask shape must match noisy_ids: "
+                        f"{tuple(diagnostic_mask.shape)} != {tuple(noisy_ids.shape)}"
+                    )
+                if diagnostic_mask.dtype != torch.bool:
+                    raise TypeError("diagnostic_mask must have dtype torch.bool")
+                if diagnostic_mask.device != noisy_ids.device:
+                    raise ValueError("diagnostic_mask must be on noisy_ids.device")
+
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
             noisy_ids = noisy_ids[:, : self.max_len]
+            if diagnostic_targets is not None:
+                diagnostic_targets = diagnostic_targets[:, : self.max_len]
+            if diagnostic_mask is not None:
+                diagnostic_mask = diagnostic_mask[:, : self.max_len]
             seq = self.max_len
-        pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
-
-        y = self.tok(noisy_ids) + self.pos(pos)
-        features = self._features_for_batch(bsz)
-        if features is not None:
-            row = torch.arange(bsz, device=noisy_ids.device).unsqueeze(1)
-            y = y + features[row, noisy_ids.clamp(0, features.size(1) - 1)]
-        if self.kind is not None:
-            safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
-            y = y + self.kind(self.kind_lookup[safe])
-
-        self_pad = noisy_ids.eq(pad_id)
-
-        # SLM-241 (RSC-A05): initial z state depends on ``z_state_mode``.
-        # "full" (arm B / historical V1): learned max_len latent + learned
-        # pooled-context projection + position -- unchanged from before this
-        # field existed. "parameter_free" (arm D): a deterministic,
-        # parameter-free pooled-context broadcast -- no learned max_len bank,
-        # no learned projection, so this mode declares neither ``z_latent``
-        # nor ``ctx_proj``. "y_only" (arm C) has no distinct z state at all;
-        # ``z`` stays ``None`` and the recursion loop below folds both
-        # updates through ``y``.
-        if ctx_pad_mask is None:
-            pooled = context.mean(dim=1)
-        else:
-            mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
-            pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
-
-        z: torch.Tensor | None
-        if self.z_state_mode == "full":
-            z = self.z_latent[pos]
-            z = z + self.ctx_proj(pooled).unsqueeze(1)
-            z = z + self.pos(pos)
-        elif self.z_state_mode == "parameter_free":
-            z = pooled.unsqueeze(1).expand(-1, seq, -1)
-        else:  # "y_only"
-            z = None
+        initial = self.initial_transition_state(
+            noisy_ids, context, pad_id, ctx_pad_mask
+        )
+        y = initial["y"]
+        z = initial["z"]
+        self_pad = initial["self_pad_mask"]
+        features = initial["runtime_symbol_features"]
+        assert isinstance(y, torch.Tensor)
+        assert z is None or isinstance(z, torch.Tensor)
+        assert isinstance(self_pad, torch.Tensor)
+        assert features is None or isinstance(features, torch.Tensor)
 
         depth_hiddens: list[torch.Tensor] = []
         depth_logits: list[torch.Tensor] = []
         attn: torch.Tensor | None = None
         step_boundaries: list[dict[str, Any]] = []
+        diagnostic_states: list[
+            tuple[
+                torch.Tensor,
+                torch.Tensor | None,
+                torch.Tensor,
+                torch.Tensor | None,
+                torch.Tensor,
+                torch.Tensor | None,
+            ]
+        ] = []
 
         for r in range(1, self.recursive_steps + 1):
-            if z is None:
-                # "y_only" (arm C): both the F- and G-update layers run on
-                # the same ``y`` state -- there is no separate z variable to
-                # update, only ``y`` ever changes across recursion steps.
-                f_in = self.norm(y)
-                f_out = self._apply_layers(
-                    f_in, self._f_layers, self_pad, context, ctx_pad_mask
-                )
-                assert isinstance(f_out, torch.Tensor)
-                y = y + f_out
-                g_in = self.norm(y)
-            else:
-                # z_r = z_{r-1} + F_theta(norm(z_{r-1} + y_{r-1}), context)
-                f_in = self.norm(z + y)
-                f_out = self._apply_layers(
-                    f_in, self._f_layers, self_pad, context, ctx_pad_mask
-                )
-                assert isinstance(f_out, torch.Tensor)
-                z = z + f_out
-                g_in = self.norm(y + z)
-
-            # y_r = y_{r-1} + G_theta(norm(y_{r-1} + z_r), context)
+            y_before = y
+            z_before = z
             return_last_attn = return_attn and r == self.recursive_steps
-            g_out = self._apply_layers(
-                g_in,
-                self._g_layers,
-                self_pad,
+            step = self.transition_step(
+                y,
+                z,
                 context,
+                self_pad,
                 ctx_pad_mask,
-                return_last_attn=return_last_attn,
+                runtime_symbol_features=features,
+                return_attn=return_last_attn,
+                update_mode=diagnostic_update_mode,
             )
-            if return_last_attn and isinstance(g_out, tuple):
-                g_out, attn = g_out
-            else:
-                assert isinstance(g_out, torch.Tensor)
-            y = y + g_out
-
-            h = self.norm(y)
+            y = step["y"]
+            z = step["z"]
+            h = step["hidden"]
+            logits = step["logits"]
+            assert isinstance(y, torch.Tensor)
+            assert z is None or isinstance(z, torch.Tensor)
+            assert isinstance(h, torch.Tensor)
+            assert isinstance(logits, torch.Tensor)
+            if return_last_attn:
+                attn = step["attn"]
+                assert isinstance(attn, torch.Tensor)
             depth_hiddens.append(h)
-            depth_logits.append(self.project(h))
+            depth_logits.append(logits)
+
+            if diagnostics:
+                diagnostic_states.append(
+                    (
+                        y.detach(),
+                        None if z is None else z.detach(),
+                        (y - y_before).detach(),
+                        None if z is None else (z - z_before).detach(),
+                        y_before.detach(),
+                        None if z_before is None else z_before.detach(),
+                    )
+                )
 
             if return_step_boundaries:
                 # Captured before any detach below -- the real, graph-
@@ -432,7 +757,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         final_hidden = depth_hiddens[-1]
         final_logits = depth_logits[-1]
 
-        result: dict[str, torch.Tensor | list[torch.Tensor]] = {
+        result: dict[str, Any] = {
             "logits": final_logits,
             "depth_hiddens": depth_hiddens,
             "depth_logits": depth_logits,
@@ -443,6 +768,129 @@ class SharedRecursiveDenoiserTower(nn.Module):
             result["attn"] = attn
         if return_step_boundaries:
             result["step_boundaries"] = step_boundaries
+        if diagnostics:
+            diagnostics_update_label = (
+                diagnostic_update_mode
+                if diagnostic_update_mode is not None
+                else {
+                    "current_v1": "as_is",
+                    "delta_only": "residual_delta",
+                }.get(self.update_mode, self.update_mode)
+            )
+            mask: torch.Tensor | None = None
+            counts: torch.Tensor | None = None
+            task_metrics: list[
+                tuple[
+                    torch.Tensor,
+                    torch.Tensor,
+                    torch.Tensor,
+                    torch.Tensor | None,
+                    torch.Tensor,
+                ]
+                | None
+            ] = [None] * len(depth_logits)
+            if diagnostic_targets is not None:
+                mask = (
+                    diagnostic_targets.ne(pad_id)
+                    if diagnostic_mask is None
+                    else diagnostic_mask
+                )
+                counts = mask.sum(dim=1)
+                if torch.any(counts == 0):
+                    raise ValueError(
+                        "diagnostic_mask must select at least one target per example"
+                    )
+                weights = mask.to(torch.float32)
+                denominators = counts.to(torch.float32)
+                log_probs = [
+                    F.log_softmax(logits.detach().float(), dim=-1)
+                    for logits in depth_logits
+                ]
+                final_log_probs = log_probs[-1]
+                for index, current_log_probs in enumerate(log_probs):
+                    token_ce = F.nll_loss(
+                        current_log_probs.transpose(1, 2),
+                        diagnostic_targets,
+                        reduction="none",
+                    )
+                    token_accuracy = current_log_probs.argmax(dim=-1).eq(
+                        diagnostic_targets
+                    )
+                    probabilities = current_log_probs.exp()
+                    token_entropy = -(probabilities * current_log_probs).sum(dim=-1)
+
+                    def _masked_mean(values: torch.Tensor) -> torch.Tensor:
+                        return (values * weights).sum(dim=1) / denominators
+
+                    def _kl(reference: torch.Tensor) -> torch.Tensor:
+                        token_kl = (
+                            probabilities * (current_log_probs - reference)
+                        ).sum(dim=-1)
+                        return _masked_mean(token_kl)
+
+                    next_kl = (
+                        None
+                        if index + 1 == len(log_probs)
+                        else _kl(log_probs[index + 1])
+                    )
+                    task_metrics[index] = (
+                        _masked_mean(token_ce),
+                        _masked_mean(token_accuracy.to(torch.float32)),
+                        _masked_mean(token_entropy),
+                        next_kl,
+                        _kl(final_log_probs),
+                    )
+
+            records: list[RecursiveDepthDiagnosticsV1] = []
+
+            def _batch_l2(value: torch.Tensor) -> torch.Tensor:
+                return value.float().flatten(1).norm(dim=1)
+
+            for index, (
+                y_state,
+                z_state,
+                y_update,
+                z_update,
+                y_before,
+                z_before,
+            ) in enumerate(diagnostic_states):
+                y_norm = _batch_l2(y_state)
+                y_update_norm = _batch_l2(y_update)
+                y_before_norm = _batch_l2(y_before)
+                z_norm = None if z_state is None else _batch_l2(z_state)
+                z_update_norm = None if z_update is None else _batch_l2(z_update)
+                z_before_norm = None if z_before is None else _batch_l2(z_before)
+                metrics = task_metrics[index]
+                records.append(
+                    RecursiveDepthDiagnosticsV1(
+                        contract_version="RecursiveDepthDiagnosticsV1",
+                        step=index + 1,
+                        update_mode=diagnostics_update_label,
+                        y=y_state,
+                        z=z_state,
+                        y_update=y_update,
+                        z_update=z_update,
+                        y_norm=y_norm,
+                        z_norm=z_norm,
+                        y_update_norm=y_update_norm,
+                        z_update_norm=z_update_norm,
+                        y_update_state_ratio=y_update_norm
+                        / y_before_norm.clamp_min(torch.finfo(torch.float32).eps),
+                        z_update_state_ratio=(
+                            None
+                            if z_update_norm is None or z_before_norm is None
+                            else z_update_norm
+                            / z_before_norm.clamp_min(torch.finfo(torch.float32).eps)
+                        ),
+                        target_count=None if counts is None else counts.detach(),
+                        cross_entropy=None if metrics is None else metrics[0],
+                        accuracy=None if metrics is None else metrics[1],
+                        entropy=None if metrics is None else metrics[2],
+                        kl_to_next=None if metrics is None else metrics[3],
+                        kl_to_final=None if metrics is None else metrics[4],
+                    )
+                )
+            result["diagnostics"] = records
         return result
 
     def encode(
@@ -736,9 +1184,7 @@ def _estimate_transformer_block_flops(
     to be cited as an absolute latency/throughput claim.
     """
     self_attn = 4.0 * seq_len * d_model * d_model + 2.0 * seq_len * seq_len * d_model
-    cross_attn = (
-        4.0 * seq_len * d_model * d_model + 4.0 * seq_len * ctx_len * d_model
-    )
+    cross_attn = 4.0 * seq_len * d_model * d_model + 4.0 * seq_len * ctx_len * d_model
     hidden = d_model * mlp_ratio
     mlp = 4.0 * seq_len * d_model * hidden
     return self_attn + cross_attn + mlp
@@ -895,8 +1341,7 @@ def compare_denoiser_architectures(
         recursive_logits = recursive(noisy_ids, context, pad_id)
     output_shape_compatible = stacked_logits.shape == recursive_logits.shape
     behaviorally_equivalent = bool(
-        output_shape_compatible
-        and torch.allclose(stacked_logits, recursive_logits)
+        output_shape_compatible and torch.allclose(stacked_logits, recursive_logits)
     )
 
     # Canonical (deduplicated-by-identity) declared parameters. Both towers'

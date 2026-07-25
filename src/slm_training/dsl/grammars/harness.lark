@@ -1,0 +1,27 @@
+// Canonical Harness DSL v1 framing.
+//
+// PAYLOAD_TEXT is validated independently by the selected target DslPack.
+// The implementation keeps the payload byte-exact and parses this framing
+// fail-closed before invoking any target-pack parser.
+
+start: VERSION _NL operation _NL pack _NL payload_type _NL category _NL artifact* marker* PAYLOAD_BEGIN _NL PAYLOAD_TEXT _NL PAYLOAD_END
+
+VERSION: "HARNESS_V1"
+operation: "OP" _WS OPERATION
+pack: "PACK" _WS SYMBOL
+payload_type: "TYPE" _WS PAYLOAD_TYPE
+category: "CATEGORY" _WS (SYMBOL | "-")
+artifact: "ARTIFACT" _WS DIGEST _NL
+marker: "MARKER" _WS MARKER_ROLE _WS MARKER_SURFACE _NL
+
+PAYLOAD_BEGIN: "PAYLOAD_BEGIN"
+PAYLOAD_END: "PAYLOAD_END"
+OPERATION: "IDENTITY" | "CANONICALIZE" | "COMPLETE_SUFFIX" | "COMPOSE"
+PAYLOAD_TYPE: "document" | "statement" | "expression" | "lexical" | "node"
+MARKER_ROLE: "alpha_binder" | "external_entity" | "state" | "fresh_binder"
+SYMBOL: /[A-Za-z_][A-Za-z0-9_.-]*/
+DIGEST: /[0-9a-f]{64}/
+MARKER_SURFACE: /[^\r\n ]+/
+PAYLOAD_TEXT: /(?s).+/
+_WS: " "
+_NL: "\n"

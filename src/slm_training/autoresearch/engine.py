@@ -581,6 +581,7 @@ def execute_commands(
     *,
     cwd: Path | str = Path("."),
     timeout_seconds: float | None = None,
+    campaign_manifest_sha256: str | None = None,
 ) -> ExperimentOutcome:
     started = utc_now()
     deadline = (
@@ -611,6 +612,7 @@ def execute_commands(
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),
+                campaign_manifest_sha256=campaign_manifest_sha256,
             )
         try:
             completed = subprocess.run(
@@ -642,6 +644,7 @@ def execute_commands(
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),
+                campaign_manifest_sha256=campaign_manifest_sha256,
             )
         except OSError as exc:
             stages.append(
@@ -664,6 +667,7 @@ def execute_commands(
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),
+                campaign_manifest_sha256=campaign_manifest_sha256,
             )
         combined.extend([completed.stdout, completed.stderr])
         parsed = _parse_json_output(completed.stdout)
@@ -695,6 +699,7 @@ def execute_commands(
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),
+                campaign_manifest_sha256=campaign_manifest_sha256,
             )
     return ExperimentOutcome(
         experiment_id=experiment.experiment_id,
@@ -708,6 +713,7 @@ def execute_commands(
         stage_telemetry=tuple(stages),
         started_at=started,
         finished_at=utc_now(),
+        campaign_manifest_sha256=campaign_manifest_sha256,
     )
 
 

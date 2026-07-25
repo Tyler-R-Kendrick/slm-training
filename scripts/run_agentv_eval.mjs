@@ -1,21 +1,7 @@
 #!/usr/bin/env node
 
-import path from "node:path";
 import { pathToFileURL } from "node:url";
-
-const sdkEntry = path.join(process.cwd(), "node_modules/@agentv/core/dist/index.js");
-const { evaluate } = await import(pathToFileURL(sdkEntry).href);
-
-// AgentV executes and publishes these named domain metrics; it is not itself a metric.
-const TRACKED_METRICS = [
-  "parse_rate", "meaningful_program_rate", "binding_aware_meaningful_v2_rate_strict",
-  "binding_aware_meaningful_v2_rate_coverage_conditioned", "binding_aware_meaningful_v2_coverage",
-  "syntax_parse_rate", "raw_syntax_validity", "contract_precision", "contract_recall",
-  "placeholder_fidelity", "placeholder_fidelity_normalized", "placeholder_validity",
-  "exact_match", "structural_similarity", "tree_edit_similarity", "component_type_recall",
-  "reward_score", "ast_node_f1", "ast_edge_f1", "language_validity", "canonical_exact",
-  "ref_graph_exact", "target_correctness", "target_efficiency", "target_composite",
-];
+import { randomUUID } from "node:crypto";
 
 function option(name) {
   const index = process.argv.indexOf(name);
@@ -25,71 +11,84 @@ function option(name) {
   return process.argv[index + 1];
 }
 
+function optional(name) {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? undefined : process.argv[index + 1];
+}
+
+function langsmithEnabled() {
+  return /^(1|true|yes|on)$/i.test(process.env.LANGSMITH_TRACING ?? "")
+    && Boolean(process.env.LANGSMITH_API_KEY);
+}
+
+function traceUuid(traceId) {
+  return traceId && /^[0-9a-f]{32}$/i.test(traceId)
+    ? `${traceId.slice(0, 8)}-${traceId.slice(8, 12)}-${traceId.slice(12, 16)}-${traceId.slice(16, 20)}-${traceId.slice(20)}`
+    : undefined;
+}
+
+async function publishLangSmithSummary({ traceId, runId, experiment, result }) {
+  const parentRunId = traceUuid(traceId);
+  if (!langsmithEnabled() || !parentRunId) return;
+  try {
+    const now = new Date().toISOString();
+    const endpoint = `${(process.env.LANGSMITH_ENDPOINT || "https://api.smith.langchain.com").replace(/\/$/, "")}/runs`;
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": process.env.LANGSMITH_API_KEY,
+        ...(process.env.LANGSMITH_WORKSPACE_ID
+          ? { "x-tenant-id": process.env.LANGSMITH_WORKSPACE_ID }
+          : {}),
+      },
+      body: JSON.stringify({
+        id: randomUUID(),
+        trace_id: parentRunId,
+        parent_run_id: parentRunId,
+        project_name: process.env.LANGSMITH_PROJECT || "slm-training",
+        name: "agentv.publication",
+        run_type: "tool",
+        inputs: { run_id: runId, experiment },
+        outputs: { summary: result.summary },
+        start_time: now,
+        end_time: now,
+        extra: { metadata: { w3c_trace_id: traceId, sdk: "@agentv/core" } },
+      }),
+      signal: AbortSignal.timeout(500),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
+    console.warn(`LangSmith AgentV export failed: ${String(error)}`);
+  }
+}
+
 const specFile = option("--spec");
 const outputDir = option("--output-dir");
 const experiment = option("--experiment");
-
-function metricAssertion(metric) {
-  return ({ output }) => {
-    try {
-      const payload = JSON.parse(output);
-      const value = payload.result?.metrics?.[metric];
-      const defined = typeof value === "number" && Number.isFinite(value);
-      return {
-        name: `openui-metric:${metric}`,
-        // The SDK requires a numeric score. This is transport only; metadata is canonical.
-        score: defined ? value : 0,
-        metadata: {
-          suite: payload.suite ?? "unspecified",
-          metric,
-          value: defined ? value : null,
-          defined,
-          defined_n: payload.result?.metric_defined_n?.[metric] ?? 0,
-        },
-      };
-    } catch (error) {
-      return {
-        name: `openui-metric:${metric}`,
-        score: 0,
-        metadata: { metric, value: null, defined: false, defined_n: 0, error: String(error) },
-      };
-    }
-  };
-}
-
-function metricResults(results) {
-  const bySuite = {};
-  for (const result of results ?? []) {
-    for (const score of result.scores ?? []) {
-      const metadata = score.details ?? score.metadata ?? {};
-      const metric = metadata.metric;
-      if (!TRACKED_METRICS.includes(metric)) continue;
-      const suite = metadata.suite ?? "unspecified";
-      bySuite[suite] ??= {};
-      bySuite[suite][metric] = {
-        value: metadata.defined ? metadata.value : null,
-        defined_n: metadata.defined_n ?? 0,
-      };
-    }
-  }
-  return bySuite;
-}
+const sdkRoot = option("--sdk-root");
+const traceId = optional("--trace-id");
+const runId = optional("--run-id");
+const sdkUrl = pathToFileURL(
+  `${sdkRoot}/node_modules/@agentv/core/dist/index.js`,
+);
+const { evaluate } = await import(sdkUrl.href);
 
 const result = await evaluate({
   specFile,
   task: async (input) => input,
-  assert: TRACKED_METRICS.map(metricAssertion),
-  threshold: 0,
+  threshold: 1,
   workers: 1,
   cache: false,
   outputDir,
   experiment,
 });
 
+await publishLangSmithSummary({ traceId, runId, experiment, result });
+
 console.log(JSON.stringify({
   summary: result.summary,
   artifacts: result.artifacts,
-  metric_results: metricResults(result.results),
 }));
 
 if (result.summary.executionErrors > 0) {

@@ -433,7 +433,6 @@ def _build_steps(
     steps: list[BridgeStepV1] = []
     replay_ok = True
     replay_detail = "ok"
-    target_fp = canonical_fingerprint(target)
     for idx, edit in enumerate(edits):
         start_micros = int(time.perf_counter() * 1_000_000)
         nxt = apply_canonical_edit(current, edit)
@@ -461,12 +460,14 @@ def _build_steps(
                 )
             )
             break
-        accepted = canonical_fingerprint(nxt) == target_fp or True
+        accepted = canonical_fingerprint(nxt) == canonical_fingerprint(
+            _canonicalize_program(nxt, validate=True)
+        )
         cert = TransitionCertificateV1(
             source_fingerprint=canonical_fingerprint(current),
             target_fingerprint=canonical_fingerprint(nxt),
             edit=edit.to_dict(),
-            source_program=current if idx == 0 else None,
+            source_program=current,
             target_program=nxt,
             verifier_accepted=accepted,
             verifier_detail="ok",

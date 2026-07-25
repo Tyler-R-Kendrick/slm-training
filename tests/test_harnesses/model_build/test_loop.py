@@ -26,6 +26,16 @@ HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\
 CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 
 
+@pytest.fixture(autouse=True)
+def _stub_agentv_publisher(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep stub-model unit tests independent of the external Node SDK."""
+
+    monkeypatch.setattr(
+        "slm_training.evals.agentv.publish_model_evaluation",
+        lambda *_args, **_kwargs: {"status": "fixture_stub"},
+    )
+
+
 def _prepare_artifacts(tmp_path: Path) -> tuple[Path, Path]:
     train_seeds = tmp_path / "train.jsonl"
     write_jsonl(
@@ -97,7 +107,10 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
     )
     summary = train(config)
     assert summary["steps"] == 2
-    assert set(summary["version_stamp"]["components"]) == {"harness.model_build.train"}
+    assert set(summary["version_stamp"]["components"]) == {
+        "harness.experiment_feature_flags",
+        "harness.model_build.train",
+    }
     assert summary["eval_history"]
     final_suite = summary["final_eval"]
     assert final_suite["meaningful_program_v1_rate"] == final_suite[

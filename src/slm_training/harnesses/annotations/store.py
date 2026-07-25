@@ -6,7 +6,9 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Callable, Protocol
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 from slm_training.harnesses.annotations import (
@@ -114,12 +116,8 @@ class VercelBlobAnnotationStore:
         self.prefix = prefix.rstrip("/") + "/"
         self.generation_prefix = generation_prefix.rstrip("/") + "/"
         if client is None or list_fn is None:
-            try:
-                from vercel.blob import BlobClient, list_objects
-            except ImportError as exc:  # pragma: no cover - deployment dependency
-                raise AnnotationStorageError("the Vercel Blob SDK is not installed") from exc
-            client = client or BlobClient(token=self.token)
-            list_fn = list_fn or list_objects
+            client = client or _VercelBlobHttpClient(self.token)
+            list_fn = list_fn or _list_vercel_blob_objects
         self._client = client
         self._list = list_fn
         self._read_url = read_url or self._read_private_url
@@ -212,6 +210,61 @@ class VercelBlobAnnotationStore:
     def count(self) -> int:
         return len(self._list_all())
 
+
+class _VercelBlobHttpClient:
+    """Minimal Blob write client; avoids shipping the Vercel SDK in the function."""
+
+    def __init__(self, token: str) -> None:
+        self.token = token
+
+    def put(
+        self,
+        pathname: str,
+        payload: bytes,
+        *,
+        access: str,
+        content_type: str,
+        add_random_suffix: bool,
+    ) -> SimpleNamespace:
+        request = Request(
+            f"https://blob.vercel-storage.com/{quote(pathname, safe='/')}",
+            data=payload,
+            method="PUT",
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "Content-Type": content_type,
+                "x-access": access,
+                "x-add-random-suffix": str(add_random_suffix).lower(),
+            },
+        )
+        with urlopen(request, timeout=15) as response:  # noqa: S310
+            return SimpleNamespace(**json.loads(response.read()))
+
+
+def _list_vercel_blob_objects(
+    *, prefix: str, limit: int, cursor: str | None, token: str
+) -> SimpleNamespace:
+    params = {"prefix": prefix, "limit": str(limit)}
+    if cursor:
+        params["cursor"] = cursor
+    request = Request(
+        f"https://blob.vercel-storage.com?{urlencode(params)}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    with urlopen(request, timeout=15) as response:  # noqa: S310
+        payload = json.loads(response.read())
+    return SimpleNamespace(
+        blobs=[
+            SimpleNamespace(
+                pathname=row.get("pathname", ""),
+                uploaded_at=row.get("uploadedAt", ""),
+                url=row["url"],
+            )
+            for row in payload["blobs"]
+        ],
+        has_more=payload.get("hasMore", False),
+        cursor=payload.get("cursor"),
+    )
 
 class UnavailableAnnotationStore:
     """Fail-closed store for deployments missing durable storage configuration."""

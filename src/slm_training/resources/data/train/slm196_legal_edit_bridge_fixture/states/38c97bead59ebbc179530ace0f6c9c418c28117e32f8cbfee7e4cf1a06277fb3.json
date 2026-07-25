@@ -1,0 +1,6 @@
+{
+  "content_digest": "38c97bead59ebbc179530ace0f6c9c418c28117e32f8cbfee7e4cf1a06277fb3",
+  "program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+  "schema": "ExactLegalEditStateV1",
+  "state_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288"
+}

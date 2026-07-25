@@ -1,0 +1,87 @@
+{
+  "diagnostics": {
+    "bridge_lengths": {
+      "2": 4
+    },
+    "candidate_set_size": {
+      "histogram": {
+        "9": 1,
+        "10": 1,
+        "16": 1,
+        "19": 1
+      },
+      "max": 19,
+      "mean": 13.5,
+      "min": 9
+    },
+    "coverage_comparison": {
+      "solver_traces": {
+        "delta": null,
+        "reason": "no hash-pinned solver-trace manifest supplied",
+        "status": "unavailable"
+      },
+      "x22_local_corruption": {
+        "delta": null,
+        "reason": "no hash-pinned X22 baseline manifest supplied",
+        "status": "unavailable"
+      }
+    },
+    "edit_family_coverage": {
+      "InsertChild": 2,
+      "InsertStatement": 2
+    },
+    "independent_targets": 2,
+    "multi_positive_rate": 1.0,
+    "paths": 2,
+    "planner_failure_reasons": {},
+    "progress_values": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "rows": 4,
+    "singleton_ratio": 0.0,
+    "source_policy_breakdown": {
+      "declared_request_contract": 4
+    },
+    "target_cluster_icc_inputs": {
+      "cta": [
+        {
+          "candidate_count": 10,
+          "positive_count": 8,
+          "progress": 0.0,
+          "row_id": "row_a84197a7ad1177e34778ea00"
+        },
+        {
+          "candidate_count": 9,
+          "positive_count": 8,
+          "progress": 0.5,
+          "row_id": "row_d19f8fa3006745c6e4b59102"
+        }
+      ],
+      "hero": [
+        {
+          "candidate_count": 19,
+          "positive_count": 12,
+          "progress": 0.0,
+          "row_id": "row_e1b12fbbd7d2d4bc4e5cb90e"
+        },
+        {
+          "candidate_count": 16,
+          "positive_count": 13,
+          "progress": 0.5,
+          "row_id": "row_d0b680a4645c282f4b388668"
+        }
+      ]
+    },
+    "target_clusters": 2,
+    "unique_candidate_sets": 4,
+    "unique_state_fingerprints": 4,
+    "unknown_prevalence": 0.24074074074074073
+  },
+  "experiment_candidates": [],
+  "recommendations": [],
+  "schema": "LegalEditBridgeSynthesisFeedbackV1",
+  "status": "pass"
+}

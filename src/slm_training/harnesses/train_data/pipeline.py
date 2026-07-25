@@ -44,7 +44,6 @@ class TrainDataConfig:
     # Explicitly set fields always win over the profile (see resolve_profile).
     profile: str = "strict"
     seed_path: Path | None = None
-    fixture_ids: tuple[str, ...] = ()
     # Human thumbs-up promotions from the annotate playground.
     human_annotations_path: Path | None = Path(
         "src/slm_training/resources/annotations/human_train.jsonl"
@@ -52,15 +51,15 @@ class TrainDataConfig:
     rico_path: Path | None = Path(
         "src/slm_training/resources/rico/semantic_train.jsonl"
     )
-    # rico | fixture | existing | existing+fixture | existing+programspec | both | awwwards | rico+awwwards | all
+    # rico | fixture | existing | staged | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
     derive_from: Path | None = None
-    # Keep inherited rows byte-for-byte when building a controlled supplement.
-    # New rows still pass every normal admission gate.
-    preserve_derived_records: bool = False
     output_root: Path = Path("outputs/data/train")
     version: str = "v1"
+    # Optional checked-in SynthesisPlanV1. It is validated before any producer
+    # or model/data artifact is loaded; None preserves the historical path.
+    synthesis_plan_path: Path | None = None
     synthesizer: str = "quality"
     require_split: str = "train"
     rico_hf_split: str | None = None
@@ -73,6 +72,7 @@ class TrainDataConfig:
     max_openui_chars: int | None = None
     max_components: int | None = None
     curriculum: bool = False
+    namespace_augment: bool = False
     # Make the declared slot contract visible to production-like training
     # prompts; this is intentionally opt-in so historical snapshots remain
     # immutable and comparable.
@@ -81,12 +81,14 @@ class TrainDataConfig:
     # opt-in because it is a stronger contract than ordinary user prompts.
     prompt_component_contract: bool = False
     prompt_component_contract_mode: str = "counts"
+    # Group visible placeholder namespaces into semantic roles and annotate
+    # schema-compatible owners from the already-visible component type set.
+    prompt_semantic_role_contract: bool = False
     # Deterministic target sanitization (D2 canonicalization + schema-checked
     # AST optimization + content-literal templatization) applied inside
     # _normalize_record before the official validate. off | audit | enforce;
     # None = the profile decides (strict=enforce, permissive=off).
     sanitize_mode: str | None = None
-
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -118,13 +120,6 @@ class TrainDataConfig:
     programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
     programspec_count: int = 16
     programspec_seed: int = 0
-    programspec_natural_prompts: bool = False
-    # Restrict a controlled ProgramSpec supplement to explicit generator facts.
-    # The selected facts remain in record provenance for post-build admission checks.
-    programspec_forward_reference_patterns: tuple[str, ...] = ()
-    # Optional dedicated source for the fact-filtered ProgramSpec rows. This
-    # makes an explicit, auditable mixture family without relabeling baseline rows.
-    programspec_selected_source: str | None = None
     include_language_contract: bool = True
     # Optional output-contract projection/selection for codec-specific corpora.
     # Projection is explicit and provenance-tagged; unselected kinds remain in
@@ -150,6 +145,13 @@ class TrainDataConfig:
     scope_canonical_pairs_per_scope: int = 3
     scoped_repairs_per_scope: int = 2
     typed_lexical_per_program: int = 4
+    # DSH3/CAP2 symbolic operator sibling artifact (never coerced into the
+    # OpenUI-only ExampleRecord target schema).
+    include_operator_corpus: bool = False
+    operator_corpus_max_roots: int = 8
+    operator_corpus_actions_per_state: int = 4
+    operator_corpus_max_combinations: int = 64
+    operator_corpus_sibling_forks: bool = True
     # Canonical-bias ranking pairs written to preference_pairs.jsonl.
     emit_preference_pairs: bool = True
     include_design_md_contrastive: bool = True
@@ -158,11 +160,6 @@ class TrainDataConfig:
     mixture_manifest: bool = True
     # Autoresearch snapshots must never overwrite prior evidence.
     immutable: bool = False
-
-    def __post_init__(self) -> None:
-        from slm_training.levers import require_valid_lever_configuration
-
-        require_valid_lever_configuration(self, context="TrainDataConfig")
 
     @property
     def output_dir(self) -> Path:
@@ -207,17 +204,15 @@ def _normalize_record(
     *,
     sanitize: "SanitizeOptions | None" = None,
 ) -> ExampleRecord:
-    from slm_training.data.contract import (
-        assert_no_template_semantic_labels,
-        canonicalize_example_template_markers,
-        normalize_example_record,
-    )
+    from slm_training.data.contract import normalize_example_record
     from slm_training.data.progspec import ProgramSpec, emit_record
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
+    verbatim_openui = (
+        record.openui if bool(record.meta.get("preserve_verbatim")) else None
+    )
     record = normalize_example_record(record)
-    assert_no_template_semantic_labels(record.prompt, record.design_md)
     if record.target_kind != "document":
         from slm_training.dsl.analysis.templatize import templatize_fragment
         from slm_training.dsl.language_contract import assert_symbol_only_output
@@ -227,25 +222,27 @@ def _normalize_record(
         accepted_outputs = list(record.accepted_outputs)
         fragment_replacements: dict[str, str] = {}
         if sanitize is not None and sanitize.enabled and sanitize.templatize:
-            primary_result = templatize_fragment(
-                primary_source, output_kind=record.target_kind
-            )
+            primary_result = templatize_fragment(primary_source)
             fragment_replacements.update(primary_result.replacements)
             if sanitize.mode == "enforce":
                 primary_source = primary_result.source
             rewritten_outputs: list[OutputTarget] = []
             for target in accepted_outputs:
-                result = templatize_fragment(target.text, output_kind=target.kind)
+                result = templatize_fragment(target.text)
                 fragment_replacements.update(result.replacements)
                 rewritten_outputs.append(
                     OutputTarget(
-                        text=result.source if sanitize.mode == "enforce" else target.text,
+                        text=result.source
+                        if sanitize.mode == "enforce"
+                        else target.text,
                         kind=target.kind,
                         category=target.category,
                     )
                 )
             accepted_outputs = rewritten_outputs
-        primary = validate_output(primary_source, record.target_kind, record.target_category)
+        primary = validate_output(
+            primary_source, record.target_kind, record.target_category
+        )
         assert_symbol_only_output(primary, output_kind=record.target_kind)
         for target in accepted_outputs:
             validate_output(target.text, target.kind, target.category)
@@ -287,7 +284,7 @@ def _normalize_record(
                 "templatize_skipped": {},
             }
         surfaces = [primary, *(target.text for target in accepted_outputs)]
-        return canonicalize_example_template_markers(ExampleRecord(
+        return ExampleRecord(
             id=record.id,
             prompt=record.prompt.strip(),
             openui=primary,
@@ -301,7 +298,7 @@ def _normalize_record(
             target_kind=record.target_kind,
             target_category=record.target_category,
             accepted_outputs=accepted_outputs,
-        ))
+        )
 
     scrubbed = strip_style_literals(record.openui)
     # Deterministic sanitization runs on the style-stripped source *before*
@@ -320,9 +317,7 @@ def _normalize_record(
         if not eligible:
             sanitize_meta = {"mode": sanitize.mode, "skip_reason": skip_reason}
         else:
-            outcome = sanitize_openui(
-                scrubbed, prompt=record.prompt, options=sanitize
-            )
+            outcome = sanitize_openui(scrubbed, prompt=record.prompt, options=sanitize)
             sanitize_meta = outcome.to_meta(sanitize.mode)
             if sanitize.mode == "enforce" and outcome.applied:
                 scrubbed = outcome.openui
@@ -341,7 +336,7 @@ def _normalize_record(
             result = (
                 templatize(target_text)
                 if target.kind == "document"
-                else templatize_fragment(target_text, output_kind=target.kind)
+                else templatize_fragment(target_text)
             )
             if sanitize.mode == "enforce":
                 target_text = result.source
@@ -424,7 +419,7 @@ def _normalize_record(
     out = ExampleRecord(
         id=emitted.id,
         prompt=emitted.prompt,
-        openui=emitted.openui,
+        openui=(verbatim_openui if verbatim_openui is not None else emitted.openui),
         placeholders=placeholders,
         split=emitted.split,
         source=emitted.source,
@@ -440,7 +435,6 @@ def _normalize_record(
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
         pass
-    out = canonicalize_example_template_markers(out)
     from slm_training.data.quality import independent_judge
 
     # Feed the deterministic prompt/output judge into the authoritative
@@ -644,24 +638,6 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
                     f"{len(specs)}/{config.programspec_count} requested roots"
                 }
             )
-    if config.programspec_forward_reference_patterns:
-        requested = set(config.programspec_forward_reference_patterns)
-        available = {
-            str(spec.facts.get("forward_reference_pattern"))
-            for spec in specs
-            if spec.facts.get("forward_reference_pattern") is not None
-        }
-        missing = requested - available
-        if missing:
-            raise ValueError(
-                "requested ProgramSpec forward-reference patterns are absent: "
-                f"{sorted(missing)}"
-            )
-        specs = [
-            spec
-            for spec in specs
-            if str(spec.facts.get("forward_reference_pattern")) in requested
-        ]
     return specs, errors
 
 
@@ -675,11 +651,6 @@ def _records_from_progspec(
 
     specs, load_errors = preloaded if preloaded is not None else _load_progspecs(config)
     errors = list(load_errors)
-    selected_source = (
-        config.programspec_selected_source
-        if config.programspec_forward_reference_patterns
-        else None
-    )
     out: list[ExampleRecord] = []
     for spec in sorted(specs, key=lambda item: item.id):
         if spec.split != config.require_split:
@@ -693,19 +664,11 @@ def _records_from_progspec(
         try:
             record = emit_record(
                 spec,
-                prompt=(
-                    _programspec_natural_prompt(spec)
-                    if config.programspec_natural_prompts
-                    else f"Generate the {spec.program_family_id} OpenUI program."
-                ),
+                prompt=f"Generate the {spec.program_family_id} OpenUI program.",
                 task="generation",
                 record_id=spec.id,
-                source=selected_source or "programspec_generated",
-                meta={
-                    "source_kind": "program-first",
-                    "programspec_facts": dict(spec.facts),
-                    "programspec_source": "programspec_generated",
-                },
+                source="programspec_generated",
+                meta={"source_kind": "program-first"},
             )
             out.append(
                 stamp_record(record, VerificationContext(source_kind="program-first"))
@@ -722,44 +685,34 @@ def _records_from_progspec(
     return out, errors
 
 
-def _programspec_natural_prompt(spec) -> str:
-    facts = getattr(spec, "facts", {})
-    component_names = {
-        "Button": "a button",
-        "Buttons": "buttons",
-        "Card": "a card",
-        "Form": "a form",
-        "FormControl": "a form control",
-        "Input": "an input field",
-        "Slider": "a slider",
-        "SwitchGroup": "a switch group",
-        "SwitchItem": "a switch item",
-        "Tabs": "tabs",
-        "TextCallout": "a text callout",
-        "TextContent": "text content",
-    }
-    components = [
-        component_names.get(component, component.replace("_", " ").lower())
-        for component in facts.get("components", getattr(spec, "components", ()))
-        if component not in {"Buttons", "Stack"}
-    ]
-    component_text = ", ".join(components) if components else "content"
-    direction = "horizontal" if int(facts.get("width", getattr(spec, "width", 1))) > 1 else "vertical"
-    return (
-        f"Create a {facts.get('viewport', getattr(spec, 'viewport', 'responsive'))} "
-        f"{facts.get('render_state', getattr(spec, 'render_state', 'ready'))} interface with {component_text}. "
-        f"Arrange the content in a {direction} layout."
-    )
-
-
 def _records_from_language_contract(
     config: TrainDataConfig,
-) -> tuple[list[ExampleRecord], list[dict]]:
+) -> tuple[list[ExampleRecord], list[dict], list]:
     if not config.include_language_contract:
-        return [], []
-    from slm_training.data.language_contract import iter_positives
+        return [], [], []
+    from slm_training.data.language_contract import (
+        iter_positives,
+        iter_root_renderability_pairs,
+    )
+    from slm_training.harnesses.preference import PreferencePair
 
-    return list(iter_positives(config.require_split)), []
+    pairs = [
+        PreferencePair(
+            prompt=pair.prompt,
+            chosen=pair.chosen,
+            rejected=pair.rejected,
+            chosen_score=1.0,
+            rejected_score=0.0,
+            meta={
+                "pair_corpus": "root_renderability",
+                "rank_source": "official_preview_runtime",
+                "root_type": pair.component,
+                "container": pair.container,
+            },
+        )
+        for pair in iter_root_renderability_pairs()
+    ]
+    return list(iter_positives(config.require_split)), [], pairs
 
 
 def _documentize_expression(record: ExampleRecord) -> ExampleRecord:
@@ -1130,15 +1083,7 @@ def _records_from_fixtures(
     human_records, human_errors = _records_from_seed_file(
         config.human_annotations_path, require_split=config.require_split
     )
-    records = fixture_records + human_records
-    if config.fixture_ids:
-        requested = set(config.fixture_ids)
-        available = {record.id for record in records}
-        missing = requested - available
-        if missing:
-            raise ValueError(f"unknown fixture ids: {sorted(missing)}")
-        records = [record for record in records if record.id in requested]
-    return records, fixture_errors + human_errors
+    return fixture_records + human_records, fixture_errors + human_errors
 
 
 def _records_from_rico(
@@ -1197,20 +1142,11 @@ def _records_from_existing(
         raise ValueError("source 'existing' requires --derive-from")
     if not Path(path).is_file():
         raise ValueError(f"derivation source does not exist: {path}")
-    refreshed_contract_ids: set[str] = set()
-    if config.include_language_contract:
-        from slm_training.data.language_contract import iter_positives
-
-        refreshed_contract_ids = {
-            record.id for record in iter_positives(config.require_split)
-        }
     records: list[ExampleRecord] = []
     errors: list[dict] = []
     for record in load_jsonl(path):
-        # Current canonical contract rows are refreshed below. Preserve derived
-        # rows in the same family: silently dropping them makes --derive-from
-        # non-conservative and discards valid hard examples.
-        if record.id in refreshed_contract_ids:
+        family = str((record.meta or {}).get("program_family_id") or "")
+        if config.include_language_contract and family.startswith("language_contract:"):
             continue
         if record.split != config.require_split:
             errors.append(
@@ -1232,7 +1168,6 @@ def _records_from_existing(
                     **record.meta,
                     "derivation_source": str(path),
                     "parent_id": (record.meta or {}).get("parent_id") or record.id,
-                    "immutable_baseline": bool(config.preserve_derived_records),
                 },
                 design_md=record.design_md,
                 target_kind=record.target_kind,
@@ -1276,6 +1211,12 @@ def build_train_data(
     synthesizer: PromptSynthesizer | None = None,
 ) -> dict:
     """Load every enabled producer, synthesize, verify, dedupe, and write artifacts."""
+    synthesis_plan = None
+    if config.synthesis_plan_path is not None:
+        from slm_training.harnesses.synthesis_plan import SynthesisPlanV1
+
+        synthesis_plan = SynthesisPlanV1.load(config.synthesis_plan_path)
+        synthesis_plan.require_executable()
     config = resolve_profile(config)
     from slm_training.harnesses.train_data.sanitize import (
         SANITIZE_MODES,
@@ -1300,7 +1241,33 @@ def build_train_data(
     # rejected.jsonl with its stage + reason (never silently discarded).
     rejections: list[dict] = []
 
-    if source in {"fixture", "both", "fixtures", "existing+fixture", "all"}:
+    staged_materialization = None
+    staged_preference_pairs: list = []
+    if synthesis_plan is not None:
+        from slm_training.harnesses.train_data.staged_materialization import (
+            materialize_staged_graph,
+        )
+
+        staged_materialization = materialize_staged_graph(
+            synthesis_plan,
+            output_dir=config.output_dir,
+            require_split=config.require_split,
+        )
+        seeds.extend(staged_materialization.records)
+        staged_preference_pairs.extend(staged_materialization.preference_pairs)
+        for rejection in staged_materialization.rejections:
+            rejections.append(
+                rejection_entry(
+                    "staged_materialization",
+                    str(rejection["reason"]),
+                    record_id=str(rejection["artifact_id"]),
+                    detail=dict(rejection["detail"]),
+                )
+            )
+    elif source == "staged":
+        raise ValueError("train source 'staged' requires --synthesis-plan")
+
+    if source in {"fixture", "both", "fixtures", "all"}:
         fixture_records, fixture_errors = _records_from_fixtures(config)
         seeds.extend(fixture_records)
         errors.extend(fixture_errors)
@@ -1312,12 +1279,13 @@ def build_train_data(
         aww_records, aww_errors = _records_from_awwwards(config)
         seeds.extend(aww_records)
         errors.extend(aww_errors)
-    if source in {"existing", "existing+fixture", "existing+programspec"}:
+    if source == "existing":
         records, source_errors = _records_from_existing(config)
         seeds.extend(records)
         errors.extend(source_errors)
     scope_preference_pairs: list = []
-    if source in {"programspec", "existing+programspec", "integrated", "all"}:
+    root_renderability_pairs: list = []
+    if source in {"programspec", "integrated", "all"}:
         # One committed-file parse / seeded generation feeds both consumers;
         # each still reports the load errors it reported before.
         preloaded_specs = _load_progspecs(config)
@@ -1331,15 +1299,10 @@ def build_train_data(
         )
         seeds.extend(records)
         errors.extend(source_errors)
-    if source in {
-        "language_contract",
-        "integrated",
-        "all",
-        "existing",
-        "existing+fixture",
-        "existing+programspec",
-    }:
-        records, source_errors = _records_from_language_contract(config)
+    if source in {"language_contract", "integrated", "all", "existing"}:
+        records, source_errors, root_renderability_pairs = _records_from_language_contract(
+            config
+        )
         seeds.extend(records)
         errors.extend(source_errors)
     if source in {"deconstruct", "integrated", "all"}:
@@ -1357,8 +1320,7 @@ def build_train_data(
         "both",
         "awwwards",
         "existing",
-        "existing+fixture",
-        "existing+programspec",
+        "staged",
         "rico+awwwards",
         "programspec",
         "language_contract",
@@ -1414,7 +1376,6 @@ def build_train_data(
         synths.append(_FrozenArtifactBuildSynthesizer(config.frontier_artifact_root))
     if config.include_design_md_contrastive and source in {
         "programspec",
-        "existing+programspec",
         "integrated",
         "all",
     }:
@@ -1427,12 +1388,17 @@ def build_train_data(
     lineage_index: LineageIndex = {}
     for seed in seeds:
         candidates = [seed]
-        if seed.target_kind == "document" and (seed.meta or {}).get("task") in {
-            None,
-            "generation",
-        }:
+        if (
+            seed.source != "staged"
+            and seed.target_kind == "document"
+            and (seed.meta or {}).get("task")
+            in {
+                None,
+                "generation",
+            }
+        ):
             candidates.extend(synth.expand(seed))
-            if source in {"existing", "existing+fixture", "existing+programspec"} and (
+            if source == "existing" and (
                 config.include_edit_derivatives or config.repairs_per_program > 0
             ):
                 try:
@@ -1447,13 +1413,25 @@ def build_train_data(
                             detail={"error": str(exc)},
                         )
                     )
+        if (
+            seed.source != "staged"
+            and config.namespace_augment
+            and seed.target_kind == "document"
+        ):
+            from slm_training.harnesses.train_data.synth import (
+                NamespaceAugmentSynthesizer,
+            )
+
+            ns = NamespaceAugmentSynthesizer()
+            extra: list[ExampleRecord] = []
+            for candidate in list(candidates):
+                extra.extend(ns.expand(candidate))
+            candidates.extend(extra)
         for candidate in candidates:
             candidate = _apply_governance_gate(candidate)
             lineage_index[candidate.id] = lineage_entry(candidate)
             try:
-                collected.append(
-                    _normalize_record(candidate, sanitize=sanitize_options)
-                )
+                normalized = _normalize_record(candidate, sanitize=sanitize_options)
             except (ParseError, ValueError) as exc:
                 errors.append({"id": candidate.id, "error": str(exc)})
                 rejections.append(
@@ -1464,6 +1442,56 @@ def build_train_data(
                         detail={"error": str(exc)},
                     )
                 )
+                if candidate.source == "staged" and staged_materialization is not None:
+                    artifact_id = str(
+                        (candidate.meta.get("staged_sources") or {}).get(
+                            "graph_node_id"
+                        )
+                        or candidate.id
+                    )
+                    if artifact_id in staged_materialization.nodes:
+                        staged_materialization.store.quarantine_node(
+                            staged_materialization.nodes[artifact_id],
+                            ("parse_or_contract_error",),
+                            {"error": str(exc)},
+                        )
+                continue
+            if candidate.source == "staged":
+                from slm_training.harnesses.train_data.staged_materialization import (
+                    StagedValidationError,
+                    validate_staged_record,
+                )
+
+                try:
+                    validation = validate_staged_record(normalized, synthesis_plan)
+                except StagedValidationError as exc:
+                    artifact_id = str(
+                        (candidate.meta.get("staged_sources") or {}).get(
+                            "graph_node_id"
+                        )
+                        or candidate.id
+                    )
+                    errors.append({"id": candidate.id, "error": str(exc)})
+                    rejections.append(
+                        rejection_entry(
+                            "staged_validation",
+                            exc.reason,
+                            record=candidate,
+                            detail=exc.detail,
+                        )
+                    )
+                    if (
+                        staged_materialization is not None
+                        and artifact_id in staged_materialization.nodes
+                    ):
+                        staged_materialization.store.quarantine_node(
+                            staged_materialization.nodes[artifact_id],
+                            (exc.reason,),
+                            exc.detail,
+                        )
+                    continue
+                normalized.meta["staged_validation"] = validation
+            collected.append(normalized)
 
     verifier_rejected: list[dict] = []
     verified: list[ExampleRecord] = []
@@ -1523,12 +1551,8 @@ def build_train_data(
 
     from slm_training.data.quality import filter_quality
 
-    immutable_baseline = [
-        record for record in verified if (record.meta or {}).get("immutable_baseline")
-    ]
-    quality_candidates = [record for record in verified if record not in immutable_baseline]
     quality_kept, quality_rejected = filter_quality(
-        quality_candidates,
+        verified,
         min_score=config.min_quality_score,
         require_design_md=config.require_design_md,
         max_openui_chars=config.max_openui_chars,
@@ -1592,10 +1616,7 @@ def build_train_data(
         deduped.append(record)
         return True
 
-    for record in immutable_baseline + quality_kept:
-        if (record.meta or {}).get("immutable_baseline"):
-            _accept_record(record)
-            continue
+    for record in quality_kept:
         structure_fp = fingerprint_openui_structure(record.openui)
         if structure_fp in reserved_test_structures:
             structure_reserved_rejected.append(
@@ -1787,41 +1808,37 @@ def build_train_data(
         # they bound exposure without evicting one another. Builds without
         # scope-corpus rows keep the original cross-family semantics.
         per_family=config.include_scope_corpus
-        and source in {"programspec", "existing+programspec", "integrated", "all"},
+        and source in {"programspec", "integrated", "all"},
     )
     _mirror_drops("exposure", parent_cap_dropped)
     deduped.sort(key=lambda r: r.id)
-
-    from slm_training.data.selection import (
-        attach_curation_scores,
-        load_record_nll,
-        select_difficult_records,
-    )
-
-    nll_by_id: dict[str, float] | None = None
-    difficulty_dropped: list[dict] = []
-    difficulty_scored_count = 0
-    if config.difficulty_from:
-        nll_by_id = load_record_nll(config.difficulty_from)
-        difficulty_scored_count = sum(record.id in nll_by_id for record in deduped)
-    attach_curation_scores(deduped, nll_by_id=nll_by_id)
-    if nll_by_id:
-        deduped, difficulty_dropped = select_difficult_records(deduped, nll_by_id)
-        _mirror_drops("selection", difficulty_dropped)
-
     source_families = family_stats(deduped)
     from slm_training.data.dedup import cluster_exposure_stats
 
     source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
 
+    from slm_training.data.selection import attach_curation_scores, load_record_nll
+
+    nll_by_id: dict[str, float] | None = None
+    if config.difficulty_from:
+        nll_by_id = load_record_nll(config.difficulty_from)
+    attach_curation_scores(deduped, nll_by_id=nll_by_id)
+
     # Prompt contracts are training-only projections, not admission signals.
     # Apply them after every quality/decontamination/dedup gate so enabling a
     # contract cannot silently change which source examples are admitted.
+    if config.prompt_semantic_role_contract and not (
+        config.prompt_component_contract and config.prompt_slot_contract
+    ):
+        raise ValueError(
+            "prompt_semantic_role_contract requires visible component and slot contracts"
+        )
     if (
         config.prompt_component_contract
         or config.prompt_slot_contract
+        or config.prompt_semantic_role_contract
     ):
-        from slm_training.data.quality import component_counts
+        from slm_training.data.quality import component_counts, semantic_role_contract
         from slm_training.models.template_fill import ensure_prompt_inventory
 
         component_mode = config.prompt_component_contract_mode
@@ -1831,6 +1848,9 @@ def build_train_data(
             )
         contracted = []
         for record in deduped:
+            if isinstance(record.meta.get("harness_dsl"), dict):
+                contracted.append(record)
+                continue
             prompt = record.prompt.rstrip()
             counts = sorted(component_counts(record.openui).items())
             if config.prompt_component_contract and not any(
@@ -1846,21 +1866,17 @@ def build_train_data(
                 prompt = ensure_prompt_inventory(
                     prompt, list(record.placeholders or [])
                 )
+            if config.prompt_semantic_role_contract and not any(
+                line.startswith("Semantic roles:") for line in prompt.splitlines()
+            ):
+                roles = semantic_role_contract(
+                    list(record.placeholders or []),
+                    [name for name, _count in counts],
+                )
+                if roles:
+                    prompt = f"{prompt}\nSemantic roles: {roles}"
             contracted.append(replace(record, prompt=prompt))
         deduped = contracted
-
-    if config.preserve_derived_records:
-        if config.derive_from is None:
-            raise ValueError("preserve_derived_records requires --derive-from")
-        baseline = [
-            record
-            for record in load_jsonl(config.derive_from)
-            if record.split == config.require_split
-        ]
-        baseline_ids = {record.id for record in baseline}
-        # Preserve the control corpus exactly after all candidate-only gates.
-        deduped = baseline + [record for record in deduped if record.id not in baseline_ids]
-        deduped.sort(key=lambda record: record.id)
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.
@@ -1878,10 +1894,35 @@ def build_train_data(
     write_jsonl(records_path, deduped)
 
     preference_pairs_path: Path | None = None
-    if config.emit_preference_pairs and scope_preference_pairs:
-        preference_pairs_path = _write_scope_preference_pairs(
-            out_dir, scope_preference_pairs
+    staged_admitted_ids = {record.id for record in deduped if record.source == "staged"}
+    admitted_staged_pairs = []
+    for pair in staged_preference_pairs:
+        record_ids = set((pair.meta or {}).get("record_ids") or ())
+        if record_ids and record_ids <= staged_admitted_ids:
+            admitted_staged_pairs.append(pair)
+    staged_preference_pairs = admitted_staged_pairs
+    preference_pairs: list = []
+    if config.emit_preference_pairs:
+        from slm_training.harnesses.preference import write_pairs
+
+        if scope_preference_pairs:
+            _write_scope_preference_pairs(out_dir, scope_preference_pairs)
+            from slm_training.harnesses.preference import load_pairs
+
+            preference_pairs.extend(load_pairs(out_dir / "preference_pairs.jsonl"))
+        preference_pairs.extend(staged_preference_pairs)
+        preference_pairs.extend(root_renderability_pairs)
+        preference_pairs.sort(
+            key=lambda pair: (
+                pair.prompt,
+                pair.chosen,
+                pair.rejected,
+                json.dumps(pair.meta or {}, sort_keys=True),
+            )
         )
+        if preference_pairs:
+            preference_pairs_path = out_dir / "preference_pairs.jsonl"
+            write_pairs(preference_pairs_path, preference_pairs)
 
     governance_paths: dict[str, Path] = {}
     if config.governance_artifacts:
@@ -1929,6 +1970,31 @@ def build_train_data(
     from slm_training.versioning import build_version_stamp
 
     version_stamp = build_version_stamp("harness.train_data")
+    operator_corpus_result: dict[str, Any] | None = None
+    if config.include_operator_corpus:
+        operator_version_stamp = build_version_stamp(
+            "harness.train_data",
+            "dsl.operators.contracts",
+            "dsl.operators.collapse",
+            "dsl.operators.legal_set",
+        )
+        from slm_training.harnesses.train_data.operator_corpus import (
+            OperatorCorpusConfig,
+            build_symbolic_operator_corpus,
+        )
+
+        operator_corpus_result = build_symbolic_operator_corpus(
+            records=deduped,
+            output_dir=out_dir,
+            version=config.version,
+            version_stamp=operator_version_stamp,
+            config=OperatorCorpusConfig(
+                max_roots=config.operator_corpus_max_roots,
+                actions_per_state=config.operator_corpus_actions_per_state,
+                max_combinations_per_operator=(config.operator_corpus_max_combinations),
+                sibling_forks=config.operator_corpus_sibling_forks,
+            ),
+        )
     from slm_training.harnesses.train_data.sanitize import aggregate_sanitization
 
     sanitization_section = (
@@ -2025,6 +2091,7 @@ def build_train_data(
         "prompt_slot_contract": bool(config.prompt_slot_contract),
         "prompt_component_contract": bool(config.prompt_component_contract),
         "prompt_component_contract_mode": config.prompt_component_contract_mode,
+        "prompt_semantic_role_contract": bool(config.prompt_semantic_role_contract),
         "sanitize_mode": sanitize_mode,
         "sanitize": sanitization_section,
         "structure_reserved_rejected": len(structure_reserved_rejected),
@@ -2051,9 +2118,11 @@ def build_train_data(
         "difficulty_from": (
             str(config.difficulty_from) if config.difficulty_from else None
         ),
-        "difficulty_scored": difficulty_scored_count,
-        "difficulty_dropped": len(difficulty_dropped),
-        "difficulty_dropped_samples": difficulty_dropped[:20],
+        "difficulty_scored": (
+            sum(1 for r in deduped if "record_nll" in (r.meta or {}))
+            if nll_by_id
+            else 0
+        ),
         "producer_inputs": {
             "programspec_path": (
                 str(config.programspec_path) if config.programspec_path else None
@@ -2080,8 +2149,34 @@ def build_train_data(
             "scope_canonical_pairs_per_scope": config.scope_canonical_pairs_per_scope,
             "scoped_repairs_per_scope": config.scoped_repairs_per_scope,
             "typed_lexical_per_program": config.typed_lexical_per_program,
+            "operator_corpus": bool(config.include_operator_corpus),
+            "operator_corpus_max_roots": config.operator_corpus_max_roots,
+            "operator_corpus_actions_per_state": (
+                config.operator_corpus_actions_per_state
+            ),
+            "operator_corpus_max_combinations": (
+                config.operator_corpus_max_combinations
+            ),
+            "operator_corpus_sibling_forks": (config.operator_corpus_sibling_forks),
         },
-        "preference_pairs": len(scope_preference_pairs),
+        "operator_corpus": (
+            {
+                key: value
+                for key, value in operator_corpus_result.items()
+                if key != "report"
+            }
+            if operator_corpus_result is not None
+            else None
+        ),
+        "preference_pairs": len(preference_pairs),
+        "preference_pair_families": dict(
+            sorted(
+                Counter(
+                    str((pair.meta or {}).get("pair_corpus") or "unknown")
+                    for pair in preference_pairs
+                ).items()
+            )
+        ),
         "preference_pairs_path": (
             str(preference_pairs_path) if preference_pairs_path else None
         ),
@@ -2138,12 +2233,61 @@ def build_train_data(
         "mixture": str(mixture_path.as_posix()) if mixture_path else None,
         "synthesis_telemetry": str(synthesis_telemetry_path.as_posix()),
         "synthesis_telemetry_sha256": _file_sha(synthesis_telemetry_path),
+        "operator_corpus": (
+            {
+                key: value
+                for key, value in operator_corpus_result.items()
+                if key != "report"
+            }
+            if operator_corpus_result is not None
+            else None
+        ),
         "diffusion_online": (
             asdict(_diffusion_config()) if config.diffusion_online else None
         ),
         "built_at": stats["built_at"],
         "version_stamp": version_stamp,
     }
+    if synthesis_plan is not None:
+        from slm_training.harnesses.train_data.staged_materialization import (
+            dataset_card_markdown,
+            graph_publication,
+        )
+
+        assert staged_materialization is not None
+        graph = graph_publication(
+            staged_materialization,
+            accepted_record_ids=staged_admitted_ids,
+        )
+        graph["version_stamp"] = version_stamp
+        dataset_card_path = out_dir / "DATASET_CARD.md"
+        dataset_card_path.write_text(
+            dataset_card_markdown(
+                synthesis_plan,
+                graph,
+                version=config.version,
+                version_stamp=version_stamp,
+            ),
+            encoding="utf-8",
+        )
+        manifest["synthesis_plan"] = {
+            "plan_id": synthesis_plan.plan_id,
+            "sha256": synthesis_plan.sha,
+            "schema_version": synthesis_plan.schema_version,
+            "dsl_pack_id": synthesis_plan.dsl_pack_id,
+            "dsl_pack_version": synthesis_plan.dsl_pack_version,
+            "surface_policy_version": synthesis_plan.surface_policy_version,
+            "generators": [item.to_dict() for item in synthesis_plan.generators],
+            "validators": [item.to_dict() for item in synthesis_plan.validators],
+            "gate_spec": synthesis_plan.gate_spec.to_dict(),
+        }
+        manifest["artifact_graph"] = graph
+        manifest["dataset_card"] = dataset_card_path.as_posix()
+        manifest["staged_materialization"] = {
+            "accepted_count": graph["accepted_count"],
+            "rejected_count": graph["rejected_count"],
+            "preference_pair_count": len(staged_preference_pairs),
+        }
     manifest_path = out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
@@ -2153,6 +2297,7 @@ def build_train_data(
         "stats": stats,
         "quality_report": quality_report,
         "synthesis_feedback": synthesis_feedback,
+        "operator_corpus": operator_corpus_result,
         "governance": {name: str(path) for name, path in governance_paths.items()},
     }
 

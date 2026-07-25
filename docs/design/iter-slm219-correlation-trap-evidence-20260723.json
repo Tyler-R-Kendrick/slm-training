@@ -1,0 +1,1204 @@
+{
+  "checkpoint_disposition": "scratch diagnostic only; not promoted, not synced, and not registered in the serving model card",
+  "data_manifest_sha": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+  "evidence_hash": "fce949a6e124802c7b8796974454ea8c5a91048424b440791dfdfc10bdd37fd1",
+  "family": "e396_parent_e500_auxiliary_continuation",
+  "historical_code_commit": "f2ab01f8ae6af6be49db3f294cd166fe034b67a5",
+  "honesty_mode": "no-design-md-context",
+  "matrix_set": "slm219_correlation_traps",
+  "matrix_version": "ncs1-03-v2",
+  "null_draws": 24,
+  "points": [
+    {
+      "checkpoint_sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+      "elapsed_wall_seconds": 0.0,
+      "evaluation": {
+        "agentv": {
+          "durationMs": 15,
+          "executionErrors": 0,
+          "failed": 1,
+          "meanScore": 0.5,
+          "passed": 0,
+          "total": 1
+        },
+        "agentv_artifacts": {
+          "benchmark": {
+            "bytes": 780,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t0000-benchmark.json",
+            "sha256": "9098cbcd06f36639ddf169de9b4db06c9986034a3caa53964ea29bb381381b3f"
+          },
+          "index": {
+            "bytes": 3269,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t0000-index.jsonl",
+            "sha256": "ae93cf7639244a9f631ac43088686b252429b29e12ba9e4e53236f3f4a407a8d"
+          },
+          "spec": {
+            "bytes": 1654,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t0000-spec.jsonl",
+            "sha256": "d02905b7abe1327f1a398ff5f141c8873527291cc6f7d9460b99fbfde4dfed0d"
+          },
+          "timing": {
+            "bytes": 155,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t0000-timing.json",
+            "sha256": "422fc0c3922d96272c5c5f3a5bb2b75a9275737ffbe80a72d45d7ce191dd4862"
+          }
+        },
+        "component_type_recall": 0.0,
+        "duplicate_subtree_rate": 0.0,
+        "eval_json_sha256": "6db6054d89d076fc842204b7d54def14134b0c4c49cc18c74defbb492a78394f",
+        "meaningful_program_rate": 0.0,
+        "n": 3,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "structural_similarity": 0.21446666666666667,
+        "suite": "smoke"
+      },
+      "gradient_norm": null,
+      "gradient_norm_unavailable_reason": "historical train telemetry did not persist gradient norms",
+      "heldout_nll": null,
+      "heldout_nll_unavailable_reason": "historical continuation did not emit a held-out NLL snapshot",
+      "label": "t0000",
+      "roles": {
+        "cross_attn_out": {
+          "matrix_path": "denoiser.layers.0.cross_attn.out_proj.weight",
+          "rms_drift_from_parent": 0.0,
+          "shape": [
+            128,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 77.08228302001953,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.030220146486460247,
+            "null_sd_outlier_energy": 0.0008865902244511562,
+            "outlier_energy_fraction": 0.03134046973673543,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.8954753746969618,
+            "stable_rank": 31.907626414031043,
+            "top_gap_ratio": 1.0347153878311954,
+            "trap_z": 1.2636314042022307
+          },
+          "update_norm_from_previous": 0.0,
+          "weightwatcher": {
+            "alpha": 5.27035032481738,
+            "alpha_weighted": 0.6539587405938183,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 19,
+            "spectral_norm": 1.330707468061754,
+            "stable_rank": 31.907626414031043,
+            "status": "success"
+          }
+        },
+        "lm_head": {
+          "matrix_path": "denoiser.lm_head.weight",
+          "rms_drift_from_parent": 0.0,
+          "shape": [
+            681,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 116.3553695678711,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.01583097225278525,
+            "null_sd_outlier_energy": 0.0002899329576802442,
+            "outlier_energy_fraction": 0.015648961155258368,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.980341993934874,
+            "stable_rank": 63.90200538417079,
+            "top_gap_ratio": 1.0048114400591843,
+            "trap_z": -0.6277696022665166
+          },
+          "update_norm_from_previous": 0.0,
+          "weightwatcher": {
+            "alpha": 6.471202665505929,
+            "alpha_weighted": 20.268770068523942,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 35,
+            "spectral_norm": 1355.6540086755208,
+            "stable_rank": 63.90200538417088,
+            "status": "success"
+          }
+        },
+        "mlp_out": {
+          "matrix_path": "denoiser.layers.0.mlp.2.weight",
+          "rms_drift_from_parent": 0.0,
+          "shape": [
+            128,
+            512
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 100.74491882324219,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.017229444378550313,
+            "null_sd_outlier_energy": 0.0003274863048262177,
+            "outlier_energy_fraction": 0.04415482036309862,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9506518910767057,
+            "stable_rank": 22.64758392802176,
+            "top_gap_ratio": 1.133048641713417,
+            "trap_z": 82.21832665288521
+          },
+          "update_norm_from_previous": 0.0,
+          "weightwatcher": {
+            "alpha": 3.3397445638295107,
+            "alpha_weighted": 1.2749614710185646,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 42,
+            "spectral_norm": 2.4085417957125412,
+            "stable_rank": 22.647583928021763,
+            "status": "success"
+          }
+        }
+      },
+      "run_id": "e396-balanced-type-head-continuation-r1",
+      "source_locator": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/last.pt",
+      "source_resolution": "verified_local_copy",
+      "step": 0,
+      "tokens": 0,
+      "train_loss_proxy": null,
+      "training": null
+    },
+    {
+      "checkpoint_sha256": "1a4cc8e2b6afc91ec96b49d230f1af1706f734b1e72befb1ab5873e1216abe8a",
+      "elapsed_wall_seconds": 21.06905202800408,
+      "evaluation": {
+        "agentv": {
+          "durationMs": 16,
+          "executionErrors": 0,
+          "failed": 1,
+          "meanScore": 0.5,
+          "passed": 0,
+          "total": 1
+        },
+        "agentv_artifacts": {
+          "benchmark": {
+            "bytes": 776,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t1000-benchmark.json",
+            "sha256": "a13cdd0de264d684dadd459f680188e86ad05b2fc238583dfe49510c376a2447"
+          },
+          "index": {
+            "bytes": 3206,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t1000-index.jsonl",
+            "sha256": "de08b25c7a09d92320926c085617f744cce125ecea0e821042b919e7ce46e72a"
+          },
+          "spec": {
+            "bytes": 1702,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t1000-spec.jsonl",
+            "sha256": "f84b1aa062bd28ef13c695e22791951e9726202aeda9b747ce0c6bcda1b46ef5"
+          },
+          "timing": {
+            "bytes": 151,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t1000-timing.json",
+            "sha256": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746"
+          }
+        },
+        "component_type_recall": 0.16666666666666666,
+        "duplicate_subtree_rate": 0.0,
+        "eval_json_sha256": "647c80e770b54f1af63f1194cdea9c8a49bef6a6725284569bf5b5e52fa70c04",
+        "meaningful_program_rate": 0.3333333333333333,
+        "n": 3,
+        "placeholder_fidelity": 0.611111111111111,
+        "reward_score": 0.5686666666666667,
+        "structural_similarity": 0.3369333333333333,
+        "suite": "smoke"
+      },
+      "gradient_norm": null,
+      "gradient_norm_unavailable_reason": "historical train telemetry did not persist gradient norms",
+      "heldout_nll": null,
+      "heldout_nll_unavailable_reason": "historical continuation did not emit a held-out NLL snapshot",
+      "label": "t1000",
+      "roles": {
+        "cross_attn_out": {
+          "matrix_path": "denoiser.layers.0.cross_attn.out_proj.weight",
+          "rms_drift_from_parent": 0.0014037087499643038,
+          "shape": [
+            128,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 77.06784057617188,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.030229141535694504,
+            "null_sd_outlier_energy": 0.0010618206051176068,
+            "outlier_energy_fraction": 0.03144979023035255,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.8954367405007331,
+            "stable_rank": 31.796714466950203,
+            "top_gap_ratio": 1.0352240064358125,
+            "trap_z": 1.14958090733495
+          },
+          "update_norm_from_previous": 0.17967471999543072,
+          "weightwatcher": {
+            "alpha": 5.2685238843896744,
+            "alpha_weighted": 0.6613117321914022,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 19,
+            "spectral_norm": 1.3351229321089393,
+            "stable_rank": 31.796714466950192,
+            "status": "success"
+          }
+        },
+        "lm_head": {
+          "matrix_path": "denoiser.lm_head.weight",
+          "rms_drift_from_parent": 0.0017103049884314653,
+          "shape": [
+            681,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 116.35614013671875,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.015773665861426058,
+            "null_sd_outlier_energy": 0.0002580858679724656,
+            "outlier_energy_fraction": 0.01564746110383041,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9803433977074695,
+            "stable_rank": 63.90813138082864,
+            "top_gap_ratio": 1.0047678889931593,
+            "trap_z": -0.48900297636254775
+          },
+          "update_norm_from_previous": 0.5049543329849133,
+          "weightwatcher": {
+            "alpha": 6.467893248514157,
+            "alpha_weighted": 20.257716443667665,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 35,
+            "spectral_norm": 1355.321991107003,
+            "stable_rank": 63.908131380828635,
+            "status": "success"
+          }
+        },
+        "mlp_out": {
+          "matrix_path": "denoiser.layers.0.mlp.2.weight",
+          "rms_drift_from_parent": 0.0014354930918088,
+          "shape": [
+            128,
+            512
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 100.58013153076172,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.017154143912212778,
+            "null_sd_outlier_energy": 0.0002830100462315749,
+            "outlier_energy_fraction": 0.04472754013289339,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9503144784511781,
+            "stable_rank": 22.357589910574656,
+            "top_gap_ratio": 1.1507865446158807,
+            "trap_z": 97.42903684104022
+          },
+          "update_norm_from_previous": 0.3674862315030462,
+          "weightwatcher": {
+            "alpha": 3.3599660421086552,
+            "alpha_weighted": 1.3034027474704728,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 39,
+            "spectral_norm": 2.4429884004193023,
+            "stable_rank": 22.357589910574642,
+            "status": "success"
+          }
+        }
+      },
+      "run_id": "slm219-e502-uniform-t1000",
+      "source_locator": "scratch:no-sync/deterministic-prefix-rerun/slm219-e502-uniform-t1000/checkpoints/last.pt",
+      "source_resolution": "verified_local_copy",
+      "step": 22,
+      "tokens": 1039,
+      "train_loss_proxy": 25.690502166748047,
+      "training": {
+        "checkpoint_sync": "disabled_scratch_rejected_continuation",
+        "code_commit": "f2ab01f8ae6af6be49db3f294cd166fe034b67a5",
+        "context_backend": "hf",
+        "data_manifest_sha": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+        "deterministic_prefix_rerun": true,
+        "device": "cpu",
+        "max_wall_minutes": 3.0,
+        "recipe": {
+          "batch_size": 2,
+          "binder_arity_decode_weight": 0.0,
+          "binder_arity_loss_weight": 0.0,
+          "binder_component_plan_decode_weight": 0.0,
+          "binder_component_plan_loss_weight": 0.0,
+          "binder_topology_decode_weight": 0.0,
+          "binder_topology_loss_weight": 0.0,
+          "compiler_alignment_loss_weight": 0.0,
+          "compiler_alignment_margin": 0.0,
+          "compiler_alignment_semantic_exhaustive": false,
+          "compiler_alignment_stratified": false,
+          "component_edge_alignment_loss_weight": 0.0,
+          "component_edge_decode_weight": 0.0,
+          "component_edge_loss_weight": 0.0,
+          "component_inventory_decode_weight": 0.0,
+          "component_inventory_loss_weight": 0.0,
+          "component_plan_decode_weight": 0.0,
+          "component_plan_loss_weight": 4.0,
+          "design_md_dropout": 0.0,
+          "fastpath_aux_weight": 0.0,
+          "fidelity_loss_weight": 0.5,
+          "fuse_ltr_loss": true,
+          "grammar_constrained": true,
+          "honesty_mode": "no-design-md-context",
+          "learning_rate": 0.0003,
+          "ltr_loss_weight": 0.5,
+          "retrieval_k": 0,
+          "schema_in_context": false,
+          "seed": 0,
+          "slot_component_class_balance_power": 0.5,
+          "slot_component_decode_weight": 4.0,
+          "slot_component_lexeme_prior_weight": 1.0,
+          "slot_component_loss_weight": 1.0,
+          "slot_component_prompt_context": true,
+          "slot_component_span_prior_weight": 0.0,
+          "steps_requested": 200
+        },
+        "resumed_from_prior_stage": false,
+        "seen_prompt_tokens": 1509,
+        "seen_target_tokens": 1039,
+        "shared_parent_seed_and_uniform_order": true,
+        "target_token_budget": 1000
+      }
+    },
+    {
+      "checkpoint_sha256": "bea50a1c8b8e414d984e0b4db8ff5f9e71f9e3ee2fd8718808e18524c6d40b7b",
+      "elapsed_wall_seconds": 36.35305760000483,
+      "evaluation": {
+        "agentv": {
+          "durationMs": 17,
+          "executionErrors": 0,
+          "failed": 1,
+          "meanScore": 0.5,
+          "passed": 0,
+          "total": 1
+        },
+        "agentv_artifacts": {
+          "benchmark": {
+            "bytes": 776,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t2000-benchmark.json",
+            "sha256": "a6f71ea888907d1445242495cc1eec9cdb91964bf2a170395294c0e522795c08"
+          },
+          "index": {
+            "bytes": 3237,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t2000-index.jsonl",
+            "sha256": "04a65708bd5676527c2436fc7e4215bbfbbfcf997f535b2bc40e98473deca3ac"
+          },
+          "spec": {
+            "bytes": 1667,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t2000-spec.jsonl",
+            "sha256": "822fb3d0a97ffba2f92490644b6862577ca9de0a930f883592cc0d9758cba49e"
+          },
+          "timing": {
+            "bytes": 151,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t2000-timing.json",
+            "sha256": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746"
+          }
+        },
+        "component_type_recall": 0.08333333333333333,
+        "duplicate_subtree_rate": 0.0,
+        "eval_json_sha256": "ea173ad2b214f19be99f73a3504693c05ce3a821d447ee065b063c4b63c5d9cd",
+        "meaningful_program_rate": 0.0,
+        "n": 3,
+        "placeholder_fidelity": 0.4166666666666667,
+        "reward_score": 0.22733333333333336,
+        "structural_similarity": 0.1986,
+        "suite": "smoke"
+      },
+      "gradient_norm": null,
+      "gradient_norm_unavailable_reason": "historical train telemetry did not persist gradient norms",
+      "heldout_nll": null,
+      "heldout_nll_unavailable_reason": "historical continuation did not emit a held-out NLL snapshot",
+      "label": "t2000",
+      "roles": {
+        "cross_attn_out": {
+          "matrix_path": "denoiser.layers.0.cross_attn.out_proj.weight",
+          "rms_drift_from_parent": 0.0017261044746985396,
+          "shape": [
+            128,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 77.04428100585938,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.030075691017864378,
+            "null_sd_outlier_energy": 0.0009212164807782098,
+            "outlier_energy_fraction": 0.03163970649251094,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.8953737314791282,
+            "stable_rank": 31.605855769765057,
+            "top_gap_ratio": 1.037362552951071,
+            "trap_z": 1.6977719214547025
+          },
+          "update_norm_from_previous": 0.106961673327104,
+          "weightwatcher": {
+            "alpha": 5.274839687015915,
+            "alpha_weighted": 0.6755114898704574,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 19,
+            "spectral_norm": 1.3429595818114612,
+            "stable_rank": 31.605855769765068,
+            "status": "success"
+          }
+        },
+        "lm_head": {
+          "matrix_path": "denoiser.lm_head.weight",
+          "rms_drift_from_parent": 0.0028056277215050807,
+          "shape": [
+            681,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 116.35713958740234,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.015811959942959822,
+            "null_sd_outlier_energy": 0.0002580368571012108,
+            "outlier_energy_fraction": 0.01564614406588523,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9803451804016223,
+            "stable_rank": 63.913510944872016,
+            "top_gap_ratio": 1.0047256213620839,
+            "trap_z": -0.6426053972962266
+          },
+          "update_norm_from_previous": 0.36645917939276795,
+          "weightwatcher": {
+            "alpha": 6.465456864328726,
+            "alpha_weighted": 20.249518927004992,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 35,
+            "spectral_norm": 1355.04850449608,
+            "stable_rank": 63.913510944871966,
+            "status": "success"
+          }
+        },
+        "mlp_out": {
+          "matrix_path": "denoiser.layers.0.mlp.2.weight",
+          "rms_drift_from_parent": 0.0018366231146809567,
+          "shape": [
+            128,
+            512
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 100.54584503173828,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.017213868862084588,
+            "null_sd_outlier_energy": 0.0003700410178360682,
+            "outlier_energy_fraction": 0.04437805303961719,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9502442375633515,
+            "stable_rank": 22.5336609316159,
+            "top_gap_ratio": 1.1509122938876966,
+            "trap_z": 73.40857599080165
+          },
+          "update_norm_from_previous": 0.23838301501433812,
+          "weightwatcher": {
+            "alpha": 3.3661951502415763,
+            "alpha_weighted": 1.295353877772813,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 39,
+            "spectral_norm": 2.4255625143125896,
+            "stable_rank": 22.533660931615902,
+            "status": "success"
+          }
+        }
+      },
+      "run_id": "slm219-e502-uniform-t2000",
+      "source_locator": "scratch:no-sync/deterministic-prefix-rerun/slm219-e502-uniform-t2000/checkpoints/last.pt",
+      "source_resolution": "verified_local_copy",
+      "step": 42,
+      "tokens": 2047,
+      "train_loss_proxy": 15.01705551147461,
+      "training": {
+        "checkpoint_sync": "disabled_scratch_rejected_continuation",
+        "code_commit": "f2ab01f8ae6af6be49db3f294cd166fe034b67a5",
+        "context_backend": "hf",
+        "data_manifest_sha": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+        "deterministic_prefix_rerun": true,
+        "device": "cpu",
+        "max_wall_minutes": 3.0,
+        "recipe": {
+          "batch_size": 2,
+          "binder_arity_decode_weight": 0.0,
+          "binder_arity_loss_weight": 0.0,
+          "binder_component_plan_decode_weight": 0.0,
+          "binder_component_plan_loss_weight": 0.0,
+          "binder_topology_decode_weight": 0.0,
+          "binder_topology_loss_weight": 0.0,
+          "compiler_alignment_loss_weight": 0.0,
+          "compiler_alignment_margin": 0.0,
+          "compiler_alignment_semantic_exhaustive": false,
+          "compiler_alignment_stratified": false,
+          "component_edge_alignment_loss_weight": 0.0,
+          "component_edge_decode_weight": 0.0,
+          "component_edge_loss_weight": 0.0,
+          "component_inventory_decode_weight": 0.0,
+          "component_inventory_loss_weight": 0.0,
+          "component_plan_decode_weight": 0.0,
+          "component_plan_loss_weight": 4.0,
+          "design_md_dropout": 0.0,
+          "fastpath_aux_weight": 0.0,
+          "fidelity_loss_weight": 0.5,
+          "fuse_ltr_loss": true,
+          "grammar_constrained": true,
+          "honesty_mode": "no-design-md-context",
+          "learning_rate": 0.0003,
+          "ltr_loss_weight": 0.5,
+          "retrieval_k": 0,
+          "schema_in_context": false,
+          "seed": 0,
+          "slot_component_class_balance_power": 0.5,
+          "slot_component_decode_weight": 4.0,
+          "slot_component_lexeme_prior_weight": 1.0,
+          "slot_component_loss_weight": 1.0,
+          "slot_component_prompt_context": true,
+          "slot_component_span_prior_weight": 0.0,
+          "steps_requested": 200
+        },
+        "resumed_from_prior_stage": false,
+        "seen_prompt_tokens": 2722,
+        "seen_target_tokens": 2047,
+        "shared_parent_seed_and_uniform_order": true,
+        "target_token_budget": 2000
+      }
+    },
+    {
+      "checkpoint_sha256": "dbedf264d40b853086cf08a832aa37620dc0ff337dc27554cdf7e947ec7c8e97",
+      "elapsed_wall_seconds": 49.19872935600142,
+      "evaluation": {
+        "agentv": {
+          "durationMs": 22,
+          "executionErrors": 0,
+          "failed": 1,
+          "meanScore": 0.5,
+          "passed": 0,
+          "total": 1
+        },
+        "agentv_artifacts": {
+          "benchmark": {
+            "bytes": 776,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t3000-benchmark.json",
+            "sha256": "65fbd337dc5b94c5e71c39e5642773e30e3d91a489db047e630254d0704d6713"
+          },
+          "index": {
+            "bytes": 3250,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t3000-index.jsonl",
+            "sha256": "307d55ea375a1650bf04ec57488885dba38a76b2fe4e2c68d0ca64c0678e008e"
+          },
+          "spec": {
+            "bytes": 1694,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t3000-spec.jsonl",
+            "sha256": "50c7114bfb35eced7d568b61b6c7a93a2ff3900d6393c8660f7affa582c02428"
+          },
+          "timing": {
+            "bytes": 151,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t3000-timing.json",
+            "sha256": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746"
+          }
+        },
+        "component_type_recall": 0.08333333333333333,
+        "duplicate_subtree_rate": 0.0,
+        "eval_json_sha256": "3c6b822f64bbb6c72c4f60b84048de55c5775c51ac6b66269d780262d5bd2ce7",
+        "meaningful_program_rate": 0.0,
+        "n": 3,
+        "placeholder_fidelity": 0.27777777777777773,
+        "reward_score": 0.25233333333333335,
+        "structural_similarity": 0.33749999999999997,
+        "suite": "smoke"
+      },
+      "gradient_norm": null,
+      "gradient_norm_unavailable_reason": "historical train telemetry did not persist gradient norms",
+      "heldout_nll": null,
+      "heldout_nll_unavailable_reason": "historical continuation did not emit a held-out NLL snapshot",
+      "label": "t3000",
+      "roles": {
+        "cross_attn_out": {
+          "matrix_path": "denoiser.layers.0.cross_attn.out_proj.weight",
+          "rms_drift_from_parent": 0.0020028725448198704,
+          "shape": [
+            128,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 77.06254577636719,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.0304649695376682,
+            "null_sd_outlier_energy": 0.0011023741356917186,
+            "outlier_energy_fraction": 0.031736771668145425,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.8954225421311363,
+            "stable_rank": 31.50919099322606,
+            "top_gap_ratio": 1.0380850837669742,
+            "trap_z": 1.153693731828345
+          },
+          "update_norm_from_previous": 0.11309754684782129,
+          "weightwatcher": {
+            "alpha": 5.305697731305263,
+            "alpha_weighted": 0.6859528378565458,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 19,
+            "spectral_norm": 1.346747182288662,
+            "stable_rank": 31.50919099322604,
+            "status": "success"
+          }
+        },
+        "lm_head": {
+          "matrix_path": "denoiser.lm_head.weight",
+          "rms_drift_from_parent": 0.003953612240207886,
+          "shape": [
+            681,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 116.3580322265625,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.015826842589698954,
+            "null_sd_outlier_energy": 0.0002800208234578745,
+            "outlier_energy_fraction": 0.015644463428589595,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9803467288128033,
+            "stable_rank": 63.92037697966312,
+            "top_gap_ratio": 1.0046671326370498,
+            "trap_z": -0.6513057095441152
+          },
+          "update_norm_from_previous": 0.38416214088432055,
+          "weightwatcher": {
+            "alpha": 6.463518740215722,
+            "alpha_weighted": 20.24285289839253,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 35,
+            "spectral_norm": 1354.760872547035,
+            "stable_rank": 63.92037697966312,
+            "status": "success"
+          }
+        },
+        "mlp_out": {
+          "matrix_path": "denoiser.layers.0.mlp.2.weight",
+          "rms_drift_from_parent": 0.0021752473971089923,
+          "shape": [
+            128,
+            512
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 100.63602447509766,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.017181679339516493,
+            "null_sd_outlier_energy": 0.00038022077329218166,
+            "outlier_energy_fraction": 0.04402348693136525,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9504289522713183,
+            "stable_rank": 22.715147520210028,
+            "top_gap_ratio": 1.1438930638253724,
+            "trap_z": 70.59532113260444
+          },
+          "update_norm_from_previous": 0.2440955730163141,
+          "weightwatcher": {
+            "alpha": 3.366310052249052,
+            "alpha_weighted": 1.282236751071126,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 39,
+            "spectral_norm": 2.4038244514542724,
+            "stable_rank": 22.715147520210017,
+            "status": "success"
+          }
+        }
+      },
+      "run_id": "slm219-e502-uniform-t3000",
+      "source_locator": "scratch:no-sync/deterministic-prefix-rerun/slm219-e502-uniform-t3000/checkpoints/last.pt",
+      "source_resolution": "verified_local_copy",
+      "step": 61,
+      "tokens": 3008,
+      "train_loss_proxy": 12.501229286193848,
+      "training": {
+        "checkpoint_sync": "disabled_scratch_rejected_continuation",
+        "code_commit": "f2ab01f8ae6af6be49db3f294cd166fe034b67a5",
+        "context_backend": "hf",
+        "data_manifest_sha": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+        "deterministic_prefix_rerun": true,
+        "device": "cpu",
+        "max_wall_minutes": 3.0,
+        "recipe": {
+          "batch_size": 2,
+          "binder_arity_decode_weight": 0.0,
+          "binder_arity_loss_weight": 0.0,
+          "binder_component_plan_decode_weight": 0.0,
+          "binder_component_plan_loss_weight": 0.0,
+          "binder_topology_decode_weight": 0.0,
+          "binder_topology_loss_weight": 0.0,
+          "compiler_alignment_loss_weight": 0.0,
+          "compiler_alignment_margin": 0.0,
+          "compiler_alignment_semantic_exhaustive": false,
+          "compiler_alignment_stratified": false,
+          "component_edge_alignment_loss_weight": 0.0,
+          "component_edge_decode_weight": 0.0,
+          "component_edge_loss_weight": 0.0,
+          "component_inventory_decode_weight": 0.0,
+          "component_inventory_loss_weight": 0.0,
+          "component_plan_decode_weight": 0.0,
+          "component_plan_loss_weight": 4.0,
+          "design_md_dropout": 0.0,
+          "fastpath_aux_weight": 0.0,
+          "fidelity_loss_weight": 0.5,
+          "fuse_ltr_loss": true,
+          "grammar_constrained": true,
+          "honesty_mode": "no-design-md-context",
+          "learning_rate": 0.0003,
+          "ltr_loss_weight": 0.5,
+          "retrieval_k": 0,
+          "schema_in_context": false,
+          "seed": 0,
+          "slot_component_class_balance_power": 0.5,
+          "slot_component_decode_weight": 4.0,
+          "slot_component_lexeme_prior_weight": 1.0,
+          "slot_component_loss_weight": 1.0,
+          "slot_component_prompt_context": true,
+          "slot_component_span_prior_weight": 0.0,
+          "steps_requested": 200
+        },
+        "resumed_from_prior_stage": false,
+        "seen_prompt_tokens": 4002,
+        "seen_target_tokens": 3008,
+        "shared_parent_seed_and_uniform_order": true,
+        "target_token_budget": 3000
+      }
+    },
+    {
+      "checkpoint_sha256": "63c9788a2581d63cf3d3d785699548ad3722f62af6c5d8ed0e073f7c3efe633a",
+      "elapsed_wall_seconds": 63.46667178200005,
+      "evaluation": {
+        "agentv": {
+          "durationMs": 15,
+          "executionErrors": 0,
+          "failed": 1,
+          "meanScore": 0.5,
+          "passed": 0,
+          "total": 1
+        },
+        "agentv_artifacts": {
+          "benchmark": {
+            "bytes": 776,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t4000-benchmark.json",
+            "sha256": "f2f15cfcb57207fe7ddb47483849bc215b08132bb80241133c6c74ba9845991c"
+          },
+          "index": {
+            "bytes": 3192,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t4000-index.jsonl",
+            "sha256": "fee3cabf0927f59461faf226f97a5760271f1f9c517899c575e6b588d768cec3"
+          },
+          "spec": {
+            "bytes": 1603,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t4000-spec.jsonl",
+            "sha256": "8c2f8413a881bbf2af093f303badfe4b26b04d984a86e7a4dfc97fb0e9c64c61"
+          },
+          "timing": {
+            "bytes": 151,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t4000-timing.json",
+            "sha256": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746"
+          }
+        },
+        "component_type_recall": 0.16666666666666666,
+        "duplicate_subtree_rate": 0.6666666666666666,
+        "eval_json_sha256": "854766e57a39d91c769e5ac031f23b7bcf8ff5bd8b07170047a058b820eba0a4",
+        "meaningful_program_rate": 0.0,
+        "n": 3,
+        "placeholder_fidelity": 0.75,
+        "reward_score": 0.31233333333333335,
+        "structural_similarity": 0.11373333333333334,
+        "suite": "smoke"
+      },
+      "gradient_norm": null,
+      "gradient_norm_unavailable_reason": "historical train telemetry did not persist gradient norms",
+      "heldout_nll": null,
+      "heldout_nll_unavailable_reason": "historical continuation did not emit a held-out NLL snapshot",
+      "label": "t4000",
+      "roles": {
+        "cross_attn_out": {
+          "matrix_path": "denoiser.layers.0.cross_attn.out_proj.weight",
+          "rms_drift_from_parent": 0.0021353205656663107,
+          "shape": [
+            128,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 77.06398010253906,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.030173932857231345,
+            "null_sd_outlier_energy": 0.0008136259166567852,
+            "outlier_energy_fraction": 0.03165531034116908,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.8954264305214811,
+            "stable_rank": 31.590276298743397,
+            "top_gap_ratio": 1.037500933390497,
+            "trap_z": 1.8207107881036533
+          },
+          "update_norm_from_previous": 0.09374721894853245,
+          "weightwatcher": {
+            "alpha": 5.799487180127855,
+            "alpha_weighted": 0.7421499970360999,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 17,
+            "spectral_norm": 1.3426666774011387,
+            "stable_rank": 31.590276298743376,
+            "status": "success"
+          }
+        },
+        "lm_head": {
+          "matrix_path": "denoiser.lm_head.weight",
+          "rms_drift_from_parent": 0.00505932354212496,
+          "shape": [
+            681,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 116.35935974121094,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.015786109461972644,
+            "null_sd_outlier_energy": 0.00021597466325451098,
+            "outlier_energy_fraction": 0.01564302773898164,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9803490696304858,
+            "stable_rank": 63.92624347958229,
+            "top_gap_ratio": 1.0046070932580238,
+            "trap_z": -0.6624930944904026
+          },
+          "update_norm_from_previous": 0.377980723912052,
+          "weightwatcher": {
+            "alpha": 6.4595192649744995,
+            "alpha_weighted": 20.229798505472928,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 35,
+            "spectral_norm": 1354.5056302038406,
+            "stable_rank": 63.9262434795823,
+            "status": "success"
+          }
+        },
+        "mlp_out": {
+          "matrix_path": "denoiser.layers.0.mlp.2.weight",
+          "rms_drift_from_parent": 0.0023801219405537623,
+          "shape": [
+            128,
+            512
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 100.37445068359375,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.017275631420222922,
+            "null_sd_outlier_energy": 0.00027363422692638684,
+            "outlier_energy_fraction": 0.04473729972413778,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9498925668065232,
+            "stable_rank": 22.352712527717784,
+            "top_gap_ratio": 1.1395844968823685,
+            "trap_z": 100.3590399212106
+          },
+          "update_norm_from_previous": 0.22071629283887373,
+          "weightwatcher": {
+            "alpha": 3.387710828489469,
+            "alpha_weighted": 1.3186767342327308,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 37,
+            "spectral_norm": 2.4504905875252443,
+            "stable_rank": 22.352712527717763,
+            "status": "success"
+          }
+        }
+      },
+      "run_id": "slm219-e502-uniform-t4000",
+      "source_locator": "scratch:no-sync/deterministic-prefix-rerun/slm219-e502-uniform-t4000/checkpoints/last.pt",
+      "source_resolution": "verified_local_copy",
+      "step": 80,
+      "tokens": 4007,
+      "train_loss_proxy": 12.012982368469238,
+      "training": {
+        "checkpoint_sync": "disabled_scratch_rejected_continuation",
+        "code_commit": "f2ab01f8ae6af6be49db3f294cd166fe034b67a5",
+        "context_backend": "hf",
+        "data_manifest_sha": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+        "deterministic_prefix_rerun": true,
+        "device": "cpu",
+        "max_wall_minutes": 3.0,
+        "recipe": {
+          "batch_size": 2,
+          "binder_arity_decode_weight": 0.0,
+          "binder_arity_loss_weight": 0.0,
+          "binder_component_plan_decode_weight": 0.0,
+          "binder_component_plan_loss_weight": 0.0,
+          "binder_topology_decode_weight": 0.0,
+          "binder_topology_loss_weight": 0.0,
+          "compiler_alignment_loss_weight": 0.0,
+          "compiler_alignment_margin": 0.0,
+          "compiler_alignment_semantic_exhaustive": false,
+          "compiler_alignment_stratified": false,
+          "component_edge_alignment_loss_weight": 0.0,
+          "component_edge_decode_weight": 0.0,
+          "component_edge_loss_weight": 0.0,
+          "component_inventory_decode_weight": 0.0,
+          "component_inventory_loss_weight": 0.0,
+          "component_plan_decode_weight": 0.0,
+          "component_plan_loss_weight": 4.0,
+          "design_md_dropout": 0.0,
+          "fastpath_aux_weight": 0.0,
+          "fidelity_loss_weight": 0.5,
+          "fuse_ltr_loss": true,
+          "grammar_constrained": true,
+          "honesty_mode": "no-design-md-context",
+          "learning_rate": 0.0003,
+          "ltr_loss_weight": 0.5,
+          "retrieval_k": 0,
+          "schema_in_context": false,
+          "seed": 0,
+          "slot_component_class_balance_power": 0.5,
+          "slot_component_decode_weight": 4.0,
+          "slot_component_lexeme_prior_weight": 1.0,
+          "slot_component_loss_weight": 1.0,
+          "slot_component_prompt_context": true,
+          "slot_component_span_prior_weight": 0.0,
+          "steps_requested": 200
+        },
+        "resumed_from_prior_stage": false,
+        "seen_prompt_tokens": 5181,
+        "seen_target_tokens": 4007,
+        "shared_parent_seed_and_uniform_order": true,
+        "target_token_budget": 4000
+      }
+    },
+    {
+      "checkpoint_sha256": "d9c416c0a36bec85fe55350e32bbc111e5ab86d451070766acb214922045f044",
+      "elapsed_wall_seconds": 70.99265612399904,
+      "evaluation": {
+        "agentv": {
+          "durationMs": 13,
+          "executionErrors": 0,
+          "failed": 1,
+          "meanScore": 0.5,
+          "passed": 0,
+          "total": 1
+        },
+        "agentv_artifacts": {
+          "benchmark": {
+            "bytes": 776,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t5000-benchmark.json",
+            "sha256": "0ac5c84c094fbdf121394a2cfaf831971dc4f1108c2f19ded3fec008a4135a63"
+          },
+          "index": {
+            "bytes": 3176,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t5000-index.jsonl",
+            "sha256": "01416a5bd7d177a2f7d91f5fa49b989f49fce1d964f9671d1e5d09befe9c83b7"
+          },
+          "spec": {
+            "bytes": 1599,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t5000-spec.jsonl",
+            "sha256": "2e57d3714f78d3efbe2cacac5ed88a78673d55d7454af51a4fe8c4a2d533bcaa"
+          },
+          "timing": {
+            "bytes": 151,
+            "path": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t5000-timing.json",
+            "sha256": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746"
+          }
+        },
+        "component_type_recall": 0.0,
+        "duplicate_subtree_rate": 0.0,
+        "eval_json_sha256": "9e0c218f8b77675e076e27d1f586080aa3cf46e83f58f5a617743df0ddc34a5d",
+        "meaningful_program_rate": 0.0,
+        "n": 3,
+        "placeholder_fidelity": 0.5277777777777778,
+        "reward_score": 0.30233333333333334,
+        "structural_similarity": 0.21166666666666667,
+        "suite": "smoke"
+      },
+      "gradient_norm": null,
+      "gradient_norm_unavailable_reason": "historical train telemetry did not persist gradient norms",
+      "heldout_nll": null,
+      "heldout_nll_unavailable_reason": "historical continuation did not emit a held-out NLL snapshot",
+      "label": "t5000",
+      "roles": {
+        "cross_attn_out": {
+          "matrix_path": "denoiser.layers.0.cross_attn.out_proj.weight",
+          "rms_drift_from_parent": 0.0023693960081392486,
+          "shape": [
+            128,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 77.00656127929688,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.029827673342915403,
+            "null_sd_outlier_energy": 0.0008799142766987546,
+            "outlier_energy_fraction": 0.03169658669347641,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.8952727446320695,
+            "stable_rank": 31.549138387377642,
+            "top_gap_ratio": 1.0371733154285716,
+            "trap_z": 2.1239720732487224
+          },
+          "update_norm_from_previous": 0.14673893091581483,
+          "weightwatcher": {
+            "alpha": 5.27805143182644,
+            "alpha_weighted": 0.679285217495708,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 19,
+            "spectral_norm": 1.3449309866435286,
+            "stable_rank": 31.54913838737765,
+            "status": "success"
+          }
+        },
+        "lm_head": {
+          "matrix_path": "denoiser.lm_head.weight",
+          "rms_drift_from_parent": 0.006214313158176663,
+          "shape": [
+            681,
+            128
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 116.3608627319336,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.015739015300641344,
+            "null_sd_outlier_energy": 0.00027046019755991443,
+            "outlier_energy_fraction": 0.01564046850584458,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9803517691774654,
+            "stable_rank": 63.936703662445716,
+            "top_gap_ratio": 1.004501616660528,
+            "trap_z": -0.36436708870973045
+          },
+          "update_norm_from_previous": 0.3953520329572876,
+          "weightwatcher": {
+            "alpha": 6.455297532744027,
+            "alpha_weighted": 20.21585943954298,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 35,
+            "spectral_norm": 1354.1590033049908,
+            "stable_rank": 63.936703662445666,
+            "status": "success"
+          }
+        },
+        "mlp_out": {
+          "matrix_path": "denoiser.layers.0.mlp.2.weight",
+          "rms_drift_from_parent": 0.0026261731037467515,
+          "shape": [
+            128,
+            512
+          ],
+          "trap": {
+            "backend": "pytorch-native-svd-v1",
+            "effective_rank": 100.03515625,
+            "null_draws": 24,
+            "null_mean_outlier_energy": 0.017139232529302228,
+            "null_sd_outlier_energy": 0.00020322759608861198,
+            "outlier_energy_fraction": 0.045234838406644245,
+            "schema": "TrapMetricsV1",
+            "spectral_entropy": 0.9491947756262484,
+            "stable_rank": 22.1068546992558,
+            "top_gap_ratio": 1.141725684332235,
+            "trap_z": 138.24700197256516
+          },
+          "update_norm_from_previous": 0.2527656592671338,
+          "weightwatcher": {
+            "alpha": 3.379432492577959,
+            "alpha_weighted": 1.3389011560041564,
+            "backend": "weightwatcher-0.7.5",
+            "num_pl_spikes": 36,
+            "spectral_norm": 2.4899528509407745,
+            "stable_rank": 22.106854699255813,
+            "status": "success"
+          }
+        }
+      },
+      "run_id": "slm219-e502-uniform-t5000",
+      "source_locator": "scratch:no-sync/deterministic-prefix-rerun/slm219-e502-uniform-t5000/checkpoints/last.pt",
+      "source_resolution": "verified_local_copy",
+      "step": 99,
+      "tokens": 5019,
+      "train_loss_proxy": 12.893698692321777,
+      "training": {
+        "checkpoint_sync": "disabled_scratch_rejected_continuation",
+        "code_commit": "f2ab01f8ae6af6be49db3f294cd166fe034b67a5",
+        "context_backend": "hf",
+        "data_manifest_sha": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+        "deterministic_prefix_rerun": true,
+        "device": "cpu",
+        "max_wall_minutes": 3.0,
+        "recipe": {
+          "batch_size": 2,
+          "binder_arity_decode_weight": 0.0,
+          "binder_arity_loss_weight": 0.0,
+          "binder_component_plan_decode_weight": 0.0,
+          "binder_component_plan_loss_weight": 0.0,
+          "binder_topology_decode_weight": 0.0,
+          "binder_topology_loss_weight": 0.0,
+          "compiler_alignment_loss_weight": 0.0,
+          "compiler_alignment_margin": 0.0,
+          "compiler_alignment_semantic_exhaustive": false,
+          "compiler_alignment_stratified": false,
+          "component_edge_alignment_loss_weight": 0.0,
+          "component_edge_decode_weight": 0.0,
+          "component_edge_loss_weight": 0.0,
+          "component_inventory_decode_weight": 0.0,
+          "component_inventory_loss_weight": 0.0,
+          "component_plan_decode_weight": 0.0,
+          "component_plan_loss_weight": 4.0,
+          "design_md_dropout": 0.0,
+          "fastpath_aux_weight": 0.0,
+          "fidelity_loss_weight": 0.5,
+          "fuse_ltr_loss": true,
+          "grammar_constrained": true,
+          "honesty_mode": "no-design-md-context",
+          "learning_rate": 0.0003,
+          "ltr_loss_weight": 0.5,
+          "retrieval_k": 0,
+          "schema_in_context": false,
+          "seed": 0,
+          "slot_component_class_balance_power": 0.5,
+          "slot_component_decode_weight": 4.0,
+          "slot_component_lexeme_prior_weight": 1.0,
+          "slot_component_loss_weight": 1.0,
+          "slot_component_prompt_context": true,
+          "slot_component_span_prior_weight": 0.0,
+          "steps_requested": 200
+        },
+        "resumed_from_prior_stage": false,
+        "seen_prompt_tokens": 6669,
+        "seen_target_tokens": 5019,
+        "shared_parent_seed_and_uniform_order": true,
+        "target_token_budget": 5000
+      }
+    }
+  ],
+  "roles": {
+    "cross_attn_out": "denoiser.layers.0.cross_attn.out_proj.weight",
+    "lm_head": "denoiser.lm_head.weight",
+    "mlp_out": "denoiser.layers.0.mlp.2.weight"
+  },
+  "run_id": "slm219-e396-e500-prefix-trajectory-20260723",
+  "schema": "CorrelationTrapCheckpointEvidenceV1",
+  "seed": 0,
+  "version_stamp": {
+    "code_commit": "0c3ef2c57da6658c54c4c2f7bd4e4689100735b6",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v68",
+      "harness.experiments.slm214_spectral_snapshot": "v4",
+      "harness.experiments.slm219_correlation_traps": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T15:10:09.883962+00:00"
+  },
+  "weightwatcher_comparison": {
+    "install_scope": "ephemeral project virtualenv; not a runtime dependency",
+    "requested": true,
+    "version": "0.7.5"
+  }
+}

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from scripts.run_slm229_looped_latent_differentiation import main
 
@@ -19,10 +18,28 @@ def test_plan_only_mode_writes_json(tmp_path) -> None:
     assert data["mechanism_comparison"]
     assert data["differentiators"]
     assert data["version_stamp"]
+    assert data["floor_gate_hash"]
+    assert data["floor_gate_verdict"] == "inconclusive"
 
 
 def test_fixture_mode_writes_json_and_docs(tmp_path) -> None:
-    assert main(["--mode", "fixture", "--output-dir", str(tmp_path)]) == 0
+    design_json = tmp_path / "design.json"
+    design_md = tmp_path / "design.md"
+    assert (
+        main(
+            [
+                "--mode",
+                "fixture",
+                "--output-dir",
+                str(tmp_path),
+                "--design-json",
+                str(design_json),
+                "--design-md",
+                str(design_md),
+            ]
+        )
+        == 0
+    )
     run_json = tmp_path / "slm229_looped_latent_differentiation_report.json"
     assert run_json.exists()
     data = json.loads(run_json.read_text())
@@ -39,9 +56,6 @@ def test_fixture_mode_writes_json_and_docs(tmp_path) -> None:
     assert data["verdict"] == "blocked_by_recurrence"
     assert data["minimal_contract"] is None
 
-    root = Path(__file__).resolve().parents[2]
-    design_json = root / "docs/design/iter-slm229-looped-latent-differentiation-20260721.json"
-    design_md = root / "docs/design/iter-slm229-looped-latent-differentiation-20260721.md"
     assert design_json.exists()
     assert design_md.exists()
     design_data = json.loads(design_json.read_text())
@@ -50,7 +64,21 @@ def test_fixture_mode_writes_json_and_docs(tmp_path) -> None:
 
 
 def test_fixture_mode_report_is_idempotent_in_contents(tmp_path) -> None:
-    assert main(["--mode", "fixture", "--output-dir", str(tmp_path)]) == 0
+    assert (
+        main(
+            [
+                "--mode",
+                "fixture",
+                "--output-dir",
+                str(tmp_path),
+                "--design-json",
+                str(tmp_path / "design.json"),
+                "--design-md",
+                str(tmp_path / "design.md"),
+            ]
+        )
+        == 0
+    )
     data1 = json.loads(
         (tmp_path / "slm229_looped_latent_differentiation_report.json").read_text()
     )

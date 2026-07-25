@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import fields
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,19 +13,22 @@ from slm_training.data.leakage import (
     fingerprint_openui_structure,
     normalize_openui_structure,
 )
-from slm_training.dsl.schema import ExampleRecord, OutputTarget, write_jsonl
+from slm_training.dsl.production_codec import ProductionCodec
+from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build import ModelBuildConfig
-from slm_training.harnesses.model_build.eval_runner import (
-    _effective_evaluation_policy,
-    _is_meaningful_program,
-    component_type_recall,
-    evaluate,
-    evaluate_suites,
-    structural_similarity,
-)
 from slm_training.harnesses.model_build.data import (
     load_suite_records,
     load_train_records,
+)
+from slm_training.harnesses.model_build.eval_runner import (
+    _effective_evaluation_policy,
+    _is_meaningful_program,
+    _record_langsmith_evaluation,
+    component_type_recall,
+    evaluate,
+    evaluate_grammar_leakage_audit,
+    evaluate_suites,
+    structural_similarity,
 )
 from slm_training.harnesses.model_build.plugin import GenerationRequest, StubModel
 from slm_training.harnesses.model_build.ship_gates import (
@@ -35,8 +37,45 @@ from slm_training.harnesses.model_build.ship_gates import (
     write_ship_gates,
 )
 from slm_training.harnesses.preference import composite_reward
-from slm_training.dsl.production_codec import ProductionCodec
 from slm_training.models.decode_stats import DecodeStats
+
+
+def test_langsmith_evaluation_summary_excludes_per_example_details(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured = {}
+
+    class Trace:
+        def record_summary(self, name, **kwargs) -> None:
+            captured["name"] = name
+            captured.update(kwargs)
+
+    monkeypatch.setattr(
+        "slm_training.runtime.telemetry.current_trace", lambda: Trace()
+    )
+    _record_langsmith_evaluation(
+        SimpleNamespace(run_id="safe-summary"),
+        suites={
+            "smoke": {
+                "n": 1,
+                "parse_rate": 1.0,
+                "details": [{"prompt": "do not export", "completion": "secret"}],
+            }
+        },
+        scoreboard={
+            "run_class": "scratch_matrix",
+            "checkpoint_sha256": "a" * 64,
+            "eval_data_manifest_sha": "b" * 64,
+            "code_git_sha": "c" * 40,
+            "version_stamp": {"stamp_schema": "version_stamp/v1"},
+            "gates": {"pass": False, "failures": ["smoke:parse_rate"]},
+            "agentv": {"summary": {"passed": 0, "failed": 1}},
+        },
+    )
+    assert captured["name"] == "evaluation.summary"
+    assert captured["outputs"]["suites"]["smoke"] == {"n": 1, "parse_rate": 1.0}
+    assert "details" not in str(captured)
+    assert "do not export" not in str(captured)
 
 
 def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
@@ -86,6 +125,22 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
     } <= policy.keys()
 
 
+@pytest.mark.parametrize(
+    "unsafe",
+    [
+        {"grammar_constrained": False},
+        {"allow_unconstrained_fallback": True},
+        {"grammar_sample_decode": True},
+        {"grammar_uniform_at_unforced": True},
+    ],
+)
+def test_new_model_build_config_rejects_unsafe_generation_flags(
+    unsafe: dict[str, bool],
+) -> None:
+    with pytest.raises(ValueError, match="unsafe|stochastic"):
+        ModelBuildConfig(train_dir=Path("train"), **unsafe)
+
+
 def test_evaluation_policy_snapshots_every_loaded_model_config_field() -> None:
     config = ModelBuildConfig(train_dir=Path("train"))
     loaded = SimpleNamespace(alpha=1, path=Path("checkpoint"), modes=("tree",))
@@ -131,7 +186,7 @@ def test_evaluate_applies_offset_before_limit(
         ExampleRecord(
             id=f"s{index}",
             prompt=f"Prompt {index}",
-            openui='root = TextContent(":slot_0")',
+            openui='root = TextContent(":value")',
             split="smoke",
             meta={"suite": "smoke"},
         )
@@ -155,6 +210,82 @@ def test_evaluate_applies_offset_before_limit(
     assert metrics["eval_offset"] == 2
     assert metrics["eval_limit"] == 1
     assert metrics["details"][0]["id"] == "s2"
+
+
+def test_grammar_leakage_audit_runs_explicit_decode_variants(
+    tmp_path: Path,
+) -> None:
+    test_dir = tmp_path / "eval"
+    suite_dir = test_dir / "suites" / "smoke"
+    suite_dir.mkdir(parents=True)
+    gold = 'root = TextContent(":value")'
+    write_jsonl(
+        suite_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="audit",
+                prompt="Value",
+                openui=gold,
+                placeholders=[":value"],
+                split="smoke",
+                meta={"semantic_factor": "content"},
+            )
+        ],
+    )
+
+    class AuditModel:
+        def __init__(self) -> None:
+            self.calls: list[bool | None] = []
+            self.config = SimpleNamespace(
+                grammar_constrained=True,
+                grammar_ltr_repair=False,
+                grammar_uniform_at_unforced=False,
+            )
+
+        def generate_batch_requests(
+            self,
+            requests: list[GenerationRequest],
+            *,
+            grammar_constrained: bool | None = None,
+            max_len: int | None = None,
+        ) -> list[str]:
+            self.calls.append(grammar_constrained)
+            return [gold for _ in requests]
+
+    model = AuditModel()
+    config = ModelBuildConfig(
+        train_dir=tmp_path / "train",
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="audit",
+        model_name="stub",
+    )
+    payload = evaluate_grammar_leakage_audit(
+        config, model=model, publish_agentv=False
+    )
+
+    assert model.calls == [True, True]
+    assert model.config.grammar_constrained is True
+    assert model.config.grammar_ltr_repair is False
+    assert model.config.grammar_uniform_at_unforced is False
+    assert set(payload["variants"]) == {
+        "constrained_native",
+        "constrained_compiler",
+    }
+    assert (
+        payload["strata"]["constrained_native"]["semantic_factor"]["content"]["n"]
+        == 1
+    )
+    assert Path(payload["output"]).is_file()
+
+    selected = evaluate_grammar_leakage_audit(
+        config,
+        model=AuditModel(),
+        publish_agentv=False,
+        variant_names=("constrained_native",),
+    )
+    assert set(selected["variants"]) == {"constrained_native"}
 
 
 def test_evaluate_rejects_negative_offset(tmp_path: Path) -> None:
@@ -193,153 +324,6 @@ def test_train_loader_rejects_free_form_targets_before_a_run_exists(
     )
 
     with pytest.raises(ValueError, match="symbol-only output contract"):
-        load_train_records(train_dir)
-
-
-def test_train_loader_rejects_template_semantic_labels(tmp_path: Path) -> None:
-    train_dir = tmp_path / "train"
-    train_dir.mkdir()
-    write_jsonl(
-        train_dir / "records.jsonl",
-        [
-            ExampleRecord(
-                id="forbidden-role-label",
-                prompt="CTA\nSemantic roles: action -> Button",
-                openui='root = Button(":slot_0")',
-                placeholders=[":slot_0"],
-            )
-        ],
-    )
-
-    with pytest.raises(ValueError, match="semantic role labels are prohibited"):
-        load_train_records(train_dir)
-
-
-def test_train_loader_rejects_user_defined_marker_names(tmp_path: Path) -> None:
-    train_dir = tmp_path / "train"
-    train_dir.mkdir()
-    write_jsonl(
-        train_dir / "records.jsonl",
-        [
-            ExampleRecord(
-                id="forbidden-marker-name",
-                prompt="CTA with :cta.label",
-                openui='root = Button(":cta.label")',
-                placeholders=[":cta.label"],
-            )
-        ],
-    )
-
-    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
-        load_train_records(train_dir)
-
-
-@pytest.mark.parametrize(
-    "openui,placeholders,reason",
-    [
-        # Closed DSL atoms exercise wrong-role rejection without content strings.
-        (
-            'root = Input(":slot_0")',
-            [":slot_0"],
-            "placeholder ':slot_0' in non-content property Input.name",
-        ),
-        (
-            'root = Input("column", ":slot_0", "text")',
-            [":slot_0"],
-            "open string 'column' in property Input.name",
-        ),
-        (
-            'root = Slider("column", "continuous", '
-            '0, 100, 1, [40], ":slot_0")',
-            [":slot_0"],
-            "open string 'column' in property Slider.name",
-        ),
-    ],
-)
-def test_train_loader_rejects_role_unsafe_strings(
-    tmp_path: Path,
-    openui: str,
-    placeholders: list[str],
-    reason: str,
-) -> None:
-    train_dir = tmp_path / "train"
-    train_dir.mkdir()
-    write_jsonl(
-        train_dir / "records.jsonl",
-        [
-            ExampleRecord(
-                id="role-unsafe",
-                prompt="Input",
-                openui=openui,
-                placeholders=placeholders,
-            )
-        ],
-    )
-
-    with pytest.raises(ValueError, match=re.escape(reason)):
-        load_train_records(train_dir)
-
-
-def test_train_loader_accepts_opaque_structural_ids(tmp_path: Path) -> None:
-    train_dir = tmp_path / "train"
-    train_dir.mkdir()
-    write_jsonl(
-        train_dir / "records.jsonl",
-        [
-            ExampleRecord(
-                id="role-safe",
-                prompt="Input",
-                openui='root = Input("$0", ":slot_0", "text")',
-                placeholders=[":slot_0"],
-            )
-        ],
-    )
-
-    assert [record.id for record in load_train_records(train_dir)] == ["role-safe"]
-
-
-def test_active_role_safe_train_and_eval_corpora_pass_loaders() -> None:
-    root = Path(__file__).resolve().parents[3]
-    train_dir = (
-        root
-        / "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2"
-    )
-    eval_dir = root / "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2"
-
-    assert len(load_train_records(train_dir)) == 524
-    assert sum(
-        len(load_suite_records(eval_dir, suite))
-        for suite in ("smoke", "held_out", "adversarial", "ood", "rico_held")
-    ) == 50
-
-
-def test_train_loader_rejects_role_unsafe_accepted_output(tmp_path: Path) -> None:
-    train_dir = tmp_path / "train"
-    train_dir.mkdir()
-    write_jsonl(
-        train_dir / "records.jsonl",
-        [
-            ExampleRecord(
-                id="unsafe-alternate",
-                prompt="Switch group",
-                openui='SwitchGroup("$0", [SwitchItem(null, null, "$1")])',
-                target_kind="expression",
-                accepted_outputs=[
-                    OutputTarget(
-                        'root = SwitchGroup(":slot_0", '
-                        '[SwitchItem(null, null, ":slot_1")])'
-                    )
-                ],
-            )
-        ],
-    )
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "placeholder ':slot_0' in non-content property SwitchGroup.name"
-        ),
-    ):
         load_train_records(train_dir)
 
 
@@ -418,8 +402,8 @@ def test_meaningful_parse_requires_component_recall() -> None:
         openui=(
             'root = Stack([title, notify, volume], "column")\n'
             'title = TextContent(":t")\n'
-            'notify = SwitchItem(":n", ":d", "$0")\n'
-            'volume = Slider("$1", "continuous", 0, 100, 1, [40], ":v")'
+            'notify = SwitchItem(":n", ":d", "x")\n'
+            'volume = Slider("volume", "continuous", 0, 100, 1, [40], ":v")'
         ),
         placeholders=[":t", ":n", ":d", ":v"],
     )
@@ -450,6 +434,7 @@ def test_ship_gates_fail_when_hard_suites_miss() -> None:
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
     assert any("missing_suite" in f for f in result["failures"])
+    assert result["evidence_volume_failures"]
     assert set(DEFAULT_SHIP_GATES) >= {"smoke", "rico_held"}
 
 
@@ -470,8 +455,8 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
         }
         for suite in DEFAULT_SHIP_GATES
     }
-    for suite in base:
-        base[suite].update(overrides)
+    for metrics in base.values():
+        metrics.update(overrides)
     return base
 
 
@@ -507,6 +492,10 @@ def test_ship_gates_fail_on_none_metric_values() -> None:
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
     assert any("smoke:meaningful_program_rate" in f for f in result["failures"])
+    assert any(
+        "smoke:meaningful_program_rate" in failure
+        for failure in result["measurement_integrity_failures"]
+    )
 
 
 def test_certified_fallback_fails_when_unmeasured() -> None:
@@ -515,7 +504,9 @@ def test_certified_fallback_fails_when_unmeasured() -> None:
     del suites["smoke"]["fallback_count"]
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any("smoke:certified_fallback unmeasured" in f for f in result["failures"])
+    assert any(
+        "smoke:certified_fallback unmeasured" in f for f in result["failures"]
+    )
 
 
 def test_certified_fallback_fails_on_measured_fallbacks() -> None:
@@ -524,6 +515,7 @@ def test_certified_fallback_fails_on_measured_fallbacks() -> None:
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
     assert any("smoke:certified_fallback actual=2" in f for f in result["failures"])
+    assert result["measurement_integrity_failures"]
 
 
 def test_ship_gates_fail_on_insufficient_suite_n() -> None:
@@ -533,9 +525,57 @@ def test_ship_gates_fail_on_insufficient_suite_n() -> None:
     suites["smoke"]["n"] = 3
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any(
-        "smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"]
+    assert any("smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"])
+    assert result["evidence_volume_failures"]
+
+
+def test_ship_gate_failure_categories_partition_flat_failures() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["n"] = 3
+    suites["held_out"]["meaningful_program_rate"] = 0.0
+    del suites["adversarial"]["fallback_count"]
+    result = evaluate_ship_gates(suites)
+    categories = (
+        result["evidence_volume_failures"]
+        + result["measurement_integrity_failures"]
+        + result["quality_threshold_failures"]
+        + result["runtime_failures"]
     )
+    assert len(categories) == len(result["failures"])
+    assert sorted(categories) == sorted(result["failures"])
+
+
+def test_ship_gate_runtime_failures_include_decode_timeouts() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["decode_timeout_count"] = 1
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert result["runtime_failures"] == [
+        "smoke:decode_timeout_count actual=1 need=0"
+    ]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("n", True),
+        ("n", float("nan")),
+        ("fallback_count", 0.9),
+        ("fallback_count", "bad"),
+        ("meaningful_program_rate", True),
+        ("meaningful_program_rate", "0.9"),
+        ("meaningful_program_rate", float("inf")),
+        ("meaningful_program_rate", float("nan")),
+    ],
+)
+def test_ship_gate_malformed_measurements_fail_integrity(
+    field: str, value: object
+) -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"][field] = value
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert result["measurement_integrity_failures"]
 
 
 def test_ship_gates_min_n_overridable_per_suite_policy() -> None:
@@ -554,10 +594,9 @@ def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
     first = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     second = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     policy = first["meaningful_metric_policy"]
-    assert (
-        policy["threshold_version"]
-        == second["meaningful_metric_policy"]["threshold_version"]
-    )
+    assert policy["threshold_version"] == second["meaningful_metric_policy"][
+        "threshold_version"
+    ]
     assert policy["threshold_version"].startswith("custom:")
     assert policy["meaningful_program_v1"]["thresholds"] == "request_thresholds"
     assert policy["binding_aware_meaningful_v2"]["thresholds"] is None
@@ -566,13 +605,56 @@ def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
 def test_write_ship_gates_stamps_payload(tmp_path: Path) -> None:
     import json
 
-    payload = write_ship_gates(tmp_path, {})
+    payload = write_ship_gates(
+        tmp_path,
+        {},
+        evals_result={
+            "format": "AgentEvals JSONL",
+            "criteria": {
+                "pass": False,
+                "results": [
+                    {"id": f"{suite}:missing_suite", "pass": False}
+                    for suite in DEFAULT_SHIP_GATES
+                ],
+            },
+            "runner": {"name": "AgentV", "execution_errors": 0},
+        },
+    )
+    assert payload["authority"] == "AgentEvals assertions"
     assert set(payload["version_stamp"]["components"]) == {
         "gates.ship",
+        "harness.core",
         "evals.meaningful_program",
     }
     on_disk = json.loads((tmp_path / "gates.json").read_text(encoding="utf-8"))
     assert on_disk["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+
+
+def test_write_ship_gates_binds_verdict_to_raw_agentevals_criteria(
+    tmp_path: Path,
+) -> None:
+    from slm_training.evals.agentv import model_ship_gate_cases
+
+    suites = _full_suite_metrics()
+    results = [
+        {**criterion, "pass": True}
+        for case in model_ship_gate_cases(suites)
+        for criterion in case["assertions"]
+    ]
+    evals_result = {
+        "format": "AgentEvals JSONL",
+        "authority": "AgentEvals assertions",
+        "criteria": {"pass": True, "results": results},
+        "runner": {"name": "AgentV", "execution_errors": 0},
+    }
+    assert write_ship_gates(
+        tmp_path / "valid", suites, evals_result=evals_result
+    )["pass"] is True
+
+    results[0]["actual"] = 99
+    assert write_ship_gates(
+        tmp_path / "tampered", suites, evals_result=evals_result
+    )["pass"] is False
 
 
 def test_evaluate_suites_scoreboard(
@@ -584,8 +666,8 @@ def test_evaluate_suites_scoreboard(
     (test_dir / "suites" / "smoke").mkdir(parents=True)
     hero = (
         'root = Stack([hero], "column")\n'
-        'hero_title = TextContent(":slot_0")\n'
-        'hero_body = TextContent(":slot_1")\n'
+        'hero_title = TextContent(":hero.title")\n'
+        'hero_body = TextContent(":hero.body")\n'
         "hero = Card([hero_title, hero_body])"
     )
     records = [
@@ -628,9 +710,20 @@ def test_evaluate_suites_scoreboard(
     assert set(stamp["components"]) == {
         "config.levers",
         "harness.model_build.eval",
+        "harness.experiment_feature_flags",
         "evals.meaningful_program",
+        "evals.power_protocol",
         "evals.scoring",
     }
+    rate_evidence = metrics["rate_evidence"]["meaningful_program_rate"]
+    assert rate_evidence["numerator"] == 1
+    assert rate_evidence["denominator"] == 1
+    assert rate_evidence["seed_count"] == 1
+    assert rate_evidence["interval"]["method"] == "wilson_score"
+    assert rate_evidence["evidence_class"] == "fixture_under_minimum_n"
+    exact_evidence = metrics["rate_evidence"]["exact_match"]
+    assert exact_evidence["numerator"] == 1
+    assert exact_evidence["denominator"] == 1
     assert metrics["n"] == 1
     # Every eval output pins the exact dataset it scored against.
     assert metrics["test_dir"] == str(test_dir)
@@ -643,17 +736,11 @@ def test_evaluate_suites_scoreboard(
     assert metrics["meaningful_metric_primary"] == "meaningful_program_v1"
     assert metrics["binding_aware_meaningful_v2_rate_strict"] == 0.0
     assert metrics["binding_aware_meaningful_v2_coverage"] == 0.0
-    assert (
-        metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
-    )
+    assert metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
 
     monkeypatch.setattr(
         "slm_training.evals.agentv.publish_model_evaluation",
         lambda *_args, **_kwargs: {},
-    )
-    monkeypatch.setattr(
-        "slm_training.evals.agentv.apply_agentv_metric_results",
-        lambda *_args, **_kwargs: None,
     )
     board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board
@@ -687,7 +774,7 @@ def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = TextContent(":slot_0")'
+    gold = 'root = TextContent(":copy.value")'
     record = ExampleRecord(
         id="stats-1",
         prompt="Copy value",
@@ -724,7 +811,7 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     record = ExampleRecord(
         id="timeout-1",
         prompt="Copy value",
-        openui='root = TextContent(":slot_0")',
+        openui='root = TextContent(":copy.value")',
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -751,100 +838,17 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
 
 
-def test_evaluate_interrupts_a_blocked_decoder_before_harness_deadline(
-    tmp_path: Path,
-) -> None:
-    train_dir = tmp_path / "train"
-    test_dir = tmp_path / "test"
-    train_dir.mkdir()
-    (test_dir / "suites" / "smoke").mkdir(parents=True)
-    record = ExampleRecord(
-        id="blocked-1",
-        prompt="Copy value",
-        openui='root = TextContent(":slot_0")',
-        placeholders=[":slot_0"],
-        split="smoke",
-        meta={"suite": "smoke"},
-    )
-    write_jsonl(train_dir / "records.jsonl", [record])
-    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
-
-    class BlockedModel:
-        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
-            while True:
-                pass
-
-    config = ModelBuildConfig(
-        train_dir=train_dir,
-        test_dir=test_dir,
-        suite="smoke",
-        run_root=tmp_path / "runs",
-        run_id="blocked-generation",
-        model_name="twotower",
-        decode_timeout_seconds=0.01,
-    )
-    metrics = evaluate(config, model=BlockedModel(), publish_agentv=False)
-    assert metrics["decode_timeout_count"] == 1
-    assert metrics["empty_prediction_count"] == 1
-
-
-def test_evaluate_preserves_live_batch_stats_on_signal_timeout(tmp_path: Path) -> None:
-    train_dir = tmp_path / "train"
-    test_dir = tmp_path / "test"
-    train_dir.mkdir()
-    (test_dir / "suites" / "smoke").mkdir(parents=True)
-    record = ExampleRecord(
-        id="blocked-batch-1",
-        prompt="Copy value",
-        openui='root = TextContent(":slot_0")',
-        placeholders=[":slot_0"],
-        split="smoke",
-        meta={"suite": "smoke"},
-    )
-    write_jsonl(train_dir / "records.jsonl", [record])
-    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
-
-    class BlockedBatchModel:
-        def generate_batch_requests(
-            self, _requests: list[GenerationRequest]
-        ) -> list[str]:
-            from slm_training.models.decode_stats import get_active_stats
-
-            stats = get_active_stats()
-            assert stats is not None
-            stats.tokens_emitted = 7
-            stats.constrained_selection_traces.append({"row": 0, "phase": "root"})
-            while True:
-                pass
-
-    config = ModelBuildConfig(
-        train_dir=train_dir,
-        test_dir=test_dir,
-        suite="smoke",
-        run_root=tmp_path / "runs",
-        run_id="blocked-batch-generation",
-        model_name="twotower",
-        decode_timeout_seconds=0.01,
-    )
-    metrics = evaluate(config, model=BlockedBatchModel(), publish_agentv=False)
-    assert metrics["decode_timeout_count"] == 1
-    assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
-    assert metrics["decode_stats"]["constrained_selection_traces"] == [
-        {"row": 0, "phase": "root", "record_id": "blocked-batch-1"}
-    ]
-
-
 def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Stack([cta])\ncta = Button(":slot_0")'
+    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
     record = ExampleRecord(
         id="s1",
         prompt="CTA",
         openui=gold,
-        placeholders=[":slot_0"],
+        placeholders=[":prod.cta"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -861,10 +865,10 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
             assert len(requests) == 1
             request = requests[0]
             assert request.prompt == "CTA"
-            assert request.slot_contract == (":slot_0",)
-            assert request.runtime_symbols == ()
-            assert request.effective_runtime_symbols()[0].surface == ":slot_0"
-            assert request.effective_runtime_symbols()[0].semantic_role is None
+            assert request.slot_contract == (":prod.cta",)
+            assert len(request.runtime_symbols) == 1
+            assert request.runtime_symbols[0].surface == ":prod.cta"
+            assert request.runtime_symbols[0].semantic_role == "cta"
             assert not hasattr(request, "openui")
             return [gold]
 
@@ -881,7 +885,13 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     assert metrics["contract_precision"] == 1.0
     assert metrics["contract_recall"] == 1.0
     assert metrics["fallback_count"] == 0
-    assert metrics["details"][0]["generation_request"]["slot_contract"] == [":slot_0"]
+    detail = metrics["details"][0]
+    assert detail["raw_prediction_sha256"] == detail["prediction_sha256"]
+    assert detail["raw_prediction_id"] == f"sha256:{detail['prediction_sha256']}"
+    assert detail["constrained_id"] == "unknown_not_captured"
+    assert detail["repaired_id"] == "unknown_not_captured"
+    assert detail["harness_provenance_id"] == metrics["harness_provenance_id"]
+    assert metrics["harness_provenance"]["browser"] == "not_applicable"
 
 
 def test_evaluate_passes_reported_canvas_cap_to_request_generation(
@@ -891,12 +901,12 @@ def test_evaluate_passes_reported_canvas_cap_to_request_generation(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Button(":slot_0")'
+    gold = 'root = Button(":prod.cta")'
     record = ExampleRecord(
         id="canvas-cap",
         prompt="CTA",
         openui=gold,
-        placeholders=[":slot_0"],
+        placeholders=[":prod.cta"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -935,12 +945,12 @@ def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Button(":slot_0")'
+    gold = 'root = Button(":prod.cta")'
     record = ExampleRecord(
         id="request-stats",
         prompt="CTA",
         openui=gold,
-        placeholders=[":slot_0"],
+        placeholders=[":prod.cta"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -951,7 +961,7 @@ def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
         def generate_batch_requests(
             self, requests: list[GenerationRequest]
         ) -> list[str]:
-            assert requests[0].slot_contract == (":slot_0",)
+            assert requests[0].slot_contract == (":prod.cta",)
             return [gold]
 
         def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
@@ -977,12 +987,12 @@ def test_topology_composite_keeps_quality_structure_trace_and_efficiency(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Stack([cta])\ncta = Button(":slot_0")'
+    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
     record = ExampleRecord(
         id="s1",
         prompt="CTA",
         openui=gold,
-        placeholders=[":slot_0"],
+        placeholders=[":prod.cta"],
         split="smoke",
         meta={"suite": "smoke"},
     )

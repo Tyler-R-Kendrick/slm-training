@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"confirmation_blocked": true, "unknown_has_positive_rate_mass": true, "unknown_not_directly_supervised": true, "unknown_stays_live": true}, "claim": "exact_rate_and_adapted_production_contract", "failures": [], "result": {"confirmation": {"owner": "VFA1-02", "reason": "SLM-199 does not establish a held-out flow win", "status": "blocked"}, "fidelity": "adapted_path_approximation", "unknown_events": [51, 28], "unknown_rate_mass_after_fit": 0.011322579346597195}}

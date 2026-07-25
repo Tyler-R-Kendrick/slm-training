@@ -88,3 +88,8 @@ def test_prefer_valid_rejects() -> None:
     )
     assert pair is not None
     assert grammar_score(pair.rejected) > 0.0 or pair.rejected == worse
+
+
+def test_parseable_structural_root_scores_as_nonrendering() -> None:
+    assert grammar_score('root = Col(":hero.title", "success")') == 0.0
+    assert grammar_score('root = Table([Col(":hero.title", "success")])') > 0.0

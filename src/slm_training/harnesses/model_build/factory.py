@@ -32,6 +32,13 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     cfg = getattr(model, "config", None)
     if cfg is None:
         return model
+    from slm_training.harnesses.model_build.eval_policy import (
+        MANDATORY_GENERATION_POLICY,
+    )
+
+    model._declared_generation_policy = {
+        key: getattr(cfg, key, None) for key in MANDATORY_GENERATION_POLICY
+    }
     allowed = config.runtime_override_fields
     for key in (
         "grammar_constrained",
@@ -61,8 +68,6 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "best_of_n",
         "fidelity_loss_weight",
         "ltr_loss_weight",
-        "ltr_tail_loss_weight",
-        "ltr_tail_tokens",
         "gen_steps",
         "parallel_unmask",
         "remask_ratio",
@@ -73,7 +78,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_fastpath",
         "grammar_fastpath_mode",
         "grammar_draft_window",
-        "request_aware_slot_reservation",
+        "compiler_prefill_max_states",
+        "compiler_prefill_token_budget",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -117,6 +123,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_trust_model",
         "grammar_sample_decode",
         "grammar_sample_temperature",
+        "grammar_uniform_at_unforced",
         "grammar_block_decode",
         "grammar_block_size",
         "use_amp",
@@ -142,8 +149,6 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_role_decode_weight",
         "semantic_role_schema_candidates",
         "slot_coverage_close_decode_weight",
-        "required_slot_root_completion",
-        "required_slot_array_completion",
         "schema_value_decode_weight",
         "schema_enum_close_decode_weight",
         "schema_open_decode_weight",
@@ -162,16 +167,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_plan_repeated_slot_margin_decode_weight",
         "semantic_plan_typed_array_nonempty_margin_decode_weight",
         "semantic_plan_typed_array_item_margin_decode_weight",
-        "compiler_schema_component_types",
-        "slot_alias_unique_decode",
         "visible_reference_decode_weight",
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
         "binder_topology_decode_weight",
-        "binder_topology_unique_decode",
-        "binder_slot_ownership_decode_weight",
-        "binder_slot_presence_decode_weight",
-        "binder_reference_presence_decode_weight",
         "binder_arity_decode_weight",
         "root_reference_arity_decode_weight",
         "root_reference_identity_decode_weight",
@@ -241,6 +240,11 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "speculative_successor",
         "speculative_fanout",
         "speculative_overlap",
+        "speculative_rank",
+        "speculative_rank_table",
+        "speculative_rank_margin",
+        "prefill_schedule",
+        "prefill_schedule_max_lookahead",
     ):
         if allowed is not None and key not in allowed:
             continue
@@ -248,6 +252,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
             value = getattr(config, key)
             if value is not None:
                 setattr(cfg, key, value)
+    for key, value in MANDATORY_GENERATION_POLICY.items():
+        if hasattr(cfg, key):
+            setattr(cfg, key, value)
     # Preserve checkpoint DESIGN.md conditioning unless caller sets an explicit bool.
     # Eval defaults must not force-enable gold DESIGN.md on no-design-md checkpoints.
     dm = getattr(config, "design_md_in_context", None)
@@ -339,6 +346,13 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         recursive_detach_between_steps=getattr(
             config, "recursive_detach_between_steps", False
         ),
+        recursive_update_mode=getattr(
+            config, "recursive_update_mode", "current_v1"
+        ),
+        recursive_empty_f_mode=getattr(
+            config, "recursive_empty_f_mode", "pass_through"
+        ),
+        recursive_norm_mode=getattr(config, "recursive_norm_mode", "shared"),
         recursive_depth_supervision_weights=config.recursive_depth_supervision_weights,
         recursive_depth_aux_mode=config.recursive_depth_aux_mode,
         recursive_depth_aux_weight=float(config.recursive_depth_aux_weight),
@@ -351,11 +365,13 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_ltr_stages=tuple(ltr_stages),
         grammar_finalize_validate=getattr(config, "grammar_finalize_validate", False),
         ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
-        ltr_tail_loss_weight=float(
-            getattr(config, "ltr_tail_loss_weight", 0.0) or 0.0
-        ),
-        ltr_tail_tokens=int(getattr(config, "ltr_tail_tokens", 32) or 0),
         fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
+        semantic_contrast_loss_weight=float(
+            getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0
+        ),
+        semantic_contrast_margin=float(
+            getattr(config, "semantic_contrast_margin", 1.0) or 0.0
+        ),
         grammar_ltr_primary=config.grammar_ltr_primary,
         design_md_in_context=(
             True
@@ -398,11 +414,11 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_fastpath=getattr(config, "grammar_fastpath", True),
         grammar_fastpath_mode=getattr(config, "grammar_fastpath_mode", "hybrid"),
         grammar_draft_window=int(getattr(config, "grammar_draft_window", 8) or 8),
-        request_aware_slot_reservation=bool(
-            getattr(config, "request_aware_slot_reservation", False)
+        compiler_prefill_max_states=max(
+            0, int(getattr(config, "compiler_prefill_max_states", 0) or 0)
         ),
-        slot_alias_unique_decode=bool(
-            getattr(config, "slot_alias_unique_decode", False)
+        compiler_prefill_token_budget=max(
+            0, int(getattr(config, "compiler_prefill_token_budget", 0) or 0)
         ),
         compiler_decode_mode=str(
             getattr(config, "compiler_decode_mode", "off") or "off"
@@ -453,6 +469,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_trust_model=getattr(config, "grammar_trust_model", False),
         grammar_sample_decode=getattr(config, "grammar_sample_decode", False),
         grammar_sample_temperature=getattr(config, "grammar_sample_temperature", 0.8),
+        grammar_uniform_at_unforced=getattr(
+            config, "grammar_uniform_at_unforced", False
+        ),
         grammar_block_decode=getattr(config, "grammar_block_decode", False),
         grammar_block_size=getattr(config, "grammar_block_size", 32),
         output_tokenizer=getattr(config, "output_tokenizer", "lexer"),
@@ -526,12 +545,6 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         slot_coverage_close_decode_weight=float(
             getattr(config, "slot_coverage_close_decode_weight", 0.0) or 0.0
-        ),
-        required_slot_root_completion=bool(
-            getattr(config, "required_slot_root_completion", False)
-        ),
-        required_slot_array_completion=bool(
-            getattr(config, "required_slot_array_completion", False)
         ),
         schema_value_decode_weight=float(
             getattr(config, "schema_value_decode_weight", 0.0) or 0.0
@@ -609,9 +622,6 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             )
             or 0.0
         ),
-        compiler_schema_component_types=bool(
-            getattr(config, "compiler_schema_component_types", False)
-        ),
         visible_reference_decode_weight=float(
             getattr(config, "visible_reference_decode_weight", 0.0) or 0.0
         ),
@@ -653,27 +663,6 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         binder_topology_decode_weight=float(
             getattr(config, "binder_topology_decode_weight", 0.0) or 0.0
-        ),
-        binder_topology_unique_decode=bool(
-            getattr(config, "binder_topology_unique_decode", False)
-        ),
-        binder_slot_ownership_loss_weight=float(
-            getattr(config, "binder_slot_ownership_loss_weight", 0.0) or 0.0
-        ),
-        binder_slot_ownership_decode_weight=float(
-            getattr(config, "binder_slot_ownership_decode_weight", 0.0) or 0.0
-        ),
-        binder_slot_presence_loss_weight=float(
-            getattr(config, "binder_slot_presence_loss_weight", 0.0) or 0.0
-        ),
-        binder_slot_presence_decode_weight=float(
-            getattr(config, "binder_slot_presence_decode_weight", 0.0) or 0.0
-        ),
-        binder_reference_presence_loss_weight=float(
-            getattr(config, "binder_reference_presence_loss_weight", 0.0) or 0.0
-        ),
-        binder_reference_presence_decode_weight=float(
-            getattr(config, "binder_reference_presence_decode_weight", 0.0) or 0.0
         ),
         binder_arity_loss_weight=float(
             getattr(config, "binder_arity_loss_weight", 0.0) or 0.0
@@ -787,7 +776,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "grammar_finalize_on_last_attempt_only", False)
         ),
         allow_unconstrained_fallback=bool(
-            getattr(config, "allow_unconstrained_fallback", True)
+            getattr(config, "allow_unconstrained_fallback", False)
         ),
         stability_min_persistence=int(
             getattr(config, "stability_min_persistence", 0) or 0
@@ -807,6 +796,15 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         speculative_successor=bool(getattr(config, "speculative_successor", False)),
         speculative_fanout=int(getattr(config, "speculative_fanout", 2) or 2),
         speculative_overlap=bool(getattr(config, "speculative_overlap", False)),
+        speculative_rank=str(getattr(config, "speculative_rank", "off") or "off"),
+        speculative_rank_table=getattr(config, "speculative_rank_table", None),
+        speculative_rank_margin=float(
+            getattr(config, "speculative_rank_margin", 0.0) or 0.0
+        ),
+        prefill_schedule=str(getattr(config, "prefill_schedule", "off") or "off"),
+        prefill_schedule_max_lookahead=int(
+            getattr(config, "prefill_schedule_max_lookahead", 0) or 0
+        ),
         seed=config.seed,
     )
 
@@ -816,6 +814,9 @@ def build_model(
     records: list[ExampleRecord],
     checkpoint: Path | None = None,
 ) -> Any:
+    from slm_training.harnesses.capability_gates import require_training_authorized
+
+    require_training_authorized(config)
     try:
         from slm_training.models.grammar import set_active_dsl
 

@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {}, "claim": "bounded_architecture_repair_not_ship", "failures": [], "result": {"blocked_claims": ["semantic_workspace", "checkpoint_promotion", "ship_readiness", "production_default_change"]}}

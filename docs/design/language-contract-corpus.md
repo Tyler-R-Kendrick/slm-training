@@ -31,6 +31,10 @@ specific verifier gate.
   - reaches a non-`Quarantine` tier through the F2 verifier, and
   - is projected via the F1 `emit_record`, so it carries `contract_id`, family,
     lineage, and `split_group_id`.
+- **Root-renderability repairs** — every structural-only component that parses
+  but renders no standalone UI gets a deterministic `task="repair"` record.
+  The invalid root appears only in prompt context; the SFT target is the
+  smallest visible parent document.
 
 ### Negatives (`polarity="negative"`, `task="adversarial"`)
 
@@ -49,6 +53,16 @@ For G0–G3 the targeted gate is also the *first* failing gate
 (`verify_record(...).failing_gate`). v0.5 dataflow syntax (G4) is invalid at
 several levels at once, so those are asserted only through the isolated
 `evaluate_gate(Gate.DATAFLOW, ...)` check.
+
+## Runtime-renderability preference signal
+
+The strict train-data writer also emits one `pair_corpus="root_renderability"`
+pair per structural-only root into `preference_pairs.jsonl`. Each pair ranks a
+runtime-visible repair above its parseable-but-blank standalone root, with
+`chosen_score=1.0` and `rejected_score=0.0`. Phase B consumes these curated
+pairs before generic soft-corruption pairs, so a preference limit cannot drop
+the renderability lesson. The official preview verifier is the regression
+oracle for both sides of every pair.
 
 ## Coverage report
 

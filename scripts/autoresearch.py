@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -34,7 +35,11 @@ from slm_training.autoresearch.providers import (
 )
 from slm_training.autoresearch.researchers import RESEARCHERS, get_researcher
 from slm_training.autoresearch.researcher_eval import evaluate_researcher
-from slm_training.autoresearch.rl_gate import assess_rl_readiness, write_rl_readiness
+from slm_training.autoresearch.rl_gate import (
+    assert_rl_ready,
+    assess_rl_readiness,
+    write_rl_readiness,
+)
 from slm_training.autoresearch.schemas import (
     CampaignBudget,
     CampaignSpec,
@@ -47,6 +52,7 @@ from slm_training.autoresearch.schemas import (
     ResearcherRun,
     ResearchSource,
 )
+from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.autoresearch.telemetry import TrackioSink
 from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
@@ -582,6 +588,33 @@ def cmd_run(args: argparse.Namespace) -> int:
             if item.experiment.experiment_id == matrix.recommended_experiment_id
         )
     _require_hypothesis_matrix(store, campaign, experiment)
+    manifest_path = getattr(args, "campaign_manifest", None)
+    if manifest_path is not None:
+        manifest = ExperimentCampaignV1.model_validate_json(
+            manifest_path.read_text(encoding="utf-8")
+        )
+        if manifest.experiment_id != experiment.experiment_id:
+            raise ValueError("campaign manifest belongs to a different experiment")
+        lock = store.lock_experiment_campaign(manifest)
+    else:
+        try:
+            lock = store.load_experiment_campaign(experiment.experiment_id)
+        except FileNotFoundError:
+            lock = None
+    if args.execute and lock is None:
+        raise ValueError(
+            "execution requires a preregistered --campaign-manifest lock"
+        )
+    if lock is not None and lock.manifest.requires_rl:
+        if not experiment.requires_rl or not experiment.rl_readiness_report:
+            raise ValueError("RL campaign requires experiment readiness evidence")
+        readiness_path = Path(experiment.rl_readiness_report)
+        resolved = assert_rl_ready(readiness_path)
+        report_sha = hashlib.sha256(readiness_path.read_bytes()).hexdigest()
+        if report_sha != lock.manifest.rl_readiness_report_sha256:
+            raise ValueError("RL readiness report digest does not match campaign lock")
+        if resolved.evaluation_sha256 != lock.manifest.rl_evaluation_sha256:
+            raise ValueError("RL evaluation digest does not match campaign lock")
     started = {
         str(row.get("experiment_id"))
         for row in _events(store)
@@ -598,7 +631,14 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
     commands = compile_commands(campaign, experiment, output_root=args.root)
     plan_path = store.write_artifact(
-        "execution_plans", {"commands": commands, "execute": args.execute}
+        "execution_plans",
+        {
+            "commands": commands,
+            "execute": args.execute,
+            "campaign_manifest_sha256": (
+                lock.manifest_sha256 if lock is not None else None
+            ),
+        },
     )
     store.append_event(
         "execution_planned",
@@ -614,13 +654,17 @@ def cmd_run(args: argparse.Namespace) -> int:
             "experiment_started",
             experiment_id=experiment.experiment_id,
             status="running",
-            detail={"hypothesis_matrix_id": matrix.matrix_id},
+        detail={
+            "hypothesis_matrix_id": matrix.matrix_id,
+            "campaign_manifest_sha256": lock.manifest_sha256,
+        },
         )
     outcome = execute_commands(
         experiment,
         commands,
         cwd=ROOT,
         timeout_seconds=float(campaign.budget.max_wall_minutes * 60),
+        campaign_manifest_sha256=lock.manifest_sha256,
     )
     outcome_path = store.write_artifact("outcomes", outcome)
     store.append_event(
@@ -628,7 +672,10 @@ def cmd_run(args: argparse.Namespace) -> int:
         experiment_id=experiment.experiment_id,
         status=outcome.status,
         artifact_sha256=outcome_path.stem,
-        detail={"exit_code": outcome.exit_code},
+        detail={
+            "exit_code": outcome.exit_code,
+            "campaign_manifest_sha256": lock.manifest_sha256,
+        },
     )
     diagnosis = diagnose_outcome(outcome)
     diagnosis_path = store.write_artifact("diagnoses", diagnosis)
@@ -936,6 +983,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exact matrix member; defaults to the matrix recommendation.",
     )
     run.add_argument("--execute", action="store_true")
+    run.add_argument(
+        "--campaign-manifest",
+        type=Path,
+        help="ExperimentCampaignV1 JSON locked before --execute.",
+    )
     run.add_argument("--trackio", action="store_true")
     run.set_defaults(func=cmd_run)
 

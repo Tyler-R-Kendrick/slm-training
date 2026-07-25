@@ -1,0 +1,22 @@
+{
+  "claim_manifest_digest": "sha256:slm184-dev-fixture-no-confirmation",
+  "confirmation_allowed": false,
+  "created_at": "2026-07-23T00:00:00+00:00",
+  "max_edits": 12,
+  "reachability_floor": 0.95,
+  "reachability_rate": 1.0,
+  "schema": "LegalEditPlannerManifestV1",
+  "selected_arm": "canonical_greedy",
+  "source_policy": "declared_request_contract",
+  "status": "dev_fixture",
+  "transition_replay_rate": 1.0,
+  "version_pins": {
+    "canonicalizer": "d2",
+    "codec": "production_codec/v1",
+    "compiler": "openui_statement/v0.5",
+    "coupling": "canonical_greedy",
+    "pack": "openui/v0.5",
+    "planner": "slm189/v1",
+    "verifier": "statement/canonical"
+  }
+}

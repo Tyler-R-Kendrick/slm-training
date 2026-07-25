@@ -1,0 +1,4769 @@
+{
+  "schema": "RecursiveUpdateRawMatrixV1",
+  "issue": "SLM-243",
+  "rows": [
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 1,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.235998630523682,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.9210187196731567,
+      "update_cosine_previous": [],
+      "gradient_norm": 2.0730797666574277,
+      "gradient_norm_by_group": {
+        "f": 0.3909701830791318,
+        "g": 0.6542566300904864,
+        "norm": 1.6834259033203125,
+        "other": 0.9395890191356622
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 7.23599910736084,
+        "entropy": 3.2658894062042236,
+        "y_norm": 26.1119441986084,
+        "z_norm": 22.85111427307129,
+        "y_update_ratio": 0.7964237928390503,
+        "z_update_ratio": 0.9830647706985474
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 1,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 7.289873123168945,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.9242327213287354,
+      "update_cosine_previous": [],
+      "gradient_norm": 2.1589814603698465,
+      "gradient_norm_by_group": {
+        "f": 0.47531019160283916,
+        "g": 0.6773016385537797,
+        "norm": 1.7149713039398193,
+        "other": 1.0175544629426514
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 7.2898736000061035,
+        "entropy": 3.0309579372406006,
+        "y_norm": 27.311124801635742,
+        "z_norm": 22.274438858032227,
+        "y_update_ratio": 0.7780675292015076,
+        "z_update_ratio": 0.9444795846939087
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 1,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.594428539276123,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.9701228439807892,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.7562685686270976,
+      "gradient_norm_by_group": {
+        "f": 0.42123295528874755,
+        "g": 0.6724767781221785,
+        "norm": 1.2768548727035522,
+        "other": 0.9079970811989384
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 5.594428539276123,
+        "entropy": 3.2851812839508057,
+        "y_norm": 28.631546020507812,
+        "z_norm": 23.927377700805664,
+        "y_update_ratio": 0.7613142728805542,
+        "z_update_ratio": 1.0239628553390503
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 2,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.457108497619629,
+      "accuracy": 0.0546875,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.7200012877583504,
+      "update_cosine_previous": [
+        0.9951276779174805
+      ],
+      "gradient_norm": 2.4268787125313542,
+      "gradient_norm_by_group": {
+        "f": 0.6559652068095209,
+        "g": 1.018342906396356,
+        "norm": 1.8793470859527588,
+        "other": 0.9436536378917227
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 7.457108497619629,
+        "entropy": 3.268310070037842,
+        "y_norm": 37.9451904296875,
+        "z_norm": 34.45317840576172,
+        "y_update_ratio": 0.4734865427017212,
+        "z_update_ratio": 0.5311918258666992
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.012175,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 2,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 7.610044002532959,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.730661541223526,
+      "update_cosine_previous": [
+        0.9899066686630249
+      ],
+      "gradient_norm": 2.520352397856353,
+      "gradient_norm_by_group": {
+        "f": 0.9072208912180733,
+        "g": 1.1507029539717692,
+        "norm": 1.7586396932601929,
+        "other": 1.054606848511849
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 7.610044002532959,
+        "entropy": 3.084779977798462,
+        "y_norm": 39.50216293334961,
+        "z_norm": 33.709617614746094,
+        "y_update_ratio": 0.4788399040699005,
+        "z_update_ratio": 0.5505423545837402
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 2,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.809298515319824,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.7507551833987236,
+      "update_cosine_previous": [
+        0.994759202003479
+      ],
+      "gradient_norm": 2.1493015284684267,
+      "gradient_norm_by_group": {
+        "f": 0.7191107896153807,
+        "g": 1.0814475433576292,
+        "norm": 1.4416500329971313,
+        "other": 0.9243879736672141
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 5.809298515319824,
+        "entropy": 3.281505584716797,
+        "y_norm": 41.04743194580078,
+        "z_norm": 36.37965774536133,
+        "y_update_ratio": 0.46096810698509216,
+        "z_update_ratio": 0.546161949634552
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 4,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.67842960357666,
+      "accuracy": 0.04296875,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.515884269028902,
+      "update_cosine_previous": [
+        0.9951276779174805,
+        0.9978092908859253,
+        0.9987572431564331
+      ],
+      "gradient_norm": 2.953660378373944,
+      "gradient_norm_by_group": {
+        "f": 1.030563868846131,
+        "g": 1.4563313144150758,
+        "norm": 2.1558609008789062,
+        "other": 0.9452040106350869
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 7.67842960357666,
+        "entropy": 3.289855480194092,
+        "y_norm": 62.576210021972656,
+        "z_norm": 58.45514678955078,
+        "y_update_ratio": 0.25448450446128845,
+        "z_update_ratio": 0.26872679591178894
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.006825,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 4,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 8.064988136291504,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.5310948900878429,
+      "update_cosine_previous": [
+        0.9899066686630249,
+        0.9955459237098694,
+        0.9976088404655457
+      ],
+      "gradient_norm": 3.3732377534247484,
+      "gradient_norm_by_group": {
+        "f": 1.6204377852159568,
+        "g": 1.8609134401854026,
+        "norm": 2.0067412853240967,
+        "other": 1.1237904196457489
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 8.064988136291504,
+        "entropy": 3.1301331520080566,
+        "y_norm": 65.24594116210938,
+        "z_norm": 58.3155632019043,
+        "y_update_ratio": 0.26196959614753723,
+        "z_update_ratio": 0.287250816822052
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 4,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.050414085388184,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.5311378799378872,
+      "update_cosine_previous": [
+        0.994759202003479,
+        0.9977772831916809,
+        0.9987848997116089
+      ],
+      "gradient_norm": 2.674104036617864,
+      "gradient_norm_by_group": {
+        "f": 1.1233568972397234,
+        "g": 1.5636871689736789,
+        "norm": 1.6052825450897217,
+        "other": 0.9310489074679392
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.050414562225342,
+        "entropy": 3.292344093322754,
+        "y_norm": 66.5689468383789,
+        "z_norm": 62.16060256958008,
+        "y_update_ratio": 0.24671170115470886,
+        "z_update_ratio": 0.2729392647743225
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 6,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.8030171394348145,
+      "accuracy": 0.033854166666666664,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.4099171335498492,
+      "update_cosine_previous": [
+        0.9951276779174805,
+        0.9978092908859253,
+        0.9987572431564331,
+        0.9992002248764038,
+        0.9994431138038635
+      ],
+      "gradient_norm": 3.3358294243833835,
+      "gradient_norm_by_group": {
+        "f": 1.2945859482197652,
+        "g": 1.7302668360826632,
+        "norm": 2.3567516803741455,
+        "other": 0.9506331386292177
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 7.803016662597656,
+        "entropy": 3.3016371726989746,
+        "y_norm": 87.86150360107422,
+        "z_norm": 83.02691650390625,
+        "y_update_ratio": 0.17271962761878967,
+        "z_update_ratio": 0.17939551174640656
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 6,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 8.38026237487793,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.42474496364593506,
+      "update_cosine_previous": [
+        0.9899066686630249,
+        0.9955459237098694,
+        0.9976088404655457,
+        0.9985515475273132,
+        0.9990475177764893
+      ],
+      "gradient_norm": 4.070628589865963,
+      "gradient_norm_by_group": {
+        "f": 2.1297721888969683,
+        "g": 2.3242048144112797,
+        "norm": 2.293692111968994,
+        "other": 1.1709551725808367
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 8.38026237487793,
+        "entropy": 3.118504047393799,
+        "y_norm": 91.99069213867188,
+        "z_norm": 84.26496887207031,
+        "y_update_ratio": 0.17841604351997375,
+        "z_update_ratio": 0.19221065938472748
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 6,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.189987659454346,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.41901413227121037,
+      "update_cosine_previous": [
+        0.994759202003479,
+        0.9977772831916809,
+        0.9987848997116089,
+        0.9992380738258362,
+        0.9994791746139526
+      ],
+      "gradient_norm": 3.0287904133098666,
+      "gradient_norm_by_group": {
+        "f": 1.3908096343738081,
+        "g": 1.8535934628078663,
+        "norm": 1.7138277292251587,
+        "other": 0.9307017341047699
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.189988136291504,
+        "entropy": 3.2989602088928223,
+        "y_norm": 92.33033752441406,
+        "z_norm": 88.51043701171875,
+        "y_update_ratio": 0.1665758639574051,
+        "z_update_ratio": 0.18060624599456787
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 8,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.889711856842041,
+      "accuracy": 0.029296875,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.34369061421602964,
+      "update_cosine_previous": [
+        0.9951276779174805,
+        0.9978092908859253,
+        0.9987572431564331,
+        0.9992002248764038,
+        0.9994431138038635,
+        0.9995907545089722,
+        0.9996871948242188
+      ],
+      "gradient_norm": 3.6320726736279223,
+      "gradient_norm_by_group": {
+        "f": 1.4947040665134783,
+        "g": 1.925632930510548,
+        "norm": 2.5167791843414307,
+        "other": 0.9568552734148451
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 7.889712333679199,
+        "entropy": 3.305037021636963,
+        "y_norm": 113.5194091796875,
+        "z_norm": 107.98995208740234,
+        "y_update_ratio": 0.130397230386734,
+        "z_update_ratio": 0.13467302918434143
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "45b5b49c3b470e9662c749e4b15c24b646dbff8ed5752e1859cf7e63c713b552",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "d35742fd8ef4d05d7779628b179c9c6cf8058a367e2c6c14c966eb23289f460b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "f09e06beb9f67665659487a0f525ec472d186d43ef4c96ed263ec6af0a5939b8",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "09fc1fb8d9fee3856897bdfb989ac4602260ba4109231e7903861905a7382777",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 8,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 8.615357398986816,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.3572241924703121,
+      "update_cosine_previous": [
+        0.9899066686630249,
+        0.9955459237098694,
+        0.9976088404655457,
+        0.9985515475273132,
+        0.9990475177764893,
+        0.9993355870246887,
+        0.999515175819397
+      ],
+      "gradient_norm": 4.587072374302806,
+      "gradient_norm_by_group": {
+        "f": 2.496191152253527,
+        "g": 2.632340731486308,
+        "norm": 2.538226366043091,
+        "other": 1.199354779281342
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 8.6153564453125,
+        "entropy": 3.0904486179351807,
+        "y_norm": 119.34103393554688,
+        "z_norm": 111.09748077392578,
+        "y_update_ratio": 0.1347411870956421,
+        "z_update_ratio": 0.14389416575431824
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "7fcfe33496f976b05c81cc4f316c5b3725c9239a16c71f627c106ae54e968821",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "271d667013d14106b496a99b922ef4af5a9a47a46893a2cb12ee01c003eca7ce",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "ab2f182c925706c5a07925705288fcae20ca308f2661d4328b2036a3d8f6c042",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "44c8081396ba38d7f1d9469ade4000476ee0a39dc440342d88b62e2923c2020a",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "architecture_hash": "45c203a2e28e67be070cadd95aa5310f7686f2012f48adbbdb2fcd54c666fb4b",
+      "depth": 8,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.287038326263428,
+      "accuracy": 0.04296875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.34968257043510675,
+      "update_cosine_previous": [
+        0.994759202003479,
+        0.9977772831916809,
+        0.9987848997116089,
+        0.9992380738258362,
+        0.9994791746139526,
+        0.9996222257614136,
+        0.9997140169143677
+      ],
+      "gradient_norm": 3.2962552364423403,
+      "gradient_norm_by_group": {
+        "f": 1.5894355753512335,
+        "g": 2.0560328832855785,
+        "norm": 1.8023210763931274,
+        "other": 0.929172027139728
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.2870378494262695,
+        "entropy": 3.301985740661621,
+        "y_norm": 118.1218490600586,
+        "z_norm": 115.19071197509766,
+        "y_update_ratio": 0.12536659836769104,
+        "z_update_ratio": 0.1346355378627777
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "f8f9901d0e71937bce9cb4c3c1134a3bfa05b0b10168f194a2e8774afa475499",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0375,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "6e515813af74a1ca1e7b28a98c97e9704da3f7a0e38ccd72604498fe4ccf716f",
+            "meaningful_parse": false,
+            "structural_similarity": 0.06,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "ebdfe22f40128de92248a5de2c26a0618137d6329d2b3501cb990ed28162d55f",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "0093e8d177bea200c5bb61b8f841f56a62da2c264f0c2cfc267cc1619c2335be",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0214,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 1,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.857085704803467,
+      "accuracy": 0.09375,
+      "maximum_update_ratio": 0.36419013142585754,
+      "mean_update_ratio": 0.3621405363082886,
+      "update_cosine_previous": [],
+      "gradient_norm": 2.3564113202505212,
+      "gradient_norm_by_group": {
+        "f": 0.8466304745586241,
+        "g": 1.3621444827102318,
+        "norm": 1.460554838180542,
+        "other": 0.920452672679551
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.857085704803467,
+        "entropy": 3.309957504272461,
+        "y_norm": 15.806439399719238,
+        "z_norm": 12.567676544189453,
+        "y_update_ratio": 0.33548134565353394,
+        "z_update_ratio": 0.3303433060646057
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.26846978068351746,
+        "js": 0.05999787896871567
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 1,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.945917129516602,
+      "accuracy": 0.015625,
+      "maximum_update_ratio": 0.48097705841064453,
+      "mean_update_ratio": 0.43070684373378754,
+      "update_cosine_previous": [],
+      "gradient_norm": 2.283977327820784,
+      "gradient_norm_by_group": {
+        "f": 0.690391597722561,
+        "g": 1.2216957977043175,
+        "norm": 1.5119755268096924,
+        "other": 0.9804597187001739
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.94591760635376,
+        "entropy": 3.1024954319000244,
+        "y_norm": 16.902259826660156,
+        "z_norm": 12.453878402709961,
+        "y_update_ratio": 0.2981933653354645,
+        "z_update_ratio": 0.4208674430847168
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.17917770147323608,
+        "js": 0.03927610069513321
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 1,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.2453837394714355,
+      "accuracy": 0.09375,
+      "maximum_update_ratio": 0.48293548822402954,
+      "mean_update_ratio": 0.460504487156868,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.8966257662230124,
+      "gradient_norm_by_group": {
+        "f": 0.7802500146420973,
+        "g": 1.212846785187623,
+        "norm": 0.8572106957435608,
+        "other": 0.8846421369768249
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 5.245383262634277,
+        "entropy": 3.2148451805114746,
+        "y_norm": 18.450313568115234,
+        "z_norm": 14.002432823181152,
+        "y_update_ratio": 0.3744172155857086,
+        "z_update_ratio": 0.3941437602043152
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.02155,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.21545866131782532,
+        "js": 0.048818569630384445
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 2,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.302200794219971,
+      "accuracy": 0.1015625,
+      "maximum_update_ratio": 0.36419013142585754,
+      "mean_update_ratio": 0.35256920009851456,
+      "update_cosine_previous": [
+        0.986476719379425
+      ],
+      "gradient_norm": 4.025771912425857,
+      "gradient_norm_by_group": {
+        "f": 2.0054255057564916,
+        "g": 2.7325334133283965,
+        "norm": 1.926601529121399,
+        "other": 1.0032824750633353
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 7.302201271057129,
+        "entropy": 3.1906228065490723,
+        "y_norm": 17.94905662536621,
+        "z_norm": 14.182555198669434,
+        "y_update_ratio": 0.3089146614074707,
+        "z_update_ratio": 0.3316700756549835
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.8848692178726196,
+        "js": 0.1590801477432251
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 2,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 7.545488357543945,
+      "accuracy": 0.0078125,
+      "maximum_update_ratio": 0.4906047582626343,
+      "mean_update_ratio": 0.42609720677137375,
+      "update_cosine_previous": [
+        0.9834980964660645
+      ],
+      "gradient_norm": 4.153291296621356,
+      "gradient_norm_by_group": {
+        "f": 1.9700485542124515,
+        "g": 3.004416278252178,
+        "norm": 1.818385362625122,
+        "other": 1.0176909101491336
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 7.545489311218262,
+        "entropy": 3.1324069499969482,
+        "y_norm": 18.84511947631836,
+        "z_norm": 14.707904815673828,
+        "y_update_ratio": 0.2796506881713867,
+        "z_update_ratio": 0.4127751588821411
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.5182002186775208,
+        "js": 0.10088343173265457
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 2,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.650273323059082,
+      "accuracy": 0.09375,
+      "maximum_update_ratio": 0.48293548822402954,
+      "mean_update_ratio": 0.4158315435051918,
+      "update_cosine_previous": [
+        0.9697380661964417
+      ],
+      "gradient_norm": 3.616705384675882,
+      "gradient_norm_by_group": {
+        "f": 2.0559604464084065,
+        "g": 2.6716379396724594,
+        "norm": 0.933272123336792,
+        "other": 0.9192052792781357
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 5.650272846221924,
+        "entropy": 3.130812406539917,
+        "y_norm": 20.837848663330078,
+        "z_norm": 16.768224716186523,
+        "y_update_ratio": 0.2815583646297455,
+        "z_update_ratio": 0.3467942774295807
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.05155,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.6127006411552429,
+        "js": 0.12047010660171509
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 4,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.923201560974121,
+      "accuracy": 0.08984375,
+      "maximum_update_ratio": 0.36419013142585754,
+      "mean_update_ratio": 0.3235139362514019,
+      "update_cosine_previous": [
+        0.986476719379425,
+        0.9875798225402832,
+        0.9892916083335876
+      ],
+      "gradient_norm": 5.318508853839809,
+      "gradient_norm_by_group": {
+        "f": 2.957030930322595,
+        "g": 3.637572505078263,
+        "norm": 2.2898101806640625,
+        "other": 1.0331215380166057
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 7.923201560974121,
+        "entropy": 3.121837854385376,
+        "y_norm": 24.023929595947266,
+        "z_norm": 20.12578010559082,
+        "y_update_ratio": 0.2112576961517334,
+        "z_update_ratio": 0.28953617811203003
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.772979974746704,
+        "js": 0.2671441435813904
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 4,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 8.87186050415039,
+      "accuracy": 0.00390625,
+      "maximum_update_ratio": 0.4906047582626343,
+      "mean_update_ratio": 0.3808510936796665,
+      "update_cosine_previous": [
+        0.9834980964660645,
+        0.9888834357261658,
+        0.9942793250083923
+      ],
+      "gradient_norm": 7.451409618940207,
+      "gradient_norm_by_group": {
+        "f": 4.189178818453849,
+        "g": 5.373642165485518,
+        "norm": 2.806309700012207,
+        "other": 1.105839898532227
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 8.87186050415039,
+        "entropy": 3.061459541320801,
+        "y_norm": 24.970050811767578,
+        "z_norm": 22.881248474121094,
+        "y_update_ratio": 0.22076764702796936,
+        "z_update_ratio": 0.32251304388046265
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.0976322889328003,
+        "js": 0.18945389986038208
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 4,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.372798919677734,
+      "accuracy": 0.09375,
+      "maximum_update_ratio": 0.48293548822402954,
+      "mean_update_ratio": 0.3361096326261759,
+      "update_cosine_previous": [
+        0.9697380661964417,
+        0.970702588558197,
+        0.9726261496543884
+      ],
+      "gradient_norm": 5.6666552125965675,
+      "gradient_norm_by_group": {
+        "f": 3.3321698749784154,
+        "g": 4.318001428345527,
+        "norm": 1.2206374406814575,
+        "other": 0.9340948163579523
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.372798919677734,
+        "entropy": 3.114537000656128,
+        "y_norm": 26.099885940551758,
+        "z_norm": 23.94129180908203,
+        "y_update_ratio": 0.1783638745546341,
+        "z_update_ratio": 0.2377903163433075
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.106725,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.2966465950012207,
+        "js": 0.2206542193889618
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 6,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 8.229022026062012,
+      "accuracy": 0.07291666666666667,
+      "maximum_update_ratio": 0.36419013142585754,
+      "mean_update_ratio": 0.288917638361454,
+      "update_cosine_previous": [
+        0.986476719379425,
+        0.9875798225402832,
+        0.9892916083335876,
+        0.990999698638916,
+        0.9928900003433228
+      ],
+      "gradient_norm": 6.1952601467648085,
+      "gradient_norm_by_group": {
+        "f": 3.6967700496346865,
+        "g": 4.282597939309737,
+        "norm": 2.3044726848602295,
+        "other": 1.0314552928602168
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 8.229022979736328,
+        "entropy": 3.1074321269989014,
+        "y_norm": 30.477615356445312,
+        "z_norm": 28.52100944519043,
+        "y_update_ratio": 0.14564694464206696,
+        "z_update_ratio": 0.223777636885643
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.009375,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 2.1587579250335693,
+        "js": 0.3051069676876068
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 6,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 9.767714500427246,
+      "accuracy": 0.0026041666666666665,
+      "maximum_update_ratio": 0.4906047582626343,
+      "mean_update_ratio": 0.3379395479957263,
+      "update_cosine_previous": [
+        0.9834980964660645,
+        0.9888834357261658,
+        0.9942793250083923,
+        0.9973249435424805,
+        0.9986028671264648
+      ],
+      "gradient_norm": 9.219917429471446,
+      "gradient_norm_by_group": {
+        "f": 5.554715392161475,
+        "g": 6.403942503807805,
+        "norm": 3.4317431449890137,
+        "other": 1.1681924983068779
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 9.767715454101562,
+        "entropy": 2.9142069816589355,
+        "y_norm": 32.85029983520508,
+        "z_norm": 34.02602767944336,
+        "y_update_ratio": 0.17015351355075836,
+        "z_update_ratio": 0.237604558467865
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.5003225803375244,
+        "js": 0.25142621994018555
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 6,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.944825649261475,
+      "accuracy": 0.07552083333333333,
+      "maximum_update_ratio": 0.48293548822402954,
+      "mean_update_ratio": 0.2859402038156986,
+      "update_cosine_previous": [
+        0.9697380661964417,
+        0.970702588558197,
+        0.9726261496543884,
+        0.9785829186439514,
+        0.9856754541397095
+      ],
+      "gradient_norm": 6.536073356576675,
+      "gradient_norm_by_group": {
+        "f": 3.7351041703793864,
+        "g": 5.03084274677804,
+        "norm": 1.6081311702728271,
+        "other": 0.9347658291538736
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.944826126098633,
+        "entropy": 3.096409320831299,
+        "y_norm": 31.519412994384766,
+        "z_norm": 32.055259704589844,
+        "y_update_ratio": 0.14632271230220795,
+        "z_update_ratio": 0.1710708737373352
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.086925,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.9341392517089844,
+        "js": 0.29931801557540894
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 8,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 8.405867576599121,
+      "accuracy": 0.05859375,
+      "maximum_update_ratio": 0.36419013142585754,
+      "mean_update_ratio": 0.25761680863797665,
+      "update_cosine_previous": [
+        0.986476719379425,
+        0.9875798225402832,
+        0.9892916083335876,
+        0.990999698638916,
+        0.9928900003433228,
+        0.9945602416992188,
+        0.9957244396209717
+      ],
+      "gradient_norm": 6.975979047078971,
+      "gradient_norm_by_group": {
+        "f": 4.366604945395558,
+        "g": 4.8434192705857315,
+        "norm": 2.2594151496887207,
+        "other": 1.0165519498814355
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 8.405867576599121,
+        "entropy": 3.0972096920013428,
+        "y_norm": 36.81309509277344,
+        "z_norm": 38.193119049072266,
+        "y_update_ratio": 0.11130648851394653,
+        "z_update_ratio": 0.16940295696258545
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "59827e5aafe5e78651c56dc65780f073ba14686849d139d4cb5b966a550d225f",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "61553b4dfd86d920c9c38f4ad67f91b23a3d1cd7d1bda4a38b3807d27416626b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "9d061e571d14b976e2284f4a3414818cba185af6be39ba0b4688ac069aecd4b3",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "1b6348e032305610990918cb59776c1586424cf27fe04dd51c8b4d7b0c65a861",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 2.3336098194122314,
+        "js": 0.32232505083084106
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 8,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 10.319206237792969,
+      "accuracy": 0.001953125,
+      "maximum_update_ratio": 0.4906047582626343,
+      "mean_update_ratio": 0.300239659845829,
+      "update_cosine_previous": [
+        0.9834980964660645,
+        0.9888834357261658,
+        0.9942793250083923,
+        0.9973249435424805,
+        0.9986028671264648,
+        0.9991893172264099,
+        0.9994990229606628
+      ],
+      "gradient_norm": 10.104806055024364,
+      "gradient_norm_by_group": {
+        "f": 6.248344566842109,
+        "g": 6.8815263928597465,
+        "norm": 3.7800629138946533,
+        "other": 1.1920631086669609
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 10.319206237792969,
+        "entropy": 2.796812057495117,
+        "y_norm": 41.64851379394531,
+        "z_norm": 46.8799934387207,
+        "y_update_ratio": 0.13400386273860931,
+        "z_update_ratio": 0.17768491804599762
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "180081d945c0d9f5f6c5abaf1b2087cf8824e90307f4e179a0f7ef55e0d2ad44",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "e01e35f792f5f0ae718a41ef4f0a4e0198c25716a3af0122e9f876f075d2e2b9",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "7928eb52a43a067c497cf66b8ffb62f8ff5254093d3d84c818081fd974b8445c",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "9343a342ade1a9487ffe1f28c0de794a58ac59294fcc1c321a67971abe055b96",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.7542297840118408,
+        "js": 0.2882891595363617
+      }
+    },
+    {
+      "variant": "delta_only",
+      "architecture_hash": "b1dafbfd37057396bbb82b06feb8c75b4b14b295df12e42f8dc7c9d0d97ffcf7",
+      "depth": 8,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 7.452569007873535,
+      "accuracy": 0.056640625,
+      "maximum_update_ratio": 0.48293548822402954,
+      "mean_update_ratio": 0.2555561689659953,
+      "update_cosine_previous": [
+        0.9697380661964417,
+        0.970702588558197,
+        0.9726261496543884,
+        0.9785829186439514,
+        0.9856754541397095,
+        0.9910036325454712,
+        0.9943604469299316
+      ],
+      "gradient_norm": 7.2452240669218275,
+      "gradient_norm_by_group": {
+        "f": 4.3156612841150155,
+        "g": 5.416679778469945,
+        "norm": 1.9086973667144775,
+        "other": 0.9406348922435379
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 7.452569484710693,
+        "entropy": 3.0829036235809326,
+        "y_norm": 37.575531005859375,
+        "z_norm": 40.55772399902344,
+        "y_update_ratio": 0.13092951476573944,
+        "z_update_ratio": 0.13203437626361847
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "a847ac9a1dfa338cf49eaa4b45dc05500b72a6a13e87461324244f37bb51eb9e",
+            "meaningful_parse": false,
+            "structural_similarity": 0.075,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "7c30eb88294f5333f94b172caf0e52051a84b7929d86e117ef40bc27aaa849c7",
+            "meaningful_parse": false,
+            "structural_similarity": 0.24,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "9ce9fed384c486d9167e677df89635a632ffc3ef482cdac0c7035859be878b31",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0273,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "7b677d50c638a92e766604235e465e36b77a0a3f122abc4bdd6ff22b6cb96792",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0429,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0963,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 2.5811634063720703,
+        "js": 0.3634586036205292
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 1,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.758033275604248,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003599618939915672,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.6139114968320352,
+      "gradient_norm_by_group": {
+        "f": 0.00048198103972832304,
+        "g": 0.22267537713442684,
+        "norm": 1.3207095861434937,
+        "other": 0.9004731827142997
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.758033752441406,
+        "entropy": 3.327580451965332,
+        "y_norm": 15.054332733154297,
+        "z_norm": 12.065143585205078,
+        "y_update_ratio": 0.0003318498784210533,
+        "z_update_ratio": 0.0003303446574136615
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.19128401577472687,
+        "js": 0.04420234262943268
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 1,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806413650512695,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.00048097921535372734,
+      "mean_update_ratio": 0.0004300735017750412,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.9241293723819948,
+      "gradient_norm_by_group": {
+        "f": 0.0005474739739665479,
+        "g": 0.14306766890934355,
+        "norm": 1.6509937047958374,
+        "other": 0.9777652943179865
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.806413650512695,
+        "entropy": 3.0244956016540527,
+        "y_norm": 16.09799575805664,
+        "z_norm": 12.13851261138916,
+        "y_update_ratio": 0.00030193134443834424,
+        "z_update_ratio": 0.0004208669706713408
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.23630835115909576,
+        "js": 0.05181978642940521
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 1,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.299899101257324,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.00048580029397271574,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.3280658352762236,
+      "gradient_norm_by_group": {
+        "f": 0.0008804476671213728,
+        "g": 0.3254496806700575,
+        "norm": 0.9346663951873779,
+        "other": 0.8855728782539745
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 5.299899101257324,
+        "entropy": 3.24914288520813,
+        "y_norm": 17.063735961914062,
+        "z_norm": 12.373695373535156,
+        "y_update_ratio": 0.0004055214812979102,
+        "z_update_ratio": 0.00039414287311956286
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.2894288897514343,
+        "js": 0.06525587290525436
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 2,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.75792932510376,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.00035995341750094667,
+      "update_cosine_previous": [
+        1.0000001192092896
+      ],
+      "gradient_norm": 1.6592891304359279,
+      "gradient_norm_by_group": {
+        "f": 0.0009668661773816377,
+        "g": 0.44545923544449145,
+        "norm": 1.32058584690094,
+        "other": 0.9004768592666604
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 6.757928848266602,
+        "entropy": 3.3275318145751953,
+        "y_norm": 15.054330825805664,
+        "z_norm": 12.065003395080566,
+        "y_update_ratio": 0.0003318428061902523,
+        "z_update_ratio": 0.0003303580160718411
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.39116331934928894,
+        "js": 0.0824647769331932
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 2,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806386947631836,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004810346581507474,
+      "mean_update_ratio": 0.00043008691136492416,
+      "update_cosine_previous": [
+        0.9999998211860657
+      ],
+      "gradient_norm": 1.9398632156744808,
+      "gradient_norm_by_group": {
+        "f": 0.0010959818941184431,
+        "g": 0.2861802489674679,
+        "norm": 1.6507954597473145,
+        "other": 0.9777746721659321
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 6.8063859939575195,
+        "entropy": 3.024496555328369,
+        "y_norm": 16.098129272460938,
+        "z_norm": 12.13776683807373,
+        "y_update_ratio": 0.0003019235155079514,
+        "z_update_ratio": 0.0004208847531117499
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.6145215034484863,
+        "js": 0.11652455478906631
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 2,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.299358367919922,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.00048575350956525654,
+      "update_cosine_previous": [
+        1.0
+      ],
+      "gradient_norm": 1.442211734959554,
+      "gradient_norm_by_group": {
+        "f": 0.0017599618883208635,
+        "g": 0.6500813467329106,
+        "norm": 0.9344546794891357,
+        "other": 0.8855282522878535
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 5.299358367919922,
+        "entropy": 3.2491607666015625,
+        "y_norm": 17.064056396484375,
+        "z_norm": 12.374472618103027,
+        "y_update_ratio": 0.0004054307355545461,
+        "z_update_ratio": 0.0003941188333556056
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.5741748213768005,
+        "js": 0.12016023695468903
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 4,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.7577223777771,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003599317969928961,
+      "update_cosine_previous": [
+        1.0000001192092896,
+        0.9999999403953552,
+        0.9999998211860657
+      ],
+      "gradient_norm": 1.8299403465259152,
+      "gradient_norm_by_group": {
+        "f": 0.0019511390756445674,
+        "g": 0.8913526936251005,
+        "norm": 1.320339560508728,
+        "other": 0.9004841394619846
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.7577223777771,
+        "entropy": 3.3274340629577637,
+        "y_norm": 15.05433177947998,
+        "z_norm": 12.064728736877441,
+        "y_update_ratio": 0.000331829214701429,
+        "z_update_ratio": 0.0003303871490061283
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.70270836353302,
+        "js": 0.1322854608297348
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 4,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806332588195801,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004811499093193561,
+      "mean_update_ratio": 0.0004301130793464836,
+      "update_cosine_previous": [
+        0.9999998211860657,
+        0.9999998211860657,
+        0.9999997019767761
+      ],
+      "gradient_norm": 2.001925079068716,
+      "gradient_norm_by_group": {
+        "f": 0.00219865618464463,
+        "g": 0.5725415730061795,
+        "norm": 1.6503986120224,
+        "other": 0.9777933098203385
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.806332588195801,
+        "entropy": 3.0244991779327393,
+        "y_norm": 16.098398208618164,
+        "z_norm": 12.136282920837402,
+        "y_update_ratio": 0.0003019072755705565,
+        "z_update_ratio": 0.000420921656768769
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.2785484790802002,
+        "js": 0.2100314497947693
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 4,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.29827880859375,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.0004856586929236073,
+      "update_cosine_previous": [
+        1.0,
+        1.0,
+        0.9999999403953552
+      ],
+      "gradient_norm": 1.8271199063277206,
+      "gradient_norm_by_group": {
+        "f": 0.0035194905936909663,
+        "g": 1.296894807410031,
+        "norm": 0.9340322613716125,
+        "other": 0.8854390766816821
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 5.298278331756592,
+        "entropy": 3.2491965293884277,
+        "y_norm": 17.064701080322266,
+        "z_norm": 12.376035690307617,
+        "y_update_ratio": 0.00040524580981582403,
+        "z_update_ratio": 0.0003940666210837662
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.9394424557685852,
+        "js": 0.18010586500167847
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 6,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.757516860961914,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003599118596563737,
+      "update_cosine_previous": [
+        1.0000001192092896,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999999403953552,
+        1.0
+      ],
+      "gradient_norm": 2.083970382911507,
+      "gradient_norm_by_group": {
+        "f": 0.002964168443004454,
+        "g": 1.3376798381291948,
+        "norm": 1.3200953006744385,
+        "other": 0.9004914315848256
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.757517337799072,
+        "entropy": 3.327335834503174,
+        "y_norm": 15.054339408874512,
+        "z_norm": 12.064457893371582,
+        "y_update_ratio": 0.0003318164963275194,
+        "z_update_ratio": 0.0003304170968476683
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.9380800127983093,
+        "js": 0.16590602695941925
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 6,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806279182434082,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004812608822248876,
+      "mean_update_ratio": 0.00043013826264844585,
+      "update_cosine_previous": [
+        0.9999998211860657,
+        0.9999998211860657,
+        0.9999997019767761,
+        0.9999997615814209,
+        0.9999998211860657
+      ],
+      "gradient_norm": 2.101585179371334,
+      "gradient_norm_by_group": {
+        "f": 0.0033131084914128266,
+        "g": 0.8590859390206068,
+        "norm": 1.6500012874603271,
+        "other": 0.9778120423791634
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.806279182434082,
+        "entropy": 3.0245025157928467,
+        "y_norm": 16.09867286682129,
+        "z_norm": 12.134805679321289,
+        "y_update_ratio": 0.0003018898714799434,
+        "z_update_ratio": 0.00042095655226148665
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.7477028369903564,
+        "js": 0.2669951319694519
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 6,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.29720401763916,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.0004855652756911392,
+      "update_cosine_previous": [
+        1.0,
+        1.0,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999998807907104
+      ],
+      "gradient_norm": 2.3282718072204784,
+      "gradient_norm_by_group": {
+        "f": 0.005285128294381891,
+        "g": 1.9404502168821405,
+        "norm": 0.9336111545562744,
+        "other": 0.8853501248696914
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 5.29720401763916,
+        "entropy": 3.2492315769195557,
+        "y_norm": 17.06536102294922,
+        "z_norm": 12.377603530883789,
+        "y_update_ratio": 0.00040506129153072834,
+        "z_update_ratio": 0.00039401435060426593
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.175472617149353,
+        "js": 0.2144099771976471
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 8,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.757313251495361,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003598917810450075,
+      "update_cosine_previous": [
+        1.0000001192092896,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999999403953552,
+        1.0,
+        0.9999998807907104,
+        0.9999998807907104
+      ],
+      "gradient_norm": 2.3952359944866743,
+      "gradient_norm_by_group": {
+        "f": 0.004016808345277379,
+        "g": 1.7844407285969563,
+        "norm": 1.3198533058166504,
+        "other": 0.9004986795018121
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.757312774658203,
+        "entropy": 3.3272366523742676,
+        "y_norm": 15.05435562133789,
+        "z_norm": 12.064192771911621,
+        "y_update_ratio": 0.00033180287573486567,
+        "z_update_ratio": 0.00033044503652490675
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "f429c03fbaa04b2c8f3354f4b8ac180042eefa9ebc6b9ac296f09cf8a6c55df7",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0375,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "53ca63b288d3bb16e78d1d9db94ad7c193c0dfa161b7236d69a2bc68165ec43d",
+            "meaningful_parse": false,
+            "structural_similarity": 0.06,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "f429c03fbaa04b2c8f3354f4b8ac180042eefa9ebc6b9ac296f09cf8a6c55df7",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0273,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "f429c03fbaa04b2c8f3354f4b8ac180042eefa9ebc6b9ac296f09cf8a6c55df7",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0214,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.1255197525024414,
+        "js": 0.19097696244716644
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 8,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806227684020996,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004813754931092262,
+      "mean_update_ratio": 0.0004301638327888213,
+      "update_cosine_previous": [
+        0.9999998211860657,
+        0.9999998211860657,
+        0.9999997019767761,
+        0.9999997615814209,
+        0.9999998211860657,
+        0.9999998807907104,
+        0.9999999403953552
+      ],
+      "gradient_norm": 2.233888800107475,
+      "gradient_norm_by_group": {
+        "f": 0.004444358700199708,
+        "g": 1.145816029154356,
+        "norm": 1.6496038436889648,
+        "other": 0.9778303560131965
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.806227684020996,
+        "entropy": 3.0245065689086914,
+        "y_norm": 16.098953247070312,
+        "z_norm": 12.133338928222656,
+        "y_update_ratio": 0.0003018762799911201,
+        "z_update_ratio": 0.00042099363054148853
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "7cba94f9b050e35a8bed93ba77f99c284c87e5e7fa1adabc02c3cb758f8e6d2b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "9244d1e293d78e7be0062f8773da3a18d79c550a954e1e66b4967478eeb8d0f4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "7cba94f9b050e35a8bed93ba77f99c284c87e5e7fa1adabc02c3cb758f8e6d2b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "7cba94f9b050e35a8bed93ba77f99c284c87e5e7fa1adabc02c3cb758f8e6d2b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 2.0973165035247803,
+        "js": 0.30476731061935425
+      }
+    },
+    {
+      "variant": "layerscale",
+      "architecture_hash": "ce8a84928ea2d0e1c34c99d6284853f726884ac0af0b864c708f89374f5b35dc",
+      "depth": 8,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.296132564544678,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.00048547132973908447,
+      "update_cosine_previous": [
+        1.0,
+        1.0,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999998807907104,
+        0.9999999403953552,
+        0.9999999403953552
+      ],
+      "gradient_norm": 2.883556231230595,
+      "gradient_norm_by_group": {
+        "f": 0.007063296505580508,
+        "g": 2.5807578868539274,
+        "norm": 0.9331918954849243,
+        "other": 0.8852616924693927
+      },
+      "parameter_count": 6696,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 5.296133041381836,
+        "entropy": 3.249267101287842,
+        "y_norm": 17.066028594970703,
+        "z_norm": 12.379179954528809,
+        "y_update_ratio": 0.00040487851947546005,
+        "z_update_ratio": 0.00039396501961164176
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "c065b4b23cc1b825b2bfbf3b064a7f1a44dce4a94da9751f4dce4c6e20cd59e4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "077b440d19f89c9e8af27ad57eb565fcaba8354dc73a20fcd064c9fd38725cdf",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "c065b4b23cc1b825b2bfbf3b064a7f1a44dce4a94da9751f4dce4c6e20cd59e4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "c065b4b23cc1b825b2bfbf3b064a7f1a44dce4a94da9751f4dce4c6e20cd59e4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.3476096391677856,
+        "js": 0.23771928250789642
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 1,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.756312370300293,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.006476673297584057,
+      "mean_update_ratio": 0.006474669324234128,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.5977672077559373,
+      "gradient_norm_by_group": {
+        "f": 0.008724451717307628,
+        "g": 0.020009806741519507,
+        "norm": 1.3196289539337158,
+        "other": 0.9005348220343349
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.756312370300293,
+        "entropy": 3.326742649078369,
+        "y_norm": 15.0545015335083,
+        "z_norm": 12.06295394897461,
+        "y_update_ratio": 0.005969368387013674,
+        "z_update_ratio": 0.005941626150161028
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.18534713983535767,
+        "js": 0.042896904051303864
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 1,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.805981159210205,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.008650952950119972,
+      "mean_update_ratio": 0.007735864259302616,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.9170947309728819,
+      "gradient_norm_by_group": {
+        "f": 0.009827543615924623,
+        "g": 0.020725620545524622,
+        "norm": 1.6487555503845215,
+        "other": 0.9779218837104012
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.805981636047363,
+        "entropy": 3.0245361328125,
+        "y_norm": 16.100439071655273,
+        "z_norm": 12.126127243041992,
+        "y_update_ratio": 0.0054296585731208324,
+        "z_update_ratio": 0.007569810375571251
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.23043467104434967,
+        "js": 0.0506606325507164
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 1,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.29085111618042,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.008774418383836746,
+      "mean_update_ratio": 0.008730300702154636,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.284478345955934,
+      "gradient_norm_by_group": {
+        "f": 0.015471060961422888,
+        "g": 0.022900341167144032,
+        "norm": 0.9307018518447876,
+        "other": 0.8848247876554609
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 5.290851593017578,
+        "entropy": 3.2494454383850098,
+        "y_norm": 17.069530487060547,
+        "z_norm": 12.387177467346191,
+        "y_update_ratio": 0.007284374907612801,
+        "z_update_ratio": 0.007089154329150915
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.27805086970329285,
+        "js": 0.06289082765579224
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 2,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.754624843597412,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.006476673297584057,
+      "mean_update_ratio": 0.006471400032751262,
+      "update_cosine_previous": [
+        0.9999949932098389
+      ],
+      "gradient_norm": 1.597383436010113,
+      "gradient_norm_by_group": {
+        "f": 0.01760277752184634,
+        "g": 0.04015760023058773,
+        "norm": 1.3185713291168213,
+        "other": 0.9006003558947833
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 6.754624843597412,
+        "entropy": 3.3258135318756104,
+        "y_norm": 15.05522632598877,
+        "z_norm": 12.061009407043457,
+        "y_update_ratio": 0.005967115983366966,
+        "z_update_ratio": 0.0059463344514369965
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.3733239471912384,
+        "js": 0.0790269672870636
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 2,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.8055901527404785,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.008669217117130756,
+      "mean_update_ratio": 0.00773996114730835,
+      "update_cosine_previous": [
+        0.9999958872795105
+      ],
+      "gradient_norm": 1.9154648818550017,
+      "gradient_norm_by_group": {
+        "f": 0.01964710764267977,
+        "g": 0.04146971053842186,
+        "norm": 1.6462886333465576,
+        "other": 0.9780765325897844
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 6.805590629577637,
+        "entropy": 3.024634599685669,
+        "y_norm": 16.103471755981445,
+        "z_norm": 12.113697052001953,
+        "y_update_ratio": 0.005426989868283272,
+        "z_update_ratio": 0.007575528230518103
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.593165397644043,
+        "js": 0.1132732629776001
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 2,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.2816033363342285,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.008774418383836746,
+      "mean_update_ratio": 0.00871495297178626,
+      "update_cosine_previous": [
+        0.9999931454658508
+      ],
+      "gradient_norm": 1.2818948919575,
+      "gradient_norm_by_group": {
+        "f": 0.03021006585574281,
+        "g": 0.045229505583958156,
+        "norm": 0.9266824126243591,
+        "other": 0.8840564823047508
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 5.28160285949707,
+        "entropy": 3.249758720397949,
+        "y_norm": 17.07646942138672,
+        "z_norm": 12.401986122131348,
+        "y_update_ratio": 0.007254505529999733,
+        "z_update_ratio": 0.007080703508108854
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.5426563024520874,
+        "js": 0.11441218107938766
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 4,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.751661777496338,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.006476673297584057,
+      "mean_update_ratio": 0.006464661448262632,
+      "update_cosine_previous": [
+        0.9999949932098389,
+        0.9999951124191284,
+        0.9999950528144836
+      ],
+      "gradient_norm": 1.59792472892831,
+      "gradient_norm_by_group": {
+        "f": 0.03583645559096566,
+        "g": 0.08088041409067874,
+        "norm": 1.3168975114822388,
+        "other": 0.9007321969596164
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.75166130065918,
+        "entropy": 3.3238465785980225,
+        "y_norm": 15.058351516723633,
+        "z_norm": 12.058279037475586,
+        "y_update_ratio": 0.005961868446320295,
+        "z_update_ratio": 0.005955479107797146
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.6530318260192871,
+        "js": 0.12420634925365448
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 4,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.8050217628479,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.008704307489097118,
+      "mean_update_ratio": 0.007747774303425103,
+      "update_cosine_previous": [
+        0.9999958872795105,
+        0.9999958276748657,
+        0.999995768070221
+      ],
+      "gradient_norm": 1.9129528699053262,
+      "gradient_norm_by_group": {
+        "f": 0.03927283623787341,
+        "g": 0.08301937025412612,
+        "norm": 1.6412732601165771,
+        "other": 0.9783538197409809
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.805021286010742,
+        "entropy": 3.02500057220459,
+        "y_norm": 16.110904693603516,
+        "z_norm": 12.090947151184082,
+        "y_update_ratio": 0.0054211546666920185,
+        "z_update_ratio": 0.007586159743368626
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.2118650674819946,
+        "js": 0.2023702710866928
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 4,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.2641282081604,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.008774418383836746,
+      "mean_update_ratio": 0.008683722582645714,
+      "update_cosine_previous": [
+        0.9999931454658508,
+        0.999993085861206,
+        0.9999930262565613
+      ],
+      "gradient_norm": 1.2786012206870694,
+      "gradient_norm_by_group": {
+        "f": 0.057570590393509626,
+        "g": 0.08828198757185614,
+        "norm": 0.9191071391105652,
+        "other": 0.8825843110834009
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 5.2641282081604,
+        "entropy": 3.2503671646118164,
+        "y_norm": 17.092769622802734,
+        "z_norm": 12.433244705200195,
+        "y_update_ratio": 0.007193858735263348,
+        "z_update_ratio": 0.007062908262014389
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.8614375591278076,
+        "js": 0.16783462464809418
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 6,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.74924373626709,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.006476673297584057,
+      "mean_update_ratio": 0.006457652819032471,
+      "update_cosine_previous": [
+        0.9999949932098389,
+        0.9999951124191284,
+        0.9999950528144836,
+        0.9999949932098389,
+        0.9999949932098389
+      ],
+      "gradient_norm": 1.6002625224309317,
+      "gradient_norm_by_group": {
+        "f": 0.05472603282556575,
+        "g": 0.12218970355924774,
+        "norm": 1.3158107995986938,
+        "other": 0.9008644837220149
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.74924373626709,
+        "entropy": 3.3217663764953613,
+        "y_norm": 15.06370735168457,
+        "z_norm": 12.057100296020508,
+        "y_update_ratio": 0.005955626256763935,
+        "z_update_ratio": 0.005964233539998531
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.8510609269142151,
+        "js": 0.1532084345817566
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 6,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.804745197296143,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.00873741414397955,
+      "mean_update_ratio": 0.007755068441232045,
+      "update_cosine_previous": [
+        0.9999958872795105,
+        0.9999958276748657,
+        0.999995768070221,
+        0.9999958276748657,
+        0.9999957084655762
+      ],
+      "gradient_norm": 1.911463617248423,
+      "gradient_norm_by_group": {
+        "f": 0.05890132783731177,
+        "g": 0.12466241022929471,
+        "norm": 1.6361675262451172,
+        "other": 0.9785902631746259
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.804745674133301,
+        "entropy": 3.0255892276763916,
+        "y_norm": 16.120166778564453,
+        "z_norm": 12.071024894714355,
+        "y_update_ratio": 0.005414673592895269,
+        "z_update_ratio": 0.007595711853355169
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.6287600994110107,
+        "js": 0.2551063895225525
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 6,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.248006820678711,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.008774418383836746,
+      "mean_update_ratio": 0.008651807360971967,
+      "update_cosine_previous": [
+        0.9999931454658508,
+        0.999993085861206,
+        0.9999930262565613,
+        0.9999929666519165,
+        0.999992847442627
+      ],
+      "gradient_norm": 1.2774965069967463,
+      "gradient_norm_by_group": {
+        "f": 0.08225534779703866,
+        "g": 0.12938229867938697,
+        "norm": 0.912141740322113,
+        "other": 0.8811861605235645
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 5.248006820678711,
+        "entropy": 3.250943899154663,
+        "y_norm": 17.112232208251953,
+        "z_norm": 12.466673851013184,
+        "y_update_ratio": 0.007132085971534252,
+        "z_update_ratio": 0.007043914869427681
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.0483295917510986,
+        "js": 0.19604316353797913
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 8,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.747368335723877,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.006476673297584057,
+      "mean_update_ratio": 0.006450378306908533,
+      "update_cosine_previous": [
+        0.9999949932098389,
+        0.9999951124191284,
+        0.9999950528144836,
+        0.9999949932098389,
+        0.9999949932098389,
+        0.9999950528144836,
+        0.9999951720237732
+      ],
+      "gradient_norm": 1.604455529955249,
+      "gradient_norm_by_group": {
+        "f": 0.0742879639165961,
+        "g": 0.164098624086395,
+        "norm": 1.3153076171875,
+        "other": 0.9009974249478178
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.747367858886719,
+        "entropy": 3.3196117877960205,
+        "y_norm": 15.071282386779785,
+        "z_norm": 12.057475090026855,
+        "y_update_ratio": 0.005948397796601057,
+        "z_update_ratio": 0.005972601473331451
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "680c7ce61a48344cc8f2aca53c1ed4feae0658dd0e079bec84fae39c4c7350a0",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0375,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "7e2229136631e6fd01279ac0d848cdf2ea387babe19ca694daa32d1f9e3c691a",
+            "meaningful_parse": false,
+            "structural_similarity": 0.06,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "158605088b604daddedb9f298ae6eda1e0d2c5c28611e7b9ce2e67d3cb7de4b8",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0273,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "158605088b604daddedb9f298ae6eda1e0d2c5c28611e7b9ce2e67d3cb7de4b8",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0214,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.9982585906982422,
+        "js": 0.17381812632083893
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 8,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.804775238037109,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.008768470957875252,
+      "mean_update_ratio": 0.007761837099678814,
+      "update_cosine_previous": [
+        0.9999958872795105,
+        0.9999958276748657,
+        0.999995768070221,
+        0.9999958276748657,
+        0.9999957084655762,
+        0.9999957084655762,
+        0.9999955892562866
+      ],
+      "gradient_norm": 1.91102941196988,
+      "gradient_norm_by_group": {
+        "f": 0.07856176718354983,
+        "g": 0.1664143633025465,
+        "norm": 1.6309934854507446,
+        "other": 0.9787890335791382
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.804775714874268,
+        "entropy": 3.026397228240967,
+        "y_norm": 16.131248474121094,
+        "z_norm": 12.053940773010254,
+        "y_update_ratio": 0.0054075452499091625,
+        "z_update_ratio": 0.007604171987622976
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "7903300fb5c301e057cc95d441caa65844780be6c84ca5d2e23057f23e77c287",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "7b6925799811a398b154d566c5237f48b440f6fe8d47e56bbfdd05a0791058ee",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "b617c1ae989d7e3e2ac12f7a0e50e58d430a4a482f8609170e8f52367596497c",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "0e2437cc81a609e237e52488c16d49fff6132aca4914030ef5ea7a062f023358",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.9232685565948486,
+        "js": 0.28883522748947144
+      }
+    },
+    {
+      "variant": "gated_private",
+      "architecture_hash": "d295412c61a09ee91ab70270913971135e9d28577f0ee588fcb7b02614d215ea",
+      "depth": 8,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.233231544494629,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.008774418383836746,
+      "mean_update_ratio": 0.008619243220891804,
+      "update_cosine_previous": [
+        0.9999931454658508,
+        0.999993085861206,
+        0.9999930262565613,
+        0.9999929666519165,
+        0.999992847442627,
+        0.999992847442627,
+        0.9999926090240479
+      ],
+      "gradient_norm": 1.2782696278588295,
+      "gradient_norm_by_group": {
+        "f": 0.1044690103720877,
+        "g": 0.16877190791256436,
+        "norm": 0.9057778716087341,
+        "other": 0.8798533728876258
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 5.233231067657471,
+        "entropy": 3.2514710426330566,
+        "y_norm": 17.134763717651367,
+        "z_norm": 12.502252578735352,
+        "y_update_ratio": 0.007069298066198826,
+        "z_update_ratio": 0.007023747079074383
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "c065b4b23cc1b825b2bfbf3b064a7f1a44dce4a94da9751f4dce4c6e20cd59e4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "6726dda60eece60333fb316f5def61c5993f448eb54658911a40d875deca0e4e",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "125cf4304e1a30625567a78c92aa596b4ad0676b8698a37061b693ad610e1202",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "125cf4304e1a30625567a78c92aa596b4ad0676b8698a37061b693ad610e1202",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.1707780361175537,
+        "js": 0.21361230313777924
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 1,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.235998630523682,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.9210187196731567,
+      "update_cosine_previous": [],
+      "gradient_norm": 2.0730797666574277,
+      "gradient_norm_by_group": {
+        "f": 0.3909701830791318,
+        "g": 0.6542566300904864,
+        "norm": 1.6834259033203125,
+        "other": 0.9395890191356622
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 7.23599910736084,
+        "entropy": 3.2658894062042236,
+        "y_norm": 26.1119441986084,
+        "z_norm": 22.85111427307129,
+        "y_update_ratio": 0.7964237928390503,
+        "z_update_ratio": 0.9830647706985474
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": -9.886666485492412e-11
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 1,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 7.289873123168945,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.9242327213287354,
+      "update_cosine_previous": [],
+      "gradient_norm": 2.1589814603698465,
+      "gradient_norm_by_group": {
+        "f": 0.47531019160283916,
+        "g": 0.6773016385537797,
+        "norm": 1.7149713039398193,
+        "other": 1.0175544629426514
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 7.2898736000061035,
+        "entropy": 3.0309579372406006,
+        "y_norm": 27.311124801635742,
+        "z_norm": 22.274438858032227,
+        "y_update_ratio": 0.7780675292015076,
+        "z_update_ratio": 0.9444795846939087
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": -4.798350050627676e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 1,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.594428539276123,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.9701228439807892,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.7562685686270976,
+      "gradient_norm_by_group": {
+        "f": 0.42123295528874755,
+        "g": 0.6724767781221785,
+        "norm": 1.2768548727035522,
+        "other": 0.9079970811989384
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 5.594428539276123,
+        "entropy": 3.2851812839508057,
+        "y_norm": 28.631546020507812,
+        "z_norm": 23.927377700805664,
+        "y_update_ratio": 0.7613142728805542,
+        "z_update_ratio": 1.0239628553390503
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": -6.261234863913501e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 2,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.457108497619629,
+      "accuracy": 0.0546875,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.7200012877583504,
+      "update_cosine_previous": [
+        0.9951276779174805
+      ],
+      "gradient_norm": 2.4268787125313542,
+      "gradient_norm_by_group": {
+        "f": 0.6559652068095209,
+        "g": 1.018342906396356,
+        "norm": 1.8793470859527588,
+        "other": 0.9436536378917227
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 7.457108497619629,
+        "entropy": 3.268310070037842,
+        "y_norm": 37.9451904296875,
+        "z_norm": 34.45317840576172,
+        "y_update_ratio": 0.4734865427017212,
+        "z_update_ratio": 0.5311918258666992
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.012175,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 3.539483151016043e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 2,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 7.610044002532959,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.730661541223526,
+      "update_cosine_previous": [
+        0.9899066686630249
+      ],
+      "gradient_norm": 2.520352397856353,
+      "gradient_norm_by_group": {
+        "f": 0.9072208912180733,
+        "g": 1.1507029539717692,
+        "norm": 1.7586396932601929,
+        "other": 1.054606848511849
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 7.610044002532959,
+        "entropy": 3.084779977798462,
+        "y_norm": 39.50216293334961,
+        "z_norm": 33.709617614746094,
+        "y_update_ratio": 0.4788399040699005,
+        "z_update_ratio": 0.5505423545837402
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": -2.0267565403742083e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 2,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.809298515319824,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.7507551833987236,
+      "update_cosine_previous": [
+        0.994759202003479
+      ],
+      "gradient_norm": 2.1493015284684267,
+      "gradient_norm_by_group": {
+        "f": 0.7191107896153807,
+        "g": 1.0814475433576292,
+        "norm": 1.4416500329971313,
+        "other": 0.9243879736672141
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 5.809298515319824,
+        "entropy": 3.281505584716797,
+        "y_norm": 41.04743194580078,
+        "z_norm": 36.37965774536133,
+        "y_update_ratio": 0.46096810698509216,
+        "z_update_ratio": 0.546161949634552
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": -1.1207799133217122e-09
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 4,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.67842960357666,
+      "accuracy": 0.04296875,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.515884269028902,
+      "update_cosine_previous": [
+        0.9951276779174805,
+        0.9978092908859253,
+        0.9987572431564331
+      ],
+      "gradient_norm": 2.953660378373944,
+      "gradient_norm_by_group": {
+        "f": 1.030563868846131,
+        "g": 1.4563313144150758,
+        "norm": 2.1558609008789062,
+        "other": 0.9452040106350869
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 7.67842960357666,
+        "entropy": 3.289855480194092,
+        "y_norm": 62.576210021972656,
+        "z_norm": 58.45514678955078,
+        "y_update_ratio": 0.25448450446128845,
+        "z_update_ratio": 0.26872679591178894
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.006825,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": -2.3271487514797684e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 4,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 8.064988136291504,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.5310948900878429,
+      "update_cosine_previous": [
+        0.9899066686630249,
+        0.9955459237098694,
+        0.9976088404655457
+      ],
+      "gradient_norm": 3.3732377534247484,
+      "gradient_norm_by_group": {
+        "f": 1.6204377852159568,
+        "g": 1.8609134401854026,
+        "norm": 2.0067412853240967,
+        "other": 1.1237904196457489
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 8.064988136291504,
+        "entropy": 3.1301331520080566,
+        "y_norm": 65.24594116210938,
+        "z_norm": 58.3155632019043,
+        "y_update_ratio": 0.26196959614753723,
+        "z_update_ratio": 0.287250816822052
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": -9.086521535195402e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 4,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.050414085388184,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.5311378799378872,
+      "update_cosine_previous": [
+        0.994759202003479,
+        0.9977772831916809,
+        0.9987848997116089
+      ],
+      "gradient_norm": 2.674104036617864,
+      "gradient_norm_by_group": {
+        "f": 1.1233568972397234,
+        "g": 1.5636871689736789,
+        "norm": 1.6052825450897217,
+        "other": 0.9310489074679392
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.050414562225342,
+        "entropy": 3.292344093322754,
+        "y_norm": 66.5689468383789,
+        "z_norm": 62.16060256958008,
+        "y_update_ratio": 0.24671170115470886,
+        "z_update_ratio": 0.2729392647743225
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 8.834744047447884e-11
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 6,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.8030171394348145,
+      "accuracy": 0.033854166666666664,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.4099171335498492,
+      "update_cosine_previous": [
+        0.9951276779174805,
+        0.9978092908859253,
+        0.9987572431564331,
+        0.9992002248764038,
+        0.9994431138038635
+      ],
+      "gradient_norm": 3.3358294243833835,
+      "gradient_norm_by_group": {
+        "f": 1.2945859482197652,
+        "g": 1.7302668360826632,
+        "norm": 2.3567516803741455,
+        "other": 0.9506331386292177
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 7.803016662597656,
+        "entropy": 3.3016371726989746,
+        "y_norm": 87.86150360107422,
+        "z_norm": 83.02691650390625,
+        "y_update_ratio": 0.17271962761878967,
+        "z_update_ratio": 0.17939551174640656
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 3.6461250685349e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 6,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 8.38026237487793,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.42474496364593506,
+      "update_cosine_previous": [
+        0.9899066686630249,
+        0.9955459237098694,
+        0.9976088404655457,
+        0.9985515475273132,
+        0.9990475177764893
+      ],
+      "gradient_norm": 4.070628589865963,
+      "gradient_norm_by_group": {
+        "f": 2.1297721888969683,
+        "g": 2.3242048144112797,
+        "norm": 2.293692111968994,
+        "other": 1.1709551725808367
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 8.38026237487793,
+        "entropy": 3.118504047393799,
+        "y_norm": 91.99069213867188,
+        "z_norm": 84.26496887207031,
+        "y_update_ratio": 0.17841604351997375,
+        "z_update_ratio": 0.19221065938472748
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 5.90569926295359e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 6,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.189987659454346,
+      "accuracy": 0.046875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.41901413227121037,
+      "update_cosine_previous": [
+        0.994759202003479,
+        0.9977772831916809,
+        0.9987848997116089,
+        0.9992380738258362,
+        0.9994791746139526
+      ],
+      "gradient_norm": 3.0287904133098666,
+      "gradient_norm_by_group": {
+        "f": 1.3908096343738081,
+        "g": 1.8535934628078663,
+        "norm": 1.7138277292251587,
+        "other": 0.9307017341047699
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.189988136291504,
+        "entropy": 3.2989602088928223,
+        "y_norm": 92.33033752441406,
+        "z_norm": 88.51043701171875,
+        "y_update_ratio": 0.1665758639574051,
+        "z_update_ratio": 0.18060624599456787
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 8.254903982596318e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 8,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 7.889711856842041,
+      "accuracy": 0.029296875,
+      "maximum_update_ratio": 1.0147572755813599,
+      "mean_update_ratio": 0.34369061421602964,
+      "update_cosine_previous": [
+        0.9951276779174805,
+        0.9978092908859253,
+        0.9987572431564331,
+        0.9992002248764038,
+        0.9994431138038635,
+        0.9995907545089722,
+        0.9996871948242188
+      ],
+      "gradient_norm": 3.6320726736279223,
+      "gradient_norm_by_group": {
+        "f": 1.4947040665134783,
+        "g": 1.925632930510548,
+        "norm": 2.5167791843414307,
+        "other": 0.9568552734148451
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 7.889712333679199,
+        "entropy": 3.305037021636963,
+        "y_norm": 113.5194091796875,
+        "z_norm": 107.98995208740234,
+        "y_update_ratio": 0.130397230386734,
+        "z_update_ratio": 0.13467302918434143
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "45b5b49c3b470e9662c749e4b15c24b646dbff8ed5752e1859cf7e63c713b552",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "d35742fd8ef4d05d7779628b179c9c6cf8058a367e2c6c14c966eb23289f460b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "f09e06beb9f67665659487a0f525ec472d186d43ef4c96ed263ec6af0a5939b8",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "09fc1fb8d9fee3856897bdfb989ac4602260ba4109231e7903861905a7382777",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 9.796542466133928e-10
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 8,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 8.615357398986816,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 1.0280673503875732,
+      "mean_update_ratio": 0.3572241924703121,
+      "update_cosine_previous": [
+        0.9899066686630249,
+        0.9955459237098694,
+        0.9976088404655457,
+        0.9985515475273132,
+        0.9990475177764893,
+        0.9993355870246887,
+        0.999515175819397
+      ],
+      "gradient_norm": 4.587072374302806,
+      "gradient_norm_by_group": {
+        "f": 2.496191152253527,
+        "g": 2.632340731486308,
+        "norm": 2.538226366043091,
+        "other": 1.199354779281342
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 8.6153564453125,
+        "entropy": 3.0904486179351807,
+        "y_norm": 119.34103393554688,
+        "z_norm": 111.09748077392578,
+        "y_update_ratio": 0.1347411870956421,
+        "z_update_ratio": 0.14389416575431824
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "7fcfe33496f976b05c81cc4f316c5b3725c9239a16c71f627c106ae54e968821",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "271d667013d14106b496a99b922ef4af5a9a47a46893a2cb12ee01c003eca7ce",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "ab2f182c925706c5a07925705288fcae20ca308f2661d4328b2036a3d8f6c042",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "44c8081396ba38d7f1d9469ade4000476ee0a39dc440342d88b62e2923c2020a",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 1.2605286814348915e-09
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "architecture_hash": "bf74d8939badc0499d5d3a3afba7ccef0bcd244117b7ff35f1c166979cee107e",
+      "depth": 8,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 6.287038326263428,
+      "accuracy": 0.04296875,
+      "maximum_update_ratio": 1.118669033050537,
+      "mean_update_ratio": 0.34968257043510675,
+      "update_cosine_previous": [
+        0.994759202003479,
+        0.9977772831916809,
+        0.9987848997116089,
+        0.9992380738258362,
+        0.9994791746139526,
+        0.9996222257614136,
+        0.9997140169143677
+      ],
+      "gradient_norm": 3.2962552364423403,
+      "gradient_norm_by_group": {
+        "f": 1.5894355753512335,
+        "g": 2.0560328832855785,
+        "norm": 1.8023210763931274,
+        "other": 0.929172027139728
+      },
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.2870378494262695,
+        "entropy": 3.301985740661621,
+        "y_norm": 118.1218490600586,
+        "z_norm": 115.19071197509766,
+        "y_update_ratio": 0.12536659836769104,
+        "z_update_ratio": 0.1346355378627777
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "f8f9901d0e71937bce9cb4c3c1134a3bfa05b0b10168f194a2e8774afa475499",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0375,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "6e515813af74a1ca1e7b28a98c97e9704da3f7a0e38ccd72604498fe4ccf716f",
+            "meaningful_parse": false,
+            "structural_similarity": 0.06,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "ebdfe22f40128de92248a5de2c26a0618137d6329d2b3501cb990ed28162d55f",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "0093e8d177bea200c5bb61b8f841f56a62da2c264f0c2cfc267cc1619c2335be",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0214,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.0,
+        "js": 1.0387635196451583e-09
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 1,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.758033275604248,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003599618939915672,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.6139555956015454,
+      "gradient_norm_by_group": {
+        "f": 0.0004819810398808052,
+        "g": 0.22267541201447708,
+        "norm": 1.3207634687423706,
+        "other": 0.9004731827142997
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.758033752441406,
+        "entropy": 3.327580451965332,
+        "y_norm": 15.054332733154297,
+        "z_norm": 12.065143585205078,
+        "y_update_ratio": 0.0003318498784210533,
+        "z_update_ratio": 0.0003303446574136615
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.19128401577472687,
+        "js": 0.04420234262943268
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 1,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806413650512695,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.00048097921535372734,
+      "mean_update_ratio": 0.0004300735017750412,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.9241842039715427,
+      "gradient_norm_by_group": {
+        "f": 0.000547473974044134,
+        "g": 0.14306774121256416,
+        "norm": 1.6510576009750366,
+        "other": 0.9777652943179865
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 6.806413650512695,
+        "entropy": 3.0244956016540527,
+        "y_norm": 16.09799575805664,
+        "z_norm": 12.13851261138916,
+        "y_update_ratio": 0.00030193134443834424,
+        "z_update_ratio": 0.0004208669706713408
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.23630835115909576,
+        "js": 0.05181978642940521
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 1,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.299899101257324,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.00048580029397271574,
+      "update_cosine_previous": [],
+      "gradient_norm": 1.328048721406454,
+      "gradient_norm_by_group": {
+        "f": 0.0008804476671721043,
+        "g": 0.32544968488590975,
+        "norm": 0.9346420764923096,
+        "other": 0.8855728782539745
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 1,
+        "cross_entropy": 5.299899101257324,
+        "entropy": 3.24914288520813,
+        "y_norm": 17.063735961914062,
+        "z_norm": 12.373695373535156,
+        "y_update_ratio": 0.0004055214812979102,
+        "z_update_ratio": 0.00039414287311956286
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.2894288897514343,
+        "js": 0.06525587290525436
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 2,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.75792932510376,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.00035995341750094667,
+      "update_cosine_previous": [
+        1.0000001192092896
+      ],
+      "gradient_norm": 1.6593750128823113,
+      "gradient_norm_by_group": {
+        "f": 0.0009668661780653003,
+        "g": 0.4454593051637955,
+        "norm": 1.3206937313079834,
+        "other": 0.9004768592666604
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 6.757928848266602,
+        "entropy": 3.3275318145751953,
+        "y_norm": 15.054330825805664,
+        "z_norm": 12.065003395080566,
+        "y_update_ratio": 0.0003318428061902523,
+        "z_update_ratio": 0.0003303580160718411
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.39116331934928894,
+        "js": 0.0824647769331932
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 2,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806386947631836,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004810346581507474,
+      "mean_update_ratio": 0.00043008691136492416,
+      "update_cosine_previous": [
+        0.9999998211860657
+      ],
+      "gradient_norm": 1.9399716832536396,
+      "gradient_norm_by_group": {
+        "f": 0.0010959818944672518,
+        "g": 0.286180393474723,
+        "norm": 1.6509228944778442,
+        "other": 0.9777746721659321
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 6.8063859939575195,
+        "entropy": 3.024496555328369,
+        "y_norm": 16.098129272460938,
+        "z_norm": 12.13776683807373,
+        "y_update_ratio": 0.0003019235155079514,
+        "z_update_ratio": 0.0004208847531117499
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.6145215034484863,
+        "js": 0.11652455478906631
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 2,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.299358367919922,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.00048575350956525654,
+      "update_cosine_previous": [
+        1.0
+      ],
+      "gradient_norm": 1.442180341380336,
+      "gradient_norm_by_group": {
+        "f": 0.001759961888548904,
+        "g": 0.6500813551527869,
+        "norm": 0.9344062209129333,
+        "other": 0.8855282522878535
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 2,
+        "cross_entropy": 5.299358367919922,
+        "entropy": 3.2491607666015625,
+        "y_norm": 17.064056396484375,
+        "z_norm": 12.374472618103027,
+        "y_update_ratio": 0.0004054307355545461,
+        "z_update_ratio": 0.0003941188333556056
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.5741748213768005,
+        "js": 0.12016023695468903
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 4,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.7577223777771,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003599317969928961,
+      "update_cosine_previous": [
+        1.0000001192092896,
+        0.9999999403953552,
+        0.9999998211860657
+      ],
+      "gradient_norm": 1.8300960160720332,
+      "gradient_norm_by_group": {
+        "f": 0.001951139079403882,
+        "g": 0.8913528328997741,
+        "norm": 1.3205552101135254,
+        "other": 0.9004841394619846
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.7577223777771,
+        "entropy": 3.3274340629577637,
+        "y_norm": 15.05433177947998,
+        "z_norm": 12.064728736877441,
+        "y_update_ratio": 0.000331829214701429,
+        "z_update_ratio": 0.0003303871490061283
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.70270836353302,
+        "js": 0.1322854608297348
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 4,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806332588195801,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004811499093193561,
+      "mean_update_ratio": 0.0004301130793464836,
+      "update_cosine_previous": [
+        0.9999998211860657,
+        0.9999998211860657,
+        0.9999997019767761
+      ],
+      "gradient_norm": 2.0021349878126764,
+      "gradient_norm_by_group": {
+        "f": 0.002198656186576561,
+        "g": 0.5725418616232403,
+        "norm": 1.6506531238555908,
+        "other": 0.9777933098203385
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 6.806332588195801,
+        "entropy": 3.0244991779327393,
+        "y_norm": 16.098398208618164,
+        "z_norm": 12.136282920837402,
+        "y_update_ratio": 0.0003019072755705565,
+        "z_update_ratio": 0.000420921656768769
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.2785484790802002,
+        "js": 0.2100314497947693
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 4,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.29827880859375,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.0004856586929236073,
+      "update_cosine_previous": [
+        1.0,
+        1.0,
+        0.9999999403953552
+      ],
+      "gradient_norm": 1.8270705584507922,
+      "gradient_norm_by_group": {
+        "f": 0.0035194905949538897,
+        "g": 1.29689482420285,
+        "norm": 0.9339357018470764,
+        "other": 0.8854390766816821
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 4,
+        "cross_entropy": 5.298278331756592,
+        "entropy": 3.2491965293884277,
+        "y_norm": 17.064701080322266,
+        "z_norm": 12.376035690307617,
+        "y_update_ratio": 0.00040524580981582403,
+        "z_update_ratio": 0.0003940666210837662
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.9394424557685852,
+        "js": 0.18010586500167847
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 6,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.757516860961914,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003599118596563737,
+      "update_cosine_previous": [
+        1.0000001192092896,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999999403953552,
+        1.0
+      ],
+      "gradient_norm": 2.0841752485821887,
+      "gradient_norm_by_group": {
+        "f": 0.002964168453902822,
+        "g": 1.3376800467948469,
+        "norm": 1.3204184770584106,
+        "other": 0.9004914315848256
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.757517337799072,
+        "entropy": 3.327335834503174,
+        "y_norm": 15.054339408874512,
+        "z_norm": 12.064457893371582,
+        "y_update_ratio": 0.0003318164963275194,
+        "z_update_ratio": 0.0003304170968476683
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 0.9380800127983093,
+        "js": 0.16590602695941925
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 6,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806279182434082,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004812608822248876,
+      "mean_update_ratio": 0.00043013826264844585,
+      "update_cosine_previous": [
+        0.9999998211860657,
+        0.9999998211860657,
+        0.9999997019767761,
+        0.9999997615814209,
+        0.9999998211860657
+      ],
+      "gradient_norm": 2.101884776120147,
+      "gradient_norm_by_group": {
+        "f": 0.0033131084970667735,
+        "g": 0.8590863713493037,
+        "norm": 1.6503826379776,
+        "other": 0.9778120423791634
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 6.806279182434082,
+        "entropy": 3.0245025157928467,
+        "y_norm": 16.09867286682129,
+        "z_norm": 12.134805679321289,
+        "y_update_ratio": 0.0003018898714799434,
+        "z_update_ratio": 0.00042095655226148665
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.7477028369903564,
+        "js": 0.2669951319694519
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 6,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.29720401763916,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.0004855652756911392,
+      "update_cosine_previous": [
+        1.0,
+        1.0,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999998807907104
+      ],
+      "gradient_norm": 2.3282140158653832,
+      "gradient_norm_by_group": {
+        "f": 0.005285128298078665,
+        "g": 1.9404502420017111,
+        "norm": 0.9334669709205627,
+        "other": 0.8853501248696914
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 6,
+        "cross_entropy": 5.29720401763916,
+        "entropy": 3.2492315769195557,
+        "y_norm": 17.06536102294922,
+        "z_norm": 12.377603530883789,
+        "y_update_ratio": 0.00040506129153072834,
+        "z_update_ratio": 0.00039401435060426593
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [],
+        "raw_rows_persisted": false,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.175472617149353,
+        "js": 0.2144099771976471
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 8,
+      "seed": 24301,
+      "corpus_n": 4,
+      "cross_entropy": 6.757313251495361,
+      "accuracy": 0.078125,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "mean_update_ratio": 0.0003598917810450075,
+      "update_cosine_previous": [
+        1.0000001192092896,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999999403953552,
+        1.0,
+        0.9999998807907104,
+        0.9999998807907104
+      ],
+      "gradient_norm": 2.3954733628655642,
+      "gradient_norm_by_group": {
+        "f": 0.004016808368880881,
+        "g": 1.7844410064883887,
+        "norm": 1.3202836513519287,
+        "other": 0.9004986795018121
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.757312774658203,
+        "entropy": 3.3272366523742676,
+        "y_norm": 15.05435562133789,
+        "z_norm": 12.064192771911621,
+        "y_update_ratio": 0.00033180287573486567,
+        "z_update_ratio": 0.00033044503652490675
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "f429c03fbaa04b2c8f3354f4b8ac180042eefa9ebc6b9ac296f09cf8a6c55df7",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0375,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "53ca63b288d3bb16e78d1d9db94ad7c193c0dfa161b7236d69a2bc68165ec43d",
+            "meaningful_parse": false,
+            "structural_similarity": 0.06,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "f429c03fbaa04b2c8f3354f4b8ac180042eefa9ebc6b9ac296f09cf8a6c55df7",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0273,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "f429c03fbaa04b2c8f3354f4b8ac180042eefa9ebc6b9ac296f09cf8a6c55df7",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0214,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.1255197525024414,
+        "js": 0.19097696244716644
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 8,
+      "seed": 24302,
+      "corpus_n": 4,
+      "cross_entropy": 6.806227684020996,
+      "accuracy": 0.0,
+      "maximum_update_ratio": 0.0004813754931092262,
+      "mean_update_ratio": 0.0004301638327888213,
+      "update_cosine_previous": [
+        0.9999998211860657,
+        0.9999998211860657,
+        0.9999997019767761,
+        0.9999997615814209,
+        0.9999998211860657,
+        0.9999998807907104,
+        0.9999999403953552
+      ],
+      "gradient_norm": 2.234264303291421,
+      "gradient_norm_by_group": {
+        "f": 0.004444358712586086,
+        "g": 1.1458166047954472,
+        "norm": 1.6501119136810303,
+        "other": 0.9778303560131965
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 6.806227684020996,
+        "entropy": 3.0245065689086914,
+        "y_norm": 16.098953247070312,
+        "z_norm": 12.133338928222656,
+        "y_update_ratio": 0.0003018762799911201,
+        "z_update_ratio": 0.00042099363054148853
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "7cba94f9b050e35a8bed93ba77f99c284c87e5e7fa1adabc02c3cb758f8e6d2b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "9244d1e293d78e7be0062f8773da3a18d79c550a954e1e66b4967478eeb8d0f4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "7cba94f9b050e35a8bed93ba77f99c284c87e5e7fa1adabc02c3cb758f8e6d2b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "7cba94f9b050e35a8bed93ba77f99c284c87e5e7fa1adabc02c3cb758f8e6d2b",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 2.0973165035247803,
+        "js": 0.30476731061935425
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "architecture_hash": "5ff552abf4e08ced76e2d5237da978719ebceabacc7068e6fd25041e2b74fae5",
+      "depth": 8,
+      "seed": 24303,
+      "corpus_n": 4,
+      "cross_entropy": 5.296132564544678,
+      "accuracy": 0.125,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "mean_update_ratio": 0.00048547132973908447,
+      "update_cosine_previous": [
+        1.0,
+        1.0,
+        0.9999999403953552,
+        0.9999998211860657,
+        0.9999998807907104,
+        0.9999999403953552,
+        0.9999999403953552
+      ],
+      "gradient_norm": 2.8834943279890126,
+      "gradient_norm_by_group": {
+        "f": 0.007063296513683021,
+        "g": 2.580757920254841,
+        "norm": 0.9330005049705505,
+        "other": 0.8852616924693927
+      },
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "all_finite": true,
+      "final_depth_metrics": {
+        "depth": 8,
+        "cross_entropy": 5.296133041381836,
+        "entropy": 3.249267101287842,
+        "y_norm": 17.066028594970703,
+        "z_norm": 12.379179954528809,
+        "y_update_ratio": 0.00040487851947546005,
+        "z_update_ratio": 0.00039396501961164176
+      },
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "rows": [
+          {
+            "record_id": "smoke_hero_01",
+            "prediction_sha256": "c065b4b23cc1b825b2bfbf3b064a7f1a44dce4a94da9751f4dce4c6e20cd59e4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "smoke_button_01",
+            "prediction_sha256": "077b440d19f89c9e8af27ad57eb565fcaba8354dc73a20fcd064c9fd38725cdf",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_form_01",
+            "prediction_sha256": "c065b4b23cc1b825b2bfbf3b064a7f1a44dce4a94da9751f4dce4c6e20cd59e4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          },
+          {
+            "record_id": "held_out_dual_card_01",
+            "prediction_sha256": "c065b4b23cc1b825b2bfbf3b064a7f1a44dce4a94da9751f4dce4c6e20cd59e4",
+            "meaningful_parse": false,
+            "structural_similarity": 0.0,
+            "reward": 0.0
+          }
+        ],
+        "raw_rows_persisted": true,
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      },
+      "logit_divergence_from_current_v1": {
+        "kl": 1.3476096391677856,
+        "js": 0.23771928250789642
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "62726d6671dc9115d08c5581044bab7818e87e05",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm243_recursive_update_gate": "v3",
+      "model.recursive_denoiser": "v18",
+      "model.twotower": "v231"
+    },
+    "stamped_at": "2026-07-24T04:57:44.584306+00:00"
+  }
+}

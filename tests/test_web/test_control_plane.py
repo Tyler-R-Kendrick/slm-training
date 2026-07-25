@@ -2650,7 +2650,9 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
                 "train_result": {"trace_id": "a" * 32},
                 "suites": suites,
                 "ship_gates": {"pass": False},
-                "agentv": {"total": 5, "passed": 1},
+                "evals": {
+                    "criteria": {"total": 5, "passed": 1, "pass": False}
+                },
                 "scoreboard": "outputs/autoresearch/e9-current/runs/e9-run/scoreboard.json",
             }
         ),
@@ -2674,7 +2676,11 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
     readers = Readers(tmp_path)
     research = readers.scoreboard("research")
     assert research["results"][0]["run_id"] == "e9-run"
-    assert research["results"][0]["agentv"] == {"total": 5, "passed": 1}
+    assert research["results"][0]["eval_criteria"] == {
+        "total": 5,
+        "passed": 1,
+        "pass": False,
+    }
     assert any(row["run_id"] == "e9-run" for row in readers.runs()["runs"])
     detail = readers.run("e9-run")
     assert detail["provenance"] == "live"
@@ -2771,7 +2777,9 @@ def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None
                 "evaluation": {
                     "suites": suites,
                     "failed_gates": 4,
-                    "agentv": {"total": 5, "passed": 1},
+                    "evals": {
+                        "criteria": {"total": 5, "passed": 1, "pass": False}
+                    },
                 },
             }
         ),
@@ -2782,7 +2790,11 @@ def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None
     assert result["run_id"] == "e230-diverse-roots-32step"
     assert result["pass"] is False
     assert result["suites"] == suites
-    assert result["agentv"] == {"total": 5, "passed": 1}
+    assert result["eval_criteria"] == {
+        "total": 5,
+        "passed": 1,
+        "pass": False,
+    }
     assert result["trace_id"] == "b" * 32
     assert result["run_dir"].endswith("e230-diverse-roots-32step")
 
@@ -2822,7 +2834,8 @@ def test_committed_sde0_evidence_is_visible_on_research_scoreboard() -> None:
     )
 
     assert result["pass"] is False
-    assert result["agentv"] == {"total": 5, "passed": 0, "execution_errors": 0}
+    # Historical AgentV execution summaries are not re-labeled as criteria.
+    assert result["eval_criteria"] == {}
     assert set(result["suites"]) == {
         "smoke",
         "held_out",
@@ -2844,7 +2857,7 @@ def test_committed_e498_evidence_is_visible_on_research_scoreboard() -> None:
 
     assert result["pass"] is False
     assert result["claim_class"] == "diagnostic"
-    assert result["agentv"]["passed"] == 0
+    assert result["eval_criteria"] == {}
     assert result["suites"]["smoke"]["slot_component_applications"] == 20
 
 
@@ -2894,12 +2907,19 @@ def test_features_bootstrap_returns_evaluated_defaults(ro_client: TestClient) ->
     assert payload["provider"] == "in_memory"
     assert payload["evaluated"]["dashboard.default-renderer"] == "interpreted"
     assert payload["targeting_key"] == "test"
-    assert any(row["lever_id"] == "dashboard-renderer" for row in payload["levers"])
+    assert any(row["key"] == "dashboard.default-renderer" for row in payload["flags"])
 
 
 def test_features_levers_registry(ro_client: TestClient) -> None:
     payload = ro_client.get("/api/features/levers").json()
-    assert any(row["flag_key"] == "dashboard.default-renderer" for row in payload["levers"])
+    assert any(row["key"] == "dashboard.default-renderer" for row in payload["flags"])
+
+
+def test_experiment_feature_flag_detail_endpoint(ro_client: TestClient) -> None:
+    response = ro_client.get("/api/experiment-flags/slm.schema_in_context")
+    assert response.status_code == 200
+    assert response.json()["key"] == "slm.schema_in_context"
+    assert ro_client.get("/api/experiment-flags/slm.not-a-flag").status_code == 404
 
 
 def test_read_only_blocks_execution(ro_client: TestClient) -> None:
@@ -2911,6 +2931,28 @@ def test_read_only_blocks_execution(ro_client: TestClient) -> None:
 
 
 # --- pure-compute gate endpoint (works even read-only) ---------------------
+def test_openfeature_levers_and_ofrep_evaluate(ro_client: TestClient) -> None:
+    caps = ro_client.get("/api/capabilities").json()
+    assert caps["openfeature"]["enabled"] is True
+    assert caps["openfeature"]["evaluate"] == "/api/flags/ofrep/v1/evaluate"
+
+    levers = ro_client.get("/api/flags/levers").json()
+    keys = {row["key"] for row in levers["levers"]}
+    assert "verified_solver_decode" in keys
+
+    resp = ro_client.post(
+        "/api/flags/ofrep/v1/evaluate",
+        json={
+            "context": {"targetingKey": "run-ofrep", "experiment_id": "E0"},
+            "flags": ["verified_solver_decode"],
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["flags"]["verified_solver_decode"]["value"] is False
+    assert body["flags"]["verified_solver_decode"]["reason"] in {"STATIC", "DEFAULT"}
+
+
 def test_gates_evaluate_matches_pure_function(ro_client: TestClient) -> None:
     thresholds = {"smoke": {"parse_rate": 0.66}}
     resp = ro_client.post(
@@ -2918,6 +2960,18 @@ def test_gates_evaluate_matches_pure_function(ro_client: TestClient) -> None:
     ).json()
     assert resp == evaluate_ship_gates(SMOKE_SUITE, thresholds=thresholds)
     assert resp["pass"] is True
+
+
+def test_promotion_evaluate_preserves_governance_gate(ro_client: TestClient) -> None:
+    response = ro_client.post(
+        "/api/promotion/evaluate", json={"ship_suites": SMOKE_SUITE}
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["promotable"] is False
+    assert result["checks"]["campaign_governance"]["pass"] is False
+    assert "campaign_governance_missing" in result["failures"]
 
 
 # --- remote dispatch monitoring --------------------------------------------

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import slm_training.evals.agentv as agentv_module
 
 from slm_training.evals.agentv import (
-    MODEL_QUALITY_METRICS,
     _agentv_runtime,
-    apply_agentv_metric_results,
     model_ship_gate_cases,
     publish_agentv_evaluation,
     publish_model_evaluation,
@@ -37,7 +36,7 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     assert _agentv_runtime(worktree) == (runner, common_root)
 
 
-def test_model_cases_publish_every_named_domain_metric() -> None:
+def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
     cases = model_ship_gate_cases(
         {
             "smoke": {
@@ -58,10 +57,19 @@ def test_model_cases_publish_every_named_domain_metric() -> None:
         "ood",
         "rico_held",
     ]
-    assert "pass" not in cases[0]
-    assert set(cases[0]["result"]["metrics"]) == set(MODEL_QUALITY_METRICS)
-    assert cases[0]["result"]["metrics"]["parse_rate"] == 1.0
-    assert cases[1]["result"]["metrics"]["parse_rate"] is None
+    assert all(item["actual"] is not None for item in cases[0]["assertions"])
+    assert all(
+        case["assertions"] == [
+            {
+                "id": f"{case['id']}:missing_suite",
+                "actual": None,
+                "operator": "present",
+                "expected": True,
+                "suite": case["id"],
+            }
+        ]
+        for case in cases[1:]
+    )
 
 
 def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
@@ -74,20 +82,91 @@ def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
                 "id": "case-1",
                 "criteria": "The fixture wiring case passes.",
                 "pass": True,
+                "checks": {"value_is_one": True},
                 "result": {"value": 1},
             }
         ],
+        version_stamp={"stamp_schema": "version_stamp/v1"},
     )
     spec = tmp_path / "agentv" / "sdk-wiring.eval.jsonl"
     row = json.loads(spec.read_text(encoding="utf-8"))
-    assert row["assert"] == [{"required": True, "type": "is-json"}]
+    assert row["assert"][0]["type"] == "code-grader"
+    assert row["assert"][0]["config"] == {
+        "actual": True,
+        "expected": True,
+        "id": "case-1:domain_criterion",
+        "operator": "eq",
+    }
     assert "agentv_pass" not in json.loads(row["input"])
     assert Path(published["spec"]).is_absolute()
-    assert published["sdk"] == "@agentv/core"
+    assert published["authority"] == "AgentEvals assertions"
+    assert published["criteria"]["pass"] is True
+    assert published["summary"]["passed"] == 1
     assert published["summary"]["executionErrors"] == 0
+    benchmark = json.loads(
+        Path(published["artifacts"]["benchmarkPath"]).read_text(encoding="utf-8")
+    )
+    assert benchmark["version_stamp"]["stamp_schema"] == "version_stamp/v1"
 
 
-def test_agentv_model_bundle_reports_named_metrics_for_a_smoke_run(tmp_path) -> None:
+def test_agentv_contract_checks_fail_even_when_pass_flag_is_true(tmp_path) -> None:
+    published = publish_agentv_evaluation(
+        tmp_path,
+        name="checked-contract",
+        claim="fixture_wiring_not_ship",
+        cases=[
+            {
+                "id": "bad-value",
+                "criteria": "The named contract value must pass.",
+                "pass": True,
+                "assertions": [{
+                    "id": "bad-value:value_is_one",
+                    "actual": False,
+                    "operator": "eq",
+                    "expected": True,
+                }],
+                "result": {"value": 0},
+            }
+        ],
+    )
+    assert published["criteria"]["pass"] is False
+    assert published["criteria"]["failed"] == 1
+
+
+def test_agentv_forwards_w3c_trace_id_to_the_node_runner(tmp_path, monkeypatch) -> None:
+    runner = tmp_path / "runner.mjs"
+    runner.write_text("// fixture")
+    sdk_root = tmp_path / "sdk-root"
+    captured = {}
+    (tmp_path / "trace.json").write_text(
+        json.dumps({"trace_id": "0123456789abcdef0123456789abcdef"})
+    )
+    monkeypatch.setattr(agentv_module, "_agentv_runtime", lambda _: (runner, sdk_root))
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps({"summary": {}, "artifacts": {}}),
+            stderr="",
+        )
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+    publish_agentv_evaluation(
+        tmp_path,
+        name="trace-link",
+        claim="fixture_wiring_not_ship",
+        cases=[{"id": "case", "criteria": "passes", "pass": True}],
+    )
+    assert captured["command"][-4:] == [
+        "--trace-id",
+        "0123456789abcdef0123456789abcdef",
+        "--run-id",
+        tmp_path.name,
+    ]
+
+
+def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
     published = publish_model_evaluation(
         tmp_path,
         {
@@ -103,31 +182,6 @@ def test_agentv_model_bundle_reports_named_metrics_for_a_smoke_run(tmp_path) -> 
             }
         },
     )
-    metrics = published["metric_results"]["smoke"]
-    assert set(metrics) == set(MODEL_QUALITY_METRICS)
-    assert metrics["parse_rate"] == {"value": 1.0, "defined_n": 32}
-    assert metrics["ast_node_f1"] == {"value": None, "defined_n": 0}
-
-
-def test_apply_agentv_metric_results_rejects_missing_or_mismatched_metrics() -> None:
-    local = {
-        "n": 2,
-        "parse_rate": 0.5,
-        "metric_defined_n": {"parse_rate": 2},
-        **{metric: None for metric in MODEL_QUALITY_METRICS if metric != "parse_rate"},
-    }
-    results = {
-        metric: {"value": None, "defined_n": 0}
-        for metric in MODEL_QUALITY_METRICS
-    }
-    results["parse_rate"] = {"value": 0.5, "defined_n": 2}
-    publication = {
-        "format": "AgentEvals JSONL",
-        "summary": {"executionErrors": 0},
-        "metric_results": {"smoke": results},
-    }
-
-    apply_agentv_metric_results(local, publication, "smoke")
-
-    assert local["metric_evaluator"]["sdk"] == "@agentv/core"
-    assert "agentv" not in local
+    assert published["criteria"]["passed"] == 7
+    assert published["criteria"]["failed"] == 4
+    assert published["criteria"]["pass"] is False

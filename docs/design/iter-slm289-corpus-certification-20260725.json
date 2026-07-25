@@ -1,0 +1,47 @@
+{
+  "schema": "slm289_corpus_certification_result/v1",
+  "generated_at": "2026-07-25T04:08:28.999779+00:00",
+  "dataset_id": "openui_verified_v1",
+  "source_snapshot_count": 21,
+  "source_rows": 6337,
+  "core_records": 1682,
+  "tiers": {
+    "Bronze": 2882,
+    "Gold": 20,
+    "Quarantine": 572,
+    "Silver": 2863
+  },
+  "quarantine_rate": 0.0902635316395771,
+  "source_fingerprints": {
+    "dq_strict_fixture_r4_20260718": "59bc139ef678d9b69e2b19882554dc3e7ff91db38370551923f5fc2e9a5f4620",
+    "e177_semantic_judge_v2": "d59a94d9de0c3bfd0145faf27cc4ffab11fac73a4fc0f14e0390330aa8367803",
+    "e214_schema_role_judge_v3": "d3ad058fc5935e5b340a82ef1c9067057a4016e128d623a508afb0ae071e27ad",
+    "e218_schema_normalized_judge_v5": "f23ac31ee8170d2acda6da72e5916e5101160c2a1f3d940aaeb280e664eeb0f7",
+    "e230_diverse_judged_roots_v2": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+    "e283_signature_support_synth_v1": "5bb8f9601bbb2d0ef7caaf905eedda40d88e1908851445ee8bdd8818c604bcbe",
+    "e297_semantic_contract_judge_v1": "1e1815e2b658c618b0b556853f7c7b009c384ab98749b3786eebd379a54290a9",
+    "e500_documentized_expression_candidate_r2_20260718": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+    "e521_visible_slot_contract_r2_20260719": "b6a44a1b155f569ff46e738295330c4f35e3e4cdccd606cb8ff7a0a8a853b7d5",
+    "e524_visible_component_slot_contract_r4_20260719": "56c035c1a6386ef4f49fb7e9d68dcd89445f6c75dfff5686bb9bff5b1825d37a",
+    "e527_visible_component_types_slot_contract_r1_20260719": "84c4ee8e5b1f18f1a09b1ebf14eb4dcdda33533cb0071807e76fa0e7fe90fc5a",
+    "e530_visible_semantic_roles_r1_20260719": "c9f7ee1da5ce85aee6b2297a491e702695242b06c472bc703b73b5ba2e72a3b5",
+    "e530_visible_semantic_roles_r2_20260719": "e65a6ac5a7c49499b638582c325eafd0b245cc4aa9d2650d1396a88230eccee2",
+    "remediated": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
+    "remediated_cap3": "d94d09bef3b6bfbffd5f8bc34e78c4f25b558bdda7dc56e09b3efb68188b2bcc",
+    "remediated_roots": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce",
+    "remediated_roots_judged": "2f5a2f0c2def4b7e5032a9c0b7fc871c6f0b95bf5f102ce94ead78a5115752d9",
+    "remediated_unique": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
+    "scope_graded_v1": "56db51d38947b090fb901c740e7035549743437e935b0047ea124997544d623a",
+    "slm196_legal_edit_bridge_fixture": "e9248b29ffdd0029d589c9472092914e5e66ef03cfe74d49ab3217446d874389",
+    "slm230_symbol_only_v1": "cb221fdf48cc116c90e5e05043baa9dd97c64db24b7a38802b60434305bab943"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8bf37cd6dacdfe4b3ef5df7da378a40d4d268e7c",
+    "code_dirty": true,
+    "components": {
+      "data.corpus_certification": "v1"
+    },
+    "stamped_at": "2026-07-25T04:02:55.495309+00:00"
+  }
+}

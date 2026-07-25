@@ -28,11 +28,17 @@ from slm_training.harnesses.annotations import (
 )
 from slm_training.harnesses.annotations.store import AnnotationStore, FileAnnotationStore
 from slm_training.dsl.parser import ParseError, stream_check, validate
+from slm_training.levers import require_constrained_production_config
 from slm_training.models.checkpoint_resolve import (
     ResolvedCheckpoint,
     resolve_serving_checkpoint,
 )
 from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
+from slm_training.models.template_fill import (
+    ensure_prompt_inventory,
+    inventory_from_prompt,
+)
+from slm_training.dsl.renderability import root_type, structural_root_container
 from slm_training.web.prompts import EXAMPLE_PROMPTS, PromptCursor, load_prompt_bank
 
 DEFAULT_CHECKPOINT = PLAYGROUND_DEMO_CHECKPOINT
@@ -53,6 +59,38 @@ class GenerateResult:
     stream: dict[str, Any]
     serialized: str | None
     attempts: list[dict[str, Any]]
+    # Decode invariant I6 (docs/design/decode-invariants.md): an unconstrained
+    # decode is a diagnostic control. It may still parse, but it is never
+    # certified, never gated on, and never counted as a serving sample.
+    constrained: bool = True
+
+    @property
+    def certified(self) -> bool:
+        return bool(self.valid and self.constrained)
+
+
+class SubstitutedGeneration(RuntimeError):
+    """The backend returned a certified stand-in, not a real model decode."""
+
+
+def _raise_on_substituted_generation(model: Any) -> None:
+    """Fail the attempt when the backend substituted a certified fallback.
+
+    Decode invariant I6 keeps output legal, and a backend is free to satisfy
+    that by returning a certified deterministic program instead of an invalid
+    one. That is not a successful generation, and the serving harness — which
+    persists every attempt as annotation evidence — must not record it as one.
+    Backends that expose no evidence channel are unaffected.
+    """
+    consume = getattr(model, "consume_generation_evidence", None)
+    if not callable(consume):
+        return
+    for row in consume() or ():
+        if isinstance(row, dict) and row.get("fallback_used"):
+            raise SubstitutedGeneration(
+                "backend substituted a certified fallback program for a failed "
+                "constrained decode"
+            )
 
 
 class GenerationExhausted(RuntimeError):
@@ -280,11 +318,16 @@ class PlaygroundService:
             "serving checkpoint %s (%s)", self.checkpoint, self._resolved.provenance
         )
         self._model.eval()
-        # Enable the deterministic DFA / LTR speculative layer. Validation
-        # and fallback policy belong to this service. Q9 decode levers cut
-        # repair-path latency without hiding failed model attempts.
+        # Use the compiler tree to keep the model's OpenUI output complete.
+        # Template markers remain literal DSL values; the browser may choose
+        # to realize them for display, but generation never fills them in.
         cfg = self._model.config
         cfg.grammar_constrained = True
+        cfg.compiler_decode_mode = "tree"
+        cfg.slot_contract_constrained_decode = True
+        cfg.honest_slot_contract = True
+        cfg.slot_contract_in_context = True
+        cfg.template_fill_decode = False
         cfg.grammar_ltr_primary = True
         cfg.grammar_ltr_repair = True
         # The harness owns the retry/fallback policy. Do not let the model
@@ -310,6 +353,12 @@ class PlaygroundService:
             cfg.generate_max_attempts = 3
         if int(cfg.grammar_ltr_max_tokens or 0) < 128:
             cfg.grammar_ltr_max_tokens = 192
+        # I6/I2: a serving config may never be able to emit uncertified output
+        # or spend a forward on a proven singleton. Checked after every
+        # override above so a checkpoint's own declared config cannot smuggle
+        # a weakening lever into the playground.
+        cfg.allow_unconstrained_fallback = False
+        require_constrained_production_config(cfg, context="playground serving config")
         return self._model
 
     def next_prompt(self, session_id: str | None = None) -> dict[str, str]:
@@ -417,6 +466,7 @@ class PlaygroundService:
             "openui": record.openui,
             "prior_failures": record.prior_failures,
             "identities": record.identities,
+            "meta": record.meta,
             "training_path": path,
         }
 
@@ -440,10 +490,56 @@ class PlaygroundService:
         return found
 
     @staticmethod
+    def _candidate_diagnostics(openui: str) -> dict[str, Any]:
+        """Return lexer diagnostics before the parser collapses them to text."""
+        status = stream_check(openui)
+        if isinstance(status, dict):
+            error_codes = status.get("error_codes") or status.get("errors") or []
+            unresolved = status.get("unresolved") or []
+            return {
+                "stream_ok": bool(status.get("ok")),
+                "incomplete": bool(status.get("incomplete")),
+                "has_root": bool(status.get("has_root")),
+                "failure_codes": [str(code) for code in error_codes],
+                "unresolved": [str(name) for name in unresolved],
+            }
+        return {
+            "stream_ok": bool(status.ok),
+            "incomplete": bool(status.incomplete),
+            "has_root": bool(status.has_root),
+            "failure_codes": [str(code) for code in status.error_codes],
+            "unresolved": [str(name) for name in status.unresolved],
+        }
+
+    @staticmethod
     def _validate_candidate(openui: str) -> str:
         """Return canonical, useful OpenUI or raise a training-grade failure."""
+        diagnostics = PlaygroundService._candidate_diagnostics(openui)
+        reasons = list(diagnostics["failure_codes"])
+        if diagnostics["incomplete"]:
+            reasons.insert(0, "incomplete")
+        if diagnostics["unresolved"]:
+            reasons.append(
+                "unresolved=" + ",".join(sorted(set(diagnostics["unresolved"])))
+            )
+        if reasons:
+            raise ParseError("generated OpenUI failed preflight: " + ", ".join(reasons))
         program = validate(openui)
-        serialized = (program.serialized or openui).strip()
+        component = root_type(program)
+        if container := structural_root_container(component):
+            raise ParseError(
+                f"generated OpenUI root {component} is structural-only and cannot "
+                f"render standalone; wrap it in {container}(...)"
+            )
+        serialized = str(program.serialized or "").strip()
+        # lang-core's `serialized` field is an implementation detail and some
+        # versions return its JSON AST. The playground, annotations, and model
+        # targets must always carry OpenUI source text.
+        if not any(
+            line.lstrip().startswith("root") and "=" in line
+            for line in serialized.splitlines()
+        ):
+            serialized = openui.strip()
         compact = "".join(serialized.split())
         if "root=" not in compact:
             raise ParseError("generated OpenUI is missing a root assignment")
@@ -475,7 +571,32 @@ class PlaygroundService:
         prompt = (prompt or "").strip()
         if not prompt:
             raise ValueError("prompt must be non-empty")
-        model = self.load()
+        try:
+            model = self.load()
+        except Exception as exc:  # noqa: BLE001
+            # Slim deployments may ship without a runnable checkpoint or
+            # inference runtime (e.g. the Vercel function has no onnxruntime).
+            # Surface the absence as an exhausted attempt so callers take the
+            # honest browser-handoff path instead of erroring with a 500.
+            raise GenerationExhausted(
+                f"training model unavailable in this deployment: {exc}",
+                prompt=prompt,
+                attempts=[
+                    {
+                        "attempt": max(1, int(attempt_start)),
+                        "openui": "",
+                        "valid": False,
+                        "error": f"model_unavailable: {exc}",
+                        "identities": {
+                            "request_generator": dict(
+                                request_identity or self._user_identity(session_id)
+                            ),
+                            "output_generator": self._training_model_identity(),
+                        },
+                        "path": None,
+                    }
+                ],
+            ) from exc
         if design_md is None:
             try:
                 from slm_training.dsl.design_md import load_default_design_md
@@ -483,6 +604,21 @@ class PlaygroundService:
                 design_md = load_default_design_md()
             except Exception:  # noqa: BLE001
                 design_md = None
+        marker_inventory = inventory_from_prompt(prompt, design_md, heuristic=True)
+        decode_meta = {
+            "marker_inventory": marker_inventory,
+            "decode_contract": {
+                # I6: unconstrained requests are diagnostic controls. Stamp
+                # every persisted attempt so a control sample can never be
+                # mistaken later for a certified serving generation.
+                "mode": "compiler_tree" if grammar_constrained else "unconstrained_control",
+                "grammar_constrained": bool(grammar_constrained),
+                "diagnostic_control": not bool(grammar_constrained),
+                "certifiable": bool(grammar_constrained),
+                "slot_contract": "prompt_or_design_inventory",
+                "template_fill_decode": False,
+            },
+        }
 
         last_error: str | None = None
         openui = ""
@@ -550,12 +686,24 @@ class PlaygroundService:
                         f"{prompt}\n\nPrevious generation and review failures to correct:\n"
                         f"{feedback}"
                     )
+                # Keep the contract visible and stable across repair attempts.
+                # The marker strings are part of the desired model output.
+                inference_prompt = ensure_prompt_inventory(
+                    inference_prompt, marker_inventory
+                )
                 try:
                     openui = model.generate(
                         inference_prompt,
                         grammar_constrained=grammar_constrained,
                         design_md=design_md,
                     )
+                    # I6 honesty: a backend may satisfy "never emit invalid
+                    # grammar" by substituting a certified deterministic
+                    # program (ONNX does). That program parses, so without
+                    # reading the evidence the harness would record a failed
+                    # decode as a successful real-model attempt and feed it to
+                    # the annotation store. Treat it as the failure it is.
+                    _raise_on_substituted_generation(model)
                 except Exception as exc:  # noqa: BLE001
                     last_error = str(exc)
                     if grammar_constrained:
@@ -568,6 +716,7 @@ class PlaygroundService:
                             meta={
                                 "failure": "generate_exception",
                                 "identities": identities,
+                                **decode_meta,
                             },
                         )
                     record, path = self._persist_generation_attempt(
@@ -583,6 +732,7 @@ class PlaygroundService:
                         meta={
                             "failure": "generate_exception",
                             "identities": identities,
+                            **decode_meta,
                         },
                     )
                     attempt_summaries.append(self._attempt_summary(record, path))
@@ -591,6 +741,10 @@ class PlaygroundService:
                         raise
                     continue
                 try:
+                    attempt_meta = {
+                        **decode_meta,
+                        "stream_diagnostics": self._candidate_diagnostics(openui),
+                    }
                     serialized = self._validate_candidate(openui)
                     valid = True
                     last_error = None
@@ -604,7 +758,7 @@ class PlaygroundService:
                         prior_failures=accumulated_failures,
                         design_md=design_md,
                         session_id=session_id,
-                        meta={"identities": identities},
+                        meta={"identities": identities, **attempt_meta},
                     )
                     attempt_summaries.append(self._attempt_summary(record, path))
                     break
@@ -620,6 +774,10 @@ class PlaygroundService:
                             meta={
                                 "failure": "parse_error",
                                 "identities": identities,
+                                **decode_meta,
+                                "stream_diagnostics": self._candidate_diagnostics(
+                                    openui
+                                ),
                             },
                         )
                     record, path = self._persist_generation_attempt(
@@ -635,6 +793,10 @@ class PlaygroundService:
                         meta={
                             "failure": "parse_error",
                             "identities": identities,
+                            **decode_meta,
+                            "stream_diagnostics": self._candidate_diagnostics(
+                                openui
+                            ),
                         },
                     )
                     attempt_summaries.append(self._attempt_summary(record, path))
@@ -680,6 +842,7 @@ class PlaygroundService:
             },
             serialized=serialized,
             attempts=attempt_summaries,
+            constrained=bool(grammar_constrained),
         )
 
     def server_attempt(
@@ -740,6 +903,8 @@ class PlaygroundService:
             "openui": result.openui,
             "serialized": result.serialized,
             "valid": result.valid,
+            "certified": result.certified,
+            "constrained": result.constrained,
             "error": result.error,
             "session_id": sid,
             "source": "server",
@@ -784,23 +949,30 @@ class PlaygroundService:
                 str(item.get("error") or "unknown server generation failure")
                 for item in exc.attempts
             ]
+            last_attempt = exc.attempts[-1] if exc.attempts else None
             return {
                 "prompt": current_prompt,
-                "openui": "",
+                # Keep the actual invalid model output visible to the
+                # playground. It is diagnostic/training evidence, never a
+                # substitute for a successful generation.
+                "openui": str((last_attempt or {}).get("openui") or ""),
                 "valid": False,
                 "error": str(exc),
                 "stream": None,
                 "serialized": None,
                 "session_id": sid,
-                "source": None,
+                "source": "server",
                 "fallback_required": True,
                 "failure_reasons": failures,
                 "attempts": exc.attempts,
+                "attempt": last_attempt,
             }
         return {
             "prompt": result.prompt,
             "openui": result.openui,
             "valid": result.valid,
+            "certified": result.certified,
+            "constrained": result.constrained,
             "error": result.error,
             "stream": result.stream,
             "serialized": result.serialized,

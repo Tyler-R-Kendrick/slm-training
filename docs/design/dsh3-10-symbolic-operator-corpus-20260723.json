@@ -1,0 +1,133 @@
+{
+  "schema": "symbolic_operator_corpus_evidence/v1",
+  "issue": "SLM-378",
+  "run_id": "dsh3_10_operator_fixture_v4",
+  "run_date": "2026-07-23",
+  "status": "pass_fixture_contract",
+  "honesty": {
+    "label": "fixture_wiring_only",
+    "ship_claim": false,
+    "checkpoint_created": false,
+    "agentv_required": false,
+    "notes": "This strict CPU data-build exercise validates deterministic generation and replay wiring on two admitted fixture roots. It is not a model evaluation, full-corpus coverage claim, or ship result."
+  },
+  "recipe": {
+    "device": "cpu",
+    "profile": "strict",
+    "source": "fixture",
+    "synthesizer": "none",
+    "max_wall_minutes": 3,
+    "operator_corpus": {
+      "max_roots": 2,
+      "actions_per_state": 2,
+      "max_combinations_per_operator": 32,
+      "sibling_forks": true
+    },
+    "disabled_optional_producers": [
+      "language_contract",
+      "frontier_artifacts",
+      "design_md_contrastive",
+      "scope_corpus",
+      "governance_artifacts",
+      "mixture_manifest",
+      "preference_pairs",
+      "diffusion_online",
+      "publish",
+      "lineage_registration"
+    ]
+  },
+  "train_build": {
+    "seed_count": 20,
+    "candidate_count": 20,
+    "admitted_count": 19,
+    "rejected_count": 1,
+    "error_count": 0,
+    "mean_quality_score": 1.0,
+    "content_fingerprint": "e086b62faf8cecb326a5697ecb12e5f7e6af5bc2e34e922dc3be1cafb9510928"
+  },
+  "operator_corpus": {
+    "root_count": 2,
+    "record_count": 20,
+    "content_fingerprint": "c44ebd4fb5e30a26bb3dce4bcce2b42f7d17cf5505f4e29d07c702a668d054ed",
+    "invalid_family_count": 0,
+    "legal_set_count": 4,
+    "coverage_gap_count": 24,
+    "rejection_sample_count": 158,
+    "application_coverage": {
+      "legal_successes": 27,
+      "rejected_combinations": 533,
+      "emitted_illegal_targets": 0
+    },
+    "strata": {
+      "kind": {
+        "single_turn": 12,
+        "next_turn": 6,
+        "sibling_fork": 2
+      },
+      "target_view": {
+        "operator_only": 6,
+        "result_ast_only": 6,
+        "dual": 6,
+        "history_only": 2
+      },
+      "operator_family": {
+        "openui.replace_node": 12,
+        "openui.set_property": 6,
+        "history.fork": 2
+      },
+      "argument_kinds": {
+        "node,template": 12,
+        "node,role,value": 6,
+        "none": 2
+      },
+      "state_size": {
+        "3": 10,
+        "5": 10
+      },
+      "scope_complexity": {
+        "4": 20
+      },
+      "outcome": {
+        "success": 18,
+        "fork": 2
+      },
+      "semantic_family": {
+        "human_curated": 20
+      }
+    }
+  },
+  "quality_loop": {
+    "warnings": [],
+    "recommendation_code": "eval_leakage_source",
+    "rejected_record": {
+      "id": "train_text_only_01",
+      "stage": "decontamination",
+      "reason": "test_fixture_structure",
+      "source_family": "human_curated"
+    },
+    "decision": "Preserve the strict reserved-structure firewall and audit the source input separately.",
+    "experiment_issue": "SLM-392"
+  },
+  "acceptance": {
+    "all_emitted_operator_targets_were_exact_legal_actions": true,
+    "all_emitted_applications_replayed_exactly": true,
+    "all_intermediate_states_passed_pack_authority": true,
+    "all_conversation_traces_replayed_exactly": true,
+    "closed_symbolic_question_and_answer_keys": true,
+    "before_after_effect_proof_and_preference_persisted": true,
+    "typed_rejection_evidence_persisted": true,
+    "coverage_gaps_explicit": true,
+    "hidden_generator_state_required_for_replay": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c825c4b52cfdea365cec952897ca941c7a00f28e",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.contracts": "v10",
+      "dsl.operators.legal_set": "v2",
+      "harness.train_data": "v12"
+    },
+    "stamped_at": "2026-07-23T17:39:39.144693+00:00"
+  }
+}

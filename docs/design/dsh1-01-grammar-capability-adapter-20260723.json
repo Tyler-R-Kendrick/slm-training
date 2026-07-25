@@ -1,0 +1,76 @@
+{
+  "schema_version": "grammar_capability_conformance/v1",
+  "issue": "SLM-353",
+  "date": "2026-07-23",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "implementation": "GrammarCapabilityAdapterV1",
+  "registry_authority": "DslPack",
+  "inference_from_examples": false,
+  "complete_pack_conformance": [
+    {
+      "pack_id": "openui",
+      "complete": true,
+      "start_symbols": [
+        "start"
+      ],
+      "production_alternatives": 76,
+      "terminal_categories": 36,
+      "nonterminals": 28,
+      "reachable": 28,
+      "productive": 28,
+      "nullable": 1,
+      "recursive": 20,
+      "fingerprints": {
+        "grammar": "95d303356c245047722dbad8545ad350985354f2fce553b4a6efa2dcafa39145",
+        "backend": "9efba85012a951e174f65011c601237e24b3e33847986b77f37e786d7e4c53d3",
+        "schema": "62f3640b92709ec1f6f069ee482e6f4290d1a8b45fdd79b55a902a835100275f",
+        "property_order": "c4ea066816e837cf4db6f77a6b198185b838b21714af4bee83954fcdfbb97f82",
+        "placeholder": "077656699a6ac8cbc652fab858b3aa287468d137ea6d4d239703f2dbd5bbe102",
+        "combined": "037eda9c65d3fcff8cead84754645c504d90928550c530c74f75bdd13ed6c309"
+      }
+    },
+    {
+      "pack_id": "test-mini",
+      "complete": true,
+      "authority": "test-owned Lark grammar",
+      "shared_conformance_suite": true
+    }
+  ],
+  "partial_pack_control": {
+    "pack_id": "toy-layout",
+    "complete": false,
+    "absent_capability_status": "UNSUPPORTED"
+  },
+  "controls": {
+    "example_text_cannot_change_productions": "passed",
+    "grammar_authority_mutation_changes_fingerprint": "passed",
+    "undeclared_fragment_start_rejected": "passed",
+    "generic_module_imports_openui": false
+  },
+  "commands": [
+    "python -m pytest -q tests/test_dsl/test_grammar_capabilities.py tests/test_dsl/test_pack.py",
+    "python -m ruff check src/slm_training/dsl/grammar_capabilities.py src/slm_training/dsl/pack.py tests/test_dsl/test_grammar_capabilities.py",
+    "python -m compileall -q src/slm_training/dsl/grammar_capabilities.py src/slm_training/dsl/pack.py tests/test_dsl/test_grammar_capabilities.py",
+    "git diff --check"
+  ],
+  "results": {
+    "pytest": "27 passed",
+    "ruff": "passed",
+    "compileall": "passed",
+    "diff_check": "passed"
+  },
+  "claim_limits": [
+    "No train, eval, benchmark, corpus synthesis, or checkpoint was run.",
+    "This contract fixture does not issue a capability certificate or model ship claim."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "967e2e435f84b029bfb63e86daff2ac8fac60dfd",
+    "code_dirty": true,
+    "components": {
+      "dsl.grammar_capabilities": "v1"
+    },
+    "stamped_at": "2026-07-23T21:25:06+00:00"
+  }
+}

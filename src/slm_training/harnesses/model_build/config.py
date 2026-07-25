@@ -5,13 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slm_training.levers import (
-    DEFAULT_CONTEXT_BACKEND,
-    DEFAULT_DECODE_TIMEOUT_SECONDS,
-    CHECKPOINT_DECLARED_POLICY,
-    DEFAULT_OUTPUT_TOKENIZER,
-    MAX_HARNESS_WALL_MINUTES,
-)
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.models.twotower_numeric_gates import (
     NumericValidationError,
     validate_model_build_config,
@@ -25,17 +19,24 @@ class ModelBuildConfig:
     suite: str = "smoke"
     # Atomic policy preset. compiler_decode_mode=tree always selects the strict
     # bundle in eval_policy before validation or artifact creation.
-    evaluation_policy: str = CHECKPOINT_DECLARED_POLICY
+    evaluation_policy: str = "checkpoint_declared"
     # Honesty label stamped into every eval payload (see evals.record_schema
     # RUN_CLASSES): fixture_demo | scratch_matrix | ship_eval.
     run_class: str = "scratch_matrix"
+    # Optional staged-capability preflight. Legacy runs remain unclassified;
+    # classified runs fail before corpus or checkpoint loading unless every
+    # prior-stage certificate and lever permission is valid.
+    requested_capability: str | None = None
+    capability_plan: Path | None = None
+    capability_certificates: tuple[Path, ...] = ()
+    capability_distillation: bool = False
     run_root: Path = Path("outputs/runs")
     run_id: str = "latest"
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
     # Cumulative deadline; canonical run policy lives in slm_training.levers.
-    max_wall_minutes: float | None = float(MAX_HARNESS_WALL_MINUTES)
+    max_wall_minutes: float | None = float(MAX_RUN_MINUTES)
     batch_size: int = 4
     lr: float = 3e-4
     # SLM-222: optimizer family. adamw (default, byte-identical) or muon_hybrid.
@@ -59,8 +60,8 @@ class ModelBuildConfig:
     mask_min: float = 0.15
     mask_max: float = 0.85
     gen_steps: int = 8
-    # Local-first. Remote/full HF context must be selected explicitly.
-    context_backend: str = DEFAULT_CONTEXT_BACKEND  # scratch | hf
+    # Prefer HF when available; tests/CI can pass --context-backend scratch.
+    context_backend: str = "hf"  # scratch | hf
     hf_model_name: str = "HuggingFaceTB/SmolLM2-135M"
     hf_model_revision: str | None = None
     # False for scratch POC; True by default when context_backend=hf (see factory)
@@ -83,8 +84,11 @@ class ModelBuildConfig:
     # only). Reuses denoiser_arch="shared_recursive" (arm B's/G's arch
     # string), no new arch value.
     recursive_detach_between_steps: bool = False
+    recursive_update_mode: str = "current_v1"
+    recursive_empty_f_mode: str = "pass_through"
+    recursive_norm_mode: str = "shared"
     recursive_depth_supervision_weights: tuple[float, ...] = ()
-    # SLM-238 (RSC-A02): explicit final-depth semantics for deep supervision.
+    # SLM-279: required explicit final-depth semantics when weights are non-empty.
     recursive_depth_aux_mode: str | None = None
     recursive_depth_aux_weight: float = 1.0
     # SLM-211: default-on tying; False creates an independent output head.
@@ -94,16 +98,19 @@ class ModelBuildConfig:
     grammar_dsl: str = "openui"
     grammar_top_k: int = 16
     structural_bias: float = 1.25
-    grammar_ltr_repair: bool = False
+    grammar_ltr_repair: bool = True
     # Length-safe for compositional tokenizer (fixture gold up to ~160 tokens).
     grammar_ltr_max_tokens: int = 256
     grammar_ltr_stages: tuple[int, ...] | None = None
-    grammar_ltr_primary: bool = False
-    grammar_finalize_validate: bool = False
+    grammar_ltr_primary: bool = True
+    grammar_finalize_validate: bool = True
     ltr_loss_weight: float = 0.5
-    ltr_tail_loss_weight: float = 0.0
-    ltr_tail_tokens: int = 32
     fidelity_loss_weight: float = 0.5
+    # SLM-292: explicit immutable contrast corpus; disabled unless weight > 0.
+    semantic_contrast_dir: Path | None = None
+    semantic_contrast_loss_weight: float = 0.0
+    semantic_contrast_margin: float = 1.0
+    semantic_contrast_fraction: float = 0.0
     # None = preserve checkpoint on load; factory defaults new models to True.
     design_md_in_context: bool | None = None
     # Deterministic record-level train-time omission; evaluation is unaffected.
@@ -137,6 +144,10 @@ class ModelBuildConfig:
     mixture_max_importance_weight: float | None = None
     # P1d: after base training, write promoted.pt from best_weighted_nll / last.
     register_promoted: bool = False
+    campaign_manifest: Path | None = None
+    campaign_result: Path | None = None
+    campaign_store_root: Path | None = None
+    campaign_artifact_root: Path | None = None
     # Stub-only
     noise_rate: float = 0.0
     # Eval-driven training: run suite eval every N steps (0 disables).
@@ -162,9 +173,6 @@ class ModelBuildConfig:
     initialization_weight_retention: float = 0.0
     # Write full training state (optimizer/RNG/sampler) alongside last.pt.
     full_state_checkpoint: bool = True
-    # Optional optimizer-step cadence for resumable full-state snapshots.
-    # Zero preserves terminal/evaluation-only checkpoint behavior.
-    checkpoint_every_steps: int = 0
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).
     eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).
@@ -189,9 +197,8 @@ class ModelBuildConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
-    compiler_schema_component_types: bool = False
-    request_aware_slot_reservation: bool = False
-    slot_alias_unique_decode: bool = False
+    compiler_prefill_max_states: int = 0
+    compiler_prefill_token_budget: int = 0
     compiler_decode_mode: str = "off"  # off | forced | restricted | tree
     compiler_search_mode: str = "greedy"  # greedy | lattice | ptrm | gram
     compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always
@@ -228,6 +235,9 @@ class ModelBuildConfig:
     grammar_trust_model: bool = False
     grammar_sample_decode: bool = False
     grammar_sample_temperature: float = 0.8
+    # Evaluation-only control: preserve forced singleton actions, otherwise
+    # sample uniformly from exact grammar-legal candidates.
+    grammar_uniform_at_unforced: bool = False
     grammar_block_decode: bool = False
     grammar_block_size: int = 32
     # Grammar-topology diffusion (format v2 production tree)
@@ -268,7 +278,7 @@ class ModelBuildConfig:
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers
-    output_tokenizer: str = DEFAULT_OUTPUT_TOKENIZER
+    output_tokenizer: str = "lexer"  # symbol-only grammar/AST tokens
     use_symbol_table: bool = True
     # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
     bind_encoding: str = "absolute"
@@ -319,8 +329,6 @@ class ModelBuildConfig:
     semantic_role_decode_weight: float | None = None
     semantic_role_schema_candidates: bool | None = None
     slot_coverage_close_decode_weight: float | None = None
-    required_slot_root_completion: bool | None = None
-    required_slot_array_completion: bool = False
     schema_value_decode_weight: float | None = None
     schema_enum_close_decode_weight: float | None = None
     schema_open_decode_weight: float | None = None
@@ -353,13 +361,6 @@ class ModelBuildConfig:
     binder_component_plan_decode_weight: float | None = None
     binder_topology_loss_weight: float = 0.0
     binder_topology_decode_weight: float | None = None
-    binder_topology_unique_decode: bool = False
-    binder_slot_ownership_loss_weight: float = 0.0
-    binder_slot_ownership_decode_weight: float | None = None
-    binder_slot_presence_loss_weight: float = 0.0
-    binder_slot_presence_decode_weight: float | None = None
-    binder_reference_presence_loss_weight: float = 0.0
-    binder_reference_presence_decode_weight: float | None = None
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float | None = None
     root_reference_arity_loss_weight: float = 0.0
@@ -428,9 +429,10 @@ class ModelBuildConfig:
     byte_budget: int | None = None
     generate_max_attempts: int = 3
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
-    decode_timeout_seconds: float | None = DEFAULT_DECODE_TIMEOUT_SECONDS
+    decode_timeout_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
-    allow_unconstrained_fallback: bool = True
+    # Decode invariant I6 (docs/design/decode-invariants.md): diagnostic-only.
+    allow_unconstrained_fallback: bool = False
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix
@@ -444,6 +446,13 @@ class ModelBuildConfig:
     speculative_successor: bool = False  # E74 successor-state cache
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # I3/I4 (docs/design/decode-invariants.md): deterministic ranking over the
+    # forward-calculated symbol table, and symbol-table prefill scheduling.
+    speculative_rank: str = "off"  # off | ngram
+    speculative_rank_table: str | None = None
+    speculative_rank_margin: float = 0.0
+    prefill_schedule: str = "off"  # off | checkpoint
+    prefill_schedule_max_lookahead: int = 0
     # Hugging Face Bucket for durable checkpoints (full HF-context trains).
     # None → default hf://buckets/TKendrick/OpenUI when sync is enabled.
     # Empty string → disable auto bucket selection.
@@ -476,12 +485,8 @@ class ModelBuildConfig:
     # SLM-212 (SDE5-05): default-off constraint-debt routing over decode paths.
     # All modes are default-off; routing only selects among existing MaskGIT /
     # constrained LTR / ASAp decode paths and never changes legal membership.
-    constraint_debt_routing_mode: str = (
-        "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
-    )
-    constraint_debt_routing_signal: str = (
-        "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
-    )
+    constraint_debt_routing_mode: str = "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
+    constraint_debt_routing_signal: str = "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
     constraint_debt_routing_threshold_high: float = 2.0
     constraint_debt_routing_threshold_low: float | None = None
     constraint_debt_routing_hysteresis: int = 1
@@ -490,20 +495,33 @@ class ModelBuildConfig:
     constraint_debt_routing_calibrator_path: Path | None = None
 
     def __post_init__(self) -> None:
-        from slm_training.levers import require_valid_lever_configuration
+        if self.grammar_constrained is False:
+            raise ValueError(
+                "grammar_constrained=False is unsafe for OpenUI generation"
+            )
+        if self.allow_unconstrained_fallback:
+            raise ValueError(
+                "allow_unconstrained_fallback=True is unsafe for OpenUI generation"
+            )
+        if self.grammar_sample_decode or self.grammar_uniform_at_unforced:
+            raise ValueError(
+                "stochastic grammar selection is unsafe for deterministic "
+                "OpenUI generation"
+            )
         from slm_training.harnesses.model_build.eval_policy import (
             apply_evaluation_policy,
         )
 
         apply_evaluation_policy(self)
-        if self.checkpoint_every_steps < 0:
-            raise ValueError("checkpoint_every_steps must be non-negative")
+        if self.optimizer_name not in {"adamw", "muon_hybrid"}:
+            raise ValueError(
+                "optimizer_name must be one of: adamw, muon_hybrid"
+            )
         # SLM-242: fail-closed numeric/schedule gate.
         try:
             validate_model_build_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
-        require_valid_lever_configuration(self, context="model build config")
 
     @property
     def run_dir(self) -> Path:

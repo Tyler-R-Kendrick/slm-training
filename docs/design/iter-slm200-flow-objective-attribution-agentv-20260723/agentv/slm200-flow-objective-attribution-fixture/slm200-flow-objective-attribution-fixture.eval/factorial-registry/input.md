@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"a0_typed_unavailable": true, "a8_shuffled_negative_control": true, "a9_exact_only": true, "all_ten_arms_present": true}, "claim": "fixture_wiring_not_confirmation", "failures": [], "result": {"A0": "unavailable", "A1": "measured_fixture", "A2": "measured_fixture", "A3": "measured_fixture", "A4": "measured_fixture", "A5": "measured_fixture", "A6": "measured_fixture", "A7": "measured_fixture", "A8": "measured_fixture", "A9": "measured_exact_fixture"}}

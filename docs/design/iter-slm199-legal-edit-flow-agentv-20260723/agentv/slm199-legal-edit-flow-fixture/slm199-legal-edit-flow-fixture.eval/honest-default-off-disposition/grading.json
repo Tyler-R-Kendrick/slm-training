@@ -1,0 +1,76 @@
+{
+  "assertions": [
+    {
+      "text": "Output is valid JSON",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "openui-domain-gate",
+      "passed": true,
+      "evidence": ""
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "is-json",
+      "type": "is-json",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "Output is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "inline-assert-0",
+      "type": "inline-assert",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "openui-domain-gate",
+          "passed": true
+        }
+      ],
+      "details": {
+        "claim": "exact_rate_and_adapted_production_contract",
+        "checks": {
+          "confirmation_blocked": true,
+          "existing_direct_policy_unchanged": true,
+          "flow_default_off": true,
+          "honest_fixture_verdict": true,
+          "no_checkpoint_written": true
+        },
+        "failedChecks": [],
+        "failures": []
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "92eb472193ed82eb1ecb10dba7faac7e59569f44",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm199_legal_edit_flow": "v2"
+    },
+    "stamped_at": "2026-07-24T00:28:56.434722+00:00"
+  }
+}

@@ -6,15 +6,45 @@ from pathlib import Path
 
 import pytest
 
+from slm_training.data.leakage import (
+    fingerprint_openui_structure,
+    load_reserved_test_structure_fingerprints,
+)
 from slm_training.dsl import bridge_available
-from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+from slm_training.harnesses.train_data.sanitize import (
+    SanitizeOptions,
+    sanitize_openui,
+    sanitized_reserved_structures,
+)
 
 pytestmark = pytest.mark.skipif(
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
+
+
+def test_committed_train_fixtures_are_disjoint_after_strict_sanitize() -> None:
+    """Source fixtures must not rely on the downstream firewall for isolation."""
+    train_path = Path("src/slm_training/resources/train_seeds.jsonl")
+    test_path = Path("src/slm_training/resources/test_seeds.jsonl")
+    options = SanitizeOptions(mode="enforce")
+    reserved = load_reserved_test_structure_fingerprints(test_path)
+    reserved |= sanitized_reserved_structures(test_path, options)
+
+    collisions = []
+    for record in load_jsonl(train_path):
+        outcome = sanitize_openui(
+            record.openui,
+            prompt=record.prompt,
+            options=options,
+        )
+        if fingerprint_openui_structure(outcome.openui) in reserved:
+            collisions.append(record.id)
+
+    assert collisions == []
 
 
 def test_train_excludes_test_fixture_structures(tmp_path: Path) -> None:

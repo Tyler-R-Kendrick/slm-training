@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"no_false_positive_claim": true, "verdict_matches_eligibility": true}, "claim": "fixture_screen_not_confirmation", "failures": [], "result": {"decision": "No learned proposal clears the joint recall and wall-clock gate; retain exact cached enumeration and the deterministic grammar partition as diagnostics.", "eligible": [], "thresholds": {"acceptable_recall": 0.95, "coverage_probability": 0.95, "target_recall": 0.95, "warm_p50_improvement": 0.3}}}

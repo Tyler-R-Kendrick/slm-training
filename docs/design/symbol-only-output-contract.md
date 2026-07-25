@@ -1,5 +1,9 @@
 # Symbol-only output contract
 
+> **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) —
+> constrained decoding is the product, deterministic singleton bypass outranks
+> learned scores, and a rejected approach never closes a goal.
+
 OpenUI model targets and completions contain only grammar/AST symbols and
 template placeholders. The model never learns or emits arbitrary string
 content.
@@ -34,6 +38,34 @@ The invariant is enforced at five boundaries:
 4. tokenizer encoding and constrained decoding cannot represent free-form string
    literals; and
 5. both meaningfulness metrics reject any free-form output string.
+
+## Staged target surface policy
+
+`SymbolicSurfacePolicyV1` is the stricter, pack-neutral admission layer for the
+staged capability curriculum. It does not silently change the existing v2
+corpus contract. Before any staged row is materialized, it classifies source
+spans as grammar keyword/punctuation, closed enum/primitive, open
+string/number, binder, external/state reference, comment/prose, or undeclared
+identifier.
+
+Only the active `DslPack` backend/schema and grammar-local binders provide
+closed authority. Open values return typed `template` only where the active
+pack already owns a compatible marker channel; otherwise they return `reject`.
+OpenUI content strings can use `external_entity`, while numeric literals have
+no declared staged marker and reject. Comments/prose and undeclared identifiers
+also reject. A placeholder or state surface is admitted only when the
+`GenerationRequest` effective runtime symbol table declares the matching role.
+No marker family is added:
+external placeholders, state symbols, alpha binders, and the opaque
+`ScopeEnv` IDs remain canonical.
+
+Every violation records its exact character span, category, pack ID and
+surface-authority hash, `symbolic_surface_policy/v1`, decision, and suggested
+existing marker role. The same policy passes OpenUI and the committed GraphQL
+schema authority without requiring the optional GraphQL Node bridge. Binder
+alpha-renaming and content-marker alias permutations preserve canonical/opaque
+meaning in the fixture controls. Full contract evidence:
+[DSH0-02](dsh0-02-symbolic-surface-policy-20260723.md).
 
 ## Measured smoke
 

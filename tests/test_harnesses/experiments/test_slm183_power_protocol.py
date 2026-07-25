@@ -12,6 +12,7 @@ from slm_training.harnesses.experiments.slm183_power_protocol import (
     PowerProtocolReport,
     analyze_existing_iter,
     build_default_manifest,
+    build_experiment_campaign,
     render_markdown,
     run_variance_fixture,
 )
@@ -31,6 +32,14 @@ def test_manifest_round_trip() -> None:
     assert reconstructed == manifest
 
 
+def test_fixture_embeds_canonical_campaign_with_fallback_endpoint() -> None:
+    campaign = build_experiment_campaign(seeds=(0, 1))
+    assert campaign.claim_class == "wiring"
+    assert campaign.seeds == (0, 1)
+    assert campaign.endpoints[0].metric == "paired_binary_success_delta"
+    assert campaign.multiplicity_families[0].method == "holm"
+
+
 def test_run_variance_fixture_produces_report() -> None:
     report = run_variance_fixture(
         n_targets=10, paths_per_target=2, n_seeds=3, run_id="test"
@@ -40,7 +49,11 @@ def test_run_variance_fixture_produces_report() -> None:
     assert report.experiment_id == EXPERIMENT_ID
     assert report.status == "fixture"
     assert report.claim_class == "wiring"
-    assert len(report.cells) == 10 * 3
+    assert len(report.cells) == 10 * 3 * 2
+    assert {cell["arm_id"] for cell in report.cells} == {
+        "synthetic_control",
+        "synthetic_candidate",
+    }
     assert report.mde_curve
     assert report.version_stamp
 

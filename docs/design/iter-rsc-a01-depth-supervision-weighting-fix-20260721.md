@@ -107,6 +107,25 @@ python -m pytest tests/test_models/test_recursive_denoiser.py -q
 - `model.recursive_denoiser`: v1 -> v2 (owns the fixture script and this test
   file, both edited).
 
+## SLM-277 (RSC-A06 audit) follow-up
+
+The same defect was independently re-flagged as
+[SLM-277](https://linear.app/quickdeploy-ai/issue/SLM-277) during the RSC-A06
+numeric-schedule audit. That issue's required scope is already covered by this
+correction:
+
+- The intended semantics are the normalized weighted mean implemented above.
+- The loss term is fixed in `src/slm_training/models/twotower.py`.
+- The obsolete `schedule-guard: allow UNUSED_LOOP_WEIGHT ...` suppression
+  comment is not present in the corrected code.
+- `validate_recursive_depth_supervision` rejects the six historical failure
+  modes and is exercised by the tests below.
+
+The remaining dependent work — re-running the matched recursive-depth campaign
+under the corrected weighting — is tracked by
+[SLM-233](https://linear.app/quickdeploy-ai/issue/SLM-233) (RSC2-01), which
+this issue unblocks.
+
 ## Non-goals honored
 
 - No choice of whether the final depth belongs in the auxiliary term

@@ -244,6 +244,11 @@ def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
             raise RuntimeError(
                 f"OpenUI bridge timed out after {timeout_s:.3f}s"
             ) from exc
+        except TimeoutError:
+            # Evaluation's SIGALRM deadline is cancellation, not a broken REPL.
+            # Retrying through the one-shot bridge would silently defeat it.
+            _close_repl()
+            raise
         except Exception:  # noqa: BLE001
             # Fall back so CI / broken REPL still works.
             _close_repl()

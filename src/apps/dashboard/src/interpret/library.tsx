@@ -208,13 +208,14 @@ const Timeline = defineComponent({
 const DataTable = defineComponent({
   name: "DataTable",
   description:
-    "Dense table. columns = [{key,label,align,help,digits,direction}]; rows = a Query row-set; statusLen truncates status-pill labels (default 26); linkKey renders that column as a mono run-link; searchable enables filtering.",
-  props: z.object({ columns: z.array(any), rows: any, statusLen: z.number().optional(), linkKey: z.string().optional(), searchable: z.boolean().optional(), searchPlaceholder: z.string().optional() }),
+    "Dense table. columns = [{key,label,align,help,digits,direction}]; rows = a Query row-set; statusLen truncates status-pill labels (default 26); linkKey renders that column as a mono run-link; hrefKey supplies a row URL for that link; searchable enables filtering.",
+  props: z.object({ columns: z.array(any), rows: any, statusLen: z.number().optional(), linkKey: z.string().optional(), searchable: z.boolean().optional(), searchPlaceholder: z.string().optional(), hrefKey: z.string().optional() }),
   component: ({ props }: any) => {
     const cols = (props.columns || []).filter((c: any) => c && c.key);
     const data = rowsOf(props.rows);
     const statusLen = props.statusLen ?? 26;
     const linkKey = props.linkKey;
+    const hrefKey = props.hrefKey;
     if (!cols.length) return <Empty>No columns.</Empty>;
     return (
       <DataTableC
@@ -227,9 +228,9 @@ const DataTable = defineComponent({
             c.key,
             (r: any) => {
               if (linkKey && c.key === linkKey) {
-                const to = `/runs/${encodeURIComponent(r.run_id || r[c.key])}`;
+                const to = hrefKey ? String(r[hrefKey] || "") : `/runs/${encodeURIComponent(r.run_id || r[c.key])}`;
                 return (
-                  <a className="mono runlink" title="open run detail" onClick={() => navRef.current?.(to)}>
+                  <a className="mono runlink" title="open detail" onClick={() => to && navRef.current?.(to)}>
                     {fmt(r[c.key])}
                   </a>
                 );

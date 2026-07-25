@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "bridge_curriculum_fixture_contract", "failures": [], "result": {"row_ids": ["row_a84197a7ad1177e34778ea00", "row_d0b680a4645c282f4b388668", "row_d19f8fa3006745c6e4b59102", "row_e1b12fbbd7d2d4bc4e5cb90e"]}}

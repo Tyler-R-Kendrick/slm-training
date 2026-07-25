@@ -23,18 +23,15 @@ import json
 import random
 import re
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from slm_training.data.contract import (
-    assert_canonical_template_marker_inventory,
-    assert_canonical_template_markers,
-)
-from slm_training.dsl.parser import validate
+from slm_training.dsl.parser import validate, validate_output
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -53,7 +50,18 @@ ACTION_STOP = 0
 ACTION_REPLACE = 1  # swap the component type of one statement
 ACTION_ADD = 2  # add a fresh leaf statement + reference it from a container
 ACTION_REMOVE = 3  # remove one leaf statement and its references
-N_ACTIONS = 4
+# SLM-305 (LAR2-01) extended valid-state edit language. Every new action is
+# bounded, deterministic, validity-preserving (re-validated through the real
+# parser before acceptance), and invertible; preconditions are documented at
+# each branch of ``TreeEditSpace.apply``.
+ACTION_ADD_CONTAINER = 4  # insert an empty container into a container's children
+ACTION_REMOVE_CONTAINER = 5  # safe inverse: remove an empty/leaf-only container subtree
+ACTION_INSERT_SUBTREE = 6  # transactional: declare container+leaf subtree and reference it
+ACTION_REPLACE_SUBTREE = 7  # replace a canonical one-leaf container subtree's leaf
+ACTION_INSERT_STATEMENT = 8  # insert a canonical V0.5 state/query/mutation statement
+ACTION_REPLACE_STATEMENT = 9  # swap one canonical V0.5 statement for another
+ACTION_BIND_PLACEHOLDER = 10  # (re)bind a leaf's slot to an inventory placeholder
+N_ACTIONS = 11
 
 MAX_STMTS = 24
 MAX_SLOTS = 16
@@ -63,6 +71,40 @@ MAX_SLOTS = 16
 # beyond this split so the action space stays grammar-coupled.
 LEAF_COMPONENTS = ("TextContent", "Button", "Image", "TextInput")
 CONTAINER_COMPONENTS = ("Stack", "Card", "Form")
+
+# Canonical rest texts for containers minted by ADD_CONTAINER / INSERT_SUBTREE.
+# Fixed candidate set (indexed by ``Edit.target``) so minted containers are
+# deterministic and the reachability invariants can reason about them exactly.
+CONTAINER_RESTS: tuple[str, ...] = (', "column"', "")
+CONTAINER_REST = CONTAINER_RESTS[0]
+
+# V0.5 statement component names (state/query/mutation/action pack forms).
+V05_COMPONENTS = ("Query", "Mutation", "Action", "State", "Resource")
+
+# Bounded canonical V0.5 statement templates: (component, canonical arg text).
+# Construction is canonical-AST-backed: each inserted/replaced line is built
+# from this structured spec and fragment-validated through the canonical
+# grammar (``validate_output(..., kind="statement")``) before acceptance —
+# never regex string surgery on existing program text.
+V05_TEMPLATES: tuple[tuple[str, str], ...] = (
+    ("Query", '"tool", {arg: $x}, {default: []}, 15'),
+    ("Mutation", '"tool", {arg: $x}'),
+)
+
+
+def v05_template_index(stmt: Statement) -> int | None:
+    """Index of the canonical V0.5 template ``stmt`` instantiates, else None.
+
+    Only canonical-template statements are REPLACE_STATEMENT-editable, so the
+    inverse edit (restore the old template) is always expressible.
+    """
+    if stmt.has_list:
+        return None
+    rest = stmt.rest.strip()
+    for index, (comp, args) in enumerate(V05_TEMPLATES):
+        if stmt.comp == comp and rest == args:
+            return index
+    return None
 
 _STMT_RE = re.compile(r"^(?P<name>\w+)\s*=\s*(?P<comp>\w+)\((?P<args>.*)\)\s*$")
 
@@ -105,7 +147,14 @@ class Statement:
 
 def parse_statements(source: str) -> list[Statement] | None:
     """Structural parse of a canonical program; None when a line defies the
-    `name = Comp(...)` shape (those programs are skipped, never mutated)."""
+    `name = Comp(...)` shape (those programs are skipped, never mutated).
+
+    V0.5 statement lines (Query/Mutation/Action/State/Resource) are owned by
+    the canonical grammar: the line is fragment-validated through
+    ``validate_output(..., kind="statement")`` rather than the regex alone.
+    UI statement lines keep the legacy structural split so
+    ``Statement.render()`` stays byte-stable for existing fixture programs.
+    """
     statements: list[Statement] = []
     for line in source.splitlines():
         line = line.strip()
@@ -114,6 +163,11 @@ def parse_statements(source: str) -> list[Statement] | None:
         match = _STMT_RE.match(line)
         if match is None:
             return None
+        if match.group("comp") in V05_COMPONENTS:
+            try:
+                validate_output(line, kind="statement")
+            except Exception:  # noqa: BLE001
+                return None
         args = match.group("args")
         if args.startswith("["):
             depth = 0
@@ -156,6 +210,7 @@ def render_statements(statements: list[Statement]) -> str:
     return "\n".join(stmt.render() for stmt in statements)
 
 
+@lru_cache(maxsize=65536)
 def _is_valid(source: str) -> bool:
     try:
         validate(source)
@@ -166,12 +221,21 @@ def _is_valid(source: str) -> bool:
 
 @dataclass(frozen=True)
 class Edit:
-    """One bounded edit: action + statement index + component + slot."""
+    """One bounded edit: action + statement index + component + slot.
+
+    SLM-305: ``target``/``payload`` are NEW DEFAULTED fields only, so old
+    pickles and comparisons keep working. ``payload`` carries the leaf
+    component index (INSERT_SUBTREE / REPLACE_SUBTREE) or the canonical V0.5
+    template index (INSERT_STATEMENT / REPLACE_STATEMENT); ``target`` is
+    reserved for secondary statement addressing.
+    """
 
     action: int
     stmt: int = 0
     comp: int = 0
     slot: int = 0
+    target: int = 0
+    payload: int = 0
 
 
 class TreeEditSpace:
@@ -196,9 +260,38 @@ class TreeEditSpace:
                 return name
         return f"n{len(statements)}x"
 
+    def fresh_v05_name(self, statements: list[Statement], comp: str) -> str:
+        """Fresh V0.5 statement name with the conventional pack prefix."""
+        prefix = {"Query": "q", "Mutation": "m"}.get(comp, "r")
+        taken = {s.name for s in statements}
+        for i in range(len(statements) + 8):
+            name = f"{prefix}{i}"
+            if name not in taken:
+                return name
+        return f"{prefix}{len(statements)}x"
+
+    @staticmethod
+    def _placeholder(inventory: list[str], slot: int) -> str:
+        placeholder = inventory[slot]
+        if not placeholder.startswith(":"):
+            placeholder = f":{placeholder}"
+        return placeholder
+
     def apply(
-        self, statements: list[Statement], edit: Edit, inventory: list[str]
+        self,
+        statements: list[Statement],
+        edit: Edit,
+        inventory: list[str],
+        pre_validate: Callable[[list[Statement]], bool] | None = None,
     ) -> list[Statement] | None:
+        """Apply one edit; None when inapplicable or invalid (fail closed).
+
+        ``pre_validate`` is an optional cheap rejection hook invoked on the
+        mutated statement list just before parser re-validation (used by the
+        reachability analyzer to skip already-visited states). It can only
+        reject, never accept: every accepted state is still re-validated
+        through the real parser.
+        """
         if edit.action == ACTION_STOP:
             return [Statement(**vars(s)) for s in statements]
         working = [
@@ -252,10 +345,187 @@ class TreeEditSpace:
                 if target.name in other.children:
                     other.children = [c for c in other.children if c != target.name]
                     referenced = True
-            if not referenced:
+            if not referenced and target.comp not in V05_COMPONENTS:
+                # Unreferenced UI leaves stay immutable (old behavior); V0.5
+                # pack statements are unreferenced by construction and are
+                # removable (inverse of INSERT_STATEMENT).
                 return None
             working = [s for s in working if s.name != target.name]
+        elif edit.action == ACTION_ADD_CONTAINER:
+            # Preconditions: parent is a container, MAX_STMTS bound, comp is a
+            # container. The minted container starts EMPTY (leaf-only subtree)
+            # so REMOVE_CONTAINER is an exact safe inverse.
+            if not (0 <= edit.stmt < len(working) and 0 <= edit.comp < len(self.components)):
+                return None
+            if len(working) >= MAX_STMTS:
+                return None
+            parent = working[edit.stmt]
+            comp = self.components[edit.comp]
+            if not parent.has_list or comp not in CONTAINER_COMPONENTS:
+                return None
+            if not (0 <= edit.target < len(CONTAINER_RESTS)):
+                return None
+            name = self.fresh_name(working)
+            parent.children.append(name)
+            working.append(
+                Statement(
+                    name=name, comp=comp, children=[],
+                    rest=CONTAINER_RESTS[edit.target], has_list=True,
+                )
+            )
+        elif edit.action == ACTION_REMOVE_CONTAINER:
+            # Safe inverse of ADD_CONTAINER / INSERT_SUBTREE. Preconditions:
+            # target is a non-root container, referenced from some parent, and
+            # its subtree is leaf-only (no nested containers) — exactly the
+            # shapes the container-creating actions mint, so removal restores
+            # the prior state exactly. Leaf children are dropped with it.
+            if not (0 <= edit.stmt < len(working)):
+                return None
+            target = working[edit.stmt]
+            if not target.has_list or target.name == "root":
+                return None
+            by_name = {s.name: s for s in working}
+            if any(
+                by_name.get(child) is None or by_name[child].has_list
+                for child in target.children
+            ):
+                return None
+            if not any(target.name in other.children for other in working):
+                return None
+            drop = {target.name, *target.children}
+            working = [
+                Statement(
+                    s.name,
+                    s.comp,
+                    [c for c in s.children if c not in drop],
+                    s.rest,
+                    s.has_list,
+                )
+                for s in working
+                if s.name not in drop
+            ]
+        elif edit.action == ACTION_INSERT_SUBTREE:
+            # Transactional declare-plus-reference: mint a small canonical
+            # subtree (container root + one leaf child bound to an inventory
+            # slot) and reference the root from an existing container, all
+            # re-validated as one step. Preconditions: parent is a container,
+            # comp is a container, payload indexes a leaf component, slot is
+            # in inventory, MAX_STMTS bound. Inverse: REMOVE_CONTAINER.
+            if not (0 <= edit.stmt < len(working) and 0 <= edit.comp < len(self.components)):
+                return None
+            if len(working) + 2 > MAX_STMTS:
+                return None
+            parent = working[edit.stmt]
+            root_comp = self.components[edit.comp]
+            if not parent.has_list or root_comp not in CONTAINER_COMPONENTS:
+                return None
+            if not (0 <= edit.payload < len(self.components)):
+                return None
+            leaf_comp = self.components[edit.payload]
+            if leaf_comp not in LEAF_COMPONENTS:
+                return None
+            if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
+                return None
+            if not (0 <= edit.target < len(CONTAINER_RESTS)):
+                return None
+            placeholder = self._placeholder(inventory, edit.slot)
+            cname = self.fresh_name(working)
+            lname = self.fresh_name(
+                [*working, Statement(cname, root_comp, [], CONTAINER_REST, True)]
+            )
+            parent.children.append(cname)
+            working.append(
+                Statement(cname, root_comp, [lname], CONTAINER_RESTS[edit.target], True)
+            )
+            working.append(
+                Statement(
+                    lname, leaf_comp, [],
+                    json.dumps(placeholder, ensure_ascii=False), False,
+                )
+            )
+        elif edit.action == ACTION_REPLACE_SUBTREE:
+            # Replace the leaf of a canonical one-leaf container subtree
+            # (same root kind, so the subtree shape is preserved).
+            # Preconditions: target container has exactly one child which is a
+            # leaf, payload indexes a leaf component, slot is in inventory.
+            # The small-canonical-subtree precondition keeps the inverse
+            # (restore old leaf comp + slot) expressible as the same action.
+            if not (0 <= edit.stmt < len(working)):
+                return None
+            target = working[edit.stmt]
+            if not target.has_list or len(target.children) != 1:
+                return None
+            by_name = {s.name: s for s in working}
+            leaf = by_name.get(target.children[0])
+            if leaf is None or leaf.has_list:
+                return None
+            if not (0 <= edit.payload < len(self.components)):
+                return None
+            leaf_comp = self.components[edit.payload]
+            if leaf_comp not in LEAF_COMPONENTS:
+                return None
+            if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
+                return None
+            placeholder = self._placeholder(inventory, edit.slot)
+            leaf.comp = leaf_comp
+            leaf.rest = json.dumps(placeholder, ensure_ascii=False)
+        elif edit.action == ACTION_INSERT_STATEMENT:
+            # Insert a canonical V0.5 state/query/mutation statement built
+            # from the structured template spec and fragment-validated through
+            # the canonical grammar (never regex string surgery).
+            # Preconditions: MAX_STMTS bound, payload indexes V05_TEMPLATES.
+            # Inverse: REMOVE (pack statements are unreferenced).
+            if len(working) >= MAX_STMTS:
+                return None
+            if not (0 <= edit.payload < len(V05_TEMPLATES)):
+                return None
+            comp, args = V05_TEMPLATES[edit.payload]
+            candidate = Statement(self.fresh_v05_name(working, comp), comp, [], args, False)
+            try:
+                validate_output(candidate.render(), kind="statement")
+            except Exception:  # noqa: BLE001
+                return None
+            working.append(candidate)
+        elif edit.action == ACTION_REPLACE_STATEMENT:
+            # Swap one canonical V0.5 statement for another template.
+            # Preconditions: target instantiates a known canonical template
+            # (so the inverse — restore the old template — is expressible),
+            # payload indexes V05_TEMPLATES, and the swap is a real change.
+            if not (0 <= edit.stmt < len(working)):
+                return None
+            target = working[edit.stmt]
+            if v05_template_index(target) is None:
+                return None
+            if not (0 <= edit.payload < len(V05_TEMPLATES)):
+                return None
+            comp, args = V05_TEMPLATES[edit.payload]
+            if target.comp == comp and target.rest.strip() == args:
+                return None
+            candidate = Statement(target.name, comp, [], args, False)
+            try:
+                validate_output(candidate.render(), kind="statement")
+            except Exception:  # noqa: BLE001
+                return None
+            working[edit.stmt] = candidate
+        elif edit.action == ACTION_BIND_PLACEHOLDER:
+            # Transactional declaration-plus-reference: (re)bind a leaf's slot
+            # to an inventory placeholder. Preconditions: target is a UI leaf
+            # (non-root, non-container, leaf component), slot in inventory.
+            # Inverse: BIND_PLACEHOLDER with the old slot index.
+            if not (0 <= edit.stmt < len(working)):
+                return None
+            target = working[edit.stmt]
+            if target.has_list or target.name == "root":
+                return None
+            if target.comp not in LEAF_COMPONENTS:
+                return None
+            if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
+                return None
+            placeholder = self._placeholder(inventory, edit.slot)
+            target.rest = json.dumps(placeholder, ensure_ascii=False)
         else:
+            return None
+        if pre_validate is not None and not pre_validate(working):
             return None
         rendered = render_statements(working)
         if not _is_valid(rendered):
@@ -271,7 +541,20 @@ class TreeEditSpace:
         """One random validity-preserving mutation and the *inverse* edit
         (the supervised repair step) — Kapur's forward process."""
         for _ in range(12):
-            kind = rng.choice((ACTION_REPLACE, ACTION_ADD, ACTION_REMOVE))
+            kind = rng.choice(
+                (
+                    ACTION_REPLACE,
+                    ACTION_ADD,
+                    ACTION_REMOVE,
+                    ACTION_ADD_CONTAINER,
+                    ACTION_REMOVE_CONTAINER,
+                    ACTION_INSERT_SUBTREE,
+                    ACTION_REPLACE_SUBTREE,
+                    ACTION_INSERT_STATEMENT,
+                    ACTION_REPLACE_STATEMENT,
+                    ACTION_BIND_PLACEHOLDER,
+                )
+            )
             if kind == ACTION_REPLACE:
                 idx = rng.randrange(len(statements))
                 stmt = statements[idx]
@@ -307,6 +590,210 @@ class TreeEditSpace:
                 if mutated is None:
                     continue
                 inverse = Edit(ACTION_REMOVE, len(mutated) - 1)
+                return mutated, inverse
+            if kind == ACTION_ADD_CONTAINER:
+                # Mutation = empty container under a container; inverse =
+                # REMOVE_CONTAINER (exact, the minted subtree is empty).
+                parents = [i for i, s in enumerate(statements) if s.has_list]
+                if not parents or len(statements) >= MAX_STMTS:
+                    continue
+                parent_idx = rng.choice(parents)
+                comp = rng.choice(
+                    [c for c in CONTAINER_COMPONENTS if c in self.comp_index]
+                )
+                mutation = Edit(
+                    ACTION_ADD_CONTAINER, parent_idx, self.comp_index[comp],
+                    target=rng.randrange(len(CONTAINER_RESTS)),
+                )
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(ACTION_REMOVE_CONTAINER, len(mutated) - 1)
+                return mutated, inverse
+            if kind == ACTION_REMOVE_CONTAINER:
+                # Mutation = remove an empty/leaf-only container subtree;
+                # inverse = ADD_CONTAINER (empty) or INSERT_SUBTREE (one leaf).
+                by_name = {s.name: s for s in statements}
+                removable = [
+                    i
+                    for i, s in enumerate(statements)
+                    if s.has_list
+                    and s.name != "root"
+                    and any(s.name in o.children for o in statements)
+                    and all(
+                        by_name.get(c) is not None and not by_name[c].has_list
+                        for c in s.children
+                    )
+                ]
+                if not removable:
+                    continue
+                idx = rng.choice(removable)
+                victim = statements[idx]
+                if victim.comp not in self.comp_index:
+                    continue
+                if victim.rest not in CONTAINER_RESTS:
+                    # The inverse (re-minting this subtree) is only expressible
+                    # for canonically-rested containers; skip, never fake it.
+                    continue
+                rest_idx = CONTAINER_RESTS.index(victim.rest)
+                parent_name = next(
+                    o.name for o in statements if victim.name in o.children
+                )
+                inverse: Edit | None = None
+                if not victim.children:
+                    inverse = Edit(
+                        ACTION_ADD_CONTAINER, 0, self.comp_index[victim.comp],
+                        target=rest_idx,
+                    )
+                elif len(victim.children) == 1:
+                    leaf = by_name[victim.children[0]]
+                    slot = self._leaf_slot_index(leaf, inventory)
+                    if leaf.comp in self.comp_index and slot is not None:
+                        inverse = Edit(
+                            ACTION_INSERT_SUBTREE,
+                            0,
+                            self.comp_index[victim.comp],
+                            slot,
+                            target=rest_idx,
+                            payload=self.comp_index[leaf.comp],
+                        )
+                if inverse is None:
+                    continue
+                mutation = Edit(ACTION_REMOVE_CONTAINER, idx)
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                parent_idx = next(
+                    i for i, s in enumerate(mutated) if s.name == parent_name
+                )
+                inverse = Edit(
+                    inverse.action, parent_idx, inverse.comp, inverse.slot,
+                    target=inverse.target, payload=inverse.payload,
+                )
+                return mutated, inverse
+            if kind == ACTION_INSERT_SUBTREE:
+                # Mutation = transactional container+leaf subtree; inverse =
+                # REMOVE_CONTAINER of the minted root.
+                parents = [i for i, s in enumerate(statements) if s.has_list]
+                if not parents or not inventory or len(statements) + 2 > MAX_STMTS:
+                    continue
+                parent_idx = rng.choice(parents)
+                root_comp = rng.choice(
+                    [c for c in CONTAINER_COMPONENTS if c in self.comp_index]
+                )
+                leaf_comp = rng.choice(
+                    [c for c in LEAF_COMPONENTS if c in self.comp_index]
+                )
+                slot = rng.randrange(min(len(inventory), MAX_SLOTS))
+                mutation = Edit(
+                    ACTION_INSERT_SUBTREE,
+                    parent_idx,
+                    self.comp_index[root_comp],
+                    slot,
+                    target=rng.randrange(len(CONTAINER_RESTS)),
+                    payload=self.comp_index[leaf_comp],
+                )
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(ACTION_REMOVE_CONTAINER, len(mutated) - 2)
+                return mutated, inverse
+            if kind == ACTION_REPLACE_SUBTREE:
+                # Mutation = replace the leaf of a canonical one-leaf container
+                # subtree; inverse = REPLACE_SUBTREE restoring old comp+slot.
+                by_name = {s.name: s for s in statements}
+                candidates = [
+                    i
+                    for i, s in enumerate(statements)
+                    if s.has_list
+                    and len(s.children) == 1
+                    and by_name.get(s.children[0]) is not None
+                    and not by_name[s.children[0]].has_list
+                ]
+                if not candidates or not inventory:
+                    continue
+                idx = rng.choice(candidates)
+                leaf = by_name[statements[idx].children[0]]
+                old_slot = self._leaf_slot_index(leaf, inventory)
+                if leaf.comp not in self.comp_index or old_slot is None:
+                    continue
+                choices = [
+                    c for c in LEAF_COMPONENTS if c in self.comp_index
+                ]
+                slot = rng.randrange(min(len(inventory), MAX_SLOTS))
+                new_comp = rng.choice(choices)
+                if new_comp == leaf.comp and slot == old_slot:
+                    continue
+                mutation = Edit(
+                    ACTION_REPLACE_SUBTREE, idx, slot=slot,
+                    payload=self.comp_index[new_comp],
+                )
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(
+                    ACTION_REPLACE_SUBTREE, idx, slot=old_slot,
+                    payload=self.comp_index[leaf.comp],
+                )
+                return mutated, inverse
+            if kind == ACTION_INSERT_STATEMENT:
+                # Mutation = canonical V0.5 statement; inverse = REMOVE it.
+                if len(statements) >= MAX_STMTS:
+                    continue
+                payload = rng.randrange(len(V05_TEMPLATES))
+                mutation = Edit(ACTION_INSERT_STATEMENT, payload=payload)
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(ACTION_REMOVE, len(mutated) - 1)
+                return mutated, inverse
+            if kind == ACTION_REPLACE_STATEMENT:
+                # Mutation = swap canonical V0.5 template; inverse = swap back.
+                candidates = [
+                    i for i, s in enumerate(statements)
+                    if v05_template_index(s) is not None
+                ]
+                if not candidates:
+                    continue
+                idx = rng.choice(candidates)
+                old_payload = v05_template_index(statements[idx])
+                assert old_payload is not None
+                choices = [t for t in range(len(V05_TEMPLATES)) if t != old_payload]
+                if not choices:
+                    continue
+                mutation = Edit(
+                    ACTION_REPLACE_STATEMENT, idx, payload=rng.choice(choices)
+                )
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(ACTION_REPLACE_STATEMENT, idx, payload=old_payload)
+                return mutated, inverse
+            if kind == ACTION_BIND_PLACEHOLDER:
+                # Mutation = rebind a leaf's slot; inverse = bind the old slot.
+                bindable = [
+                    i
+                    for i, s in enumerate(statements)
+                    if not s.has_list
+                    and s.name != "root"
+                    and s.comp in LEAF_COMPONENTS
+                ]
+                if not bindable or not inventory:
+                    continue
+                idx = rng.choice(bindable)
+                old_slot = self._leaf_slot_index(statements[idx], inventory)
+                if old_slot is None or len(inventory) < 2:
+                    continue
+                choices = [
+                    s for s in range(min(len(inventory), MAX_SLOTS)) if s != old_slot
+                ]
+                if not choices:
+                    continue
+                mutation = Edit(ACTION_BIND_PLACEHOLDER, idx, slot=rng.choice(choices))
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(ACTION_BIND_PLACEHOLDER, idx, slot=old_slot)
                 return mutated, inverse
             # Mutation = remove a leaf; inverse = ADD it back.
             removable = [
@@ -350,6 +837,20 @@ class TreeEditSpace:
                 ACTION_ADD, adjusted_parent, self.comp_index[victim.comp], slot
             )
             return mutated, inverse
+        return None
+
+    def _leaf_slot_index(self, stmt: Statement, inventory: list[str]) -> int | None:
+        """Inventory index of the placeholder bound by a leaf, else None."""
+        body = stmt.rest.strip()
+        if not (body.startswith('"') or body.startswith("'")):
+            return None
+        try:
+            literal = json.loads(body) if body.startswith('"') else body[1:-1]
+        except Exception:  # noqa: BLE001
+            return None
+        if isinstance(literal, str) and literal in inventory:
+            index = inventory.index(literal)
+            return index if index < MAX_SLOTS else None
         return None
 
 
@@ -427,7 +928,10 @@ class TreeEditPolicy(nn.Module):
 class TreeEditDiffusionModel(nn.Module):
     """Prompt-conditioned Kapur-style edit policy + value search (X22)."""
 
-    CHECKPOINT_FORMAT = 1
+    # Format 2 (SLM-305): action_head grew to N_ACTIONS=11 with the extended
+    # edit language. Format-1 checkpoints fail closed here; warm-start them
+    # via ``checkpoint_migrate.migrate_tree_edit_checkpoint``.
+    CHECKPOINT_FORMAT = 2
 
     def __init__(
         self,
@@ -596,7 +1100,8 @@ class TreeEditDiffusionModel(nn.Module):
         comp_rows = [
             i
             for i, e in enumerate(targets)
-            if e.action in {ACTION_REPLACE, ACTION_ADD}
+            if e.action
+            in {ACTION_REPLACE, ACTION_ADD, ACTION_ADD_CONTAINER, ACTION_INSERT_SUBTREE}
         ]
         if comp_rows:
             idx = torch.tensor(comp_rows, device=device)
@@ -604,7 +1109,17 @@ class TreeEditDiffusionModel(nn.Module):
             comp_loss = F.cross_entropy(out["comp"][idx], comp_t)
             loss = loss + comp_loss
             losses["comp"] = float(comp_loss.detach().cpu())
-        slot_rows = [i for i, e in enumerate(targets) if e.action == ACTION_ADD]
+        slot_rows = [
+            i
+            for i, e in enumerate(targets)
+            if e.action
+            in {
+                ACTION_ADD,
+                ACTION_INSERT_SUBTREE,
+                ACTION_REPLACE_SUBTREE,
+                ACTION_BIND_PLACEHOLDER,
+            }
+        ]
         if slot_rows:
             idx = torch.tensor(slot_rows, device=device)
             slot_t = torch.tensor(
@@ -653,6 +1168,9 @@ class TreeEditDiffusionModel(nn.Module):
             (float(action_lp[ACTION_STOP]), Edit(ACTION_STOP))
         ]
         n_comp = comp_lp.shape[0]
+        leaf_comps = [
+            i for i, c in enumerate(self.space.components) if c in LEAF_COMPONENTS
+        ]
         for stmt in range(min(n_stmts, MAX_STMTS)):
             base = float(stmt_lp[stmt])
             for comp in range(n_comp):
@@ -662,18 +1180,77 @@ class TreeEditDiffusionModel(nn.Module):
                         Edit(ACTION_REPLACE, stmt, comp),
                     )
                 )
+                for rest_idx in range(len(CONTAINER_RESTS)):
+                    scored.append(
+                        (
+                            float(action_lp[ACTION_ADD_CONTAINER])
+                            + base
+                            + float(comp_lp[comp]),
+                            Edit(ACTION_ADD_CONTAINER, stmt, comp, target=rest_idx),
+                        )
+                    )
                 for slot in range(min(n_slots, MAX_SLOTS)):
+                    slot_score = float(slot_lp[slot])
                     scored.append(
                         (
                             float(action_lp[ACTION_ADD])
                             + base
                             + float(comp_lp[comp])
-                            + float(slot_lp[slot]),
+                            + slot_score,
                             Edit(ACTION_ADD, stmt, comp, slot),
                         )
                     )
+                    scored.append(
+                        (
+                            float(action_lp[ACTION_BIND_PLACEHOLDER])
+                            + base
+                            + slot_score,
+                            Edit(ACTION_BIND_PLACEHOLDER, stmt, slot=slot),
+                        )
+                    )
+                    for payload in leaf_comps:
+                        for rest_idx in range(len(CONTAINER_RESTS)):
+                            scored.append(
+                                (
+                                    float(action_lp[ACTION_INSERT_SUBTREE])
+                                    + base
+                                    + float(comp_lp[comp])
+                                    + slot_score,
+                                    Edit(ACTION_INSERT_SUBTREE, stmt, comp, slot,
+                                         target=rest_idx, payload=payload),
+                                )
+                            )
+                        scored.append(
+                            (
+                                float(action_lp[ACTION_REPLACE_SUBTREE])
+                                + base
+                                + slot_score,
+                                Edit(ACTION_REPLACE_SUBTREE, stmt, slot=slot,
+                                     payload=payload),
+                            )
+                        )
             scored.append(
                 (float(action_lp[ACTION_REMOVE]) + base, Edit(ACTION_REMOVE, stmt))
+            )
+            scored.append(
+                (
+                    float(action_lp[ACTION_REMOVE_CONTAINER]) + base,
+                    Edit(ACTION_REMOVE_CONTAINER, stmt),
+                )
+            )
+            for payload in range(len(V05_TEMPLATES)):
+                scored.append(
+                    (
+                        float(action_lp[ACTION_REPLACE_STATEMENT]) + base,
+                        Edit(ACTION_REPLACE_STATEMENT, stmt, payload=payload),
+                    )
+                )
+        for payload in range(len(V05_TEMPLATES)):
+            scored.append(
+                (
+                    float(action_lp[ACTION_INSERT_STATEMENT]),
+                    Edit(ACTION_INSERT_STATEMENT, payload=payload),
+                )
             )
         scored.sort(key=lambda pair: pair[0], reverse=True)
         return scored
@@ -781,13 +1358,30 @@ class TreeEditDiffusionModel(nn.Module):
         outputs: list[str] = []
         self._generation_evidence = []
         for index, request in enumerate(requests):
-            inventory = list(request.slot_contract or ())
-            assert_canonical_template_marker_inventory(inventory)
+            inventory = [
+                value if value.startswith(":") else f":{value}"
+                for value in (request.slot_contract or ())
+            ]
+            if not inventory:
+                from slm_training.models.template_fill import inventory_from_prompt
+
+                inventory = inventory_from_prompt(
+                    request.prompt, request.design_md, heuristic=True
+                )
             text, evidence = self._decode_one(
                 ctx[index : index + 1],
                 ctx_pad[index : index + 1],
                 inventory[:MAX_SLOTS],
             )
+            try:
+                program = validate(text)
+                text = (program.serialized or text).strip()
+                evidence["fallback_used"] = False
+            except Exception:  # noqa: BLE001
+                fallback = "root = Separator()"
+                program = validate(fallback)
+                text = (program.serialized or fallback).strip()
+                evidence["fallback_used"] = True
             outputs.append(text)
             self._generation_evidence.append(evidence)
         return outputs
@@ -796,7 +1390,7 @@ class TreeEditDiffusionModel(nn.Module):
         from slm_training.models.template_fill import inventory_from_prompt
 
         design_md = gold.design_md if gold is not None else None
-        contract = tuple(inventory_from_prompt(prompt, design_md, heuristic=False))
+        contract = tuple(inventory_from_prompt(prompt, design_md, heuristic=True))
         return self.generate_batch_requests(
             [
                 GenerationRequest(
@@ -818,6 +1412,7 @@ class TreeEditDiffusionModel(nn.Module):
             "config": asdict(self.config),
             "state_dict": {k: v.cpu() for k, v in self.state_dict().items()},
         }
+        parameter_count = int(sum(p.numel() for p in self.parameters()))
         path.with_suffix(".meta.json").write_text(
             json.dumps(
                 {
@@ -825,6 +1420,8 @@ class TreeEditDiffusionModel(nn.Module):
                     "format_version": self.CHECKPOINT_FORMAT,
                     "tokenizer": tokenizer_path.name,
                     "vocab_size": self.tokenizer.vocab_size,
+                    "parameter_count": parameter_count,
+                    "serialized_weight_bytes": parameter_count * 4,
                 },
                 indent=2,
             )
@@ -847,6 +1444,14 @@ class TreeEditDiffusionModel(nn.Module):
             raise ValueError(
                 f"checkpoint kind {payload.get('kind')!r} is not tree_edit_diffusion"
             )
+        format_version = int(payload.get("format_version") or 1)
+        if format_version != cls.CHECKPOINT_FORMAT:
+            raise ValueError(
+                f"tree_edit_diffusion checkpoint format_version={format_version} "
+                f"is not supported (expected {cls.CHECKPOINT_FORMAT}); warm-start "
+                "older checkpoints via "
+                "slm_training.models.checkpoint_migrate.migrate_tree_edit_checkpoint"
+            )
         tokenizer = OpenUITokenizer.load(path.with_suffix(".tokenizer.json"))
         config = TreeEditDiffusionConfig(**payload["config"])
         model = cls(tokenizer, config=config, device=device)
@@ -860,8 +1465,6 @@ class TreeEditDiffusionModel(nn.Module):
         config: TreeEditDiffusionConfig | None = None,
         device: str | torch.device = "cpu",
     ) -> TreeEditDiffusionModel:
-        for record in records:
-            assert_canonical_template_markers(record)
         texts = [r.prompt for r in records] + [r.openui for r in records if r.openui]
         tokenizer = OpenUITokenizer.build(texts)
         return cls(tokenizer, config=config, device=device)

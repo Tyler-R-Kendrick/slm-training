@@ -27,7 +27,16 @@ export const toolProvider: Record<string, QueryFn> = {
     const s = p.stats ?? {};
     return {
       references: {
-        rows: (p.references ?? []).map((r: any) => ({ ...r, card_state: r.status })),
+        rows: (p.references ?? []).map((r: any) => ({
+          ...r,
+          card_state: r.status,
+          meaningful: r.metrics?.meaningful_program_rate == null
+            ? "—"
+            : pct(r.metrics.meaningful_program_rate),
+          structure: r.metrics?.structural_similarity == null
+            ? "—"
+            : pct(r.metrics.structural_similarity),
+        })),
         provenance: p.reference_provenance,
       },
       tiles: {
@@ -149,6 +158,24 @@ export const toolProvider: Record<string, QueryFn> = {
   },
 
   // ---- Experiments --------------------------------------------------------
+  experiment_flags: async () => {
+    const d: any = await getJSON("/api/experiment-flags");
+    return {
+      provenance: d.provenance,
+      meta: {
+        count: String(d.count ?? 0),
+        boolean_count: String(d.boolean_count ?? 0),
+        history_runs: String(d.history_runs ?? 0),
+        revision: String(d.revision ?? "—").slice(0, 8),
+      },
+      rows: (d.flags ?? []).map((flag: any) => ({
+        key: flag.key,
+        href: `/experiments/flags/${encodeURIComponent(flag.key)}`,
+        type: flag.type,
+        default: typeof flag.default === "object" ? JSON.stringify(flag.default) : String(flag.default),
+      })),
+    };
+  },
   scoreboard: async (args) => {
     const kind = String(args.kind || "quality");
     const d: any = await getJSON(`/api/scoreboards/${kind}`);
@@ -169,15 +196,21 @@ export const toolProvider: Record<string, QueryFn> = {
       },
       columns: [
         { key: "id", label: "id" },
+        { key: "run_id", label: "run" },
+        { key: "parameters", label: "params", align: "right" },
         { key: "date", label: "date" },
         { key: "description", label: "experiment" },
         { key: "pass_status", label: "gate" },
         ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" })),
+        { key: "agentv", label: "AgentV", align: "right" },
+        { key: "eval_criteria", label: "Eval criteria", align: "right" },
+        { key: "checkpoint", label: "checkpoint" },
         { key: "trace", label: "trace", align: "right" },
       ],
       rows: rows.map((r: any) => ({
         id: r.id,
         run_id: r.run_id || r.id,
+        parameters: r.parameters || "—",
         date: r.date || "—",
         description: (r.description || "").slice(0, 70),
         pass_status: r.pass === undefined ? "" : r.pass ? "pass" : "fail",
@@ -190,6 +223,11 @@ export const toolProvider: Record<string, QueryFn> = {
           const legacy = c.metric === "meaningful_program_rate" && values.meaningful_source === "parse_rate_legacy";
           return [c.key, `${f(v, 2)}${legacy ? "*" : ""}`];
         })),
+        agentv: r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+        eval_criteria: r.eval_criteria?.total === undefined ? "—" : `${r.eval_criteria.passed ?? 0}/${r.eval_criteria.total}`,
+        checkpoint: r.checkpoint
+          ? String(r.checkpoint).split("/").slice(-2).join("/")
+          : "—",
         trace: r.trace_id ? String(r.trace_id).slice(0, 12) : "—",
       })),
     };
@@ -346,6 +384,8 @@ export const toolProvider: Record<string, QueryFn> = {
   checkpoints_roster_full: async () => {
     const d: any = await getJSON("/api/checkpoints");
     const checkpoints = d.checkpoints ?? [];
+    const pct = (v: any) =>
+      v === undefined || v === null || Number.isNaN(Number(v)) ? "—" : `${(Number(v) * 100).toFixed(0)}%`;
     return {
       provenance: d.provenance ?? "committed",
       bucket: d.bucket ?? {},
@@ -355,7 +395,11 @@ export const toolProvider: Record<string, QueryFn> = {
         architecture: c.architecture,
         parameters: c.parameters,
         model_size: c.model_size,
-        throughput: c.throughput,
+        gate_pass: c.gate_pass === undefined || c.gate_pass === null ? "" : c.gate_pass ? "pass" : "fail",
+        meaningful: pct(c.metrics?.meaningful_program_rate),
+        structure: pct(c.metrics?.structural_similarity),
+        agentv: c.agentv?.total === undefined ? "—" : `${c.agentv.passed ?? 0}/${c.agentv.total}`,
+        evaluation_status: c.evaluation_status || "—",
         status: c.status,
         source: c.source || "—",
       })),

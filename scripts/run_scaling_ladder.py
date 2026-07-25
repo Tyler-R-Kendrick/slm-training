@@ -145,6 +145,10 @@ def main(argv: list[str] | None = None) -> int:
         default=128,
         help="CAP3-05: quantization group size for byte modeling (default: 128).",
     )
+    parser.add_argument("--campaign-manifest", type=Path)
+    parser.add_argument("--campaign-result", type=Path)
+    parser.add_argument("--campaign-store-root", type=Path)
+    parser.add_argument("--campaign-artifact-root", type=Path)
     args = parser.parse_args(argv)
 
     if args.family == "discrete-bottleneck":
@@ -266,6 +270,7 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.harnesses.experiments.promotion import (
         check_data_integrity,
         evaluate_promotion,
+        load_campaign_governance,
         register_promoted_checkpoint,
     )
     from slm_training.harnesses.experiments.scaling_fit import (
@@ -273,6 +278,26 @@ def main(argv: list[str] | None = None) -> int:
         fit_power_law,
         observation_from_summary,
     )
+
+    campaign_governance = None
+    campaign_paths = (
+        args.campaign_manifest,
+        args.campaign_result,
+        args.campaign_store_root,
+        args.campaign_artifact_root,
+    )
+    if any(path is not None for path in campaign_paths):
+        if any(path is None for path in campaign_paths):
+            parser.error(
+                "campaign promotion requires manifest, result, store root, "
+                "and artifact root"
+            )
+        campaign_governance = load_campaign_governance(
+            manifest_path=args.campaign_manifest,
+            result_path=args.campaign_result,
+            store_root=args.campaign_store_root,
+            artifact_root=args.campaign_artifact_root,
+        )
 
     widths = tuple(int(x) for x in args.widths.split(",") if x.strip())
     horizons = tuple(float(x) for x in args.horizons.split(",") if x.strip())
@@ -420,10 +445,20 @@ def main(argv: list[str] | None = None) -> int:
         ordered = sorted(rows, key=lambda o: o.loss)
         rankings[point_id] = [o.candidate_id for o in ordered]
 
+    governance_kwargs = {}
+    if campaign_governance is not None:
+        manifest, campaign_result, campaign_store, artifact_root = campaign_governance
+        governance_kwargs = {
+            "campaign_manifest": manifest,
+            "campaign_result": campaign_result,
+            "campaign_store": campaign_store,
+            "artifact_root": artifact_root,
+        }
     promotion = evaluate_promotion(
         integrity=integrity,
         rankings=rankings if len(rankings) >= 2 else None,
         eg_time_by_seed=eg_vals or None,
+        **governance_kwargs,
     )
 
     if summaries and promotion.get("promotable"):
@@ -435,7 +470,9 @@ def main(argv: list[str] | None = None) -> int:
         register_promoted_checkpoint(
             ckpt,
             source=best["checkpoint"],
+            promotion_result=promotion,
             meta={"ladder_id": ladder.ladder_id, "track": ladder.track},
+            **governance_kwargs,
         )
 
     payload = {

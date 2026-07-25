@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -25,19 +26,20 @@ from pydantic import BaseModel, Field
 from slm_training.web.otel_hub import MAX_INGEST_BYTES
 
 from slm_training.autoresearch.run_insights import RunInsightSubmission
-from slm_training.harnesses.experiments.promotion import (
+from slm_training.harness_core.promotion_engine import (
     PromotionCriteria,
-    evaluate_promotion,
+    evaluate_promotion as evaluate_promotion_engine,
 )
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
-from slm_training.features.levers import lever_registry_payload
+from slm_training.features.levers import feature_flag_registry_payload
 
 observability_router = APIRouter(prefix="/api")
 actions_router = APIRouter(prefix="/api")
 otel_ingest_router = APIRouter()
+_PROMOTION_HARD_CATEGORIES = ("binding", "structural", "repair")
 
 
 def _readers(request: Request):
@@ -81,6 +83,14 @@ def capabilities(request: Request) -> dict[str, Any]:
         "openfeature": bool(features),
         "provider": features.provider if features else None,
     }
+    flag_client = getattr(request.app.state, "flag_client", None)
+    caps["openfeature"] = {
+        "enabled": flag_client is not None,
+        "provider": getattr(flag_client, "provider_name", "InMemoryProvider"),
+        "evaluate": "/api/flags/ofrep/v1/evaluate",
+        "levers": "/api/flags/levers",
+        "docs": "docs/design/openfeature-research-levers.md",
+    }
     return caps
 
 
@@ -97,7 +107,7 @@ def features_bootstrap(
 
 @observability_router.get("/features/levers")
 def features_levers() -> dict[str, Any]:
-    return lever_registry_payload()
+    return feature_flag_registry_payload()
 
 
 @observability_router.get("/overview")
@@ -108,6 +118,19 @@ def overview(request: Request) -> dict[str, Any]:
 @observability_router.get("/scoreboards")
 def scoreboards(request: Request) -> dict[str, Any]:
     return {"scoreboards": _readers(request).scoreboards()}
+
+
+@observability_router.get("/experiment-flags")
+def experiment_flags(request: Request) -> dict[str, Any]:
+    return _readers(request).experiment_flags()
+
+
+@observability_router.get("/experiment-flags/{key}")
+def experiment_flag(request: Request, key: str) -> dict[str, Any]:
+    detail = _readers(request).experiment_flag(key)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="unknown experiment feature flag")
+    return detail
 
 
 @observability_router.get("/scoreboards/{kind}")
@@ -348,6 +371,10 @@ class PromotionEvalRequest(BaseModel):
     category_regression_tolerance: float = 0.02
     eg_time_lcb_min: float = 1.0
     require_rank_stable_top2: bool = True
+    campaign_manifest: dict[str, Any] | None = None
+    campaign_result: dict[str, Any] | None = None
+    campaign_store_root: Path | None = None
+    campaign_artifact_root: Path | None = None
 
 
 @observability_router.post("/promotion/evaluate")
@@ -357,13 +384,112 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
         require_rank_stable_top2=payload.require_rank_stable_top2,
         eg_time_lcb_min=payload.eg_time_lcb_min,
     )
-    return evaluate_promotion(
+    campaign_store = None
+    if payload.campaign_manifest is not None and payload.campaign_store_root is not None:
+        from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
+        from slm_training.autoresearch.storage import CampaignStore
+
+        manifest = ExperimentCampaignV1.model_validate(payload.campaign_manifest)
+        campaign_store = CampaignStore(
+            manifest.campaign_id, payload.campaign_store_root
+        )
+    result = evaluate_promotion_engine(
         integrity=payload.integrity,
         rankings=payload.rankings,
         eg_time_by_seed=payload.eg_time_by_seed,
         ship_suites=payload.ship_suites,
         criteria=criteria,
+        hard_categories=_PROMOTION_HARD_CATEGORIES,
+        gate_evaluator=lambda suites, policy: evaluate_ship_gates(
+            suites, thresholds=policy or DEFAULT_SHIP_GATES
+        ),
     )
+    if payload.campaign_manifest is None or payload.campaign_result is None:
+        governance_failures = ("campaign_governance_missing",)
+        manifest_sha = None
+    else:
+        from slm_training.autoresearch.experiment_campaign import (
+            CampaignResultV1,
+            ExperimentCampaignV1,
+            campaign_manifest_sha256,
+            validate_result_claim,
+        )
+
+        manifest = ExperimentCampaignV1.model_validate(payload.campaign_manifest)
+        governed_result = CampaignResultV1.model_validate(payload.campaign_result)
+        governance_failures = validate_result_claim(
+            manifest, governed_result, artifact_root=payload.campaign_artifact_root
+        )
+        if campaign_store is None or payload.campaign_artifact_root is None:
+            governance_failures = (*governance_failures, "campaign_store_missing")
+        else:
+            governance_failures = (
+                *governance_failures,
+                *campaign_store.validate_campaign_result(
+                    governed_result, artifact_root=payload.campaign_artifact_root
+                ),
+            )
+        if governed_result.claim_class not in {"promotion_candidate", "ship_gate"}:
+            governance_failures = (*governance_failures, "claim_class_not_promotable")
+        governance_failures = tuple(dict.fromkeys(governance_failures))
+        manifest_sha = campaign_manifest_sha256(manifest)
+    result.setdefault("checks", {})["campaign_governance"] = {
+        "pass": not governance_failures,
+        "failures": list(governance_failures),
+        "manifest_sha256": manifest_sha,
+    }
+    if not governance_failures and result.get("failures") == ["sufficient_evidence"]:
+        result["checks"].pop("sufficient_evidence", None)
+        result["checks"]["governed_campaign_evidence"] = {"pass": True}
+        result["failures"] = []
+        result["promotable"] = True
+    if governance_failures:
+        result["promotable"] = False
+        result.setdefault("failures", []).extend(governance_failures)
+    return result
+
+
+# --------------------------------------------------------------------------- #
+# Research OpenFeature / OFREP-shaped flag evaluation (read-only)
+# --------------------------------------------------------------------------- #
+class OfrepEvaluateRequest(BaseModel):
+    context: dict[str, Any] = Field(default_factory=dict)
+    flags: list[str] | None = None
+
+
+@observability_router.get("/flags/levers")
+def flags_levers() -> dict[str, Any]:
+    from slm_training.flags.levers import LEVER_FLAGS
+
+    return {
+        "provider": "InMemoryProvider",
+        "standard": "openfeature",
+        "docs": "docs/design/openfeature-research-levers.md",
+        "levers": [
+            {
+                "key": spec.key,
+                "type": spec.value_type.value,
+                "default": spec.default,
+                "description": spec.description,
+            }
+            for spec in LEVER_FLAGS
+        ],
+    }
+
+
+@observability_router.post("/flags/ofrep/v1/evaluate")
+def flags_ofrep_evaluate(
+    request: Request, payload: OfrepEvaluateRequest
+) -> dict[str, Any]:
+    from slm_training.flags.ofrep import evaluate_ofrep
+
+    client = getattr(request.app.state, "flag_client", None)
+    if client is None:
+        from slm_training.flags import FlagClient, InMemoryProvider
+        from slm_training.flags.in_memory import ruleset_from_defaults
+
+        client = FlagClient(InMemoryProvider(ruleset_from_defaults()))
+    return evaluate_ofrep(client, context_payload=payload.context, flags=payload.flags)
 
 
 # --------------------------------------------------------------------------- #

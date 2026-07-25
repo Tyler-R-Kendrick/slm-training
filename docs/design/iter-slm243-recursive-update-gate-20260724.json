@@ -1,0 +1,1686 @@
+{
+  "schema": "RecursiveUpdateMatrixReportV1",
+  "issue": "SLM-243",
+  "matrix_set": "slm243-recursive-update-gate",
+  "generated_at": "2026-07-24T04:57:56.577390+00:00",
+  "claim_class": "scratch_architecture_matrix_not_ship",
+  "recipe": {
+    "device": "cpu",
+    "backend": "scratch_direct_tower",
+    "corpus": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722",
+    "record_ids": [
+      "smoke_hero_01",
+      "smoke_button_01",
+      "held_out_form_01",
+      "held_out_dual_card_01"
+    ],
+    "corpus_n": 4,
+    "depths": [
+      1,
+      2,
+      4,
+      6,
+      8
+    ],
+    "paired_seeds": [
+      24301,
+      24302,
+      24303
+    ],
+    "d_model": 8,
+    "transition_layers": 2,
+    "max_target_tokens": 16,
+    "optimizer_steps": 0,
+    "max_wall_minutes": 3.0,
+    "honesty_mode": "architecture_repair_not_semantic_ship"
+  },
+  "thresholds": {
+    "hard_nonfinite": true,
+    "maximum_update_ratio": 2.0,
+    "maximum_gradient_norm": 100.0,
+    "paired_update_ratio_fraction": 0.8,
+    "paired_cross_entropy_tolerance": 0.25,
+    "recommendation_requires_all_three_seeds": true
+  },
+  "variants": {
+    "current_v1": {
+      "update_mode": "current_v1",
+      "empty_f_mode": "pass_through",
+      "norm_mode": "shared"
+    },
+    "delta_only": {
+      "update_mode": "delta_only",
+      "empty_f_mode": "zero",
+      "norm_mode": "shared"
+    },
+    "layerscale": {
+      "update_mode": "layerscale",
+      "empty_f_mode": "zero",
+      "norm_mode": "shared"
+    },
+    "gated_private": {
+      "update_mode": "gated",
+      "empty_f_mode": "zero",
+      "norm_mode": "private"
+    },
+    "current_true_empty": {
+      "update_mode": "current_v1",
+      "empty_f_mode": "zero",
+      "norm_mode": "shared"
+    },
+    "layerscale_private": {
+      "update_mode": "layerscale",
+      "empty_f_mode": "zero",
+      "norm_mode": "private"
+    }
+  },
+  "mechanism_fixtures": {
+    "historical_empty_f_update_norm": 5.656853675842285,
+    "true_empty_f_update_norm": 0.0,
+    "true_empty_f_exact_zero": true,
+    "layerscale_initial_value": 0.0010000000474974513,
+    "gated_initial_sigmoid": 0.01798621006309986,
+    "private_norm_objects_distinct": true
+  },
+  "rows": [
+    {
+      "variant": "current_v1",
+      "depth": 1,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.235998630523682,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 2.0730797666574277,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 1,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 7.289873123168945,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 2.1589814603698465,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 1,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.594428539276123,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 1.7562685686270976,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 2,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.457108497619629,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 2.4268787125313542,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.012175,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 2,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 7.610044002532959,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 2.520352397856353,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 2,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.809298515319824,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 2.1493015284684267,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 4,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.67842960357666,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 2.953660378373944,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.006825,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 4,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 8.064988136291504,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 3.3732377534247484,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 4,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.050414085388184,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 2.674104036617864,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 6,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.8030171394348145,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 3.3358294243833835,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 6,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 8.38026237487793,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 4.070628589865963,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 6,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.189987659454346,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 3.0287904133098666,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 8,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.889711856842041,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 3.6320726736279223,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 8,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 8.615357398986816,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 4.587072374302806,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_v1",
+      "depth": 8,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.287038326263428,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 3.2962552364423403,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 1,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.857085704803467,
+      "maximum_update_ratio": 0.36419013142585754,
+      "gradient_norm": 2.3564113202505212,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 1,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.945917129516602,
+      "maximum_update_ratio": 0.48097705841064453,
+      "gradient_norm": 2.283977327820784,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 1,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.2453837394714355,
+      "maximum_update_ratio": 0.48293548822402954,
+      "gradient_norm": 1.8966257662230124,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.02155,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 2,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.302200794219971,
+      "maximum_update_ratio": 0.36419013142585754,
+      "gradient_norm": 4.025771912425857,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 2,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 7.545488357543945,
+      "maximum_update_ratio": 0.4906047582626343,
+      "gradient_norm": 4.153291296621356,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 2,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.650273323059082,
+      "maximum_update_ratio": 0.48293548822402954,
+      "gradient_norm": 3.616705384675882,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.05155,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 4,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.923201560974121,
+      "maximum_update_ratio": 0.36419013142585754,
+      "gradient_norm": 5.318508853839809,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 4,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 8.87186050415039,
+      "maximum_update_ratio": 0.4906047582626343,
+      "gradient_norm": 7.451409618940207,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 4,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.372798919677734,
+      "maximum_update_ratio": 0.48293548822402954,
+      "gradient_norm": 5.6666552125965675,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.106725,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 6,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 8.229022026062012,
+      "maximum_update_ratio": 0.36419013142585754,
+      "gradient_norm": 6.1952601467648085,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.009375,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 6,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 9.767714500427246,
+      "maximum_update_ratio": 0.4906047582626343,
+      "gradient_norm": 9.219917429471446,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 6,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.944825649261475,
+      "maximum_update_ratio": 0.48293548822402954,
+      "gradient_norm": 6.536073356576675,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.086925,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 8,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 8.405867576599121,
+      "maximum_update_ratio": 0.36419013142585754,
+      "gradient_norm": 6.975979047078971,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 8,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 10.319206237792969,
+      "maximum_update_ratio": 0.4906047582626343,
+      "gradient_norm": 10.104806055024364,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "delta_only",
+      "depth": 8,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 7.452569007873535,
+      "maximum_update_ratio": 0.48293548822402954,
+      "gradient_norm": 7.2452240669218275,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0963,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 1,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.758033275604248,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 1.6139114968320352,
+      "parameter_count": 6696,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 1,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806413650512695,
+      "maximum_update_ratio": 0.00048097921535372734,
+      "gradient_norm": 1.9241293723819948,
+      "parameter_count": 6696,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 1,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.299899101257324,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 1.3280658352762236,
+      "parameter_count": 6696,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 2,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.75792932510376,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 1.6592891304359279,
+      "parameter_count": 6696,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 2,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806386947631836,
+      "maximum_update_ratio": 0.0004810346581507474,
+      "gradient_norm": 1.9398632156744808,
+      "parameter_count": 6696,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 2,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.299358367919922,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 1.442211734959554,
+      "parameter_count": 6696,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 4,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.7577223777771,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 1.8299403465259152,
+      "parameter_count": 6696,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 4,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806332588195801,
+      "maximum_update_ratio": 0.0004811499093193561,
+      "gradient_norm": 2.001925079068716,
+      "parameter_count": 6696,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 4,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.29827880859375,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 1.8271199063277206,
+      "parameter_count": 6696,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 6,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.757516860961914,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 2.083970382911507,
+      "parameter_count": 6696,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 6,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806279182434082,
+      "maximum_update_ratio": 0.0004812608822248876,
+      "gradient_norm": 2.101585179371334,
+      "parameter_count": 6696,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 6,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.29720401763916,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 2.3282718072204784,
+      "parameter_count": 6696,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 8,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.757313251495361,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 2.3952359944866743,
+      "parameter_count": 6696,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 8,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806227684020996,
+      "maximum_update_ratio": 0.0004813754931092262,
+      "gradient_norm": 2.233888800107475,
+      "parameter_count": 6696,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale",
+      "depth": 8,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.296132564544678,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 2.883556231230595,
+      "parameter_count": 6696,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 1,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.756312370300293,
+      "maximum_update_ratio": 0.006476673297584057,
+      "gradient_norm": 1.5977672077559373,
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 1,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.805981159210205,
+      "maximum_update_ratio": 0.008650952950119972,
+      "gradient_norm": 1.9170947309728819,
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 1,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.29085111618042,
+      "maximum_update_ratio": 0.008774418383836746,
+      "gradient_norm": 1.284478345955934,
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 2,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.754624843597412,
+      "maximum_update_ratio": 0.006476673297584057,
+      "gradient_norm": 1.597383436010113,
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 2,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.8055901527404785,
+      "maximum_update_ratio": 0.008669217117130756,
+      "gradient_norm": 1.9154648818550017,
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 2,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.2816033363342285,
+      "maximum_update_ratio": 0.008774418383836746,
+      "gradient_norm": 1.2818948919575,
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 4,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.751661777496338,
+      "maximum_update_ratio": 0.006476673297584057,
+      "gradient_norm": 1.59792472892831,
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 4,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.8050217628479,
+      "maximum_update_ratio": 0.008704307489097118,
+      "gradient_norm": 1.9129528699053262,
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 4,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.2641282081604,
+      "maximum_update_ratio": 0.008774418383836746,
+      "gradient_norm": 1.2786012206870694,
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 6,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.74924373626709,
+      "maximum_update_ratio": 0.006476673297584057,
+      "gradient_norm": 1.6002625224309317,
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 6,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.804745197296143,
+      "maximum_update_ratio": 0.00873741414397955,
+      "gradient_norm": 1.911463617248423,
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 6,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.248006820678711,
+      "maximum_update_ratio": 0.008774418383836746,
+      "gradient_norm": 1.2774965069967463,
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 8,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.747368335723877,
+      "maximum_update_ratio": 0.006476673297584057,
+      "gradient_norm": 1.604455529955249,
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 8,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.804775238037109,
+      "maximum_update_ratio": 0.008768470957875252,
+      "gradient_norm": 1.91102941196988,
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "gated_private",
+      "depth": 8,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.233231544494629,
+      "maximum_update_ratio": 0.008774418383836746,
+      "gradient_norm": 1.2782696278588295,
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 1,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.235998630523682,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 2.0730797666574277,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 1,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 7.289873123168945,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 2.1589814603698465,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 1,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.594428539276123,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 1.7562685686270976,
+      "parameter_count": 6680,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 2,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.457108497619629,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 2.4268787125313542,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.012175,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 2,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 7.610044002532959,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 2.520352397856353,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 2,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.809298515319824,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 2.1493015284684267,
+      "parameter_count": 6680,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 4,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.67842960357666,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 2.953660378373944,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.006825,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 4,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 8.064988136291504,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 3.3732377534247484,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 4,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.050414085388184,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 2.674104036617864,
+      "parameter_count": 6680,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.027174999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 6,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.8030171394348145,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 3.3358294243833835,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 6,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 8.38026237487793,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 4.070628589865963,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 6,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.189987659454346,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 3.0287904133098666,
+      "parameter_count": 6680,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 8,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 7.889711856842041,
+      "maximum_update_ratio": 1.0147572755813599,
+      "gradient_norm": 3.6320726736279223,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 8,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 8.615357398986816,
+      "maximum_update_ratio": 1.0280673503875732,
+      "gradient_norm": 4.587072374302806,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "current_true_empty",
+      "depth": 8,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 6.287038326263428,
+      "maximum_update_ratio": 1.118669033050537,
+      "gradient_norm": 3.2962552364423403,
+      "parameter_count": 6680,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.029724999999999998,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 1,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.758033275604248,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 1.6139555956015454,
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 1,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806413650512695,
+      "maximum_update_ratio": 0.00048097921535372734,
+      "gradient_norm": 1.9241842039715427,
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 1,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.299899101257324,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 1.328048721406454,
+      "parameter_count": 6712,
+      "block_evaluations": 2,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 2,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.75792932510376,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 1.6593750128823113,
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 2,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806386947631836,
+      "maximum_update_ratio": 0.0004810346581507474,
+      "gradient_norm": 1.9399716832536396,
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 2,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.299358367919922,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 1.442180341380336,
+      "parameter_count": 6712,
+      "block_evaluations": 4,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 4,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.7577223777771,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 1.8300960160720332,
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 4,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806332588195801,
+      "maximum_update_ratio": 0.0004811499093193561,
+      "gradient_norm": 2.0021349878126764,
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 4,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.29827880859375,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 1.8270705584507922,
+      "parameter_count": 6712,
+      "block_evaluations": 8,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 6,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.757516860961914,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 2.0841752485821887,
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 6,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806279182434082,
+      "maximum_update_ratio": 0.0004812608822248876,
+      "gradient_norm": 2.101884776120147,
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 6,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.29720401763916,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 2.3282140158653832,
+      "parameter_count": 6712,
+      "block_evaluations": 12,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 8,
+      "seed": 24301,
+      "all_finite": true,
+      "cross_entropy": 6.757313251495361,
+      "maximum_update_ratio": 0.00036009037285111845,
+      "gradient_norm": 2.3954733628655642,
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.03655,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 8,
+      "seed": 24302,
+      "all_finite": true,
+      "cross_entropy": 6.806227684020996,
+      "maximum_update_ratio": 0.0004813754931092262,
+      "gradient_norm": 2.234264303291421,
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    },
+    {
+      "variant": "layerscale_private",
+      "depth": 8,
+      "seed": 24303,
+      "all_finite": true,
+      "cross_entropy": 5.296132564544678,
+      "maximum_update_ratio": 0.0004886633832938969,
+      "gradient_norm": 2.8834943279890126,
+      "parameter_count": 6712,
+      "block_evaluations": 16,
+      "bounded_semantics": {
+        "mode": "one_forward_masked_reconstruction",
+        "meaningful_parse_rate": 0.0,
+        "structural_similarity": 0.0,
+        "reward": 0.0
+      }
+    }
+  ],
+  "raw_matrix": {
+    "path": "agentv-dir://raw_matrix.json",
+    "sha256": "31d61abe62c5c681e727b17d21042f4442ffa340d7ffe6a93b30ad8ff1fec2b4",
+    "schema": "RecursiveUpdateRawMatrixV1",
+    "cells": 90
+  },
+  "gate": {
+    "verdict": "layerscale_preferred",
+    "maximum_authorized_depth": 8,
+    "allowed_slm233_modes": [
+      "layerscale_diagnostic"
+    ],
+    "blocked_claims": [
+      "semantic_workspace",
+      "checkpoint_promotion",
+      "ship_readiness",
+      "production_default_change"
+    ],
+    "selected_variant": "layerscale",
+    "rationale": "selected repair improved high-depth update stability on all paired seeds",
+    "evidence_refs": [
+      "docs/design/iter-slm282-recurrence-health-20260723.json",
+      "docs/design/iter-slm230-recurrence-observability-20260724.json",
+      "docs/design/iter-slm231-recurrence-dynamics-20260724.json",
+      "docs/design/iter-slm232-latent-state-use-20260724.json"
+    ],
+    "schema": "RecursiveUpdateGateV1"
+  },
+  "prior_evidence": [
+    "docs/design/iter-slm282-recurrence-health-20260723.json",
+    "docs/design/iter-slm230-recurrence-observability-20260724.json",
+    "docs/design/iter-slm231-recurrence-dynamics-20260724.json",
+    "docs/design/iter-slm232-latent-state-use-20260724.json"
+  ],
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/slm243-recursive-update-gate.eval.jsonl",
+    "summary": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "executionErrors": 0,
+      "durationMs": 21,
+      "meanScore": 1
+    },
+    "artifacts": {
+      "runDir": "agentv-dir://agentv/slm243-recursive-update-gate",
+      "benchmarkPath": "agentv-dir://agentv/slm243-recursive-update-gate/benchmark.json",
+      "indexPath": "agentv-dir://agentv/slm243-recursive-update-gate/index.jsonl",
+      "timingPath": "agentv-dir://agentv/slm243-recursive-update-gate/timing.json"
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "62726d6671dc9115d08c5581044bab7818e87e05",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm243_recursive_update_gate": "v3",
+      "model.recursive_denoiser": "v18",
+      "model.twotower": "v231"
+    },
+    "stamped_at": "2026-07-24T04:57:44.584306+00:00"
+  },
+  "checkpoint_created": false,
+  "production_default_changed": false,
+  "ship_gate_claim": false,
+  "elapsed_seconds": 12.012370276992442,
+  "report_hash": "4b5f1605db3064e98b4fcdd24c1ad24e7853745b5a86c8d175b1f0645d6b6a26"
+}

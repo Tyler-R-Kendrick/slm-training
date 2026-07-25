@@ -164,6 +164,7 @@ def _write_record_nll(run_dir: Path, plugin, records) -> Path:
 
 
 def train(config: ModelBuildConfig, model=None) -> dict:
+    from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
     from slm_training.runtime.accel import (
         autocast_context,
         detect_device,
@@ -177,6 +178,49 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         restore_rng_states,
         save_full_state,
     )
+
+    config, flag_snapshot = resolve(config, phase="training")
+    from slm_training.harnesses.capability_gates import require_training_authorized
+    from slm_training.harnesses.experiments.slm228_spectral_disposition import (
+        validate_spectral_recipe,
+    )
+
+    require_training_authorized(config)
+    requested_spectral_use = (
+        "promotion"
+        if bool(getattr(config, "register_promoted", False))
+        else "ship_eval"
+        if str(getattr(config, "run_class", "")) == "ship_eval"
+        else "scratch"
+    )
+    validate_spectral_recipe(
+        {"optimizer_name": getattr(config, "optimizer_name", "adamw")},
+        requested_use=requested_spectral_use,
+    )
+
+    campaign_governance = None
+    if bool(getattr(config, "register_promoted", False)):
+        from slm_training.harnesses.experiments.promotion import (
+            load_campaign_governance,
+        )
+
+        campaign_paths = (
+            config.campaign_manifest,
+            config.campaign_result,
+            config.campaign_store_root,
+            config.campaign_artifact_root,
+        )
+        if any(path is None for path in campaign_paths):
+            raise ValueError(
+                "register_promoted requires campaign manifest, result, store root, "
+                "and artifact root"
+            )
+        campaign_governance = load_campaign_governance(
+            manifest_path=config.campaign_manifest,
+            result_path=config.campaign_result,
+            store_root=config.campaign_store_root,
+            artifact_root=config.campaign_artifact_root,
+        )
 
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
     max_wall_minutes = (
@@ -224,6 +268,26 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         raise ValueError(
             "replay sampling cannot be combined with curriculum or mixture sampling"
         )
+    contrast_weight = float(
+        getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0
+    )
+    contrast_fraction = float(
+        getattr(config, "semantic_contrast_fraction", 0.0) or 0.0
+    )
+    contrast_pairs = []
+    contrast_dir = getattr(config, "semantic_contrast_dir", None)
+    if contrast_weight > 0.0:
+        if contrast_dir is None:
+            raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
+        if not 0.0 < contrast_fraction <= 1.0:
+            raise ValueError("semantic_contrast_fraction must be in (0, 1]")
+        if config.batch_size < 2:
+            raise ValueError("semantic contrast objective requires batch_size >= 2")
+        if replay_fraction:
+            raise ValueError("semantic contrast objective cannot be combined with replay")
+        from slm_training.models.semantic_contrast_loss import load_semantic_contrast_pairs
+
+        contrast_pairs = load_semantic_contrast_pairs(Path(contrast_dir))
     replay_records = []
     replay_manifest_sha: str | None = None
     if replay_fraction:
@@ -359,6 +423,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     run_dir = config.run_dir
     ckpt_dir = config.checkpoint_dir
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+    flag_payload = save_snapshot(run_dir, flag_snapshot)
     metrics_path = run_dir / "metrics.jsonl"
     eval_history: list[dict] = []
     nll_history: list[dict] = []
@@ -488,6 +553,23 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             task_family_pools = index_task_family_pools(records)
 
     def _batches_for_step(step: int) -> list[list]:
+        if contrast_pairs:
+            # Pair sides stay in the same batch. Negative sides are scored only
+            # by TwoTowerModel; their token CE never becomes a training target.
+            pair_count = min(
+                config.batch_size // 2,
+                max(1, round(config.batch_size * contrast_fraction / 2)),
+            )
+            primary_count = config.batch_size - (2 * pair_count)
+            windows = []
+            for _ in range(8):
+                rows = []
+                for pair in (rng.choice(contrast_pairs) for _ in range(pair_count)):
+                    rows.extend((pair.positive, pair.negative))
+                rows.extend(rng.choice(records) for _ in range(primary_count))
+                rng.shuffle(rows)
+                windows.append(rows)
+            return windows
         if replay_records:
             target = config.batch_size * 8
             replay_count = round(target * replay_fraction)
@@ -1124,9 +1206,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     if bool(getattr(config, "register_promoted", False)):
         from slm_training.harnesses.experiments.promotion import (
+            evaluate_promotion,
             register_promoted_checkpoint,
         )
 
+        assert campaign_governance is not None
+        manifest, result, store, artifact_root = campaign_governance
+        promotion = evaluate_promotion(
+            campaign_manifest=manifest,
+            campaign_result=result,
+            campaign_store=store,
+            artifact_root=artifact_root,
+        )
         source = ckpt_dir / "best_weighted_nll.pt"
         if not source.exists():
             source = ckpt_dir / "best_ship_score.pt"
@@ -1135,6 +1226,11 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         register_promoted_checkpoint(
             ckpt_dir,
             source=source,
+            promotion_result=promotion,
+            campaign_manifest=manifest,
+            campaign_result=result,
+            campaign_store=store,
+            artifact_root=artifact_root,
             meta={
                 "step": step,
                 "best_weighted_nll": (
@@ -1195,6 +1291,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 "primary": _source_loss_proxy_summary("primary"),
                 "replay": _source_loss_proxy_summary("replay"),
             },
+        },
+        "semantic_contrast": {
+            "enabled": bool(contrast_pairs),
+            "path": str(contrast_dir) if contrast_pairs else None,
+            "loss_weight": contrast_weight,
+            "margin": float(getattr(config, "semantic_contrast_margin", 1.0)),
+            "fraction": contrast_fraction,
+            "pair_count": len(contrast_pairs),
+            "families": sorted({pair.family for pair in contrast_pairs}),
         },
         "model": config.model_name,
         "device": config.device,
@@ -1420,10 +1525,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "telemetry": tel.summary(),
         "telemetry_path": str(tel_path.as_posix()),
         "finished_at": datetime.now(timezone.utc).isoformat(),
+        "feature_flags": flag_payload,
     }
     from slm_training.versioning import build_version_stamp
 
-    summary["version_stamp"] = build_version_stamp("harness.model_build.train")
+    summary["version_stamp"] = build_version_stamp(
+        "harness.model_build.train", "harness.experiment_feature_flags"
+    )
     (run_dir / "train_summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )

@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "frozen_cap2_symbolic_fixture_contract_not_ship", "failures": [], "result": {"available": false, "dependency_issue": "SLM-379", "reason": "CERT_CAP1_unavailable"}}

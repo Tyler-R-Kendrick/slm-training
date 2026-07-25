@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/slm194-candidate-proposals.eval.jsonl",
+    "timestamp": "2026-07-24T06:07:10.615Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "confirmation-firewall",
+      "dynamic-interface",
+      "exact-fallback-parity",
+      "true-amortization-gate",
+      "unknown-safety"
+    ],
+    "experiment": "slm194-candidate-proposals"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "is-json:is-json": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "inline-assert-0:inline-assert": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e7622064c8153c7bb8728aee4f7e2d428af9445a",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v75",
+      "harness.experiments.slm194_candidate_proposals": "v1",
+      "matrix.slm194_candidate_proposals": "ffe3-03-v1"
+    },
+    "stamped_at": "2026-07-24T06:07:10.306598+00:00"
+  }
+}

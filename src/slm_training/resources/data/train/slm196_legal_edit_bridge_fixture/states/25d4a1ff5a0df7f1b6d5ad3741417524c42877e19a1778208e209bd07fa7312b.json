@@ -1,0 +1,6 @@
+{
+  "content_digest": "25d4a1ff5a0df7f1b6d5ad3741417524c42877e19a1778208e209bd07fa7312b",
+  "program": "hero_title = TextContent(\":hero.title\")\nhero = Card([hero_title], \"column\")\nroot = Stack([hero], \"column\")",
+  "schema": "ExactLegalEditStateV1",
+  "state_fingerprint": "d45609a9c6f0be6d350afa0f36a20204f9ac32feeee26b2988a55d02ad3f8c0e"
+}

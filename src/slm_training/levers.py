@@ -13,94 +13,127 @@ from dataclasses import MISSING, fields
 from pathlib import Path
 from typing import Any, Final
 
+from slm_training.harnesses.staged import Capability
 
-MAX_RUN_MINUTES: Final = 2
+
+# The CI changed-test fan-out includes dependency setup; three minutes is the
+# repository-wide hard ceiling and lets that completed test suite report cleanly.
+MAX_RUN_MINUTES: Final = 3
 KILL_GRACE_SECONDS: Final = 10
 MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
-# Harnesses must stop themselves early enough to serialize checkpoints and
-# result metadata before the command-level interrupt fires.
-HARNESS_FINALIZATION_RESERVE_SECONDS: Final = 15
-MAX_HARNESS_WALL_SECONDS: Final = (
-    INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS
-)
-MAX_HARNESS_WALL_MINUTES: Final = MAX_HARNESS_WALL_SECONDS / 60
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 CHANGED_TEST_WORKERS: Final = 4
 VERCEL_FUNCTION_INCLUDE_FILES: Final = (
-    "docs/design/**",
+    "docs/design/*.json",
     "docs/MODEL_CARD.md",
     "src/slm_training/resources/checkpoints/playground_demo/**",
 )
-VERCEL_FUNCTION_EXCLUDE_FILES: Final = (
-    ".venv/**",
-    ".vercel/**",
-    "node_modules/**",
-    "outputs/**",
-    "tests/**",
-    "src/apps/**",
-    "**/governance/records.jsonl",
-    # Historical semantic/schema-role corpora are provenance, not runtime data.
-    "**/train/e177_*/**",
-    "**/train/e21[48]_*/**",
-    "**/train/e297_*/**",
-    "**/train/scope_graded_v1/**",
-)
 
-# Active, source-controlled corpora. Historical snapshots remain immutable
-# evidence but fail the canonical marker guard and are never CLI defaults.
-DEFAULT_TRAIN_DATA_DIR: Final = Path(
-    "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2"
-)
-DEFAULT_EVAL_DATA_DIR: Final = Path(
-    "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2"
-)
-DEFAULT_CONTEXT_BACKEND: Final = "scratch"
+# Capability profiles are deliberately expressed as deviations from the
+# model-build defaults. A default-off lever is harmless; activating it requires
+# the listed certificate stage.
+CAPABILITY_LEVER_MINIMUMS: Final = {
+    # CAP1 introduces authored schema / natural-language conditioning.
+    "design_md_in_context": (False, Capability.CAP1_SEMANTICS),
+    "schema_in_context": (False, Capability.CAP1_SEMANTICS),
+    "semantic_connector": ("none", Capability.CAP1_SEMANTICS),
+    # CAP2 introduces operator identity, retrieval, and action-space mutation.
+    "action_embedding_init": ("none", Capability.CAP2_TRANSFORM),
+    "action_alias_mode": ("canonical", Capability.CAP2_TRANSFORM),
+    "action_alias_manifest": (None, Capability.CAP2_TRANSFORM),
+    "action_shortlist_mode": ("off", Capability.CAP2_TRANSFORM),
+    "train_scope": ("current", Capability.CAP2_TRANSFORM),
+}
 
-# Template markers are codec identities, never semantic supervision.  Keep this
-# policy beside every other user-facing lever so there is one discoverable
-# source of truth for training and decode configuration.
-TEMPLATE_MARKERS_ARE_OPAQUE: Final = True
-# A difficulty-scored rebuild is a hard-example selection operation, not a
-# metadata-only annotation. Records in the easiest NLL tail are rejected by
-# the data harness before training.
-DIFFICULTY_EASY_TAIL_FRACTION: Final = 0.2
-DEFAULT_OUTPUT_TOKENIZER: Final = "lexer"
-DEFAULT_DECODE_TIMEOUT_SECONDS: Final = 12.0
-CHECKPOINT_DECLARED_POLICY: Final = "checkpoint_declared"
-STRICT_COMPILER_TREE_POLICY_ID: Final = "strict_compiler_tree"
-# Every evaluation enforces the symbol-only completion boundary independently
-# of checkpoint provenance. The compiler-tree bundle is the canonical default.
-DEFAULT_EVALUATION_POLICY: Final = STRICT_COMPILER_TREE_POLICY_ID
-STRICT_EVALUATION_POLICY: Final = {
-    "grammar_constrained": True,
-    "grammar_ltr_primary": True,
-    "grammar_finalize_validate": True,
-    "slot_contract_constrained_decode": True,
-    "honest_slot_contract": True,
-    "allow_unconstrained_fallback": False,
+
+# Decode invariants I1/I2/I6 (docs/design/decode-invariants.md). Ranking is a
+# lever; legality is not. Every lever below can only ever make output *less*
+# constrained or spend a forward where a deterministic proof existed, so each
+# one is registered with its fail-closed value and the invariant it protects.
+# A production / serving / ship-gated configuration must hold every safe value;
+# diagnostic control arms may deviate and their output is never certified.
+CONSTRAINT_WEAKENING_LEVERS: Final = {
+    "grammar_constrained": {
+        "safe_value": True,
+        "invariant": "I6",
+        "effect": "legality",
+        "note": "unconstrained decode may emit invalid grammar",
+    },
+    "allow_unconstrained_fallback": {
+        "safe_value": False,
+        "invariant": "I6",
+        "effect": "legality",
+        "note": "retries a failed constrained decode with token filtering off",
+    },
+    "grammar_fastpath": {
+        "safe_value": True,
+        "invariant": "I2",
+        "effect": "bypass",
+        "note": "disables DFA force-emit, so proven singletons cost a forward",
+    },
 }
-STRICT_COMPILER_TREE_POLICY: Final = {
-    **STRICT_EVALUATION_POLICY,
-    "output_tokenizer": DEFAULT_OUTPUT_TOKENIZER,
-    "compiler_decode_mode": "tree",
-    # Structural AST-plan scoring is part of the policy, not a caller-owned
-    # pair of optional flags. This consumes no marker names or free-form text.
-    "semantic_plan_decode_weight": 4.0,
-    "semantic_plan_margin_decode_weight": 2.0,
-}
-PROHIBITED_TEMPLATE_SEMANTIC_LEVERS: Final = {
-    "namespace_augment": "renames opaque markers into user-defined namespaces",
-    "prompt_semantic_role_contract": "adds user-defined marker labels to training prompts",
-    "semantic_role_contract_in_context": "exposes user-defined marker labels",
-    "semantic_role_decode_weight": "scores user-defined marker labels",
-    "semantic_role_schema_candidates": "maps user-defined marker labels to schema",
-    "schema_role_slot_decode_weight": "maps user-defined marker labels to schema",
-    "slot_coverage_close_decode_weight": "uses marker-label-derived schema reachability",
-    "semantic_plan_repeated_slot_margin_decode_weight": (
-        "groups markers by user-defined namespace labels"
-    ),
-}
+
+
+def constraint_weakening_violations(config: Any) -> dict[str, dict[str, Any]]:
+    """Return registered weakening levers this config sets to an unsafe value."""
+    violations: dict[str, dict[str, Any]] = {}
+    for name, spec in CONSTRAINT_WEAKENING_LEVERS.items():
+        if not hasattr(config, name):
+            continue
+        value = getattr(config, name)
+        if value is None or bool(value) == bool(spec["safe_value"]):
+            continue
+        violations[name] = {**spec, "value": value}
+    return violations
+
+
+def require_constrained_production_config(
+    config: Any, *, context: str = "config"
+) -> None:
+    """Fail before execution when a production path weakens constrained decode.
+
+    Diagnostic control arms must not call this; they are the one place a
+    weakening lever is legitimate, and their output is never certified.
+    """
+    violations = constraint_weakening_violations(config)
+    if not violations:
+        return
+    detail = "; ".join(
+        f"{name}={spec['value']!r} (safe {spec['safe_value']!r}, "
+        f"weakens {spec['invariant']})"
+        for name, spec in sorted(violations.items())
+    )
+    raise ValueError(
+        f"{context} weakens constrained decoding: {detail}; "
+        "see docs/design/decode-invariants.md — production and ship-gated "
+        "configurations must hold every safe value"
+    )
+
+
+def require_capability_lever_profile(config: Any, capability: Capability) -> None:
+    """Reject active levers introduced above the requested capability."""
+
+    rank = tuple(Capability).index(capability)
+    blocked: list[str] = []
+    for name, (inactive, minimum) in CAPABILITY_LEVER_MINIMUMS.items():
+        if not hasattr(config, name):
+            continue
+        value = getattr(config, name)
+        # ``None`` means preserve-checkpoint for the tri-state design flag and
+        # is therefore inactive at training construction time.
+        if name == "design_md_in_context" and value is None:
+            value = False
+        if value != inactive and rank < tuple(Capability).index(minimum):
+            blocked.append(f"{name} requires {minimum.value}")
+    if bool(getattr(config, "teacher_init_embeddings", False)) and not bool(
+        getattr(config, "capability_distillation", False)
+    ):
+        blocked.append("teacher_init_embeddings requires distillation permission")
+    if blocked:
+        raise ValueError(
+            f"{capability.value} lever profile violation: " + "; ".join(blocked)
+        )
 
 # Applicability lives beside discovery so CLIs and harness validation cannot
 # drift from the human-visible lever catalog. Each tuple is an OR of complete
@@ -123,28 +156,28 @@ _CHOICE_ONLY_DECODE_LEVERS: Final = (
     "semantic_plan_root_decode_weight",
     "semantic_plan_root_margin_decode_weight",
     "semantic_plan_repeated_array_close_margin_decode_weight",
+    "semantic_plan_repeated_slot_margin_decode_weight",
+    "semantic_plan_typed_array_item_margin_decode_weight",
     "visible_reference_decode_weight",
+    "root_reference_identity_decode_weight",
 )
 _DUAL_PATH_DECODE_LEVERS: Final = (
     "component_inventory_decode_weight",
     "component_plan_decode_weight",
     "slot_component_decode_weight",
+    "semantic_role_decode_weight",
+    "slot_coverage_close_decode_weight",
+    "schema_role_slot_decode_weight",
     "required_slot_margin_decode_weight",
     "semantic_plan_decode_weight",
     "semantic_plan_margin_decode_weight",
     "semantic_plan_typed_array_nonempty_margin_decode_weight",
-    "semantic_plan_typed_array_item_margin_decode_weight",
     "root_reference_arity_decode_weight",
-    "root_reference_identity_decode_weight",
 )
 _COMPILER_PATH_DECODE_LEVERS: Final = (
-    "compiler_schema_component_types",
     "component_edge_decode_weight",
     "binder_component_plan_decode_weight",
     "binder_topology_decode_weight",
-    "binder_slot_ownership_decode_weight",
-    "binder_slot_presence_decode_weight",
-    "binder_reference_presence_decode_weight",
     "binder_arity_decode_weight",
 )
 LEVER_REQUIREMENTS: Final = {
@@ -152,7 +185,7 @@ LEVER_REQUIREMENTS: Final = {
     **{name: (_CHOICE, _LEXER_COMPILER) for name in _DUAL_PATH_DECODE_LEVERS},
     **{name: (_LEXER_COMPILER,) for name in _COMPILER_PATH_DECODE_LEVERS},
     "root_reference_arity_loss_weight": (_CHOICE, _LEXER_COMPILER),
-    "root_reference_identity_loss_weight": (_CHOICE, _LEXER_COMPILER),
+    "root_reference_identity_loss_weight": (_CHOICE,),
 }
 
 # A decode head is usable only when its checkpoint trained that head. Without
@@ -168,11 +201,6 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
     ),
     "binder_component_plan_decode_weight": ("binder_component_plan_loss_weight",),
     "binder_topology_decode_weight": ("binder_topology_loss_weight",),
-    "binder_slot_ownership_decode_weight": ("binder_slot_ownership_loss_weight",),
-    "binder_slot_presence_decode_weight": ("binder_slot_presence_loss_weight",),
-    "binder_reference_presence_decode_weight": (
-        "binder_reference_presence_loss_weight",
-    ),
     "binder_arity_decode_weight": ("binder_arity_loss_weight",),
     "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",),
     "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),
@@ -193,12 +221,33 @@ _SLOT_CONTRACT_DECODE: Final = (
     },
 )
 SLOT_CONTRACT_DECODE_LEVERS: Final = (
+    "schema_role_slot_decode_weight",
+    "slot_coverage_close_decode_weight",
     "semantic_plan_typed_array_nonempty_margin_decode_weight",
     "semantic_plan_typed_array_item_margin_decode_weight",
+    "semantic_plan_repeated_slot_margin_decode_weight",
     "required_slot_margin_decode_weight",
 )
+_VISIBLE_SEMANTIC_ROLE_DECODE: Final = (
+    {
+        "slot_contract_in_context": True,
+        "slot_contract_constrained_decode": True,
+        "honest_slot_contract": True,
+        "semantic_role_contract_in_context": True,
+    },
+    {
+        "slot_contract_in_context": True,
+        "template_fill_decode": True,
+        "honest_slot_contract": True,
+        "semantic_role_contract_in_context": True,
+    },
+)
 LEVER_COMPANION_REQUIREMENTS: Final = {
-    **{name: _SLOT_CONTRACT_DECODE for name in SLOT_CONTRACT_DECODE_LEVERS},
+    **{
+        name: _SLOT_CONTRACT_DECODE
+        for name in SLOT_CONTRACT_DECODE_LEVERS
+    },
+    "semantic_role_decode_weight": _VISIBLE_SEMANTIC_ROLE_DECODE,
 }
 
 
@@ -225,9 +274,7 @@ def _matches_requirement(config: Any, requirement: dict[str, Any]) -> bool:
     return True
 
 
-def incompatible_lever_requirements(
-    config: Any,
-) -> dict[str, tuple[dict[str, Any], ...]]:
+def incompatible_lever_requirements(config: Any) -> dict[str, tuple[dict[str, Any], ...]]:
     """Return enabled levers for which no executable configuration exists."""
     return {
         name: requirements
@@ -242,7 +289,9 @@ def incompatible_lever_requirements(
 def _positive_numeric(config: Any, field: str) -> bool:
     value = getattr(config, field, 0.0)
     return (
-        isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0.0
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and value > 0.0
     )
 
 
@@ -273,22 +322,6 @@ def lever_configuration_errors(
 ) -> tuple[str, ...]:
     """Return every canonical lever-contract violation for ``config``."""
     errors: list[str] = []
-    if (
-        TEMPLATE_MARKERS_ARE_OPAQUE
-        and getattr(config, "symbol_anonymization", True) is False
-    ):
-        errors.append(
-            "symbol_anonymization=False is prohibited because template markers are opaque"
-        )
-    prohibited = {
-        name: reason
-        for name, reason in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS.items()
-        if bool(getattr(config, name, False))
-    }
-    errors.extend(
-        f"{name} is prohibited because template markers are opaque: {reason}"
-        for name, reason in prohibited.items()
-    )
     incompatible = incompatible_lever_requirements(config)
     if incompatible:
         errors.append(f"unsupported enabled levers: {', '.join(incompatible)}")
@@ -389,49 +422,33 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
                 _requirement_json(requirement)
                 for requirement in LEVER_COMPANION_REQUIREMENTS[item.name]
             ]
-        if item.name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS:
-            catalog[item.name]["prohibited"] = True
-            catalog[item.name]["prohibited_reason"] = (
-                PROHIBITED_TEMPLATE_SEMANTIC_LEVERS[item.name]
+        if item.name in CONSTRAINT_WEAKENING_LEVERS:
+            spec = CONSTRAINT_WEAKENING_LEVERS[item.name]
+            catalog[item.name].update(
+                {
+                    "weakens_constraint": True,
+                    "constraint_safe_value": _json_value(spec["safe_value"]),
+                    "constraint_invariant": spec["invariant"],
+                    "constraint_effect": spec["effect"],
+                    "diagnostic_only": True,
+                }
             )
-        if item.name == "symbol_anonymization":
-            catalog[item.name]["required"] = True
-            catalog[item.name]["required_reason"] = (
-                "template markers are opaque codec identities"
-            )
-        if (
-            item.name in checkpoint_defaults
-            and checkpoint_defaults[item.name] != default
-        ):
+        if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]
             )
             catalog[item.name]["contexts_diverge"] = True
-    for name, reason in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS.items():
-        catalog.setdefault(
-            name,
-            {
-                "category": "data",
-                "default": False,
-                "type": "bool",
-                "source": "slm_training.levers.PROHIBITED_TEMPLATE_SEMANTIC_LEVERS",
-                "prohibited": True,
-                "prohibited_reason": reason,
-            },
-        )
     catalog["max_wall_minutes"].update(
         {
-            "default": MAX_HARNESS_WALL_MINUTES,
-            "maximum": MAX_HARNESS_WALL_MINUTES,
+            "default": MAX_RUN_MINUTES,
+            "maximum": MAX_RUN_MINUTES,
             "derived": {
-                "hard_cap_minutes": MAX_RUN_MINUTES,
                 "interrupt_after_seconds": INTERRUPT_AFTER_SECONDS,
                 "kill_grace_seconds": KILL_GRACE_SECONDS,
-                "finalization_reserve_seconds": HARNESS_FINALIZATION_RESERVE_SECONDS,
                 "total_seconds": MAX_RUN_SECONDS,
                 "hf_job_timeout": HF_JOB_TIMEOUT,
             },
-            "source": "slm_training.levers.MAX_HARNESS_WALL_MINUTES",
+            "source": "slm_training.levers.MAX_RUN_MINUTES",
         }
     )
     catalog["changed_test_workers"] = {
@@ -446,48 +463,19 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
         "type": "tuple[str, ...]",
         "source": "slm_training.levers.VERCEL_FUNCTION_INCLUDE_FILES",
     }
-    catalog["template_markers_are_opaque"] = {
-        "category": "data",
-        "default": TEMPLATE_MARKERS_ARE_OPAQUE,
-        "type": "bool",
-        "source": "slm_training.levers.TEMPLATE_MARKERS_ARE_OPAQUE",
-    }
-    catalog["default_train_data_dir"] = {
-        "category": "data",
-        "default": str(DEFAULT_TRAIN_DATA_DIR),
-        "type": "Path",
-        "source": "slm_training.levers.DEFAULT_TRAIN_DATA_DIR",
-    }
-    catalog["default_eval_data_dir"] = {
-        "category": "data",
-        "default": str(DEFAULT_EVAL_DATA_DIR),
-        "type": "Path",
-        "source": "slm_training.levers.DEFAULT_EVAL_DATA_DIR",
-    }
-    catalog["default_context_backend"] = {
-        "category": "model",
-        "default": DEFAULT_CONTEXT_BACKEND,
-        "type": "str",
-        "choices": ["scratch", "hf"],
-        "source": "slm_training.levers.DEFAULT_CONTEXT_BACKEND",
-    }
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 
     catalog["evaluation_policy"].update(
         {
-            "default": DEFAULT_EVALUATION_POLICY,
-            "config_default": CHECKPOINT_DECLARED_POLICY,
             "choices": sorted(EVALUATION_POLICIES),
-            "source": "slm_training.levers.DEFAULT_EVALUATION_POLICY",
+            "source": "slm_training.harnesses.model_build.eval_policy.EVALUATION_POLICIES",
         }
     )
     return catalog
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="List canonical OpenUI training levers."
-    )
+    parser = argparse.ArgumentParser(description="List canonical OpenUI training levers.")
     parser.add_argument("--category", default=None)
     args = parser.parse_args(argv)
     catalog = lever_catalog()

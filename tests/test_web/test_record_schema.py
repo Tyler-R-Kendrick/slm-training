@@ -124,6 +124,26 @@ def test_canonical_root_suite_wins_over_nested_diagnostic_metrics() -> None:
     assert record["suites"]["smoke"]["structural_similarity"] == 0.5
 
 
+def test_historical_canonical_result_block_remains_browsable() -> None:
+    payload = {
+        "schema_version": 1,
+        "run_id": "e534-treatment",
+        "run_class": "scratch_matrix",
+        "result": {
+            "suite": "ood",
+            "n": 4,
+            "syntax_parse_rate": 1.0,
+            "meaningful_program_rate": 0.25,
+        },
+    }
+
+    record, reason = normalize_experiment_record(payload, stem="e534")
+
+    assert reason is None and record is not None
+    assert record["source_schema"] == "block@result"
+    assert record["suites"]["ood"]["meaningful_program_rate"] == 0.25
+
+
 def test_canonical_envelope_validates() -> None:
     envelope = canonical_envelope(
         run_id="run-1",

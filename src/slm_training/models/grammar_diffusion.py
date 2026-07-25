@@ -2163,6 +2163,15 @@ class GrammarDiffusionModel(nn.Module):
                 slot_inventory=inventory,
                 output_kind=request.output_kind,
             )
+            if request.output_kind == "document" and not text:
+                from slm_training.dsl.parser import validate
+
+                fallback = "root = Separator()"
+                program = validate(fallback)
+                text = (program.serialized or fallback).strip()
+                evidence["fallback_used"] = True
+            else:
+                evidence["fallback_used"] = False
             outputs.append(text)
             self._generation_evidence.append(evidence)
         return outputs

@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "cert_cap2_rejected_dsh4_closed", "failures": [], "result": {"cert_cap2": {"issued": false, "reason": "No action representation causally improved held-out CAP2 behavior; CAP1 retention is unavailable."}, "dsh4": {"open": false, "reason": "No action representation causally improved held-out CAP2 behavior; CAP1 retention is unavailable."}}}

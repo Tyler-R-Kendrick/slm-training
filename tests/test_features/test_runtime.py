@@ -9,7 +9,7 @@ from openfeature import api
 
 from slm_training.features.defaults import PRODUCT_FLAG_DEFAULTS
 from slm_training.features.keys import DASHBOARD_DEFAULT_RENDERER
-from slm_training.features.levers import lever_by_flag, lever_registry_payload
+from slm_training.features.levers import feature_flag_by_key, feature_flag_registry_payload
 from slm_training.features.runtime import FeatureRuntime, _auto_provider_kind, _resolve_provider_kind
 
 
@@ -57,7 +57,7 @@ def test_bootstrap_payload_shape(monkeypatch: pytest.MonkeyPatch) -> None:
         assert payload["evaluated"][DASHBOARD_DEFAULT_RENDERER] == "interpreted"
         assert payload["targeting_key"] == "anon-1"
         assert any(
-            row["lever_id"] == "dashboard-renderer" for row in payload["levers"]
+            row["key"] == DASHBOARD_DEFAULT_RENDERER for row in payload["flags"]
         )
     finally:
         runtime.shutdown()
@@ -86,9 +86,10 @@ def test_auto_prefers_launchdarkly(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _resolve_provider_kind("auto") == "launchdarkly"
 
 
-def test_lever_registry_lookup() -> None:
-    payload = lever_registry_payload()
-    assert len(payload["levers"]) >= 3
-    lever = lever_by_flag(DASHBOARD_DEFAULT_RENDERER)
-    assert lever is not None
-    assert lever.lever_id == "dashboard-renderer"
+def test_feature_flag_registry_lookup() -> None:
+    payload = feature_flag_registry_payload()
+    assert len(payload["flags"]) >= 3
+    flag = feature_flag_by_key(DASHBOARD_DEFAULT_RENDERER)
+    assert flag is not None
+    assert flag.key == DASHBOARD_DEFAULT_RENDERER
+    assert all({"lever_id", "flag_key"}.isdisjoint(row) for row in payload["flags"])

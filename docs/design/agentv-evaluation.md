@@ -1,4 +1,4 @@
-# Standard evaluation contract: AgentEvals + AgentV
+# Standard evaluation contract: AgentEvals criteria, AgentV runner
 
 All repository evaluation runs use the [AgentEvals](https://agentevals.io/)
 portable JSONL/YAML contract and the canonical
@@ -6,56 +6,33 @@ portable JSONL/YAML contract and the canonical
 `agentv@4.42.4` for the CLI and `@agentv/core@4.42.4` for the TypeScript SDK.
 Both are exact pins.
 
-AgentV standardizes execution artifacts; it does not redefine model quality or
-produce an aggregate “AgentV” score. The existing honest multi-suite policy in
-`ship_gates.py` remains the source of truth for OpenUI readiness. Every model
-suite publishes its named domain graders through `@agentv/core`, including
-parse, meaningful-program, binding-aware, contract, fidelity, structural,
-reward, AST, language, reference-graph, and target-quality metrics. A missing
-or mismatched named SDK result fails the evaluation publication.
+AgentEvals assertions are the gate authority. The existing honest multi-suite
+thresholds in `ship_gates.py` remain the policy source, and `agentv.py` lowers
+the raw metric evidence into required `actual/operator/expected` assertions.
+The assertions—not a Python-generated pass boolean—produce the durable
+verdict. AgentV runs the spec and publishes artifacts; it is not itself a gate
+or model-quality metric. Missing suites remain required failing criteria, so a
+successful smoke case can never turn a partial run into a production claim.
 
-## Tracked grader metrics
-
-Every listed metric is executed and recorded through the pinned AgentV SDK.
-The runner itself is metadata, never a score. `null` means the grader found the
-metric inapplicable and its `metric_defined_n` denominator is zero.
-
-| Metric | What it measures |
-| --- | --- |
-| `parse_rate` | Official OpenUI parse success |
-| `meaningful_program_rate` | Meaningful-program verdict |
-| `binding_aware_meaningful_v2_rate_strict` | Strict binding-aware meaningfulness |
-| `binding_aware_meaningful_v2_rate_coverage_conditioned` | Strict meaningfulness where coverage is known |
-| `binding_aware_meaningful_v2_coverage` | Coverage of the strict meaningfulness contract |
-| `syntax_parse_rate` | Syntax parser success |
-| `raw_syntax_validity` | Raw generated syntax validity |
-| `contract_precision` | Correct emitted contract items |
-| `contract_recall` | Required contract-item coverage |
-| `placeholder_fidelity` | Exact visible-placeholder fidelity |
-| `placeholder_fidelity_normalized` | Canonicalized placeholder fidelity |
-| `placeholder_validity` | Placeholder legality |
-| `exact_match` | Exact canonical program match |
-| `structural_similarity` | Program structure similarity |
-| `tree_edit_similarity` | AST edit similarity |
-| `component_type_recall` | Required component-type coverage |
-| `reward_score` | Canonical composite quality reward |
-| `ast_node_f1` | AST node F1 |
-| `ast_edge_f1` | AST edge F1 |
-| `language_validity` | Language-contract validity |
-| `canonical_exact` | Canonical serialization exactness |
-| `ref_graph_exact` | Reference-graph exactness |
-| `target_correctness` | Target correctness |
-| `target_efficiency` | Target efficiency |
-| `target_composite` | Target composite quality |
+`evaluate_ship_gates()` remains available as an explicitly labeled Python
+preview for APIs and diagnostics. Only `gates.json` derived from successful
+AgentEvals assertion results has `authority: "AgentEvals assertions"`.
 
 ## Flow
 
-1. Python evaluators produce the domain metric inputs using the existing harnesses.
-2. `publish_agentv_evaluation` writes standard `*.eval.jsonl` cases.
-3. `run_agentv_eval.mjs` invokes one named SDK grader per metric through
-   `evaluate()` from `@agentv/core`.
-4. The source spec and AgentV result bundle land beside the original evidence
-   under `<run-dir>/agentv/`.
+1. Python evaluators compute domain metrics using the existing harnesses.
+2. `publish_agentevals_evaluation` writes standard `*.eval.jsonl` cases whose
+   required code-graders compare raw evidence with policy thresholds.
+3. `run_agentv_eval.mjs` invokes `evaluate()` from `@agentv/core`; it injects no
+   assertion and makes no quality decision of its own.
+4. The source spec and AgentV runner bundle land beside the original evidence
+   under `<run-dir>/evals/`.
+5. `write_ship_gates` projects those assertion results into the compatibility
+   `gates.json` shape and records the AgentEvals authority.
+6. With opt-in LangSmith tracing, the runner publishes its aggregate AgentV
+   summary as a child of the existing W3C-correlated trace. This is
+   observational only; AgentEvals assertions, local artifacts, and ship gates
+   retain authority if export fails.
 
 The `agentv` npm package is retained for the canonical CLI and dashboard. In
 the pinned release its published package is CLI-only, so programmatic execution
@@ -63,19 +40,22 @@ correctly imports the SDK from `@agentv/core`.
 
 ## Coverage
 
-| Evaluation surface | AgentV publication |
+| Evaluation surface | AgentEvals criteria / AgentV execution |
 | --- | --- |
 | `evaluate` / `evaluate_suites` / `evaluate_model` | Five canonical ship-suite cases; absent suites fail |
 | Quality, grammar, phase, reproduction, and mid-train model evals | Inherit the shared model-eval publication path |
 | `evaluate_loss_suites` report writer | Complete finite diagnostic report; explicitly not a ship claim |
-| `evaluate_tasks` | Fixture prediction evidence; fails the AgentV quality case while ship gates are not run |
+| `evaluate_tasks` | Fixture prediction evidence; fails its AgentEvals quality criterion while ship gates are not run |
 | `diagnose_eval` | Diagnostic completion and length-budget result; explicitly not a ship claim |
+| `run_cap2_operator_eval_fixture` | Frozen CAP2 symbolic suite identity, oracle replay, three anti-cheat controls, and uncertified-NL refusal; fixture contract only |
+| `run_reserved_operator_baseline` | E803 matched-arm identity, compiler-membership audit, causal changes, honest stop-rule rejection, and CAP0/CAP1 retention boundary; bounded symbolic baseline only |
+| `publish_cap2_disposition` | Complete seven-capability terminal ledger, exact evidence identities, unrun-versus-benefit guard, certificate rejection, and DSH4 closure; no model eval or checkpoint claim |
 | Pure gate calculators and web read endpoints | No run is created because they evaluate supplied data without executing a model eval |
 
 New evaluation entrypoints must call the shared publisher instead of inventing
-another result format. The recorded domain JSON carries the named SDK grader
-outputs and denominators; the AgentV bundle is the standard cross-evaluator
-run envelope.
+another result format. The original domain JSON remains for existing research
+tables; the AgentEvals spec is the gate contract and AgentV provides the
+standard cross-evaluator run envelope.
 
 ## Commands and artifacts
 
@@ -88,7 +68,7 @@ npm run agentv -- dashboard
 The Python command automatically creates:
 
 ```text
-outputs/runs/<id>/agentv/
+outputs/runs/<id>/evals/
   openui-model-ship-gates-<timestamp>.eval.jsonl
   openui-model-ship-gates-<timestamp>/
     benchmark.json
@@ -105,3 +85,5 @@ The implementation check is recorded in
 | Date | Recipe | Result | Claim |
 | --- | --- | --- | --- |
 | 2026-07-14 | CPU, steps 0, no model backend; AgentV SDK fixture plus model/loss/task/train-loop harness tests | 34/34 focused tests passed; SDK fixture wrote valid AgentEvals JSONL and AgentV artifacts; dependency audit has 0 high/critical findings | Tooling wiring only; no checkpoint, model score, or ship gate was produced |
+| 2026-07-23 | CPU, steps 0, no model backend; focused assertion-authority tests with the pinned SDK | AgentEvals JSONL carried required code-graders over raw criteria; the runner produced 1/1 passing fixture criteria with 0 execution errors; 135 focused gate/consumer checks and all 6 interpreted page validations passed. Dashboard production build remained environment-blocked because the locked `@openfeature/web-sdk` dependency was unavailable and automatic review rejected installation before execution. | Tooling and gate-authority wiring only; no checkpoint or model-quality claim |
+| 2026-07-24 | Local summary-only telemetry configuration smoke; LangSmith `slm-training` project, two-second bounded flush, standard OTLP resource defaults | W3C root trace `fdf78e5360a6647b09fa0882a2c5d4ec` was published and read back as `slm.telemetry.config` | Tooling wiring only; no checkpoint, model score, or ship gate was produced ([JSON](langsmith-telemetry-smoke-20260724.json)) |

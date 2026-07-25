@@ -2,6 +2,16 @@ A code wiki for the **slm-training** OpenUI layout-SLM research repo.
 
 Prioritize:
 
+0. **Decode invariants (goal law).** Carry
+   [`docs/design/decode-invariants.md`](../design/decode-invariants.md) into
+   every generated page that touches decoding, evaluation, serving, vocabulary,
+   or multi-turn state: constrained decoding is the product and is never
+   removable; deterministic singleton bypass outranks learned scores;
+   speculation ranks over forward-calculated symbol tables and verifies before
+   commit; symbol tables schedule prefills; the compute-ops vocabulary is shared
+   encoder↔decoder; multi-turn is a CRDT event store; goals are non-negotiable
+   while approaches are disposable. Never describe an unconstrained arm as a
+   supported mode — it is a diagnostic control.
 1. Concise quickstart for agents and engineers (where to start, what is fixture vs ship).
 2. Architecture: TwoTower / grammar-diffusion, harnesses (`train_data` / `test_data` / `model_build`), DSL + grammar backends.
 3. Core workflows: train → eval → matrix → docs/MODEL_CARD updates; HF checkpoint bucket sync.
@@ -9,6 +19,18 @@ Prioritize:
 5. Repository organization: `docs/repository-organization.md`, canonical skills, `git mv`, and the repo-policy hooks/CI gate.
 6. Agent surface: `AGENTS.md`, `.agents/skills/`, token-efficiency stack, OpenWiki itself.
 7. Source map: `src/slm_training/`, `scripts/`, `docs/design/`, playground / Vercel entrypoints.
+8. Recursive-denoiser objective semantics: final-depth primary versus explicit
+   intermediate/all-depth auxiliary modes, checkpoint migration boundaries, and
+   the correction-only SLM-279 evidence under `docs/design/`.
+9. Recursive-denoiser health diagnostics: opt-in raw per-depth state/update and
+   prediction telemetry, historical `as_is` versus fixture-only
+   `residual_delta`, one-forward anytime-depth curves, the exact preregistered
+   disposition, and the SLM-282 boundary that fixture success is neither a
+   contraction proof nor a quality/ship claim.
+10. Measurement reachability: canonical binomial rate evidence, the four-way
+    ship-gate failure taxonomy, prospective-only power planning, and the
+    deterministic SLM-286 committed-artifact census with append-only
+    adjudications.
 
 Ground pages in repository structure and measured results under `docs/design/`. Prefer practical navigation over generic summaries. Prefer linking existing design docs over rewriting them.
 

@@ -1,0 +1,457 @@
+{
+  "agentv_evaluation": {
+    "n": 0,
+    "resolved": false,
+    "sdk": "@agentv/core",
+    "sdk_version": "4.42.4",
+    "status": "missing"
+  },
+  "allowed_claims": [
+    "diagnostic",
+    "proxy",
+    "constraint_debt",
+    "structure",
+    "synthetic_wiring"
+  ],
+  "anti_gaming": {
+    "executed": false,
+    "owner_sha256": "c350af61cc609dbf2ddc38a25ba5e6b412c7c2ca1c9cb5c6f78927e2b0802e4a",
+    "passed": false,
+    "scheduled_cells": 24,
+    "schema_version": "metric_gaming/v1",
+    "status": "scheduled_not_executed"
+  },
+  "blocked_claims": [
+    "semantic_prediction",
+    "semantic_causal",
+    "learned_latent",
+    "floor_escape",
+    "promotion",
+    "ship"
+  ],
+  "checkpoint_references": [],
+  "config_hashes": [],
+  "constraint_debt": {
+    "evidence_class": "synthetic_fixture",
+    "slm208_summary": {
+      "by_decision_kind_split_space": {
+        "component::held_out::full_vocab": {
+          "bad_debt": {
+            "mean": 1.0986122588627878,
+            "median": 1.0986122588627878,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 1.0986122588627878,
+            "median": 1.0986122588627878,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": 0.4054650783043425,
+            "median": 0.4054650783043425,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 0.3333333134651184,
+            "median": 0.3333333134651184,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": 0.0,
+            "median": 0.0,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        },
+        "component::held_out::legal_tokens": {
+          "bad_debt": {
+            "mean": 0.6931471805579453,
+            "median": 0.6931471805579453,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 0.6931471805579453,
+            "median": 0.6931471805579453,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": -1.000088900581841e-12,
+            "median": -1.000088900581841e-12,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 0.0,
+            "median": 0.0,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": 0.40546512603759766,
+            "median": 0.40546512603759766,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        },
+        "component::train::full_vocab": {
+          "bad_debt": {
+            "mean": 1.0986122588627878,
+            "median": 1.0986122588627878,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 1.0986122588627878,
+            "median": 1.0986122588627878,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": 0.4054650783043425,
+            "median": 0.4054650783043425,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 0.3333333134651184,
+            "median": 0.3333333134651184,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": 0.0,
+            "median": 0.0,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        },
+        "component::train::legal_tokens": {
+          "bad_debt": {
+            "mean": 0.6931471805579453,
+            "median": 0.6931471805579453,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 0.6931471805579453,
+            "median": 0.6931471805579453,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": -1.000088900581841e-12,
+            "median": -1.000088900581841e-12,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 0.0,
+            "median": 0.0,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": 0.40546512603759766,
+            "median": 0.40546512603759766,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        },
+        "grammar_comma::held_out::full_vocab": {
+          "bad_debt": {
+            "mean": 2.4401896532075185,
+            "median": 2.4401896532075185,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 1.4401896245258916,
+            "median": 1.4401896245258916,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": 1.032583713421337,
+            "median": 1.032583713421337,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 0.6439142525196075,
+            "median": 0.6439142525196075,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": -5.947717340859526e-08,
+            "median": -5.947717340859526e-08,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        },
+        "grammar_comma::held_out::legal_tokens": {
+          "bad_debt": {
+            "mean": 1.4076059450134593,
+            "median": 1.4076059450134593,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 0.407605982997008,
+            "median": 0.407605982997008,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": -1.000088900581841e-12,
+            "median": -1.000088900581841e-12,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 0.0,
+            "median": 0.0,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": 1.0325835943222046,
+            "median": 1.0325835943222046,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        },
+        "grammar_comma::train::full_vocab": {
+          "bad_debt": {
+            "mean": 3.1698460425251556,
+            "median": 3.1698460425251556,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 0.169846056291237,
+            "median": 0.169846056291237,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": 5.9603646573809654e-08,
+            "median": 5.9603646573809654e-08,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 5.960464477539063e-08,
+            "median": 5.960464477539063e-08,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": -6.286760623197551e-08,
+            "median": -6.286760623197551e-08,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        },
+        "grammar_comma::train::legal_tokens": {
+          "bad_debt": {
+            "mean": 3.1698460425251556,
+            "median": 3.1698460425251556,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "count": 1,
+          "empty_bad_partition_fraction": 0.0,
+          "empty_good_partition_fraction": 0.0,
+          "good_debt": {
+            "mean": 0.169846056291237,
+            "median": 0.169846056291237,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_debt": {
+            "mean": -1.000088900581841e-12,
+            "median": -1.000088900581841e-12,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "legal_mass_deficit": {
+            "mean": 0.0,
+            "median": 0.0,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "pre_post_mask_kl": {
+            "mean": 0.0,
+            "median": 0.0,
+            "non_null_count": 1,
+            "null_count": 0
+          },
+          "single_legal_action_fraction": 0.0
+        }
+      },
+      "row_count": 8
+    },
+    "slm209_disposition": "no_debt_lift",
+    "slm212_disposition": "signal_predictive"
+  },
+  "eval_manifests": [],
+  "evaluator_versions": {
+    "@agentv/core": "4.42.4",
+    "agentv_owner_sha256": "6103125a86b3570e347614a534f2509e23a22af895fa5b802fe41aa145f1f3bc",
+    "evals.scoring": "v20"
+  },
+  "evidence": [
+    {
+      "claim_class": "wiring",
+      "disposition": null,
+      "issue_id": "SLM-208",
+      "path": "docs/design/iter-slm208-constraint-debt-20260720.json",
+      "schema": "Slm208ConstraintDebtReportV1",
+      "sha256": "11437b4109d39f6815b1305dee148fcb0fa451d60cc7acbbc993d40b73c68cb2",
+      "source_commit": "a284d6ae9e874f17b66674cc2bc52eabf16834b1",
+      "source_dirty": true,
+      "status": "fixture"
+    },
+    {
+      "claim_class": "wiring",
+      "disposition": "no_debt_lift",
+      "issue_id": "SLM-209",
+      "path": "docs/design/iter-slm209-debt-targeted-curriculum-20260720.json",
+      "schema": "DebtCurriculumManifestV1",
+      "sha256": "6c4caa766b44dfe44ddbacbc131b46e0e45b110ca2f0477f1471dd181d380c7f",
+      "source_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
+      "source_dirty": true,
+      "status": "fixture"
+    },
+    {
+      "claim_class": "wiring",
+      "disposition": "inconclusive",
+      "issue_id": "SLM-210",
+      "path": "docs/design/sde5-floor-escape-matrix-results.json",
+      "schema": "SDE5FloorEscapeMatrixV1",
+      "sha256": "0e42f43548e856541e7202e1d55d6dde3e542d7b133d0a4ef5735684bb42151e",
+      "source_commit": "42d31f1dd9fee295324d5d39bbc48c53dd87cb96",
+      "source_dirty": true,
+      "status": "fixture"
+    },
+    {
+      "claim_class": "wiring",
+      "disposition": null,
+      "issue_id": "SLM-211",
+      "path": "docs/design/iter-slm211-untied-output-head-20260721.json",
+      "schema": "UntiedOutputHeadReportV1",
+      "sha256": "83a21827a4d47010b92762d85b2ecb3ca2001e27501b7e13317c52a63f6affab",
+      "source_commit": "83d12c301de4d96eef7129340359940637b647af",
+      "source_dirty": true,
+      "status": "fixture"
+    },
+    {
+      "claim_class": "wiring",
+      "disposition": "signal_predictive",
+      "issue_id": "SLM-212",
+      "path": "docs/design/iter-slm212-debt-routing-20260721.json",
+      "schema": "DebtRoutingMatrixManifest",
+      "sha256": "fab22a3aa09b9d231020928e7f0f2d49e6fe58e7cb5fde88d414786f74e60da6",
+      "source_commit": "96c51de50bde727d046ce1a463ed519897956eef",
+      "source_dirty": true,
+      "status": "fixture"
+    }
+  ],
+  "evidence_cutoff": "2026-07-21T04:15:30.006965Z",
+  "gate_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
+  "generated_at": "2026-07-23T07:03:22.541155Z",
+  "legacy_meaning_v1_by_suite": {},
+  "metric_versions": {
+    "binding_aware_meaningful_v2": "2.13.0",
+    "registry:evals.meaningful_program": "2.13.0"
+  },
+  "paired_statistics": {
+    "available": false,
+    "reason": "no paired strict meaning-v2 statistics across the declared seeds"
+  },
+  "protected_objectives": {
+    "measured": false,
+    "reason": "no trained matched campaign or protected-objective outcome artifact"
+  },
+  "resolving_evidence": [
+    "no durable checkpoint reference for the SDE5 floor-escape family",
+    "no hash-pinned train manifest",
+    "no hash-pinned eval manifest or preregistered strict meaning-v2 sample count",
+    "no executed anti-gaming result bundle (schedule flags are not outcomes)",
+    "no SDE5 AgentV/independent-evaluation bundle",
+    "no paired strict meaning-v2 statistics across the declared seeds",
+    "all SLM-208\u2013212 producer stamps report code_dirty=true"
+  ],
+  "runtime_cost": {
+    "evidence_class": "fixture_only",
+    "model_runtime_measured": false,
+    "real_decode_cost_measured": false
+  },
+  "sample_sizes": {
+    "agentv": 0,
+    "strict_meaning_v2": 0
+  },
+  "schema_version": "semantic_floor_gate/v1",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "semantic_checks": {
+    "binding": "not_measured",
+    "hidden_gold": "not_measured",
+    "inventory": "scheduled_not_executed",
+    "minimal_valid": "scheduled_not_executed",
+    "repeated_subtree": "scheduled_not_executed",
+    "retry": "scheduled_not_executed"
+  },
+  "source_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
+  "strict_meaning_v2_by_suite": {},
+  "train_manifests": [],
+  "verdict": "inconclusive",
+  "version_stamp": {
+    "code_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v64",
+      "harness.experiments.semantic_floor_gate": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T07:03:22.870204+00:00"
+  }
+}

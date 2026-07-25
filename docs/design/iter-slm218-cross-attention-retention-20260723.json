@@ -1,0 +1,288 @@
+{
+  "claim_class": "diagnostic",
+  "family_manifest": {
+    "complete_context_families": 0,
+    "complete_retention_families": 0,
+    "manifest_hash": "9f2905e4a46b7393c86e7e3fdd74d5289bd34f5130b63df76168533aeed36907",
+    "schema": "CrossAttentionRetentionFamilyManifestV1",
+    "sources": [
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [
+          "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt"
+        ],
+        "declared_children": 0,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "context",
+        "remote_parent_uris": [],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e135-hf-context-control-20260715.json",
+        "source_sha256": "fe48d225ceede6211b95fa57ca72cd361f76152eb6248230ab147bcbf20750f4"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [
+          "outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32/checkpoints/last.pt"
+        ],
+        "declared_children": 0,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "context",
+        "remote_parent_uris": [],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e136-hf-context-32step-20260715.json",
+        "source_sha256": "1d88b34ae259f5af54d188f5a5f780fb7ebd43265b313a64d4cbfdf0bd4dca17"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [
+          "outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/checkpoints/last.pt"
+        ],
+        "declared_children": 0,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "context",
+        "remote_parent_uris": [],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e138-hf-seed1-8step-20260715.json",
+        "source_sha256": "cb90599dbca91c6a6f55347c3761f1a8984299eb13cbfdefd71d8ea3985d64e1"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [
+          "outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/checkpoints/last.pt"
+        ],
+        "declared_children": 0,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "context",
+        "remote_parent_uris": [],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e139-hf-seed2-8step-20260715.json",
+        "source_sha256": "598919b8e6eb2409a75a346f9c7a73174045259ddff5af0e96bb234b9a90db6f"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [
+          "outputs/runs/e176-broad-corpus-8step/checkpoints/last.pt"
+        ],
+        "declared_children": 0,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "context",
+        "remote_parent_uris": [],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e176-broad-corpus-20260716.json",
+        "source_sha256": "fbd6d98cdf5b3505328dd4d462bd591fc247675021e5934def7fe6bc213ddcc3"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [],
+        "declared_children": 4,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "retention",
+        "remote_parent_uris": [
+          "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+        ],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e501-e396-e500-warm-start-20260719.json",
+        "source_sha256": "1a1e585cae8839f3e784e8132cd1173c63a99ac2c6623d69bfa46950154cf2e7"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [],
+        "declared_children": 4,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "retention",
+        "remote_parent_uris": [
+          "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+        ],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e502-initialization-prior-retention-20260719.json",
+        "source_sha256": "f81ebc9835b8e8bda8951734eed9271b9c4aac7a6514b52d3d6153e67ca8739b"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [],
+        "declared_children": 4,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "retention",
+        "remote_parent_uris": [
+          "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+        ],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e503-initialized-weight-retention-20260719.json",
+        "source_sha256": "da4ad538431da50b4534a0422f7633945eb56034a9fa646c2a78288b344c2be6"
+      },
+      {
+        "complete_family": false,
+        "declared_checkpoint_paths": [],
+        "declared_children": 5,
+        "exclusion_reason": "unresolved local-history checkpoints prevent matrix comparison",
+        "family": "retention",
+        "remote_parent_uris": [
+          "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+        ],
+        "resolved_local_checkpoints": [],
+        "source": "docs/design/iter-e504-parent-corpus-replay-20260719.json",
+        "source_sha256": "96db5b70eaf1c74121ac2ef222c9b4aa396fed41ffdda38b1ac69d768114d94a"
+      }
+    ]
+  },
+  "h1_verdict": "inconclusive",
+  "h2_verdict": "inconclusive",
+  "honesty_mode": "zero_training_retrospective",
+  "overall_verdict": "inconclusive",
+  "ranked_candidates": [],
+  "rationale": [
+    "all declared context-family checkpoints are unresolved local history",
+    "retention families retain a durable parent reference but rejected child checkpoints are local-only and absent",
+    "synthetic controls validate geometry but cannot rank historical outcomes",
+    "SemanticFloorGateV1 is inconclusive; semantic interpretation is blocked"
+  ],
+  "report_hash": "04fa873a3615b0f695e0bea745bd968516092d5f2ac51ff13e93ba466cf14a72",
+  "run_id": "slm218-cross-attention-retention-20260723",
+  "schema": "CrossAttentionRetentionReportV1",
+  "semantic_floor_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
+  "semantic_floor_verdict": "inconclusive",
+  "source_commit": "19471092046d25db2cf54feb55e7dd09f3a4b68b",
+  "synthetic_controls": {
+    "context_alignment": {
+      "k": 2,
+      "principal_angles_radians": [
+        0.0,
+        0.0
+      ],
+      "projection_overlap": 1.0000000000000002
+    },
+    "different_ordering": {
+      "child_singular_values": [
+        4.0,
+        3.0,
+        2.0,
+        1.0
+      ],
+      "k": 2,
+      "parent_singular_values": [
+        4.0,
+        3.0,
+        2.0,
+        1.0
+      ],
+      "principal_angles_radians": [
+        1.5707963267948966,
+        1.5707963267948966
+      ],
+      "projection_overlap": 0.0,
+      "retained_parent_subspace_energy": 0.16666666666666666,
+      "rms_drift": 1.118033988749895,
+      "schema": "SubspaceRetentionV1",
+      "update_energy_inside_parent_subspace": 0.5,
+      "update_energy_outside_parent_subspace": 0.5
+    },
+    "energy_thresholds": [
+      0.5,
+      0.8,
+      0.9
+    ],
+    "identical": {
+      "child_singular_values": [
+        4.0,
+        3.0,
+        2.0,
+        1.0
+      ],
+      "k": 2,
+      "parent_singular_values": [
+        4.0,
+        3.0,
+        2.0,
+        1.0
+      ],
+      "principal_angles_radians": [
+        0.0,
+        0.0
+      ],
+      "projection_overlap": 1.0000000000000002,
+      "retained_parent_subspace_energy": 0.8333333333333334,
+      "rms_drift": 0.0,
+      "schema": "SubspaceRetentionV1",
+      "update_energy_inside_parent_subspace": 0.0,
+      "update_energy_outside_parent_subspace": 0.0
+    },
+    "isospectral_rotated": {
+      "child_singular_values": [
+        4.0,
+        3.0,
+        2.0,
+        1.0
+      ],
+      "k": 2,
+      "parent_singular_values": [
+        4.0,
+        3.0,
+        2.0,
+        1.0
+      ],
+      "principal_angles_radians": [
+        0.0,
+        0.0
+      ],
+      "projection_overlap": 1.0000000000000002,
+      "retained_parent_subspace_energy": 0.8333333333333334,
+      "rms_drift": 1.7677669529663689,
+      "schema": "SubspaceRetentionV1",
+      "update_energy_inside_parent_subspace": 1.0,
+      "update_energy_outside_parent_subspace": 0.0
+    },
+    "k_values": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "qk_bilinear": {
+      "effective_rank": 4,
+      "frobenius_norm": 1.4696938635144696,
+      "orientation": "input_query_by_input_context = Wq.T @ Wk",
+      "shape": [
+        4,
+        4
+      ],
+      "spectral_norm": 1.0
+    },
+    "restriction_energy": 1.0,
+    "scaled": {
+      "child_singular_values": [
+        8.0,
+        6.0,
+        4.0,
+        2.0
+      ],
+      "k": 2,
+      "parent_singular_values": [
+        4.0,
+        3.0,
+        2.0,
+        1.0
+      ],
+      "principal_angles_radians": [
+        0.0,
+        0.0
+      ],
+      "projection_overlap": 1.0000000000000002,
+      "retained_parent_subspace_energy": 0.8333333333333334,
+      "rms_drift": 1.3693063937629153,
+      "schema": "SubspaceRetentionV1",
+      "update_energy_inside_parent_subspace": 0.8333333333333334,
+      "update_energy_outside_parent_subspace": 0.16666666666666666
+    }
+  },
+  "version_stamp": {
+    "code_commit": "19471092046d25db2cf54feb55e7dd09f3a4b68b",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v67",
+      "harness.experiments.slm217_functional_spectra": "v1",
+      "harness.experiments.slm218_cross_attention_retention": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T08:15:42.949554+00:00"
+  }
+}

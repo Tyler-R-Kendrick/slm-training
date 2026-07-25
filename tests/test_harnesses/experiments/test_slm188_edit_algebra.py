@@ -79,6 +79,20 @@ def test_apply_canonical_edit_replace_production() -> None:
     assert "Button" in result
 
 
+def test_apply_insert_missing_statement_is_replayable() -> None:
+    source = 'title = TextContent(":title")\nroot = Stack([title], "column")'
+    edit = CanonicalEdit(
+        edit_id="insert-body",
+        action="InsertStatement",
+        target_name="body",
+        production="TextContent",
+        slot=":body",
+    )
+    result = apply_canonical_edit(source, edit)
+    assert result is not None
+    assert 'body = TextContent(":body")' in result
+
+
 def test_apply_canonical_edit_bind_slot() -> None:
     source = 'root = Stack([n0], "column")\nn0 = TextContent(":slot")'
     edit = CanonicalEdit(

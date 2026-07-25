@@ -1,0 +1,247 @@
+{
+  "adjudications": [
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "eaf0a3877fb014e0df44e9858ad864c8fd07a58eb9dbe4fff3b6857511cfdc7e",
+      "previous_event_sha256": null,
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/",
+        "model_card_line": 163,
+        "run_id": "e396-balanced-type-head-continuation-r1"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "450b5771c622abbdcb0927660ec934da0cde3c2c9f95033855c452b74f0596d1",
+      "previous_event_sha256": "eaf0a3877fb014e0df44e9858ad864c8fd07a58eb9dbe4fff3b6857511cfdc7e",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/",
+        "model_card_line": 188,
+        "run_id": "e513-e396-e500-replay050-slotrole4-focal2-r3-5k"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "a97eba8d186525bd598d9f71422a35fcc8edba9074dd221d9a353dec2bec3b15",
+      "previous_event_sha256": "450b5771c622abbdcb0927660ec934da0cde3c2c9f95033855c452b74f0596d1",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/",
+        "model_card_line": 189,
+        "run_id": "e515-e396-e500-replay050-slotrole4-focal0-r1-5k"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "61c37c9e1477e3e9a64746d45ca8ae0edd2ad5d828f4c21fe03274f37c7c6fff",
+      "previous_event_sha256": "a97eba8d186525bd598d9f71422a35fcc8edba9074dd221d9a353dec2bec3b15",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/",
+        "model_card_line": 190,
+        "run_id": "e517-e396-e500-replay050-slotrole1-context-r1-5k"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "8e8055dd0caedae99f05b992edf393fd2d887531551261c3c521887ebdec6dae",
+      "previous_event_sha256": "61c37c9e1477e3e9a64746d45ca8ae0edd2ad5d828f4c21fe03274f37c7c6fff",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e519-e396-e500-replay050-slotrole1-honest-context-r1-5k/",
+        "model_card_line": 191,
+        "run_id": "e519-e396-e500-replay050-slotrole1-honest-context-r1-5k"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "d4f0a2a03c11d2ef9d5dbeda40bd52dec350d017aa7402d2b0c078abaebdbbe4",
+      "previous_event_sha256": "8e8055dd0caedae99f05b992edf393fd2d887531551261c3c521887ebdec6dae",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e522-e396-e521-replay050-slotrole1-honest-context-r2-5k/",
+        "model_card_line": 192,
+        "run_id": "e522-e396-e521-replay050-slotrole1-honest-context-r2-5k"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "227af59d9cffb7f5655788280e3d1ce5b3355d124719288c0718eb482d15b278",
+      "previous_event_sha256": "d4f0a2a03c11d2ef9d5dbeda40bd52dec350d017aa7402d2b0c078abaebdbbe4",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e525-e396-e524-replay050-slotrole1-honest-context-r2-5k/",
+        "model_card_line": 193,
+        "run_id": "e525-e396-e524-replay050-slotrole1-honest-context-r2-5k"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "63d3ff9b7be7889e9dff24019399b8b01781ff4f2548ddf97a8120b83aa41f95",
+      "previous_event_sha256": "227af59d9cffb7f5655788280e3d1ce5b3355d124719288c0718eb482d15b278",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e528-e396-e527-replay050-slotrole1-honest-context-r1-5k/",
+        "model_card_line": 194,
+        "run_id": "e528-e396-e527-replay050-slotrole1-honest-context-r1-5k"
+      }
+    },
+    {
+      "adjudication": "bar_not_met_for_non_fixture_claims",
+      "event_id": "d7989cfa71b8d16d02e7ea05056d79bac6bf5ec31b750f515a9748f12ddf6d05",
+      "previous_event_sha256": "63d3ff9b7be7889e9dff24019399b8b01781ff4f2548ddf97a8120b83aa41f95",
+      "record": {
+        "bar_application": {
+          "below_bar_for": [
+            "frontier",
+            "ship_candidate"
+          ],
+          "reasons": [
+            "no evidence_bundle/v1 payload exists for this run: source commit/dirty-tree, config digest, seeds, environment digest, corpus and suite hashes, and pinned evaluator/gate versions were not recorded as a bundle",
+            "durability of the checkpoint URI alone does not satisfy the non-fixture evidence bar"
+          ],
+          "satisfies_bar_as": [
+            "fixture",
+            "diagnostic"
+          ]
+        },
+        "historical_status": "diagnostic (honestly disclaimed; not promotable or ship)",
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k/",
+        "model_card_line": 206,
+        "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k"
+      }
+    }
+  ],
+  "bar_schema": "preregistered_claim_bar/v1",
+  "bundle_schema": "evidence_bundle/v1",
+  "census_sha256": "23b6e9a008837c2454f3f3b75e08b20850b5973881f246bd66464ef58460b05b",
+  "generated_at": "2026-07-24",
+  "immutability": "historical model-card rows and result artifacts are unchanged; this file is the append-only adjudication record",
+  "issue": "SLM-291",
+  "schema": "evidence_bar_adjudications/v1",
+  "selection": "all 9 durable-remote roster rows in docs/MODEL_CARD.md (E396..E531 bucket checkpoints); the template row 'checkpoints/<run_id>/' is excluded",
+  "version_stamp": {
+    "code_commit": "c5ab8bb9334a4d4befc7b48827118655c1a32295",
+    "code_dirty": true,
+    "components": {
+      "harness.core": "v9",
+      "harness_core.evidence_bundle": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T07:49:16.402913+00:00"
+  }
+}

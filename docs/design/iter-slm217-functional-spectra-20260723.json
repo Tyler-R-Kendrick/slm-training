@@ -1,0 +1,185 @@
+{
+  "checkpoint_references": [],
+  "claim_class": "diagnostic",
+  "honesty_mode": "fixture_cpu",
+  "matrix_set": "slm217_functional_spectra",
+  "matrix_version": "ncs1-01-v1",
+  "rationale": [
+    "analytical fixture confirms functional spectra diverge across exact-state activation strata",
+    "no compatible durable current-contract checkpoint and DecisionEvent manifest pair is committed",
+    "SemanticFloorGateV1 is inconclusive; semantic interpretation is blocked"
+  ],
+  "report_hash": "d9953911c42303bb860db40e326a88612ed9bf17c4b822b028404ac263cd1391",
+  "run_id": "slm217-functional-spectra-20260723",
+  "schema": "FunctionalSpectralReportV1",
+  "semantic_floor_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
+  "semantic_floor_verdict": "inconclusive",
+  "snapshots": [
+    {
+      "abstract_state_role": "component_slot",
+      "activation_artifact_hash": "bdee87ca930d309a7b4f8fb7e71b55e90fdf5157deb53c264ee0889630d20cd4",
+      "base_spectral_reference": "slm214:fixture",
+      "bootstrap_interval": [
+        1.028720745180538,
+        1.033015976398513
+      ],
+      "checkpoint_sha": "fixture:no-current-checkpoint",
+      "constraint_debt_join": {
+        "d_good": null,
+        "protected_margin": null
+      },
+      "covariance_condition": 26530.546127141242,
+      "covariance_eigenvalues": [
+        9.999999999999743e-07,
+        1.0000000000000675e-06,
+        0.0003571681585712947,
+        0.026530546127143034
+      ],
+      "covariance_rank": 4,
+      "decision_kind": "component",
+      "eligibility": "eligible",
+      "functional_effective_rank": 1.023898672104301,
+      "functional_singular_values": [
+        0.16185747856031543,
+        0.00963345063000446,
+        0.0005281013836490553,
+        0.0002392530614980784
+      ],
+      "functional_stable_rank": 1.0035552355527404,
+      "group_count": 4,
+      "group_ids": [
+        "component-group-0",
+        "component-group-1",
+        "component-group-2",
+        "component-group-3"
+      ],
+      "init_null_esd_distance": 0.10191266953235006,
+      "input_dimension": 4,
+      "isotropic_null_esd_distance": 1.0568620710777854,
+      "module_path": "probe",
+      "observation_weighting": "one_selected_input_row_per_state",
+      "orientation": "PyTorch nn.Linear weight is [out_features,in_features]; row activations [n,in_features] map as X @ W.T; functional operator is W @ Sigma^(1/2)",
+      "permutation_null_interval": [
+        0.8359442311165741,
+        1.132116362654982
+      ],
+      "permutation_null_mean": 0.9365197609405108,
+      "raw_effective_rank": 2.7029029057213334,
+      "raw_functional_esd_distance": 1.0296454084437545,
+      "raw_singular_values": [
+        1.0,
+        0.800000011920929,
+        0.4000000059604645,
+        0.20000000298023224
+      ],
+      "raw_stable_rank": 1.840000025033951,
+      "ridge": 1e-06,
+      "schema": "FunctionalSpectralSnapshotV1",
+      "semantic_role": "probe",
+      "split": "held_out",
+      "state_ids": [
+        "component-state-0-0",
+        "component-state-0-1",
+        "component-state-1-0",
+        "component-state-1-1",
+        "component-state-2-0",
+        "component-state-2-1",
+        "component-state-3-0",
+        "component-state-3-1"
+      ],
+      "state_manifest_hash": "545d3b4b6e2c8b2ee9d36dd25d75c620ace33545659027ca23709977ed5ce86c",
+      "support_count": 8,
+      "warnings": []
+    },
+    {
+      "abstract_state_role": "binding_slot",
+      "activation_artifact_hash": "99d320e5a0d743d21efb4b5d996fb84ec0adfe7881eb55a7e1fab496d3c9cb55",
+      "base_spectral_reference": "slm214:fixture",
+      "bootstrap_interval": [
+        1.0707679205473615,
+        1.07579573842663
+      ],
+      "checkpoint_sha": "fixture:no-current-checkpoint",
+      "constraint_debt_join": {
+        "d_good": null,
+        "protected_margin": null
+      },
+      "covariance_condition": 12069.560300447858,
+      "covariance_eigenvalues": [
+        9.999999999999013e-07,
+        1.000000000000053e-06,
+        0.00033243969955151624,
+        0.012069560300448496
+      ],
+      "covariance_rank": 4,
+      "decision_kind": "binding",
+      "eligibility": "eligible",
+      "functional_effective_rank": 1.0914398784567219,
+      "functional_singular_values": [
+        0.08718968180431058,
+        0.011540242208941492,
+        0.0005276317470763846,
+        0.00024147447079579597
+      ],
+      "functional_stable_rank": 1.0175629021490467,
+      "group_count": 4,
+      "group_ids": [
+        "binding-group-0",
+        "binding-group-1",
+        "binding-group-2",
+        "binding-group-3"
+      ],
+      "init_null_esd_distance": 0.36367345617397795,
+      "input_dimension": 4,
+      "isotropic_null_esd_distance": 0.7737909167054907,
+      "module_path": "probe",
+      "observation_weighting": "one_selected_input_row_per_state",
+      "orientation": "PyTorch nn.Linear weight is [out_features,in_features]; row activations [n,in_features] map as X @ W.T; functional operator is W @ Sigma^(1/2)",
+      "permutation_null_interval": [
+        0.34913566602520996,
+        1.4284044131574842
+      ],
+      "permutation_null_mean": 0.8414049171571188,
+      "raw_effective_rank": 2.7029029057213334,
+      "raw_functional_esd_distance": 1.0718536333050084,
+      "raw_singular_values": [
+        1.0,
+        0.800000011920929,
+        0.4000000059604645,
+        0.20000000298023224
+      ],
+      "raw_stable_rank": 1.840000025033951,
+      "ridge": 1e-06,
+      "schema": "FunctionalSpectralSnapshotV1",
+      "semantic_role": "probe",
+      "split": "held_out",
+      "state_ids": [
+        "binding-state-0-0",
+        "binding-state-0-1",
+        "binding-state-1-0",
+        "binding-state-1-1",
+        "binding-state-2-0",
+        "binding-state-2-1",
+        "binding-state-3-0",
+        "binding-state-3-1"
+      ],
+      "state_manifest_hash": "50a0b988fd9af966c158eaddaba2d5f9115b011f53ae72882471e90ad98aaefd",
+      "support_count": 8,
+      "warnings": []
+    }
+  ],
+  "source_commit": "cf8a9e1db733ab528c4ace2f92c0689218c6dabb",
+  "verdict": "inconclusive",
+  "version_stamp": {
+    "code_commit": "cf8a9e1db733ab528c4ace2f92c0689218c6dabb",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v66",
+      "harness.experiments.semantic_floor_gate": "v1",
+      "harness.experiments.slm214_spectral_snapshot": "v3",
+      "harness.experiments.slm217_functional_spectra": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T08:05:08.365539+00:00"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9d22aa81f56638196d1ab7d7eaabe8e0dfdf54ee",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm231_recurrence_dynamics": "v1"
+    },
+    "stamped_at": "2026-07-24T03:33:38.739174+00:00"
+  }
+}

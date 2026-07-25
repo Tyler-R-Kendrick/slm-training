@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from slm_training.harnesses.experiments.slm215_spectral_atlas import (
     MATRIX_SET,
     MATRIX_VERSION,
@@ -22,6 +25,8 @@ def test_fixture_generates_rows_and_signal() -> None:
     assert report.signal["status"] == "evaluated"
     assert "spearman_alpha_z_vs_parse" in report.signal
     assert report.atlas_hash
+    assert report.floor_gate_hash
+    assert report.floor_gate_verdict == "inconclusive"
 
 
 def test_report_round_trip() -> None:
@@ -36,6 +41,17 @@ def test_atlas_hash_is_deterministic() -> None:
     a = run_spectral_atlas_fixture(synthetic_runs=4)
     b = run_spectral_atlas_fixture(synthetic_runs=4)
     assert a.atlas_hash == b.atlas_hash
+
+
+def test_custom_floor_gate_path_is_recorded() -> None:
+    gate_path = Path(__file__).resolve().parents[3] / "docs/design/semantic-floor-gate-v1.json"
+    report = run_spectral_atlas_fixture(
+        synthetic_runs=2,
+        floor_gate_path=gate_path,
+    )
+    assert report.floor_gate_ref == gate_path.as_posix()
+    assert report.floor_gate_hash == json.loads(gate_path.read_text())["gate_hash"]
+    assert report.floor_gate_verdict == "inconclusive"
 
 
 def test_role_summaries_present() -> None:

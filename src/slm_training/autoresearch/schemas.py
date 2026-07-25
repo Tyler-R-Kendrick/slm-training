@@ -550,6 +550,9 @@ class ExperimentOutcome(StrictModel):
     stage_telemetry: tuple[dict[str, Any], ...] = ()
     started_at: str | None = None
     finished_at: str | None = None
+    campaign_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
 
 
 class Diagnosis(StrictModel):
@@ -568,11 +571,12 @@ class RLReadinessReport(StrictModel):
     required_suites: tuple[str, ...]
     suite_sizes: dict[str, int]
     ship_gates_pass: bool
-    agentv_pass: bool
+    eval_criteria_pass: bool
     reward_sample_count: int = Field(ge=0)
     reward_variance: float = Field(ge=0)
     approved: bool
     failures: tuple[str, ...] = ()
+    evaluation_uri: str | None = None
     created_at: str = Field(default_factory=utc_now)
 
 

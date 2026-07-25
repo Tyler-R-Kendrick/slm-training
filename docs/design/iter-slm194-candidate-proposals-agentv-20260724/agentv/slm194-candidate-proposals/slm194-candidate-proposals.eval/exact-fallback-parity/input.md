@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"all_exact": true, "zero_invalid_over_valid": true}, "claim": "fixture_screen_not_confirmation", "failures": [], "result": {"evaluated_results": 42, "fallback_policy": "mandatory exact completion for every non-oracle partial prefix"}}

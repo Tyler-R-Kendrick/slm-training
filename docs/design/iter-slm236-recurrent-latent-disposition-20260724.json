@@ -1,0 +1,61 @@
+{
+  "claim_class": "governance_disposition",
+  "disposition": "blocked",
+  "evidence": [
+    {
+      "mechanism_id": "differentiation",
+      "path": "docs/design/iter-slm229-looped-latent-differentiation-20260721.json",
+      "sha256": "cd026b3c0d9fce5fed3d2e93da4d5b56299325b82386de9512952bcf1f771b3c",
+      "verdict": "blocked_by_recurrence"
+    },
+    {
+      "mechanism_id": "observability",
+      "path": "docs/design/iter-slm230-recurrence-observability-20260724.json",
+      "sha256": "5d67decf7f199539aa4c5de6cd9f576418b9c59a84172df06d4b8590633a8217",
+      "verdict": "stagnant"
+    },
+    {
+      "mechanism_id": "dynamics",
+      "path": "docs/design/iter-slm231-recurrence-dynamics-20260724.json",
+      "sha256": "145d42fbf1ed492971d67d7f739ff41b8a3b5e03743785c3fd58eda42615f884",
+      "verdict": "expansive_unstable"
+    },
+    {
+      "mechanism_id": "z_state",
+      "path": "docs/design/iter-slm232-latent-state-use-20260724.json",
+      "sha256": "42b4d51129a3a5d15d3ce7ebcff62a5557eea449f01bd3b62b0b7b585afe0816",
+      "verdict": "unstable"
+    },
+    {
+      "mechanism_id": "recursive_core",
+      "path": "docs/design/iter-slm233-recursive-campaign-20260724.json",
+      "sha256": "de9912028f27627e3f51802cd92b1c25de9fbb0195c0ffc0a090a4f21481734c",
+      "verdict": "architecture_not_identifiable"
+    },
+    {
+      "mechanism_id": "minimal_probe",
+      "path": "docs/design/iter-slm234-compiler-latent-closeout-20260724.json",
+      "sha256": "8ea74ab40d2f7cc7334ef9bf5bdf1c3a75132897274ccef5da41f2cccfccb9c9",
+      "verdict": "not_authorized"
+    }
+  ],
+  "evidence_cutoff_commit": "8845fe40d09f2a2f82df4e3d2aa3b7fadee77f6f",
+  "matrix_set": "slm236_recurrent_latent_disposition",
+  "matrix_version": "rsc4-02-v1",
+  "rationale": "No RSC mechanism is authorized for optional or primary use: the differentiation contract is absent, the floor is inconclusive, recurrence is stagnant or unstable, the recursive core is unidentifiable, and the minimal probe is not authorized.",
+  "reopen_conditions": [
+    "An authorized MinimalCompilerLatentContractV1 with an exact hash.",
+    "A SemanticFloorGateV1 floor_escaped verdict.",
+    "A matched recursive-core verdict with a durable checkpoint and bounded stable dynamics."
+  ],
+  "schema": "RecurrentLatentDispositionV1",
+  "version_stamp": {
+    "code_commit": "8845fe40d09f2a2f82df4e3d2aa3b7fadee77f6f",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm236_recurrent_latent_disposition": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T16:21:56.429982+00:00"
+  }
+}

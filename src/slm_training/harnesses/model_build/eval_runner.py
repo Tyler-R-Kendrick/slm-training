@@ -5,20 +5,32 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import platform
 import re
 import signal
 import time
 from dataclasses import fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from slm_training.data.contract import is_canonical_template_marker
+from slm_training.data.contract import RuntimeSymbol
 from slm_training.data.structure import strip_style_literals
-from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
+from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.evals.eval_cache import (
+    EvalCache,
+    EvalCacheMode,
+    suite_result_key,
+)
+from slm_training.harnesses.eval.harness_replay import (
+    UNKNOWN_NOT_CAPTURED,
+    HarnessProvenanceV1,
+    harness_provenance_id,
+    prediction_lineage,
+)
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import (
     load_suite_records,
@@ -27,31 +39,71 @@ from slm_training.harnesses.model_build.data import (
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.full_state import _git_dirty, _git_sha
 from slm_training.harnesses.model_build.plugin import GenerationRequest
-from slm_training.evals.eval_cache import (
-    EvalCache,
-    EvalCacheMode,
-    suite_result_key,
-)
-from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
-from slm_training.levers import (
-    DEFAULT_DECODE_TIMEOUT_SECONDS,
-    DEFAULT_EVALUATION_POLICY,
-    MAX_HARNESS_WALL_SECONDS,
+from slm_training.harnesses.model_build.ship_gates import (
+    DEFAULT_MIN_SUITE_N,
+    DEFAULT_SHIP_GATES,
 )
 from slm_training.models.decode_stats import collect_decode_stats
+from slm_training.harnesses.model_build.decode_outcome import outcome_counts
 from slm_training.versioning import component_version
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
+_LANGSMITH_METRIC_KEYS = (
+    "n",
+    "parse_rate",
+    "placeholder_fidelity",
+    "structural_similarity",
+    "reward_score",
+)
 
 
 def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
     components = (
         "config.levers",
         "harness.model_build.eval",
+        "harness.experiment_feature_flags",
         "evals.meaningful_program",
+        "evals.power_protocol",
         "evals.scoring",
     )
     return components + (("model.twotower",) if config.model_name == "twotower" else ())
+
+
+def _record_langsmith_evaluation(config, *, suites: dict[str, dict], scoreboard: dict) -> None:
+    """Publish only aggregate evaluation data to the active summary trace."""
+    from slm_training.runtime.telemetry import current_trace
+
+    trace = current_trace()
+    if trace is None:
+        return
+    summary = {
+        suite: {
+            key: metrics[key]
+            for key in _LANGSMITH_METRIC_KEYS
+            if key in metrics
+        }
+        for suite, metrics in suites.items()
+    }
+    trace.record_summary(
+        "evaluation.summary",
+        inputs={"run_id": config.run_id, "suites": sorted(suites)},
+        outputs={
+            "suites": summary,
+            "gates": scoreboard.get("gates"),
+            "agentv": scoreboard.get("agentv"),
+        },
+        metadata={
+            key: scoreboard.get(key)
+            for key in (
+                "run_class",
+                "checkpoint_sha256",
+                "eval_data_manifest_sha",
+                "code_git_sha",
+                "version_stamp",
+            )
+            if scoreboard.get(key) is not None
+        },
+    )
 
 
 def _annotate_decode_trace_records(
@@ -101,15 +153,9 @@ def _aggregate_scope_contract_metrics(
     def summarize(group: list[dict[str, Any]]) -> dict[str, Any]:
         summary: dict[str, Any] = {"sample_count": len(group)}
         for key in mean_keys:
-            values = [
-                float(row[key])
-                for row in group
-                if isinstance(row.get(key), (int, float))
-            ]
+            values = [float(row[key]) for row in group if isinstance(row.get(key), (int, float))]
             if values:
-                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(
-                    values
-                ) / len(values)
+                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(values) / len(values)
         tp = sum(int(row.get("failure_cone_tp", 0)) for row in group)
         fp = sum(int(row.get("failure_cone_fp", 0)) for row in group)
         fn = sum(int(row.get("failure_cone_fn", 0)) for row in group)
@@ -121,9 +167,7 @@ def _aggregate_scope_contract_metrics(
                 "failure_cone_recall": recall,
                 "failure_cone_f1": (
                     2.0 * precision * recall / (precision + recall)
-                    if precision is not None
-                    and recall is not None
-                    and precision + recall
+                    if precision is not None and recall is not None and precision + recall
                     else None
                 ),
             }
@@ -153,15 +197,18 @@ def _sha256_file(path: Path) -> str:
 
 def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float | None:
     """
-    Legacy-schema alias for strict opaque-marker overlap.
-
-    Semantic namespace labels are prohibited and receive no normalization
-    credit. The retained field name avoids breaking historical result readers.
+    Namespace-stripped placeholder overlap (diagnostic / ablation metric).
 
     ``None`` when gold has no placeholders and the prediction adds none: 0/0 is
     undefined evidence, never a vacuous 1.0.
     """
-    return _placeholder_fidelity(pred, gold)
+    pred_set = _placeholders_of(pred)
+    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
+    if not gold_set:
+        return None if not pred_set else 0.0
+    pred_n = {_normalize_placeholder(p) for p in pred_set}
+    gold_n = {_normalize_placeholder(p) for p in gold_set}
+    return len(pred_n & gold_n) / len(gold_n)
 
 
 def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
@@ -178,6 +225,15 @@ def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
     return len(pred_set & gold_set) / len(gold_set)
 
 
+def _normalize_placeholder(token: str) -> str:
+    """Drop leading namespace segment so :smoke.hero.title ~= :hero.title."""
+    body = token.removeprefix(":")
+    parts = body.split(".")
+    if len(parts) >= 3:
+        return ".".join(parts[1:])
+    return body
+
+
 def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
     """
     Soft placeholder quality for diagnostics only (not a ship gate alone).
@@ -190,8 +246,12 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
         return None if not pred_set else 0.5
     if not pred_set:
         return 0.0
-    well_formed = sum(is_canonical_template_marker(p) for p in pred_set) / len(pred_set)
-    overlap = len(pred_set & gold_set) / len(gold_set)
+    well_formed = sum(1 for p in pred_set if p.startswith(":") and "." in p) / len(
+        pred_set
+    )
+    pred_n = {_normalize_placeholder(p) for p in pred_set}
+    gold_n = {_normalize_placeholder(p) for p in gold_set}
+    overlap = len(pred_n & gold_n) / len(gold_n) if gold_n else 0.0
     return round(0.4 * well_formed + 0.6 * overlap, 4)
 
 
@@ -279,6 +339,17 @@ def _contract_recall(pred: str, record: ExampleRecord) -> float | None:
     if not gold_set:
         return None if not pred_set else 0.0
     return len(pred_set & gold_set) / len(gold_set)
+
+
+def _binder_reference_f1(
+    precision: float | None, recall: float | None
+) -> float | None:
+    """Harmonic mean for the existing binder/reference contract evidence."""
+    if precision is None or recall is None:
+        return None
+    if precision + recall == 0.0:
+        return 0.0
+    return 2.0 * precision * recall / (precision + recall)
 
 
 def tree_edit_similarity(pred: str, gold_openui: str) -> float:
@@ -393,7 +464,7 @@ def _effective_evaluation_policy(
 
     return {
         "evaluation_policy": str(
-            getattr(config, "evaluation_policy", DEFAULT_EVALUATION_POLICY)
+            getattr(config, "evaluation_policy", "checkpoint_declared")
         ),
         "context_backend": value("context_backend"),
         "local_files_only": bool(value("local_files_only")),
@@ -404,9 +475,6 @@ def _effective_evaluation_policy(
             None
             if value("compiler_decode_mode") is None
             else str(value("compiler_decode_mode"))
-        ),
-        "compiler_schema_component_types": bool(
-            value("compiler_schema_component_types")
         ),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
@@ -554,6 +622,120 @@ def _is_meaningful_program(
 # Public version lock: historical scoreboards and ship thresholds remain v1.
 meaningful_program_v1 = _is_meaningful_program
 
+#: Schema marker for the typed v1 reason-code report (SLM-288).
+MEANINGFUL_V1_REASON_SCHEMA = "meaningful_program_v1_reasons/v1"
+
+#: Typed clause codes in evaluation order. ``component_recall_unobservable``
+#: is an UNKNOWN/unobservable annotation, never a failure.
+MEANINGFUL_V1_CLAUSE_CODES: tuple[str, ...] = (
+    "parse_failed",
+    "free_form_output_string",
+    "empty_root_stack",
+    "empty_card",
+    "empty_children",
+    "no_content_components",
+    "no_placeholders",
+    "low_component_recall",
+    "component_recall_unobservable",
+)
+
+
+def meaningful_program_v1_report(
+    pred: str,
+    *,
+    gold: ExampleRecord | None = None,
+    min_component_recall: float = 0.5,
+) -> dict[str, Any]:
+    """Typed, ordered reason-code view of :func:`meaningful_program_v1` (SLM-288).
+
+    Every clause is evaluated (no short-circuit) so downstream analysis sees
+    the full failure profile; ``verdict`` and the first failure's legacy
+    reason string remain byte-identical to v1. UNKNOWN/unobservable contract
+    cases (gold missing, or recall undefined because gold has only Stacks)
+    are reported explicitly as ``component_recall_unobservable`` and are never
+    counted as semantic failures.
+    """
+    checks: list[dict[str, Any]] = []
+
+    def _add(code: str, status: str, detail: str | None = None) -> None:
+        checks.append({"code": code, "status": status, "detail": detail})
+
+    serialized: str | None = None
+    program: Any = None
+    try:
+        program = validate(pred)
+    except ParseError as exc:
+        _add("parse_failed", "fail", str(exc))
+        fails = [c for c in checks if c["status"] == "fail"]
+        return {
+            "schema": MEANINGFUL_V1_REASON_SCHEMA,
+            "verdict": False,
+            "reason_codes": [c["code"] for c in checks if c["status"] != "pass"],
+            "checks": checks,
+            "legacy_reason": fails[0]["detail"],
+            "serialized": None,
+            "component_recall": None,
+            "min_component_recall": min_component_recall,
+        }
+    serialized = (program.serialized or pred).strip()
+    from slm_training.dsl.language_contract import output_contract_violations
+
+    if output_contract_violations(serialized):
+        _add("free_form_output_string", "fail")
+    compact = serialized.replace(" ", "")
+    empty_literal_stack = "Stack([])" in compact or "Stack([]," in compact
+    empty_literal_card = "Card([])" in compact
+    empty_type = _first_empty_children_component(program.root)
+    if empty_literal_stack or empty_type == "Stack":
+        _add("empty_root_stack", "fail")
+    if empty_literal_card or empty_type == "Card":
+        _add("empty_card", "fail")
+    if empty_type is not None and empty_type not in {"Stack", "Card"}:
+        _add("empty_children", "fail", empty_type)
+    comps = _component_multiset(serialized)
+    non_stack = {k: v for k, v in comps.items() if k != "Stack"}
+    if not non_stack:
+        _add("no_content_components", "fail")
+    if not extract_placeholders(serialized):
+        _add("no_placeholders", "fail")
+    recall: float | None = None
+    if gold is not None and min_component_recall > 0:
+        recall = component_type_recall(serialized, gold.openui)
+        if recall is None:
+            _add(
+                "component_recall_unobservable",
+                "unknown",
+                "recall undefined: gold has only Stack components",
+            )
+        elif recall < min_component_recall:
+            _add("low_component_recall", "fail", f"{recall:.2f}")
+    else:
+        _add(
+            "component_recall_unobservable",
+            "unknown",
+            "no gold reference or recall floor disabled",
+        )
+    fails = [c for c in checks if c["status"] == "fail"]
+    first = fails[0] if fails else None
+    legacy_reason: str | None = None
+    if first is not None:
+        if first["code"] == "low_component_recall":
+            legacy_reason = f"low_component_recall:{first['detail']}"
+        elif first["code"] == "empty_children":
+            legacy_reason = f"empty_children:{first['detail']}"
+        else:
+            legacy_reason = first["detail"] or first["code"]
+    return {
+        "schema": MEANINGFUL_V1_REASON_SCHEMA,
+        "verdict": not fails,
+        "reason_codes": [c["code"] for c in checks if c["status"] != "pass"],
+        "checks": checks,
+        "legacy_reason": legacy_reason,
+        "serialized": serialized,
+        "component_recall": recall,
+        "min_component_recall": min_component_recall,
+    }
+
 
 def _eval_data_sha(directory: Path) -> str | None:
     """Content fingerprint of an eval dataset dir (manifest or records hash)."""
@@ -572,15 +754,12 @@ def evaluate(
     *,
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
+    generation_overrides: dict[str, Any] | None = None,
 ) -> dict:
-    run_started = time.perf_counter()
-    configured_wall_seconds = float(
-        (config.max_wall_minutes or (MAX_HARNESS_WALL_SECONDS / 60)) * 60
-    )
-    run_deadline = run_started + min(
-        configured_wall_seconds,
-        float(MAX_HARNESS_WALL_SECONDS),
-    )
+    from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
+
+    config, flag_snapshot = resolve(config, phase="evaluation")
+    generation_overrides = dict(generation_overrides or {})
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
 
@@ -593,7 +772,9 @@ def evaluate(
         suite_limit = getattr(config, "rico_eval_limit", None)
     records = records[
         suite_offset : (
-            suite_offset + max(0, int(suite_limit)) if suite_limit is not None else None
+            suite_offset + max(0, int(suite_limit))
+            if suite_limit is not None
+            else None
         )
     ]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
@@ -645,6 +826,7 @@ def evaluate(
     recall_vals: list[float] = []
     contract_precision_vals: list[float] = []
     contract_recall_vals: list[float] = []
+    binder_reference_f1_vals: list[float] = []
     match_error_count = 0
     reward_error_count = 0
     empty_prediction_count = 0
@@ -669,6 +851,33 @@ def evaluate(
         Path(config.test_dir) / "suites" / config.suite
     )
     evaluation_policy = _effective_evaluation_policy(config, plugin)
+    harness_provenance = HarnessProvenanceV1(
+        source_eval_sha256=eval_suite_manifest_sha or UNKNOWN_NOT_CAPTURED,
+        evaluation_policy=evaluation_policy,
+        timeout_seconds=(
+            float(config.decode_timeout_seconds)
+            if config.decode_timeout_seconds is not None
+            else None
+        ),
+        canvas_cap=canvas_cap,
+        parser_fallback=(
+            "allow_unconstrained_fallback"
+            if evaluation_policy["allow_unconstrained_fallback"]
+            else "forbidden"
+        ),
+        repair_policy=(
+            str(evaluation_policy["grammar_ltr_repair"])
+            if evaluation_policy["grammar_ltr_repair"] is not None
+            else UNKNOWN_NOT_CAPTURED
+        ),
+        runtime=(
+            f"python/{platform.python_version()} "
+            f"{platform.system().lower()}/{platform.machine().lower()}"
+        ),
+        verifier="meaningful_program/v1+binding_aware_meaningful_v2",
+        target_length=canvas_cap,
+    )
+    harness_provenance_ref = harness_provenance_id(harness_provenance)
     cache_key = None
     cache_dependencies: dict[str, Any] = {}
     if cache is not None and cache.config.mode is not EvalCacheMode.OFF:
@@ -686,6 +895,7 @@ def evaluate(
             "suite_limit": suite_limit,
             "suite_offset": suite_offset,
             "evaluation_policy": evaluation_policy,
+            "generation_overrides": generation_overrides,
             "component_versions": component_versions,
         }
         cache_key = suite_result_key(
@@ -696,7 +906,10 @@ def evaluate(
             eval_limit=suite_limit,
             evaluation_policy=evaluation_policy,
             component_versions=component_versions,
-            extra={"eval_offset": suite_offset},
+            extra={
+                "eval_offset": suite_offset,
+                "generation_overrides": generation_overrides,
+            },
         )
         if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
             cached_metrics = cache.get(cache_key)
@@ -742,13 +955,31 @@ def evaluate(
 
     def _request_for(record: ExampleRecord) -> GenerationRequest:
         schema = _eval_schema()
-        return GenerationRequest.from_record(record, schema=schema)
+        request = GenerationRequest.from_record(record, schema=schema)
+        # Historical evaluation checkpoints use visible placeholder suffixes as
+        # semantic-role features. Declare that compatibility authority explicitly;
+        # opaque production requests still require caller-provided typed symbols.
+        data = request.to_dict()
+        data["runtime_symbols"] = [
+            RuntimeSymbol(
+                surface=slot,
+                role="external_entity",
+                semantic_role=(
+                    re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
+                    or "value"
+                ),
+            ).to_dict()
+            for slot in request.slot_contract
+        ]
+        return GenerationRequest.from_dict(data)
 
     def _effective_request_for(record: ExampleRecord) -> GenerationRequest:
         request = _request_for(record)
         data = request.to_dict()
         if not getattr(config, "design_md_in_context", False):
             data.pop("design_md", None)
+        if not getattr(config, "slot_contract_in_context", False):
+            data["slot_contract"] = []
         return GenerationRequest.from_dict(data)
 
     def _requests_for(chunk: list[ExampleRecord]) -> list[GenerationRequest]:
@@ -762,16 +993,13 @@ def evaluate(
             with collect_decode_stats() as stats:
                 requests = _requests_for(chunk)
                 try:
-                    predictions = generate_batch_requests(requests, max_len=canvas_cap)
+                    predictions = generate_batch_requests(
+                        requests, max_len=canvas_cap, **generation_overrides
+                    )
                 except TypeError:
-                    try:
-                        predictions = generate_batch_requests(requests)
-                    except TimeoutError as exc:
-                        exc.decode_stats = stats  # type: ignore[attr-defined]
-                        raise
-                except TimeoutError as exc:
-                    exc.decode_stats = stats  # type: ignore[attr-defined]
-                    raise
+                    predictions = generate_batch_requests(
+                        requests, **generation_overrides
+                    )
             _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             consume = getattr(plugin, "consume_generation_evidence", None)
@@ -779,49 +1007,70 @@ def evaluate(
             return predictions, list(evidence)
         if callable(generate_with_stats) and len(chunk) == 1:
             try:
-                text, stats = generate_with_stats(chunk[0].prompt, max_len=canvas_cap)
+                text, stats = generate_with_stats(
+                    chunk[0].prompt, max_len=canvas_cap, **generation_overrides
+                )
             except TypeError:
-                text, stats = generate_with_stats(chunk[0].prompt)
+                text, stats = generate_with_stats(
+                    chunk[0].prompt, **generation_overrides
+                )
             _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             return [text], []
         prompts = [r.prompt for r in chunk]
         if callable(generate_batch):
             try:
-                return generate_batch(prompts, max_len=canvas_cap), []
+                return generate_batch(
+                    prompts, max_len=canvas_cap, **generation_overrides
+                ), []
             except TypeError:
                 try:
-                    return generate_batch(prompts, golds=None), []
+                    return generate_batch(
+                        prompts, golds=None, **generation_overrides
+                    ), []
                 except TypeError:
                     pass
         out: list[str] = []
         for prompt in prompts:
             try:
-                out.append(plugin.generate(prompt, max_len=canvas_cap))
+                out.append(
+                    plugin.generate(
+                        prompt, max_len=canvas_cap, **generation_overrides
+                    )
+                )
             except TypeError:
-                out.append(plugin.generate(prompt, gold=None))
+                out.append(
+                    plugin.generate(prompt, gold=None, **generation_overrides)
+                )
         consume = getattr(plugin, "consume_generation_evidence", None)
         evidence = consume() if callable(consume) else []
         return out, list(evidence)
 
     decode_timeout_count = 0
+    # SLM-303: per-chunk decode-outcome evidence (parallel to the chunk loop);
+    # each entry carries the timeout fact plus the chunk's DecodeStats row (or
+    # None when the plugin exposes no stats) so every scored record can be
+    # classified into the decode-outcome taxonomy.
+    chunk_decode_meta: list[dict[str, Any]] = []
 
     def _generate_chunk(
         chunk: list[ExampleRecord],
     ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate a chunk, converting an explicit diagnostic timeout to failures."""
         nonlocal decode_timeout_count
-        remaining = run_deadline - time.perf_counter()
-        if remaining <= 0:
-            decode_timeout_count += len(chunk)
-            return ["" for _ in chunk], []
-        configured = float(
-            getattr(config, "decode_timeout_seconds", 0)
-            or DEFAULT_DECODE_TIMEOUT_SECONDS
-        )
-        seconds = min(configured, remaining)
-        if not hasattr(signal, "setitimer"):
-            return _generate_chunk_unbounded(chunk)
+        seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+
+        def _run(timed_out: bool) -> tuple[list[str], list[dict[str, Any]]]:
+            stats_before = len(decode_stats_rows)
+            result = _generate_chunk_unbounded(chunk)
+            stats = (
+                decode_stats_rows[-1] if len(decode_stats_rows) > stats_before else None
+            )
+            chunk_decode_meta.append({"timed_out": timed_out, "stats": stats})
+            return result
+
+        if seconds <= 0 or not hasattr(signal, "setitimer"):
+            return _run(timed_out=False)
 
         def _alarm(_signum: int, _frame: object) -> None:
             raise TimeoutError(f"decode exceeded {seconds:g}s")
@@ -829,23 +1078,80 @@ def evaluate(
         previous = signal.signal(signal.SIGALRM, _alarm)
         signal.setitimer(signal.ITIMER_REAL, seconds)
         try:
-            return _generate_chunk_unbounded(chunk)
+            return _run(timed_out=False)
         except TimeoutError as exc:
             stats = getattr(exc, "decode_stats", None)
             if stats is not None:
                 _annotate_decode_trace_records(stats, chunk)
                 decode_stats_rows.append(stats)
+            chunk_decode_meta.append({"timed_out": True, "stats": stats})
             decode_timeout_count += len(chunk)
             return ["" for _ in chunk], []
         finally:
             signal.setitimer(signal.ITIMER_REAL, 0)
             signal.signal(signal.SIGALRM, previous)
 
+    def _decode_outcome_fields(
+        pred: str,
+        *,
+        parse_ok: bool | None,
+        error: str | None,
+        decode_meta: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """SLM-303 additive per-record decode-outcome classification.
+
+        Computed from the same evidence the runner already has (chunk timeout
+        fact, chunk DecodeStats fallback counters, parse verdict); never
+        changes any existing field.
+        """
+        from slm_training.harnesses.model_build.decode_outcome import (
+            MODEL_VALID,
+            classify_decode_outcome,
+            fallback_counter_total,
+        )
+
+        meta = decode_meta or {}
+        stats = meta.get("stats")
+        fallbacks = fallback_counter_total(stats)
+        timed_out = bool(meta.get("timed_out"))
+        outcome = classify_decode_outcome(
+            parse_ok=parse_ok,
+            error=error,
+            fallback_counters=fallbacks,
+            timed_out=timed_out,
+            abstained=not pred.strip(),
+            harness_exception=False,
+        )
+        if timed_out:
+            stop_reason = "decode_timeout"
+        else:
+            stop_reason = ""
+            for name in (
+                "compiler_lattice_termination_reason",
+                "solver_terminal_status",
+            ):
+                value = str(getattr(stats, name, "") or "") if stats is not None else ""
+                if value:
+                    stop_reason = value
+                    break
+            if not stop_reason:
+                stop_reason = "empty_prediction" if not pred.strip() else "completed"
+        detail = None
+        if outcome == MODEL_VALID and parse_ok is None:
+            detail = "parse_not_evaluated"
+        return {
+            "decode_outcome": outcome,
+            "stop_reason": stop_reason,
+            "fallback_used": fallbacks > 0,
+            "decode_outcome_detail": detail,
+        }
+
     def _score_one(
         record: ExampleRecord,
         pred: str,
         latency_ms: float,
         prediction_evidence: dict[str, Any] | None = None,
+        decode_meta: dict[str, Any] | None = None,
     ) -> None:
         nonlocal parse_ok, syntax_parse_ok, raw_syntax_ok
         nonlocal match_error_count, reward_error_count, empty_prediction_count
@@ -858,6 +1164,7 @@ def evaluate(
             from slm_training.evals.task_scoreboard import score_output_targets
 
             target_score = score_output_targets(pred, record.output_targets)
+            lineage = prediction_lineage(pred)
             topology_evidence.append(evidence)
             details.append(
                 {
@@ -865,8 +1172,22 @@ def evaluate(
                     "target_kind": record.target_kind,
                     "target_score": target_score,
                     "latency_ms": round(latency_ms, 2),
-                    "prediction": pred[:500],
+                    "prediction": pred,
+                    # Keep the legacy digest while recording explicit replay
+                    # lineage. There is no captured intermediate decoder output.
+                    "prediction_sha256": lineage["raw_prediction_sha256"],
+                    **lineage,
+                    "harness_provenance_id": harness_provenance_ref,
+                    "generation_request": _effective_request_for(record).to_dict(),
+                    "source_record_sha256": hashlib.sha256(
+                        json.dumps(
+                            record.to_dict(), sort_keys=True, separators=(",", ":")
+                        ).encode("utf-8")
+                    ).hexdigest(),
                     "topology_evidence": evidence or None,
+                    **_decode_outcome_fields(
+                        pred, parse_ok=None, error=None, decode_meta=decode_meta
+                    ),
                 }
             )
             task_cases.append(
@@ -926,6 +1247,7 @@ def evaluate(
         recall = component_type_recall(scored_pred, record.openui)
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
+        binder_reference_f1 = _binder_reference_f1(contract_prec, contract_rec)
         reward: float | None
         try:
             reward = _reward_for_prediction(scored_pred, record)
@@ -957,12 +1279,14 @@ def evaluate(
             (recall_vals, recall),
             (contract_precision_vals, contract_prec),
             (contract_recall_vals, contract_rec),
+            (binder_reference_f1_vals, binder_reference_f1),
             (reward_vals, reward),
         ):
             if value is not None:
                 defined_values.append(float(value))
         if gold_dscore is not None:
             gold_design_scores.append(gold_dscore)
+        lineage = prediction_lineage(pred)
         details.append(
             {
                 "id": record.id,
@@ -978,6 +1302,7 @@ def evaluate(
                 "placeholder_validity": ph_valid,
                 "contract_precision": contract_prec,
                 "contract_recall": contract_rec,
+                "binder_reference_f1": binder_reference_f1,
                 "exact_match": exact,
                 "structural_similarity": struct,
                 "tree_edit_similarity": tree_edit,
@@ -988,15 +1313,34 @@ def evaluate(
                 "latency_ms": round(latency_ms, 2),
                 # Full text + digest make every new metric report replayable.
                 "prediction": pred,
-                "prediction_sha256": hashlib.sha256(pred.encode("utf-8")).hexdigest(),
+                "prediction_sha256": lineage["raw_prediction_sha256"],
+                **lineage,
+                "harness_provenance_id": harness_provenance_ref,
                 "generation_request": _effective_request_for(record).to_dict(),
                 "source_record_sha256": hashlib.sha256(
                     json.dumps(
                         record.to_dict(), sort_keys=True, separators=(",", ":")
                     ).encode("utf-8")
                 ).hexdigest(),
+                "semantic_factor": str(
+                    (record.meta or {}).get("semantic_factor")
+                    or record.target_category
+                    or record.target_kind
+                ),
+                "complexity": {
+                    "program_chars": len(record.openui),
+                    "statement_count": record.openui.count("\n") + 1,
+                    "bucket": (
+                        "small"
+                        if len(record.openui) < 160
+                        else "medium" if len(record.openui) < 400 else "large"
+                    ),
+                },
                 "serialized": serialized,
                 "topology_evidence": evidence or None,
+                **_decode_outcome_fields(
+                    pred, parse_ok=ok, error=error, decode_meta=decode_meta
+                ),
             }
         )
         task_cases.append(
@@ -1022,16 +1366,18 @@ def evaluate(
             chunk = records[start : start + batch_size]
             t0 = time.perf_counter()
             preds, evidence_rows = _generate_chunk(chunk)
+            chunk_meta = chunk_decode_meta[-1] if chunk_decode_meta else None
             elapsed = (time.perf_counter() - t0) * 1000.0
             per = elapsed / max(1, len(chunk))
             for index, (record, pred) in enumerate(zip(chunk, preds)):
                 latencies.append(per)
                 evidence = evidence_rows[index] if index < len(evidence_rows) else None
-                _score_one(record, pred, per, evidence)
+                _score_one(record, pred, per, evidence, chunk_meta)
     else:
         for record in records:
             t0 = time.perf_counter()
             predictions, evidence_rows = _generate_chunk([record])
+            chunk_meta = chunk_decode_meta[-1] if chunk_decode_meta else None
             pred = predictions[0]
             latencies.append((time.perf_counter() - t0) * 1000.0)
             _score_one(
@@ -1039,6 +1385,7 @@ def evaluate(
                 pred,
                 latencies[-1],
                 evidence_rows[0] if evidence_rows else None,
+                chunk_meta,
             )
 
     lat_sorted = sorted(latencies)
@@ -1072,20 +1419,48 @@ def evaluate(
     else:
         fallback_count = None
 
+    from slm_training.evals.power_protocol import binomial_rate_evidence
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
-    from slm_training.lineage.promotion import wilson_lower_bound
+    def _rate_evidence(successes: int, total: int) -> dict[str, Any]:
+        evidence_class = (
+            "unmeasured"
+            if total == 0
+            else (
+                "diagnostic_subset"
+                if suite_limit is not None or suite_offset > 0
+                else (
+                    "meets_default_suite_n"
+                    if total >= DEFAULT_MIN_SUITE_N
+                    else "fixture_under_minimum_n"
+                )
+            )
+        )
+        return binomial_rate_evidence(
+            successes,
+            total,
+            seed_count=1,
+            evidence_class=evidence_class,
+        )
 
-    def _wilson_ci95(successes: int, total: int) -> list[float] | None:
-        """95% Wilson interval — makes tiny-n quantization visible (n=3 → ±0.5)."""
-        if total <= 0:
-            return None
-        lower = wilson_lower_bound(successes, total)
-        upper = 1.0 - wilson_lower_bound(total - successes, total)
-        return [round(lower, 4), round(upper, 4)]
+    syntax_rate_evidence = _rate_evidence(syntax_parse_ok, document_n)
+    meaningful_rate_evidence = _rate_evidence(parse_ok, document_n)
+    unmeasured_rate_evidence = {
+        "schema": "binomial_rate_evidence/v1",
+        "numerator": None,
+        "denominator": 0,
+        "seed_count": 1,
+        "interval": {
+            "method": "wilson_score",
+            "n": 0,
+            "estimate": None,
+            "low": None,
+            "high": None,
+            "confidence_level": 0.95,
+        },
+        "evidence_class": "unmeasured",
+    }
 
-    run_class = (
-        config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
-    )
+    run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
     metrics = {
         "schema_version": SCHEMA_VERSION,
         "run_class": run_class,
@@ -1100,17 +1475,47 @@ def evaluate(
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout
         # metrics even when the checkpoint hash is identical.
-        "evaluation_policy": _effective_evaluation_policy(config, plugin),
+        "evaluation_policy": evaluation_policy,
+        "harness_provenance": harness_provenance.to_dict(),
+        "harness_provenance_id": harness_provenance_ref,
         # Rates are None (JSON null) when no document records were measured —
         # "not measured" must never render as a fabricated 0.0.
         "parse_rate": (syntax_parse_ok / document_n) if document_n else None,
         "meaningful_program_rate": (parse_ok / document_n) if document_n else None,
-        "syntax_parse_rate": ((syntax_parse_ok / document_n) if document_n else None),
+        "syntax_parse_rate": (
+            (syntax_parse_ok / document_n) if document_n else None
+        ),
         "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else None,
-        "parse_rate_ci95": _wilson_ci95(syntax_parse_ok, document_n),
-        "meaningful_program_rate_ci95": _wilson_ci95(parse_ok, document_n),
+        "parse_rate_ci95": [
+            round(float(bound), 4)
+            for bound in (
+                syntax_rate_evidence["interval"]["low"],
+                syntax_rate_evidence["interval"]["high"],
+            )
+            if bound is not None
+        ]
+        or None,
+        "meaningful_program_rate_ci95": [
+            round(float(bound), 4)
+            for bound in (
+                meaningful_rate_evidence["interval"]["low"],
+                meaningful_rate_evidence["interval"]["high"],
+            )
+            if bound is not None
+        ]
+        or None,
+        "rate_evidence": {
+            "parse_rate": syntax_rate_evidence,
+            "syntax_parse_rate": syntax_rate_evidence,
+            "raw_syntax_validity": _rate_evidence(raw_syntax_ok, document_n),
+            "meaningful_program_rate": meaningful_rate_evidence,
+            "exact_match": _rate_evidence(int(sum(exact_vals)), len(exact_vals)),
+            "residual_mask_rate": unmeasured_rate_evidence,
+            "oov_rate": unmeasured_rate_evidence,
+        },
         "contract_precision": _mean_or_none(contract_precision_vals),
         "contract_recall": _mean_or_none(contract_recall_vals),
+        "binder_reference_f1": _mean_or_none(binder_reference_f1_vals),
         # Not computed by any current decode path; None (not a fake 0.0) until
         # a plugin actually measures them.
         "residual_mask_rate": None,
@@ -1129,6 +1534,7 @@ def evaluate(
         "metric_defined_n": {
             "contract_precision": len(contract_precision_vals),
             "contract_recall": len(contract_recall_vals),
+            "binder_reference_f1": len(binder_reference_f1_vals),
             "placeholder_fidelity": len(fidelity_vals),
             "placeholder_fidelity_normalized": len(fidelity_norm_vals),
             "placeholder_validity": len(validity_vals),
@@ -1159,10 +1565,15 @@ def evaluate(
         "model": config.model_name,
         "code_git_sha": _git_sha(),
         "code_dirty": _git_dirty(),
-        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "evaluated_at": datetime.now(UTC).isoformat(),
         "failure_breakdown": failure_breakdown,
         "decode_timeout_count": decode_timeout_count,
         "decode_canvas_cap": canvas_cap,
+        # SLM-303: per-taxonomy decode-outcome counts over details[] rows
+        # (additive; every taxonomy key always present).
+        "decode_outcome_counts": outcome_counts(
+            [str(row.get("decode_outcome")) for row in details]
+        ),
         "details": details,
         "generation_evidence_schemas": sorted(
             {
@@ -1175,19 +1586,43 @@ def evaluate(
     from slm_training.evals.meaningful_program import aggregate_meaning_reports_v2
 
     meaning_v2 = aggregate_meaning_reports_v2(semantic_meaning_reports_v2)
+    strict_positive_n = sum(report.verdict for report in semantic_meaning_reports_v2)
+    covered_reports_v2 = [
+        report for report in semantic_meaning_reports_v2 if report.coverage_known
+    ]
+    covered_positive_n = sum(report.verdict for report in covered_reports_v2)
+    covered_n = len(covered_reports_v2)
     metrics.update(
         {
             "meaningful_program_v1_rate": metrics["meaningful_program_rate"],
-            "binding_aware_meaningful_v2_rate_strict": meaning_v2["strict_rate"],
-            "binding_aware_meaningful_v2_rate_coverage_conditioned": meaning_v2[
-                "coverage_conditioned_rate"
-            ],
-            "binding_aware_meaningful_v2_coverage": meaning_v2["coverage"],
+            "binding_aware_meaningful_v2_rate_strict": (
+                meaning_v2["strict_rate"] if semantic_meaning_reports_v2 else None
+            ),
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": (
+                meaning_v2["coverage_conditioned_rate"] if covered_n else None
+            ),
+            "binding_aware_meaningful_v2_coverage": (
+                meaning_v2["coverage"] if semantic_meaning_reports_v2 else None
+            ),
             "meaningful_metric_primary": "meaningful_program_v1",
             "meaningful_metric_versions": {
                 "meaningful_program_v1": "1.0.0",
                 "binding_aware_meaningful_v2": meaning_v2,
             },
+        }
+    )
+    metrics["rate_evidence"].update(
+        {
+            "meaningful_program_v1_rate": _rate_evidence(parse_ok, document_n),
+            "binding_aware_meaningful_v2_rate_strict": _rate_evidence(
+                strict_positive_n, len(semantic_meaning_reports_v2)
+            ),
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": _rate_evidence(
+                covered_positive_n, covered_n
+            ),
+            "binding_aware_meaningful_v2_coverage": _rate_evidence(
+                covered_n, len(semantic_meaning_reports_v2)
+            ),
         }
     )
     from slm_training.evals.task_scoreboard import build_task_scoreboard
@@ -1293,12 +1728,17 @@ def evaluate(
         metrics["speculative_stats"] = spec_stats.as_dict()
     if decode_stats_rows:
         from slm_training.models.decode_stats import aggregate_stats
-
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
-        retries = sum(
-            int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows
-        )
+        retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
+        metrics["rate_evidence"]["constrained_fallback_rate"] = {
+            "schema": "rate_evidence/v1",
+            "numerator": retries,
+            "denominator": len(decode_stats_rows),
+            "seed_count": 1,
+            "interval": None,
+            "evidence_class": "decode_batch_telemetry_non_binomial",
+        }
 
     # Metrics the active decode policy enforces by construction: consumers must
     # not read them as learned model skill (e.g. constrained decode guarantees
@@ -1323,6 +1763,7 @@ def evaluate(
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
+    save_snapshot(run_dir, flag_snapshot)
     suite_path = run_dir / f"eval_{config.suite}.json"
     from slm_training.versioning import build_version_stamp
 
@@ -1336,38 +1777,194 @@ def evaluate(
 
             # Single-suite runs publish only the suite that actually ran —
             # never four missing_suite auto-failures dressed up as 5/5 failed.
-            publication = publish_model_evaluation(
+            metrics["agentv"] = publish_model_evaluation(
                 run_dir,
                 {config.suite: metrics},
                 include_missing_suites=False,
             )
-            from slm_training.evals.agentv import apply_agentv_metric_results
-
-            apply_agentv_metric_results(metrics, publication, config.suite)
+            metrics["agentv"]["suites_run"] = [config.suite]
         else:
-            metrics["evaluation_artifacts"] = {
+            metrics["agentv"] = {
                 "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
             }
     # SDE3-01: persist the full suite result for exact replay when enabled.
-    if (
-        cache is not None
-        and cache_key is not None
-        and cache.config.mode
-        in (
-            EvalCacheMode.READ_WRITE,
-            EvalCacheMode.REFRESH,
-        )
+    if cache is not None and cache_key is not None and cache.config.mode in (
+        EvalCacheMode.READ_WRITE,
+        EvalCacheMode.REFRESH,
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)
-        except Exception:  # noqa: BLE001 - cache write must never break eval
+        except Exception:  # noqa: BLE001,S110 - cache write must never break eval
             pass
 
     payload = json.dumps(metrics, indent=2) + "\n"
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":
         (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    if publish_agentv:
+        _record_langsmith_evaluation(
+            config,
+            suites={config.suite: metrics},
+            scoreboard={
+                "run_class": config.run_class,
+                "checkpoint_sha256": metrics.get("checkpoint_sha256"),
+                "eval_data_manifest_sha": metrics.get("eval_data_manifest_sha"),
+                "code_git_sha": metrics.get("code_git_sha"),
+                "version_stamp": metrics["version_stamp"],
+                "agentv": metrics.get("agentv"),
+            },
+        )
     return metrics
+
+
+def evaluate_grammar_leakage_audit(
+    config: ModelBuildConfig,
+    model=None,
+    checkpoint: Path | None = None,
+    *,
+    publish_agentv: bool = True,
+    variant_names: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    """Compare deterministic constrained decoders on one checkpoint.
+
+    Raw logits remain available as constraint-shadow telemetry, but are never
+    emitted as an unconstrained program.
+    """
+    from contextlib import contextmanager
+    from dataclasses import replace
+
+    all_variants = {
+        "constrained_native": {
+            "grammar_constrained": True,
+            "grammar_ltr_repair": True,
+            "grammar_uniform_at_unforced": False,
+            "compiler_decode_mode": "off",
+        },
+        "constrained_compiler": {
+            "grammar_constrained": True,
+            "grammar_ltr_repair": True,
+            "grammar_uniform_at_unforced": False,
+            "compiler_decode_mode": "tree",
+        },
+    }
+    selected_names = variant_names or tuple(all_variants)
+    if "constrained_native" not in selected_names or not set(
+        selected_names
+    ).issubset(all_variants):
+        raise ValueError(
+            "grammar leakage audit variants must include constrained_native"
+        )
+    variants = {name: all_variants[name] for name in selected_names}
+
+    @contextmanager
+    def _temporary_plugin_config(overrides: dict[str, Any]):
+        plugin_config = getattr(model, "config", None)
+        saved = {
+            key: getattr(plugin_config, key)
+            for key in overrides
+            if plugin_config is not None and hasattr(plugin_config, key)
+        }
+        try:
+            for key, value in overrides.items():
+                if plugin_config is not None and hasattr(plugin_config, key):
+                    setattr(plugin_config, key, value)
+            yield
+        finally:
+            for key, value in saved.items():
+                setattr(plugin_config, key, value)
+
+    results: dict[str, dict[str, Any]] = {}
+    for name, overrides in variants.items():
+        variant_config = replace(
+            config,
+            run_id=f"{config.run_id}/grammar-leakage-{name}",
+            **overrides,
+        )
+        with _temporary_plugin_config(overrides):
+            results[name] = evaluate(
+                variant_config,
+                model=model,
+                checkpoint=checkpoint,
+                publish_agentv=publish_agentv,
+                cache=None,
+                generation_overrides={
+                    "grammar_constrained": overrides["grammar_constrained"]
+                },
+            )
+
+    metric_names = (
+        "meaningful_program_rate",
+        "parse_rate",
+        "placeholder_fidelity",
+        "contract_precision",
+        "contract_recall",
+        "binder_reference_f1",
+        "structural_similarity",
+    )
+    baseline = results["constrained_native"]
+    deltas = {
+        name: {
+            metric: (
+                None
+                if metrics.get(metric) is None or baseline.get(metric) is None
+                else float(metrics[metric]) - float(baseline[metric])
+            )
+            for metric in metric_names
+        }
+        for name, metrics in results.items()
+        if name != "constrained_native"
+    }
+
+    def _strata(metrics: dict[str, Any]) -> dict[str, dict[str, dict[str, float]]]:
+        grouped: dict[str, dict[str, list[dict[str, Any]]]] = {
+            "semantic_factor": {},
+            "complexity": {},
+        }
+        for detail in metrics.get("details") or ():
+            grouped["semantic_factor"].setdefault(
+                str(detail.get("semantic_factor") or "unknown"), []
+            ).append(detail)
+            grouped["complexity"].setdefault(
+                str((detail.get("complexity") or {}).get("bucket") or "unknown"), []
+            ).append(detail)
+        return {
+            axis: {
+                label: {
+                    "n": len(rows),
+                    "meaningful_program_rate": sum(
+                        bool(row.get("binding_aware_meaningful_v2")) for row in rows
+                    )
+                    / len(rows),
+                    "parse_rate": sum(bool(row.get("parse_ok")) for row in rows)
+                    / len(rows),
+                }
+                for label, rows in labels.items()
+            }
+            for axis, labels in grouped.items()
+        }
+
+    payload: dict[str, Any] = {
+        "schema_version": "grammar-leakage-audit/v1",
+        "run_id": config.run_id,
+        "suite": config.suite,
+        "variants": results,
+        "baseline_deltas": deltas,
+        "strata": {name: _strata(metrics) for name, metrics in results.items()},
+        "claim_scope": (
+            "evaluation-only constrained decoder comparison; raw logits are "
+            "diagnostic shadows and never emitted"
+        ),
+    }
+    from slm_training.versioning import build_version_stamp
+
+    payload["version_stamp"] = build_version_stamp(
+        *_evaluation_version_components(config)
+    )
+    output = config.run_dir / "grammar_leakage_audit.json"
+    payload["output"] = str(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return payload
 
 
 def evaluate_suites(
@@ -1418,7 +2015,7 @@ def evaluate_suites(
         "code_git_sha": next(iter(board.values()), {}).get("code_git_sha"),
         "code_dirty": next(iter(board.values()), {}).get("code_dirty"),
         "suites": board,
-        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "evaluated_at": datetime.now(UTC).isoformat(),
         "version_stamp": build_version_stamp(*_evaluation_version_components(config)),
     }
     # Ceiling + length-budget diagnostics ride with every board so a zero
@@ -1458,33 +2055,38 @@ def evaluate_suites(
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
+    from slm_training.harnesses.model_build.feature_flags import load_snapshot
+
+    scoreboard["feature_flags"] = load_snapshot(run_dir)
     path = run_dir / "scoreboard.json"
     scoreboard["output"] = str(path)
-    if write_gates:
-        gates = write_ship_gates(run_dir, board)
-        scoreboard["gates"] = {k: gates[k] for k in ("pass", "failures", "output")}
     gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
     if gate_suites:
         from slm_training.evals.agentv import publish_model_evaluation
 
-        publication = publish_model_evaluation(
+        scoreboard["evals"] = publish_model_evaluation(
             run_dir,
             board,
             include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
         )
-        from slm_training.evals.agentv import apply_agentv_metric_results
-
-        for suite in gate_suites:
-            apply_agentv_metric_results(board[suite], publication, suite)
-        scoreboard["evaluation_artifacts"] = {
-            "format": publication.get("format"),
-            "sdk": "@agentv/core",
-            "spec": publication.get("spec"),
-            "artifacts": publication.get("artifacts"),
-        }
+        scoreboard["evals"]["suites_run"] = gate_suites
     else:
-        scoreboard["evaluation_artifacts"] = {
-            "skipped": "no ship-gate policy suites evaluated"
+        scoreboard["evals"] = {"skipped": "no ship-gate policy suites evaluated"}
+    if write_gates:
+        gates = write_ship_gates(run_dir, board, evals_result=scoreboard["evals"])
+        scoreboard["gates"] = {
+            key: gates[key]
+            for key in (
+                "authority",
+                "pass",
+                "failures",
+                "evidence_volume_failures",
+                "measurement_integrity_failures",
+                "quality_threshold_failures",
+                "runtime_failures",
+                "output",
+            )
         }
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
+    _record_langsmith_evaluation(config, suites=board, scoreboard=scoreboard)
     return scoreboard

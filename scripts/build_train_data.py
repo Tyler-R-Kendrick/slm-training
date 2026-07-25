@@ -34,8 +34,7 @@ def main(argv: list[str] | None = None) -> int:
             "awwwards",
             "rico+awwwards",
             "existing",
-            "existing+fixture",
-            "existing+programspec",
+            "staged",
             "programspec",
             "language_contract",
             "deconstruct",
@@ -52,15 +51,10 @@ def main(argv: list[str] | None = None) -> int:
         help="JSONL seed fixtures (used when source includes fixtures).",
     )
     parser.add_argument(
-        "--fixture-ids",
-        default="",
-        help="Comma-separated fixture ids to include (default: all fixtures).",
-    )
-    parser.add_argument(
         "--derive-from",
         type=Path,
         default=None,
-        help="Existing records.jsonl to use as roots when --source includes existing.",
+        help="Existing records.jsonl to use as roots when --source existing.",
     )
     parser.add_argument(
         "--rico-path",
@@ -88,10 +82,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--version", default="v1")
     parser.add_argument(
-        "--preserve-derived-records",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Keep --derive-from rows immutable while admitting new rows normally.",
+        "--synthesis-plan",
+        type=Path,
+        default=None,
+        help=(
+            "Checked-in SynthesisPlanV1 JSON/YAML to validate before loading "
+            "any producer; independent of --curriculum."
+        ),
     )
     parser.add_argument(
         "--immutable",
@@ -120,27 +117,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--programspec-count", type=int, default=16)
     parser.add_argument("--programspec-seed", type=int, default=0)
-    parser.add_argument(
-        "--programspec-natural-prompts",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-    )
-    parser.add_argument(
-        "--programspec-forward-reference-patterns",
-        default="",
-        help=(
-            "Comma-separated forward_reference_pattern facts to admit from "
-            "--programspec-path; every requested pattern must be present."
-        ),
-    )
-    parser.add_argument(
-        "--programspec-selected-source",
-        default=None,
-        help=(
-            "Dedicated source-family label for rows admitted by "
-            "--programspec-forward-reference-patterns."
-        ),
-    )
     parser.add_argument(
         "--language-contract",
         action=argparse.BooleanOptionalAction,
@@ -216,6 +192,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scoped-repairs-per-scope", type=int, default=2)
     parser.add_argument("--typed-lexical-per-program", type=int, default=4)
     parser.add_argument(
+        "--operator-corpus",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Emit verified symbolic operator QA and coverage artifacts beside "
+            "the admitted OpenUI records."
+        ),
+    )
+    parser.add_argument("--operator-corpus-max-roots", type=int, default=8)
+    parser.add_argument(
+        "--operator-corpus-actions-per-state", type=int, default=4
+    )
+    parser.add_argument(
+        "--operator-corpus-max-combinations", type=int, default=64
+    )
+    parser.add_argument(
+        "--operator-corpus-sibling-forks",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
         "--preference-pairs",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -269,6 +266,11 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--namespace-augment",
+        action="store_true",
+        help="Emit namespace-augmented train variants (:acme.* re-prefix).",
+    )
+    parser.add_argument(
         "--prompt-slot-contract",
         action="store_true",
         help="Append each record's declared placeholder inventory to its prompt.",
@@ -283,6 +285,14 @@ def main(argv: list[str] | None = None) -> int:
         choices=("counts", "types"),
         default="counts",
         help="Expose exact component counts (default) or component types only.",
+    )
+    parser.add_argument(
+        "--prompt-semantic-role-contract",
+        action="store_true",
+        help=(
+            "Group visible slots by semantic namespace and annotate compatible "
+            "owners from the visible component types; requires both prompt contracts."
+        ),
     )
     parser.add_argument(
         "--sanitize-mode",
@@ -374,8 +384,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "record_nll.jsonl from a trained run (train_model "
-            "--emit-record-nll); rejects the trivially-easy NLL tail and "
-            "stamps difficulty evidence on retained records."
+            "--emit-record-nll); discounts the trivially-easy NLL tail in "
+            "curation scores."
         ),
     )
     parser.add_argument(
@@ -409,20 +419,15 @@ def main(argv: list[str] | None = None) -> int:
 
     config = TrainDataConfig(
         profile=args.profile,
-        seed_path=args.seed_path
-        if args.source in {"fixture", "both", "existing+fixture", "all"}
-        else None,
-        fixture_ids=tuple(
-            item.strip() for item in args.fixture_ids.split(",") if item.strip()
-        ),
+        seed_path=args.seed_path if args.source in {"fixture", "both", "all"} else None,
         rico_path=args.rico_path
         if args.source in {"rico", "both", "rico+awwwards", "all"}
         else None,
         source=args.source,
         derive_from=args.derive_from,
-        preserve_derived_records=args.preserve_derived_records,
         output_root=args.output_root,
         version=args.version,
+        synthesis_plan_path=args.synthesis_plan,
         immutable=args.immutable,
         synthesizer=args.synthesizer,
         rico_hf_split=args.rico_hf_split,
@@ -434,9 +439,11 @@ def main(argv: list[str] | None = None) -> int:
         max_openui_chars=args.max_openui_chars,
         max_components=args.max_components,
         curriculum=args.curriculum,
+        namespace_augment=args.namespace_augment,
         prompt_slot_contract=args.prompt_slot_contract,
         prompt_component_contract=args.prompt_component_contract,
         prompt_component_contract_mode=args.prompt_component_contract_mode,
+        prompt_semantic_role_contract=args.prompt_semantic_role_contract,
         sanitize_mode=args.sanitize_mode,
         max_records_per_parent=args.max_records_per_parent,
         fuzzy_dedup=bool(args.fuzzy_dedup),
@@ -455,13 +462,6 @@ def main(argv: list[str] | None = None) -> int:
         programspec_path=args.programspec_path,
         programspec_count=args.programspec_count,
         programspec_seed=args.programspec_seed,
-        programspec_natural_prompts=args.programspec_natural_prompts,
-        programspec_forward_reference_patterns=tuple(
-            item.strip()
-            for item in args.programspec_forward_reference_patterns.split(",")
-            if item.strip()
-        ),
-        programspec_selected_source=args.programspec_selected_source,
         include_language_contract=args.language_contract,
         documentize_expressions=args.documentize_expressions,
         target_kinds=(
@@ -484,6 +484,17 @@ def main(argv: list[str] | None = None) -> int:
         scope_canonical_pairs_per_scope=args.scope_canonical_pairs_per_scope,
         scoped_repairs_per_scope=args.scoped_repairs_per_scope,
         typed_lexical_per_program=args.typed_lexical_per_program,
+        include_operator_corpus=args.operator_corpus,
+        operator_corpus_max_roots=args.operator_corpus_max_roots,
+        operator_corpus_actions_per_state=(
+            args.operator_corpus_actions_per_state
+        ),
+        operator_corpus_max_combinations=(
+            args.operator_corpus_max_combinations
+        ),
+        operator_corpus_sibling_forks=(
+            args.operator_corpus_sibling_forks
+        ),
         emit_preference_pairs=args.preference_pairs,
         diffusion_online=args.diffusion_online,
         governance_artifacts=args.governance_artifacts,

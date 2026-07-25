@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "bounded_symbolic_baseline_rejected_not_ship", "failures": [], "result": {"cap0": {"available": true, "pass": true, "reason": "default_off_path_is_unchanged"}, "cap1": {"available": false, "dependency_issue": "SLM-379", "pass": null, "reason": "CERT_CAP1_unavailable"}}}

@@ -109,6 +109,55 @@ Default behavior is byte-identical everywhere (asserted by tests):
 - **Reward wiring**: `reward_label` is exposed and tested; making RL/reward
   harnesses read it from the pack (instead of their own labels) is F3 work.
 
+### DSH3 operator capability
+
+SLM-370 extends the same fail-closed slot pattern with optional
+`operator_library`. The generic immutable registry and pure apply/dry-run/replay
+boundary live in `dsl/operators/registry.py`; packs without the slot remain
+unsupported. An operator-produced source passes the pack's normal parse,
+static/schema oracle, scope, property-order, canonicalization, and round-trip
+authorities before it can become a new immutable state. See
+[dsh3-02-pack-operator-registry-20260723.md](dsh3-02-pack-operator-registry-20260723.md).
+
+### DSH1 declared grammar capabilities
+
+SLM-353 adds the optional `grammar_capability_authority` slot without adding a
+registry. `GrammarCapabilityAdapterV1` resolves one `DslPack` and exposes only
+that pack's declared start symbols, productions, terminals, grammar analyses,
+fragment parser, canonical serializer, validator, scope policy, and completion
+frontier. Missing declarations return typed `UNSUPPORTED` values, so partial
+packs cannot appear complete.
+
+OpenUI declares its authority from the strict Lark grammar inside its pack
+wiring. The generic adapter imports no OpenUI implementation and has no
+corpus-example fallback. See
+[dsh1-01-grammar-capability-adapter-20260723.md](dsh1-01-grammar-capability-adapter-20260723.md).
+
+SLM-354 extends that same authority object with exact production tracing,
+finite containing-context witness candidates, and typed unsupported reasons.
+`minimal_witnesses.py` remains pack-generic: it selects the lexicographic
+minimum fully admitted candidate per reachable/productive alternative and
+blocks every unexplained gap. OpenUI sources and lexer/semantic exclusions
+remain behind `pack.py`. See
+[dsh1-02-minimal-alternative-witnesses-20260723.md](dsh1-02-minimal-alternative-witnesses-20260723.md).
+
+### DSH1 symbolic Harness task boundary
+
+SLM-355 adds `harness_dsl/v1`, a separate closed grammar for CAP0 task intent.
+The Harness parser owns only reserved operation/type framing, exact pack and
+grammar-category symbols, digest artifact refs, declared runtime markers, and
+the embedded payload boundary. It does not parse the target language itself.
+
+After the outer prompt parses, generic code resolves the named `DslPack` and
+requires its `fragment_parser` slot. OpenUI populates that existing slot with a
+typed adapter around its document/statement/expression/lexical/node validator;
+OpenUI-specific parsing remains behind `pack.py`. The symbolic-surface policy
+then rejects comments, open strings/numbers, and undeclared identifiers or
+runtime refs. Partial packs without typed fragment validation fail closed.
+
+See
+[dsh1-03-symbolic-harness-dsl-20260723.md](dsh1-03-symbolic-harness-dsl-20260723.md).
+
 ## End-to-end fixture run (executed, not hypothetical)
 
 `tests/test_dsl/test_pack.py::test_end_to_end_fixture_run_through_pack_interface`

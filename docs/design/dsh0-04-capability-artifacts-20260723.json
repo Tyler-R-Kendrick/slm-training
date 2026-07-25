@@ -1,0 +1,52 @@
+{
+  "schema": "dsh0_capability_artifact_evidence/v1",
+  "issue": "SLM-348",
+  "disposition": "adopt_contract",
+  "run_class": "fixture_demo",
+  "contract": {
+    "schema_version": "capability_artifacts/v1",
+    "component": "harness.capability_artifacts/v1",
+    "source_sha256": "8dab5f0f627eb84b6164f74e24c729ee2f760202f6cbbc3ce629839c8b3ce89c"
+  },
+  "fixture_ids": {
+    "question_semantic_id": "226dfc223d5845014ab1f4504498be77977fa026a0fd03031d57c8b06cf102ed",
+    "answer_semantic_id": "2efba1644bda97e21ef9f9cb63b5e4fb76e549eaccb6f6fa705a3cf972aad193",
+    "qa_accepted_set_id": "24aadbe64bfda6f4ea211c4d347a93a420f94c131069f0712a28955786d8aabe",
+    "derivation_activity_id": "84b4f8409c1849e9fa18fbc01e3dc63ac097437149adfabf369e326c3ceed96c",
+    "validation_report_id": "271aae22b08eecdd950e46bec8027720c8f85099c7d88419b18e23f27089dfe5",
+    "capability_certificate_id": "69a78642d2ab294cf7955d389cf1719349b4b64d8091e428925fad202bb6a1bf"
+  },
+  "acceptance": {
+    "canonical_equivalent_answers_share_semantic_id": true,
+    "surface_and_lineage_remain_recorded_outside_semantic_id": true,
+    "separate_runs_have_distinct_activity_ids": true,
+    "accepted_set_separate_from_canonical_preference": true,
+    "all_descendant_ids_resolve_before_publication": true,
+    "process_config_code_and_optional_llm_teacher_versions_recorded": true,
+    "missing_provenance_rejected": true,
+    "json_round_trip_deterministic": true,
+    "recorded_identity_or_schema_migration_drift_rejected": true,
+    "focused_tests_passed": 8
+  },
+  "honesty": {
+    "data_build": false,
+    "train_run": false,
+    "eval_run": false,
+    "benchmark_run": false,
+    "agentv_required": false,
+    "checkpoint_written": false,
+    "capability_certificate_claim": false,
+    "ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c4939e8d6304dd77024f86e20fc6de23104e67bb",
+    "code_dirty": true,
+    "components": {
+      "harness.staged": "v1",
+      "harness.synthesis_plan": "v1",
+      "harness.capability_artifacts": "v1"
+    },
+    "stamped_at": "2026-07-23T20:08:33.216094+00:00"
+  }
+}

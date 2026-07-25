@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 import json
-from dataclasses import replace
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 from slm_training.dsl import bridge_available
 from slm_training.dsl.language_contract import contract_id
+from slm_training.dsl.parser import validate
+from slm_training.dsl.renderability import STRUCTURAL_ROOT_CONTAINERS, root_type
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
-from slm_training.data.quality import assess_record
+from slm_training.harnesses.preference import load_pairs
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
-from slm_training.harnesses.train_data.pipeline import _programspec_natural_prompt
 
 
 def _seed_file(tmp_path: Path) -> Path:
@@ -44,62 +43,6 @@ def _seed_file(tmp_path: Path) -> Path:
         ],
     )
     return path
-
-
-def test_programspec_natural_prompt_describes_components_and_layout() -> None:
-    spec = SimpleNamespace(
-        components=("TextContent", "Form", "Input", "Slider", "SwitchGroup", "SwitchItem", "TextCallout"),
-        facts={
-            "components": [
-                "Buttons",
-                "Form",
-                "Input",
-                "Slider",
-                "Stack",
-                "SwitchGroup",
-                "SwitchItem",
-                "TextCallout",
-                "TextContent",
-            ],
-            "viewport": "mobile",
-            "render_state": "success",
-            "width": 3,
-        },
-        viewport="mobile",
-        render_state="success",
-        width=3,
-    )
-
-    prompt = _programspec_natural_prompt(spec)
-
-    assert "text content" in prompt
-    assert "a form" in prompt
-    assert "an input field" in prompt
-    assert "a slider" in prompt
-    assert "a switch group" in prompt
-    assert "a switch item" in prompt
-    assert "a text callout" in prompt
-    assert "horizontal layout" in prompt
-    assert "buttons" not in prompt
-
-
-def test_quality_accepts_schema_valid_switch_group_parent() -> None:
-    report = assess_record(
-        ExampleRecord(
-            id="switch_group",
-            prompt="Switch group with a labeled setting.",
-            openui=(
-                'root = SwitchGroup(":slot_0", [item])\n'
-                'item = SwitchItem(":slot_1", ":slot_2", "$0")'
-            ),
-            placeholders=[":slot_0", ":slot_1", ":slot_2"],
-            split="train",
-        ),
-        require_design_md=False,
-    )
-
-    assert report.ok
-    assert "unknown_components" not in report.reasons
 
 
 @pytest.mark.skipif(
@@ -167,7 +110,7 @@ def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> N
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
     assert "Components: Card x1, Stack x1, TextContent x2" in rows["t1"].prompt
-    assert "Placeholders: :slot_0, :slot_1" in rows["t1"].prompt
+    assert "Placeholders: :hero.title, :hero.body" in rows["t1"].prompt
     assert result["stats"]["prompt_component_contract"] is True
     assert result["stats"]["prompt_slot_contract"] is True
     assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
@@ -196,42 +139,47 @@ def test_component_contract_can_expose_types_without_counts(tmp_path: Path) -> N
     assert result["stats"]["prompt_component_contract_mode"] == "types"
 
 
-def test_semantic_role_contract_is_absent_from_data_config(tmp_path: Path) -> None:
-    config = TrainDataConfig(seed_path=_seed_file(tmp_path))
-    assert not hasattr(config, "prompt_semantic_role_contract")
-
-
-def test_existing_source_refreshes_contract_bases_without_dropping_derivatives(
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
+def test_semantic_role_contract_uses_only_visible_slots_and_types(
     tmp_path: Path,
 ) -> None:
-    from slm_training.harnesses.train_data.pipeline import _records_from_existing
-
-    base = ExampleRecord(
-        id="lc_forward_reference",
-        prompt="stale base",
-        openui='root = TextContent(":slot_0")',
-        placeholders=[":slot_0"],
-        split="train",
-        meta={"program_family_id": "language_contract:forward_reference"},
+    result = build_train_data(
+        TrainDataConfig(
+            seed_path=_seed_file(tmp_path),
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "train_data",
+            version="roles",
+            synthesizer="none",
+            prompt_slot_contract=True,
+            prompt_component_contract=True,
+            prompt_component_contract_mode="types",
+            prompt_semantic_role_contract=True,
+        )
     )
-    derivative = ExampleRecord(
-        id="lc_forward_reference_aug_dir",
-        prompt="derived hard case",
-        openui='root = TextContent(":slot_0")',
-        placeholders=[":slot_0"],
-        split="train",
-        meta={"program_family_id": "language_contract:forward_reference"},
-    )
-    roots = tmp_path / "records.jsonl"
-    write_jsonl(roots, [base, derivative])
+    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
+    assert "Semantic roles: hero(body -> TextContent, title -> TextContent)" in rows["t1"].prompt
+    assert "Semantic roles: cta(label -> Button)" in rows["t2"].prompt
+    assert " x" not in rows["t2"].prompt
+    assert result["stats"]["prompt_semantic_role_contract"] is True
 
-    records, errors = _records_from_existing(
-        TrainDataConfig(source="existing", derive_from=roots)
-    )
 
-    assert errors == []
-    assert [record.id for record in records] == [derivative.id]
-    assert records[0].meta["derivation_source"] == str(roots)
+def test_semantic_role_contract_requires_visible_authority(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="requires visible component and slot"):
+        build_train_data(
+            TrainDataConfig(
+                seed_path=_seed_file(tmp_path),
+                rico_path=None,
+                source="fixture",
+                output_root=tmp_path / "train_data",
+                version="invalid-roles",
+                synthesizer="none",
+                prompt_semantic_role_contract=True,
+            )
+        )
 
 
 @pytest.mark.skipif(
@@ -260,132 +208,6 @@ def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     assert any(row.target_kind == "lexical" for row in rows)
     assert any(row.meta.get("synth") == "template" for row in rows)
     assert len(rows) > 2
-
-
-@pytest.mark.skipif(
-    not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
-)
-def test_existing_corpus_can_be_supplemented_from_fixture_registry(
-    tmp_path: Path,
-) -> None:
-    roots = _seed_file(tmp_path)
-    fixture = ExampleRecord(
-        id="supplement",
-        prompt="Three-item switch group",
-        openui=(
-            'root = SwitchGroup("$0", [a, b, c])\n'
-            'a = SwitchItem(":slot_0", ":slot_1", "$1")\n'
-            'b = SwitchItem(":slot_2", ":slot_3", "$2")\n'
-            'c = SwitchItem(":slot_4", ":slot_5", "$3")'
-        ),
-        placeholders=[f":slot_{index}" for index in range(6)],
-        split="train",
-    )
-    fixture_path = tmp_path / "supplements.jsonl"
-    write_jsonl(fixture_path, [fixture])
-
-    result = build_train_data(
-        TrainDataConfig(
-            source="existing+fixture",
-            derive_from=roots,
-            seed_path=fixture_path,
-            fixture_ids=("supplement",),
-            output_root=tmp_path / "train_data",
-            version="supplemented",
-            synthesizer="none",
-            include_frontier_artifacts=False,
-            include_language_contract=False,
-            include_edit_derivatives=False,
-            repairs_per_program=0,
-        )
-    )
-
-    rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
-    assert {"t1", "t2", "supplement"} <= {row.id for row in rows}
-
-
-@pytest.mark.skipif(
-    not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
-)
-def test_existing_corpus_can_be_supplemented_from_programspec_roots(
-    tmp_path: Path,
-) -> None:
-    from slm_training.data.progspec.generate import (
-        GeneratorConfig,
-        generate_program_specs,
-    )
-
-    selected = generate_program_specs(
-        1,
-        config=GeneratorConfig(components=("Button",)),
-        seed=1308,
-    ).programs[0]
-    programs = (
-        replace(
-            selected,
-            facts={
-                **selected.facts,
-                "forward_reference_pattern": "selected_pattern",
-            },
-        ),
-        replace(
-            selected,
-            id="program_ignored_pattern",
-            facts={
-                **selected.facts,
-                "forward_reference_pattern": "ignored_pattern",
-            },
-        ),
-    )
-    programs_path = tmp_path / "programs.jsonl"
-    programs_path.write_text(
-        "\n".join(json.dumps(program.to_dict()) for program in programs) + "\n",
-        encoding="utf-8",
-    )
-
-    result = build_train_data(
-        TrainDataConfig(
-            source="existing+programspec",
-            derive_from=_seed_file(tmp_path),
-            programspec_path=programs_path,
-            output_root=tmp_path / "train_data",
-            version="supplemented_programspec",
-            synthesizer="none",
-            programspec_forward_reference_patterns=("selected_pattern",),
-            programspec_selected_source="paired_forward_reference",
-            include_frontier_artifacts=False,
-            include_language_contract=False,
-            include_edit_derivatives=False,
-            repairs_per_program=0,
-            include_design_md_contrastive=False,
-            include_scope_corpus=False,
-            preserve_derived_records=True,
-        )
-    )
-
-    rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
-    assert {"t1", "t2"} <= {row.id for row in rows}
-    selected_row = next(row for row in rows if row.id == selected.id)
-    assert selected_row.meta["programspec_facts"]["forward_reference_pattern"] == "selected_pattern"
-    assert selected_row.source == "paired_forward_reference"
-    assert selected_row.meta["source_family"] == "paired_forward_reference"
-    assert selected_row.meta["programspec_source"] == "programspec_generated"
-    assert "program_ignored_pattern" not in {row.id for row in rows}
-
-
-def test_unknown_fixture_selection_fails_closed(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="unknown fixture ids"):
-        build_train_data(
-            TrainDataConfig(
-                source="fixture",
-                seed_path=_seed_file(tmp_path),
-                fixture_ids=("missing",),
-                output_root=tmp_path / "train_data",
-                synthesizer="none",
-            )
-        )
 
 
 @pytest.mark.skipif(
@@ -434,6 +256,18 @@ def test_documentizes_expressions_and_records_target_selection(tmp_path: Path) -
         item["evidence"].get("top_reason") != "target_kind_excluded"
         for item in feedback["recommendations"]
     )
+    pairs = [
+        pair
+        for pair in load_pairs(out_dir / "preference_pairs.jsonl")
+        if (pair.meta or {}).get("pair_corpus") == "root_renderability"
+    ]
+    assert len(pairs) == len(STRUCTURAL_ROOT_CONTAINERS)
+    assert result["stats"]["preference_pair_families"]["root_renderability"] == len(
+        pairs
+    )
+    assert all(pair.chosen_score > pair.rejected_score for pair in pairs)
+    assert all(root_type(validate(pair.chosen)) not in STRUCTURAL_ROOT_CONTAINERS for pair in pairs)
+    assert all(root_type(validate(pair.rejected)) in STRUCTURAL_ROOT_CONTAINERS for pair in pairs)
 
 
 @pytest.mark.skipif(
@@ -508,9 +342,7 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
             rico_limit=10,
         )
     )
-    # Opaque role canonicalization collapses semantic-name-only duplicates;
-    # strict decontamination also removes fixtures reserved by the eval corpus.
-    assert result["stats"]["record_count"] >= 1
+    assert result["stats"]["record_count"] >= 5
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
 

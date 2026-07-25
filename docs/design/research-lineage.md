@@ -164,6 +164,11 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Fixture** | `scripts/run_slm138_recursive_denoiser_fixture.py` |
 | **SLM-139 follow-up** | Closed as `no_supported_probabilistic_regime`: SLM-138 delivered only wiring-only fixture evidence, so the stochastic high-level width campaign did not run. See `docs/design/iter-slm139-stochastic-recursive-width-20260720.md`. |
 | **RSC-A04 correction (SLM-240)** | The module docstring previously overstated interface compatibility as a "same parameter count and layer names" claim. Corrected: R=1 preserves the public interface/tensor shapes only, never output/parameter equivalence — V1 always adds `z_latent` + `ctx_proj` (exact formula in `recursive_zstate_parameter_delta`; +9,248 params / +14.23% for this fixture's config). See `docs/design/iter-rsc-a04-*` and `ArchitectureComparisonReportV1`. This is an annotation, not a re-verdict — SLM-138's wiring-only landing is unchanged. |
+| **Depth-supervision semantics (SLM-279)** | Recursive Masked Diffusion Models separates final/all/weighted/truncated loop supervision ([objective](https://arxiv.org/html/2606.18022#S3.SS2), [training details](https://arxiv.org/html/2606.18022#S3.SS4)); Deeply-Supervised Nets is adjacent motivation for intermediate auxiliary losses ([Lee et al., 2015](https://proceedings.mlr.press/v38/lee15a.html)). **Adapted**, not reproduced: OpenUI's canonical new objective is final-depth primary + normalized `0..R-2` auxiliary under an explicit coefficient. `all_depths` remains an experiment arm and pre-field checkpoints migrate to `legacy_all_depths`. The clean fixture is correction-only and makes no quality claim; see [`iter-slm279-depth-supervision-correction-20260723.md`](iter-slm279-depth-supervision-correction-20260723.md). |
+| **Recurrence-health audit (SLM-282)** | [DeepLoop](https://arxiv.org/abs/2607.13491) motivates visit-aware stability analysis for tied-depth Transformers; [Training-Free Looped Transformers](https://arxiv.org/abs/2605.23872) shows that naive block reapplication can degrade and motivates isolating the residual field; [DEQ Jacobian regularization](https://arxiv.org/abs/2106.14342) is adjacent motivation for measuring local update sensitivity. **Adapted/Adjacent**, not reproduced: OpenUI records raw per-depth y/z norms, update ratios, masked CE/accuracy/entropy/KL, and a seeded finite-difference directional gain for its coupled RMSNorm denoiser. The `residual_delta` arm is fixture-only, and its gain is neither a global Lipschitz estimate nor a contraction proof. The preregistered `as_is` result was negative: seed 1 / R=4 / example `b` regressed at the final depth, so only one of two required seeds passed and LAR3 was not activated; see [`iter-slm282-recurrence-health-20260723.md`](iter-slm282-recurrence-health-20260723.md). |
+| **Depth-wise observability and anytime exits (SLM-230)** | **Adapted diagnostic**, not a faithful reproduction of a recurrence paper: the canonical shared-recursive forward now exposes per-depth teacher-forced distributions, while a bounded evaluation runner compares fixed, KL-plateau, top-k-stability, histogram-matched, and oracle exits without changing serving defaults. On a four-step local R=4 checkpoint, both held-out CE curves improve but free-running accuracy, parse, structure, and reward remain zero; KL/top-k select R=4, no early exit qualifies, and the verdict is `stagnant`. Exact-state legal/good/bad candidate partitions were unavailable and are censored, the semantic floor remains inconclusive, and no test-R, promotion, or ship claim is made. See [`iter-slm230-recurrence-observability-20260724.md`](iter-slm230-recurrence-observability-20260724.md). |
+| **Residual recurrence dynamics (SLM-231)** | **Adapted diagnostic**, not an edge-of-chaos or DEQ-criticality reproduction. The canonical tower exposes one mutation-free transition step, and the audit measures `J_Delta`, `J_T = I + J_Delta`, the ordered trajectory product, finite-time Lyapunov exponents, and cross-depth y/z/update alignment. Exact synthetic/SLM-138 fixture controls validate the estimator and keep the residual identity explicit. On one active-token projection of the bounded SLM-230 checkpoint, the exact R=4 product has top singular value `4.7243` and maximum FTLE `0.3882`; joined free-running outcomes remain `stagnant`, so the result is `expansive_unstable` and blocks looped-latent expansion. The iterative real-checkpoint product estimator is explicitly flagged non-converged; the exact bounded product owns the verdict. See [`iter-slm231-recurrence-dynamics-20260724.md`](iter-slm231-recurrence-dynamics-20260724.md). |
+| **Latent-state rank and causal use (SLM-232)** | **Adapted diagnostic**, not a mechanistic-interpretability proof. The evaluation-only matrix separates learned z-bank, projected-context, and position initialization; cuts each y/z route; adds deterministic paired swaps, norm-matched random noise, and a matched-block-evaluation y-only control; and restores the source state exactly. On four bounded records, total z0 effective rank is `2.1054` but becomes exactly zero after removing context and position, while all bounded free-running primary cells remain vacuous. Teacher-forced logits are sensitive to path cuts, but exact legal/protected outcomes and uncertainty are unavailable. Joined SLM-231 dynamics remain `expansive_unstable`, so the authoritative gate is `unstable`, not `causally_used`. See [`iter-slm232-latent-state-use-20260724.md`](iter-slm232-latent-state-use-20260724.md). |
 
 ### Preference / “DPO”
 
@@ -1098,6 +1103,809 @@ else).
 is ready for production until it clears its activation gate and produces a
 `POSITIVE` result under ship-gates with durable checkpoints. The synthesis
 renderer labels the report as wiring-grade and does not promote a champion.
+
+## Gate reachability and prospective power (SLM-286)
+
+**Fidelity label: adapted.** [Wilson (1927)](https://doi.org/10.1080/01621459.1927.10502953)
+supplies the score interval; [Hoenig and Heisey
+(2001)](https://doi.org/10.1198/000313001300339897) motivates rejecting
+observed/post-hoc power as success evidence.
+
+| | |
+| --- | --- |
+| **Lineage** | Wilson score intervals; prospective statistical-power planning; anti-post-hoc-power metascience |
+| **Fidelity** | **Adapted** — exact binomial count provenance and preregistration metadata, not a significance-test implementation |
+| **Code** | `src/slm_training/evals/power_protocol.py`, `src/slm_training/harnesses/model_build/evidence_census.py` |
+| **Config** | `confidence_level`, `target_delta`, `alpha`, `target_power`, `sides`, `seeds`, `--revision` |
+
+**What we took:** canonical binomial rates disclose exact counts, seeds, and
+intervals; power inputs are frozen prospectively; committed scoreboards are
+replayed through current gates with hash-bound append-only adjudications.
+
+**What we did not take:** interval overlap as a significance test, observed
+power as success evidence, or permission to rewrite historical scoreboards.
+Evidence:
+[`slm286-ship-gate-evidence-census-20260723.md`](slm286-ship-gate-evidence-census-20260723.md).
+
+## Semantic-floor claim authorization (SDE5-06 / SLM-213)
+
+[`SemanticFloorGateV1`](semantic-floor-gate-v1.json) is the single
+machine-readable prerequisite for semantic prediction, semantic causal, and
+learned-latent claims. It loads and hashes the registered SLM-208–212 artifacts
+and the canonical meaning-v2, anti-gaming, and AgentV owners; missing identities
+fail closed instead of being inferred from fixture filenames.
+
+The current verdict is **`inconclusive`** at gate hash
+`7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d`.
+Constraint-debt, structural, spectral, and recurrent/latent diagnostics remain
+allowed as proxies, but NCS/RSC manifests must carry this hash and cannot make
+semantic prediction/control claims. The SLM-215 spectral atlas and SLM-229
+looped-latent audit now consume the gate directly; SLM-229 remains
+`blocked_by_recurrence` as well. No new training, decoder experiment, metric
+change, or promotion was performed. Generated narrative:
+[`semantic-floor-gate-v1.md`](semantic-floor-gate-v1.md).
+
+## Fixed-token spectral-regime gate (NCS0-03 / SLM-216)
+
+**Fidelity label: adapted.** [Yang et al.
+(2021)](https://jmlr.org/papers/v22/20-410.html) motivate batch size as an
+optimization-noise dial and null-calibrated spectral trajectories as
+diagnostics. The bounded implementation reuses the canonical
+`SpectralSnapshotV1` owner; it does not claim the paper's production-scale
+model, data, or training regime.
+
+| | |
+| --- | --- |
+| **Lineage** | batch-size/optimization-noise controls; same-shape randomized ESD nulls; fixed-token exposure accounting |
+| **Fidelity** | **Adapted diagnostic** — deterministic 16×16 CPU scratch model, not the serving TwoTower checkpoint |
+| **Code** | `src/slm_training/harnesses/experiments/slm216_spectral_regime.py`, `scripts/run_spectral_regime_matrix.py` |
+| **Config** | six frozen cells, three seeds, 1,280 target tokens/cell, snapshots at 0/640/1,280 tokens, five null draws |
+
+The 18-cell measured report is `inconclusive` at report hash
+`7fd9f53499195a196080a24748451ced1c5eea89fb52c3a1519e2f6ae1e88675`.
+The scratch controls show lower final randomized-ESD distance for genuinely
+diverse 5×/10× data than for the duplicated-data control; direct batch 8 and
+physical batch 2 with accumulation 4 are exactly trajectory/state equivalent.
+The fixed-token batch-2/batch-8 contrast necessarily changes optimizer-step
+count, so it cannot authorize a batch-causal claim. No current-model checkpoint,
+canonical model evaluation, AgentV run, promotion, or ship claim was produced.
+Spectral diagnostics remain allowed; spectral LR/RG control, semantic,
+promotion, and ship claims remain blocked. Evidence:
+[`iter-slm216-spectral-regime-20260723.md`](iter-slm216-spectral-regime-20260723.md).
+
+## Absolute spectral finite-size boundary (NCS4-01 / SLM-226)
+
+**Fidelity label: adapted descriptive diagnostic.** The HTSR literature
+motivates heavy-tail fitting, but SLM-226 tests the narrower repository
+question: can an absolute alpha target be distinguished from same-shape random
+nulls at the small widths currently under discussion? It does not treat raw
+alpha or alpha near 2 as evidence of criticality.
+
+| | |
+| --- | --- |
+| **Shapes** | `128x128`, `256x128`, and `512x128` `ctx_proj` probes |
+| **Nulls** | 200 deterministic Gaussian draws per exact shape plus same-shape Pareto and spiked controls |
+| **Trained stage** | three seeds, eight AdamW steps, 8,192 synthetic target tokens per shape/seed |
+| **Code** | `src/slm_training/harnesses/experiments/slm226_absolute_spectral_gate.py`, `scripts/run_absolute_spectral_gate.py` |
+
+The gate verdict is **`descriptive_only`** at report hash
+`c413d33274206d2e68552c351a2b0bd959b4ffd1969f1d23e7478cc78ba0fd2e`.
+The Gaussian-null mean alpha changes from `2.273991` at `128x128` to
+`3.468501` at `256x128` and `4.973008` at `512x128`; the trained scratch probes
+remain close to their exact-shape nulls. These are CPU linear-role probes, not
+durable TwoTower checkpoints or quality evidence. SLM-221 found no causal
+singular-value-shape effect, no provenance-resolvable checkpoint family exists,
+and the semantic floor remains inconclusive. Consequently the versioned guard
+authorizes only null-calibrated diagnostics and blocks `ww_pgd`, `trace_log`,
+and `alpha_target` for every role/shape. No checkpoint, model evaluation,
+AgentV run, promotion, or ship claim was produced. Evidence:
+[`iter-slm226-absolute-spectral-gate-20260723.md`](iter-slm226-absolute-spectral-gate-20260723.md).
+
+## Decision-conditioned functional spectra (NCS1-01 / SLM-217)
+
+**Fidelity label: adapted diagnostic.** [Yang et al.
+(2021)](https://jmlr.org/papers/v22/20-410.html) analyze weight-matrix spectra.
+SLM-217 extends the repository's null-calibrated spectral contract to the
+input-conditioned operator `W Σ^(1/2)` over exact `DecisionStateV2` strata.
+This is an adaptation for compiler decision evidence, not a claim from the
+paper and not a complete model of nonlinear/residual behavior.
+
+| | |
+| --- | --- |
+| **Evidence unit** | checkpoint × module role × decision kind × abstract state role × split |
+| **Orientation** | PyTorch linear `W[out,in]`; row inputs map as `X @ W.T`; analyze `W @ Σ^(1/2)` |
+| **Covariance** | float64 streaming Welford; explicit support/rank/ridge; train and held-out strata cannot mix |
+| **Nulls** | trace-matched isotropic covariance, initialization weight with observed covariance, cross-group activation permutation, group bootstrap |
+| **Code** | `src/slm_training/harnesses/experiments/slm217_functional_spectra.py`, `scripts/run_functional_spectral_fixture.py` |
+
+The bounded analytical fixture is `inconclusive` at report hash
+`d9953911c42303bb860db40e326a88612ed9bf17c4b822b028404ac263cd1391`.
+It validates orientation, exact-state identity binding, targeted input hooks,
+streaming covariance, support failures, and null/bootstrap plumbing. It does
+not complete the retrospective study: the repository's only committed demo
+checkpoint is output-contract v0 and correctly fails the current
+symbol-only/v2 loader, so there is no compatible durable checkpoint plus
+DecisionEvent manifest pair to analyze. No semantic, predictive, causal,
+optimizer, promotion, or ship claim is authorized. Evidence:
+[`iter-slm217-functional-spectra-20260723.md`](iter-slm217-functional-spectra-20260723.md).
+
+## Cross-attention and parent-child retention geometry (NCS1-02 / SLM-218)
+
+**Fidelity label: adapted diagnostic.** SLM-218 combines the SLM-217
+input-conditioned operator with standard principal-angle/subspace metrics. It
+uses the dimensionally valid activation-side restriction
+`||J V||²_F / ||J||²_F`; it does not reuse the invalid output-side `U×U`
+orientation and does not infer causality from retrospective correlation.
+
+| | |
+| --- | --- |
+| **Preregistered ranks** | `k ∈ {4, 8, 16, 32}` subject to matrix dimension |
+| **Preregistered energy thresholds** | `{0.5, 0.8, 0.9}` |
+| **Retention metrics** | principal angles, projection overlap, child energy in parent subspace, update energy inside/outside, RMS drift baseline |
+| **Context metrics** | activation/K-V alignment, pairwise input-side `Wq.T @ Wk`, functional context covariance, activation-side restriction energy |
+| **Code** | `src/slm_training/harnesses/experiments/slm218_cross_attention_retention.py`, `scripts/run_cross_attention_retention.py` |
+
+The zero-training retrospective is `inconclusive` for both H1 and H2 at report
+hash `04fa873a3615b0f695e0bea745bd968516092d5f2ac51ff13e93ba466cf14a72`.
+The immutable manifest covers five context sources and four retention sources,
+but resolves zero complete checkpoint families: E135–E176 checkpoints are
+absent local history, while E501–E504 retain a durable parent reference but
+their rejected child checkpoints were explicitly local-only and are absent.
+Synthetic controls validate the formulas but cannot rank historical outcomes.
+No cross-attention bottleneck or retention target is nominated; no semantic,
+causal, optimizer, promotion, or ship claim is made. Evidence:
+[`iter-slm218-cross-attention-retention-20260723.md`](iter-slm218-cross-attention-retention-20260723.md).
+
+## Correlation-trap early-warning retrospective (NCS1-03 / SLM-219)
+
+**Fidelity label: adapted diagnostic.** The study uses repository-native SVD
+observables—top gap, outlier energy, stable/effective rank, entropy, and a
+same-shape null z-score—to test the correlation-trap hypothesis without making
+WeightWatcher heuristics authoritative.
+
+| | |
+| --- | --- |
+| **Historical scope** | E501–E504 endpoint inventory plus a hash-verified six-checkpoint E396→E500 reproduction on historical commit `f2ab01f8` |
+| **Collapse rule** | structure ≤ 0.15 and duplicate-subtree prevalence ≥ 1/3 for one snapshot, derived from published E501/E502 outcome evidence; no spectral field participates |
+| **Warning rule** | trap z ≥ 2.0 or outlier-energy delta ≥ 0.10 for two snapshots |
+| **Controls** | three matrix roles, same-shape Gaussian nulls, scalar rescaling, bulk/spike/rank-collapse fixtures, time shuffle, train-loss/RMS baselines, WeightWatcher 0.7.5 parity |
+| **Code** | `src/slm_training/harnesses/experiments/slm219_correlation_traps.py`, `scripts/collect_correlation_trap_evidence.py`, `scripts/run_correlation_trap_retrospective.py` |
+
+The result is **`inconclusive`** at report hash
+`0340c57d223df0304bb520da638c56b7af786668620f38ac490ca4574d36fffa`.
+E501–E504 expose 17 final endpoints but zero resolvable pre-collapse checkpoint
+sequences. SLM-219 therefore downloaded and hash-verified the durable E396
+parent, then used the historical code revision that originally admitted the
+committed E500 corpus to create five deterministic prefix checkpoints from one
+parent, seed, and uniform sample order. The trajectory met the independently
+outcome-only collapse rule transiently at 4,007 target tokens. The native
+warning preceded that point for one of three dependent matrix roles; reversing
+the spectral series produced the same result, and there is no independent
+non-collapse trajectory from which to estimate FPR. WeightWatcher stable rank
+matched the native owner numerically, but one seed/family cannot make its alpha
+trajectory predictive. Historical telemetry did not retain held-out NLL or
+gradient norms; that absence remains explicit.
+Correlation-trap language is not authorized for early stopping, scratch
+checkpoints were rejected without sync or promotion, no recommendation artifact
+was emitted, and production behavior is unchanged. Evidence:
+[`iter-slm219-correlation-trap-20260723.md`](iter-slm219-correlation-trap-20260723.md).
+
+## Activation-side causal restriction energy (NCS2-01 / SLM-220)
+
+**Fidelity label: adapted diagnostic.** SLM-220 implements the corrected
+activation-side quantity `||J V||²_F / ||J||²_F`, where `V` spans right
+singular directions of `W Σ^(1/2)` and `J` maps the same module-input space to
+an explicitly declared legal-decision output. It does not use the invalid
+output-side `U×U` comparison and never differentiates through compiler legality.
+
+| | |
+| --- | --- |
+| **Target API** | pure selected activation → declared legal-logit/objective vector; tested hook replacement preserves baseline logits and exact membership |
+| **Estimators** | bounded exact Jacobian, direct JVP numerator, deterministic Hutchinson VJP denominator with uncertainty |
+| **Controls** | repeated random orthonormal, raw-weight, functional top/middle/bottom, covariance-only, group/label permutation, norm-matched random module |
+| **Evidence scope** | four analytic fixtures; current semantic floor is `inconclusive`; no compatible retained checkpoint/state-manifest family |
+| **Code** | `src/slm_training/harnesses/experiments/slm220_causal_subspace.py`, `scripts/run_causal_subspace_fixture.py` |
+
+The fixture retrospective is **`rejected` for coupling-based use** at report
+hash `5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312`.
+Exact and JVP restriction energies agree, the deterministic Hutchinson
+denominator is exact on the one-output fixtures, and learned-unused versus
+causally-effective analytic cases separate by construction. Those fixtures are
+not model evidence. SLM-217 and SLM-125 retain fixture evidence only, while
+SLM-218 resolves zero complete checkpoint families, so the required focused
+checkpoint retrospective cannot be run honestly. No matrix or band is eligible
+for a later coupling perturbation; no semantic, training, optimizer, promotion,
+or ship claim is authorized. Evidence:
+[`iter-slm220-causal-subspace-20260723.md`](iter-slm220-causal-subspace-20260723.md).
+
+## Final null-calibrated spectral disposition (NCS4-03 / SLM-228)
+
+[`SpectralDispositionV1`](null-calibrated-spectral-learning-disposition.json)
+hash-binds the complete SLM-214 through SLM-227 evidence set and records one
+typed disposition for each of sixteen mechanisms. The synthesis adopts four
+diagnostics and no optional or primary training mechanism:
+
+| Adopted diagnostic | Authorized scope |
+| --- | --- |
+| Native spectral snapshot and same-shape null cache | Inspection only |
+| WeightWatcher stable-rank parity | Backend parity diagnostic only |
+| Activation-side analytic estimator | Analytic and future compatible-checkpoint diagnostics only |
+| Absolute target gate | Governance and rejection checks only |
+
+Raw alpha as a quality or criticality signal, correlation-trap operational
+early stopping, and verifier-conditioned spectral learning-rate control are
+rejected. Muon remains available only for explicit scratch replay; it is not a
+default and cannot enter ship evaluation or promotion. Model-cycle
+initialization, branching, promotion, and direct promoted training now reject
+forbidden absolute-target knobs and promotion-ineligible optimizer settings.
+
+The report also makes the evidence dependence explicit: several later studies
+reuse the same scratch checkpoint lineage, so their rows are not treated as
+independent replications. No new experiment, checkpoint, AgentV evaluation,
+model-card roster row, default, champion, or production promotion was produced.
+The rendered decision record is
+[`null-calibrated-spectral-learning-disposition.md`](null-calibrated-spectral-learning-disposition.md).
+
+## Compiler-owned AST operator contracts (DSH3-01 / SLM-369)
+
+**Fidelity label: adapted contract.** The versioned operator, typed-reference,
+effect, and proof records adapt the explicit edit/action representation used by
+neural program transformation and graph-edit work into the repository's
+compiler-owned DSL boundary. The records do not claim faithful reproduction of
+one paper and do not make learned embeddings authoritative for identity or
+legality.
+
+| | |
+| --- | --- |
+| **Primary sources** | [Allamanis et al., 2019](https://arxiv.org/abs/1810.13337); [Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205); [Yao et al., 2020](https://arxiv.org/abs/2005.13209) |
+| **Schemas** | `AstOperatorV1`, six opaque typed references, `ActionEffectV1`, `OperatorApplicationV1`, deterministic proof/rejection |
+| **Authority boundary** | declaration/evidence only; pack-owned execution and legal-set enumeration remain later DSH3 work |
+| **Evidence** | nine deterministic unit tests; no train, eval, model, checkpoint, or capability claim |
+
+Equivalent declarations canonicalize set-like metadata before SHA-256
+fingerprinting. Successful application identity binds typed arguments,
+before/after state and AST digests, the exact effect fingerprint, compiler and
+source provenance, and proof checks. Rejections cannot claim a resulting state.
+Evidence and scope:
+[`dsh3-01-operator-contracts-20260723.md`](dsh3-01-operator-contracts-20260723.md).
+
+## Pack-owned pure operator execution (DSH3-02 / SLM-370)
+
+**Fidelity label: repository contract.** The immutable registry does not add
+an algorithm from the cited transformation literature. It enforces the
+repository-specific authority boundary required before those operator families
+can be implemented: the same pack owns lookup, execution, ordinary-program
+validation, proof/rejection evidence, and replay.
+
+| | |
+| --- | --- |
+| **Capability seam** | optional `DslPack.operator_library`, fail-closed through `require` |
+| **Authority checks** | parse/serialize, static/schema oracle, scope, property order, canonicalization, canonical round trip |
+| **Identity** | registry declaration fingerprint, immutable source state/AST digests, exact application proof or typed rejection |
+| **Evidence** | real OpenUI authority fixture plus deterministic unit tests; no production operator or model claim |
+
+Dry-run and apply share the exact execution path; replay compares the complete
+recorded application identity. OpenUI receives no placeholder production
+operators, and partial packs remain unsupported. Evidence and scope:
+[`dsh3-02-pack-operator-registry-20260723.md`](dsh3-02-pack-operator-registry-20260723.md).
+
+## Permutation-invariant operator references (DSH3-03 / SLM-371)
+
+**Fidelity label: adapted representation contract.** Inspired by
+[Yin and Neubig, 2021](https://aclanthology.org/2021.acl-long.284/), this
+repository contract uses compiler-derived structural fingerprints and opaque
+request/branch-local surfaces. It does not expose learned pointer embeddings as
+identity and does not claim the paper's model architecture.
+
+| | |
+| --- | --- |
+| **Persistent identity** | canonical structure + parent fingerprint + hashed branch-local disambiguator |
+| **Descriptor scope** | inference-visible kind/type/fact IDs; current parent/order/position only for `IndexRef` |
+| **Resolution boundary** | exact request, state, branch, kind, unique membership, and current ordered parent |
+| **Controls** | opaque-ID permutation, candidate-order permutation, descriptor-input order, alpha-normalized structure, stale/cross-branch/type/missing/duplicate cases |
+
+Pure opaque-ID and candidate-order permutation preserves resolved semantic
+fingerprints and canonical fixture results. Stale state, cross-branch use, and
+conflicting parent-order edits fail with stable codes before operator
+execution. Evidence and scope:
+[`dsh3-03-permutation-invariant-references-20260723.md`](dsh3-03-permutation-invariant-references-20260723.md).
+
+## Core local OpenUI operators (DSH3-04 / SLM-372)
+
+**Fidelity label: adapted executable contract.** The six local edits adapt the
+explicit transformation/action inventories in
+[Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205) and
+[Allamanis et al., 2019](https://arxiv.org/abs/1810.13337) to OpenUI's
+pack-owned compiler boundary. They do not reproduce either model architecture
+or make a learned policy authoritative for legality.
+
+| | |
+| --- | --- |
+| **Inventory** | add/remove/replace node, set/unset property, reorder children |
+| **Legality** | component-schema roles, child compatibility, required properties, exact permutations, state-bound ordered indices |
+| **Authority** | canonical statement-binding rewrite followed by all ordinary OpenUI pack checks |
+| **Controls** | exhaustive small-state insertion/order fixtures, inverse identity, locality diff, opaque-ref permutation, stable rejection cases |
+
+Unsupported binding-graph removal, positional optional-property holes, v0.5
+programs, and schema behavior that cannot be represented exactly fail closed.
+No text-replacement fallback or learned legality path exists. Evidence and
+scope:
+[`dsh3-04-core-local-operators-20260723.md`](dsh3-04-core-local-operators-20260723.md).
+
+## Topology and template operators (DSH3-05 / SLM-373)
+
+**Fidelity label: adapted executable contract.** Move/reparent, wrapper,
+duplication, and exact template aliases adapt graph-edit action structure from
+[Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205) and the
+repository's
+[grammar topology diffusion](grammar-topology-diffusion.md) direction. This is
+not an implementation or evaluation of
+[Graph DiT](https://arxiv.org/abs/2405.20519), and no diffusion model is changed.
+
+| | |
+| --- | --- |
+| **Inventory** | move/reparent, wrap/unwrap, duplicate subtree, expand/contract template |
+| **Topology proof boundary** | inline capture-free subtrees, schema-owned destination roles, ordered-parent index refs, cycle prevention |
+| **Template authority** | immutable pack/source/lowering manifest; exact expanded/contracted AST identity; ordinary production-codec lowering |
+| **Controls** | inverse identity, ordinary-construction equivalence, explicit provenance, cycle/capture/cardinality/partial-pack failures |
+
+Binding-graph rewrites and capture-sensitive moves remain unsupported until the
+pack exposes exact rename/reference-graph proof. Missing template aliases omit
+the dependent operators rather than synthesizing a fallback. Evidence and
+scope:
+[`dsh3-05-topology-template-operators-20260723.md`](dsh3-05-topology-template-operators-20260723.md).
+
+## Exact bounded operator legal set (DSH3-06 / SLM-374)
+
+**Fidelity label: repository contract.** The legal-set boundary composes the
+compiler-owned declarations, opaque semantic references, and pack-owned dry-run
+authority established by DSH3-01 through DSH3-05. It does not add a learned
+policy or claim an implementation of a cited transformation model.
+
+| | |
+| --- | --- |
+| **Enumeration** | declaration-ordered typed Cartesian products, consumed lazily under a per-operator bound |
+| **Proof boundary** | every admitted tuple succeeds through the exact pack-owned registry dry-run path |
+| **Conservative decisions** | only complete zero-action products hard-prune; partial and unbounded products remain retained |
+| **Action surface** | `OPERATOR <operator_id> <slot>=<kind>:<request>:<opaque> ...`; ordinary nonoperator actions preserved |
+| **Controls** | independent small-domain brute force, zero false admissions, truncation, singleton forcing, opaque-ID and candidate-order permutation |
+
+Semantic action IDs use declaration and descriptor fingerprints rather than
+request-local opaque IDs. Exact singleton emission requires complete global
+coverage across the combined ordinary and operator action set. Evidence and
+scope:
+[`dsh3-06-operator-legal-set-20260723.md`](dsh3-06-operator-legal-set-20260723.md).
+
+## Semantic-first operator preference (DSH3-07 / SLM-375)
+
+**Fidelity label: repository contract.** The ranking contract separates
+compiler eligibility from canonical and sequence preference. The
+source/follow-up framing of
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) supplies only
+general metamorphic-control motivation; this is not an implementation or
+evaluation of that work.
+
+| | |
+| --- | --- |
+| **Non-tradeable boundary** | complete required semantics + verifier validity precede every brevity or sequence cost |
+| **Comparison scope** | exactly one `SemanticFrame` fingerprint and intended equivalence-class fingerprint |
+| **Structural direction** | minimize for simplification, maximize for explicit expansion, ignore for preserve intent |
+| **Sequence safety** | reject or explicitly penalize no-ops, cycles, repeated applications, and compiler-proven redundancy |
+| **Outputs** | deterministic tie tiers, strict preference pairs, final-AST groups, semantic-sequence groups |
+
+Operator-specific costs bind to successful application evidence and the exact
+declaration fingerprint; preference-pair generation is explicitly bounded.
+Evidence and scope:
+[`dsh3-07-semantic-operator-preference-20260723.md`](dsh3-07-semantic-operator-preference-20260723.md).
+
+## Immutable conversation state graph (DSH3-08 / SLM-376)
+
+**Fidelity label: adapted repository contract.** Explicit successful edit
+records are adapted from the structured edit framing in
+[Yin et al., 2019](https://arxiv.org/abs/1810.13337). The source/follow-up
+language of
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) supplies only
+general testing motivation. The immutable graph and history semantics are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **State identity** | parent + branch + canonical state/AST digests + branch-local reference-table fingerprint |
+| **AST edge** | exactly one successful pack-owned application record and exact output state |
+| **History edge** | explicit undo parent, redo child, checkout target, or deterministic fork; no AST mutation |
+| **Branch isolation** | fork-remapped semantic/runtime fingerprints and reallocated opaque refs; one next state per parent/branch |
+| **Replay** | root-to-cursor provenance, application, intermediate authority, fork reconstruction, and orphan audit |
+
+State-specific authority resolution supports compiler contexts rebuilt from
+each immutable node without introducing an ambient mutable cursor. Evidence and
+scope:
+[`dsh3-08-conversation-state-graph-20260723.md`](dsh3-08-conversation-state-graph-20260723.md).
+
+## Bounded branch merge (DSH3-09 / SLM-377)
+
+**Fidelity label: adapted repository contract.** The structured-edit framing in
+[Yin et al., 2019](https://arxiv.org/abs/1810.13337) and
+[Brody et al., 2020](https://arxiv.org/abs/2005.13209) motivates explicit,
+structural change records. The conservative three-way merge, conflict taxonomy,
+opaque-reference lineage, and compiler revalidation boundary are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **Inputs** | one verified operator edge from each of two distinct forks of one exact immutable base |
+| **Eligibility** | exact nonempty effects; disjoint base targets or symmetric commuting declarations |
+| **Composition** | deterministic structural three-way merge followed by ordinary pack authority |
+| **Refusal** | typed same-node, delete/modify, role/cardinality, child-order, scope/binder, stale-ref, or unsupported-effect conflict |
+| **Replay** | both application replays, fork-ref lineage, structural decision, result authority, and complete canonical identity |
+
+Conflict resolution remains an explicit later task; a commuting declaration
+permits exact composition but never authorizes branch selection or heuristic
+repair. Evidence and scope:
+[`dsh3-09-bounded-branch-merge-20260723.md`](dsh3-09-bounded-branch-merge-20260723.md).
+
+## Verified symbolic operator corpus (DSH3-10 / SLM-378)
+
+**Fidelity label: adapted repository contract.** The explicit edit framing in
+[Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205) and the
+syntax-tree generation framing in
+[Gong et al., 2024](https://arxiv.org/abs/2405.20519) motivate structured
+transformation data. The OpenUI legal-set sampling, closed QA schemas,
+conversation transitions, rejection ledger, and replay boundary are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **Targets** | operator-only, result-AST-only, dual, and immutable fork-history views |
+| **Authority** | exact pack-owned legal set and registry application; no LLM-defined semantics |
+| **Replay evidence** | before/after AST, effect, proof, preference, source record, and immutable conversation trace |
+| **Negative coverage** | complete rejection counts plus bounded typed rejected applications; zero illegal targets |
+| **Fixture result** | 20 records from two roots; 27 legal successes, 533 rejected combinations, zero invalid families |
+
+The measured result is fixture wiring evidence, not a full-corpus, learned-model,
+or ship claim. Evidence and scope:
+[`dsh3-10-symbolic-operator-corpus-20260723.md`](dsh3-10-symbolic-operator-corpus-20260723.md).
+
+## Verified collapsed operator traces (DSH3-12 / SLM-380)
+
+**Fidelity label: adapted repository contract.**
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) motivates
+systematic source/follow-up construction for metamorphic fault detection. The
+OpenUI trace-collapse schema, exact sequential replay boundary, canonical AST
+equality, explicit instruction order, typed refusal rules, and reordered
+operator hard negatives are repository-specific and do not reproduce the
+paper.
+
+| | |
+| --- | --- |
+| **Source authority** | complete immutable conversation replay through state-specific pack authority |
+| **Collapsed target** | ordered serialized operators plus the exact trace-authoritative final AST |
+| **Refusal** | short/history/no-op/cycle/redundant/replay-mismatch sequences |
+| **Metamorphic control** | actually reorder adjacent noncommuting applications; retain only conflict or different-result negatives |
+| **Fixture result** | two collapses, two exact final-state matches, two `ref.missing` reordered conflicts, zero NL targets |
+
+This is fixture wiring evidence, not a learned planning or ship claim. Evidence
+and scope:
+[`dsh3-12-collapsed-operator-traces-20260723.md`](dsh3-12-collapsed-operator-traces-20260723.md).
+
+## Frozen CAP2 operator evaluation (DSH3-13 / SLM-381)
+
+**Fidelity label: adapted repository contract.**
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) motivates
+systematic metamorphic source/follow-up construction, while
+[Tarlow et al., 2019](https://arxiv.org/abs/1911.01205) motivates precise AST
+diff prediction with pointer-like locations. The OpenUI multi-axis scores,
+history/merge/collapse strata, opaque-marker control, anti-cheat policies,
+confidence thresholds, frozen hashes, and AgentV envelope are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **Gold authority** | canonical legal-set generation plus exact application, conversation, and collapse replay |
+| **Model-facing scores** | legal mass, operator, typed arguments, AST, effect, locality, unintended edits, final state |
+| **Metamorphic strata** | history/branch, undo-redo, merge/conflict, collapse equality, reorder, stale ref, marker permutation |
+| **Anti-cheat controls** | unchanged 0/20; generic valid AST 0/20; constant operator 1/20 |
+| **Fixture result** | oracle 20/20; Wilson lower 0.8389; AgentV 6/6; zero NL rows |
+
+This freezes evaluator wiring and does not certify a learned CAP2 model.
+Evidence and scope:
+[`dsh3-13-cap2-operator-eval-20260723.md`](dsh3-13-cap2-operator-eval-20260723.md).
+
+## Reserved discrete-operator token baseline (DSH3-14 / SLM-382 / E803)
+
+**Fidelity label: adapted repository experiment.**
+[Tarlow et al., 2019](https://arxiv.org/abs/1911.01205) motivates explicit
+edit operations with structured locations. The reserved OpenUI framing,
+default-off checkpoint contract, compiler legal-set membership, matched
+hashed-token scorer, causal-change accounting, and stop rule are
+repository-specific and do not reproduce that paper.
+
+| | |
+| --- | --- |
+| **Arms** | result AST only, reserved operator only, and reserved operator plus result AST |
+| **Authority** | closed v1 framing; exact live `OperatorLegalSetV1` membership; pack-owned compiler application |
+| **Compatibility** | feature disabled by default; missing/schema/config-mismatched checkpoint metadata fails closed when enabled |
+| **Matched result** | every arm 0.50 exact action/result AST and 0.75 operator ID across three seeds; zero false admissions |
+| **Decision** | reject model-visible tokens: causal changes are absent or balanced correct/wrong, with no held-out improvement |
+
+The ambiguity is part of the measured result: symbolic questions expose state
+and legal-set identity but no edit intent, so the experiment does not add a
+hidden target channel to make the treatment pass. Evidence and scope:
+[`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md).
+
+## Terminal CAP2 capability disposition (DSH3-17 / SLM-385)
+
+**Fidelity label: repository evidence disposition.** This terminal ledger adds
+no paper-derived mechanism. It preserves the adapted evidence boundaries from
+DSH3-13 and E803 while preventing compiler correctness, unavailable evidence,
+or unrun conditional branches from being reported as learned capability.
+
+| | |
+| --- | --- |
+| **Capabilities** | symbolic transform, NL transform, discrete-token action, hierarchical head, topology application, bounded merge, efficiency |
+| **Positive boundary** | no learned capability has implemented benefit; symbolic transform and bounded merge remain compiler contracts only |
+| **Negative boundary** | E803 rejects discrete-token action benefit; CAP1-dependent NL and exact-hardware efficiency evidence are unavailable |
+| **Unrun boundary** | hierarchical head and topology application remain explicit unrun conditionals after their prerequisite failed |
+| **Decision** | reject `CERT_CAP2`; close DSH4 action distillation; no checkpoint or ship claim |
+
+The disposition is machine-checkable, records exact evidence identities, and
+fails closed if a positive E803 claim or unsupported benefit is substituted.
+Evidence and scope:
+[`dsh3-17-cap2-disposition-20260723/summary.md`](dsh3-17-cap2-disposition-20260723/summary.md).
+
+## Staged DSL capability baseline (DSH0-01 / SLM-345)
+
+**Fidelity label: repository contract.** The staged vocabulary introduces no
+paper-derived model mechanism. It separates certified capability
+(`CAP0_GRAMMAR`, `CAP1_SEMANTICS`, `CAP2_TRANSFORM`) from supervision source,
+evaluation source, task difficulty, and the existing authored-request L0-L5
+abstraction ladder.
+
+The baseline pins the clean repository, negative DSH3-17 frontier,
+symbol-only output contract, checkpoint implementation generation, cited
+artifact hashes, and canonical reuse map. Distillation remains a supervision
+process and trace mining remains an evidence process; neither is a capability.
+Missing evidence stays `unknown` or `invalid`, never numeric zero. No train,
+eval, checkpoint, certificate, or ship claim was produced. Evidence:
+[`dsh0-01-staged-harness-baseline-20260723.md`](dsh0-01-staged-harness-baseline-20260723.md).
+
+## Staged symbolic surface policy (DSH0-02 / SLM-346)
+
+**Fidelity label: repository contract.** The policy adds no learned mechanism.
+It turns the symbol-only target boundary into a typed, pack-authoritative
+staged admission report over existing runtime-marker roles and opaque scope
+identities.
+
+OpenUI and offline GraphQL fixtures retain required closed terminals, while
+open strings/numbers require templating and comments, undeclared identifiers,
+or undeclared markers fail closed. Alpha-renaming and marker-alias permutation
+controls preserve canonical/opaque meaning. No corpus, model, checkpoint,
+certificate, or ship claim was produced. Evidence:
+[`dsh0-02-symbolic-surface-policy-20260723.md`](dsh0-02-symbolic-surface-policy-20260723.md).
+
+## Staged synthesis plan state machine (DSH0-03 / SLM-347)
+
+**Fidelity label: repository contract.** `SynthesisPlanV1` adds no learned
+mechanism. It gives checked-in staged plans a strict canonical identity over
+the independent capability/supervision/evaluation/difficulty axes and exact
+pack, surface-policy, generator, validator, split, gate, seed, and destination
+versions.
+
+The executable state machine requires verified CAP0 evidence before CAP1,
+verified CAP1 evidence before NL/paraphrase CAP2, and verified CAP2 evidence
+before distillation or trace-promotion eligibility. Invalid plans fail before
+producer loading; the plan registry delegates language lookup to `DslPack`.
+No data build, model, checkpoint, certificate, or ship claim was produced.
+Evidence:
+[`dsh0-03-synthesis-plan-20260723.md`](dsh0-03-synthesis-plan-20260723.md).
+
+## Content-addressed capability artifacts (DSH0-04 / SLM-348)
+
+**Fidelity label: repository contract.** The V1 artifact graph applies
+content-addressed and W3C-PROV-style lineage ideas to staged questions,
+answers, accepted QA sets, derivation activities, validations, and capability
+results. It adds no learned mechanism.
+
+Canonical content identity excludes timestamps, host paths, and invocation
+IDs; activity identity retains exact run/process/config/code provenance.
+Accepted answer sets remain separate from canonical preference. Publication
+fails on unresolved lineage, missing process versions, incomplete accepted
+compiler coverage, or schema/recorded-ID drift. Optional LLM and teacher
+processes pin provider/model/prompt or exact-versus-approximate trace identity.
+No data build, model, checkpoint, capability certificate, or ship claim was
+produced. Evidence:
+[`dsh0-04-capability-artifacts-20260723.md`](dsh0-04-capability-artifacts-20260723.md).
+
+## Root-family derivation DAG and leakage firewall (DSH0-05 / SLM-349)
+
+**Fidelity label: repository contract.** The dataset-sidecar DAG applies
+content-addressed lineage and root-before-expansion splitting without adding a
+learned mechanism. Descendants inherit one root family and split; mixed-split
+composition fails closed. Exact, alpha-equivalent, canonical-AST,
+source-parent, and near-template cross-split candidates are persisted with
+typed quarantine evidence, never silently dropped. No staged corpus, model,
+checkpoint, certificate, or ship claim was produced. Evidence:
+[`dsh0-05-artifact-graph-20260723.md`](dsh0-05-artifact-graph-20260723.md).
+
+## Synthesis-plan train-data materialization (DSH0-06 / SLM-350)
+
+**Fidelity label: repository contract.** Plan destinations now feed their
+append-only artifact graphs through the single canonical train-data path.
+Typed question/answer/QA identities survive on each `ExampleRecord` and
+canonical preference, while plan-authoritative symbolic-surface, active-pack,
+integrity, and tokenizer round trips precede the existing quality and leakage
+gates.
+
+Invalid targets retain both train-data rejection and graph quarantine evidence.
+Plan-only manifests publish graph identity/version/counts plus a deterministic
+dataset card; the pinned no-plan fixture remains byte-identical. No durable
+corpus, model, checkpoint, capability certificate, or ship claim was produced.
+Evidence:
+[`dsh0-06-synthesis-materialization-20260723.md`](dsh0-06-synthesis-materialization-20260723.md).
+
+## Declared grammar capability conformance (DSH1-01 / SLM-353)
+
+| | |
+| --- | --- |
+| **Paper** | Macedo, Viera, and Saraiva, *Property-based Testing of Attribute Grammars*, SLE 2025. [ACM DOI: 10.1145/3732771.3742710](https://doi.org/10.1145/3732771.3742710) |
+| **Fidelity** | **Adapted** — shared language-agnostic conformance over declared grammar authority; not an implementation of the paper's attribute-grammar testing system |
+| **Code** | [`grammar_capabilities.py`](../../src/slm_training/dsl/grammar_capabilities.py), pack wiring in [`pack.py`](../../src/slm_training/dsl/pack.py), and shared fixtures in [`test_grammar_capabilities.py`](../../tests/test_dsl/test_grammar_capabilities.py) |
+| **Evidence** | [`dsh1-01-grammar-capability-adapter-20260723.md`](dsh1-01-grammar-capability-adapter-20260723.md) |
+
+The relevant principle is to derive properties from the declared grammar and
+attribute authority, then reuse the property surface across languages. The
+adapter applies that boundary to exact productions, grammar analyses, pack
+operations, and authority fingerprints. It deliberately has no
+example-to-production inference path.
+
+## Grammar-directed minimal alternative witnesses (DSH1-02 / SLM-354)
+
+| | |
+| --- | --- |
+| **Papers** | Rabinovich, Stern, and Klein, *Abstract Syntax Networks for Code Generation and Semantic Parsing*, ACL 2017. [ACL Anthology](https://aclanthology.org/P17-1105/). Yin and Neubig, *TRANX: A Transition-based Neural Abstract Syntax Parser for Semantic Parsing and Code Generation*, EMNLP 2018. [ACL Anthology](https://aclanthology.org/D18-2002/) |
+| **Fidelity** | **Adapted** — grammar/AST-governed construction and target-language generality; deterministic alternative coverage rather than either neural transition decoder |
+| **Code** | [`minimal_witnesses.py`](../../src/slm_training/dsl/minimal_witnesses.py), declared traces/candidates in [`grammar_capabilities.py`](../../src/slm_training/dsl/grammar_capabilities.py), and OpenUI authority behind [`pack.py`](../../src/slm_training/dsl/pack.py) |
+| **Evidence** | [`dsh1-02-minimal-alternative-witnesses-20260723.md`](dsh1-02-minimal-alternative-witnesses-20260723.md) |
+
+The shared selector treats the pack's declared productions and containing
+contexts as authority, selects lexicographic minimum admitted witnesses, and
+blocks unexplained reachable/productive gaps. It does not train or reproduce
+the cited models.
+
+## Symbolic Harness DSL for CAP0 tasks (DSH1-03 / SLM-355)
+
+| | |
+| --- | --- |
+| **Mechanism** | Versioned repository protocol; no new paper mechanism |
+| **Fidelity** | **Repository contract** — closed symbolic task framing and pack-owned fragment validation, not a learned semantic parser |
+| **Code** | [`harness_dsl.py`](../../src/slm_training/dsl/harness_dsl.py), grammar authority in [`harness.lark`](../../src/slm_training/dsl/grammars/harness.lark), pack adapter in [`pack.py`](../../src/slm_training/dsl/pack.py), and CAP0 conversion in [`scope_corpus.py`](../../src/slm_training/harnesses/train_data/scope_corpus.py) |
+| **Evidence** | [`dsh1-03-symbolic-harness-dsl-20260723.md`](dsh1-03-symbolic-harness-dsl-20260723.md) |
+
+The protocol removes open natural-language task instructions from CAP0
+identity/canonicalization rows. It reserves typed operations, carries exact
+pack/category/artifact/marker authority, validates embedded fragments only
+through the active pack, and fails before model input construction. It adds no
+learned mechanism and does not establish suffix-completion or composition
+capability.
+
+## Discrete flow objective-attribution fixture (VFA1-02 / SLM-200)
+
+| | |
+| --- | --- |
+| **Papers** | Gat et al., *Discrete Flow Matching*, [arXiv:2407.15595](https://arxiv.org/abs/2407.15595). Lipman et al., *Flow Matching for Generative Modeling*, [arXiv:2210.02747](https://arxiv.org/abs/2210.02747). |
+| **Fidelity** | **Adapted / surrogate** — exact finite-graph A9 plus explicitly labelled `adapted_path_approximation` bridge targets; not faithful production DFM |
+| **Code** | [`slm200_flow_objective_attribution.py`](../../src/slm_training/harnesses/experiments/slm200_flow_objective_attribution.py) and [`run_flow_objective_attribution.py`](../../scripts/run_flow_objective_attribution.py) |
+| **Evidence** | [`iter-slm200-flow-objective-attribution-20260723.md`](iter-slm200-flow-objective-attribution-20260723.md) |
+
+The A0–A9 registry isolates normalized CE, time/state weighting, hazard, edge
+rate, and shuffled-target mechanisms while keeping exact candidate authority,
+total capacity, initialization, row order, and decode fixed. The committed run
+is only a two-target non-publishable fixture screen: confirmation remains
+untouched, the shuffled control does not degrade, and no causal weighting,
+hazard, transport, checkpoint, or ship conclusion is supported.
+
+## Recursive update architecture gate (RSC1-04 / SLM-243)
+
+| | |
+| --- | --- |
+| **Papers** | Parisotto et al., *Stabilizing Transformers for Reinforcement Learning*, [arXiv:1910.06764](https://arxiv.org/abs/1910.06764). Touvron et al., *Going deeper with Image Transformers*, [arXiv:2103.17239](https://arxiv.org/abs/2103.17239). |
+| **Fidelity** | **Adapted / diagnostic** — residual-delta, learned LayerScale, sigmoid-gated, true-empty-F, and private-norm controls applied to the repository's shared recursive denoiser; not a reproduction of either paper's full architecture or training regime |
+| **Code** | [`recursive_denoiser.py`](../../src/slm_training/models/recursive_denoiser.py), [`slm243_recursive_update_gate.py`](../../src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py), and [`run_slm243_recursive_update_gate.py`](../../scripts/run_slm243_recursive_update_gate.py) |
+| **Evidence** | [`iter-slm243-recursive-update-gate-20260724.md`](iter-slm243-recursive-update-gate-20260724.md) |
+
+The experiment isolates nested residual identity, empty-F pass-through, and
+shared-norm interference with checkpoint-recorded, default-off controls.
+LayerScale clears the bounded three-seed stability gate through R=8, but the
+evidence is an untrained scratch architecture screen. It authorizes only a
+later `layerscale_diagnostic` SLM-233 mode and leaves semantic, promotion,
+shipping, and production-default claims blocked.
+
+## Matched recursive-depth campaign (RSC2-01 / SLM-233)
+
+| | |
+| --- | --- |
+| **Mechanism** | Existing shared-recursive denoiser plus SLM-243's selected LayerScale diagnostic; no new tower or paper mechanism |
+| **Fidelity** | **Repository diagnostic** — paired scratch proxy/control campaign under repaired floor, observability, dynamics, z-use, and update gates; not production-scale semantic evidence |
+| **Code** | [`slm233_recursive_campaign.py`](../../src/slm_training/harnesses/experiments/slm233_recursive_campaign.py) and [`run_slm233_recursive_campaign.py`](../../scripts/run_slm233_recursive_campaign.py) |
+| **Evidence** | [`iter-slm233-recursive-campaign-20260724.md`](iter-slm233-recursive-campaign-20260724.md) |
+
+The five-arm primary comparison fixes each denoiser call at four transformer
+block evaluations while isolating stacked execution, shared recurrence,
+normalized all-depth supervision, y-only recurrence, and R=4 recurrence.
+Three paired seeds share initialization, data order, corruption, exposure, and
+decode/evaluator budgets. A secondary pair matches active trainable parameters
+and exposes rather than hides LayerScale's serialized parameter/byte residual.
+Test depths 1/2/4/6/8 remain diagnostic and explicitly label train R.
+
+`RecursiveCoreGateV2` returns `architecture_not_identifiable`: the semantic
+floor is inconclusive and the joined recurrence gates are stagnant,
+expansive-unstable, and unstable. Descriptive NLL/structure/resource movement
+therefore cannot identify a semantic architecture effect or falsify recurrence.
+Protected/recovery outcomes are censored, prior mechanistic values are not
+transplanted onto new scratch states, no durable checkpoint exists, and
+RSC3/RSC4, promotion, production defaults, readiness, and ship claims remain
+blocked.
+
+## Dynamic legal-edit proposal amortization (FFE3-03 / SLM-194)
+
+| | |
+| --- | --- |
+| **Papers** | Vinyals, Fortunato, and Jaitly, *Pointer Networks*, [arXiv:1506.03134](https://arxiv.org/abs/1506.03134). Kalyan et al., *Neural-Guided Deductive Search for Real-Time Program Synthesis from Examples*, [arXiv:1804.01186](https://arxiv.org/abs/1804.01186). |
+| **Fidelity** | **Adapted / diagnostic** — dynamic per-state candidate scoring and neural-guided scheduling, with compiler-owned membership and mandatory exact fallback; not a reproduction of either paper's model or search system |
+| **Code** | [`proposals.py`](../../src/slm_training/flow/proposals.py), [`slm194_candidate_proposals.py`](../../src/slm_training/harnesses/experiments/slm194_candidate_proposals.py), and [`run_candidate_proposal_matrix.py`](../../scripts/run_candidate_proposal_matrix.py) |
+| **Evidence** | [`iter-slm194-candidate-proposals-20260724.md`](iter-slm194-candidate-proposals-20260724.md) |
+
+The common interface assigns scores to cheap feature objects from an exact
+dynamic candidate set; it never creates legality, permanently prunes, converts
+UNKNOWN to UNSUPPORTED, or consumes final/future witness text. The fixture
+compares deterministic, retrieval, learned, direct-logit, flow-logit, and
+oracle schedules over one manifest.
+
+The four-row/two-cluster screen rejects a positive amortization claim: complete
+recall requires near-complete `k`, exact fallback removes final work savings,
+and no eligible arm reaches the frozen 30% warm-p50 threshold. Exact cached
+enumeration remains the decision; confirmation, checkpoints, defaults,
+promotion, and shipping remain untouched.
+
+## Minimal compiler-latent probe gate closeout (RSC3-01 / SLM-234)
+
+| | |
+| --- | --- |
+| **Mechanism** | None implemented — the proposed two-slot internal looped latent (root/inventory, adapted from LOTUS, arXiv:2606.31779) was never authorized |
+| **Fidelity** | **Gate closeout** — zero-compute authorization audit only; no probe exists to classify as faithful/adapted |
+| **Evidence** | [`iter-slm234-compiler-latent-closeout-20260724.md`](iter-slm234-compiler-latent-closeout-20260724.md) |
+
+SLM-234 closed `not_authorized` with no production code: SLM-229 returned
+`blocked_by_recurrence` without publishing a `MinimalCompilerLatentContractV1`
+hash, the semantic floor gate is `inconclusive`, SLM-233's
+`RecursiveCoreGateV2` returned `architecture_not_identifiable` with `rsc3` in
+its blocked claims, and the SLM-230/231 recurrence gates are
+`stagnant`/`expansive_unstable`. RSC4 typed expansion stays blocked. The probe
+may be reopened only if a differentiation memo authorizes a contract, the
+floor escapes, and a matched recursive campaign returns an authorizing verdict
+with stable dynamics.
+
+## RSC4 recurrent/looped-latent disposition (SLM-236)
+
+**Fidelity label: adapted diagnostic / governance closeout, not a new experiment.**
+[`RecurrentLatentDispositionV1`](recurrent-semantic-computation-looped-latent-disposition.md)
+is `blocked`: SLM-229 lacks an authorized contract, the semantic floor is
+inconclusive, SLM-230/231/232 are stagnant or unstable, SLM-233 cannot identify
+a semantic architecture effect, and SLM-234 did not authorize the minimal
+probe. No latent configuration, checkpoint, or default is promoted.
+
+## LOTUS-to-OpenUI transfer contract (LOT0-01 / SLM-248)
+
+[`lotus-openui-fidelity-contract-v1.md`](lotus-openui-fidelity-contract-v1.md)
+records the mechanism-fidelity, non-duplication, source-provenance, and
+preregistration contract for assessing LOTUS-style looped latent computation
+in the OpenUI track. The accompanying machine-readable contract and source
+manifest are [`lotus-openui-fidelity-contract-v1.json`](lotus-openui-fidelity-contract-v1.json)
+and [`lotus-openui-sources.json`](../../src/slm_training/resources/autoresearch/lotus-openui-sources.json).
+
+The verdict is `needs_target_trace_contract`: this is research intake only.
+It authorizes a follow-up to define the OpenUI target-trace and control
+contract, but it authorizes no model, training, checkpoint, semantic-quality,
+latency, or adoption claim.
 
 ## Honesty rules (for docs & claims)
 

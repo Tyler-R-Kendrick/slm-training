@@ -8,6 +8,7 @@ deep-supervision objective and its fail-closed
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.recursive_denoiser import (
     ArchitectureComparisonReportV1,
+    RecursiveDepthDiagnosticsV1,
     SharedRecursiveDenoiserTower,
     StackedMatchedStateDenoiserTower,
     compare_denoiser_architectures,
@@ -43,6 +45,7 @@ from slm_training.models.twotower import (
     TwoTowerConfig,
     TwoTowerModel,
     migrate_recursive_depth_aux_config,
+    reduce_weighted_recursive_depth_losses,
     resolve_recursive_depth_aux_mode,
     validate_recursive_depth_supervision,
 )
@@ -506,6 +509,309 @@ def test_weight_sharing_across_recursions() -> None:
     assert len(f_ids) + len(g_ids) == len(tower.layers)
 
 
+def test_recursive_diagnostics_as_is_is_bit_identical_and_deterministic() -> None:
+    torch.manual_seed(282)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=3,
+    )
+    tower.eval()
+    noisy = torch.randint(1, 23, (2, 5))
+    targets = torch.randint(1, 23, (2, 5))
+    mask = torch.tensor(
+        [[True, True, False, True, False], [True, False, True, True, True]]
+    )
+    ctx = torch.randn(2, 3, 16)
+
+    with torch.no_grad():
+        baseline = tower.recursive_outputs(noisy, ctx, pad_id=0)
+        first = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets, diagnostic_mask=mask,
+        )
+        second = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets, diagnostic_mask=mask,
+        )
+
+    assert "diagnostics" not in baseline
+    assert torch.equal(baseline["logits"], first["logits"])
+    for expected, actual in zip(
+        baseline["depth_logits"], first["depth_logits"], strict=True
+    ):
+        assert torch.equal(expected, actual)
+    assert len(first["diagnostics"]) == len(second["diagnostics"]) == 3
+    for left, right in zip(
+        first["diagnostics"], second["diagnostics"], strict=True
+    ):
+        assert isinstance(left, RecursiveDepthDiagnosticsV1)
+        for field_name in left.__dataclass_fields__:
+            left_value = getattr(left, field_name)
+            right_value = getattr(right, field_name)
+            if isinstance(left_value, torch.Tensor):
+                assert torch.equal(left_value, right_value)
+            else:
+                assert left_value == right_value
+
+
+def test_recursive_diagnostics_schema_shapes_metrics_and_ratios() -> None:
+    torch.manual_seed(282)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2,
+    )
+    noisy = torch.randint(1, 23, (2, 5))
+    targets = torch.randint(1, 23, (2, 5))
+    mask = torch.tensor(
+        [[True, True, False, True, False], [True, False, True, True, True]]
+    )
+    out = tower.recursive_outputs(
+        noisy, torch.randn(2, 3, 16), pad_id=0, diagnostics=True,
+        diagnostic_targets=targets, diagnostic_mask=mask,
+    )
+
+    records = out["diagnostics"]
+    assert len(records) == 2
+    for step, record in enumerate(records, start=1):
+        assert isinstance(record, RecursiveDepthDiagnosticsV1)
+        assert record.contract_version == "RecursiveDepthDiagnosticsV1"
+        assert record.step == step
+        assert record.update_mode == "as_is"
+        assert record.y.shape == record.y_update.shape == (2, 5, 16)
+        assert record.z is not None and record.z.shape == (2, 5, 16)
+        assert record.z_update is not None
+        assert record.z_update.shape == (2, 5, 16)
+        assert torch.equal(record.target_count, mask.sum(dim=1))
+        tensor_fields = (
+            record.y, record.z, record.y_update, record.z_update,
+            record.y_norm, record.z_norm, record.y_update_norm,
+            record.z_update_norm, record.y_update_state_ratio,
+            record.z_update_state_ratio, record.cross_entropy, record.accuracy,
+            record.entropy, record.kl_to_final,
+        )
+        assert all(value is not None for value in tensor_fields)
+        assert all(torch.isfinite(value).all() for value in tensor_fields)
+        assert all(not value.requires_grad for value in tensor_fields)
+        y_before = record.y - record.y_update
+        expected_ratio = record.y_update.float().flatten(1).norm(dim=1) / (
+            y_before.float().flatten(1).norm(dim=1).clamp_min(
+                torch.finfo(torch.float32).eps
+            )
+        )
+        torch.testing.assert_close(record.y_update_state_ratio, expected_ratio)
+    assert records[0].kl_to_next is not None
+    assert torch.isfinite(records[0].kl_to_next).all()
+    assert records[-1].kl_to_next is None
+    torch.testing.assert_close(
+        records[-1].kl_to_final, torch.zeros(2), atol=1e-6, rtol=0
+    )
+    expected_ce = F.cross_entropy(
+        out["depth_logits"][0].detach().float().transpose(1, 2),
+        targets,
+        reduction="none",
+    )
+    expected_ce = (expected_ce * mask).sum(dim=1) / mask.sum(dim=1)
+    torch.testing.assert_close(records[0].cross_entropy, expected_ce)
+
+
+def test_recursive_residual_delta_removes_empty_f_layer_identity_update() -> None:
+    torch.manual_seed(282)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+        recursive_steps=1, recursive_transition_layers=1,
+    )
+    tower.eval()
+    noisy = torch.randint(1, 23, (2, 5))
+    ctx = torch.randn(2, 3, 16)
+    with torch.no_grad():
+        as_is = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True
+        )["diagnostics"][0]
+        residual_delta = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_update_mode="residual_delta",
+        )["diagnostics"][0]
+
+    # One transition layer leaves F empty, so its layer stack is identity.
+    assert residual_delta.z_update is not None
+    assert torch.equal(
+        residual_delta.z_update, torch.zeros_like(residual_delta.z_update)
+    )
+    assert as_is.z_update is not None and torch.any(as_is.z_update != 0)
+    assert not torch.equal(as_is.y, residual_delta.y)
+
+
+def test_recursive_update_default_is_exact_historical_current_v1() -> None:
+    torch.manual_seed(243)
+    implicit = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2,
+    )
+    torch.manual_seed(243)
+    explicit = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2, update_mode="current_v1",
+        empty_f_mode="pass_through", norm_mode="shared",
+    )
+    assert implicit.state_dict().keys() == explicit.state_dict().keys()
+    for key in implicit.state_dict():
+        assert torch.equal(implicit.state_dict()[key], explicit.state_dict()[key])
+    noisy = torch.randint(1, 23, (2, 5))
+    context = torch.randn(2, 3, 16)
+    assert torch.equal(
+        implicit(noisy, context, pad_id=0),
+        explicit(noisy, context, pad_id=0),
+    )
+
+
+def test_recursive_true_empty_f_zero_is_independent_of_outer_update() -> None:
+    torch.manual_seed(243)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+        recursive_steps=1, recursive_transition_layers=1,
+        update_mode="current_v1", empty_f_mode="zero",
+    )
+    initial = tower.initial_transition_state(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 16), pad_id=0
+    )
+    step = tower.transition_step(
+        initial["y"], initial["z"], torch.randn(2, 3, 16),
+        initial["self_pad_mask"],
+    )
+    assert step["z_update"] is not None
+    assert torch.equal(step["z_update"], torch.zeros_like(step["z_update"]))
+
+    nonempty = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=1, recursive_transition_layers=2,
+        update_mode="current_v1", empty_f_mode="zero",
+    )
+    assert len(nonempty._f_layers) == 1
+
+
+@pytest.mark.parametrize("update_mode", ["delta_only", "layerscale", "gated"])
+def test_recursive_repair_updates_are_finite_and_trainable(update_mode: str) -> None:
+    torch.manual_seed(243)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=8, n_layers=2, n_heads=1, max_len=16,
+        recursive_steps=8, update_mode=update_mode, empty_f_mode="zero",
+        norm_mode="private" if update_mode == "gated" else "shared",
+    )
+    output = tower(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 8), pad_id=0
+    )
+    assert torch.isfinite(output).all()
+    output.square().mean().backward()
+    assert all(
+        parameter.grad is not None and torch.isfinite(parameter.grad).all()
+        for name, parameter in tower.named_parameters()
+        if "update_" in name
+    )
+    if update_mode == "layerscale":
+        assert torch.allclose(
+            tower.f_update_scale.detach(), torch.full((8,), 1e-3)
+        )
+    if update_mode == "gated":
+        assert float(torch.sigmoid(tower.f_update_gate).max()) < 0.02
+
+
+def test_recursive_private_norms_are_distinct_and_receive_gradients() -> None:
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=8, n_layers=2, n_heads=1, max_len=16,
+        recursive_steps=2, update_mode="gated", norm_mode="private",
+    )
+    assert tower.f_norm is not tower.g_norm
+    assert tower.f_norm is not tower.norm
+    assert tower.g_norm is not tower.norm
+    tower(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 8), pad_id=0
+    ).square().mean().backward()
+    assert tower.f_norm.weight.grad is not None
+    assert tower.g_norm.weight.grad is not None
+    assert tower.norm.weight.grad is not None
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("update_mode", "unknown"),
+        ("empty_f_mode", "unknown"),
+        ("norm_mode", "unknown"),
+    ],
+)
+def test_recursive_repair_modes_fail_closed(field: str, value: str) -> None:
+    kwargs = {field: value}
+    with pytest.raises(ValueError, match=field):
+        SharedRecursiveDenoiserTower(vocab_size=7, d_model=4, n_heads=1, **kwargs)
+
+
+def test_recursive_diagnostics_y_only_uses_nullable_z_fields() -> None:
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2, z_state_mode="y_only",
+    )
+    out = tower.recursive_outputs(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 16), pad_id=0,
+        diagnostics=True,
+    )
+    for record in out["diagnostics"]:
+        assert record.z is None
+        assert record.z_update is None
+        assert record.z_norm is None
+        assert record.z_update_norm is None
+        assert record.z_update_state_ratio is None
+        assert record.target_count is None
+        assert record.cross_entropy is None
+        assert record.accuracy is None
+        assert record.entropy is None
+        assert record.kl_to_next is None
+        assert record.kl_to_final is None
+
+
+def test_recursive_diagnostics_reject_invalid_inputs() -> None:
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+    )
+    noisy = torch.randint(1, 23, (2, 5))
+    ctx = torch.randn(2, 3, 16)
+    targets = torch.randint(1, 23, (2, 5))
+    with pytest.raises(ValueError, match="require diagnostics=True"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostic_update_mode="residual_delta"
+        )
+    with pytest.raises(ValueError, match="not one of"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_update_mode="unknown",
+        )
+    with pytest.raises(ValueError, match="requires diagnostic_targets"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_mask=torch.ones_like(noisy, dtype=torch.bool),
+        )
+    with pytest.raises(ValueError, match="shape must match"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets[:, :-1],
+        )
+    with pytest.raises(TypeError, match="dtype torch.long"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets.float(),
+        )
+    with pytest.raises(TypeError, match="dtype torch.bool"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets, diagnostic_mask=torch.ones_like(targets),
+        )
+    with pytest.raises(ValueError, match="at least one target per example"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets,
+            diagnostic_mask=torch.zeros_like(targets, dtype=torch.bool),
+        )
+
+
 def test_runtime_symbol_features_sliced_projection() -> None:
     vocab, d_model = 23, 16
     tower = SharedRecursiveDenoiserTower(
@@ -578,6 +884,7 @@ def test_twotower_deep_supervision_metrics() -> None:
             recursive_steps=3,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=(0.5, 1.0, 0.5),
+            recursive_depth_aux_mode="all_depths",
             grammar_constrained=False,
             seed=0,
         ),
@@ -610,7 +917,13 @@ def test_checkpoint_migration_to_shared_recursive(tmp_path: Path) -> None:
     report = migrate_to_shared_recursive_denoiser(
         src,
         dst,
-        config={"recursive_steps": 2, "recursive_transition_layers": 2},
+        config={
+            "recursive_steps": 2,
+            "recursive_transition_layers": 2,
+            "recursive_depth_supervision_weights": (1.0,),
+            "recursive_depth_aux_mode": "intermediate_only",
+            "recursive_depth_aux_weight": 0.25,
+        },
         device="cpu",
     )
     assert dst.exists()
@@ -628,6 +941,8 @@ def test_checkpoint_migration_to_shared_recursive(tmp_path: Path) -> None:
 
     loaded = TwoTowerModel.from_checkpoint(dst, device="cpu")
     assert loaded.config.denoiser_arch == "shared_recursive"
+    assert loaded.config.recursive_depth_aux_mode == "intermediate_only"
+    assert loaded.config.recursive_depth_aux_weight == 0.25
     assert isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
 
 
@@ -663,12 +978,39 @@ def _recursive_model_for_weights(
             recursive_steps=recursive_steps,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=weights,
+            recursive_depth_aux_mode=("all_depths" if weights else None),
             grammar_constrained=False,
             seed=seed,
         ),
         device="cpu",
     )
     return model, records
+
+
+@pytest.mark.parametrize(
+    ("raw_losses", "weights", "expected"),
+    [
+        ((1.0, 2.0, 3.0), (0.5, 1.0, 0.5), 2.0),
+        ((1.0, 2.0), (1.0, 0.0), 1.0),
+        ((1.0, 2.0), (0.0, 1.0), 2.0),
+    ],
+)
+def test_reduce_weighted_recursive_depth_losses_exact_matrix(
+    raw_losses: tuple[float, ...],
+    weights: tuple[float, ...],
+    expected: float,
+) -> None:
+    validated = validate_recursive_depth_supervision(
+        weights=weights,
+        num_depths=len(weights),
+        supports_recursive_outputs=True,
+    )
+    contributions, total = reduce_weighted_recursive_depth_losses(
+        tuple(torch.tensor(loss) for loss in raw_losses), validated
+    )
+
+    assert len(contributions) == len(raw_losses)
+    torch.testing.assert_close(total, torch.tensor(expected))
 
 
 def test_weights_zero_one_equals_l1_exactly() -> None:
@@ -790,6 +1132,7 @@ def test_training_loss_fails_closed_on_stacked_denoiser() -> None:
                 denoiser_layers=2,
                 denoiser_arch="stacked",
                 recursive_depth_supervision_weights=(1.0,),
+                recursive_depth_aux_mode="all_depths",
                 grammar_constrained=False,
                 seed=0,
             ),
@@ -863,10 +1206,9 @@ def test_gradient_reaches_only_positive_weight_depths() -> None:
     validated = validate_recursive_depth_supervision(
         weights=(0.0, 1.0), num_depths=2, supports_recursive_outputs=True
     )
-    norm_w0, norm_w1 = validated.normalized()
     l0 = F.cross_entropy(logits_zero_weighted, targets)
     l1 = F.cross_entropy(logits_positive_weighted, targets)
-    total = norm_w0 * l0 + norm_w1 * l1
+    _, total = reduce_weighted_recursive_depth_losses((l0, l1), validated)
     total.backward()
 
     assert logits_zero_weighted.grad is not None
@@ -903,28 +1245,31 @@ def test_fixture_architecture_comparison_delta_reproduced_from_formula() -> None
 
 
 def test_fixture_metrics_agree_with_manual_calculation() -> None:
-    """The committed fixture's deep-supervision metrics (weights=(0.5, 1.0))
-    match the manual weighted-mean calculation from its own recorded raw
-    per-depth losses."""
+    """The fixture reports canonical intermediate-only and correction math."""
     from scripts.run_slm138_recursive_denoiser_fixture import _run_fixture
 
     report = _run_fixture()
     metrics = report["deep_supervision_metrics"]
-    expected = (
-        0.5 * metrics["recursive_depth_loss_0"] + 1.0 * metrics["recursive_depth_loss_1"]
-    ) / 1.5
+    assert metrics["recursive_depth_aux_mode"] == "intermediate_only"
     assert metrics["recursive_depth_supervision_loss"] == pytest.approx(
-        expected, rel=1e-5
+        metrics["recursive_depth_loss_0"], rel=1e-6
     )
-    # The historical defective formula was sum(L_d) / sum(w_d) -- the
-    # unweighted mean -- which this fixture's own recorded values must no
-    # longer reproduce (would only coincide by chance if L0 == L1).
-    defective = (
-        metrics["recursive_depth_loss_0"] + metrics["recursive_depth_loss_1"]
-    ) / 1.5
-    assert metrics["recursive_depth_supervision_loss"] != pytest.approx(
-        defective, rel=1e-9
-    ) or math.isclose(metrics["recursive_depth_loss_0"], metrics["recursive_depth_loss_1"])
+    assert metrics["recursive_final_depth_aux_contribution"] == 0.0
+    assert metrics["combined_training_loss"] == pytest.approx(
+        metrics["primary_final_reconstruction_loss"]
+        + metrics["recursive_intermediate_aux_loss"],
+        rel=1e-6,
+    )
+
+    correction = report["depth_supervision_arithmetic_correction"]
+    l0, final = correction["raw_depth_losses"]
+    assert correction["old_buggy_unweighted_sum_divided_by_weight_sum"] == pytest.approx(
+        (l0 + final) / 1.5
+    )
+    assert correction["corrected_historical_weighted_mean"] == pytest.approx(
+        (0.5 * l0 + final) / 1.5
+    )
+    assert correction["quality_claim"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -1186,14 +1531,21 @@ def test_migrate_recursive_depth_aux_config_deterministic() -> None:
     assert migrate_recursive_depth_aux_config(already_migrated) == already_migrated
 
 
-def test_resolve_recursive_depth_aux_mode_backward_compatible() -> None:
-    """``resolve_recursive_depth_aux_mode`` mirrors the migration policy for
-    in-memory (non-checkpoint) configs, e.g. TwoTowerConfig() built directly
-    in Python without ever touching the new field."""
+def test_resolve_recursive_depth_aux_mode_requires_explicit_weighted_semantics() -> None:
     assert resolve_recursive_depth_aux_mode(None, ()) == "off"
-    assert resolve_recursive_depth_aux_mode(None, (0.5, 1.0)) == "legacy_all_depths"
+    with pytest.raises(ValueError, match="explicit.*recursive_depth_aux_mode"):
+        resolve_recursive_depth_aux_mode(None, (0.5, 1.0))
     assert resolve_recursive_depth_aux_mode("all_depths", (0.5, 1.0)) == "all_depths"
     assert resolve_recursive_depth_aux_mode("off", ()) == "off"
+
+
+def test_new_weighted_config_requires_explicit_aux_mode() -> None:
+    with pytest.raises(ValueError, match="explicit.*recursive_depth_aux_mode"):
+        TwoTowerConfig(
+            denoiser_arch="shared_recursive",
+            recursive_steps=2,
+            recursive_depth_supervision_weights=(0.5, 1.0),
+        )
 
 
 def test_generated_decomposition_sums_reproduce_scalar_loss_exactly() -> None:
@@ -1266,6 +1618,9 @@ from scripts.run_slm138_recursive_denoiser_fixture import (
     _canonical_json,
     _clean_tree_gate,
     _compare_reports,
+    _evaluate_recurrence_preregistration,
+    _recurrence_health_corruption_schedule,
+    _run_recurrence_health_pair,
     _run_fixture,
 )
 
@@ -1348,6 +1703,7 @@ def test_rsc_a03_restored_generator_state_repeated_evaluation_identical() -> Non
             recursive_steps=2,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=(0.5, 1.0),
+            recursive_depth_aux_mode="all_depths",
             grammar_constrained=False,
             seed=0,
         ),
@@ -1392,6 +1748,7 @@ def test_rsc_a03_restoring_only_torch_rng_is_insufficient_without_model() -> Non
             recursive_steps=2,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=(0.5, 1.0),
+            recursive_depth_aux_mode="all_depths",
             grammar_constrained=False,
             seed=0,
         ),
@@ -1417,6 +1774,7 @@ def test_rsc_a03_different_training_corruption_seed_changes_only_corruption_fiel
         "losses",
         "post_update_verification",
         "deep_supervision_metrics",
+        "depth_supervision_arithmetic_correction",
     }
     unexpected = {
         k: v
@@ -1566,6 +1924,294 @@ def test_rsc_a03_determinism_report_verdict_bit_exact_and_namespace_isolated() -
     assert report["verdict"] == "bit_exact"
     assert report["namespace_isolation_ok"] is True
     assert report["different_training_corruption_seed_unexpected_changes"] == {}
+
+
+def test_slm282_recurrence_health_pair_is_matched_anytime_finite_and_deterministic() -> (
+    None
+):
+    first_matched, first_curves = _run_recurrence_health_pair(
+        seed=282, recursive_steps=2, optimizer_steps=1
+    )
+    second_matched, second_curves = _run_recurrence_health_pair(
+        seed=282, recursive_steps=2, optimizer_steps=1
+    )
+
+    assert first_matched == second_matched
+    assert first_curves == second_curves
+    assert first_matched["matched"] is True
+    assert first_matched["mismatches"] == []
+    assert (
+        first_matched["contracts"]["as_is"]
+        == first_matched["contracts"]["residual_delta"]
+    )
+    assert [curve["arm"] for curve in first_curves] == [
+        "as_is",
+        "residual_delta",
+    ]
+    for curve in first_curves:
+        assert curve["anytime_evaluation"] == {
+            "denoiser_forward_calls": 1,
+            "available_depths": [1, 2],
+        }
+        assert len(curve["depths"]) == 2
+        assert all(depth["all_finite"] for depth in curve["depths"])
+        assert all(depth["ratios_finite"] for depth in curve["depths"])
+        for depth in curve["depths"]:
+            assert len(depth["examples"]) == 2
+            assert all(
+                math.isfinite(
+                    example[
+                        "finite_difference_initial_state_directional_gain"
+                    ]
+                )
+                for example in depth["examples"]
+            )
+
+
+def test_slm282_train_and_evaluation_corruption_schedules_are_disjoint() -> None:
+    first_train, first_eval = _recurrence_health_corruption_schedule(
+        seed=0, optimizer_steps=4
+    )
+    second_train, second_eval = _recurrence_health_corruption_schedule(
+        seed=1, optimizer_steps=4
+    )
+
+    assert not set(first_train).intersection(second_train)
+    assert first_eval not in first_train
+    assert second_eval not in second_train
+    assert first_eval not in second_train
+    assert second_eval not in first_train
+
+
+def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
+    def curve(
+        arm: str,
+        seed: int,
+        recursive_steps: int,
+        ces: list[float],
+        *,
+        finite: bool = True,
+        second_example_ces: list[float] | None = None,
+    ) -> dict:
+        second = second_example_ces or ces
+        return {
+            "arm": arm,
+            "seed": seed,
+            "recursive_steps": recursive_steps,
+            "depths": [
+                {
+                    "step": step,
+                    "token_weighted_cross_entropy": ce,
+                    "ratios_finite": finite,
+                    "all_finite": finite,
+                    "examples": [
+                        {"id": "a", "cross_entropy": ce},
+                        {"id": "b", "cross_entropy": second[step - 1]},
+                    ],
+                }
+                for step, ce in enumerate(ces, start=1)
+            ],
+        }
+
+    curves = []
+    for arm in ("as_is", "residual_delta"):
+        for seed in (0, 1):
+            curves.extend(
+                [
+                    curve(arm, seed, 1, [4.0]),
+                    curve(arm, seed, 2, [4.0, 3.0]),
+                    curve(arm, seed, 4, [4.0, 3.5, 3.0, 2.5]),
+                ]
+            )
+    controls = [
+        {
+            "seed": seed,
+            "recursive_steps": depth,
+            "matched": True,
+            "batches_matched": True,
+        }
+        for seed in (0, 1)
+        for depth in (1, 2, 4)
+    ]
+    positive, failures = _evaluate_recurrence_preregistration(
+        curves,
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+        expected_example_ids=("a", "b"),
+    )
+    assert positive["disposition"] == "recursive_core_positive"
+    assert failures == []
+
+    # Make one raw example regress while the other improves enough that the
+    # aggregate still improves. No example average or counterfactual arm may
+    # rescue the primary disposition.
+    for row in curves:
+        if (
+            row["arm"] == "as_is"
+            and row["seed"] == 1
+            and row["recursive_steps"] == 4
+        ):
+            row["depths"][-1]["examples"][0]["cross_entropy"] = 4.0
+            row["depths"][-1]["examples"][1]["cross_entropy"] = 1.0
+            row["depths"][-1]["token_weighted_cross_entropy"] = 2.5
+    negative, failures = _evaluate_recurrence_preregistration(
+        curves,
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+        expected_example_ids=("a", "b"),
+    )
+    assert negative["disposition"] == "recursive_core_negative"
+    assert negative["residual_delta_can_promote"] is False
+    assert negative["passed_seed_count"] == 1
+    assert [
+        (failure["arm"], failure["seed"], failure["example_id"])
+        for failure in failures
+    ] == [("as_is", 1, "a")]
+
+    incomplete, _ = _evaluate_recurrence_preregistration(
+        curves[:-1],
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+        expected_example_ids=("a", "b"),
+    )
+    assert incomplete["disposition"] == "inconclusive_fixture"
+
+    malformed_cases = []
+
+    missing_depth = deepcopy(curves)
+    missing_depth[4]["depths"].pop(1)
+    malformed_cases.append((missing_depth, controls))
+
+    duplicate_depth = deepcopy(curves)
+    duplicate_depth[4]["depths"].insert(
+        1, deepcopy(duplicate_depth[4]["depths"][0])
+    )
+    malformed_cases.append((duplicate_depth, controls))
+
+    missing_example = deepcopy(curves)
+    missing_example[4]["depths"][0]["examples"].pop()
+    malformed_cases.append((missing_example, controls))
+
+    duplicate_example = deepcopy(curves)
+    duplicate_example[4]["depths"][0]["examples"][1] = deepcopy(
+        duplicate_example[4]["depths"][0]["examples"][0]
+    )
+    malformed_cases.append((duplicate_example, controls))
+
+    malformed_cases.append((deepcopy(curves), controls[:-1]))
+
+    for malformed_curves, malformed_controls in malformed_cases:
+        malformed, _ = _evaluate_recurrence_preregistration(
+            malformed_curves,
+            seeds=(0, 1),
+            recursive_steps=(1, 2, 4),
+            matched_controls=malformed_controls,
+            expected_example_ids=("a", "b"),
+        )
+        assert malformed["disposition"] == "inconclusive_fixture"
+
+
+def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import scripts.run_slm138_recursive_denoiser_fixture as fixture_mod
+
+    calls = []
+
+    def fake_pair(
+        *,
+        seed: int,
+        recursive_steps: int,
+        optimizer_steps: int,
+        epsilon: float = 1e-3,
+    ) -> tuple[dict, list[dict]]:
+        calls.append((seed, recursive_steps, optimizer_steps, epsilon))
+        curves = []
+        for arm in ("as_is", "residual_delta"):
+            curves.append(
+                {
+                    "arm": arm,
+                    "seed": seed,
+                    "recursive_steps": recursive_steps,
+                    "depths": [
+                        {
+                            "step": step,
+                            "token_weighted_cross_entropy": 5.0 - step,
+                            "ratios_finite": True,
+                            "all_finite": True,
+                            "examples": [
+                                {
+                                    "id": example_id,
+                                    "cross_entropy": 5.0 - step,
+                                }
+                                for example_id in ("a", "b")
+                            ],
+                        }
+                        for step in range(1, recursive_steps + 1)
+                    ],
+                }
+            )
+        return {
+            "seed": seed,
+            "recursive_steps": recursive_steps,
+            "matched": True,
+            "batches_matched": True,
+        }, curves
+
+    published = {}
+
+    def fake_publish(run_dir, *, name, claim, cases):
+        published.update(
+            run_dir=run_dir, name=name, claim=claim, cases=cases
+        )
+        artifact_root = Path(run_dir)
+        return {
+            "format": "AgentEvals JSONL",
+            "sdk": "@agentv/core",
+            "spec": str(artifact_root / "agentv" / "fixture.eval.jsonl"),
+            "artifacts": {
+                "runDir": str(artifact_root / "agentv" / "fixture"),
+            },
+            "summary": {"passed": len(cases), "executionErrors": 0},
+        }
+
+    monkeypatch.setattr(
+        fixture_mod, "_run_recurrence_health_pair", fake_pair
+    )
+    monkeypatch.setattr(
+        fixture_mod, "publish_agentv_evaluation", fake_publish
+    )
+    report = fixture_mod._run_recurrence_health(
+        output_dir=tmp_path, base_seed=9, optimizer_steps=1
+    )
+
+    assert calls == [
+        (seed, recursive_steps, 1, 1e-3)
+        for seed in (9, 10)
+        for recursive_steps in (1, 2, 4)
+    ]
+    assert report["summary"]["disposition"] == "recursive_core_positive"
+    assert published["run_dir"] == tmp_path
+    assert published["name"] == "slm282-recurrence-health"
+    assert published["claim"] == "fixture_recurrence_health_not_ship"
+    assert report["agentv"]["spec"] == "output-dir://agentv/fixture.eval.jsonl"
+    assert (
+        report["agentv"]["artifacts"]["runDir"]
+        == "output-dir://agentv/fixture"
+    )
+    assert [case["id"] for case in published["cases"]] == [
+        "matched-controls",
+        "finite-complete-telemetry",
+        "as-is-seed-9",
+        "as-is-seed-10",
+    ]
+    assert (
+        report["version_stamp"]["components"]["model.recursive_denoiser"]
+        == "v18"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1802,6 +2448,7 @@ def test_deep_supervision_works_for_arm_c_and_d() -> None:
                 denoiser_arch=arch,  # type: ignore[arg-type]
                 recursive_steps=2, recursive_transition_layers=2,
                 recursive_depth_supervision_weights=weights,
+                recursive_depth_aux_mode="all_depths",
                 grammar_constrained=False, seed=0,
             ),
             device="cpu",

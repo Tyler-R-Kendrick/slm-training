@@ -7,6 +7,7 @@ All functions degrade gracefully on zero-denominator inputs.
 from __future__ import annotations
 
 import math
+from statistics import NormalDist
 from collections import defaultdict
 from collections.abc import Callable, Hashable, Sequence
 from typing import Any
@@ -15,29 +16,50 @@ import numpy as np
 
 __all__ = [
     "wilson_interval",
+    "binomial_rate_evidence",
+    "plan_binomial_rate_test",
     "exact_binomial_interval",
     "bootstrap_paired_ci",
     "cluster_bootstrap_ci",
     "intraclass_correlation",
     "mde_simulation",
     "benjamini_hochberg",
+    "holm_bonferroni",
+    "exact_paired_binary_test",
     "classify_power",
 ]
 
 
 def wilson_interval(
-    successes: int, n: int, *, z: float = 1.959963984540054
-) -> dict[str, float | int]:
-    """Two-sided Wilson score interval for a binomial proportion.
+    successes: int,
+    n: int,
+    *,
+    confidence_level: float = 0.95,
+) -> dict[str, float | int | None]:
+    """Return a two-sided Wilson score interval for a binomial proportion.
 
-    Reuses the math from ``slm_training.evals.judge_independence``.
+    Invalid counts fail closed instead of being clamped. A zero denominator is
+    explicitly unmeasured, so its estimate and bounds are ``None``.
     """
-    if n < 1:
-        return {"n": n, "estimate": 0.0, "low": 0.0, "high": 0.0}
-    if successes < 0:
-        successes = 0
-    if successes > n:
-        successes = n
+    if isinstance(successes, bool) or not isinstance(successes, int):
+        raise TypeError("successes must be an integer")
+    if isinstance(n, bool) or not isinstance(n, int):
+        raise TypeError("n must be an integer")
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    if successes < 0 or successes > n:
+        raise ValueError("successes must satisfy 0 <= successes <= n")
+    if not 0.0 < confidence_level < 1.0:
+        raise ValueError("confidence_level must be in (0, 1)")
+    if n == 0:
+        return {
+            "n": 0,
+            "estimate": None,
+            "low": None,
+            "high": None,
+            "confidence_level": confidence_level,
+        }
+    z = NormalDist().inv_cdf(0.5 + confidence_level / 2.0)
     rate = successes / n
     denominator = 1.0 + z * z / n
     center = (rate + z * z / (2.0 * n)) / denominator
@@ -51,6 +73,101 @@ def wilson_interval(
         "estimate": rate,
         "low": max(0.0, center - margin),
         "high": min(1.0, center + margin),
+        "confidence_level": confidence_level,
+    }
+
+
+def binomial_rate_evidence(
+    successes: int,
+    n: int,
+    *,
+    seed_count: int,
+    evidence_class: str,
+    confidence_level: float = 0.95,
+) -> dict[str, Any]:
+    """Build the count provenance attached to one binomial scoreboard rate."""
+    if isinstance(seed_count, bool) or not isinstance(seed_count, int):
+        raise TypeError("seed_count must be an integer")
+    if seed_count < 1:
+        raise ValueError("seed_count must be positive")
+    if not evidence_class:
+        raise ValueError("evidence_class must be non-empty")
+    return {
+        "schema": "binomial_rate_evidence/v1",
+        "numerator": successes,
+        "denominator": n,
+        "seed_count": seed_count,
+        "interval": {
+            "method": "wilson_score",
+            **wilson_interval(
+                successes,
+                n,
+                confidence_level=confidence_level,
+            ),
+        },
+        "evidence_class": evidence_class,
+    }
+
+
+def plan_binomial_rate_test(
+    *,
+    null_rate: float,
+    target_delta: float,
+    alpha: float = 0.05,
+    target_power: float = 0.8,
+    sides: int = 2,
+    seeds: Sequence[int] = (0,),
+) -> dict[str, Any]:
+    """Prospectively plan a one-proportion rate test.
+
+    This score-normal approximation accepts design inputs only. Observed
+    outcomes are deliberately absent: post-hoc power is not success evidence.
+    Seeds are reported separately and never multiplied into the sample size.
+    """
+    if not 0.0 < null_rate < 1.0:
+        raise ValueError("null_rate must be in (0, 1)")
+    if target_delta == 0.0:
+        raise ValueError("target_delta must be non-zero")
+    target_rate = null_rate + target_delta
+    if not 0.0 < target_rate < 1.0:
+        raise ValueError("null_rate + target_delta must be in (0, 1)")
+    if not 0.0 < alpha < 1.0:
+        raise ValueError("alpha must be in (0, 1)")
+    if not 0.0 < target_power < 1.0:
+        raise ValueError("target_power must be in (0, 1)")
+    if isinstance(sides, bool) or not isinstance(sides, int) or sides not in (1, 2):
+        raise ValueError("sides must be 1 or 2")
+    normalized_seeds = tuple(seeds)
+    if not normalized_seeds:
+        raise ValueError("seeds must not be empty")
+    if any(isinstance(seed, bool) or not isinstance(seed, int) for seed in normalized_seeds):
+        raise TypeError("seeds must contain only integer identifiers")
+    if len(set(normalized_seeds)) != len(normalized_seeds):
+        raise ValueError("seeds must be unique")
+
+    z_alpha = NormalDist().inv_cdf(1.0 - alpha / sides)
+    z_power = NormalDist().inv_cdf(target_power)
+    null_sd = math.sqrt(null_rate * (1.0 - null_rate))
+    target_sd = math.sqrt(target_rate * (1.0 - target_rate))
+    required_n = math.ceil(
+        ((z_alpha * null_sd + z_power * target_sd) / abs(target_delta)) ** 2
+    )
+    return {
+        "schema": "binomial_power_preregistration/v1",
+        "method": "one_proportion_score_normal_approximation",
+        "null_rate": null_rate,
+        "target_delta": target_delta,
+        "target_rate": target_rate,
+        "alpha": alpha,
+        "target_power": target_power,
+        "sides": sides,
+        "confidence_level": 1.0 - alpha,
+        "planned_sample_size_per_seed": required_n,
+        "required_n": required_n,
+        "seeds": list(normalized_seeds),
+        "seed_count": len(normalized_seeds),
+        "seed_aggregation": "report_separately_no_pooling",
+        "use": "preregistration_only_not_post_hoc_success_evidence",
     }
 
 
@@ -292,12 +409,14 @@ def mde_simulation(
     power: float = 0.8,
     n_simulations: int = 200,
     effect_sizes: Sequence[float] | None = None,
+    effect_scale: str = "log_odds",
     seed: int = 0,
 ) -> dict[str, Any]:
     """Simulate statistical power across effect sizes under seed + target variance.
 
     Binary outcomes are generated from a mixed-effects logit model with target
-    and seed random effects.  Power is estimated as the rejection rate of a
+    and seed random effects. ``effect_scale='absolute_probability'`` treats
+    each effect as an absolute probability-point delta. Power is estimated as the rejection rate of a
     one-sided paired z-test on target-level mean differences between treatment
     and control.  The z-test uses only stdlib + numpy (no scipy).
     """
@@ -311,6 +430,12 @@ def mde_simulation(
     if effect_sizes is None:
         effect_sizes = [0.0, 0.02, 0.05, 0.08, 0.10, 0.12, 0.15, 0.20]
     effect_sizes = [float(e) for e in effect_sizes]
+    if effect_scale not in {"log_odds", "absolute_probability"}:
+        raise ValueError("effect_scale must be log_odds or absolute_probability")
+    if effect_scale == "absolute_probability" and any(
+        not 0.0 <= effect <= 1.0 for effect in effect_sizes
+    ):
+        raise ValueError("absolute-probability effects must be in [0, 1]")
 
     rng = np.random.default_rng(seed)
     base_logit = math.log(base_rate / (1.0 - base_rate))
@@ -324,9 +449,12 @@ def mde_simulation(
             seed_effects = rng.normal(0.0, sigma_seed, size=n_seeds)
             for s in range(n_seeds):
                 logit_c = base_logit + target_effects[t] + seed_effects[s]
-                logit_t = logit_c + effect
                 p_c = 1.0 / (1.0 + math.exp(-logit_c))
-                p_t = 1.0 / (1.0 + math.exp(-logit_t))
+                p_t = (
+                    min(1.0, p_c + effect)
+                    if effect_scale == "absolute_probability"
+                    else 1.0 / (1.0 + math.exp(-(logit_c + effect)))
+                )
                 control[t, s, :] = rng.random(paths_per_target) < p_c
                 treatment[t, s, :] = rng.random(paths_per_target) < p_t
         control_mean = control.mean(axis=(1, 2))
@@ -371,6 +499,7 @@ def mde_simulation(
         "paths_per_target": paths_per_target,
         "n_seeds": n_seeds,
         "alpha": alpha,
+        "effect_scale": effect_scale,
         "target_power": power,
         "n_simulations": n_simulations,
         "curve": curve,
@@ -429,6 +558,100 @@ def benjamini_hochberg(
     # Restore original order
     entries.sort(key=lambda e: e["index"])
     return entries
+
+
+def holm_bonferroni(
+    hypotheses: Sequence[tuple[str, float]], *, alpha: float = 0.05
+) -> list[dict[str, Any]]:
+    """Apply Holm's step-down family-wise error correction.
+
+    The family must be declared prospectively as ``(hypothesis_id, p_value)``
+    pairs. Results retain caller order while rank ties are resolved by stable
+    hypothesis identifier.
+    """
+    if not math.isfinite(alpha) or not 0.0 < alpha < 1.0:
+        raise ValueError("alpha must be finite and in (0, 1)")
+    ids = [item[0] for item in hypotheses]
+    if any(not isinstance(item, str) or not item for item in ids):
+        raise ValueError("hypothesis identifiers must be non-empty strings")
+    if len(ids) != len(set(ids)):
+        raise ValueError("hypothesis identifiers must be unique")
+    entries: list[dict[str, Any]] = []
+    for index, (hypothesis_id, raw_p) in enumerate(hypotheses):
+        if isinstance(raw_p, bool) or not isinstance(raw_p, (int, float)):
+            raise TypeError("p-values must be numeric")
+        p_value = float(raw_p)
+        if not math.isfinite(p_value) or not 0.0 <= p_value <= 1.0:
+            raise ValueError("p-values must be finite and in [0, 1]")
+        entries.append(
+            {
+                "index": index,
+                "hypothesis_id": hypothesis_id,
+                "p_value": p_value,
+                "rank": 0,
+                "threshold": 0.0,
+                "adjusted_p_value": 0.0,
+                "rejected": False,
+            }
+        )
+    family_size = len(entries)
+    ordered = sorted(entries, key=lambda item: (item["p_value"], item["hypothesis_id"]))
+    prior_adjusted = 0.0
+    still_rejecting = True
+    for rank, entry in enumerate(ordered, start=1):
+        remaining = family_size - rank + 1
+        threshold = alpha / remaining
+        adjusted = min(1.0, max(prior_adjusted, remaining * entry["p_value"]))
+        rejected = still_rejecting and entry["p_value"] <= threshold
+        if not rejected:
+            still_rejecting = False
+        entry.update(
+            {
+                "rank": rank,
+                "threshold": threshold,
+                "adjusted_p_value": adjusted,
+                "rejected": rejected,
+            }
+        )
+        prior_adjusted = adjusted
+    return sorted(entries, key=lambda item: item["index"])
+
+
+def exact_paired_binary_test(
+    control: Sequence[int | bool],
+    candidate: Sequence[int | bool],
+) -> dict[str, Any]:
+    """Two-sided exact McNemar test over paired binary outcomes."""
+    if len(control) != len(candidate) or not control:
+        raise ValueError("paired binary samples must be non-empty and equal length")
+    if any(value not in (0, 1, False, True) for value in (*control, *candidate)):
+        raise ValueError("paired binary samples must contain only zero/one values")
+    control_only = sum(
+        int(bool(left) and not bool(right))
+        for left, right in zip(control, candidate)
+    )
+    candidate_only = sum(
+        int(not bool(left) and bool(right))
+        for left, right in zip(control, candidate)
+    )
+    discordant = control_only + candidate_only
+    if discordant == 0:
+        p_value = 1.0
+    else:
+        smaller = min(control_only, candidate_only)
+        lower_tail = _binom_tail_prob(discordant, smaller, 0.5, upper=False)
+        p_value = min(1.0, 2.0 * lower_tail)
+    return {
+        "schema": "exact_paired_binary_test/v1",
+        "n": len(control),
+        "control_only": control_only,
+        "candidate_only": candidate_only,
+        "discordant": discordant,
+        "effect": sum(int(bool(value)) for value in candidate) / len(candidate)
+        - sum(int(bool(value)) for value in control) / len(control),
+        "p_value": p_value,
+        "method": "two_sided_exact_mcnemar",
+    }
 
 
 def classify_power(

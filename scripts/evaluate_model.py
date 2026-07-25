@@ -10,14 +10,22 @@ from pathlib import Path
 from slm_training.evals.eval_cache import EvalCache, EvalCacheConfig, EvalCacheMode
 from slm_training.evals.record_schema import RUN_CLASSES
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
-from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.harnesses.model_build.eval_runner import (
+    evaluate_grammar_leakage_audit,
+    evaluate_suites,
+)
+from slm_training.harnesses.model_build.experiment_flags import (
+    apply_levers_from_environ,
+    apply_levers_from_mapping,
+    assignments_payload,
+    cli_lever_overrides,
+)
 from slm_training.harnesses.model_build.eval_policy import (
     EVALUATION_POLICIES,
     STRICT_COMPILER_TREE_POLICY_ID,
 )
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
-    evaluate_ship_gates,
     write_ship_gates,
 )
 from slm_training.levers import (
@@ -423,6 +431,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="VSS1-03: prune the compiler forest via certified exact closure before ranking",
     )
+    parser.add_argument(
+        "--flags-json",
+        default=None,
+        help=(
+            "OpenFeature research-lever ruleset as a JSON object. Explicit CLI "
+            "lever options take precedence; also honors OPENUI_FLAGS_JSON/PATH."
+        ),
+    )
     parser.add_argument("--solver-max-nodes", type=int, default=512)
     parser.add_argument(
         "--solver-unknown-policy", choices=("keep_and_rank",), default="keep_and_rank"
@@ -567,6 +583,14 @@ def main(argv: list[str] | None = None) -> int:
         "--grammar-sample-decode",
         action="store_true",
         help="Sample from renormalized legal-token distribution (DINGO-lite).",
+    )
+    parser.add_argument(
+        "--grammar-leakage-audit",
+        action="store_true",
+        help=(
+            "Evaluation-only raw/constrained/repaired/uniform-at-unforced "
+            "audit for one suite; never changes production decode defaults."
+        ),
     )
     parser.add_argument(
         "--grammar-ltr-max-tokens",
@@ -799,6 +823,18 @@ def main(argv: list[str] | None = None) -> int:
         constraint_debt_routing_calibrator_path=args.constraint_debt_routing_calibrator_path,
     )
 
+    # Research flags are deliberately separate from product rollout flags. Their
+    # precedence is explicit CLI options > ruleset/provider > config defaults.
+    lever_overrides = cli_lever_overrides(args, argv=argv)
+    if args.flags_json:
+        config, flag_assignments = apply_levers_from_mapping(
+            config, json.loads(args.flags_json), overrides=lever_overrides
+        )
+    else:
+        config, flag_assignments = apply_levers_from_environ(
+            config, overrides=lever_overrides
+        )
+
     if args.check_decode_feasibility and config.test_dir is not None:
         from slm_training.harnesses.model_build.decode_feasibility import (
             evaluate_decode_feasibility,
@@ -823,6 +859,9 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
 
+    if args.grammar_leakage_audit and args.suites:
+        raise SystemExit("--grammar-leakage-audit evaluates one --suite; omit --suites")
+
     if args.suites:
         from slm_training.runtime.telemetry import run_trace
 
@@ -835,15 +874,17 @@ def main(argv: list[str] | None = None) -> int:
                 write_gates=args.ship_gates,
                 cache=cache,
             )
+        if flag_assignments:
+            scoreboard["research_flags"] = assignments_payload(flag_assignments)
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
         if args.ship_gates:
-            gates = scoreboard.get("gates") or write_ship_gates(
-                config.run_dir, scoreboard["suites"]
-            )
-            # Re-read full payload when only summary was embedded.
-            if "pass" not in gates or "failures" not in gates:
-                gates = evaluate_ship_gates(scoreboard["suites"])
-                write_ship_gates(config.run_dir, scoreboard["suites"])
+            gates = scoreboard.get("gates")
+            if not gates or "pass" not in gates:
+                gates = write_ship_gates(
+                    config.run_dir,
+                    scoreboard["suites"],
+                    evals_result=scoreboard["evals"],
+                )
             return 0 if gates.get("pass") else 8
         # Legacy: fail-under applies to every listed suite (not smoke-only).
         for suite_name in suites:
@@ -856,8 +897,37 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.runtime.telemetry import run_trace
 
     with run_trace(args.run_id, "eval", run_dir=config.run_dir):
+        if args.grammar_leakage_audit:
+            audit = evaluate_grammar_leakage_audit(
+                config, checkpoint=args.checkpoint
+            )
+            summary = {
+                "schema_version": audit["schema_version"],
+                "suite": audit["suite"],
+                "variants": {
+                    name: {
+                        key: metrics.get(key)
+                        for key in (
+                            "n",
+                            "meaningful_program_rate",
+                            "parse_rate",
+                            "placeholder_fidelity",
+                            "contract_precision",
+                            "contract_recall",
+                            "structural_similarity",
+                        )
+                    }
+                    for name, metrics in audit["variants"].items()
+                },
+                "raw_deltas": audit["raw_deltas"],
+                "output": audit["output"],
+            }
+            print(json.dumps(summary, indent=2))
+            return 0
         metrics = evaluate(config, checkpoint=args.checkpoint, cache=cache)
     summary = {k: v for k, v in metrics.items() if k != "details"}
+    if flag_assignments:
+        summary["research_flags"] = assignments_payload(flag_assignments)
     print(json.dumps(summary, indent=2))
     return _check_fail_unders(metrics, args)
 

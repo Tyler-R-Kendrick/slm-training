@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "direct_bridge_policy_fixture_contract", "failures": [], "result": {"candidate_corpus_shared": true, "decoder_shared": true, "parameter_count_equal": true, "parameter_counts": [4769], "termination_shared": true}}

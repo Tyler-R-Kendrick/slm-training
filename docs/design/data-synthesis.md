@@ -327,186 +327,71 @@ sanitized fingerprint families so the test firewall never weakens. Measured
 evidence, gate-interaction analysis, and follow-ups:
 [train-target-sanitization-20260719.md](train-target-sanitization-20260719.md).
 
-### E1278-E1284 required-component ProgramSpec loop (2026-07-24)
+## Verified symbolic operator sibling corpus (DSH3-10 / SLM-378)
 
-The strict direct ProgramSpec isolate now hard-requires TextContent, Form, and
-Input and realizes those components in natural prompts. E1280 exposed an
-implicit-Form Buttons wording mismatch that quarantined all 20 candidates;
-removing implicit Buttons/Stack from the prompt yields E1281's 8/20 and
-E1282's 9/100 clean admissions. Optional-Card E1283 remains 8/20 because Card
-survives in only one row; forced-Card E1284 keeps Card in all eight records but
-still has 60% semantic deduplication. Schema-valid Card containment E1285 falls
-to 7/20. All have parse/judge 1.0 and zero quality or n-gram rejects. This
-standalone producer loop is closed without a training run; its next use is a
-separate mixture experiment against E937, not relaxed gates. Full
-measured results and stamps: [E1278-E1285](iter-e1045-e1051-typed-binder-candidates-20260722.md).
+The strict train-data pipeline now optionally emits a separate closed-schema
+operator corpus from admitted document roots. Successful targets are sampled
+only from the exact pack-owned legal set and persist before/after ASTs, effects,
+proofs, preferences, and replayable conversation traces. Typed rejected
+applications remain bounded coverage evidence and are never emitted as target
+actions.
 
-### E1291 document-only generation corpus (2026-07-24)
+The fixture evidence run produced 20 records from two roots: 12 single-turn,
+six next-turn, and two sibling-fork records. It retained 27 legal successes and
+533 rejected combinations in coverage, emitted zero illegal targets, and
+replayed every application and trace. This is fixture wiring evidence, not a
+full-corpus or ship claim.
 
-E1291 separates complete-document generation from scope-target supervision
-without weakening any quality, verifier, deduplication, or decontamination
-gate. The strict canonical build selects only `target_kind=document`: 350 of
-1,077 collected candidates are admitted, all 350 begin with `root =`, parse
-and independent-judge pass rates are 1.0, and excluded scope targets remain
-auditable as 637 `target_kind_excluded` rows in `rejected.jsonl`. The corpus
-contains 82 Card and 7 Settings-shaped programs. This was built because E1290
-showed the former all-target corpus trained short lexical/fragment continuations
-while the held-out harness asks for full documents. The first matched E1292
-control removes the Settings timeout but remains strict-v2 invalid, so no
-promotion or gate change follows. Full evidence:
-[E1290-E1292](iter-e1045-e1051-typed-binder-candidates-20260722.md).
+The original strict parent build admitted 19/20 records with mean quality 1.0.
+Its only rejection was the reserved `test_fixture_structure` firewall. SLM-392
+traced that collision to strict default elision making `train_text_only_01`
+isomorphic to the reserved `adv_empty_prompt_01` fallback. Removing the
+accidental train seed yields 19/19 admitted, zero decontamination drops, no
+warnings or new feedback candidates, and the same admitted-content fingerprint;
+no gate changed. See [DSH3-10 evidence](dsh3-10-symbolic-operator-corpus-20260723.md)
+and the [source audit](slm392-human-curated-source-overlap-20260723.md).
 
-### E1295 rejected required-switch topology corpus (2026-07-24)
+## Verified collapsed operator traces (DSH3-12 / SLM-380)
 
-E1295 tested a 96-root typed ProgramSpec producer requiring Slider,
-SwitchGroup, SwitchItem, and TextCallout together, with natural component
-prompts. The pre-repair producer emitted only structural `name` values and
-empty SwitchGroup item arrays. Strict quality therefore rejected the composite
-records for zero content placeholders rather than admitting role-unsafe
-supervision. The resulting document selection retained only 189 of 2,039
-collected records, with 960 quality rejections; it is rejected and was never
-used for training. The producer repair must emit schema-valid nonempty
-reference arrays plus content-bearing properties, not relax the quality gate.
-Full evidence: [E1295](iter-e1045-e1051-typed-binder-candidates-20260722.md).
+Verified multi-turn AST-edit traces can now emit a separate closed-schema
+multi-instruction artifact. Admission replays the complete source trace, keeps
+every turn and operator application, exposes required order as `[0, 1]`, and
+requires the collapsed final AST/state to equal the trace-authoritative final
+state exactly. Undo/redo/history operations, no-ops, cycles, redundant
+applications, and replay disagreement fail closed.
 
-### E1296-E1297 strict switch-topology controls (2026-07-24)
+The strict fixture run emitted two collapses from two roots. Both matched their
+source final states exactly. Reordering each noncommuting pair produced a
+verified `ref.missing` conflict, yielding two hard negatives. SLM-379/CERT_CAP1
+was unavailable, so all questions and answers remained symbolic and no NL
+target was synthesized.
 
-E1296 replaces the unsupported composite child path with a TextContent carrier:
-33/100 direct ProgramSpecs survive strict admission with zero quality rejects,
-but 55 semantic duplicates and 12 verifier quarantines leave too little data
-for a standalone train. E1297 then restores SwitchItem and adds typed
-placeholder/nonempty-array candidates. Its 27/100 admission is still blocked by
-47 structural-only candidates with no content placeholder. The rejection also
-revealed a vocabulary inconsistency—SwitchItem was preferred while its
-schema-supported SwitchGroup parent was not—so the preferred inventory is
-aligned without changing any gate. Neither snapshot is trained; the producer,
-not the quality threshold, must next select only placeholder-bearing required
-topologies. Full evidence: [E1295-E1297](iter-e1045-e1051-typed-binder-candidates-20260722.md).
+The parent quality loop again admitted 19/20 source records with mean quality
+1.0 and rejected only the reserved test fixture. Duplicate
+`eval_leakage_source` evidence was attached to SLM-392; the later source audit
+removed that train-side duplicate while retaining every gate.
+See
+[DSH3-12 evidence](dsh3-12-collapsed-operator-traces-20260723.md).
 
-### E1298 accepted multi-slot switch topology corpus (2026-07-24)
+## SLM-230 bounded symbol-only recurrence corpus (2026-07-24)
 
-E1298 keeps strict admission unchanged and realizes two SwitchItems inside each
-required SwitchGroup, plus a legal text property, rather than using structural
-names as slots. It admits 442 documents, with 270 containing Slider,
-SwitchGroup, SwitchItem, and TextCallout; 194 of those contain at least three
-content slots. The sampled composite is parser- and G11-approved. Although
-upstream rejections remain visible (733 verifier rejects and the existing
-eval-overlap warning), the retained records have zero quality-gate rejects,
-mean quality 1.0, and a new immutable fingerprint. This is eligible only for a
-local matched scratch control, never a promotion or ship claim.
+The first SLM-230 training attempt correctly failed before model
+initialization because the legacy local `ci` snapshot contains a free-form
+`"contact"` literal forbidden by the current `symbol_only/v2` output
+contract. The replacement `slm230_symbol_only_v1` snapshot was rebuilt through
+the canonical strict fixture pipeline; no gate was weakened.
 
-### E1299 direct multi-slot producer control (2026-07-24)
+The immutable build collected 112 candidates and admitted 97 records with mean
+quality 1.0. All 112 inputs passed deterministic target sanitization, including
+22 templatized literals; 15 records were retained in `rejected.jsonl` (eight
+parent-exposure-cap drops and seven fuzzy duplicates). Decontamination found
+zero eval overlap, and `quality_report.json` contains no warnings.
+`synthesis_feedback.json` emits zero recommendations and zero experiment
+candidates, so no producer repair or follow-up data issue is warranted.
 
-The direct no-augmentation control retains only 22/100 v37 ProgramSpecs. All
-retained rows are strict-quality clean (mean 1.0; no quality or
-decontamination rejection), but G11 quarantines 19 and strict deduplication
-drops 59 more candidates. This is useful producer evidence, not a standalone
-training corpus; E1298 remains the only scoped local-mixture candidate. The
-producer, judge, and deduplication gates are unchanged. Full evidence:
-[E1299](iter-e1045-e1051-typed-binder-candidates-20260722.md).
-
-### E1301 E1298 multi-slot train control (2026-07-24)
-
-The authorized local three-pass control completes 332 steps over E1298's 442
-strict documents but fails the Settings target: parse remains 1.0 without a
-timeout, while strict-v2 is 0, structure 0.06, recall 0, reward 0.707, and two
-fallbacks occur. It regresses E1292's non-timeout Settings structure, recall,
-and reward, so the checkpoint is rejected without a wider suite. E1300's
-externally interrupted 139-step attempt wrote no checkpoint and is explicitly
-non-evidence. Full evidence: [E1300-E1301](iter-e1045-e1051-typed-binder-candidates-20260722.md).
-
-### E1305 Form capacity producer diagnosis (2026-07-24)
-
-E1305 repairs typed ProgramSpec traversal of `FormControl.input`'s `anyOf`
-schema and produces a contained six-slot Form topology: two Buttons plus two
-FormControls with Inputs. The strict document build retains 111 records at mean
-quality 1.0 with zero quality or n-gram decontamination rejects, but default
-scope-corpus expansion creates 2,160 G11 quarantines and 3,503 dedup drops.
-The feedback requires fixing producer selection, not relaxing a gate: E1305 is
-not trainable, and the next Form build disables the zero-yield derivative
-families before reconsidering a matched scratch arm. Full evidence:
-[E1305](iter-e1045-e1051-typed-binder-candidates-20260722.md).
-
-### E1306 direct Form capacity control (2026-07-24)
-
-E1306 disables every derivative family named by E1305 feedback. It eliminates
-all quarantines and quality/decontamination rejects, but strict deduplication
-retains only 10 of 240 direct legal roots. This is clean saturation evidence,
-not a ten-row train set. The producer must vary legal Form reference-array
-arity, while strict gates remain unchanged. Full evidence:
-[E1306](iter-e1045-e1051-typed-binder-candidates-20260722.md).
-
-### E1307 arity-diverse direct Form control (2026-07-24)
-
-E1307 varies required reference arrays from one through three legal children.
-It doubles direct retention to 22 distinct structural families with zero
-quarantines, quality rejects, or decontamination flags. The corpus is still too
-small to train alone, but is valid focused evidence for an immutable
-Form-capacity-plus-baseline mixture. Full evidence:
-[E1307](iter-e1045-e1051-typed-binder-candidates-20260722.md).
-
-### E1308 E1298 plus Form-capacity mixture (2026-07-24)
-
-E1308 uses the new `existing+programspec` source union to combine E1298's
-strict baseline with E1307's direct Form evidence. It retains 387 documents at
-mean quality 1.0 with zero verifier, quality, or decontamination failures; 35
-Form rows span six bounded slot counts. Its one feedback item is expected
-ProgramSpec duplicate pruning, so strict deduplication remains in place. This
-is eligible for a fresh local matched control, not promotion. Full evidence:
-[E1308](iter-e1045-e1051-typed-binder-candidates-20260722.md).
-
-E1312 later completed the E1308 mixture through an explicit full-state resume,
-but its five-row strict held-out result is rejected: strict-v2 0.2, fidelity
-0.25, reward 0.3238, and three decode timeouts. The checkpoint is local-only
-and non-promotable. This is directional evidence only because E1312 disabled
-auxiliary objectives used by E1301; any future corpus comparison must hold those
-objectives fixed.
-
-### E1333 title-plus-Form mixture (2026-07-24)
-
-E1333 combines E1298 with 240 independently verified typed ProgramSpecs that
-require TextContent, Form, FormControl, Input, and Button, varying viewport,
-state, content class, and reference-array arity. The strict build retains 471
-records at mean quality 1.0 with zero verifier, quality, or n-gram
-decontamination failures; 89 retained rows contain both title and Form. Raw
-ProgramSpec yield is only 13/257 after strict deduplication, and feedback flags
-redundant expansion plus high overall rejection. Keep every gate unchanged;
-the one authorized fresh local scratch control completed as E1335 and is now
-pending a bounded named-grader evaluation only. Full evidence:
-`iter-e1045-e1051-typed-binder-candidates-20260722.{json,md}`.
-
-E1337 tested topology- and Form-arity-aware ProgramSpec prompts to address that
-deduplication feedback. It regressed raw ProgramSpec admission from 13/257 to
-5/257 and total retention from 471 to 446 while all strict gates remained
-clean. The prompt projection is withdrawn; the quality gates are unchanged and
-E1337 is not trainable.
-
-E1338 instead isolates the verified ProgramSpec producer. Its strict build
-retains 21/240 direct title-plus-Form rows at mean quality 1.0, with zero
-verifier, quality, and n-gram decontamination failures. That clears the
-predeclared 13-row comparison with E1333, authorizing one fresh local-only
-scratch control; all gates remain unchanged.
-
-### E1421 paired forward-reference coverage (preregistered)
-
-E1421 extends the same canonical typed ProgramSpec producer, not the gates or
-prompt text. It pairs root-level distinct slot-bearing `Input` binders with
-intentional repeated slot-free `Input` sharing across 48 existing
-viewport/state/content variants, then composes them with the immutable E1333
-records under the strict profile. It may authorize one fresh local scratch arm
-only if strict admission retains both arms with zero verifier, quality, and
-n-gram-decontamination rejection; otherwise the reports are recorded and the
-producer, not the quality bar, is repaired.
-
-E1421 is rejected as planned: the shared slot-free root has too few placeholders
-for the strict quality floor, producing 210 `too_few_placeholders` rejections
-and no verifier or n-gram-decontamination rejection. E1422 adds two separate
-`TextContent` slots around that shared `Input`; the shared binder itself remains
-slot-free. The strict gates and every non-producer setting remain unchanged.
-
-E1422 completes that repair: 704 records are admitted, both paired direct arms
-survive, and no verifier or n-gram-decontamination rejection occurs. The 102
-remaining quality-floor rejections and 11 reserved-structure drops are durable
-feedback from broader synthesis, not a gate regression. E1423 is the single
-fresh local scratch comparison authorized by this corpus; it preserves E1418's
-model and loss stack exactly.
+The snapshot is fixture-source, train-only input for a four-step CPU scratch
+checkpoint. It is not a production corpus, benchmark, or model-quality claim.
+Its content fingerprint is
+`cb221fdf48cc116c90e5e05043baa9dd97c64db24b7a38802b60434305bab943`;
+its lineage snapshot is
+`154711d65817ead1c10ea7ae02175e88dc497d3546d899bf185eca050e774799`.

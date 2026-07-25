@@ -1,0 +1,19 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "72028446f6e50b1efb2dd1f2618f85567eda77bf",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm200_flow_objective_attribution": "v4"
+    },
+    "stamped_at": "2026-07-24T00:54:50.422993+00:00"
+  }
+}

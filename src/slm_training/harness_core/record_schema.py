@@ -62,6 +62,12 @@ _RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _MAX_DEPTH = 3
 
 
+def _json_pointer(path: tuple[str, ...]) -> str:
+    return "".join(
+        f"/{part.replace('~', '~0').replace('/', '~1')}" for part in path
+    )
+
+
 def normalize_suite_metrics(metrics: Mapping[str, Any]) -> dict[str, Any]:
     """Re-key one suite's metrics onto the canonical vocabulary.
 
@@ -186,17 +192,22 @@ def normalize_experiment_record(
                 "suites": suites,
                 "board_context": context,
                 "source_schema": "suites@" + ("/".join(path) or "<root>"),
+                "source_pointer": _json_pointer((*path, "suites")),
                 "boards_found": len(boards),
             },
             None,
         )
 
     # Records that declare the canonical writer contract must not fall back to
-    # mining arbitrary nested metric blocks. A malformed canonical record is
-    # safer to reject than to publish a diagnostic replay as its primary suite.
+    # mining arbitrary nested metric blocks. The first v1 records, however,
+    # persisted their single-suite evidence explicitly in ``result`` before
+    # canonical writers introduced root ``suites``. Keep that named historical
+    # contract visible; a malformed canonical record is still safer to reject
+    # than to publish an arbitrary diagnostic replay as its primary suite.
+    legacy_result = payload.get("result")
     if payload.get("schema_version") == SCHEMA_VERSION and payload.get(
         "run_class"
-    ) in RUN_CLASSES:
+    ) in RUN_CLASSES and not _is_metric_block(legacy_result):
         return None, "canonical_missing_suites"
 
     # Single-suite blocks (eval / observed / metrics / top-level …): pick the
@@ -232,6 +243,7 @@ def normalize_experiment_record(
             "suites": {suite: metrics},
             "board_context": context,
             "source_schema": "block@" + ("/".join(path) or "<root>"),
+            "source_pointer": _json_pointer(path),
             "boards_found": 0,
         },
         None,

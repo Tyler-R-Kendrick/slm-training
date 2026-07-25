@@ -17,14 +17,14 @@ dependencies = [
   "onnxruntime>=1.18,<2",
   "openfeature-sdk>=0.10,<1",
   "pydantic>=2.7,<3",
-  "vercel>=0.5,<1",
+  "PyYAML>=6,<7",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0,<9",
   "pytest-asyncio>=0.23,<2",
-  "ruff>=0.9,<1",
+  "ruff>=0.9,<0.16",
   "numpy>=1.26,<3",
   "httpx>=0.27,<1",
   "fastapi>=0.110,<1",
@@ -67,6 +67,10 @@ research = [
   "httpx>=0.27,<1",
   "openai>=2.0,<3",
   "trackio>=0.1,<1",
+]
+observability = [
+  "langsmith>=0.9,<1",
+  "python-dotenv>=1.0,<2",
 ]
 web = [
   "fastapi>=0.110,<1",
@@ -120,7 +124,19 @@ slm_training = ["evals/*.json", "dsl/grammars/*", "resources/**/*"]
 "slm_training.web" = ["static/**/*"]
 
 [tool.setuptools.exclude-package-data]
-slm_training = ["resources/data/**/governance/records.jsonl"]
+slm_training = [
+  "resources/data/**/governance/**",
+  "resources/data/**/records.jsonl",
+  "resources/data/train/slm230_symbol_only_v1/**",
+  "web/static/**/*.map",
+]
+
+[tool.uv]
+# The Vercel entrypoint imports `src.slm_training.web.vercel` straight from the
+# uploaded source tree, so installing the project into the function venv only
+# duplicates ~30 MB of code/static/resources into the bundle. Treat the repo as
+# a virtual (dependency-only) project; build wheels explicitly when needed.
+package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

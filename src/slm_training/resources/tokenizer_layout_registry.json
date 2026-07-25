@@ -1,0 +1,30 @@
+{
+  "schema": "tokenizer-layout-registry/v1",
+  "namespace_registry_version": 2,
+  "codecs": {
+    "choice_codec": {
+      "version": 2,
+      "vocab_size": 717,
+      "layout_sha256": "df0a1a317757fc0692dfce70b08007e63f5de77e9a5b6862d1e5dbeb48804574",
+      "special_ids": {
+        "pad": 0,
+        "bos": 1,
+        "eos": 2,
+        "mask": 3,
+        "unk": 4
+      }
+    },
+    "dsl_native": {
+      "version": 4,
+      "vocab_size": 505,
+      "layout_sha256": "5ce4a6f69b12024a9ea1c5ef4547659b0f9f7c058fc60c86e58fc1f19eeb559a",
+      "special_ids": {
+        "pad": 0,
+        "bos": 1,
+        "eos": 2,
+        "mask": 3,
+        "unk": 4
+      }
+    }
+  }
+}

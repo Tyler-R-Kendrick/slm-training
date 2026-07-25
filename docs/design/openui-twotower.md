@@ -68,6 +68,30 @@ prompt + DESIGN.md → Context Tower (scratch | frozen HF) → hidden states
 Optional preference stage ranks candidates with the composite reward.
 **Note:** current “DPO” training is reference-free (surrogate on masked log-probs) — not textbook DPO.
 
+### Shared-recursive diagnostic boundary
+
+`SharedRecursiveDenoiserTower` exposes `initial_transition_state()` and
+`transition_step()` as the canonical evaluation-neutral recurrence boundary.
+The normal forward path calls the same step method; derivative tools hold
+context, masks, and request-local symbol features fixed and differentiate only
+the explicit `(y,z)` state. Residual analyses must report the learned increment
+`J_Delta` beside `J_T = I + J_Delta`; a composite singular value near one is
+never sufficient evidence of useful or critical recurrence.
+
+The bounded SLM-231 profile of the rejected SLM-230 scratch checkpoint is
+`expansive_unstable` (exact R=4 product top singular value `4.7243`, maximum
+FTLE `0.3882`) and is joined to `stagnant` free-running outcomes. This is a
+diagnostic block on looped-latent expansion, not a training regularizer,
+adaptive-depth policy, checkpoint promotion, or serving-default change.
+
+SLM-232 adds evaluation-only z0 component decomposition and functional y/z
+path cuts. On the same checkpoint, total z0 varies across four records, but its
+fixed-position rank becomes zero after pooled-context and position removal.
+Path ablations change full-vocabulary logits, yet matched bounded generation
+remains vacuous and exact legal/protected outcomes are unavailable. The joined
+`LatentStateUseGateV1` is therefore `unstable`; this is not evidence of a
+causally useful workspace and changes no production path or default.
+
 **Papers / techniques → code:** see [research-lineage.md](research-lineage.md)
 (MaskGIT, constrained diffusion LLMs, speculative/force-emit, DPO/GRPO surrogates;
 verifier-guided repair Adjacent lineage).

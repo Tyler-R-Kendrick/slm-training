@@ -1,0 +1,959 @@
+{
+  "arms": [
+    {
+      "arm_name": "no_model_canonical_baseline",
+      "condition": "cold",
+      "n_repeats": 1,
+      "span_records": [
+        {
+          "count": 1,
+          "max_ms": 0.503,
+          "mean_ms": 0.503,
+          "name": "canonicalization",
+          "pct_of_total": 61.83,
+          "total_ms": 0.503
+        },
+        {
+          "count": 1,
+          "max_ms": 0.293,
+          "mean_ms": 0.293,
+          "name": "state_hashing",
+          "pct_of_total": 36.08,
+          "total_ms": 0.293
+        },
+        {
+          "count": 1,
+          "max_ms": 0.015,
+          "mean_ms": 0.015,
+          "name": "request_encoding",
+          "pct_of_total": 1.88,
+          "total_ms": 0.015
+        },
+        {
+          "count": 1,
+          "max_ms": 0.002,
+          "mean_ms": 0.002,
+          "name": "source_seed",
+          "pct_of_total": 0.2,
+          "total_ms": 0.002
+        }
+      ],
+      "total_ms": 0.813,
+      "work_units": {
+        "bytes_allocated": 383.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 0.0,
+        "nodes": 8.0,
+        "projected_candidates": 0.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    {
+      "arm_name": "no_model_canonical_baseline",
+      "condition": "warm",
+      "n_repeats": 2,
+      "span_records": [
+        {
+          "count": 2,
+          "max_ms": 0.361,
+          "mean_ms": 0.359,
+          "name": "canonicalization",
+          "pct_of_total": 55.15,
+          "total_ms": 0.718
+        },
+        {
+          "count": 2,
+          "max_ms": 0.289,
+          "mean_ms": 0.283,
+          "name": "state_hashing",
+          "pct_of_total": 43.43,
+          "total_ms": 0.565
+        },
+        {
+          "count": 2,
+          "max_ms": 0.01,
+          "mean_ms": 0.008,
+          "name": "request_encoding",
+          "pct_of_total": 1.28,
+          "total_ms": 0.017
+        },
+        {
+          "count": 2,
+          "max_ms": 0.001,
+          "mean_ms": 0.001,
+          "name": "source_seed",
+          "pct_of_total": 0.14,
+          "total_ms": 0.002
+        }
+      ],
+      "total_ms": 1.301,
+      "work_units": {
+        "bytes_allocated": 383.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 0.0,
+        "nodes": 8.0,
+        "projected_candidates": 0.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    {
+      "arm_name": "bridge_planner_canonical_greedy",
+      "condition": "cold",
+      "n_repeats": 1,
+      "span_records": [
+        {
+          "count": 1,
+          "max_ms": 30.007,
+          "mean_ms": 30.007,
+          "name": "candidate_enumeration",
+          "pct_of_total": 96.64,
+          "total_ms": 30.007
+        },
+        {
+          "count": 1,
+          "max_ms": 0.938,
+          "mean_ms": 0.938,
+          "name": "canonicalization",
+          "pct_of_total": 3.02,
+          "total_ms": 0.938
+        },
+        {
+          "count": 1,
+          "max_ms": 0.093,
+          "mean_ms": 0.093,
+          "name": "serialization",
+          "pct_of_total": 0.3,
+          "total_ms": 0.093
+        },
+        {
+          "count": 1,
+          "max_ms": 0.007,
+          "mean_ms": 0.007,
+          "name": "request_encoding",
+          "pct_of_total": 0.02,
+          "total_ms": 0.007
+        },
+        {
+          "count": 1,
+          "max_ms": 0.002,
+          "mean_ms": 0.002,
+          "name": "transition_apply",
+          "pct_of_total": 0.01,
+          "total_ms": 0.002
+        },
+        {
+          "count": 1,
+          "max_ms": 0.002,
+          "mean_ms": 0.002,
+          "name": "verifier",
+          "pct_of_total": 0.0,
+          "total_ms": 0.002
+        },
+        {
+          "count": 1,
+          "max_ms": 0.001,
+          "mean_ms": 0.001,
+          "name": "source_seed",
+          "pct_of_total": 0.0,
+          "total_ms": 0.001
+        }
+      ],
+      "total_ms": 31.049,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 3.0,
+        "legal_candidates": 1.0,
+        "nodes": 8.0,
+        "projected_candidates": 3.0,
+        "support_queries": 0.2,
+        "verifier_calls": 3.0
+      }
+    },
+    {
+      "arm_name": "bridge_planner_canonical_greedy",
+      "condition": "warm",
+      "n_repeats": 2,
+      "span_records": [
+        {
+          "count": 2,
+          "max_ms": 6.848,
+          "mean_ms": 6.696,
+          "name": "candidate_enumeration",
+          "pct_of_total": 94.57,
+          "total_ms": 13.393
+        },
+        {
+          "count": 2,
+          "max_ms": 0.289,
+          "mean_ms": 0.283,
+          "name": "canonicalization",
+          "pct_of_total": 4.0,
+          "total_ms": 0.567
+        },
+        {
+          "count": 2,
+          "max_ms": 0.093,
+          "mean_ms": 0.092,
+          "name": "serialization",
+          "pct_of_total": 1.29,
+          "total_ms": 0.183
+        },
+        {
+          "count": 2,
+          "max_ms": 0.007,
+          "mean_ms": 0.006,
+          "name": "request_encoding",
+          "pct_of_total": 0.09,
+          "total_ms": 0.012
+        },
+        {
+          "count": 2,
+          "max_ms": 0.002,
+          "mean_ms": 0.001,
+          "name": "verifier",
+          "pct_of_total": 0.02,
+          "total_ms": 0.003
+        },
+        {
+          "count": 2,
+          "max_ms": 0.001,
+          "mean_ms": 0.001,
+          "name": "source_seed",
+          "pct_of_total": 0.01,
+          "total_ms": 0.002
+        },
+        {
+          "count": 2,
+          "max_ms": 0.001,
+          "mean_ms": 0.001,
+          "name": "transition_apply",
+          "pct_of_total": 0.02,
+          "total_ms": 0.002
+        }
+      ],
+      "total_ms": 14.162,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 3.0,
+        "legal_candidates": 1.0,
+        "nodes": 8.0,
+        "projected_candidates": 3.0,
+        "support_queries": 0.2,
+        "verifier_calls": 3.0
+      }
+    },
+    {
+      "arm_name": "x22_edit_enumeration",
+      "condition": "cold",
+      "n_repeats": 1,
+      "span_records": [
+        {
+          "count": 1,
+          "max_ms": 91.813,
+          "mean_ms": 91.813,
+          "name": "candidate_enumeration",
+          "pct_of_total": 98.4,
+          "total_ms": 91.813
+        },
+        {
+          "count": 1,
+          "max_ms": 1.06,
+          "mean_ms": 1.06,
+          "name": "state_materialization",
+          "pct_of_total": 1.14,
+          "total_ms": 1.06
+        },
+        {
+          "count": 1,
+          "max_ms": 0.398,
+          "mean_ms": 0.398,
+          "name": "serialization",
+          "pct_of_total": 0.43,
+          "total_ms": 0.398
+        },
+        {
+          "count": 1,
+          "max_ms": 0.03,
+          "mean_ms": 0.03,
+          "name": "candidate_features",
+          "pct_of_total": 0.03,
+          "total_ms": 0.03
+        },
+        {
+          "count": 1,
+          "max_ms": 0.006,
+          "mean_ms": 0.006,
+          "name": "request_encoding",
+          "pct_of_total": 0.01,
+          "total_ms": 0.006
+        },
+        {
+          "count": 1,
+          "max_ms": 0.001,
+          "mean_ms": 0.001,
+          "name": "source_seed",
+          "pct_of_total": 0.0,
+          "total_ms": 0.001
+        }
+      ],
+      "total_ms": 93.308,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 293.0,
+        "legal_candidates": 41.0,
+        "nodes": 4.0,
+        "projected_candidates": 293.0,
+        "support_queries": 0.0,
+        "verifier_calls": 41.0
+      }
+    },
+    {
+      "arm_name": "x22_edit_enumeration",
+      "condition": "warm",
+      "n_repeats": 2,
+      "span_records": [
+        {
+          "count": 2,
+          "max_ms": 40.295,
+          "mean_ms": 39.428,
+          "name": "candidate_enumeration",
+          "pct_of_total": 96.91,
+          "total_ms": 78.855
+        },
+        {
+          "count": 2,
+          "max_ms": 1.073,
+          "mean_ms": 1.071,
+          "name": "state_materialization",
+          "pct_of_total": 2.63,
+          "total_ms": 2.143
+        },
+        {
+          "count": 2,
+          "max_ms": 0.192,
+          "mean_ms": 0.165,
+          "name": "serialization",
+          "pct_of_total": 0.41,
+          "total_ms": 0.331
+        },
+        {
+          "count": 2,
+          "max_ms": 0.017,
+          "mean_ms": 0.012,
+          "name": "candidate_features",
+          "pct_of_total": 0.03,
+          "total_ms": 0.025
+        },
+        {
+          "count": 2,
+          "max_ms": 0.007,
+          "mean_ms": 0.007,
+          "name": "request_encoding",
+          "pct_of_total": 0.02,
+          "total_ms": 0.014
+        },
+        {
+          "count": 2,
+          "max_ms": 0.001,
+          "mean_ms": 0.001,
+          "name": "source_seed",
+          "pct_of_total": 0.0,
+          "total_ms": 0.002
+        }
+      ],
+      "total_ms": 81.369,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 293.0,
+        "legal_candidates": 41.0,
+        "nodes": 4.0,
+        "projected_candidates": 293.0,
+        "support_queries": 0.0,
+        "verifier_calls": 41.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_toy",
+      "condition": "cold",
+      "n_repeats": 1,
+      "span_records": [
+        {
+          "count": 1,
+          "max_ms": 0.538,
+          "mean_ms": 0.538,
+          "name": "exact_closure",
+          "pct_of_total": 81.69,
+          "total_ms": 0.538
+        },
+        {
+          "count": 1,
+          "max_ms": 0.097,
+          "mean_ms": 0.097,
+          "name": "state_materialization",
+          "pct_of_total": 14.68,
+          "total_ms": 0.097
+        },
+        {
+          "count": 1,
+          "max_ms": 0.011,
+          "mean_ms": 0.011,
+          "name": "state_hashing",
+          "pct_of_total": 1.73,
+          "total_ms": 0.011
+        },
+        {
+          "count": 1,
+          "max_ms": 0.007,
+          "mean_ms": 0.007,
+          "name": "request_encoding",
+          "pct_of_total": 1.0,
+          "total_ms": 0.007
+        },
+        {
+          "count": 1,
+          "max_ms": 0.006,
+          "mean_ms": 0.006,
+          "name": "serialization",
+          "pct_of_total": 0.9,
+          "total_ms": 0.006
+        }
+      ],
+      "total_ms": 0.658,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 1.0,
+        "legal_candidates": 2.0,
+        "nodes": 1.0,
+        "projected_candidates": 4.0,
+        "support_queries": 6.0,
+        "verifier_calls": 6.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_toy",
+      "condition": "warm",
+      "n_repeats": 2,
+      "span_records": [
+        {
+          "count": 2,
+          "max_ms": 0.329,
+          "mean_ms": 0.329,
+          "name": "exact_closure",
+          "pct_of_total": 84.56,
+          "total_ms": 0.657
+        },
+        {
+          "count": 2,
+          "max_ms": 0.044,
+          "mean_ms": 0.041,
+          "name": "state_materialization",
+          "pct_of_total": 10.6,
+          "total_ms": 0.082
+        },
+        {
+          "count": 2,
+          "max_ms": 0.011,
+          "mean_ms": 0.01,
+          "name": "state_hashing",
+          "pct_of_total": 2.66,
+          "total_ms": 0.021
+        },
+        {
+          "count": 2,
+          "max_ms": 0.005,
+          "mean_ms": 0.005,
+          "name": "serialization",
+          "pct_of_total": 1.3,
+          "total_ms": 0.01
+        },
+        {
+          "count": 2,
+          "max_ms": 0.004,
+          "mean_ms": 0.003,
+          "name": "request_encoding",
+          "pct_of_total": 0.88,
+          "total_ms": 0.007
+        }
+      ],
+      "total_ms": 0.777,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 1.0,
+        "legal_candidates": 2.0,
+        "nodes": 1.0,
+        "projected_candidates": 4.0,
+        "support_queries": 6.0,
+        "verifier_calls": 6.0
+      }
+    },
+    {
+      "arm_name": "support_oracle_check",
+      "condition": "cold",
+      "n_repeats": 1,
+      "span_records": [
+        {
+          "count": 4,
+          "max_ms": 0.022,
+          "mean_ms": 0.021,
+          "name": "verifier",
+          "pct_of_total": 66.92,
+          "total_ms": 0.083
+        },
+        {
+          "count": 1,
+          "max_ms": 0.037,
+          "mean_ms": 0.037,
+          "name": "state_materialization",
+          "pct_of_total": 30.23,
+          "total_ms": 0.037
+        },
+        {
+          "count": 1,
+          "max_ms": 0.004,
+          "mean_ms": 0.004,
+          "name": "request_encoding",
+          "pct_of_total": 2.85,
+          "total_ms": 0.004
+        }
+      ],
+      "total_ms": 0.123,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 2.0,
+        "nodes": 0.0,
+        "projected_candidates": 4.0,
+        "support_queries": 4.0,
+        "verifier_calls": 4.0
+      }
+    },
+    {
+      "arm_name": "support_oracle_check",
+      "condition": "warm",
+      "n_repeats": 2,
+      "span_records": [
+        {
+          "count": 8,
+          "max_ms": 0.021,
+          "mean_ms": 0.02,
+          "name": "verifier",
+          "pct_of_total": 67.54,
+          "total_ms": 0.159
+        },
+        {
+          "count": 2,
+          "max_ms": 0.037,
+          "mean_ms": 0.035,
+          "name": "state_materialization",
+          "pct_of_total": 29.95,
+          "total_ms": 0.071
+        },
+        {
+          "count": 2,
+          "max_ms": 0.003,
+          "mean_ms": 0.003,
+          "name": "request_encoding",
+          "pct_of_total": 2.5,
+          "total_ms": 0.006
+        }
+      ],
+      "total_ms": 0.235,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 2.0,
+        "nodes": 0.0,
+        "projected_candidates": 4.0,
+        "support_queries": 4.0,
+        "verifier_calls": 4.0
+      }
+    },
+    {
+      "arm_name": "direct_scorer_fixture",
+      "condition": "cold",
+      "n_repeats": 1,
+      "span_records": [
+        {
+          "count": 1,
+          "max_ms": 9.434,
+          "mean_ms": 9.434,
+          "name": "candidate_projection",
+          "pct_of_total": 85.59,
+          "total_ms": 9.434
+        },
+        {
+          "count": 1,
+          "max_ms": 1.46,
+          "mean_ms": 1.46,
+          "name": "model_encode",
+          "pct_of_total": 13.25,
+          "total_ms": 1.46
+        },
+        {
+          "count": 1,
+          "max_ms": 0.077,
+          "mean_ms": 0.077,
+          "name": "transition_apply",
+          "pct_of_total": 0.7,
+          "total_ms": 0.077
+        },
+        {
+          "count": 1,
+          "max_ms": 0.051,
+          "mean_ms": 0.051,
+          "name": "request_encoding",
+          "pct_of_total": 0.46,
+          "total_ms": 0.051
+        }
+      ],
+      "total_ms": 11.021,
+      "work_units": {
+        "bytes_allocated": 58436.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 8.0,
+        "nodes": 0.0,
+        "projected_candidates": 8.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    {
+      "arm_name": "direct_scorer_fixture",
+      "condition": "warm",
+      "n_repeats": 2,
+      "span_records": [
+        {
+          "count": 2,
+          "max_ms": 8.534,
+          "mean_ms": 6.951,
+          "name": "candidate_projection",
+          "pct_of_total": 90.7,
+          "total_ms": 13.901
+        },
+        {
+          "count": 2,
+          "max_ms": 0.662,
+          "mean_ms": 0.614,
+          "name": "model_encode",
+          "pct_of_total": 8.01,
+          "total_ms": 1.228
+        },
+        {
+          "count": 2,
+          "max_ms": 0.052,
+          "mean_ms": 0.049,
+          "name": "request_encoding",
+          "pct_of_total": 0.64,
+          "total_ms": 0.099
+        },
+        {
+          "count": 2,
+          "max_ms": 0.06,
+          "mean_ms": 0.049,
+          "name": "transition_apply",
+          "pct_of_total": 0.64,
+          "total_ms": 0.098
+        }
+      ],
+      "total_ms": 15.326,
+      "work_units": {
+        "bytes_allocated": 58436.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 8.0,
+        "nodes": 0.0,
+        "projected_candidates": 8.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    }
+  ],
+  "cases": [
+    {
+      "arm_name": "no_model_canonical_baseline",
+      "case_id": "no_model_canonical_baseline__cold",
+      "condition": "cold",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.0008129999999999999,
+      "work_units": {
+        "bytes_allocated": 383.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 0.0,
+        "nodes": 8.0,
+        "projected_candidates": 0.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    {
+      "arm_name": "no_model_canonical_baseline",
+      "case_id": "no_model_canonical_baseline__warm",
+      "condition": "warm",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.0013009999999999999,
+      "work_units": {
+        "bytes_allocated": 383.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 0.0,
+        "nodes": 8.0,
+        "projected_candidates": 0.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    {
+      "arm_name": "bridge_planner_canonical_greedy",
+      "case_id": "bridge_planner_canonical_greedy__cold",
+      "condition": "cold",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.031049,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 3.0,
+        "legal_candidates": 1.0,
+        "nodes": 8.0,
+        "projected_candidates": 3.0,
+        "support_queries": 0.2,
+        "verifier_calls": 3.0
+      }
+    },
+    {
+      "arm_name": "bridge_planner_canonical_greedy",
+      "case_id": "bridge_planner_canonical_greedy__warm",
+      "condition": "warm",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.014162000000000001,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 3.0,
+        "legal_candidates": 1.0,
+        "nodes": 8.0,
+        "projected_candidates": 3.0,
+        "support_queries": 0.2,
+        "verifier_calls": 3.0
+      }
+    },
+    {
+      "arm_name": "x22_edit_enumeration",
+      "case_id": "x22_edit_enumeration__cold",
+      "condition": "cold",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.093308,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 293.0,
+        "legal_candidates": 41.0,
+        "nodes": 4.0,
+        "projected_candidates": 293.0,
+        "support_queries": 0.0,
+        "verifier_calls": 41.0
+      }
+    },
+    {
+      "arm_name": "x22_edit_enumeration",
+      "case_id": "x22_edit_enumeration__warm",
+      "condition": "warm",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.081369,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 293.0,
+        "legal_candidates": 41.0,
+        "nodes": 4.0,
+        "projected_candidates": 293.0,
+        "support_queries": 0.0,
+        "verifier_calls": 41.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_toy",
+      "case_id": "exact_closure_toy__cold",
+      "condition": "cold",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.0006580000000000001,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 1.0,
+        "legal_candidates": 2.0,
+        "nodes": 1.0,
+        "projected_candidates": 4.0,
+        "support_queries": 6.0,
+        "verifier_calls": 6.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_toy",
+      "case_id": "exact_closure_toy__warm",
+      "condition": "warm",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.000777,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 1.0,
+        "legal_candidates": 2.0,
+        "nodes": 1.0,
+        "projected_candidates": 4.0,
+        "support_queries": 6.0,
+        "verifier_calls": 6.0
+      }
+    },
+    {
+      "arm_name": "support_oracle_check",
+      "case_id": "support_oracle_check__cold",
+      "condition": "cold",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.000123,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 2.0,
+        "nodes": 0.0,
+        "projected_candidates": 4.0,
+        "support_queries": 4.0,
+        "verifier_calls": 4.0
+      }
+    },
+    {
+      "arm_name": "support_oracle_check",
+      "case_id": "support_oracle_check__warm",
+      "condition": "warm",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.000235,
+      "work_units": {
+        "bytes_allocated": 0.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 2.0,
+        "nodes": 0.0,
+        "projected_candidates": 4.0,
+        "support_queries": 4.0,
+        "verifier_calls": 4.0
+      }
+    },
+    {
+      "arm_name": "direct_scorer_fixture",
+      "case_id": "direct_scorer_fixture__cold",
+      "condition": "cold",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.011021000000000001,
+      "work_units": {
+        "bytes_allocated": 58436.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 8.0,
+        "nodes": 0.0,
+        "projected_candidates": 8.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    {
+      "arm_name": "direct_scorer_fixture",
+      "case_id": "direct_scorer_fixture__warm",
+      "condition": "warm",
+      "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "wall_seconds": 0.015326000000000001,
+      "work_units": {
+        "bytes_allocated": 58436.0,
+        "cache_hits": 0.0,
+        "edits": 0.0,
+        "legal_candidates": 8.0,
+        "nodes": 0.0,
+        "projected_candidates": 8.0,
+        "support_queries": 0.0,
+        "verifier_calls": 0.0
+      }
+    }
+  ],
+  "claim_class": "wiring",
+  "cost_gate": {
+    "allowed_strategy": "on_policy_viable",
+    "bottlenecks": [
+      "candidate_enumeration",
+      "candidate_projection",
+      "state_materialization"
+    ],
+    "enumeration_bound": true,
+    "max_on_policy_epoch_seconds": 1800.0
+  },
+  "disposition": "cost_profile_wired",
+  "disposition_rationale": "CPU-only fixture cost profile wired for all declared arms; no model, GPU, checkpoint, or ship claim is made.",
+  "experiment_id": "slm192-profile-flow-pipeline",
+  "falsifier": "The cold and warm profiles are identical (no caching benefit), or the top bottleneck is not enumeration/closure/verification, or the per-target cost extrapolates beyond the 30-minute on-policy epoch bound despite the tiny fixture domain.",
+  "honest_caveats": [
+    "Fixture-only wiring evidence: no trained model, checkpoint, or GPU run is involved.",
+    "Direct/flow decode arms are optional or skipped when torch is absent; no learned policy or value head is measured.",
+    "The toy support provider is synthetic (payload['ok'] flag); real support queries require a verifier and problem expander.",
+    "Real model decode cost (forward pass, beam scoring, sampler overhead) is not measured here; extrapolations are from CPU-only canonical operations.",
+    "Only the HERO fixture is exercised; production targets will have different statement counts, domain sizes, and verifier profiles."
+  ],
+  "hypothesis": "Valid-edit bridge/training/decode/closure/verification stages have separable, measurable CPU cost profiles; the dominant bottleneck on toy fixtures is either candidate enumeration, exact closure, or verifier replay; and the combined per-target bridge+enumeration cost extrapolates to an on-policy epoch budget.",
+  "matrix_set": "slm192_profile_flow_pipeline",
+  "matrix_version": "ffe3-01-v1",
+  "n_arms": 6,
+  "n_cases": 12,
+  "on_policy": {
+    "extrapolated_confirmation_suite_seconds": 1.0317348000000002,
+    "extrapolated_dagger_round_seconds": 5.158674,
+    "extrapolated_five_seeds_seconds": 51.586740000000006,
+    "projected_seconds_for_108_targets": 10.317348,
+    "projected_seconds_per_target": 0.095531,
+    "rationale": "Measured warm bridge+enum per target is 0.0955s. 108 targets = 10.3s; five seeds = 51.6s, well under the 1800s epoch bound on this fixture.",
+    "strategy": "on_policy_viable"
+  },
+  "run_id": "slm192-profile-flow-pipeline-20260721",
+  "schema": "FlowPipelineManifestV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T08:41:39.456434Z",
+  "version_stamp": {
+    "code_commit": "465b9b5ab8e38dbc968729c8957491439664d4df",
+    "code_dirty": true,
+    "components": {
+      "flow.reference": "v1",
+      "flow.termination": "v1",
+      "harness.experiments": "v60",
+      "harness.experiments.slm188_edit_algebra": "v1",
+      "harness.experiments.slm189_bridge_planner": "v1",
+      "harness.experiments.slm192_profile_flow_pipeline": "v1"
+    },
+    "lineage": {
+      "wall_seconds": 2.503812814014964
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T08:41:39.454276+00:00"
+  }
+}

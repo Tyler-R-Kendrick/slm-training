@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {}, "claim": "bounded_matched_proxy_architecture_not_identifiable_not_ship", "failures": [], "result": {"all_finite": true, "cell_count": 21, "test_depth_cell_count": 60}}

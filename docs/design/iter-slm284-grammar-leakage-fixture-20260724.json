@@ -1,0 +1,63 @@
+{
+  "schema_version": "grammar-leakage-audit/v1",
+  "issue": "SLM-284",
+  "recorded_at": "2026-07-24",
+  "kind": "local fixture diagnostic",
+  "recipe": {
+    "device": "cpu",
+    "backend": "scratch",
+    "suite": "smoke",
+    "eval_limit": 1,
+    "run_class": "fixture_demo",
+    "checkpoint_candidates": [
+      "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+      "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/checkpoints/last.pt",
+      "outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt"
+    ],
+    "local_files_only": true,
+    "hard_cap_seconds": 170,
+    "corpus": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722"
+  },
+  "arms": ["raw", "constrained", "repaired", "uniform_at_unforced"],
+  "historical_policy_status": "superseded; raw and uniform emitted arms are retained only as attempted provenance and are now replaced by constrained_native and constrained_compiler",
+  "outcome": "incomplete_no_scorecard",
+  "attempts": [
+    {
+      "checkpoint": "playground_demo/last.pt",
+      "result": "rejected",
+      "reason": "output contract v0 is incompatible with required symbol_only/v2"
+    },
+    {
+      "checkpoint": "e224-semantic-exhaustive-matched/last.pt",
+      "result": "rejected",
+      "reason": "output contract v1 is incompatible with required symbol_only/v2"
+    },
+    {
+      "checkpoint": "slm230_bounded_recursive_r4_r2/last.pt",
+      "result": "interrupted",
+      "reason": "repository run cap elapsed before grammar_leakage_audit.json was written"
+    }
+  ],
+  "metrics": {
+    "binding_aware_meaningful_v2": null,
+    "binder_reference_f1": null,
+    "parse_rate": null,
+    "gates": null
+  },
+  "claim": "No model-quality, promotion, or ship claim. Fixture attempts only validate fail-closed operational behavior.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "488d250868933fa35ac74332e26f8a3763b234b6",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v20",
+      "harness.model_build.eval": "v55",
+      "harness.experiment_feature_flags": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v7",
+      "evals.scoring": "v22",
+      "model.twotower": "v236"
+    },
+    "stamped_at": "2026-07-24T21:54:07.999056+00:00"
+  }
+}

@@ -14,6 +14,8 @@ from slm_training.data.language_contract.corpus import (
     coverage_report,
     iter_negatives,
     iter_positives,
+    iter_root_renderability_pairs,
+    iter_root_renderability_repairs,
 )
 
 __all__ = [
@@ -22,4 +24,6 @@ __all__ = [
     "coverage_report",
     "iter_negatives",
     "iter_positives",
+    "iter_root_renderability_pairs",
+    "iter_root_renderability_repairs",
 ]

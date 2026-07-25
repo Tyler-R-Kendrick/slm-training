@@ -21,6 +21,8 @@ def test_plan_only_writes_manifest(tmp_path: Path) -> None:
     data = json.loads(run_json.read_text())
     assert data["status"] == "plan_only"
     assert data["claim_class"] == "wiring"
+    assert data["floor_gate_hash"]
+    assert data["floor_gate_verdict"] == "inconclusive"
     assert "version_stamp" in data
 
 
@@ -50,7 +52,7 @@ def test_fixture_writes_report_and_design_docs(tmp_path: Path) -> None:
     data = json.loads(run_json.read_text())
     assert data["status"] == "fixture"
     assert data["n_rows"] > 0
-    assert data["version_stamp"]["components"]["harness.experiments.slm215_spectral_atlas"] == "v1"
+    assert data["version_stamp"]["components"]["harness.experiments.slm215_spectral_atlas"] == "v2"
     assert design_json.is_file()
     assert design_md.is_file()
     assert "Honest caveats" in design_md.read_text()

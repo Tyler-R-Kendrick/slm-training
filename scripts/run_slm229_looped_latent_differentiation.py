@@ -31,6 +31,10 @@ from slm_training.harnesses.experiments.slm229_looped_latent_differentiation imp
     run_differentiation_audit,
 )
 from slm_training.versioning import UNKNOWN, build_version_stamp
+from slm_training.harnesses.experiments.semantic_floor_gate import (
+    DEFAULT_GATE_PATH,
+    load_semantic_floor_gate,
+)
 
 _DESIGN_JSON = "docs/design/iter-slm229-looped-latent-differentiation-20260721.json"
 _DESIGN_MD = "docs/design/iter-slm229-looped-latent-differentiation-20260721.md"
@@ -50,6 +54,7 @@ def _build_version_stamp() -> dict[str, Any]:
         return build_version_stamp(
             "harness.experiments",
             "harness.experiments.slm229_looped_latent_differentiation",
+            "harness.experiments.semantic_floor_gate",
         )
     except KeyError:
         base = build_version_stamp("harness.experiments")
@@ -59,6 +64,9 @@ def _build_version_stamp() -> dict[str, Any]:
 
 def _build_payload(mode: str, output_dir: Path) -> tuple[dict[str, Any], str]:
     if mode == "plan-only":
+        floor_gate = load_semantic_floor_gate(
+            Path(__file__).resolve().parents[1] / DEFAULT_GATE_PATH
+        )
         report = LoopedLatentDifferentiationReport(
             schema="LoopedLatentDifferentiationV1",
             matrix_set="slm229_looped_latent_differentiation",
@@ -71,6 +79,9 @@ def _build_payload(mode: str, output_dir: Path) -> tuple[dict[str, Any], str]:
             evidence_cutoff="not_applicable",
             reviewed_refs=(),
             generated_at=_now(),
+            floor_gate_ref=DEFAULT_GATE_PATH,
+            floor_gate_hash=floor_gate.gate_hash,
+            floor_gate_verdict=floor_gate.verdict,
             mechanism_comparison=tuple(build_mechanism_comparison()),
             target_support_audit=tuple(build_target_support_audit()),
             oracle_intervention_ceiling=build_oracle_intervention_ceiling(),
@@ -153,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
             "(default: outputs/runs/slm229-differentiation-<YYYYMMDD>)"
         ),
     )
+    parser.add_argument("--design-json", type=Path)
+    parser.add_argument("--design-md", type=Path)
     try:
         args = parser.parse_args(argv)
     except (argparse.ArgumentError, SystemExit):
@@ -175,8 +188,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.mode == "fixture":
         root = Path(__file__).resolve().parents[1]
-        json_path = root / _DESIGN_JSON
-        md_path = root / _DESIGN_MD
+        json_path = args.design_json or root / _DESIGN_JSON
+        md_path = args.design_md or root / _DESIGN_MD
         json_path.parent.mkdir(parents=True, exist_ok=True)
         md_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(report_text, encoding="utf-8")

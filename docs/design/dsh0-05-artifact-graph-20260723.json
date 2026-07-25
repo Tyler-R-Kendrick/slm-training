@@ -1,0 +1,49 @@
+{
+  "schema": "dsh0_artifact_graph_evidence/v1",
+  "issue": "SLM-349",
+  "disposition": "adopt_contract",
+  "run_class": "fixture_demo",
+  "components": {
+    "artifact_graph": "artifact_graph_sidecar/v1",
+    "split_policy": "root_family_split/v1",
+    "artifact_contract": "capability_artifacts/v1"
+  },
+  "acceptance": {
+    "root_split_assigned_deterministically": true,
+    "descendants_inherit_root_family_and_split": true,
+    "mixed_split_composition_rejected": true,
+    "exact_alpha_canonical_ast_and_near_template_overlap_quarantined": true,
+    "shared_parent_overlap_explained": true,
+    "append_is_content_idempotent": true,
+    "lineage_traversal_complete": true,
+    "rejections_persist_reason_codes": true,
+    "focused_tests_passed": 7,
+    "integration_tests_passed": 32
+  },
+  "source_sha256": {
+    "src/slm_training/harnesses/train_data/artifact_graph.py": "7693fa552cacd889ba57e3d0519c2af32c604ff1b90f1d3230bddc69eb77df6c",
+    "src/slm_training/harnesses/train_data/split_policy.py": "502fb79fd5fefb03ab3c570eec7114e2663724184ae5166545c8e32dc2890fe6",
+    "scripts/explain_artifact_overlaps.py": "7101e0c26fdc494534a55feb241a47edc7782543a9a46946043a19b04fed8430"
+  },
+  "honesty": {
+    "data_build": false,
+    "train_run": false,
+    "eval_run": false,
+    "benchmark_run": false,
+    "agentv_required": false,
+    "checkpoint_written": false,
+    "certificate_claim": false,
+    "ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ab7b060d579ffe2548c2676a2d008697e8a29f72",
+    "code_dirty": true,
+    "components": {
+      "harness.capability_artifacts": "v1",
+      "harness.artifact_graph": "v1",
+      "harness.train_data": "v16"
+    },
+    "stamped_at": "2026-07-23T20:16:20.384475+00:00"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "schema_version": "harness_dsl_contract_fixture/v1",
+  "issue": "SLM-355",
+  "date": "2026-07-23",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "harness_schema": "harness_dsl/v1",
+  "operations": [
+    "IDENTITY",
+    "CANONICALIZE",
+    "COMPLETE_SUFFIX",
+    "COMPOSE"
+  ],
+  "payload_kinds": [
+    "document",
+    "statement",
+    "expression",
+    "lexical",
+    "node"
+  ],
+  "cap0_converted_families": [
+    "scope_identity_*",
+    "scope_canonical_*"
+  ],
+  "intentionally_unconverted_families": [
+    "scope_repair_*",
+    "lexical_typed_map"
+  ],
+  "controls": {
+    "all_operation_payload_combinations": "passed",
+    "canonical_round_trip": "passed",
+    "pack_and_grammar_category_identity": "passed",
+    "artifact_and_marker_shape": "passed",
+    "open_prose_comment_and_identifier_rejection": "passed",
+    "pack_owned_fragment_validation": "passed",
+    "scope_record_and_preference_identity": "passed",
+    "unsupported_scope_family_refusal": "passed",
+    "model_data_boundary_rejection": "passed"
+  },
+  "commands": [
+    "python -m pytest -q tests/test_dsl/test_harness_dsl.py",
+    "python -m pytest -q tests/test_harnesses/model_build/test_harness_data.py tests/test_harnesses/train_data/test_scope_corpus.py",
+    "python -m ruff check .",
+    "python -m compileall -q src scripts tests",
+    "python -m scripts.verify_version_stamps --check",
+    "python -m scripts.repo_policy",
+    ".githooks/check-changed",
+    "git diff --check"
+  ],
+  "results": {
+    "focused_pytest": "46 passed",
+    "ruff": "passed",
+    "compileall": "passed",
+    "version_stamps": "passed",
+    "repo_policy": "passed",
+    "changed_hook": "1431 passed, 8 skipped, 12 deselected",
+    "diff_check": "passed"
+  },
+  "claim_limits": [
+    "This is deterministic contract-fixture evidence, not a generated corpus or model evaluation.",
+    "Reserved COMPLETE_SUFFIX and COMPOSE syntax does not establish a producer, learned capability, or certificate.",
+    "No train, benchmark, checkpoint, AgentEvals publication, capability certificate, or ship claim was produced."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d09014b2e4213d1ecada27cb5f2db2cd0f9bde77",
+    "code_dirty": true,
+    "components": {
+      "dsl.harness_dsl": "v1",
+      "harness.train_data": "v18",
+      "harness.model_build.data": "v2",
+      "model.twotower": "v229"
+    },
+    "stamped_at": "2026-07-23T22:10:07.500137+00:00"
+  }
+}

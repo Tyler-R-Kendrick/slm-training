@@ -13,7 +13,7 @@ from dataclasses import dataclass, fields as _fields
 from typing import Any, Iterable, Sequence
 
 from slm_training.levers import (
-    MAX_HARNESS_WALL_MINUTES,
+    MAX_RUN_MINUTES,
     lever_configuration_errors,
 )
 
@@ -322,8 +322,8 @@ def validate_numeric_config(
         "steps", "recursive_transition_layers", "eval_every", "loss_eval_every",
         "suffix_rollback_window", "slot_component_owner_rare_threshold",
         "grammar_canvas_lookahead", "retrieval_k", "solver_max_wall_ms",
-        "stability_min_persistence",
-        "ltr_tail_tokens",
+        "stability_min_persistence", "compiler_prefill_max_states",
+        "compiler_prefill_token_budget",
     }
     positive_float_names = {"lr", "mdlm_eps"}
 
@@ -420,11 +420,11 @@ def validate_numeric_config(
             try:
                 if value is not None:
                     finite_scalar(name, value)
-                    if not (0.0 <= value <= MAX_HARNESS_WALL_MINUTES):
+                    if not (0.0 <= value <= MAX_RUN_MINUTES):
                         raise NumericValidationError(
                             name,
                             value,
-                            f"must be at most {MAX_HARNESS_WALL_MINUTES} minutes",
+                            f"must be at most {MAX_RUN_MINUTES} minutes",
                         )
                 report.record(name, True)
             except NumericValidationError as exc:

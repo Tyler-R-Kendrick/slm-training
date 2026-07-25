@@ -62,12 +62,15 @@ payload; the pre-existing test suite ran unchanged).
 
 ## DSL seams (how harnesses bind their specifics)
 
-- **Ship gates** — `gate_engine.run_gate_checks(suites, policy, *,
-  normalize_suite, default_min_n)` owns the frozen check loop (missing-suite
-  fail-closed, fallback certification, `min_n` evidence floor, per-metric
-  threshold loop). `harnesses/model_build/ship_gates.py` remains the OpenUI
-  policy owner: `DEFAULT_SHIP_GATES`, `MEANINGFUL_METRIC_POLICY`, the
-  OpenUI slim-metric normalizer, payload assembly, and `gates.json` writing.
+- **Ship gates** — `gate_engine.build_gate_criteria(suites, policy, *,
+  normalize_suite, default_min_n)` owns the frozen lowering to raw
+  `actual/operator/expected` criteria (missing-suite fail-closed, fallback
+  certification, `min_n` evidence floor, per-metric threshold loop).
+  `run_gate_checks` is the compatibility Python preview over those same
+  records; authoritative durable verdicts come from AgentEvals assertions.
+  `harnesses/model_build/ship_gates.py` remains the OpenUI policy owner:
+  `DEFAULT_SHIP_GATES`, `MEANINGFUL_METRIC_POLICY`, the OpenUI slim-metric
+  normalizer, AgentEvals result binding, and `gates.json` writing.
 - **Promotion** — `promotion_engine.evaluate_promotion(...,
   hard_categories, gate_evaluator)` owns the frozen promotion checks;
   `harnesses/experiments/promotion.py` remains the policy owner

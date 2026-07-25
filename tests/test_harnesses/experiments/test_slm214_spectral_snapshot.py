@@ -17,7 +17,19 @@ from slm_training.harnesses.experiments.slm214_spectral_snapshot import (
     make_spiked_matrix,
     run_spectral_snapshot_fixture,
     sample_null_summary,
+    spectral_trap_statistics,
 )
+
+
+@pytest.mark.parametrize("initializer", ["xavier_uniform", "kaiming_uniform"])
+def test_uniform_null_initializers_are_deterministic(initializer: str) -> None:
+    from slm_training.harnesses.experiments.slm214_spectral_snapshot import (
+        sample_null_summary,
+    )
+
+    left = sample_null_summary(16, 16, torch.float32, initializer, draws=3)
+    right = sample_null_summary(16, 16, torch.float32, initializer, draws=3)
+    assert left == right
 
 pytest.importorskip("torch")
 
@@ -161,3 +173,14 @@ def test_null_cache_is_deterministic() -> None:
     assert a["null_key"] == b["null_key"]
     assert a["mean_alpha"] is not None
     assert b["mean_alpha"] is not None
+
+
+def test_canonical_trap_projection_is_scale_invariant() -> None:
+    matrix = torch.randn(16, 16, generator=torch.Generator().manual_seed(214))
+    first = spectral_trap_statistics(matrix, null_draws=8, seed=9)
+    scaled = spectral_trap_statistics(matrix * 11, null_draws=8, seed=9)
+    assert scaled["top_gap_ratio"] == pytest.approx(first["top_gap_ratio"])
+    assert scaled["outlier_energy_fraction"] == pytest.approx(
+        first["outlier_energy_fraction"]
+    )
+    assert scaled["trap_z"] == pytest.approx(first["trap_z"])

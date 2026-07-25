@@ -1,0 +1,777 @@
+{
+  "adjudication": {
+    "adjudicator": null,
+    "needs_adjudication": 0,
+    "note": "rater agreement was unanimous on all 33 items; no adjudicator pass required"
+  },
+  "labels": {
+    "pkt_001": [
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_001",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_001",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_002": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_002",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_002",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_003": [
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_003",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_003",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_004": [
+      {
+        "confidence": 0.95,
+        "label": "not_meaningful",
+        "packet_id": "pkt_004",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_children",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.97,
+        "label": "not_meaningful",
+        "packet_id": "pkt_004",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_children",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_005": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_005",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_005",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_006": [
+      {
+        "confidence": 0.85,
+        "label": "meaningful",
+        "packet_id": "pkt_006",
+        "rater_id": "rater_a",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.9,
+        "label": "meaningful",
+        "packet_id": "pkt_006",
+        "rater_id": "rater_b",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_007": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_007",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_007",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_008": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_008",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.8,
+        "label": "not_meaningful",
+        "packet_id": "pkt_008",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_009": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_009",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_009",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_010": [
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_010",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_010",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_011": [
+      {
+        "confidence": 0.95,
+        "label": "meaningful",
+        "packet_id": "pkt_011",
+        "rater_id": "rater_a",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.95,
+        "label": "meaningful",
+        "packet_id": "pkt_011",
+        "rater_id": "rater_b",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_012": [
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_012",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_012",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_013": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_013",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_013",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_014": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_014",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.8,
+        "label": "not_meaningful",
+        "packet_id": "pkt_014",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_015": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_015",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_015",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_016": [
+      {
+        "confidence": 0.85,
+        "label": "meaningful",
+        "packet_id": "pkt_016",
+        "rater_id": "rater_a",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.9,
+        "label": "meaningful",
+        "packet_id": "pkt_016",
+        "rater_id": "rater_b",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_017": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_017",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_017",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_018": [
+      {
+        "confidence": 0.85,
+        "label": "meaningful",
+        "packet_id": "pkt_018",
+        "rater_id": "rater_a",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.9,
+        "label": "meaningful",
+        "packet_id": "pkt_018",
+        "rater_id": "rater_b",
+        "reason_codes": [],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_019": [
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_019",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_019",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_020": [
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_020",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.75,
+        "label": "not_meaningful",
+        "packet_id": "pkt_020",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_021": [
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_021",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.7,
+        "label": "not_meaningful",
+        "packet_id": "pkt_021",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_022": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_022",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_022",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_023": [
+      {
+        "confidence": 0.8,
+        "label": "not_meaningful",
+        "packet_id": "pkt_023",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_023",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_024": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_024",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_024",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_025": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_025",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_025",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_026": [
+      {
+        "confidence": 0.8,
+        "label": "not_meaningful",
+        "packet_id": "pkt_026",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_026",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_027": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_027",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_027",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_028": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_028",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_028",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_029": [
+      {
+        "confidence": 0.8,
+        "label": "not_meaningful",
+        "packet_id": "pkt_029",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_029",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_030": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_030",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_030",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_031": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_031",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_031",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_032": [
+      {
+        "confidence": 0.8,
+        "label": "not_meaningful",
+        "packet_id": "pkt_032",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.85,
+        "label": "not_meaningful",
+        "packet_id": "pkt_032",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "no_content_components",
+          "low_component_recall"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ],
+    "pkt_033": [
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_033",
+        "rater_id": "rater_a",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      },
+      {
+        "confidence": 0.98,
+        "label": "not_meaningful",
+        "packet_id": "pkt_033",
+        "rater_id": "rater_b",
+        "reason_codes": [
+          "empty_root_stack",
+          "no_content_components",
+          "no_placeholders"
+        ],
+        "schema": "slm288_meaningful_label/v1"
+      }
+    ]
+  },
+  "packet_sha256": "0980b71da1dce898689c505edf9d7acf0fe5d2c7caca5649bfdc258c43d6161a",
+  "rater_provenance": "two independent agent rater passes (same model family, separate blind contexts, different item order; NOT human raters)",
+  "rubric_sha256": "ba09ece7b4d08baf328f48ca41606c45dab152344b10b016aea2a53564aba4ce",
+  "schema": "slm288_annotation_labels/v1",
+  "version_stamp": {
+    "code_commit": "c5ab8bb9334a4d4befc7b48827118655c1a32295",
+    "code_dirty": true,
+    "components": {
+      "evals.scoring": "v22",
+      "harness.model_build.eval": "v48"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T10:10:59.561946+00:00"
+  }
+}

@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 from slm_training.harnesses.model_build import ModelBuildConfig, build_model, train
-from slm_training.levers import DEFAULT_EVAL_DATA_DIR, DEFAULT_TRAIN_DATA_DIR
 from slm_training.harnesses.model_build.data import load_train_records
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 from slm_training.harnesses.model_build.eval_policy import (
@@ -36,7 +35,6 @@ from slm_training.evals.judge_resolution import (
     SemanticResolutionManifestV1,
     apply_resolution_manifest,
 )
-
 
 SUITES = ["smoke", "held_out", "adversarial", "ood", "rico_held"]
 
@@ -88,6 +86,7 @@ class Experiment:
     rl: bool = False
     slot_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    namespace_augment: bool = False
     ltr_loss_weight: float = 1.0
     ltr_prefix_loss_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
@@ -171,8 +170,6 @@ class Experiment:
     component_inventory_decode_weight: float = 0.0
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
-    semantic_plan_decode_weight: float = 0.0
-    semantic_plan_margin_decode_weight: float = 0.0
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -342,6 +339,7 @@ def _base_experiments(
 def _v2_experiments(
     train_v1: Path,
     train_cur: Path,
+    train_ns: Path,
     *,
     design_md_in_context: bool = True,
 ) -> list[Experiment]:
@@ -373,6 +371,15 @@ def _v2_experiments(
             train_v1,
             grammar_ltr_repair=True,
             ltr_loss_weight=2.0,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E14",
+            "qx_e14_namespace_aug",
+            "F1 + namespace augmentation, no slot contract (F5)",
+            train_ns,
+            grammar_ltr_repair=True,
+            namespace_augment=True,
             design_md_in_context=design_md_in_context,
         ),
         Experiment(
@@ -1707,12 +1714,6 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         component_plan_decode_weight=float(
             getattr(exp, "component_plan_decode_weight", 0.0) or 0.0
         ),
-        semantic_plan_decode_weight=float(
-            getattr(exp, "semantic_plan_decode_weight", 0.0) or 0.0
-        ),
-        semantic_plan_margin_decode_weight=float(
-            getattr(exp, "semantic_plan_margin_decode_weight", 0.0) or 0.0
-        ),
         component_edge_loss_weight=float(
             getattr(exp, "component_edge_loss_weight", 0.0) or 0.0
         ),
@@ -2265,11 +2266,13 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
         "failures": gates.get("failures"),
         "checkpoint_sha256": board.get("checkpoint_sha256"),
         "evaluated_at": board.get("evaluated_at"),
-        "evaluation_artifacts": {
-            "format": (board.get("evaluation_artifacts") or {}).get("format"),
-            "sdk": (board.get("evaluation_artifacts") or {}).get("sdk"),
-            "spec": (board.get("evaluation_artifacts") or {}).get("spec"),
+        "evals": {
+            "format": (board.get("evals") or {}).get("format"),
+            "authority": (board.get("evals") or {}).get("authority"),
+            "criteria": (board.get("evals") or {}).get("criteria"),
+            "runner": (board.get("evals") or {}).get("runner"),
         },
+        "feature_flags": board.get("feature_flags"),
         "suites": slim,
     }
 
@@ -2646,13 +2649,13 @@ def _run_sde5_floor_escape(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=DEFAULT_TRAIN_DATA_DIR)
+    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
     parser.add_argument(
         "--curriculum-dir",
         type=Path,
-        default=DEFAULT_TRAIN_DATA_DIR,
+        default=Path("outputs/data/train/v1_curriculum"),
     )
-    parser.add_argument("--test-dir", type=Path, default=DEFAULT_EVAL_DATA_DIR)
+    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument(
         "--docs-out",
@@ -2776,6 +2779,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Build curriculum train corpus before running.",
     )
     parser.add_argument(
+        "--namespace-dir",
+        type=Path,
+        default=Path("outputs/data/train/v1_namespace"),
+    )
+    parser.add_argument(
         "--matrix",
         choices=(
             "legacy",
@@ -2877,8 +2885,8 @@ def main(argv: list[str] | None = None) -> int:
     # snapshot; use the requested corpus unless a curriculum path was also
     # explicitly selected.
     if (
-        args.train_dir != DEFAULT_TRAIN_DATA_DIR
-        and args.curriculum_dir == DEFAULT_TRAIN_DATA_DIR
+        args.train_dir != Path("outputs/data/train/v1")
+        and args.curriculum_dir == Path("outputs/data/train/v1_curriculum")
     ):
         args.curriculum_dir = args.train_dir
     args.suites = tuple(
@@ -2941,6 +2949,20 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
+    needs_namespace = selected_ids is None or "E14" in selected_ids
+    if not args.list and needs_namespace and not args.namespace_dir.exists():
+        from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+
+        build_train_data(
+            TrainDataConfig(
+                source="all",
+                output_root=args.namespace_dir.parent,
+                version=args.namespace_dir.name,
+                synthesizer="quality",
+                namespace_augment=True,
+            )
+        )
+
     design_md = not args.no_design_md_context
     experiments: list[Experiment] = []
     if args.matrix in {"legacy", "all"}:
@@ -2957,6 +2979,7 @@ def main(argv: list[str] | None = None) -> int:
             _v2_experiments(
                 args.train_dir,
                 args.curriculum_dir,
+                args.namespace_dir,
                 design_md_in_context=design_md,
             )
         )
@@ -3221,6 +3244,7 @@ def main(argv: list[str] | None = None) -> int:
         "results": results,
         "version_stamp": build_version_stamp(
             "matrix.quality",
+            "harness.experiment_feature_flags",
             "harness.model_build.eval",
             "evals.meaningful_program",
             "gates.ship",

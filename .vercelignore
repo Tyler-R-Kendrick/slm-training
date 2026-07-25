@@ -1,3 +1,21 @@
+# Never upload local build/run artifacts: outputs/ alone is ~10 GB of local
+# experiment state and instantly blows the function bundle limit. The
+# function-level excludeFiles glob in vercel.json does not reliably remove
+# these (see SLM-231/233 history), so they are excluded at source-upload time.
+/outputs/
+/.venv/
+/.vercel/
+/node_modules/
+/build/
+/session/
+/slm_training.egg-info/
+/_uv/
+/tests/
+/.pytest_cache/
+/.ruff_cache/
+/src/apps/*/node_modules/
+/src/apps/*/dist/
+
 # Offline rebuild inputs; the deployed control plane reads committed data/eval
 # snapshots instead.
 src/slm_training/resources/rico/**
@@ -6,24 +24,79 @@ src/slm_training/resources/rico/**
 # the deployed control-plane APIs.
 src/slm_training/resources/data/**/governance/**
 
+# Published training records (~69 MB of JSONL) are training inputs, not
+# dashboard runtime data. The deployed data pages degrade gracefully to an
+# empty record list while manifests, quality reports, and stats stay live.
+src/slm_training/resources/data/**/records.jsonl
+
+# The Vercel function ships no inference runtime (see
+# src/slm_training/web/requirements-vercel.txt), so the demo checkpoint is
+# dead weight in the bundle. Local and GPU deploys still resolve it from the
+# repository.
+src/slm_training/resources/checkpoints/**
+
+# Historical experiment evidence over ~200 KB is durable review material, not
+# dashboard runtime input. The observability reader tolerates missing files and
+# falls back to the committed dashboard snapshot, so these stay offline.
+docs/design/sde5-floor-escape-matrix-results.json
+docs/design/iter-sde5-floor-escape-20260721.json
+docs/design/quality-matrix-v10-e266-results.json
+docs/design/slm286-ship-gate-evidence-census-20260723.json
+docs/design/iter-slm191-termination-matrix-20260721.json
+docs/design/iter-slm167-zero-training-sparse-ceiling-20260720.json
+docs/design/iter-slm303-decode-budget-audit-20260724.json
+docs/design/iter-slm260-oracle-scoring-replay-20260724.json
+docs/design/iter-slm260-oracle-scoring-replay-20260721.json
+docs/design/data-corpus-audit.json
+docs/design/iter-slm297-unified-rescore-20260724.json
+docs/design/iter-sde0-02-metric-gaming-20260719.json
+docs/design/iter-efs2-03-conflict-slice-repair-20260719.json
+docs/design/iter-slm200-flow-objective-attribution-20260723.json
+docs/design/quality-matrix-v10-e267-results.json
+docs/design/quality-matrix-v10-e268-results.json
+docs/design/iter-efs0-03-meaningful-v2-frontier-audit-20260717.json
+
 # E530 r1 is retained only as invalid recipe-drift evidence. Production must
 # expose the corrected immutable r2 snapshot, not this rejected candidate.
 src/slm_training/resources/data/train/e530_visible_semantic_roles_r1_20260719/**
+
+# SLM-230's bounded scratch corpus is experiment evidence, not a deployed
+# dashboard dataset. Keep its 1.3 MB source/governance bundle offline.
+src/slm_training/resources/data/train/slm230_symbol_only_v1/**
 
 # Human narratives are served from the repository, not opened by the FastAPI
 # function. Machine-readable experiment JSON remains deployable.
 docs/design/**/*.md
 
-# BEGIN GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES
-.venv/**
-.vercel/**
-node_modules/**
-outputs/**
-tests/**
-src/apps/**
-**/governance/records.jsonl
-**/train/e177_*/**
-**/train/e21[48]_*/**
-**/train/e297_*/**
-**/train/scope_graded_v1/**
-# END GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES
+# AgentV SDK bundles are durable review evidence, not dashboard runtime input.
+# The compact top-level docs/design JSON remains available to observability.
+docs/design/*-agentv-*/**
+
+# Source maps are useful locally but are never served by the production app.
+src/slm_training/web/static/**/*.map
+
+# SLM-231's derivative library and bounded runner are offline experiment
+# machinery. The deployed dashboard reads only their committed result JSON.
+scripts/run_slm231_recurrence_dynamics.py
+src/slm_training/harnesses/experiments/slm231_recurrence_dynamics.py
+
+# SLM-243's architecture matrix runner and verdict contract are offline
+# experiment machinery. The deployed dashboard consumes only its compact
+# committed result JSON; full telemetry stays under the excluded AgentV path.
+scripts/run_slm243_recursive_update_gate.py
+src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py
+
+# SLM-233's matched recursive-depth campaign is offline experiment machinery.
+# The deployed dashboard consumes only its compact top-level summary JSON.
+scripts/run_slm233_recursive_campaign.py
+src/slm_training/harnesses/experiments/slm233_recursive_campaign.py
+
+# Predecessor recurrence fixture/audit runners are likewise offline. Their
+# result JSON remains available to the deployed experiment reader.
+scripts/run_slm138_recursive_denoiser_fixture.py
+scripts/run_slm230_recurrence_observability.py
+src/slm_training/harnesses/experiments/slm230_recurrence_observability.py
+
+# The Vercel app only uses the frozen promotion engine; experiment runners are
+# offline harnesses and otherwise pull their entire dependency tree into Lambda.
+src/slm_training/harnesses/experiments/**

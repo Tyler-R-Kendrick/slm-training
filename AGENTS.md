@@ -27,6 +27,119 @@ Experiment-first OpenUI layout SLMs:
    executed/published with the pinned AgentV SDK; domain metrics and honest ship
    gates remain authoritative (`docs/design/agentv-evaluation.md`).
 
+## Non-negotiable architecture invariants (goal law)
+
+This repo is **not training a natural-language LLM.** It trains a
+**grammar-constrained symbolic diffusion model** that outputs templated
+grammars (scaffolded structure + structural reasoning). Templated /
+natural-language content is deferred to a real external LLM (symbol-only output
+contract, `dsl/language_contract.py`, `OUTPUT_CONTRACT_VERSION=2`). Everything
+below is a **goal invariant**: it constrains every model, harness, lever,
+experiment, doc, and agent action here — past, present, and future. Canonical
+expansion with file pointers, current status, and open goals:
+[`docs/design/decode-invariants.md`](docs/design/decode-invariants.md).
+
+### I. Constrained decoding is the product (never removable)
+
+1. **Never output invalid grammar.** Every production decode path is
+   grammar-constrained end to end. Unconstrained arms
+   (`--unconstrained-control`, HTTP `grammar_constrained=false`, eval `raw`
+   arms) are **diagnostic controls only** — never production defaults, never
+   serving paths, and their output is never shipped, certified, or gated on.
+2. **Fail closed.** Production configs must not set
+   `allow_unconstrained_fallback=True`, must run finalize validation, and must
+   raise (not return uncertified text) when certification fails — in every
+   backend, ONNX included. An empty legal domain is a constrained dead end,
+   never a full-vocabulary fallback.
+3. **No lever, experiment, or skill may remove or weaken deterministic /
+   constrained decoding.** Levers may change *how legal symbols are chosen*
+   (ranking, speculation technique, batching) — never *whether output is
+   legal*. Weakening levers are registered in
+   `levers.CONSTRAINT_WEAKENING_LEVERS` and CI-blocked from production configs.
+
+### II. Inference is the last resort (deterministic completion law)
+
+4. **Deterministic completion paths bypass inference wherever a deterministic
+   answer exists.** Authoritative deterministic decode proofs always outrank
+   learned, semantic, confidence, or preference scores.
+5. **Forced bypass on singletons:** when the scope-aware symbol table (DFA
+   domain / `CompletionDomainV1` / choice-codec state) shows **exactly one**
+   valid next symbol, that symbol is committed **without any neural forward or
+   ranking**, in every decode path and every backend. Never downgrade certainty
+   into a soft preference. New decode paths ship with a bypass test (the
+   `forwards_count == 0` pattern) or they do not merge.
+6. **Speculative completion from forward-calculated symbol tables:** symbol
+   tables are computed *before* the model; at non-singleton branch points, rank
+   legal symbols with a deterministic scorer
+   (`dsl/grammar/fastpath/speculative_rank.py`, committed train-only n-gram
+   table at `resources/decode/speculative_ngram_v1.json`) and speculatively commit
+   multi-token spans that stay inside the certified domain (lookahead-then-
+   verify, arXiv:2602.00612; intersection-witness completions,
+   arXiv:2508.10111). The **technique** is a lever — swap it by preregistered
+   experiment — but speculation always verifies against the grammar oracle
+   before commit.
+7. **Symbol tables schedule compute:** use them to plan subsequent prefills —
+   compact ambiguous rows into minimal forwards, place prefill boundaries at
+   grammar checkpoints proven by `common_forced_run` (what the grammar forces
+   after *every* legal candidate is determined before the model picks), route
+   by detected device (`runtime/decode_schedule.py`). Record scheduled-prefill
+   and forwards-avoided counters in `DecodeStats`; utilization regressions are
+   measured, never vibes.
+
+### III. What the model is (and is not)
+
+8. **Output = scaffolded grammar.** Targets contain only grammar/AST literals
+   and placeholder symbols. Natural-language vocab is **optional fluff** —
+   optimizable later, never load-bearing, never a ship blocker.
+9. **Use-case ladder (in order, no skipping):** AST-2-AST → grammar-2-AST →
+   grammar+ops-2-AST → simplified-NL-2-AST → complex-NL-2-AST. Each rung is
+   certified before the next opens (`CERT_CAP*` gates stay). Current position
+   and blockers: `docs/MODEL_CARD.md` + `docs/design/decode-invariants.md`.
+10. **Calculator/solver enhanced with inference** — not a chat model. Inference
+    fills ambiguity; it never authors structure a deterministic solver can derive.
+
+### IV. Encoder/decoder vocabulary law
+
+11. **The encoder vocabulary MUST reserve a compute-ops vocabulary** —
+    AST/graph/set/topology operations — **known and shared by the decoder
+    vocabulary**. That vocabulary is `dsl/ops_vocab.py`: derived from the live
+    operator registries (an op cannot be in it without an implementation, or
+    implemented without being in it), reserved in the versioned `ops` token-id
+    namespace, and exposed through the single `shared_token_ids()` mapping both
+    towers call. Grammar symbols layer on top via `assert_layering`; NL sits
+    above and is strictly optional. Adding, removing, or reclassifying an
+    operator changes the fingerprint and fails
+    `verify_decode_invariants` until `resources/ops_vocab_registry.json` is
+    rebuilt and `ops.vocab` is bumped. e803 rejected *decoder-target* op tokens
+    and says nothing about encoder-side sharing; that campaign is the open rung.
+12. **Multi-turn = CRDT event store.** Append-only, content-addressed events
+    over the conversation AST (`ConversationTraceV1`). Turn inputs are ops on
+    that AST; ops include **copy/undo/redo**. Merge must converge (CRDT
+    semantics) — the conflict-rejecting merge is a documented interim state,
+    not the goal. The AST artifact is a **materialization of the entire
+    conversation history** (full replay, no hidden cursors).
+13. **Patch/diff outputs across turns.** Turns emit operation patches/diffs,
+    not full rewrites, wherever the edit space can reach the target
+    (reachability-certified). Full-AST output is the bootstrap mode, not the
+    end state; reachability blockers are open goals, not closed questions.
+
+### V. Goal-drift guard
+
+14. **Goals are non-negotiable; approaches are disposable.** A rejected
+    experiment closes an *approach*, never a *goal*. Every rejected approach to
+    an invariant above must file its successor approach (or an explicit, dated,
+    documented waiver) in the same measured-results doc. Labels like
+    "rejected" / "unavailable" / `nl_available=False` /
+    `reachable_fraction=0.0` describe **current approach state** and may never
+    be cited as reason the invariant does not apply.
+15. **Everything is documented.** These invariants live canonically in
+    `docs/design/decode-invariants.md`, are linked from README, MODEL_CARD, and
+    the decode/vocab/conversation design docs, and are regenerated into
+    OpenWiki. Changing one requires editing that doc, bumping the
+    `decode.invariants` component in `resources/versions.json`, and passing
+    `python -m scripts.verify_decode_invariants` in CI — a silent weakening is
+    a regression and blocks merge.
+
 ## Hard run cap
 
 Every train, eval, benchmark, profile, telemetry, matrix, reproduction, and
@@ -248,6 +361,19 @@ training bridge; training data + ship-gates are untouched.
 NO TRAIN / EVAL / BENCH / PROFILE / TELEMETRY / MATRIX / REPRO
 WITHOUT UPDATING DOCS
 ```
+
+## Preregistered campaign law
+
+AP-007+ experiment runners and every promotion candidate use the canonical
+`ExperimentCampaignV1` contract in
+`src/slm_training/autoresearch/experiment_campaign.py`. Lock the manifest in
+the campaign event chain before execution; bind plans, outcomes, and promotion
+evidence to that digest. Deviations are append-only and exploratory. Never
+replace the locked confirmatory endpoint, arms, seeds, stopping rule, family,
+or gates after outcomes are visible. Meaning-v2 becomes the default primary
+only after a hash-verified AP-001 `certified` artifact; otherwise use the
+binder/reference F1 fallback. See
+[`docs/design/experiment-campaign-governance.md`](docs/design/experiment-campaign-governance.md).
 
 Numbers only in `outputs/`, chat, or a PR comment = incomplete work.
 

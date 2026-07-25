@@ -7,7 +7,12 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from slm_training.harness_core.gate_engine import run_gate_checks
+from slm_training.harness_core.gate_engine import (
+    build_gate_criteria,
+    criterion_failure,
+    criterion_failure_category,
+    run_gate_checks,
+)
 
 # Per-suite minimums. Smoke is a canary; generalization requires the rest.
 #
@@ -61,7 +66,7 @@ DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
 # (candidate_pending_calibration) so recording it can never green a gate.
 MEANINGFUL_METRIC_POLICY = {
     "active_primary": "meaningful_program_v1",
-    "threshold_version": "openui_ship_gates_v1",
+    "threshold_version": "openui_ship_gates_v4",
     "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
@@ -78,7 +83,7 @@ MEANINGFUL_METRIC_POLICY = {
 def _meaningful_metric_policy(
     policy: dict[str, dict[str, float]], *, custom: bool
 ) -> dict[str, Any]:
-    policy_id = "openui_ship_gates_v1"
+    policy_id = "openui_ship_gates_v4"
     source = "DEFAULT_SHIP_GATES"
     if custom:
         encoded = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
@@ -134,22 +139,46 @@ def evaluate_ship_gates(
     suites: dict[str, dict[str, Any]],
     *,
     thresholds: dict[str, dict[str, float]] | None = None,
+    suite_reachability: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """
     Check every suite present in `suites` against the ship policy.
 
     Missing metrics fail that threshold. Suites absent from the scoreboard are
     reported as `missing_suite` failures (cannot claim pass without evidence).
+
+    When `suite_reachability` is provided (SLM-299 edit-space reachability
+    audit: suite name → fraction of decided cases proven reachable from the
+    X22 seed), any gated suite whose fraction is below 1.0 adds a blocking
+    `reachability_unproven:<suite>` measurement-integrity failure — model
+    quality on that suite is partially unmeasurable by the decode space, so
+    model-quality claims are blocked. Suites absent from the map are
+    unaffected (backwards compatible); UNKNOWN_BUDGET cases are never counted
+    as unreachable by the audit that produces the map.
     """
     policy = thresholds or DEFAULT_SHIP_GATES
-    actual, checks, failures = run_gate_checks(
+    actual, checks, failures, categorized = run_gate_checks(
         suites,
         policy,
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
     )
-
+    if suite_reachability:
+        for suite_name, fraction in suite_reachability.items():
+            if suite_name not in policy:
+                continue
+            if (
+                isinstance(fraction, (int, float))
+                and not isinstance(fraction, bool)
+                and fraction < 1.0
+            ):
+                key = f"{suite_name}:reachability_unproven"
+                message = f"reachability_unproven:{suite_name} actual={fraction!r} need=1.0"
+                checks[key] = False
+                failures.append(message)
+                categorized["measurement_integrity_failures"].append(message)
     return {
+        "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
         "policy": policy,
         "meaningful_metric_policy": _meaningful_metric_policy(
             policy, custom=bool(thresholds)
@@ -157,6 +186,7 @@ def evaluate_ship_gates(
         "actual": actual,
         "gates": checks,
         "failures": failures,
+        **categorized,
         "pass": all(checks.values()) if checks else False,
         "note": (
             "Honest ship gates require all policy suites and score structure only "
@@ -165,6 +195,8 @@ def evaluate_ship_gates(
             "semantic-density floor: shorter-but-emptier output cannot pass on "
             "syntax alone. Syntax parse is reported separately and is not a "
             "learned-quality substitute. DESIGN.md style lint is never a ship gate. "
+            "When suite_reachability is supplied, gated suites below 1.0 reachable "
+            "fail as reachability_unproven (measurement integrity). "
             "See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
         ),
     }
@@ -175,13 +207,67 @@ def write_ship_gates(
     suites: dict[str, dict[str, Any]],
     *,
     thresholds: dict[str, dict[str, float]] | None = None,
+    evals_result: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Write gates.json under the run directory; return the payload."""
+    """Write the AgentEvals-authoritative gates.json payload."""
     from slm_training.versioning import build_version_stamp
 
     payload = evaluate_ship_gates(suites, thresholds=thresholds)
+    policy = thresholds or DEFAULT_SHIP_GATES
+    _, raw_criteria = build_gate_criteria(
+        suites,
+        policy,
+        normalize_suite=_slim_suite,
+        default_min_n=DEFAULT_MIN_SUITE_N,
+    )
+    observed = {
+        str(item.get("id")): item
+        for item in (evals_result.get("criteria") or {}).get("results", [])
+    }
+    checks = {
+        str(item["id"]): (
+            observed.get(str(item["id"]), {}).get("pass") is True
+            and all(
+                observed[str(item["id"])].get(field) == item.get(field)
+                for field in ("actual", "operator", "expected")
+            )
+        )
+        for item in raw_criteria
+    }
+    failed_criteria = [
+        item for item in raw_criteria if not checks[str(item["id"])]
+    ]
+    categorized = {
+        "evidence_volume_failures": [],
+        "measurement_integrity_failures": [],
+        "quality_threshold_failures": [],
+        "runtime_failures": [],
+    }
+    for item in failed_criteria:
+        categorized[criterion_failure_category(item)].append(criterion_failure(item))
+    payload.update(
+        {
+            "authority": "AgentEvals assertions",
+            "gates": checks,
+            "failures": [criterion_failure(item) for item in failed_criteria],
+            **categorized,
+            "pass": bool(checks)
+            and all(checks.values())
+            and evals_result.get("authority") == "AgentEvals assertions"
+            and (evals_result.get("criteria") or {}).get("pass") is True
+            and int((evals_result.get("runner") or {}).get("execution_errors") or 0)
+            == 0,
+            "evals": {
+                "format": evals_result.get("format"),
+                "spec": evals_result.get("spec"),
+                "criteria": evals_result.get("criteria"),
+                "runner": evals_result.get("runner"),
+            },
+        }
+    )
     payload["version_stamp"] = build_version_stamp(
         "gates.ship",
+        "harness.core",
         "evals.meaningful_program",
     )
     run_dir = Path(run_dir)

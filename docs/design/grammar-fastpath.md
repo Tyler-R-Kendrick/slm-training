@@ -1,9 +1,14 @@
 # Grammar fast-path (force-emit + MaskGIT admit)
 
+> **Goal law:** this document is bound by [decode-invariants.md](decode-invariants.md) —
+> constrained decoding is the product, deterministic singleton bypass outranks
+> learned scores, and a rejected approach never closes a goal.
+
 ## Goal
 
-Skip transformer steps when the OpenUI LALR acceptor has a **singleton structural
-continuation**, and reject MaskGIT fills that make the CFG completion language empty.
+Skip transformer steps whenever exact grammar and scope authority has one legal
+tokenizer continuation, including request-local semantic symbols, and reject
+fills that make the completion language empty.
 
 ## Research lineage
 
@@ -27,21 +32,35 @@ Full fidelity tags and honesty rules: [research-lineage.md](research-lineage.md)
 | `losses.py` | Cheap `force_align_loss` on gold `= ( ) [ ] ,` positions |
 | `gate.py` | Optional sigmoid trust head (does not override DFA) |
 
-Force only narrow terminals: `=` `(` `)` `[` `]` `,`. Never force `NAME` /
-`COMPONENT` / `STRING`.
+The surface DFA force hint remains limited to narrow terminals:
+`=` `(` `)` `[` `]` `,`. DSL-native semantic tokens may also bypass inference,
+but only when the active pack returns a complete, scope-fingerprinted singleton
+for the current request-local symbol table. A broad `NAME` / `COMPONENT` /
+`STRING` terminal is never sufficient by itself.
 
-Exact authority is ordered before every learned preference. Once the DFA, choice
-state, complete compiler forest, or another authoritative decoder proves one legal
-continuation, semantic bias, confidence, plan scoring, and model logits may not
-replace or rerank it. Incomplete proofs remain ambiguous and fail closed to the
-ordinary legal model-ranked path.
+Exact authority is ordered before every learned preference. A constrained decoder
+asks the active DSL pack for a finite, scope-fingerprinted completion domain using
+the current prefix, request-local runtime symbols, tokenizer projection, and its
+remaining-token budget. The preferred domain carries replayable terminal
+witnesses. If that bounded horizon proof is unavailable at an unscoped framed
+literal boundary, decoding may use the pack's still-complete exact next-action
+frontier; it never widens to the tokenizer vocabulary, and final document
+certification remains mandatory. Request-local runtime-symbol domains continue
+to fail closed rather than use that unscoped fallback. Logits rank the exact
+domain only. The shared decoder contains no OpenUI component,
+binder, schema, or renderer policy. A missing/incomplete next-action authority
+or empty domain is a constrained dead end — never a
+`keep_and_rank`/full-vocabulary fallback. Renderer visibility remains an independent
+post-generation product policy, not a grammar rule.
 
 ## Decode wiring
 
 - **LTR / repair** (`TwoTowerModel._constrained_ltr_repair`, `_greedy_ltr_decode_batch`):
-  call `force_emit_token_id` before the denoiser, then use
-  `exact_forced_token_id` to distinguish a significant-lexeme hint from a full
-  tokenizer-token singleton. Only the latter skips the forward. Batched LTR
+  call `exact_forced_token_id` before the denoiser. For DSL-native tokenizers it
+  asks the pack-owned completion domain first, so a scope-aware semantic
+  singleton skips the forward even when there is no structural force hint.
+  Other tokenizers still distinguish a significant-lexeme hint from a full
+  tokenizer-token singleton. Only exact authority skips the forward. Batched LTR
   compacts the remaining ambiguous rows; repair commits exact decisions without
   fabricating model logits or log-probabilities. Legal whitespace keeps the
   compositional path model-ranked when it can change source bytes.
@@ -51,8 +70,21 @@ ordinary legal model-ranked path.
   remask-active, incomplete-proof, or rejected cases retain the ordinary neural
   proposal. In `mask`/`hybrid` mode, candidate fills still run `admit_fill`; leave a
   position masked on reject. Grammar-on picks never commit DFA-illegal tokens.
-- **Certify** (`_ensure_valid_openui`): LTR repair → minimal valid fallback → raise
-  when `grammar_finalize_validate` is set.
+- **Compiler tree** (`_compiler_ltr_decode_one`): obtains the same pack-owned
+  domain directly. Exact complete singletons commit without a neural call.
+  Ambiguous future trie states are materialized as speculative canvases and
+  sent through bounded batches; forced single-child states never enter those
+  batches. Zero-valued `compiler_prefill_max_states` and
+  `compiler_prefill_token_budget` select a device-aware bound.
+- **ONNX serving** (`OnnxTwoTowerModel`): ranks the same budgeted domain and
+  checks for an exact singleton before invoking ONNX Runtime. An unavailable
+  proof produces a tagged certified fallback, never EOS substitution or an
+  unconstrained vocabulary token.
+- **Certify** (`_ensure_valid_openui`): every public document-generation path
+  validates, repairs if configured, and otherwise emits a tagged minimal valid
+  fallback. `grammar_constrained=False`, stochastic grammar selection, and
+  unconstrained fallback flags are rejected at public/model-build boundaries;
+  legacy checkpoint metadata is normalized to the mandatory safe policy.
 - **Train aux**: `fastpath_aux_weight` (CLI `--fastpath-aux-weight`) adds
   `force_align_loss` without walking the DFA every step.
 
@@ -86,7 +118,7 @@ PyTorch remains the train/eval path; export via `cactus.export_checkpoint_bundle
 `TwoTowerConfig.grammar_fastpath` (default True), `grammar_fastpath_mode`
 (`force` | `mask` | `hybrid`), `fastpath_aux_weight`.
 
-Compiler completion remains opt-in. A compiler singleton is exact only when its
+Compiler-tree ranking remains opt-in; constrained generation does not. A compiler singleton is exact only when its
 completion forest reports `coverage="complete"`; a partial singleton still runs
 the neural ranker and is not counted as a certified forced span. MaskGIT's narrow
 one-hole terminal step can bypass; every step whose schedule, confidence, attention,

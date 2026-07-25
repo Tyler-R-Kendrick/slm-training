@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 
 import numpy as np
@@ -9,12 +10,16 @@ import pytest
 
 from slm_training.evals.power_protocol import (
     benjamini_hochberg,
+    binomial_rate_evidence,
     bootstrap_paired_ci,
     classify_power,
     cluster_bootstrap_ci,
     exact_binomial_interval,
+    exact_paired_binary_test,
+    holm_bonferroni,
     intraclass_correlation,
     mde_simulation,
+    plan_binomial_rate_test,
     wilson_interval,
 )
 
@@ -28,14 +33,82 @@ def test_wilson_interval_basic() -> None:
 
 def test_wilson_interval_degrades_on_zero_n() -> None:
     result = wilson_interval(0, 0)
-    assert result == {"n": 0, "estimate": 0.0, "low": 0.0, "high": 0.0}
+    assert result == {
+        "n": 0,
+        "estimate": None,
+        "low": None,
+        "high": None,
+        "confidence_level": 0.95,
+    }
 
 
-def test_wilson_interval_clamps_successes() -> None:
-    result = wilson_interval(-5, 10)
-    assert result["estimate"] == 0.0
-    result = wilson_interval(15, 10)
-    assert result["estimate"] == 1.0
+@pytest.mark.parametrize("successes,n", [(-5, 10), (15, 10)])
+def test_wilson_interval_rejects_invalid_successes(successes: int, n: int) -> None:
+    with pytest.raises(ValueError):
+        wilson_interval(successes, n)
+
+
+@pytest.mark.parametrize(
+    "successes,n,low,high",
+    [
+        (0, 5, 0.0, 0.43448246478317465),
+        (1, 4, 0.0455872608097006, 0.699358157417598),
+        (5, 5, 0.5655175352168254, 1.0),
+        (20, 20, 0.8388748419471808, 1.0),
+    ],
+)
+def test_wilson_interval_fixed_examples(
+    successes: int, n: int, low: float, high: float
+) -> None:
+    result = wilson_interval(successes, n)
+    assert result["low"] == pytest.approx(low)
+    assert result["high"] == pytest.approx(high)
+
+
+def test_wilson_interval_supports_configurable_confidence() -> None:
+    narrow = wilson_interval(5, 10, confidence_level=0.80)
+    wide = wilson_interval(5, 10, confidence_level=0.99)
+    assert float(narrow["high"]) - float(narrow["low"]) < (
+        float(wide["high"]) - float(wide["low"])
+    )
+
+
+def test_binomial_rate_evidence_discloses_counts_and_seed_class() -> None:
+    evidence = binomial_rate_evidence(
+        1, 4, seed_count=1, evidence_class="fixture_under_minimum_n"
+    )
+    assert evidence["numerator"] == 1
+    assert evidence["denominator"] == 4
+    assert evidence["seed_count"] == 1
+    assert evidence["interval"]["method"] == "wilson_score"
+    assert evidence["evidence_class"] == "fixture_under_minimum_n"
+
+
+def test_plan_binomial_rate_test_is_prospective_and_seed_separate() -> None:
+    plan = plan_binomial_rate_test(
+        null_rate=0.5,
+        target_delta=0.1,
+        alpha=0.05,
+        target_power=0.8,
+        seeds=(0, 1, 2),
+    )
+    assert plan["required_n"] == plan["planned_sample_size_per_seed"]
+    assert plan["seed_count"] == 3
+    assert plan["seed_aggregation"] == "report_separately_no_pooling"
+    assert "observed" not in json.dumps(plan)
+    assert plan["use"] == "preregistration_only_not_post_hoc_success_evidence"
+
+
+@pytest.mark.parametrize("seeds", [(0, 0), (True,), (1.5,)])
+def test_plan_binomial_rate_test_rejects_invalid_seeds(seeds: tuple[object, ...]) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        plan_binomial_rate_test(null_rate=0.5, target_delta=0.1, seeds=seeds)
+
+
+@pytest.mark.parametrize("sides", [True, False, 1.0, 2.0])
+def test_plan_binomial_rate_test_rejects_non_integer_sides(sides: object) -> None:
+    with pytest.raises(ValueError, match="sides must be 1 or 2"):
+        plan_binomial_rate_test(null_rate=0.5, target_delta=0.1, sides=sides)
 
 
 def test_exact_binomial_interval_basic() -> None:
@@ -147,6 +220,23 @@ def test_mde_simulation_degrades_with_zero_variance() -> None:
     assert result["curve"][0]["power"] <= 0.3
 
 
+def test_mde_simulation_reports_absolute_probability_sensitivity_at_zero_rate() -> None:
+    result = mde_simulation(
+        base_rate=0.0,
+        sigma_seed=0.0,
+        sigma_target=0.0,
+        n_targets=226,
+        paths_per_target=1,
+        n_seeds=5,
+        n_simulations=50,
+        effect_sizes=[0.0, 0.02, 0.05],
+        effect_scale="absolute_probability",
+        seed=3,
+    )
+    assert result["effect_scale"] == "absolute_probability"
+    assert result["mde"] is not None
+
+
 def test_benjamini_hochberg_rejects_expected() -> None:
     p_values = [0.001, 0.02, 0.04, 0.06, 0.5]
     result = benjamini_hochberg(p_values, alpha=0.05)
@@ -165,6 +255,110 @@ def test_benjamini_hochberg_preserves_order() -> None:
     result = benjamini_hochberg(p_values)
     assert result[0]["p_value"] == 0.5
     assert result[1]["p_value"] == 0.001
+
+
+@pytest.mark.parametrize(
+    "hypotheses,expected",
+    [
+        (
+            [("h1", 0.01), ("h2", 0.04), ("h3", 0.03), ("h4", 0.20)],
+            [
+                ("h1", 1, 0.0125, 0.04, True),
+                ("h2", 3, 0.025, 0.09, False),
+                ("h3", 2, 0.05 / 3, 0.09, False),
+                ("h4", 4, 0.05, 0.20, False),
+            ],
+        ),
+        (
+            [("primary", 0.03), ("control", 0.001), ("secondary", 0.01)],
+            [
+                ("primary", 3, 0.05, 0.03, True),
+                ("control", 1, 0.05 / 3, 0.003, True),
+                ("secondary", 2, 0.025, 0.02, True),
+            ],
+        ),
+    ],
+)
+def test_holm_bonferroni_golden_vectors(
+    hypotheses: list[tuple[str, float]],
+    expected: list[tuple[str, int, float, float, bool]],
+) -> None:
+    result = holm_bonferroni(hypotheses)
+    assert [entry["hypothesis_id"] for entry in result] == [
+        item[0] for item in expected
+    ]
+    assert [entry["rank"] for entry in result] == [item[1] for item in expected]
+    assert [entry["threshold"] for entry in result] == pytest.approx(
+        [item[2] for item in expected]
+    )
+    assert [entry["adjusted_p_value"] for entry in result] == pytest.approx(
+        [item[3] for item in expected]
+    )
+    assert [entry["rejected"] for entry in result] == [item[4] for item in expected]
+
+
+def test_holm_bonferroni_preserves_order_and_breaks_ties_by_id() -> None:
+    result = holm_bonferroni([("b", 0.01), ("a", 0.01), ("c", 0.5)])
+    assert [entry["hypothesis_id"] for entry in result] == ["b", "a", "c"]
+    assert [entry["rank"] for entry in result] == [2, 1, 3]
+
+
+def test_exact_paired_binary_test_uses_only_discordant_pairs() -> None:
+    result = exact_paired_binary_test(
+        [0, 0, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1, 0],
+    )
+    assert result["candidate_only"] == 3
+    assert result["control_only"] == 1
+    assert result["discordant"] == 4
+    assert result["effect"] == pytest.approx(2 / 6)
+    assert result["p_value"] == pytest.approx(0.625)
+
+
+@pytest.mark.parametrize(
+    ("control", "candidate"),
+    [([], []), ([0], [0, 1]), ([0, 2], [0, 1])],
+)
+def test_exact_paired_binary_test_rejects_invalid_pairs(
+    control: list[int], candidate: list[int]
+) -> None:
+    with pytest.raises(ValueError):
+        exact_paired_binary_test(control, candidate)
+
+
+@pytest.mark.parametrize(
+    "hypotheses",
+    [
+        [("same", 0.01), ("same", 0.02)],
+        [("", 0.01)],
+        [(1, 0.01)],
+    ],
+)
+def test_holm_bonferroni_rejects_invalid_ids(
+    hypotheses: list[tuple[object, float]],
+) -> None:
+    with pytest.raises(ValueError, match="hypothesis identifiers"):
+        holm_bonferroni(hypotheses)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("p_value", [math.nan, math.inf, -math.inf, -0.01, 1.01])
+def test_holm_bonferroni_rejects_nonfinite_or_out_of_range_p_values(
+    p_value: float,
+) -> None:
+    with pytest.raises(ValueError, match="p-values must be finite and in"):
+        holm_bonferroni([("h1", p_value)])
+
+
+@pytest.mark.parametrize("p_value", [True, "0.01", None])
+def test_holm_bonferroni_rejects_non_numeric_p_values(p_value: object) -> None:
+    with pytest.raises(TypeError, match="p-values must be numeric"):
+        holm_bonferroni([("h1", p_value)])  # type: ignore[list-item]
+
+
+@pytest.mark.parametrize("alpha", [math.nan, math.inf, -math.inf, 0.0, 1.0])
+def test_holm_bonferroni_rejects_invalid_alpha(alpha: float) -> None:
+    with pytest.raises(ValueError, match="alpha must be finite and in"):
+        holm_bonferroni([("h1", 0.01)], alpha=alpha)
 
 
 @pytest.mark.parametrize(

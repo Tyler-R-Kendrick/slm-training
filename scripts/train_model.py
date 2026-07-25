@@ -53,6 +53,29 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=DEFAULT_TRAIN_DATA_DIR,
     )
+    parser.add_argument(
+        "--requested-capability",
+        choices=("CAP0_GRAMMAR", "CAP1_SEMANTICS", "CAP2_TRANSFORM"),
+        default=None,
+        help="Enable fail-closed staged-capability authorization.",
+    )
+    parser.add_argument(
+        "--capability-plan",
+        type=Path,
+        help="Exact checked-in synthesis plan bound by the staged dataset manifest.",
+    )
+    parser.add_argument(
+        "--capability-certificate",
+        action="append",
+        type=Path,
+        default=[],
+        help="Prior-stage progression certificate JSON (repeat in stage order).",
+    )
+    parser.add_argument(
+        "--capability-distillation",
+        action="store_true",
+        help="Request separately certified distillation/teacher permission.",
+    )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument(
         "--train-version",
@@ -199,6 +222,10 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="P1d: write promoted.pt from best_weighted_nll / best_ship / last.",
     )
+    parser.add_argument("--campaign-manifest", type=Path)
+    parser.add_argument("--campaign-result", type=Path)
+    parser.add_argument("--campaign-store-root", type=Path)
+    parser.add_argument("--campaign-artifact-root", type=Path)
     parser.add_argument("--eval-suite", default="smoke")
     parser.add_argument(
         "--model",
@@ -311,6 +338,24 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--recursive-update-mode",
+        choices=("current_v1", "delta_only", "layerscale", "gated"),
+        default="current_v1",
+        help="SLM-243: checkpointed recurrence update rule.",
+    )
+    parser.add_argument(
+        "--recursive-empty-f-mode",
+        choices=("pass_through", "zero"),
+        default="pass_through",
+        help="SLM-243: historical or true-zero behavior for an empty F stack.",
+    )
+    parser.add_argument(
+        "--recursive-norm-mode",
+        choices=("shared", "private"),
+        default="shared",
+        help="SLM-243: shared or private F/G/readout recurrence norms.",
+    )
+    parser.add_argument(
         "--recursive-depth-supervision-weights",
         default="",
         help="SLM-138: comma-separated depth CE weights (empty = off).",
@@ -321,7 +366,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "SLM-238 (RSC-A02): final-depth semantics for recursive depth "
-            "supervision (None = resolve from --recursive-depth-supervision-weights)."
+            "supervision. Required when --recursive-depth-supervision-weights "
+            "is non-empty; intermediate_only is the canonical new objective."
         ),
     )
     parser.add_argument(
@@ -477,9 +523,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Load HF weights only from local cache.",
     )
     parser.add_argument(
+        "--unconstrained-control",
         "--no-grammar",
+        dest="unconstrained_control",
         action="store_true",
-        help="Disable streaming/grammar-constrained decode at generate time.",
+        help=(
+            "DIAGNOSTIC CONTROL ONLY: disable grammar-constrained decode at "
+            "generate time. Decode invariant I6 "
+            "(docs/design/decode-invariants.md) forbids this arm in serving or "
+            "ship-gated configurations; its output is never certified. "
+            "`--no-grammar` is the deprecated spelling."
+        ),
     )
     parser.add_argument(
         "--grammar-dsl",
@@ -632,6 +686,131 @@ def main(argv: list[str] | None = None) -> int:
         action=argparse.BooleanOptionalAction,
         default=False,
         help="Average owner evidence across schema-derived content slots.",
+    )
+    parser.add_argument(
+        "--semantic-role-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias legal component choices using only visible semantic-role candidates.",
+    )
+    parser.add_argument(
+        "--semantic-role-schema-candidates",
+        action="store_true",
+        help="Derive legal component candidates from visible slot roles and the public schema.",
+    )
+    parser.add_argument(
+        "--slot-coverage-close-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer closing typed component arrays after every visible slot is covered.",
+    )
+    parser.add_argument(
+        "--schema-value-decode-weight",
+        type=float,
+        default=0.0,
+        help="Penalize visible placeholders in legal enum-valued component arguments.",
+    )
+    parser.add_argument(
+        "--schema-open-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer opening schema-compatible component arguments over closure.",
+    )
+    parser.add_argument(
+        "--schema-opaque-decode-weight",
+        type=float,
+        default=0.0,
+        help="Penalize visible placeholders in optional unconstrained arguments.",
+    )
+    parser.add_argument(
+        "--schema-enum-close-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer legal closure at optional enum-valued arguments.",
+    )
+    parser.add_argument(
+        "--schema-opaque-close-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer legal closure at optional unconstrained arguments.",
+    )
+    parser.add_argument(
+        "--schema-role-slot-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer visible slots compatible with the active content property owner.",
+    )
+    parser.add_argument(
+        "--semantic-plan-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score legal root/bound components from prompt-derived SemanticPlanV1.",
+    )
+    parser.add_argument(
+        "--semantic-plan-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor still-required plan families above the best legal component.",
+    )
+    parser.add_argument(
+        "--semantic-plan-seed-decode-weight",
+        type=float,
+        default=0.0,
+        help="Add prompt-plan component score only before the first component.",
+    )
+    parser.add_argument(
+        "--semantic-plan-inline-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score still-missing prompt families in inline component positions.",
+    )
+    parser.add_argument(
+        "--semantic-plan-binding-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score legal root references to prompt-plan-compatible components.",
+    )
+    parser.add_argument(
+        "--semantic-plan-root-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score legal Stack root construction after prompt-plan coverage.",
+    )
+    parser.add_argument(
+        "--semantic-plan-root-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor a verified plan-root token above the best legal score.",
+    )
+    parser.add_argument(
+        "--semantic-plan-repeated-array-close-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Close nested arrays after one item inside repeated plan families.",
+    )
+    parser.add_argument(
+        "--semantic-plan-repeated-slot-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor the best unused visible slot inside repeated plan instances.",
+    )
+    parser.add_argument(
+        "--semantic-plan-typed-array-nonempty-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Start slot-bearing typed arrays inside authored plan components.",
+    )
+    parser.add_argument(
+        "--semantic-plan-typed-array-item-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor the schema-derived item start inside authored typed arrays.",
+    )
+    parser.add_argument(
+        "--visible-reference-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer unused legal generated element references in root/list aggregation.",
     )
     parser.add_argument(
         "--component-edge-loss-weight",
@@ -832,6 +1011,25 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra CE weight on gold placeholder tokens during training.",
     )
     parser.add_argument(
+        "--semantic-contrast-dir",
+        type=Path,
+        help="Explicit immutable directory (or pairs.jsonl) of hard-valid train-split pairs.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-loss-weight",
+        type=float,
+        default=0.0,
+        help="Default-off pairwise semantic-contrast margin objective weight.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-margin", type=float, default=1.0,
+        help="Required positive-over-negative sequence-score margin.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-fraction", type=float, default=0.0,
+        help="Fraction of each canonical batch occupied by complete contrast pairs.",
+    )
+    parser.add_argument(
         "--schema-in-context",
         action="store_true",
         help="Inject compact OpenUI component schema into the context tower.",
@@ -840,6 +1038,11 @@ def main(argv: list[str] | None = None) -> int:
         "--slot-contract-in-context",
         action="store_true",
         help="Inject record placeholder inventory (SLOT_CONTRACT) into context.",
+    )
+    parser.add_argument(
+        "--semantic-role-contract-in-context",
+        action="store_true",
+        help="Inject prompt-derived visible semantic-role context for decode levers.",
     )
     parser.add_argument(
         "--honest-slot-contract",
@@ -1142,6 +1345,10 @@ def main(argv: list[str] | None = None) -> int:
 
     config = ModelBuildConfig(
         train_dir=args.train_dir,
+        requested_capability=args.requested_capability,
+        capability_plan=args.capability_plan,
+        capability_certificates=tuple(args.capability_certificate),
+        capability_distillation=bool(args.capability_distillation),
         test_dir=args.test_dir,
         suite=args.eval_suite,
         run_root=args.run_root,
@@ -1173,6 +1380,9 @@ def main(argv: list[str] | None = None) -> int:
         recursive_steps=args.recursive_steps,
         recursive_transition_layers=args.recursive_transition_layers,
         recursive_detach_between_steps=bool(args.recursive_detach_between_steps),
+        recursive_update_mode=args.recursive_update_mode,
+        recursive_empty_f_mode=args.recursive_empty_f_mode,
+        recursive_norm_mode=args.recursive_norm_mode,
         recursive_depth_supervision_weights=tuple(
             float(v.strip())
             for v in args.recursive_depth_supervision_weights.split(",")
@@ -1225,7 +1435,7 @@ def main(argv: list[str] | None = None) -> int:
         hf_model_revision=args.hf_revision,
         freeze_context=freeze,
         local_files_only=args.local_files_only,
-        grammar_constrained=not args.no_grammar,
+        grammar_constrained=not args.unconstrained_control,
         grammar_dsl=args.grammar_dsl,
         grammar_top_k=args.grammar_top_k,
         structural_bias=args.structural_bias,
@@ -1260,6 +1470,37 @@ def main(argv: list[str] | None = None) -> int:
         slot_component_lexeme_prior_weight=(args.slot_component_lexeme_prior_weight),
         slot_component_span_prior_weight=(args.slot_component_span_prior_weight),
         slot_component_content_arity=args.slot_component_content_arity,
+        semantic_role_decode_weight=args.semantic_role_decode_weight,
+        semantic_role_schema_candidates=args.semantic_role_schema_candidates,
+        slot_coverage_close_decode_weight=args.slot_coverage_close_decode_weight,
+        schema_value_decode_weight=args.schema_value_decode_weight,
+        schema_open_decode_weight=args.schema_open_decode_weight,
+        schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
+        schema_opaque_decode_weight=args.schema_opaque_decode_weight,
+        schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
+        schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
+        semantic_plan_decode_weight=args.semantic_plan_decode_weight,
+        semantic_plan_margin_decode_weight=(args.semantic_plan_margin_decode_weight),
+        semantic_plan_seed_decode_weight=args.semantic_plan_seed_decode_weight,
+        semantic_plan_inline_decode_weight=args.semantic_plan_inline_decode_weight,
+        semantic_plan_binding_decode_weight=(args.semantic_plan_binding_decode_weight),
+        semantic_plan_root_decode_weight=args.semantic_plan_root_decode_weight,
+        semantic_plan_root_margin_decode_weight=(
+            args.semantic_plan_root_margin_decode_weight
+        ),
+        semantic_plan_repeated_array_close_margin_decode_weight=(
+            args.semantic_plan_repeated_array_close_margin_decode_weight
+        ),
+        semantic_plan_repeated_slot_margin_decode_weight=(
+            args.semantic_plan_repeated_slot_margin_decode_weight
+        ),
+        semantic_plan_typed_array_nonempty_margin_decode_weight=(
+            args.semantic_plan_typed_array_nonempty_margin_decode_weight
+        ),
+        semantic_plan_typed_array_item_margin_decode_weight=(
+            args.semantic_plan_typed_array_item_margin_decode_weight
+        ),
+        visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_loss_weight=args.component_edge_loss_weight,
         component_edge_alignment_loss_weight=(
             args.component_edge_alignment_loss_weight
@@ -1297,6 +1538,10 @@ def main(argv: list[str] | None = None) -> int:
             args.required_slot_margin_decode_weight
         ),
         fidelity_loss_weight=args.fidelity_loss_weight,
+        semantic_contrast_dir=args.semantic_contrast_dir,
+        semantic_contrast_loss_weight=args.semantic_contrast_loss_weight,
+        semantic_contrast_margin=args.semantic_contrast_margin,
+        semantic_contrast_fraction=args.semantic_contrast_fraction,
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
         compiler_decode_mode=args.compiler_decode_mode,
@@ -1311,6 +1556,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_ltr_max_tokens=args.grammar_ltr_max_tokens,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
+        semantic_role_contract_in_context=args.semantic_role_contract_in_context,
         slot_contract_constrained_decode=args.slot_contract_constrained_decode,
         honest_slot_contract=args.honest_slot_contract,
         retrieval_k=args.retrieval_k,
@@ -1362,6 +1608,10 @@ def main(argv: list[str] | None = None) -> int:
         mixture_per_template_cap=args.mixture_per_template_cap,
         mixture_max_importance_weight=args.mixture_max_importance_weight,
         register_promoted=bool(args.register_promoted),
+        campaign_manifest=args.campaign_manifest,
+        campaign_result=args.campaign_result,
+        campaign_store_root=args.campaign_store_root,
+        campaign_artifact_root=args.campaign_artifact_root,
         telemetry=not bool(args.no_telemetry),
         checkpoint_bucket=(
             args.checkpoint_bucket
