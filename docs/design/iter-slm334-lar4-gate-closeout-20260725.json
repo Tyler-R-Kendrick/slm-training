@@ -1,0 +1,41 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "LAR4 remains blocked per the SLM-327 closeout.",
+  "failed_gates": [
+    "gate_lar3_05",
+    "gate_lar4_01"
+  ],
+  "gates": {
+    "gate_lar3_05": {
+      "evidence": "docs/design/iter-slm327-lar3-closeout-20260725.json",
+      "issue": "SLM-327",
+      "observed_outcome": "recursive_core_negative; recurrence line closed",
+      "passed": false
+    },
+    "gate_lar4_01": {
+      "evidence": "docs/design/iter-slm329-lar4-gate-closeout-20260725.json",
+      "issue": "SLM-329",
+      "observed_outcome": "closed not_authorized",
+      "passed": false
+    }
+  },
+  "issue": "SLM-334",
+  "matrix_set": "slm334-node-routing",
+  "matrix_version": "slm334-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "SLM-334 is blocked by LAR3-05 and LAR4-01. SLM-327 closed the recurrence line as recursive_core_negative and SLM-329 closed not_authorized, so there is no recurrent core to route per-node compute over and no LAR4-01 progress metrics to build halting on.",
+  "run_id": "slm334_gate_closeout",
+  "schema": "slm334_lar4_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "af338a2bd4967e28a760f62399340938e875cf25",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T00:41:35.330953+00:00"
+  }
+}
