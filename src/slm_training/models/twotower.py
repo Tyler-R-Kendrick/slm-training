@@ -814,6 +814,33 @@ def _load_checkpoint_state(
         )
 
 
+def _remap_vocab_weight(
+    source_weight: torch.Tensor,
+    source_token_to_id: dict[str, int],
+    target_weight: torch.Tensor,
+    target_token_to_id: dict[str, int],
+) -> torch.Tensor:
+    """Copy shared token rows while retaining initialized rows for new tokens."""
+    remapped = target_weight.detach().clone()
+    for token, target_id in target_token_to_id.items():
+        source_id = source_token_to_id.get(token)
+        if source_id is not None:
+            remapped[target_id] = source_weight[source_id]
+    return remapped
+
+
+def _resize_position_weight(
+    source_weight: torch.Tensor, target_weight: torch.Tensor
+) -> torch.Tensor:
+    """Copy the shared learned position prefix across context-length changes."""
+    if source_weight.ndim != 2 or source_weight.shape[1:] != target_weight.shape[1:]:
+        return source_weight
+    resized = target_weight.detach().clone()
+    shared = min(source_weight.shape[0], target_weight.shape[0])
+    resized[:shared] = source_weight[:shared]
+    return resized
+
+
 def _check_output_head_tie_migration(
     model: "TwoTowerModel",
     source_config: dict[str, Any],

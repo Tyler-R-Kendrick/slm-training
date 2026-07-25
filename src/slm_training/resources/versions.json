@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-25",
+          "note": "Restore DEFAULT_* data/eval/context/tokenizer/evaluation-policy constants and PROHIBITED_TEMPLATE_SEMANTIC_LEVERS dropped by main #920; add DIFFICULTY_EASY_TAIL_FRACTION (0.2)"
+        },
         {
           "version": "v22",
           "date": "2026-07-25",
@@ -811,7 +816,7 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
@@ -819,6 +824,11 @@
         "tests/test_dsl/test_language_contract.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "Allow STRUCTURAL_ID_ATOMS ($0..$63) in symbol-only output contract checks so structural id props are not treated as free-form strings"
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
@@ -6901,7 +6911,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v244",
+      "version": "v245",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6936,6 +6946,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v245",
+          "date": "2026-07-25",
+          "note": "Bump DSL_TOKENIZER_VERSION 4->5 and CHOICE_TOKENIZER_VERSION 2->3; fold STRUCTURAL_ID_ATOMS into fixed string bodies; restore _remap_vocab_weight/_resize_position_weight dropped by main #920; refresh tokenizer layout registry"
+        },
         {
           "version": "v244",
           "date": "2026-07-25",
@@ -8626,6 +8641,11 @@
           "version": "v2",
           "date": "2026-07-25",
           "note": "SLM-413: rebuilt registry for the new conversation.transaction_commit op (DSH5-05's TRANSACTION_COMMIT turn) -- 19 -> 20 ops; every history-family/set/topology token_id after the insertion point shifts by one, per `python -c 'from slm_training.dsl.ops_vocab import write_registry; write_registry()'`"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: refresh checked-in dsl_native + choice_codec tokenizer layout registry fingerprints after STRUCTURAL_ID_ATOMS vocab expansion (main #920 CI unblock); ops token-id namespace unchanged"
         },
         {
           "version": "v1",
