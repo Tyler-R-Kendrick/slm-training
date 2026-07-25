@@ -24,7 +24,15 @@ from slm_training.dsl.parser import (
     stream_check as parser_stream_check,
     validate,
 )
-from slm_training.models.onnx_inference import OnnxTwoTowerModel
+
+try:
+    from slm_training.models.onnx_inference import OnnxTwoTowerModel
+
+    _model_factory = OnnxTwoTowerModel.from_checkpoint
+except ImportError:  # slim deploy: onnxruntime/numpy are not installed
+    # The service reports the model as unavailable and hands generation to the
+    # browser path instead of crashing the function at import time.
+    _model_factory = None
 from slm_training.web.app import create_app
 
 
@@ -70,5 +78,5 @@ app = create_app(
     annotation_token=os.getenv("SLM_ANNOTATION_TOKEN"),
     annotation_token_required=True,
     annotation_store=annotation_store,
-    model_factory=OnnxTwoTowerModel.from_checkpoint,
+    model_factory=_model_factory,
 )

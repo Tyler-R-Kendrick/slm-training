@@ -125,7 +125,18 @@ slm_training = ["evals/*.json", "dsl/grammars/*", "resources/**/*"]
 "slm_training.web" = ["static/**/*"]
 
 [tool.setuptools.exclude-package-data]
-slm_training = ["resources/data/**/governance/records.jsonl"]
+slm_training = [
+    "resources/data/**/governance/**",
+    "resources/data/**/records.jsonl",
+    "web/static/**/*.map",
+]
+
+[tool.uv]
+# The Vercel entrypoint imports `src.slm_training.web.vercel` straight from the
+# uploaded source tree, so installing the project into the function venv only
+# duplicates ~30 MB of code/static/resources into the bundle. Treat the repo as
+# a virtual (dependency-only) project; build wheels explicitly when needed.
+package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

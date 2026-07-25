@@ -532,7 +532,32 @@ class PlaygroundService:
         prompt = (prompt or "").strip()
         if not prompt:
             raise ValueError("prompt must be non-empty")
-        model = self.load()
+        try:
+            model = self.load()
+        except Exception as exc:  # noqa: BLE001
+            # Slim deployments may ship without a runnable checkpoint or
+            # inference runtime (e.g. the Vercel function has no onnxruntime).
+            # Surface the absence as an exhausted attempt so callers take the
+            # honest browser-handoff path instead of erroring with a 500.
+            raise GenerationExhausted(
+                f"training model unavailable in this deployment: {exc}",
+                prompt=prompt,
+                attempts=[
+                    {
+                        "attempt": max(1, int(attempt_start)),
+                        "openui": "",
+                        "valid": False,
+                        "error": f"model_unavailable: {exc}",
+                        "identities": {
+                            "request_generator": dict(
+                                request_identity or self._user_identity(session_id)
+                            ),
+                            "output_generator": self._training_model_identity(),
+                        },
+                        "path": None,
+                    }
+                ],
+            ) from exc
         if design_md is None:
             try:
                 from slm_training.dsl.design_md import load_default_design_md

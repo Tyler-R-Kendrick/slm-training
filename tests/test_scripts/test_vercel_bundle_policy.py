@@ -15,6 +15,18 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     ignored = (ROOT / ".vercelignore").read_text(encoding="utf-8")
     assert "src/slm_training/resources/data/train/slm230_symbol_only_v1/**" in ignored
     assert "docs/design/*-agentv-*/**" in ignored
+    assert "src/slm_training/resources/data/**/records.jsonl" in ignored
+    assert "src/slm_training/web/static/**/*.map" in ignored
+    for artifact in (
+        "/outputs/",
+        "/.venv/",
+        "/node_modules/",
+        "/build/",
+        "/session/",
+        "/_uv/",
+        "/tests/",
+    ):
+        assert artifact in ignored
     assert "scripts/run_slm243_recursive_update_gate.py" in ignored
     assert (
         "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py"

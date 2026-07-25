@@ -1,0 +1,43 @@
+{
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "downstream_effect": "The DSH2 line stays closed until a powered CAP0 rerun issues CERT_CAP0.",
+  "failed_gates": [
+    "gate_cap1_contract",
+    "gate_cert_cap0"
+  ],
+  "gates": {
+    "gate_cap1_contract": {
+      "evidence": "docs/design/iter-slm343-cap1-gate-closeout-20260725.json",
+      "issue": "SLM-343",
+      "observed_outcome": "closed not_authorized (CERT_CAP0 rejected)",
+      "passed": false,
+      "required_outcome": "CAP1 grounding contract implemented"
+    },
+    "gate_cert_cap0": {
+      "evidence": "docs/design/iter-slm362-cap0-experiment-20260725.json",
+      "issue": "SLM-362",
+      "observed_outcome": "rejected on four stop rules",
+      "passed": false,
+      "required_outcome": "CERT_CAP0 issued"
+    }
+  },
+  "issue": "SLM-344",
+  "matrix_set": "cap1-gen-02-ambiguity-data",
+  "matrix_version": "slm344-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "SLM-344 operationalizes the determinacy and acceptable-set semantics defined by SLM-343, which closed not_authorized: the prerequisite CERT_CAP0 was rejected by the matched CAP0 curriculum experiment (prediction_identical, copy_dominated, structurally_regressive, underpowered). Ambiguity-aware CAP1 data generation has no authorized contract to build on.",
+  "run_id": "slm344_gate_closeout",
+  "schema": "slm344_cap1_gate_closeout/v1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "53215abf139907c84da23d80da07f6049619a32c",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v83"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T06:40:43.096622+00:00"
+  }
+}
