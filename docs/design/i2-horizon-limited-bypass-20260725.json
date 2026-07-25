@@ -76,7 +76,7 @@
     "components": {
       "dsl.grammar_capabilities": "v4",
       "dsl.operators.registry": "v4",
-      "model.twotower": "v242"
+      "model.twotower": "v243"
     },
     "stamped_at": "2026-07-25T07:20:00Z"
   }

@@ -6610,12 +6610,12 @@
         {
           "version": "v243",
           "date": "2026-07-25",
-          "note": "SLM-293: instrument component-inventory decode applications and argmax changes (merged from main; renumbered v242→v243 to resolve a concurrent version collision with the I2 fix below)"
+          "note": "Close the I2 short-horizon repair gap: exact_forced_token_id accepts a horizon-limited (partial) sole-legal completion-forest proof for DSL-native tokenizers, so test_repair_exact_token_skips_forward_and_records_authority passes (docs/design/decode-invariants.md I2 known gap)"
         },
         {
           "version": "v242",
           "date": "2026-07-25",
-          "note": "Close the I2 short-horizon repair gap: exact_forced_token_id accepts a horizon-limited (partial) sole-legal completion-forest proof for DSL-native tokenizers, so test_repair_exact_token_skips_forward_and_records_authority passes (docs/design/decode-invariants.md I2 known gap)"
+          "note": "SLM-293: instrument component-inventory decode applications and argmax changes"
         },
         {
           "version": "v241",
