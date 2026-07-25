@@ -1,4 +1,4 @@
-"""Regression tests for state-local action heads (CAP2-03)."""
+"""Regression tests for state-local action heads (CAP2-03, DSH3-21)."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import math
 
 import pytest
 import torch
+import torch.nn.functional as F
 
 from slm_training.models.action_code_registry import (
     ActionCodeRegistry,
@@ -19,6 +20,7 @@ from slm_training.models.local_action_head import (
     StateContext,
     TernaryDigitHead,
     TernaryECOCHead,
+    canonical_action_key,
 )
 from slm_training.models.semantic_cost import (
     build_ternary_ecoc_entry,
@@ -255,3 +257,244 @@ def test_action_code_entry_hash_stability() -> None:
     # Different alphabet radices -> different hash.
     e3 = build_ternary_ecoc_entry(schema, detect_single_trit_error=True)
     assert e3.entry_hash != e1.entry_hash
+
+
+# --- DSH3-21: LocalFlatHead optimizer visibility / checkpoint stability -----
+
+
+def test_local_flat_head_lazy_mode_matches_legacy_shape() -> None:
+    """Before materialize(), unseen actions still lazily allocate (fixture parity)."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    legal = ["component:root:none:card", "component:root:none:text"]
+    out = head.score(_hidden(), StateContext("legacy"), legal)
+    assert out.logits is not None
+    assert out.logits.shape == (1, 2)
+    assert set(head.action_embeddings.keys()) == set(legal)
+    assert not head.materialized
+
+
+def test_local_flat_head_materialize_registers_optimizer_visible_parameters() -> None:
+    """All intended tensors appear in named_parameters() before optimizer construction."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    legal = ["a", "b", "c"]
+    head.materialize(legal)
+    assert head.materialized
+    names = {name for name, _ in head.named_parameters()}
+    for action in legal:
+        assert f"action_embeddings.{action}" in names
+    optimizer = torch.optim.SGD(head.parameters(), lr=0.1)
+    total_params = sum(p.numel() for group in optimizer.param_groups for p in group["params"])
+    expected = sum(p.numel() for p in head.parameters())
+    assert total_params == expected > 0
+
+
+def test_local_flat_head_gradients_are_finite_and_nonzero() -> None:
+    """A backward pass produces finite, nonzero gradients on the embeddings used."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    legal = ["a", "b"]
+    head.materialize(legal)
+    hidden = torch.randn(1, HIDDEN_DIM)
+    out = head.score(hidden, StateContext("grad"), legal)
+    assert out.logits is not None
+    loss = F.cross_entropy(out.logits, torch.tensor([0]))
+    loss.backward()
+    saw_nonzero = False
+    for action in legal:
+        grad = head.action_embeddings[action].grad
+        assert grad is not None
+        assert torch.isfinite(grad).all()
+        if grad.abs().sum().item() > 0:
+            saw_nonzero = True
+    assert saw_nonzero
+
+
+def test_local_flat_head_one_step_changes_score() -> None:
+    """One optimizer step changes the head's scores (it is actually trainable)."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    legal = ["a", "b"]
+    head.materialize(legal)
+    optimizer = torch.optim.SGD(head.parameters(), lr=1.0)
+    hidden = torch.randn(1, HIDDEN_DIM)
+    before = head.score(hidden, StateContext("step"), legal).logits.clone()
+    optimizer.zero_grad()
+    loss = F.cross_entropy(before, torch.tensor([0]))
+    loss.backward()
+    optimizer.step()
+    after = head.score(hidden, StateContext("step"), legal).logits
+    assert not torch.equal(before, after)
+
+
+def test_local_flat_head_two_action_overfit() -> None:
+    """A tiny two-action problem is optimizable to perfect discrimination."""
+    torch.manual_seed(0)
+    head = LocalFlatHead(HIDDEN_DIM)
+    legal = ["action_a", "action_b"]
+    head.materialize(legal)
+    optimizer = torch.optim.Adam(head.parameters(), lr=0.1)
+    hidden_a = torch.ones(1, HIDDEN_DIM)
+    hidden_b = -torch.ones(1, HIDDEN_DIM)
+    for _ in range(200):
+        optimizer.zero_grad()
+        out_a = head.score(hidden_a, StateContext("t"), legal)
+        out_b = head.score(hidden_b, StateContext("t"), legal)
+        loss = F.cross_entropy(out_a.logits, torch.tensor([0])) + F.cross_entropy(
+            out_b.logits, torch.tensor([1])
+        )
+        loss.backward()
+        optimizer.step()
+    final_a = head.score(hidden_a, StateContext("t"), legal)
+    final_b = head.score(hidden_b, StateContext("t"), legal)
+    assert head.decode(final_a, legal).action_identity == "action_a"
+    assert head.decode(final_b, legal).action_identity == "action_b"
+
+
+def test_local_flat_head_checkpoint_round_trip(tmp_path) -> None:
+    """Save/load through checkpoint_state()/load_checkpoint_state() is exact."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    legal = ["a", "b", "c"]
+    head.materialize(legal)
+    with torch.no_grad():
+        for p in head.parameters():
+            p.add_(torch.randn_like(p) * 0.1)
+    payload = head.checkpoint_state()
+    ckpt_path = tmp_path / "local_flat_head.pt"
+    torch.save(payload, ckpt_path)
+
+    loaded_payload = torch.load(ckpt_path, weights_only=False)
+    head2 = LocalFlatHead(HIDDEN_DIM)
+    head2.materialize(legal)
+    head2.load_checkpoint_state(loaded_payload)
+
+    for action in legal:
+        assert torch.equal(head.action_embeddings[action], head2.action_embeddings[action])
+    hidden = torch.randn(2, HIDDEN_DIM)
+    out1 = head.score(hidden, StateContext("ckpt"), legal)
+    out2 = head2.score(hidden, StateContext("ckpt"), legal)
+    assert torch.equal(out1.logits, out2.logits)
+
+
+def test_local_flat_head_checkpoint_format_version_mismatch_fails_closed() -> None:
+    """A checkpoint with a different format_version is rejected, never coerced."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    head.materialize(["a"])
+    payload = head.checkpoint_state()
+    payload["format_version"] = 999
+    head2 = LocalFlatHead(HIDDEN_DIM)
+    head2.materialize(["a"])
+    with pytest.raises(ValueError, match="format_version"):
+        head2.load_checkpoint_state(payload)
+
+
+def test_local_flat_head_checkpoint_registry_mismatch_fails_closed() -> None:
+    """A checkpoint whose action registry disagrees with the live head fails closed."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    head.materialize(["a", "b", "c"])
+    payload = head.checkpoint_state()
+
+    head2 = LocalFlatHead(HIDDEN_DIM)
+    head2.materialize(["a", "b"])  # different vocabulary (missing "c")
+    with pytest.raises(ValueError, match="registry mismatch"):
+        head2.load_checkpoint_state(payload)
+
+
+def test_local_flat_head_checkpoint_shape_mismatch_fails_closed() -> None:
+    """A checkpoint whose tensor shapes disagree fails closed via strict load."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    head.materialize(["a", "b"])
+    payload = head.checkpoint_state()
+
+    head2 = LocalFlatHead(HIDDEN_DIM * 2)
+    head2.materialize(["a", "b"])
+    with pytest.raises((RuntimeError, ValueError)):
+        head2.load_checkpoint_state(payload)
+
+
+def test_local_flat_head_candidate_order_permutation_stable() -> None:
+    """Scores follow the action identity, not its position in legal_actions."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    legal = ["a", "b", "c"]
+    head.materialize(legal)
+    hidden = torch.randn(1, HIDDEN_DIM)
+    out1 = head.score(hidden, StateContext("perm"), legal)
+    permuted = ["c", "a", "b"]
+    out2 = head.score(hidden, StateContext("perm"), permuted)
+    for action in legal:
+        s1 = out1.logits[0, legal.index(action)]
+        s2 = out2.logits[0, permuted.index(action)]
+        assert torch.equal(s1, s2)
+
+
+def test_canonical_action_key_identity_for_flat_actions() -> None:
+    """Plain (non-operator) action identities canonicalize to themselves."""
+    for action in ("component:root:none:card", "action:00", "only_action"):
+        assert canonical_action_key(action) == action
+
+
+def test_canonical_action_key_drops_opaque_reference_ids() -> None:
+    """Two actions differing only in opaque ref/request ids share a canonical key."""
+    a1 = "OPERATOR bind_text arg0=node:req1:opaque111"
+    a2 = "OPERATOR bind_text arg0=node:req1:opaque222"
+    a3 = "OPERATOR bind_text arg0=node:req2:opaque333"
+    assert canonical_action_key(a1) == canonical_action_key(a2) == canonical_action_key(a3)
+    assert canonical_action_key(a1) == "OPERATOR bind_text arg0=node"
+
+
+def test_canonical_action_key_distinguishes_semantic_differences() -> None:
+    """Different operator/slot/kind still canonicalize to different keys."""
+    base = "OPERATOR bind_text arg0=node:req1:opaque111"
+    other_operator = "OPERATOR bind_button arg0=node:req1:opaque111"
+    other_slot = "OPERATOR bind_text arg1=node:req1:opaque111"
+    other_kind = "OPERATOR bind_text arg0=role:req1:opaque111"
+    assert canonical_action_key(base) != canonical_action_key(other_operator)
+    assert canonical_action_key(base) != canonical_action_key(other_slot)
+    assert canonical_action_key(base) != canonical_action_key(other_kind)
+
+
+def test_local_flat_head_opaque_id_only_change_shares_one_parameter() -> None:
+    """Materializing opaque-id-only variants allocates exactly one parameter."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    a1 = "OPERATOR bind_text arg0=node:req1:opaque111"
+    a2 = "OPERATOR bind_text arg0=node:req1:opaque222"
+    head.materialize([a1, a2])
+    assert len(head.action_embeddings) == 1
+
+
+def test_local_flat_head_rejects_duplicate_canonical_actions_in_score() -> None:
+    """Two distinct legal_actions sharing a canonical key are rejected, not silently scored."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    a1 = "OPERATOR bind_text arg0=node:req1:opaque111"
+    a2 = "OPERATOR bind_text arg0=node:req1:opaque222"
+    with pytest.raises(ValueError, match="duplicate"):
+        head.score(_hidden(), StateContext("dup"), [a1, a2])
+
+
+def test_local_flat_head_materialize_deduplicates_repeated_actions() -> None:
+    """materialize() deduplicates repeated raw action identities."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    head.materialize(["a", "a", "b"])
+    assert set(head.action_embeddings.keys()) == {"a", "b"}
+
+
+def test_local_flat_head_late_unseen_action_fails_closed_by_default() -> None:
+    """An unseen action after materialize()/optimizer construction fails closed."""
+    head = LocalFlatHead(HIDDEN_DIM)
+    head.materialize(["a", "b"])
+    _optimizer = torch.optim.SGD(head.parameters(), lr=0.1)
+    with pytest.raises(ValueError, match="not registered"):
+        head.score(_hidden(), StateContext("late"), ["a", "b", "c"])
+
+
+def test_local_flat_head_late_unseen_action_routes_to_unk_when_configured() -> None:
+    """With unseen_action_policy='unk', a late unseen action routes to an explicit UNK slot."""
+    head = LocalFlatHead(HIDDEN_DIM, unseen_action_policy="unk")
+    head.materialize(["a", "b"])
+    out = head.score(_hidden(), StateContext("late"), ["a", "b", "c"])
+    assert out.logits is not None
+    assert out.logits.shape == (1, 3)
+    assert out.metadata.get("unk_routed_actions") == ("c",)
+
+
+def test_local_flat_head_invalid_unseen_action_policy_rejected() -> None:
+    """Constructing a head with an unrecognized policy fails immediately."""
+    with pytest.raises(ValueError):
+        LocalFlatHead(HIDDEN_DIM, unseen_action_policy="silently_ignore")  # type: ignore[arg-type]
