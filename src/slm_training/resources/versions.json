@@ -6247,7 +6247,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -6260,6 +6260,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-25",
+          "note": "Sample capacity-aware mixture cycles through one weighted random permutation instead of rebuilding the weighted pool per draw"
+        },
         {
           "version": "v19",
           "date": "2026-07-25",
