@@ -7879,6 +7879,24 @@
           "note": "initial registration; SLM-314 LAR2-05 winner-take-all (MCL): frozen 8-prompt x 2-mode verifier-accepted canonical-AST dataset (alpha-invariant fingerprints + sha256 manifest), min-loss-mode loss with preregistered 0.1 coverage/floor term, deterministic two-mode synthetic collapse-vs-retain proof, matched {single_gold, multi_gold, wta} arms"
         }
       ]
+    },
+    "harness.experiments.slm317_repair_hybrid": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm317_repair_hybrid.py",
+        "scripts/run_slm317_repair_hybrid.py",
+        "tests/test_harnesses/experiments/test_slm317_repair_hybrid.py",
+        "docs/design/iter-slm317-repair-hybrid-20260724.json",
+        "docs/design/iter-slm317-repair-hybrid-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-317 LAR2-06 do-no-harm AR->repair hybrid: metamorphism-invariant commit rule (hard ladder + calibrated soft score), matched arms incl. historical/improved repair + oracle upper bound, invalid-over-valid visibility, advancement gates and repair_positive|repair_negative|inconclusive disposition"
+        }
+      ]
     }
   }
 }
