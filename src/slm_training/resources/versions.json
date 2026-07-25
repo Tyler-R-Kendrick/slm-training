@@ -5485,7 +5485,7 @@
    ]
   },
   "harness.train_data": {
-   "version": "v19",
+   "version": "v20",
    "kind": "harness",
    "paths": [
     "scripts/build_train_data.py",
@@ -5498,6 +5498,11 @@
     "src/slm_training/resources/frontier/"
    ],
    "history": [
+    {
+     "version": "v20",
+     "date": "2026-07-25",
+     "note": "add marker-table materialization (opaque request-local surfaces, independent train/eval permutations, provenance sidecar) under harness.experiments.slm356_marker_tables"
+    },
     {
      "version": "v19",
      "date": "2026-07-23",
@@ -7936,6 +7941,23 @@
      "version": "v1",
      "date": "2026-07-25",
      "note": "Add SLM-339/AP-038 idempotent Linear evidence sync (machine-owned comment with sha256 marker, dry-run-first CLI, offline GraphQL payloads, key-redacting transport, retry/backoff)"
+    }
+   ]
+  },
+  "harness.experiments.slm356_marker_tables": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/train_data/marker_tables.py",
+    "tests/test_harnesses/train_data/test_marker_tables.py",
+    "docs/design/iter-slm356-marker-tables-20260725.json",
+    "docs/design/iter-slm356-marker-tables-20260725.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "initial marker-table materialization with alpha-renaming, split-level permutation controls, and fail-closed marker audits (SLM-356 / DSH1-04)"
     }
    ]
   }

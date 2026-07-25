@@ -1,0 +1,56 @@
+{
+ "schema_version": "marker_table_fixture/v1",
+ "issue": "SLM-356",
+ "track": "DSH1-04",
+ "date": "2026-07-25",
+ "run_class": "contract_fixture",
+ "decision": "supported",
+ "marker_table_schema": "marker_table/v1",
+ "provenance_schema": "marker_table_provenance/v1",
+ "policy_version": "marker_table_policy/v1",
+ "version_stamp": {
+  "stamp_schema": "version_stamp/v1",
+  "code_commit": "76698129519832bd75adf32a734607a242c96dfe",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments.slm356_marker_tables": "v1",
+   "harness.train_data": "v20"
+  },
+  "stamped_at": "2026-07-25T01:43:25.681363+00:00"
+ },
+ "controls": {
+  "opaque_surface_materialization": "passed",
+  "inference_visible_facts_only": "passed",
+  "logical_mapping_provenance_only": "passed",
+  "independent_split_permutations_disjoint": "passed",
+  "canonical_identity_alpha_invariant": "passed",
+  "role_not_recoverable_from_ordinal": "passed",
+  "unknown_marker_fail_closed": "passed",
+  "duplicate_marker_fail_closed": "passed",
+  "out_of_range_marker_fail_closed": "passed",
+  "exact_copy_surface_fail_closed": "passed",
+  "split_policy_inheritance": "passed",
+  "determinism": "passed"
+ },
+ "commands": [
+  "python -m pytest -q tests/test_harnesses/train_data/test_marker_tables.py",
+  "python -m pytest -q tests/test_harnesses/train_data tests/test_harnesses/model_build/test_dsl_tokenizer.py tests/test_harnesses/model_build/test_dsl_tokenizer_relative.py tests/test_dsl/test_language_contract.py",
+  "python -m scripts.verify_version_stamps --check",
+  "python -m scripts.repo_policy",
+  "python -m ruff check src/slm_training/harnesses/train_data/marker_tables.py tests/test_harnesses/train_data/test_marker_tables.py",
+  "git diff --check"
+ ],
+ "results": {
+  "focused_pytest": "13 passed",
+  "runtime_symbol_and_train_data_suites": "150 passed, 5 pre-existing failures (see claim_limits)",
+  "version_stamps": "passed",
+  "repo_policy": "passed",
+  "ruff": "passed",
+  "diff_check": "passed"
+ },
+ "claim_limits": [
+  "Deterministic contract-fixture evidence at fixture scale; no corpus publication and no model evaluation.",
+  "5 failures in the wider suites are pre-existing on this branch and untouched by this change: 4x tests/test_harnesses/train_data/test_staged_materialization.py and test_symbolic_surface_evidence_hashes_match_committed_sources (docs/design/dsh0-02 evidence hash drifted vs committed src/slm_training/dsl/pack.py).",
+  "Role is declared authority via the RuntimeSymbol surface codec (':', '$'); the stop-rule guarantee is that role is NOT recoverable from the ordinal stream, enforced by deranged per-(root_family, split) ordinal assignment."
+ ]
+}
