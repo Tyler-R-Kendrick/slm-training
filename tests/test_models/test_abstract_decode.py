@@ -66,12 +66,15 @@ def test_forced_end_exactly_at_the_hard_cap() -> None:
     begin_id, end_id = plan.delimiter_token_ids
     s0 = plan.slot_token_ids[0]
     initial_prefix = (_PROMPT_TOKEN, begin_id)
+    forward_calls = 0
 
     def forward(prefix: tuple[int, ...]) -> list[float]:
+        nonlocal forward_calls
         emitted = len(prefix) - len(initial_prefix)
         # The cap is reached after 2 codebook tokens; forward_logits must never be
         # called once the legal set has collapsed to {<endabstract>} alone.
         assert emitted < plan.max_slot_count, "forward called past the hard cap"
+        forward_calls += 1
         return _prefer(_VOCAB_SIZE, s0)
 
     result = capture_abstract_span(
@@ -85,6 +88,12 @@ def test_forced_end_exactly_at_the_hard_cap() -> None:
     assert set(result.slot_token_ids) <= set(plan.slot_token_ids)
     # The forced final step has no alternative: log(1.0) == 0.0.
     assert result.log_probs[-1] == 0.0
+    # Explicit forward-invocation bypass proof: CaptureResult has no dedicated
+    # forwards_count field, but every model call yields exactly one
+    # RawStepObservation (forced/singleton steps never create one), so the
+    # observation count is the exact forward-call count -- one per real
+    # (non-forced) decision, zero for the forced cap step itself.
+    assert len(result.capture.observations) == forward_calls == 2
 
 
 def test_empty_span_when_end_is_selected_immediately() -> None:
