@@ -48,8 +48,8 @@ def _fixture_records() -> list[ExampleRecord]:
     return [
         _record(
             "warmup_0_binders",
-            "Show a plain text label.",
-            'root = TextContent("Hello")',
+            "Show a horizontal divider.",
+            "root = Separator()",
         ),
         _record(
             "warmup_1_binder",
