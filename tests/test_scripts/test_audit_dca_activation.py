@@ -55,3 +55,12 @@ def test_slm273_run_reports_blocked(tmp_path: Path) -> None:
     data = json.loads((out / "dca1_02_cross_pack_transfer_gate.json").read_text())
     assert data["verdict"] == "blocked"
     assert data["issue"]["alias"] == "DCA1-02"
+
+
+def test_slm274_run_reports_blocked(tmp_path: Path) -> None:
+    out = tmp_path / "gate274"
+    rc = audit_dca_activation.main(["--issue", "SLM-274", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "dca2_01_block_conversion_gate.json").read_text())
+    assert data["verdict"] == "blocked"
+    assert data["issue"]["alias"] == "DCA2-01"
