@@ -1766,7 +1766,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v112",
+      "version": "v113",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1776,6 +1776,11 @@
       ],
       "history": [
         {
+          "version": "v113",
+          "date": "2026-07-25",
+          "note": "SLM-328 AP-030 CAP2-06 program-factor latent size/width/codec rate-distortion sweep wiring/fixture harness"
+        },
+        {
           "version": "v112",
           "date": "2026-07-25",
           "note": "SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
@@ -1784,6 +1789,11 @@
           "version": "v111",
           "date": "2026-07-25",
           "note": "SLM-268 fail-closed activation audit for verified-data scaling"
+        },
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "add SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
         },
         {
           "version": "v110",
