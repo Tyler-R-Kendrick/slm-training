@@ -58,7 +58,7 @@ STRUCTURAL_TOKENS = _active_structural_tokens()
 
 # Bump when serialization / vocab layout changes.
 # v4: removed the free-form string literal opener.
-DSL_TOKENIZER_VERSION = 4
+DSL_TOKENIZER_VERSION = 5
 SYMBOL_TABLE_VERSION = 3
 
 PAD = "<pad>"

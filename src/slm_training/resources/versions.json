@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-25",
+          "note": "Restore DEFAULT_* data/eval/context/tokenizer/evaluation-policy constants and PROHIBITED_TEMPLATE_SEMANTIC_LEVERS dropped by main #920; add DIFFICULTY_EASY_TAIL_FRACTION (0.2)"
+        },
         {
           "version": "v22",
           "date": "2026-07-25",
@@ -550,7 +555,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally — public behavior and every test_operator_merge.py test are unchanged"
+          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally \u2014 public behavior and every test_operator_merge.py test are unchanged"
         },
         {
           "version": "v1",
@@ -683,7 +688,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
@@ -764,7 +769,7 @@
         {
           "version": "v3",
           "date": "2026-07-25",
-          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all — previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
+          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all \u2014 previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
         },
         {
           "version": "v2",
@@ -774,7 +779,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts \u2014 one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
         }
       ]
     },
@@ -791,7 +796,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-05: initial atomic multi-action operator transaction executor — independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
+          "note": "DSH5-05: initial atomic multi-action operator transaction executor \u2014 independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
         }
       ]
     },
@@ -811,7 +816,7 @@
       ]
     },
     "dsl.symbolic_surface": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/language_contract.py",
@@ -819,6 +824,11 @@
         "tests/test_dsl/test_language_contract.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "Allow STRUCTURAL_ID_ATOMS ($0..$63) in symbol-only output contract checks so structural id props are not treated as free-form strings"
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
@@ -1209,7 +1219,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -1716,7 +1726,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v108",
+      "version": "v110",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1725,6 +1735,16 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v110",
+          "date": "2026-07-25",
+          "note": "SLM-300 self-context curriculum: validate manifest inside run_fixture_self_context_curriculum (trust-boundary hardening) and make _arm_label lossless for arbitrary caller-supplied rates (address CodeRabbit review on PR #895)"
+        },
+        {
+          "version": "v109",
+          "date": "2026-07-25",
+          "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
+        },
         {
           "version": "v108",
           "date": "2026-07-25",
@@ -2148,7 +2168,7 @@
         {
           "version": "v31",
           "date": "2026-07-20",
-          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         },
         {
           "version": "v30",
@@ -2188,7 +2208,7 @@
         {
           "version": "v24",
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         },
         {
           "version": "v23",
@@ -2248,7 +2268,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -2367,7 +2387,7 @@
         {
           "version": "v1",
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
@@ -2595,7 +2615,7 @@
         {
           "version": "sde5-03-v1",
           "date": "2026-07-21",
-          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness"
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan \u00d7 grammar-mass \u00d7 high-debt exposure floor-escape matrix wiring/fixture harness"
         }
       ]
     },
@@ -3066,7 +3086,7 @@
         {
           "version": "v1",
           "date": "2026-07-20",
-          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         }
       ]
     },
@@ -6909,7 +6929,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v244",
+      "version": "v245",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -6944,6 +6964,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v245",
+          "date": "2026-07-25",
+          "note": "Bump DSL_TOKENIZER_VERSION 4->5 and CHOICE_TOKENIZER_VERSION 2->3; fold STRUCTURAL_ID_ATOMS into fixed string bodies; restore _remap_vocab_weight/_resize_position_weight dropped by main #920; refresh tokenizer layout registry"
+        },
         {
           "version": "v244",
           "date": "2026-07-25",
@@ -8633,6 +8658,11 @@
         {
           "version": "v2",
           "date": "2026-07-25",
+          "note": "no-bump: refresh checked-in dsl_native + choice_codec tokenizer layout registry fingerprints after STRUCTURAL_ID_ATOMS vocab expansion (main #920 CI unblock); ops token-id namespace unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
           "note": "SLM-413: rebuilt registry for the new conversation.transaction_commit op (DSH5-05's TRANSACTION_COMMIT turn) -- 19 -> 20 ops; every history-family/set/topology token_id after the insertion point shifts by one, per `python -c 'from slm_training.dsl.ops_vocab import write_registry; write_registry()'`"
         },
         {
@@ -8663,6 +8693,25 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-249 (LOT0-02) CompilerReasoningTraceV1 typed step schema, deterministic extractor reusing SemanticPlanV1/production_codec, lossless visible serialization, permutation-invariant/cycle-free/truncation-explicit helpers, a bounded (n=16 fixture) K/c coverage probe, and the CompilerReasoningTraceGateV1 contract with an inconclusive verdict (oracle-ceiling experiment plan only, no training run, per the LOT0-01 authorization's allowed_lot1_work scope)"
+        }
+      ]
+    },
+    "matrix.self_context_curriculum": {
+      "version": "v2",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_self_context_curriculum.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "frontier fallback now returns nonzero exit code instead of masquerading as a completed frontier run; malformed --seeds/--self-context-rates CSV values now return a controlled exit code 2 instead of an uncaught traceback (address CodeRabbit review on PR #895)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-300 AP-015 self-context exposure-bias curriculum plan/fixture CLI"
         }
       ]
     }

@@ -27,7 +27,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
 from slm_training.dsl.lang_core import ParseError
-from slm_training.dsl.language_contract import grammar_string_literals
+from slm_training.dsl.language_contract import (
+    STRUCTURAL_ID_ATOMS,
+    grammar_string_literals,
+)
 from slm_training.dsl.production_codec import (
     BUILTIN_PREFIX,
     CHOICE_STMT_MARKERS,
@@ -59,7 +62,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing-only import
     from slm_training.dsl.grammar.fastpath.compiler_draft import ConstraintEvidence
 
 # v2 removes the free-form string opener from new vocabularies.
-CHOICE_TOKENIZER_VERSION = 2
+CHOICE_TOKENIZER_VERSION = 3
 CHOICE_TOKENIZER_KIND = "choice_codec"
 
 PAD = "<pad>"
@@ -123,7 +126,9 @@ _BUILTIN_NAMES: tuple[str, ...] = (
 )
 
 # One schema-derived closed set shared by validation and both output tokenizers.
-_FIXED_STRING_BODIES: tuple[str, ...] = tuple(sorted(grammar_string_literals()))
+_FIXED_STRING_BODIES: tuple[str, ...] = tuple(
+    sorted(grammar_string_literals() | STRUCTURAL_ID_ATOMS)
+)
 
 
 def _grammar_names() -> tuple[str, ...]:
