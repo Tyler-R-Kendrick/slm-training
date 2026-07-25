@@ -1,0 +1,247 @@
+{
+  "claim_class": "wiring",
+  "counts": {
+    "accepted": 4,
+    "accepted_gold_or_silver": 0,
+    "gate_failure_counts": {},
+    "locked_set_overlap_rejected": 23,
+    "proposed": 27,
+    "tier_counts": {
+      "BRONZE": 4
+    },
+    "unique_accepted_canonical_roots": 4
+  },
+  "experiment_id": "slm296-verified-teacher-admission",
+  "family_independence_control": {
+    "different_family_independent": true,
+    "same_family_independent": false,
+    "shadow_judge_fully_quarantined": true,
+    "shadow_judge_quarantined": 10,
+    "shadow_judge_sample_size": 10
+  },
+  "limitations": [
+    "No real separate-family teacher is available (no network/GPU in this sandbox); candidates come from the repository's own deterministic ProgramSpec generator, explicitly not a teacher. SLM-266 already measured that a local CPU teacher run is infeasible here (>= 11 days extrapolated for 10k requests).",
+    "The >= 500 accepted-record target is not attempted at this scale; this is a bounded wiring campaign only.",
+    "No fine-tuning run occurs and no grammar-off/meaning-v2 delta is measured or claimed.",
+    "Gold/Silver promotion is structurally blocked here because 'teacher' is a weak source with no human_audit_passed evidence -- every accepted row is Bronze at best, by construction of the real verifier stack, not by a claim made in this report."
+  ],
+  "manifest_hash": "5d9a916e1d74b39a64af4a9d4226edc7c0d41eda33a9e382c75edbf5aa2794ff",
+  "recipe": {
+    "components": [
+      "TextContent",
+      "Button",
+      "Separator"
+    ],
+    "locked_holdout_seed": 999,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "teacher_model_family": "deterministic_programspec_generator_v1"
+  },
+  "rows": [
+    {
+      "candidate_id": "program_c9e62fec8f8263fd_generation_da25ade1f0c6",
+      "canonical_root_id": "ca3e1f5a90fa6a4393c74f13472572c0da1e697c15195e5383c36fbded41cc30",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_07b5a65c60749067_generation_92288d108dd3",
+      "canonical_root_id": "124dc1b551ab7b6614eb732d26d9bd6f7931ebe90a08d0c9cc51f68d25221c48",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_3dc62808440ea389_generation_805886e1ba0f",
+      "canonical_root_id": "bfdd8a14b267b25dd39254649eee1e53829d06f2896f3fadc6e7a907dcab2539",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_11d452008abc1814_generation_17181cd32f22",
+      "canonical_root_id": "2329c928f0ccad34371023160569b49a0d2fe26173881ee79f787345cd8d402f",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_eccd2066c7d2f32d_generation_30b08afa271b",
+      "canonical_root_id": "85f8d0b8bdb04848360e647fb16451181ea75c9e5dae7b72d32275c934e10185",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_6034364651dc4e8f_generation_3156b20da01d",
+      "canonical_root_id": "2d885f6987b256a49d0aed818b777e76cb73d08f5395fe58566c96d6428f194d",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_59f40e94afab4028_generation_110026eb9bd1",
+      "canonical_root_id": "4653c3b3b163899eae1db649e1f16eb2c4c0d41f28e16016e198866f67df60ec",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_680caca3370d9c16_generation_c39097d9db01",
+      "canonical_root_id": "dfc23b60aa17911259bb60f9f81e12fae04ad12c7371d29ae2da3528721db2ea",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_a99bdf966d072a7f_generation_d4fc772436e4",
+      "canonical_root_id": "0a1895f1bf7de094d72713e1d0259e1939bf010d6994c22cffb9bc69a6a4e6cc",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_c9e62fec8f8263fd_generation_da25ade1f0c6",
+      "canonical_root_id": "ca3e1f5a90fa6a4393c74f13472572c0da1e697c15195e5383c36fbded41cc30",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_11d452008abc1814_generation_17181cd32f22",
+      "canonical_root_id": "2329c928f0ccad34371023160569b49a0d2fe26173881ee79f787345cd8d402f",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_80318515de512a30_generation_c61dd2205c7e",
+      "canonical_root_id": "40daa87a44c0a2bfa240024f725f6ceb318155616a42029c55060b39c8e06393",
+      "failing_gate": null,
+      "locked_set_overlap": false,
+      "tier": "BRONZE"
+    },
+    {
+      "candidate_id": "program_2ab9840a305d9f70_generation_47a982fb6e05",
+      "canonical_root_id": "6a3ad674df1031c5ab29291c4c5bb6a9e3814eaedb7a7f7ca79fe518d74fa2cd",
+      "failing_gate": null,
+      "locked_set_overlap": false,
+      "tier": "BRONZE"
+    },
+    {
+      "candidate_id": "program_3dc62808440ea389_generation_805886e1ba0f",
+      "canonical_root_id": "bfdd8a14b267b25dd39254649eee1e53829d06f2896f3fadc6e7a907dcab2539",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_d203725668cbc2e3_generation_7fc150d82fb2",
+      "canonical_root_id": "9d9ee4fd64a43b18b7a6b91b9f38d55cfd9fdd1e30703d2ee68f6b605fe98a64",
+      "failing_gate": null,
+      "locked_set_overlap": false,
+      "tier": "BRONZE"
+    },
+    {
+      "candidate_id": "program_da2d696e8b286563_generation_658f23556f1a",
+      "canonical_root_id": "433130343adc7661214b638257d5943937d134a558ff65d79d5801dc49fa260d",
+      "failing_gate": null,
+      "locked_set_overlap": false,
+      "tier": "BRONZE"
+    },
+    {
+      "candidate_id": "program_680caca3370d9c16_generation_c39097d9db01",
+      "canonical_root_id": "dfc23b60aa17911259bb60f9f81e12fae04ad12c7371d29ae2da3528721db2ea",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_07b5a65c60749067_generation_92288d108dd3",
+      "canonical_root_id": "124dc1b551ab7b6614eb732d26d9bd6f7931ebe90a08d0c9cc51f68d25221c48",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_680caca3370d9c16_generation_c39097d9db01",
+      "canonical_root_id": "dfc23b60aa17911259bb60f9f81e12fae04ad12c7371d29ae2da3528721db2ea",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_07b5a65c60749067_generation_92288d108dd3",
+      "canonical_root_id": "124dc1b551ab7b6614eb732d26d9bd6f7931ebe90a08d0c9cc51f68d25221c48",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_3dc62808440ea389_generation_805886e1ba0f",
+      "canonical_root_id": "bfdd8a14b267b25dd39254649eee1e53829d06f2896f3fadc6e7a907dcab2539",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_11d452008abc1814_generation_17181cd32f22",
+      "canonical_root_id": "2329c928f0ccad34371023160569b49a0d2fe26173881ee79f787345cd8d402f",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_eccd2066c7d2f32d_generation_30b08afa271b",
+      "canonical_root_id": "85f8d0b8bdb04848360e647fb16451181ea75c9e5dae7b72d32275c934e10185",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_6034364651dc4e8f_generation_3156b20da01d",
+      "canonical_root_id": "2d885f6987b256a49d0aed818b777e76cb73d08f5395fe58566c96d6428f194d",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_59f40e94afab4028_generation_110026eb9bd1",
+      "canonical_root_id": "4653c3b3b163899eae1db649e1f16eb2c4c0d41f28e16016e198866f67df60ec",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_c9e62fec8f8263fd_generation_da25ade1f0c6",
+      "canonical_root_id": "ca3e1f5a90fa6a4393c74f13472572c0da1e697c15195e5383c36fbded41cc30",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    },
+    {
+      "candidate_id": "program_a99bdf966d072a7f_generation_d4fc772436e4",
+      "canonical_root_id": "0a1895f1bf7de094d72713e1d0259e1939bf010d6994c22cffb9bc69a6a4e6cc",
+      "failing_gate": null,
+      "locked_set_overlap": true,
+      "tier": "excluded_locked_set_overlap"
+    }
+  ],
+  "schema": "verified_teacher_admission_report/v1",
+  "status": "yield_limitation_no_real_teacher_available",
+  "timestamp": "2026-07-25T14:37:31.142872Z",
+  "version_stamp": {
+    "code_commit": "fa349f9bc23414bf568cbb53ef5c7200e9b83356",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v108",
+      "harness.experiments.slm296_verified_teacher_admission": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T14:37:31.142906+00:00"
+  }
+}

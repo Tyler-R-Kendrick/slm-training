@@ -1644,7 +1644,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v106",
+      "version": "v108",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/",
@@ -1653,6 +1653,16 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v108",
+          "date": "2026-07-25",
+          "note": "SLM-296 bounded verifier-filtered teacher-admission wiring evidence, family-independence, and locked-set decontamination controls"
+        },
+        {
+          "version": "v107",
+          "date": "2026-07-25",
+          "note": "SLM-267 bounded uniform-vs-coverage-targeted ProgramSpec sampling wiring evidence and deterministic shard-seed primitive"
+        },
         {
           "version": "v106",
           "date": "2026-07-25",
@@ -5548,6 +5558,56 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; SLM-265 outcome-blind domain-shift strata and coverage-gap audit"
+        }
+      ]
+    },
+    "harness.experiments.slm267_programspec_coverage_scaling": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm267_programspec_coverage_scaling.py",
+        "scripts/generate_programspec_corpus.py",
+        "tests/test_harnesses/experiments/test_slm267_programspec_coverage_scaling.py",
+        "tests/test_scripts/test_generate_programspec_corpus.py",
+        "docs/design/programspec-coverage-scaling.md",
+        "docs/design/iter-slm267-programspec-coverage-scaling-20260725.json",
+        "docs/design/iter-slm267-programspec-coverage-scaling-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: reran the deterministic SLM-267 fixture during rebase validation; regenerated only its version-stamped JSON evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-267 bounded uniform-vs-coverage-targeted ProgramSpec sampling wiring evidence and deterministic shard-seed primitive"
+        }
+      ]
+    },
+    "harness.experiments.slm296_verified_teacher_admission": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm296_verified_teacher_admission.py",
+        "scripts/run_verified_teacher_admission.py",
+        "tests/test_harnesses/experiments/test_slm296_verified_teacher_admission.py",
+        "tests/test_scripts/test_run_verified_teacher_admission.py",
+        "docs/design/verified-teacher-admission.md",
+        "docs/design/iter-slm296-verified-teacher-admission-20260725.json",
+        "docs/design/iter-slm296-verified-teacher-admission-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: reran the deterministic SLM-296 fixture during rebase validation; regenerated only its version-stamped JSON evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-296 bounded verifier-filtered teacher-admission wiring evidence, family-independence and locked-set decontamination controls"
         }
       ]
     },
