@@ -7912,7 +7912,30 @@
     {
      "version": "v1",
      "date": "2026-07-25",
+     "note": "no-bump: SLM-339 adds sibling linear_sync files (linear_sync.py, test_linear_sync.py) under shared autoresearch paths; no behavior change to the SLM-338 publisher"
+    },
+    {
+     "version": "v1",
+     "date": "2026-07-25",
      "note": "Add SLM-338/AP-037 unified abstract-planning evidence publisher (AbstractPlanningResultV1, fail-closed publication blockers, JSON/MD/model-card emission)"
+    }
+   ]
+  },
+  "harness.experiments.slm339_linear_sync": {
+   "version": "v1",
+   "kind": "harness",
+   "paths": [
+    "src/slm_training/harnesses/autoresearch/linear_sync.py",
+    "scripts/sync_abstract_planning_linear.py",
+    "tests/test_harnesses/autoresearch/test_linear_sync.py",
+    "tests/test_scripts/test_sync_abstract_planning_linear.py",
+    "docs/design/linear-evidence-sync.md"
+   ],
+   "history": [
+    {
+     "version": "v1",
+     "date": "2026-07-25",
+     "note": "Add SLM-339/AP-038 idempotent Linear evidence sync (machine-owned comment with sha256 marker, dry-run-first CLI, offline GraphQL payloads, key-redacting transport, retry/backoff)"
     }
    ]
   }

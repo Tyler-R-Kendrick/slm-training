@@ -1,0 +1,33 @@
+{
+ "ap_id": "AP-038",
+ "cli": "scripts/sync_abstract_planning_linear.py",
+ "component": "harness.experiments.slm339_linear_sync v1",
+ "contract_doc": "docs/design/linear-evidence-sync.md",
+ "fixture": "tests/fixtures/planning_result/ap037_fixture.json",
+ "fixture_issue_key": "AP-037",
+ "honesty": "No Linear credentials in the test environment; live path unexercised against the real API. Dry-run, offline-payload, idempotency, retry, redaction, and guard behavior verified with stub transports.",
+ "idempotency": "marker <!-- ap-sync:sha256=<content_sha256> -->; replay same content = NO-OP; changed content updates machine comment; human comments untouched",
+ "issue": "SLM-339",
+ "live_sync_performed": false,
+ "module": "src/slm_training/harnesses/autoresearch/linear_sync.py",
+ "offline_mode": "--offline-out writes exact GraphQL payloads (same constants/variables as live path); zero network in tests",
+ "ownership": "never touches labels/status/assignee/priority; never auto-closes or auto-promotes; comment-only claim classes hard-asserted via _CommentOnlyGuard",
+ "run_id": "slm339_linear_sync_fixture",
+ "schema": "slm339_linear_sync/v1",
+ "secrets": "API key from env var only, redacted from all errors; canary-key test asserts no leakage",
+ "status": "implemented_dry_run_only",
+ "tests": {
+  "tests/test_harnesses/autoresearch/test_linear_sync.py": "16 passed",
+  "tests/test_scripts/test_sync_abstract_planning_linear.py": "4 passed"
+ },
+ "version_stamp": {
+  "code_commit": "c7ff6fd1bf45501253aa246e557157d3117fc40b",
+  "code_dirty": true,
+  "components": {
+   "harness.core": "v9",
+   "harness.experiments.slm339_linear_sync": "v1"
+  },
+  "stamp_schema": "version_stamp/v1",
+  "stamped_at": "2026-07-25T01:14:16.549056+00:00"
+ }
+}
