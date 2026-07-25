@@ -23,7 +23,7 @@ from slm_training.models.causal_trace import (  # noqa: E402
 )
 
 # Legality by generated-suffix length (prompt is a single token, so prompt_len == 1).
-_LEGAL_BY_SUFFIX = {0: (2, 3), 1: (4,), 2: (0,)}
+_LEGAL_BY_SUFFIX = {0: (2, 3), 1: (4,), 2: (2, 5), 3: (0,)}
 
 
 class _Output:
@@ -69,6 +69,33 @@ def _plugin() -> CausalLMOpenUIPlugin:
 
 def _allowed(prefix: tuple[int, ...]) -> tuple[int, ...]:
     return _LEGAL_BY_SUFFIX.get(len(prefix) - 1, (0,))  # prompt_len == 1; default EOS
+
+
+def test_public_causal_generation_bypasses_singleton_and_certifies_fallback(
+    monkeypatch,
+) -> None:
+    plugin = _plugin()
+    forwards = 0
+    original = plugin.model.forward
+
+    def forward(*args, **kwargs):
+        nonlocal forwards
+        forwards += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(plugin.model, "forward", forward)
+    monkeypatch.setattr(plugin, "_allowed_ids", lambda _prefix: (0,))
+
+    assert plugin.generate_constrained("Make a card") == "root = Separator()"
+    assert forwards == 0
+    assert plugin.consume_generation_evidence() == [
+        {
+            "grammar_constrained": True,
+            "model_forwards": 0,
+            "singleton_bypasses": 1,
+            "fallback_used": True,
+        }
+    ]
 
 
 def test_traced_decode_records_states_and_stops_on_eos(tmp_path) -> None:

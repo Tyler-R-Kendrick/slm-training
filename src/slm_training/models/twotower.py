@@ -64,6 +64,7 @@ from slm_training.models.grammar import (
     force_emit_token_id,
     make_grammar_state,
     pick_constrained_token,
+    require_constrained_generation,
     stream_check,
 )
 from slm_training.models.parallel_decode import (
@@ -444,6 +445,9 @@ class TwoTowerConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    # Zero selects a device-aware bound for speculative compiler prefills.
+    compiler_prefill_max_states: int = 0
+    compiler_prefill_token_budget: int = 0
     # Compiler-drafted decode: off | forced | restricted | tree.
     # Decode-only; ``off`` preserves existing checkpoint behavior.
     compiler_decode_mode: str = "off"
@@ -612,7 +616,7 @@ class TwoTowerConfig:
     # P7: playground/generate attempt budget + finalize-only-on-last.
     generate_max_attempts: int = 3
     grammar_finalize_on_last_attempt_only: bool = False
-    allow_unconstrained_fallback: bool = True
+    allow_unconstrained_fallback: bool = False
     # --- V7 speculative denoising (docs/design/speculative-denoising.md) ---
     # E70 LESS-lite: require argmax persistence before committing (0=off);
     # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
@@ -1665,7 +1669,24 @@ class TwoTowerModel(nn.Module):
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
         self._current_runtime_table: object | None = None
+        self._runtime_symbol_tables: list[object] = []
         self.to(device)
+
+    def _runtime_symbols_for_row(self, row: int = 0) -> tuple[object, ...]:
+        table = (
+            self._runtime_symbol_tables[row]
+            if 0 <= row < len(self._runtime_symbol_tables)
+            else self._current_runtime_table
+        )
+        return tuple(getattr(table, "runtime_symbols", ()) or ())
+
+    def _record_exact_bypass(self, token_id: int) -> None:
+        stats = get_active_stats()
+        if stats is None or not hasattr(self.tokenizer, "kind_of"):
+            return
+        kind = getattr(self.tokenizer.kind_of(int(token_id)), "value", "")
+        if kind in {"component", "sym", "bind", "state", "builtin"}:
+            stats.semantic_singleton_bypasses += 1
 
     def _effective_structural_bias(self) -> float:
         if getattr(self.config, "grammar_trust_model", False):
@@ -4197,6 +4218,7 @@ class TwoTowerModel(nn.Module):
         *,
         attempts: int | None = None,
         slot_contract: list[str] | None = None,
+        require_valid: bool = False,
     ) -> str:
         """
         Repair toward a valid OpenUI string when grammar-constrained.
@@ -4240,7 +4262,7 @@ class TwoTowerModel(nn.Module):
             ser = self._canonical_valid_openui(last)
             if ser is not None:
                 return ser
-        if self.config.grammar_finalize_validate:
+        if self.config.grammar_finalize_validate or require_valid:
             fallback = self._minimal_valid_openui(slot_contract)
             if fallback is not None:
                 active = get_active_stats()
@@ -4381,6 +4403,7 @@ class TwoTowerModel(nn.Module):
                 forced_token_id=forced,
                 slot_contract=contract,
                 state=st,
+                runtime_symbols=self._runtime_symbols_for_row(),
             )
             logits: torch.Tensor | None = None
             row: torch.Tensor | None = None
@@ -4389,6 +4412,7 @@ class TwoTowerModel(nn.Module):
             decision_source = "dfa_singleton" if exact is not None else "model_ranked"
             if exact is not None:
                 choice = exact
+                self._record_exact_bypass(exact)
                 if stats is not None:
                     stats.forced_row_tokens_without_forward += 1
                     stats.all_forced_steps_without_forward += 1
@@ -4416,6 +4440,7 @@ class TwoTowerModel(nn.Module):
                     forced_token_id=forced,
                     slot_contract=contract,
                     state=st,
+                    runtime_symbols=self._runtime_symbols_for_row(),
                     **pick_kw,
                 )
             # Commit-boundary invariant: a bare root binding must continue with
@@ -4447,6 +4472,7 @@ class TwoTowerModel(nn.Module):
                             top_k=self.config.grammar_top_k,
                             slot_contract=contract,
                             state=st,
+                            runtime_symbols=self._runtime_symbols_for_row(),
                             **pick_kw,
                         )
                     except TimeoutError:
@@ -4558,6 +4584,7 @@ class TwoTowerModel(nn.Module):
                         top_k=self.config.grammar_top_k,
                         slot_contract=contract,
                         state=st,
+                        runtime_symbols=self._runtime_symbols_for_row(),
                         **pick_kw,
                     )
                     if nxt is None:
@@ -8847,6 +8874,8 @@ class TwoTowerModel(nn.Module):
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
         if len(paths) == 1 and coverage == "complete":
+            if paths[0].token_ids:
+                self._record_exact_bypass(int(paths[0].token_ids[0]))
             return tuple(paths[0].token_ids)
         stats = get_active_stats()
         recorder = getattr(self, "trace_recorder", None)
@@ -9126,30 +9155,56 @@ class TwoTowerModel(nn.Module):
                 for token_id in path.token_ids:
                     children.setdefault(parent, set()).add(int(token_id))
                     parent = (*parent, int(token_id))
-            parents = [parent for parent in children if len(parent) < length]
-            canvases = torch.cat(
-                [self._compiler_canvas(list(parent), length) for parent in parents],
-                dim=0,
-            )
-            k = len(parents)
-            hidden = self._denoiser_hidden(
-                canvases,
-                ctx.expand(k, -1, -1),
-                ctx_pad.expand(k, -1) if ctx_pad is not None else ctx_pad,
-            )
             edge_scores: dict[tuple[tuple[int, ...], int], float] = {}
+            for parent, child_ids in children.items():
+                if len(child_ids) == 1:
+                    edge_scores[(parent, next(iter(child_ids)))] = 0.0
+            parents = [
+                parent
+                for parent, child_ids in children.items()
+                if len(parent) < length and len(child_ids) > 1
+            ]
+            device_type = str(self.device_name).split(":", 1)[0].lower()
+            auto_states = 4 if device_type == "cpu" else 32
+            max_states = int(
+                getattr(self.config, "compiler_prefill_max_states", 0) or auto_states
+            )
+            token_budget = int(
+                getattr(self.config, "compiler_prefill_token_budget", 0)
+                or max_states * length
+            )
+            batch_states = max(1, min(max_states, token_budget // max(1, length)))
+            hidden_rows: dict[tuple[int, ...], torch.Tensor] = {}
+            for start in range(0, len(parents), batch_states):
+                chunk = parents[start : start + batch_states]
+                canvases = torch.cat(
+                    [
+                        self._compiler_canvas(list(parent), length)
+                        for parent in chunk
+                    ],
+                    dim=0,
+                )
+                k = len(chunk)
+                hidden = self._denoiser_hidden(
+                    canvases,
+                    ctx.expand(k, -1, -1),
+                    ctx_pad.expand(k, -1) if ctx_pad is not None else ctx_pad,
+                )
+                for row, parent in enumerate(chunk):
+                    hidden_rows[parent] = hidden[row]
+                if stats is not None:
+                    stats.compiler_prefill_batches += 1
+                    stats.compiler_prefill_states += k
+                    stats.compiler_prefill_tokens += k * length
             first_edge_kinds = {
                 int(path.token_ids[0]): str(path.kind)
                 for path in paths
                 if path.token_ids
             }
-            for row, parent in enumerate(parents):
+            for parent in parents:
                 candidate_ids = tuple(sorted(children[parent]))
-                if len(candidate_ids) == 1:
-                    edge_scores[(parent, candidate_ids[0])] = 0.0
-                    continue
                 scores = self._project_candidates(
-                    hidden[row, len(parent)], candidate_ids
+                    hidden_rows[parent][len(parent)], candidate_ids
                 )
                 inventory_bias = self._component_inventory_bias(
                     ctx, ctx_pad, candidate_ids
@@ -9300,7 +9355,10 @@ class TwoTowerModel(nn.Module):
                 for i, token_id in enumerate(candidate_ids):
                     edge_scores[(parent, token_id)] = float(log_probs[i].item())
             if stats is not None:
-                stats.trie_nodes += len(parents)
+                # Keep trie topology telemetry stable: forced single-child
+                # nodes still exist even though only ambiguous parents consume
+                # speculative prefill states.
+                stats.trie_nodes += len(children)
 
         path_scores: list[float] = []
         for path in paths:
@@ -9383,14 +9441,12 @@ class TwoTowerModel(nn.Module):
             for path in paths
         ]
         if recorder is not None:
-            parent_rows = {parent: row for row, parent in enumerate(parents)}
             commits: list[dict[str, object]] = []
             parent = tuple(prefix)
             for token_id in paths[chosen].token_ids:
                 allowed = tuple(sorted(children.get(parent, ())))
                 if len(allowed) > 1:
-                    row = parent_rows[parent]
-                    raw_scores = self.denoiser.project(hidden[row, len(parent)])
+                    raw_scores = self.denoiser.project(hidden_rows[parent][len(parent)])
                     raw_id = int(raw_scores.argmax().item())
                     log_probs = F.log_softmax(raw_scores.float(), dim=-1)
                     commit: dict[str, object] = {
@@ -9630,6 +9686,7 @@ class TwoTowerModel(nn.Module):
                     ),
                     min_content=self._effective_min_content(slot_contract),
                     remaining_tokens=length - len(prefix),
+                    runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                 )
             if getattr(self.config, "verified_solver_decode", False):
                 # VSS1-03: certified exact closure prunes the forest to the live
@@ -9718,61 +9775,10 @@ class TwoTowerModel(nn.Module):
                             stats.compiler_lattice_termination_reason = (
                                 "no_live_decision"
                             )
-                if mode == "forced" and forest.paths:
-                    canvas = self._compiler_canvas(prefix, length)
-                    logits = self._denoiser_forward(canvas, ctx, ctx_pad)
-                    choice = pick_constrained_token(
-                        logits[0, len(prefix)].clone(),
-                        self.tokenizer,
-                        prefix,
-                        top_k=self.config.grammar_top_k,
-                        slot_contract=slot_contract,
-                        state=state,
-                        **self._pick_kwargs(),
-                    )
-                    token_id = int(
-                        choice if choice is not None else self.tokenizer.eos_id
-                    )
-                    prefix.append(token_id)
-                    state.advance_token(self.tokenizer, token_id)
-                    if stats is not None:
-                        stats.tokens_emitted += 1
-                    if token_id == self.tokenizer.eos_id:
-                        break
-                    continue
                 if stats is not None:
                     stats.compiler_fallbacks += 1
-                # Tree/restricted modes must never append an unconstrained
-                # suffix after the symbolic forest reaches a dead end. The
-                # prefix is grammar-admitted; return it as-is and let the
-                # evaluator report incompleteness instead of manufacturing
-                # illegal structure with MaskGIT.
-                if mode in {"tree", "restricted"}:
-                    break
-                if stats is not None:
-                    stats.seeded_fallbacks += 1
-                before_forwards = int(self.speculative_stats.denoiser_forwards)
-                text = self._generate_maskgit_one(
-                    ctx,
-                    ctx_pad,
-                    length,
-                    use_grammar=False,
-                    slot_contract=slot_contract,
-                    seed_ids=prefix,
-                )
-                encoded = self._encode_openui(
-                    text, placeholders=list(slot_contract or [])
-                )[:length]
-                fallback_forwards = max(
-                    0,
-                    int(self.speculative_stats.denoiser_forwards) - before_forwards,
-                )
-                if stats is not None:
-                    stats.forwards_count += fallback_forwards
-                    stats.full_projections += fallback_forwards
-                    stats.canvas_tokens += fallback_forwards * int(length)
-                    stats.tokens_emitted += max(0, len(encoded) - 1)
-                prefix = [int(x) for x in encoded]
+                # Exact authority is empty. Stop and let the mandatory
+                # certification layer emit a tagged deterministic fallback.
                 break
 
             if mode == "forced" and len(forest.paths) > 1:
@@ -9788,6 +9794,7 @@ class TwoTowerModel(nn.Module):
                     top_k=self.config.grammar_top_k,
                     slot_contract=slot_contract,
                     state=state,
+                    runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                     **self._pick_kwargs(),
                 )
                 selected = (
@@ -10737,20 +10744,22 @@ class TwoTowerModel(nn.Module):
                         )
                         if forced is not None:
                             forced_map[bi] = forced
-                            exact = exact_forced_token_id(
-                                tok,
-                                ids[bi, :t].tolist(),
-                                forced_token_id=forced,
-                                slot_contract=contract,
-                                state=st,
-                            )
-                            if exact is not None:
-                                exact_map[bi] = exact
+                        exact = exact_forced_token_id(
+                            tok,
+                            ids[bi, :t].tolist(),
+                            forced_token_id=forced,
+                            slot_contract=contract,
+                            state=st,
+                            runtime_symbols=self._runtime_symbols_for_row(bi),
+                        )
+                        if exact is not None:
+                            exact_map[bi] = exact
                 need_model = [bi for bi in active_idx.tolist() if bi not in exact_map]
                 forwarded_rows = set(need_model)
                 pred = ids[:, t].clone()
                 for bi, choice in exact_map.items():
                     pred[bi] = choice
+                    self._record_exact_bypass(choice)
                     st = states[bi] if states is not None else None
                     if st is not None:
                         st.advance_token(tok, int(choice))
@@ -10845,6 +10854,7 @@ class TwoTowerModel(nn.Module):
                             forced_token_id=forced_map.get(bi),
                             slot_contract=contract,
                             state=st,
+                            runtime_symbols=self._runtime_symbols_for_row(bi),
                             **pick_kw,
                         )
                         if choice is None:
@@ -10899,6 +10909,7 @@ class TwoTowerModel(nn.Module):
                                 top_k=self.config.grammar_top_k,
                                 slot_contract=contract,
                                 state=st,
+                                runtime_symbols=self._runtime_symbols_for_row(bi),
                                 **pick_kw,
                             )
                             if choice is None:
@@ -11014,9 +11025,11 @@ class TwoTowerModel(nn.Module):
                                 forced_token_id=forced,
                                 slot_contract=contract,
                                 state=st,
+                                runtime_symbols=self._runtime_symbols_for_row(bi),
                             )
                             if exact is not None:
                                 choice = exact
+                                self._record_exact_bypass(exact)
                                 if stats is not None:
                                     stats.forced_row_tokens_without_forward += 1
                                     stats.all_forced_steps_without_forward += 1
@@ -11040,6 +11053,7 @@ class TwoTowerModel(nn.Module):
                                     forced_token_id=forced,
                                     slot_contract=contract,
                                     state=st,
+                                    runtime_symbols=self._runtime_symbols_for_row(bi),
                                     **pick_kw,
                                 )
                             if choice is None:
@@ -11250,6 +11264,16 @@ class TwoTowerModel(nn.Module):
         self.eval()
         if not prompts:
             return []
+        require_constrained_generation(
+            grammar_constrained,
+            configured=bool(self.config.grammar_constrained),
+        )
+        if bool(self.config.grammar_sample_decode) or bool(
+            self.config.grammar_uniform_at_unforced
+        ):
+            raise ValueError(
+                "stochastic grammar selection is disabled for deterministic generation"
+            )
         n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
         if n_samples > 1:
             pools: list[list[str]] = [[] for _ in prompts]
@@ -11294,6 +11318,16 @@ class TwoTowerModel(nn.Module):
         _opaque_slot_projection: bool = False,
     ) -> list[str]:
         """Generate while scoping opaque codec identity to this call only."""
+        require_constrained_generation(
+            grammar_constrained,
+            configured=bool(self.config.grammar_constrained),
+        )
+        if bool(self.config.grammar_sample_decode) or bool(
+            self.config.grammar_uniform_at_unforced
+        ):
+            raise ValueError(
+                "stochastic grammar selection is disabled for deterministic generation"
+            )
         _require_symbol_only_tokenizer(self.tokenizer)
         active = set(_OPAQUE_PROJECTION_MODELS.get())
         if _opaque_slot_projection:
@@ -12089,6 +12123,7 @@ class TwoTowerModel(nn.Module):
                 feature_tables.append(table)
         except Exception:  # noqa: BLE001
             feature_tables = []
+        self._runtime_symbol_tables = feature_tables
         if choice_constrained:
             contracts = [
                 self._slot_contracts[i]
@@ -12101,10 +12136,21 @@ class TwoTowerModel(nn.Module):
             self._last_generation_evidence = self._choice_generation_evidence(
                 ids, contracts
             )
-            return [
+            decoded = [
                 self._decode_openui(ids[i], placeholders=contracts[i])
                 for i in range(len(prompts))
             ]
+            certified: list[str] = []
+            for index, text in enumerate(decoded):
+                canonical = self._canonical_valid_openui(text)
+                fallback_used = canonical is None
+                if canonical is None:
+                    canonical = self._minimal_valid_openui(contracts[index])
+                if canonical is None:
+                    raise RuntimeError("choice decoder fallback failed validation")
+                self._last_generation_evidence[index]["fallback_used"] = fallback_used
+                certified.append(canonical)
+            return certified
         if bool(getattr(self.config, "contract_template_fastpath", False)):
             fast: list[str] = []
             for contract in self._slot_contracts or []:
@@ -12196,6 +12242,7 @@ class TwoTowerModel(nn.Module):
                         length,
                         attempts=ensure_attempts,
                         slot_contract=contract,
+                        require_valid=True,
                     )
                 )
             return certified
@@ -12571,8 +12618,10 @@ class TwoTowerModel(nn.Module):
                     forced_token_id=forced,
                     slot_contract=contract,
                     state=state,
+                    runtime_symbols=self._runtime_symbols_for_row(),
                 )
                 if exact is not None:
+                    self._record_exact_bypass(exact)
                     trial = ids[0].tolist()
                     trial[position] = int(exact)
                     admitted = True
@@ -12781,6 +12830,7 @@ class TwoTowerModel(nn.Module):
                         remaining_tokens=(
                             length - t if int(unknown[b].sum().item()) == 1 else None
                         ),
+                        runtime_symbols=self._runtime_symbols_for_row(b),
                         **self._pick_kwargs(),
                     )
                     return choice  # None → leave masked for LTR repair
@@ -13201,27 +13251,6 @@ class TwoTowerModel(nn.Module):
             canonical = self._canonical_valid_openui(repaired)
             if canonical is not None:
                 return canonical
-            # Grammar filtering can occasionally strand a well-trained MaskGIT
-            # decode on a partial prefix. Retry once without token filtering,
-            # then accept it only after deterministic syntax repair + validation.
-            if rec is not None:
-                rec.event("retry_unconstrained")
-            active_stats = get_active_stats()
-            if active_stats is not None:
-                active_stats.unconstrained_retries += 1
-            if not bool(getattr(self.config, "allow_unconstrained_fallback", True)):
-                return text
-            unconstrained = self._generate_maskgit_one(
-                ctx,
-                ctx_pad,
-                length,
-                use_grammar=False,
-                slot_contract=slot_contract,
-            )
-            repaired = self._repair_surface_syntax(unconstrained)
-            canonical = self._canonical_valid_openui(repaired)
-            if canonical is not None:
-                return canonical
             return self._ensure_valid_openui(
                 text,
                 ctx,
@@ -13231,6 +13260,7 @@ class TwoTowerModel(nn.Module):
                     1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
                 ),
                 slot_contract=slot_contract,
+                require_valid=True,
             )
         return text
 
@@ -13475,6 +13505,14 @@ class TwoTowerModel(nn.Module):
             load_tokenizer_sidecar(ctx_tok_path) if ctx_tok_path.exists() else tokenizer
         )
         raw_cfg = dict(payload.get("config") or {})
+        from slm_training.harnesses.model_build.eval_policy import (
+            MANDATORY_GENERATION_POLICY,
+        )
+
+        declared_generation_policy = {
+            key: raw_cfg.get(key) for key in MANDATORY_GENERATION_POLICY
+        }
+        raw_cfg.update(MANDATORY_GENERATION_POLICY)
         if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
             raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
         for key in ("diffusion_policies", "diffusion_length_buckets"):
@@ -13509,6 +13547,7 @@ class TwoTowerModel(nn.Module):
         if "gen_len" in payload:
             model.gen_len = int(payload["gen_len"])
         model.output_contract_version = int(payload.get("output_contract_version", 0))
+        model._declared_generation_policy = declared_generation_policy
         return model
 
     @classmethod
