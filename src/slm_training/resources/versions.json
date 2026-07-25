@@ -358,6 +358,11 @@
         {
           "version": "v14",
           "date": "2026-07-25",
+          "note": "no-bump: stop re-exporting hierarchical_head from operators package init so ops_vocab/decode-invariant checks stay torch-free on python-static"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
           "note": "no-bump: re-export the SLM-383 (DSH3-15) hierarchical_head module from the operators package alongside the DSH5-01 SelectorRef exports; no behavior change to any existing export"
         },
         {
@@ -725,6 +730,11 @@
         "tests/test_dsl/test_hierarchical_operator_head.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: consumers import hierarchical_head submodule directly; package init no longer eagerly loads torch"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -1765,7 +1775,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
-        {"version": "v111", "date": "2026-07-25", "note": "SLM-268 fail-closed activation audit for verified-data scaling"},
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed activation audit for verified-data scaling"
+        },
         {
           "version": "v111",
           "date": "2026-07-25",
@@ -3810,6 +3824,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: import HierarchicalOperator* from hierarchical_head submodule instead of package init (torch-free ops_vocab path)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "SLM-383 (DSH3-15) follow-up to E803: capacity-matched token-baseline vs. weight-zero (frozen no-op) vs. enabled hierarchical-operator-action-head causal experiment over a typed-candidate-group-size fixture corpus, with causal choice-change and compiler-membership evidence"
         }
       ]
@@ -5741,8 +5760,16 @@
         "docs/design/iter-slm268-verified-data-scaling-activation-20260725.md"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-25", "note": "no-bump: regenerated the deterministic SLM-268 activation report after rebase"},
-        {"version": "v1", "date": "2026-07-25", "note": "SLM-268 fail-closed local verified-data scaling activation audit"}
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: regenerated the deterministic SLM-268 activation report after rebase"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed local verified-data scaling activation audit"
+        }
       ]
     },
     "harness.experiments.slm267_programspec_coverage_scaling": {

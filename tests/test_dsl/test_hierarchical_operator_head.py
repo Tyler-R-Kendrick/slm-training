@@ -25,9 +25,6 @@ from slm_training.dsl.operators import (
     CompilerCoverage,
     EffectDeltaKind,
     EffectDeltaV1,
-    HierarchicalDecisionKind,
-    HierarchicalOperatorActionHead,
-    HierarchicalOperatorHeadConfigV1,
     OperatorArgumentSlotV1,
     OperatorLibraryV1,
     OperatorMutationV1,
@@ -35,9 +32,14 @@ from slm_training.dsl.operators import (
     RefKind,
     ReferenceDescriptorV1,
     RegisteredOperatorV1,
-    build_operator_action_features,
     build_reference_table,
     enumerate_operator_legal_set,
+)
+from slm_training.dsl.operators.hierarchical_head import (
+    HierarchicalDecisionKind,
+    HierarchicalOperatorActionHead,
+    HierarchicalOperatorHeadConfigV1,
+    build_operator_action_features,
     group_operator_features,
 )
 from slm_training.dsl.pack import get_pack
