@@ -1,0 +1,13 @@
+{
+  "schema": "corpus_certification_quality/v1",
+  "source_rows": 6337,
+  "core_records": 1682,
+  "tiers": {
+    "Bronze": 2882,
+    "Gold": 20,
+    "Quarantine": 572,
+    "Silver": 2863
+  },
+  "quarantine_rate": 0.0902635316395771,
+  "warnings": []
+}

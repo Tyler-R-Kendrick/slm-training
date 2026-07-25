@@ -35,7 +35,9 @@ from slm_training.data.leakage import fingerprint_openui_structure, fingerprint_
 from slm_training.data.quality import assess_record
 from slm_training.data.semantic_dedup import apply_semantic_dedup, similarity_engine
 from slm_training.data.store import DataStore
+from slm_training.data.verify import certify_snapshots, write_certified_snapshot
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
+from slm_training.versioning import build_version_stamp
 
 LEGACY_TRAIN_DATA_ROOT = Path("src/slm_training/resources/train_data")
 _BANDS = 16
@@ -281,8 +283,65 @@ def _markdown(report: dict[str, object]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _certification_markdown(report: dict[str, object]) -> str:
+    tiers = report["tiers"]
+    return "\n".join(
+        [
+            "# SLM-289 corpus certification",
+            "",
+            "**Claim class:** local deterministic corpus certification; not a model ship result.",
+            "",
+            f"- source snapshots: {report['source_snapshot_count']}",
+            f"- source rows: {report['source_rows']}",
+            f"- canonical Gold/Silver core records: {report['core_records']}",
+            f"- Gold: {tiers.get('Gold', 0)}; Silver: {tiers.get('Silver', 0)}; Bronze: {tiers.get('Bronze', 0)}; Quarantine: {tiers.get('Quarantine', 0)}",
+            f"- quarantine rate: {report['quarantine_rate']:.2%} (matched clean-subset control threshold: >10%)",
+            "- G12 remains explicit optional evidence and is never a human-rating admission gate.",
+            "",
+            "The immutable `openui_verified_v1` snapshot retains every source row in compact membership manifests, records exact-dedup lineage, and admits only canonical Gold/Silver rows to `records.jsonl`. Bronze and Quarantine rows are excluded from core SFT by construction.",
+            "",
+            "Reproduce from a clean checkout: `python -m scripts.audit_data_corpora --mode certify --output-dir src/slm_training/resources/data/train/openui_verified_v1`. The immutable output refuses overwrite. Opt in to the cleaned snapshot with `--train-version openui_verified_v1`; existing training defaults are unchanged.",
+            "",
+            "Verification: `DataStore.verify('train', 'openui_verified_v1')` validated every declared artifact hash.",
+            "",
+        ]
+    )
+
+
+def _write_certification_result(directory: Path) -> tuple[Path, Path]:
+    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+    quality = json.loads((directory / "quality_report.json").read_text(encoding="utf-8"))
+    report = {
+        "schema": "slm289_corpus_certification_result/v1",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "dataset_id": manifest["dataset_id"],
+        "source_snapshot_count": len(manifest["source_fingerprints"]),
+        "source_rows": manifest["source_rows"],
+        "core_records": manifest["core_records"],
+        "tiers": manifest["tiers"],
+        "quarantine_rate": quality["quarantine_rate"],
+        "source_fingerprints": manifest["source_fingerprints"],
+        "version_stamp": manifest["version_stamp"],
+    }
+    json_path = Path("docs/design/iter-slm289-corpus-certification-20260725.json")
+    md_path = Path("docs/design/corpus-certification.md")
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    md_path.write_text(_certification_markdown(report), encoding="utf-8")
+    return json_path, md_path
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--mode", choices=("audit", "certify", "report-certification"), default="audit"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("src/slm_training/resources/data/train/openui_verified_v1"),
+        help="Immutable published snapshot destination for --mode certify.",
+    )
     parser.add_argument("--near-dup-jaccard", type=float, default=0.9)
     parser.add_argument(
         "--semantic-threshold",
@@ -299,9 +358,39 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out-md", type=Path, default=Path("docs/design/data-corpus-audit.md"))
     args = parser.parse_args(argv)
 
+    if args.mode == "report-certification":
+        json_path, md_path = _write_certification_result(args.output_dir)
+        print(f"wrote {json_path} and {md_path}")
+        return 0
     snapshots = _load_snapshots(args.include_local)
     if not snapshots:
         raise SystemExit("no committed train snapshots found")
+    if args.mode == "certify":
+        store = DataStore()
+        fingerprints = {
+            ref.dataset_id: (ref.fingerprint or "")
+            for ref in store.versions("train")
+            if args.include_local or ref.storage in {"git", "legacy"}
+        }
+        rows = certify_snapshots(snapshots)
+        manifest = write_certified_snapshot(
+            args.output_dir,
+            dataset_id="openui_verified_v1",
+            rows=rows,
+            source_fingerprints=fingerprints,
+        )
+        print(
+            json.dumps(
+                {
+                    "dataset_id": "openui_verified_v1",
+                    "source_rows": len(rows),
+                    "core_records": manifest.get("core_records"),
+                    "output_dir": str(args.output_dir),
+                },
+                indent=2,
+            )
+        )
+        return 0
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "engine_pin": os.getenv("SLM_SEMANTIC_DEDUP_ENGINE") or "auto",
@@ -314,6 +403,7 @@ def main(argv: list[str] | None = None) -> int:
             snapshots, threshold=args.semantic_threshold
         ),
         "garbage": _garbage_rates(snapshots),
+        "version_stamp": build_version_stamp("data.corpus_certification"),
     }
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
     args.out_json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
