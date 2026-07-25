@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, fields, is_dataclass, replace
-from enum import Enum
+from dataclasses import dataclass, replace
 from typing import Any
 
+from slm_training.dsl.operators.ast_merge import (
+    MergeConflictKind,
+    StructuralMergeConflict as _StructuralConflict,
+    merge_ast_value as _merge_value,
+)
 from slm_training.dsl.operators.contracts import (
     ActionEffectV1,
     AstOperatorV1,
@@ -20,16 +24,6 @@ from slm_training.dsl.operators.contracts import (
 from slm_training.dsl.operators.conversation import ConversationStateNodeV1
 from slm_training.dsl.operators.registry import OperatorLibraryV1, OperatorStateV1
 from slm_training.dsl.pack import DslPack
-
-
-class MergeConflictKind(str, Enum):
-    SAME_NODE_INCOMPATIBLE_EDIT = "same_node_incompatible_edit"
-    DELETE_MODIFY = "delete_modify"
-    ROLE_CARDINALITY = "role_cardinality"
-    CHILD_ORDER = "child_order"
-    SCOPE_BINDER = "scope_binder"
-    STALE_REF = "stale_ref"
-    UNSUPPORTED_EFFECT = "unsupported_effect"
 
 
 BranchAuthorityResolver = Callable[
@@ -396,81 +390,6 @@ def _conflict_kind(
     else:
         kind = MergeConflictKind.SAME_NODE_INCOMPATIBLE_EDIT
     return kind, tuple(sorted(overlap))
-
-
-class _StructuralConflict(ValueError):
-    def __init__(self, kind: MergeConflictKind) -> None:
-        self.kind = kind
-        super().__init__(kind.value)
-
-
-_MISSING = object()
-
-
-def _merge_value(base: Any, left: Any, right: Any) -> Any:
-    if left == right:
-        return left
-    if left == base:
-        return right
-    if right == base:
-        return left
-    if _MISSING in (base, left, right):
-        raise _StructuralConflict(MergeConflictKind.DELETE_MODIFY)
-    if type(base) is not type(left) or type(base) is not type(right):
-        raise _StructuralConflict(
-            MergeConflictKind.SAME_NODE_INCOMPATIBLE_EDIT
-        )
-    if is_dataclass(base) and not isinstance(base, type):
-        derived_fields = {
-            "source",
-            "serialized",
-            "placeholders",
-            "meta",
-            "policy_errors",
-        }
-        changes = {
-            field.name: (
-                (
-                    None
-                    if field.name == "serialized"
-                    else getattr(base, field.name)
-                )
-                if field.name in derived_fields
-                else _merge_value(
-                    getattr(base, field.name),
-                    getattr(left, field.name),
-                    getattr(right, field.name),
-                )
-            )
-            for field in fields(base)
-        }
-        return replace(base, **changes)
-    if isinstance(base, Mapping):
-        keys = set(base) | set(left) | set(right)
-        return type(base)(
-            (
-                key,
-                merged,
-            )
-            for key in sorted(keys, key=str)
-            if (
-                merged := _merge_value(
-                    base.get(key, _MISSING),
-                    left.get(key, _MISSING),
-                    right.get(key, _MISSING),
-                )
-            )
-            is not _MISSING
-        )
-    if isinstance(base, (tuple, list)):
-        if len(base) != len(left) or len(base) != len(right):
-            raise _StructuralConflict(MergeConflictKind.CHILD_ORDER)
-        values = (
-            _merge_value(base[index], left[index], right[index])
-            for index in range(len(base))
-        )
-        return type(base)(values)
-    raise _StructuralConflict(MergeConflictKind.SAME_NODE_INCOMPATIBLE_EDIT)
 
 
 def _identity(

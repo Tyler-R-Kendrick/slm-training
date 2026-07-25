@@ -348,6 +348,11 @@
         {
           "version": "v14",
           "date": "2026-07-25",
+          "note": "no-bump: DSH5-05 re-exports OperatorTransactionCommitV1/commit_operator_transaction/compose_operator_transaction/merge_ast_value transaction-executor and shared ast_merge symbols from operators/__init__.py (new dsl.operators.transaction_executor component); no change to contracts.py itself"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-25",
           "note": "no-bump: DSH5-04 re-exports OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 transaction symbols from operators/__init__.py (new dsl.operators.transactions component); no change to contracts.py itself"
         },
         {
@@ -428,13 +433,18 @@
       ]
     },
     "dsl.operators.conversation": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/conversation.py",
         "tests/test_dsl/test_operator_conversation.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "DSH5-05: add the TRANSACTION_COMMIT conversation operation, TurnArtifactV1.transaction (retaining every constituent application ID via application_ids), append_operator_transaction_turn, and a caller-supplied TransactionReplayer hook on replay_conversation_trace so one turn can carry a whole OperatorTransactionV1 without conversation.py importing the transaction_executor module (see docs/design/dsh5-05-transaction-executor.md, Layering)"
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
@@ -532,6 +542,11 @@
         "tests/test_dsl/test_operator_merge.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally — public behavior and every test_operator_merge.py test are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -733,7 +748,7 @@
       ]
     },
     "dsl.operators.transactions": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/transactions.py",
@@ -741,6 +756,11 @@
         "docs/design/dsh5-04-operator-transactions.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all — previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
+        },
         {
           "version": "v2",
           "date": "2026-07-25",
@@ -750,6 +770,23 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
+        }
+      ]
+    },
+    "dsl.operators.transaction_executor": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/transaction_executor.py",
+        "src/slm_training/dsl/operators/ast_merge.py",
+        "tests/test_dsl/test_operator_transaction_executor.py",
+        "docs/design/dsh5-05-transaction-executor.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "DSH5-05: initial atomic multi-action operator transaction executor — independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
         }
       ]
     },

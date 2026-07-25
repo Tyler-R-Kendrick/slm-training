@@ -6,7 +6,7 @@ import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from slm_training.dsl.operators.contracts import (
     ApplicationProvenanceV1,
@@ -28,6 +28,17 @@ from slm_training.dsl.operators.registry import (
 )
 from slm_training.dsl.pack import DslPack
 
+if TYPE_CHECKING:  # pragma: no cover - typing only, never a runtime import
+    # DSH5-05: a transaction-commit turn carries the full prepared
+    # OperatorTransactionV1 record. transactions.py transitively imports
+    # merge.py, which imports *this* module for ConversationStateNodeV1 —
+    # a real runtime import here would close that cycle. ``from __future__
+    # import annotations`` (above) already makes every annotation lazy, so
+    # this class is only ever resolved by type checkers, never at import
+    # time; every runtime use below treats it as a duck-typed object (see
+    # docs/design/dsh5-05-transaction-executor.md, "Layering").
+    from slm_training.dsl.operators.transactions import OperatorTransactionV1
+
 
 class ConversationOperation(str, Enum):
     AST_EDIT = "ast_edit"
@@ -39,6 +50,10 @@ class ConversationOperation(str, Enum):
     # earlier state's artifact on the current branch. FORK opens a new branch;
     # COPY_STATE carries content forward inside one.
     COPY_STATE = "copy_state"
+    # DSH5-05: one atomically-composed multi-action OperatorTransactionV1,
+    # committed as exactly one turn (never as N sequential AST_EDIT turns
+    # against progressively stale references).
+    TRANSACTION_COMMIT = "transaction_commit"
 
 
 class ConversationTraceError(ValueError):
@@ -47,6 +62,16 @@ class ConversationTraceError(ValueError):
 
 OperatorAuthorityResolver = Callable[
     ["ConversationStateNodeV1"], tuple[DslPack, OperatorLibraryV1]
+]
+
+#: DSH5-05: recompute+verify one transaction-commit turn's exact final state
+#: from its recorded ``OperatorTransactionV1`` and the cursor it applied
+#: against. A caller-supplied callback (never a direct import of
+#: ``transaction_executor.py``, for the same layering reason as above) —
+#: mirrors ``OperatorAuthorityResolver``'s existing indirection pattern.
+TransactionReplayer = Callable[
+    [DslPack, OperatorLibraryV1, "ConversationStateNodeV1", "OperatorTransactionV1"],
+    "OperatorStateV1",
 ]
 
 
@@ -112,6 +137,7 @@ class TurnArtifactV1:
     output_state_id: str
     provenance: ApplicationProvenanceV1
     application: OperatorApplicationV1 | None = None
+    transaction: "OperatorTransactionV1 | None" = None
     branch_nonce_digest: str | None = None
     reference_seed: int | None = None
     copy_source_state_id: str | None = None
@@ -131,10 +157,32 @@ class TurnArtifactV1:
                 raise ConversationTraceError(
                     "turn and application provenance disagree"
                 )
-        elif self.application is not None:
-            raise ConversationTraceError(
-                "history operations cannot carry AST applications"
-            )
+            if self.transaction is not None:
+                raise ConversationTraceError(
+                    "AST edit turn cannot carry a transaction"
+                )
+        elif self.operation is ConversationOperation.TRANSACTION_COMMIT:
+            if self.transaction is None:
+                raise ConversationTraceError(
+                    "transaction commit turn requires a transaction"
+                )
+            if self.application is not None:
+                raise ConversationTraceError(
+                    "transaction commit turn cannot carry a single application"
+                )
+            if self.transaction.provenance != self.provenance:  # type: ignore[union-attr]
+                raise ConversationTraceError(
+                    "turn and transaction provenance disagree"
+                )
+        else:
+            if self.application is not None:
+                raise ConversationTraceError(
+                    "history operations cannot carry AST applications"
+                )
+            if self.transaction is not None:
+                raise ConversationTraceError(
+                    "only a transaction commit turn may carry a transaction"
+                )
         fork_fields = (self.branch_nonce_digest, self.reference_seed)
         if self.operation is ConversationOperation.FORK:
             if any(value is None for value in fork_fields):
@@ -159,6 +207,21 @@ class TurnArtifactV1:
 
     @property
     def application_ids(self) -> tuple[str, ...]:
+        """Every constituent application evidence ID this turn carries.
+
+        DSH5-05: a ``TRANSACTION_COMMIT`` turn retains every constituent
+        prepared action's own ``dry_run.application_id`` here (canonically
+        sorted), rather than collapsing the transaction to one opaque ID —
+        the CRDT event store never loses per-action provenance just because
+        several actions committed as one turn.
+        """
+        if self.transaction is not None:
+            return tuple(
+                sorted(
+                    action.dry_run.application_id
+                    for action in self.transaction.prepared_actions
+                )
+            )
         if self.application is None:
             return ()
         return (self.application.application_id,)
@@ -177,6 +240,11 @@ class TurnArtifactV1:
             "application": (
                 self.application.to_dict()
                 if self.application is not None
+                else None
+            ),
+            "transaction": (
+                self.transaction.to_dict()  # type: ignore[union-attr]
+                if self.transaction is not None
                 else None
             ),
             "application_ids": list(self.application_ids),
@@ -385,6 +453,89 @@ def append_operator_turn(
         output_state_id=output.state_id,
         provenance=application.provenance,
         application=application,
+    )
+    return _append_turn(trace, turn, new_node=output)
+
+
+def append_operator_transaction_turn(
+    trace: ConversationTraceV1,
+    *,
+    pack: DslPack,
+    library: OperatorLibraryV1,
+    transaction: "OperatorTransactionV1",
+    final_state: OperatorStateV1,
+    output_reference_table: ReferenceTableV1,
+) -> ConversationTraceV1:
+    """Commit one already-composed transaction as exactly one turn (DSH5-05).
+
+    Mirrors :func:`append_operator_turn` exactly, one level up: the caller
+    has already produced ``final_state``/``output_reference_table`` (via
+    ``transaction_executor.commit_operator_transaction``, which this module
+    never imports — see ``TransactionReplayer`` above for why) by composing
+    ``transaction``'s prepared actions atomically against ``trace.current``.
+    This function does not re-run that composition; it reverifies every
+    constituent prepared action's own dry run against the *current* state
+    via ``library.replay`` — the same single-hop reverification depth
+    ``append_operator_turn`` already performs for one application, done once
+    per constituent action here — then appends one ``TRANSACTION_COMMIT``
+    turn carrying the whole transaction (so every constituent application ID
+    and provenance stays retrievable via ``TurnArtifactV1.application_ids``).
+    """
+    current = trace.current
+    if any(
+        node.parent_state_id == current.state_id
+        and node.branch_digest == current.branch_digest
+        for node in trace.state_nodes
+    ):
+        raise ConversationTraceError(
+            "same-branch next turn already exists; fork before adding a sibling"
+        )
+    if (
+        transaction.base_state_digest != current.state.state_digest  # type: ignore[union-attr]
+        or transaction.base_ast_digest != current.state.ast_digest  # type: ignore[union-attr]
+    ):
+        raise ConversationTraceError("transaction base differs from current state")
+    if (
+        transaction.base_reference_table_fingerprint  # type: ignore[union-attr]
+        != current.reference_table.fingerprint
+    ):
+        raise ConversationTraceError("transaction base reference table is stale")
+    if transaction.provenance.request_id != current.reference_table.request_id:  # type: ignore[union-attr]
+        raise ConversationTraceError("transaction request is stale for current refs")
+    if transaction.provenance.source_artifact_digest != _source_digest(  # type: ignore[union-attr]
+        current.state.source
+    ):
+        raise ConversationTraceError("transaction source provenance is stale")
+    for action in transaction.prepared_actions:  # type: ignore[union-attr]
+        if any(
+            argument.value
+            not in {entry.ref for entry in current.reference_table.entries}
+            for argument in action.dry_run.arguments
+        ):
+            raise ConversationTraceError(
+                "transaction action uses stale or cross-branch refs"
+            )
+        replayed = library.replay(pack, current.state, action.dry_run)
+        if not replayed.succeeded:
+            raise ConversationTraceError(
+                "transaction constituent action did not replay"
+            )
+    if output_reference_table.request_id != transaction.provenance.request_id:  # type: ignore[union-attr]
+        raise ConversationTraceError("output reference request differs")
+    if output_reference_table.state_digest != final_state.state_digest:
+        raise ConversationTraceError("output reference table is stale for final state")
+    output = ConversationStateNodeV1(
+        parent_state_id=current.state_id,
+        branch_digest=current.branch_digest,
+        state=final_state,
+        reference_table=output_reference_table,
+    )
+    turn = TurnArtifactV1(
+        operation=ConversationOperation.TRANSACTION_COMMIT,
+        input_state_id=current.state_id,
+        output_state_id=output.state_id,
+        provenance=transaction.provenance,  # type: ignore[union-attr]
+        transaction=transaction,
     )
     return _append_turn(trace, turn, new_node=output)
 
@@ -657,6 +808,7 @@ def replay_conversation_trace(
     pack: DslPack,
     library: OperatorLibraryV1 | None = None,
     authority_resolver: OperatorAuthorityResolver | None = None,
+    transaction_replayer: TransactionReplayer | None = None,
     trace: ConversationTraceV1,
 ) -> ConversationStateNodeV1:
     """Replay every turn and exact intermediate state without hidden cursors."""
@@ -730,6 +882,36 @@ def replay_conversation_trace(
             ):
                 raise ConversationTraceError("copy replay differs")
             created.add(output.state_id)
+        elif turn.operation is ConversationOperation.TRANSACTION_COMMIT:
+            assert turn.transaction is not None
+            if output.parent_state_id != cursor.state_id:
+                raise ConversationTraceError(
+                    "transaction commit output has wrong parent"
+                )
+            if output.branch_digest != cursor.branch_digest:
+                raise ConversationTraceError("transaction commit crossed branches")
+            if transaction_replayer is None:
+                raise ConversationTraceError(
+                    "trace contains a transaction commit turn but no "
+                    "transaction_replayer was provided"
+                )
+            if authority_resolver is None:
+                turn_pack, turn_library = pack, library
+            else:
+                turn_pack, turn_library = authority_resolver(cursor)
+            assert turn_library is not None
+            if turn_pack.pack_id != trace.pack_id:
+                raise ConversationTraceError(
+                    "state authority resolver returned another pack"
+                )
+            recomposed_state = transaction_replayer(
+                turn_pack, turn_library, cursor, turn.transaction
+            )
+            if recomposed_state != output.state:
+                raise ConversationTraceError(
+                    "transaction commit replay state differs"
+                )
+            created.add(output.state_id)
         else:
             assert turn.operation is ConversationOperation.FORK
             assert turn.branch_nonce_digest is not None
@@ -782,7 +964,9 @@ __all__ = [
     "ConversationTraceError",
     "ConversationTraceV1",
     "OperatorAuthorityResolver",
+    "TransactionReplayer",
     "TurnArtifactV1",
+    "append_operator_transaction_turn",
     "append_operator_turn",
     "checkout_conversation_state",
     "clone_reference_table_for_branch",

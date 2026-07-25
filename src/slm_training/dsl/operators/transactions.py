@@ -634,8 +634,20 @@ class OperatorTransactionDecisionV1:
 
 
 def _target_lineage(table: ReferenceTableV1) -> dict[OperatorRef, str]:
-    """Map every base-table ref to its stable semantic target fingerprint."""
-    return {entry.ref: entry.descriptor.fingerprint for entry in table.entries}
+    """Map every base-table ref to its stable semantic target fingerprint.
+
+    Includes ``table.selectors`` alongside ``table.entries`` (DSH5-05):
+    without this, a selector-argument operator (e.g. DSH5-02's
+    ``openui.map_set_property``) could never be prepared into a transaction
+    at all — its ``selector`` slot's ``SelectorRef`` would be unresolvable
+    against the lineage both here and in ``_precondition_footprint``, long
+    before execution ever enters the picture. Purely additive: every
+    existing (non-selector) lineage entry is unchanged.
+    """
+    return {
+        **{entry.ref: entry.descriptor.fingerprint for entry in table.entries},
+        **{entry.ref: entry.descriptor.fingerprint for entry in table.selectors},
+    }
 
 
 def _precondition_footprint(

@@ -301,6 +301,18 @@ needed a new declaration shape to participate. This issue does **not**
 restrict the transaction contract to a proven subset; it applies uniformly
 to every declared `AstOperatorV1`.
 
+**DSH5-05 addendum:** "no new declaration shape" held, but a *plumbing* gap
+did not surface until DSH5-05 exercised a selector-argument operator
+(`openui.map_set_property`, DSH5-02's only bulk operator): `_target_lineage`
+only mapped `ReferenceTableV1.entries`, never `.selectors`, so a
+`SelectorRef` argument was unresolvable in both `prepare_operator_action`'s
+semantic-id derivation and `derive_read_write_set`'s precondition footprint
+— no bulk operator could be prepared into a transaction at all. DSH5-05
+fixed this with a purely additive one-function change (adds selector
+entries to the same lineage map; every existing non-selector entry is
+unchanged) — see `docs/design/dsh5-05-transaction-executor.md`, "Selector
+lineage fix".
+
 ## Scope notes (deliberately deferred)
 
 * **No commit/execution path.** Per the issue's own agent contract, this
