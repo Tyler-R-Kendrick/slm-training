@@ -21,6 +21,7 @@ from slm_training.dsl.operators.contracts import (
     PreconditionV1,
     RefKind,
     RoleRef,
+    SelectorRef,
     TemplateRef,
     ValueRef,
     _fingerprint,
@@ -30,6 +31,7 @@ from slm_training.dsl.operators.references import (
     ReferenceDescriptorV1,
     ReferenceResolutionError,
     ReferenceTableV1,
+    SelectorDescriptorV1,
     branch_local_disambiguator,
     build_reference_table,
     ordered_parent_digest,
@@ -42,6 +44,7 @@ from slm_training.dsl.operators.registry import (
     OperatorStateV1,
     RegisteredOperatorV1,
 )
+from slm_training.dsl.operators.selectors import SelectorContextV1
 from slm_training.dsl.pack import DslPack
 from slm_training.dsl.production_codec import (
     emit_statement_bindings,
@@ -127,6 +130,49 @@ class OpenUILocalOperatorContextV1:
         except ReferenceResolutionError as exc:
             raise OperatorRejectedError(exc.code, "reference.resolve") from exc
         return descriptor, copy.deepcopy(self._payloads[descriptor.fingerprint])
+
+    def resolve_selector(
+        self,
+        ref: OperatorRef,
+        state: OperatorStateV1,
+    ) -> tuple[SelectorDescriptorV1, tuple[OperatorRef, ...]]:
+        """Resolve one selector to its exact, freshly-reconfirmed target refs (DSH5-02).
+
+        Fails closed (as ``OperatorRejectedError``) on a non-selector ref, a
+        selector missing from this context's table, stale state/branch reuse,
+        or any drift the DSH5-01 freshness/cardinality checks in
+        ``ReferenceTableV1.resolve_selector`` catch. No OpenUI-pack-specific
+        predicate is re-run here — the table already committed the exact
+        target set at selector-build time, so "current" membership re-confirms
+        that committed set against the caller's live state/branch identity
+        rather than re-deriving it from scratch (that pack-specific extraction
+        layer is out of scope; see docs/design/dsh5-01-selector-refs.md).
+        """
+        if not isinstance(ref, SelectorRef):
+            raise OperatorRejectedError("selector.type_incompatible", "argument.type")
+        matches = [
+            entry
+            for entry in self.reference_table.selectors
+            if entry.ref.opaque_id == ref.opaque_id
+        ]
+        if not matches:
+            raise OperatorRejectedError("selector.missing", "selector.resolve")
+        if len(matches) != 1:
+            raise OperatorRejectedError("selector.duplicate", "selector.resolve")
+        committed = matches[0].descriptor
+        try:
+            descriptor = self.reference_table.resolve_selector(
+                ref,
+                state_digest=state.state_digest,
+                branch_digest=self.branch_digest,
+                expected_kind=committed.selector_kind,
+                current_scope_fingerprint=committed.scope_fingerprint,
+                current_target_fingerprints=committed.target_fingerprints,
+            )
+        except ReferenceResolutionError as exc:
+            raise OperatorRejectedError(exc.code, "selector.resolve") from exc
+        members = SelectorContextV1(self.reference_table).resolve_members(descriptor)
+        return descriptor, members
 
 
 def _freeze(value: Any) -> Any:
