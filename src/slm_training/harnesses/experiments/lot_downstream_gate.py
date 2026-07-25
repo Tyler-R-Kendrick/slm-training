@@ -78,6 +78,19 @@ DOWNSTREAM_ISSUES: dict[str, DownstreamIssueSpec] = {
             "control, curriculum, and fairness manifests."
         ),
     ),
+    "SLM-253": DownstreamIssueSpec(
+        linear_issue="SLM-253",
+        alias="LOT2-02",
+        title="Compare independent-token PCL with structured, set-valued, and block-autoregressive semantic readouts",
+        gate_contract_id="structured-latent-readout-gate-v1",
+        slug="lot2-02-structured-readout",
+        activation_requirement=(
+            "SLM-251 (LOT1-02) provides a qualified faithful causal "
+            "checkpoint/recipe and continued explicit control, and SLM-252 "
+            "(LOT2-01) selects or bounds the supervision timing/readout "
+            "routing."
+        ),
+    ),
 }
 
 
