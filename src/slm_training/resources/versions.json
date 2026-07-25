@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-25",
+          "note": "Restore canonical Vercel exclusion and capped-harness derived constants after latest-main conflict resolution"
+        },
         {
           "version": "v21",
           "date": "2026-07-25",
@@ -813,7 +818,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -821,6 +826,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "Regenerate the Vercel exclusion block from the restored canonical lever tuple after conflict resolution"
+        },
         {
           "version": "v4",
           "date": "2026-07-24",
@@ -3996,7 +4006,7 @@
       ]
     },
     "harness.experiments.slm199_legal_edit_flow": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
@@ -4018,6 +4028,11 @@
         "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "Regenerate the Vercel exclusion block from the restored canonical lever tuple after conflict resolution"
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
