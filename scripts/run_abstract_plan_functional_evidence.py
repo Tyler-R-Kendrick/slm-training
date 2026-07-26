@@ -269,6 +269,34 @@ def _path_overrides(path: str) -> dict[str, Any]:
     raise ValueError(f"unknown decode path {path!r}")
 
 
+def _record_complexity(record: Any) -> tuple[int, int]:
+    """Derive outcome-strata from the program, not variable plan-head width."""
+    from slm_training.dsl.parser import parse
+
+    binder_count = 0
+    reference_diameter = 0
+
+    def walk(node: object, depth: int) -> None:
+        nonlocal binder_count, reference_diameter
+        if not isinstance(node, dict):
+            return
+        props = node.get("props")
+        if isinstance(props, dict):
+            binder_count += sum(
+                isinstance(value, str) and value.startswith(":slot_")
+                for key, value in props.items()
+                if key != "children"
+            )
+            children = props.get("children")
+            if isinstance(children, list):
+                for child in children:
+                    walk(child, depth + 1)
+        reference_diameter = max(reference_diameter, depth - 1)
+
+    walk(parse(record.openui).root, 1)
+    return binder_count, reference_diameter
+
+
 def execute_local_shard(
     *,
     root: Path,
@@ -327,7 +355,7 @@ def execute_local_shard(
                 plan_tokens = arm_evidence["plan_tokens"]
                 prompt_tokens, _ = model.count_batch_tokens([record])
                 output_tokens = len(model.tokenizer.encode(prediction))
-                targets = model._abstract_plan_targets([record])[0].tolist()
+                binder_count, reference_diameter = _record_complexity(record)
                 rows.append(
                     PlanEvidenceRow(
                         record_id=str(record.id),
@@ -345,8 +373,8 @@ def execute_local_shard(
                         gates=gates,
                         result_ref=str(result.get("output") or ""),
                         plan_length=len(plan_tokens) if plan_tokens else 0,
-                        binder_count=int(targets[3]),
-                        reference_diameter=0,
+                        binder_count=binder_count,
+                        reference_diameter=reference_diameter,
                         factor=str((record.meta or {}).get("source_family") or record.source),
                         pair_manifest_sha256=pair_sha256 if arm == "shuffle_between_examples" else None,
                     )

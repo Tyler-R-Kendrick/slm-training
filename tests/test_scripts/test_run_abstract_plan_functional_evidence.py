@@ -6,6 +6,7 @@ from scripts.run_abstract_plan_functional_evidence import (
     _locked_records,
     _pair_map,
     _path_overrides,
+    _record_complexity,
 )
 
 
@@ -36,3 +37,6 @@ def test_locked_rows_are_projected_to_opaque_request_local_slots() -> None:
         for record in records.values()
         for marker in record.placeholders
     )
+    binder_count, reference_diameter = _record_complexity(next(iter(records.values())))
+    assert binder_count >= 0
+    assert reference_diameter >= 0

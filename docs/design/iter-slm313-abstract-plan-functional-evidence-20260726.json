@@ -33,7 +33,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/slm313-abstract-plan-functional-evidence.eval.jsonl",
     "summary": {
-      "durationMs": 631,
+      "durationMs": 181,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -41,9 +41,9 @@
       "total": 1
     }
   },
-  "campaign_manifest_sha256": "690eb69ec6df87db659b367e1700c977b7ec91a9714baca40822990f714a9216",
+  "campaign_manifest_sha256": "9f6058b74836415f6afc54f7b815fdb6f2a9299f6de1aaa9543879079047c579",
   "claim_class": "diagnostic",
-  "generated_at": "2026-07-26T06:19:46.504419+00:00",
+  "generated_at": "2026-07-26T06:23:42.573588+00:00",
   "protocol": {
     "arms": [
       "no_plan",
@@ -308,18 +308,18 @@
     "meaningful_parse": "not_measured",
     "numeric_evidence_valid": false,
     "promotion_eligible": false,
-    "reason": "Local shard did not complete: ValueError: persisted template markers must use opaque :slot_<ordinal> identities",
+    "reason": "Local shard did not complete: IndexError: list index out of range",
     "verdict": "invalid_local_run"
   },
   "schema": "slm313_abstract_plan_functional_evidence/v1",
   "version_stamp": {
-    "code_commit": "23c29594d68e5b8490110e85d64bfd6eb6c65938",
+    "code_commit": "c10f540f4f27c6f5a6ac909ddccdb5a2999b8873",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v115",
-      "harness.experiments.slm313_abstract_plan_functional_evidence": "v4"
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v5"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-26T06:19:44.315231+00:00"
+    "stamped_at": "2026-07-26T06:23:40.416510+00:00"
   }
 }

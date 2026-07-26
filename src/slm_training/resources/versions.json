@@ -9004,7 +9004,7 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
@@ -9016,6 +9016,11 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-313 derives plan-length/binder/reference outcome strata from locked program structure instead of assuming a fixed plan-head round count."
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
