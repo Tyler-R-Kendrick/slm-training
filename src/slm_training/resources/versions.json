@@ -399,6 +399,11 @@
         {
           "version": "v15",
           "date": "2026-07-26",
+          "note": "no-bump: SLM-416 (DSH5-08) re-exports ConversationControlDecision/ConversationControlEntryV1/ConversationControlKind/ConversationControlLegalSetV1/ConversationControlPolicyReportV1/ConversationControlResultV1/ControlSupportVerdict/LegalControlActionV1/MergeCandidateV1/apply_conversation_control_action/deterministic_control_priority/enumerate_conversation_control_legal_set from operators/__init__.py (new dsl.operators.control_actions component); no change to contracts.py itself"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-26",
           "note": "no-bump: SLM-415 (DSH5-07) re-exports BranchApplicationSequenceV1/BranchSequenceMergeArtifactV1/BranchSequenceMergeConflictV1/BranchSequenceMergeDecisionV1/merge_branch_application_sequences/replay_branch_sequence_merge/sequence_from_branch_edits/sequence_merged_continuation_node from operators/__init__.py (new dsl.operators.sequence_merge component); no change to contracts.py itself"
         },
         {
@@ -607,6 +612,22 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial per-start reachable productive alternative basis with lexicographic witnesses, exact focus traces, typed gaps, and fail-closed admission"
+        }
+      ]
+    },
+    "dsl.operators.control_actions": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/control_actions.py",
+        "tests/test_dsl/test_conversation_control_actions.py",
+        "docs/design/dsh5-08-conversation-control-actions.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-416 (DSH5-08): define ConversationControlActionV1 as a candidate space disjoint from AstOperatorV1 (STOP/CONTINUE, UNDO, REDO, CHECKOUT, FORK, MERGE_BRANCHES); enumerate legal control actions from the ConversationTraceV1 branch graph alone (plus caller-proposed MergeCandidateV1 triples resolved through the existing merge.py/sequence_merge.py functions), execute every legal action through the existing conversation/merge functions with no new mutation logic, and add a deterministic-priority baseline arm plus ConversationControlPolicyReportV1 reusing flow.termination's brier_score/expected_calibration_error"
         }
       ]
     },
