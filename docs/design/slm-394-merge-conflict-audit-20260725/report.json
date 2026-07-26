@@ -1,0 +1,104 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/slm394-merge-conflict-audit/benchmark.json",
+      "indexPath": "output-dir://agentv/slm394-merge-conflict-audit/index.jsonl",
+      "runDir": "output-dir://agentv/slm394-merge-conflict-audit",
+      "timingPath": "output-dir://agentv/slm394-merge-conflict-audit/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 3,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "registered-pair-coverage:domain_criterion",
+          "expected": true,
+          "id": "registered-pair-coverage:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "conservative-incomplete-effects:domain_criterion",
+          "expected": true,
+          "id": "conservative-incomplete-effects:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "explained-disagreements:domain_criterion",
+          "expected": true,
+          "id": "explained-disagreements:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 3
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/slm394-merge-conflict-audit.eval.jsonl",
+    "summary": {
+      "durationMs": 279,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 3,
+      "total": 3
+    }
+  },
+  "audit": {
+    "disagreements": [],
+    "exact_actions": 66,
+    "labels": {
+      "effect_derived": {
+        "child_order": 152,
+        "delete_modify": 56,
+        "disjoint": 1352,
+        "role_cardinality": 582,
+        "same_node_incompatible_edit": 3
+      },
+      "historical": {
+        "child_order": 152,
+        "delete_modify": 56,
+        "disjoint": 1352,
+        "role_cardinality": 582,
+        "same_node_incompatible_edit": 3
+      }
+    },
+    "legal_set_coverage": "complete",
+    "pair_denominator": 2145,
+    "run": {
+      "context_backend": "none",
+      "device": "cpu",
+      "honesty": "fixture_wiring_only",
+      "matrix_set": "registered_local_topology_pairs",
+      "ship_claim": false,
+      "steps": 0
+    },
+    "schema": "MergeConflictAuditV1",
+    "unknown_or_partial_operators": []
+  },
+  "schema": "MergeConflictAuditV1",
+  "version_stamp": {
+    "code_commit": "5d5cc62feb71460a6475f32b0250f143ec96851e",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.contracts": "v15",
+      "dsl.operators.merge": "v2",
+      "evals.agentv": "v5"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T21:58:58.778854+00:00"
+  }
+}

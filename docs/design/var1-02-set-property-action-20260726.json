@@ -1,0 +1,559 @@
+{
+  "schema": "slm299_edit_reachability_audit/v2",
+  "experiment_id": "slm299-edit-reachability",
+  "seed_source": "root = Stack([], \"column\")",
+  "mode": "extended",
+  "max_edits": 8,
+  "node_budget": 15,
+  "generated_at": "2026-07-26T19:32:41Z",
+  "claim_class": "capability",
+  "production_action_space_changed": true,
+  "slm425_set_property": {
+    "action": "ACTION_SET_PROPERTY",
+    "property_authority": "DslPack.component_property_domains",
+    "production_domain": "the currently declared per-component rest values only; no hypothetical row widening",
+    "checkpoint_format": 3,
+    "comparison_scope": "full current smoke/held_out/adversarial/ood/rico corpus at max_edits=8,node_budget=15; train corpus unavailable",
+    "slm305_baseline": "docs/design/iter-slm305-edit-language-20260724.json",
+    "var1_01_probe_arm_b": "docs/design/var1-01-set-property-probe-20260725.json",
+    "per_suite_delta": {
+      "smoke": "0/3 reachable unchanged from SLM-305 and VAR1-01 arm B",
+      "held_out": "0/5 reachable unchanged from SLM-305 and VAR1-01 arm B",
+      "adversarial": "one flip: adv_empty_prompt_01 PROVEN_UNREACHABLE(needs_direction_change) -> PROVEN_REACHABLE in 2 edits via ADD then SET_PROPERTY; 1/3 decided (0.333333), at or below arm B's 1/2 decided (0.5)",
+      "ood": "0/4 reachable unchanged from SLM-305 and VAR1-01 arm B",
+      "rico": "0/1 decided reachable and 34 UNKNOWN_BUDGET; no favorable comparison to the 6-case SLM-305 historical snapshot or arm B's 35 UNKNOWN_BUDGET cases",
+      "train": "current frozen train corpus unavailable; no comparison claimed"
+    },
+    "honest_caveat": "This is bounded local reachability evidence only. It makes no quality, ship, promotion, checkpoint, or meaningful-parse claim. UNKNOWN_BUDGET is not unreachability evidence."
+  },
+  "verdict_policy": "reachable_fraction is computed over decided cases only; UNKNOWN_BUDGET cases are reported separately and are never counted as unreachable; suites without a corpus are corpus_unavailable, never zero-reachable. Reachability is a space-coverage proof, never a model-quality claim.",
+  "suites": {
+    "train": {
+      "status": "corpus_unavailable",
+      "n_cases": 0,
+      "reachable_fraction": null
+    },
+    "smoke": {
+      "status": "ok",
+      "n_cases": 3,
+      "n_decided": 3,
+      "n_unknown_budget": 0,
+      "n_reachable": 0,
+      "reachable_fraction": 0.0,
+      "reason_histogram": {
+        "unsupported_component": 3
+      },
+      "action_coverage": {},
+      "component_coverage": {},
+      "edit_lower_bound": null,
+      "cases": [
+        {
+          "id": "smoke_hero_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "smoke_button_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "smoke_callout_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        }
+      ]
+    },
+    "held_out": {
+      "status": "ok",
+      "n_cases": 5,
+      "n_decided": 5,
+      "n_unknown_budget": 0,
+      "n_reachable": 0,
+      "reachable_fraction": 0.0,
+      "reason_histogram": {
+        "unsupported_component": 5
+      },
+      "action_coverage": {},
+      "component_coverage": {},
+      "edit_lower_bound": null,
+      "cases": [
+        {
+          "id": "held_out_form_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "held_out_dual_card_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "held_out_input_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "held_out_tabs_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "held_out_settings_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        }
+      ]
+    },
+    "adversarial": {
+      "status": "ok",
+      "n_cases": 4,
+      "n_decided": 3,
+      "n_unknown_budget": 1,
+      "n_reachable": 1,
+      "reachable_fraction": 0.333333,
+      "reason_histogram": {
+        "budget": 1,
+        "needs_direction_change": 1,
+        "reached": 1,
+        "unsupported_component": 1
+      },
+      "action_coverage": {
+        "ADD": 1,
+        "SET_PROPERTY": 1
+      },
+      "component_coverage": {
+        "TextContent": 1
+      },
+      "edit_lower_bound": {
+        "min": 2,
+        "median": 2,
+        "max": 2,
+        "mean": 2
+      },
+      "cases": [
+        {
+          "id": "adv_empty_prompt_01",
+          "verdict": "PROVEN_REACHABLE",
+          "reason_code": "reached",
+          "edit_lower_bound": 2,
+          "path_length": 2
+        },
+        {
+          "id": "adv_dual_card_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "adv_deep_nest_01",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "adv_many_buttons_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "needs_direction_change",
+          "edit_lower_bound": null,
+          "path_length": 0
+        }
+      ]
+    },
+    "ood": {
+      "status": "ok",
+      "n_cases": 4,
+      "n_decided": 4,
+      "n_unknown_budget": 0,
+      "n_reachable": 0,
+      "reachable_fraction": 0.0,
+      "reason_histogram": {
+        "unsupported_component": 4
+      },
+      "action_coverage": {},
+      "component_coverage": {},
+      "edit_lower_bound": null,
+      "cases": [
+        {
+          "id": "ood_dashboard_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "ood_gallery_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "ood_modal_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "ood_auth_01",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "unsupported_component",
+          "edit_lower_bound": null,
+          "path_length": 0
+        }
+      ]
+    },
+    "rico": {
+      "status": "ok",
+      "n_cases": 35,
+      "n_decided": 1,
+      "n_unknown_budget": 34,
+      "n_reachable": 0,
+      "reachable_fraction": 0.0,
+      "reason_histogram": {
+        "budget": 34,
+        "needs_direction_change": 1
+      },
+      "action_coverage": {},
+      "component_coverage": {},
+      "edit_lower_bound": null,
+      "cases": [
+        {
+          "id": "rico_eval_test_0",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_1",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_2",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_4",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_8",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_9",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_12",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_17",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_20",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_25",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_34",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_35",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_38",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_40",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_41",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_42",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_47",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_48",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_51",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_53",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_55",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_56",
+          "verdict": "PROVEN_UNREACHABLE",
+          "reason_code": "needs_direction_change",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_57",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_58",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_59",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_60",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_68",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_69",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_77",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_81",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_91",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_95",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_97",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_99",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        },
+        {
+          "id": "rico_eval_test_104",
+          "verdict": "UNKNOWN_BUDGET",
+          "reason_code": "budget",
+          "edit_lower_bound": null,
+          "path_length": 0
+        }
+      ]
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "74e6cca3f84cae21bf2a4b11055f1c9495f144c9",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm299_edit_reachability": "v6"
+    },
+    "stamped_at": "2026-07-26T19:34:30.301938+00:00"
+  },
+  "x22_evidence_annotations": [
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
+      "suite": "adversarial",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.333333 over 3 decided adversarial cases (1 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
+      "suite": "adversarial",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.333333 over 3 decided adversarial cases (1 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on adversarial in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
+      "suite": "held_out",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
+      "suite": "held_out",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 5 decided held_out cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on held_out in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
+      "suite": "ood",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
+      "suite": "ood",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 4 decided ood cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on ood in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
+      "suite": "rico",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 1 decided rico cases (34 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on rico in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
+      "suite": "rico",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 1 decided rico cases (34 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on rico in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-x22-d3-kapur-tree-edit-20260717.md",
+      "suite": "smoke",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    },
+    {
+      "date": "2026-07-26T19:32:41Z",
+      "target_doc": "docs/design/iter-efs0-04-x22-reproduction-20260717.md",
+      "suite": "smoke",
+      "annotation": "SLM-299 edit-reachability audit: from the standard X22 minimal seed, reachable_fraction=0.0 over 3 decided smoke cases (0 UNKNOWN_BUDGET, never counted unreachable). Suite-level quality readings of the X22 tree-edit decode on smoke in this document are bounded by that fraction: the unreachable share of gold programs cannot be produced by the decode space at all, so measured quality on those cases reflects space coverage, not model quality."
+    }
+  ]
+}

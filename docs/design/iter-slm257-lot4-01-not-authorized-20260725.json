@@ -1,0 +1,26 @@
+{
+  "contract_hash": "3840a7e57f9829623bd91f26ff0bf8c3d4388c830a82f720f86395702b00bf06",
+  "contract_id": "lotus-openui-compute-frontier-v1",
+  "issue": {
+    "activation_requirement": "SLM-251 supplies faithful treatment and continued explicit checkpoints with fairness manifests; SLM-252/253/256 select the objective/readout/workspace or explicitly close those branches; SLM-254 defines allowed causal-use language; SLM-255 defines accepted-equivalence evaluation.",
+    "alias": "LOT4-01",
+    "gate_contract_id": "lotus-openui-compute-frontier-v1",
+    "linear_issue": "SLM-257",
+    "slug": "lot4-01-compute-frontier",
+    "title": "Measure the equal-quality end-to-end accuracy, throughput, FLOPs, memory, energy, and training-cost frontier"
+  },
+  "lot1_01_disposition": "not_authorized",
+  "lot1_02_disposition": "not_authorized",
+  "schema_version": "lot_downstream_gate/v1",
+  "verdict": "not_authorized",
+  "verdict_rationale": "LOT4-01 (SLM-257) activation requires: SLM-251 supplies faithful treatment and continued explicit checkpoints with fairness manifests; SLM-252/253/256 select the objective/readout/workspace or explicitly close those branches; SLM-254 defines allowed causal-use language; SLM-255 defines accepted-equivalence evaluation. The LOT1-02 launch gate reports 'not_authorized' (LOT1-01 disposition 'not_authorized'): no faithful K x c model path, curriculum, Stage 0 parent, or continued-explicit control exists, and SLM-249's oracle ceiling is not positive. Closing not_authorized in plan-only/bounded-diagnostic mode; no training, factorial, intervention, or systems code is added by this disposition.",
+  "version_stamp": {
+    "code_commit": "d2ee54dc7bd95dd59a0e4181d0a0b095b36c4178",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v116"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T16:19:43.618388+00:00"
+  }
+}

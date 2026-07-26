@@ -415,6 +415,10 @@ class ModelBuildConfig:
     connector_rank: int = 32
     connector_n_queries: int = 4
     connector_freeze_encoder: bool = True
+    abstract_plan_mode: str = "disabled"
+    abstract_plan_connector_arm: str = "disabled"
+    abstract_plan_loss_weight: float = 0.0
+    abstract_plan_train_conditioning: bool = False
     # current | connector_only | connector_plus_action_residuals | small_model
     train_scope: str = "current"
     # SLM-168 (SDE2-01): explicit contract-index pointer head (default-off).
