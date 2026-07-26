@@ -1,0 +1,83 @@
+{
+  "schema": "autotrain_wf_smoke_results/v1",
+  "honesty": "fixture_or_scratch",
+  "ship_claim": false,
+  "run_id": "autotrain_wf_smoke_20260726",
+  "recipe": "smoke",
+  "date": "2026-07-26",
+  "train_version": "wf_smoke_20260726",
+  "eval_version": "wf_smoke_20260726",
+  "regression_found_and_fixed": {
+    "component": "harness.train_data",
+    "summary": "build_train_data never canonicalized persisted template markers to opaque :slot_<ordinal> identities before writing records.jsonl/manifest.json (build_test_data already did this at harnesses/test_data/pipeline.py:119). Every fresh `slm data build-train --source fixture` build therefore persisted named markers (e.g. :auth.title) and unconditionally failed assert_canonical_template_markers at SFT load time (TwoTowerModel.from_records) for all 103/103 records in this fixture corpus.",
+    "why_undetected_until_now": "The prior 2026-07-25 autotrain smoke loop (iter1-iter50, docs/design/autotrain-loop-ledger-20260725.md) reused a single fixture corpus built once at the very start of that session ('artifacts present' skip on data_train/data_test for essentially every iteration), so the broken fresh-build path was never re-exercised in that loop.",
+    "fix": "src/slm_training/harnesses/train_data/pipeline.py: canonicalize the final record set via canonicalize_example_template_markers (+ assert_canonical_template_markers safety net) once, after decontamination/dedup/curation-score gates and before the prompt-contract enrichments (both need canonical-marker-sensitive behavior on either side, verified empirically: canonicalizing earlier collapsed real diversity into generic :slot_N n-grams and cratered RICO fixture yield in testing). Also canonicalize both sides of the --dedup-against cross-corpus fingerprint comparison. staged_materialization.validate_staged_record now validates a locally canonicalized copy without mutating the persisted record. Refreshed the stale dsh0_cap0_fixture.json synthesis-plan pin (v18/v18/v1/openui_ship_gates_v2 -> v21/v21/v4/openui_ship_gates_v4), which had drifted stale across several prior version bumps and masked a second, cascading bug (staged validation's GenerationRequest also required canonical markers) once its own require_executable() version-mismatch crash was fixed. Updated 3 tests whose assertions encoded now-unreachable named-marker/dead-flag behavior.",
+    "version_bumps": [
+      "harness.train_data v20 -> v21 (src/slm_training/resources/versions.json)",
+      "harness.synthesis_plan v2 no-bump (fixture-only pin refresh, src/slm_training/resources/versions.json)"
+    ],
+    "tests": "tests/test_harnesses/train_data + tests/test_data + tests/test_versioning: 22 pre-existing failures before this change, 15 after (7 net fixed: the canonicalization crash, the cross-corpus dedup regression it caused, the stale synthesis-plan pin it unmasked, and the staged-validation opaque-marker crash unmasked in turn), 0 new failures. Remaining 15 are unrelated (RICO progspec-topology API drift, semantic-contrast fixtures, one content-hash-pinned staged-materialization golden test) and out of scope."
+  },
+  "commands_run": [
+    "slm data build-train --source fixture --version wf_smoke_20260726 --synthesizer quality --programspec-seed 0 --no-publish",
+    "slm data build-test --source fixture --version wf_smoke_20260726 --train-manifest outputs/data/train/wf_smoke_20260726/manifest.json",
+    "slm sft train --train-dir outputs/data/train/wf_smoke_20260726 --model twotower --context-backend scratch --output-tokenizer choice --steps 8 --run-id autotrain_wf_smoke_20260726 --device cpu --seed 1 --fast-train --no-sync-checkpoints",
+    "slm eval model --test-dir outputs/data/eval/wf_smoke_20260726 --model twotower --run-id autotrain_wf_smoke_20260726 --device cpu --eval-limit 3 --suites smoke"
+  ],
+  "train": {
+    "records": 103,
+    "steps": 8,
+    "stopped_on": "steps",
+    "last_loss": 33.309722900390625,
+    "elapsed_wall_seconds": 1.8363728060000994,
+    "max_wall_minutes": 2.5833333333333335,
+    "seed": 1,
+    "device": "cpu",
+    "model": "twotower",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "7cddae6463f814bef42706612db4e2a272cb48c7",
+      "code_dirty": true,
+      "components": {
+        "harness.model_build.train": "v25",
+        "harness.experiment_feature_flags": "v3"
+      }
+    }
+  },
+  "eval": {
+    "suite": "smoke",
+    "n": 3,
+    "eval_limit": 3,
+    "ship_gates": false,
+    "meaningful_program_rate": 0.0,
+    "structural_similarity": 0.25193333333333334,
+    "placeholder_fidelity": 0.0,
+    "reward_score": 0.0,
+    "decode_timeout_count": 0,
+    "criteria_pass": false,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "7cddae6463f814bef42706612db4e2a272cb48c7",
+      "code_dirty": true,
+      "components": {
+        "config.levers": "v23",
+        "harness.model_build.eval": "v60",
+        "harness.experiment_feature_flags": "v3",
+        "evals.meaningful_program": "2.13.0",
+        "evals.power_protocol": "v8",
+        "evals.scoring": "v22",
+        "model.twotower": "v251"
+      }
+    }
+  },
+  "artifacts": [
+    "outputs/data/train/wf_smoke_20260726/manifest.json",
+    "outputs/data/train/wf_smoke_20260726/quality_report.json",
+    "outputs/data/eval/wf_smoke_20260726",
+    "outputs/runs/autotrain_wf_smoke_20260726/train_summary.json",
+    "outputs/runs/autotrain_wf_smoke_20260726/checkpoints/last.pt",
+    "outputs/runs/autotrain_wf_smoke_20260726/scoreboard.json"
+  ]
+}

@@ -1741,9 +1741,15 @@ def build_train_data(
                     f"--dedup-against target has no resolvable fingerprints: {value}"
                 )
             index |= pairs
+        from slm_training.data.contract import canonicalize_example_template_markers
+
         remaining: list[ExampleRecord] = []
         for record in deduped:
-            if fingerprint_pair(record.prompt, record.openui) in index:
+            # Compare in the same opaque-marker form the fingerprints on disk
+            # were persisted in (records.jsonl/manifest.json are canonicalized
+            # before being written), not the pipeline's working named markers.
+            canonical = canonicalize_example_template_markers(record)
+            if fingerprint_pair(canonical.prompt, canonical.openui) in index:
                 cross_corpus_dropped.append(
                     {"id": record.id, "reason": "cross_corpus_duplicate"}
                 )
@@ -1824,6 +1830,18 @@ def build_train_data(
         nll_by_id = load_record_nll(config.difficulty_from)
     attach_curation_scores(deduped, nll_by_id=nll_by_id)
 
+    # Persisted records must use opaque :slot_<ordinal> markers (never a
+    # synthesizer's named spelling), so the model can never learn a
+    # surface-level placeholder name as a shortcut. Canonicalize here, after
+    # every quality/decontamination/dedup gate (which need the more
+    # distinctive named-marker text to avoid generic-token false collisions)
+    # and before the prompt-contract enrichments below (whose
+    # ensure_prompt_inventory/semantic_role_contract already assert
+    # canonical-only placeholders).
+    from slm_training.data.contract import canonicalize_example_template_markers
+
+    deduped = [canonicalize_example_template_markers(record) for record in deduped]
+
     # Prompt contracts are training-only projections, not admission signals.
     # Apply them after every quality/decontamination/dedup gate so enabling a
     # contract cannot silently change which source examples are admitted.
@@ -1877,6 +1895,14 @@ def build_train_data(
                     prompt = f"{prompt}\nSemantic roles: {roles}"
             contracted.append(replace(record, prompt=prompt))
         deduped = contracted
+
+    # Safety net: every persisted record must carry only opaque markers by
+    # the time it reaches records.jsonl (already true from the
+    # canonicalization pass above; prompt contracts only rewrite `prompt`).
+    from slm_training.data.contract import assert_canonical_template_markers
+
+    for record in deduped:
+        assert_canonical_template_markers(record)
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.

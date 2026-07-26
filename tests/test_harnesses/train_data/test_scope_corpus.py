@@ -63,11 +63,17 @@ def test_identity_rows_echo_their_prompt_input(corpus) -> None:
 
 
 def test_identity_rows_normalize_to_canonical_opaque_slots(corpus) -> None:
+    # _normalize_record itself only does structural/AST normalization; marker
+    # canonicalization is a separate, later build_train_data pipeline stage
+    # (after decontamination/dedup, which need the more distinctive
+    # named-marker text) via canonicalize_example_template_markers.
+    from slm_training.data.contract import canonicalize_example_template_markers
+
     records, _ = corpus
     for record in records:
         if not record.source.startswith("scope_identity"):
             continue
-        normalized = _normalize_record(record)
+        normalized = canonicalize_example_template_markers(_normalize_record(record))
         assert _normalize_record(normalized).openui == normalized.openui, record.source
         assert all(
             slot == f":slot_{index}"

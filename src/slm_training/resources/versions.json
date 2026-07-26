@@ -6272,6 +6272,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-26",
+          "note": "no-bump: refresh the executable CAP0 fixture's pinned generator/validator/gate versions (v18/v18/v1/openui_ship_gates_v2 -> v21/v21/v4/openui_ship_gates_v4) to match the current registry; the plan had drifted stale for multiple prior version bumps, unconditionally failing require_executable() (tests/test_harnesses/train_data/test_staged_materialization.py)"
+        },
+        {
+          "version": "v2",
           "date": "2026-07-23",
           "note": "no-bump: refresh the executable CAP0 fixture to the v18 symbolic task materialization contract"
         },
@@ -6313,7 +6318,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -6326,6 +6331,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-26",
+          "note": "build_train_data now canonicalizes every persisted record's template markers to opaque :slot_<ordinal> identities (and asserts the contract) before writing records.jsonl/manifest.json, mirroring build_test_data; previously build-train never canonicalized, so every fresh fixture/source build persisted named markers and failed assert_canonical_template_markers at SFT load time (autotrain smoke loop, iter1)"
+        },
         {
           "version": "v20",
           "date": "2026-07-25",
