@@ -84,9 +84,16 @@ not a causal enabled-versus-disabled effect. The runner therefore records the
 preregistered stop-rule verdict **reject**: no family caused a beneficial
 held-out change at this tiny local scale. This keeps all five implementation
 families and their control evidence, but advances neither DSH5 nor a ship
-claim. It also does not satisfy SLM-403's full CAP2 acceptance: normal eval
-still lacks the ModelPlugin side-channel integration and the frozen CAP2 suite
+claim. It also does not satisfy SLM-403's full CAP2 acceptance: the normal
+eval ModelPlugin side channel is now integrated, but the frozen CAP2 suite
 still needs its current-surface reconciliation.
+
+The review-corrected rerun retains all 20 `(head_family, arm)` values in the
+two structural AgentV cases (instead of collapsing them by arm), uses a
+genuinely multiplicative factorized head, and records the current clean-source
+stamp (`harness.experiments.typed_operator_policy` v8 and `model.quantization`
+v7). Its three AgentEvals assertions pass; the negative causal conclusion is
+unchanged.
 
 ## Remaining evaluation scope
 

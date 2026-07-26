@@ -161,6 +161,7 @@ def test_invalid_code_abstains() -> None:
     head = TernaryECOCHead(HIDDEN_DIM, registry=ActionCodeRegistry(), use_detection=True)
     # Construct an output that is guaranteed not to be a codeword: all 2s.
     entry = head.entry_for(actions)
+    assert head.entry_for(actions) is entry
     m = len(entry.alphabet_radices)
     bad_trits = torch.full((1, m, 3), -100.0)
     bad_trits[:, :, 2] = 100.0

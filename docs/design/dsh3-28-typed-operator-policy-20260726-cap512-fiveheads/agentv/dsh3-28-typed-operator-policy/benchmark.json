@@ -1,7 +1,7 @@
 {
   "metadata": {
     "eval_file": "agentv-dir:///agentv/dsh3-28-typed-operator-policy.eval.jsonl",
-    "timestamp": "2026-07-26T13:49:37.054Z",
+    "timestamp": "2026-07-26T13:52:25.704Z",
     "targets": [
       "custom-task"
     ],
@@ -45,14 +45,14 @@
   "notes": [],
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "d84e4387e088c8af2594596119d78038bc00aa70",
-    "code_dirty": true,
+    "code_commit": "15bee58f6815a7e944862b810382f8d791f6756c",
+    "code_dirty": false,
     "components": {
       "harness.experiments.typed_operator_policy": "v8",
       "data.flow.operator_policy_corpus": "v4",
       "model.quantization": "v7",
       "model.operator_policy_view": "v3"
     },
-    "stamped_at": "2026-07-26T13:48:00.401551+00:00"
+    "stamped_at": "2026-07-26T13:52:05.628964+00:00"
   }
 }

@@ -1869,6 +1869,7 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {"version": "v115", "date": "2026-07-26", "note": "no-bump: migrate the CAP2 local-action fixture to TernaryECOCHead.entry_for without changing its action-code lookup."},
         {"version": "v115", "date": "2026-07-25", "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"},
         {"version": "v114", "date": "2026-07-25", "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"},
         {
@@ -6923,6 +6924,11 @@
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "no-bump: document the review-corrected bounded control rerun and its unchanged reject verdict."
+        },
         {
           "version": "v8",
           "date": "2026-07-26",

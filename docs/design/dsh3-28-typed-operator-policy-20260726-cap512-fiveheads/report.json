@@ -49,7 +49,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/dsh3-28-typed-operator-policy.eval.jsonl",
     "summary": {
-      "durationMs": 448,
+      "durationMs": 122,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -212,8 +212,8 @@
       },
       "version": "dsh3-28-dev",
       "version_stamp": {
-        "code_commit": "d84e4387e088c8af2594596119d78038bc00aa70",
-        "code_dirty": true,
+        "code_commit": "15bee58f6815a7e944862b810382f8d791f6756c",
+        "code_dirty": false,
         "components": {
           "data.flow.operator_policy_corpus": "v4",
           "harness.experiments.typed_operator_policy": "v8",
@@ -221,7 +221,7 @@
           "model.quantization": "v7"
         },
         "stamp_schema": "version_stamp/v1",
-        "stamped_at": "2026-07-26T13:48:00.401551+00:00"
+        "stamped_at": "2026-07-26T13:52:05.628964+00:00"
       }
     },
     "row_reports": [
@@ -1195,7 +1195,7 @@
     "max_combinations_per_operator": 512,
     "ship_claim": false,
     "steps": 4,
-    "timestamp": "2026-07-26T13:49:37.608157+00:00",
+    "timestamp": "2026-07-26T13:52:25.848310+00:00",
     "train_record_id": "train_text_only_01"
   },
   "schema": "dsh3_28_typed_operator_policy_report/v1",
@@ -1267,8 +1267,8 @@
       },
       "version": "dsh3-28-train",
       "version_stamp": {
-        "code_commit": "d84e4387e088c8af2594596119d78038bc00aa70",
-        "code_dirty": true,
+        "code_commit": "15bee58f6815a7e944862b810382f8d791f6756c",
+        "code_dirty": false,
         "components": {
           "data.flow.operator_policy_corpus": "v4",
           "harness.experiments.typed_operator_policy": "v8",
@@ -1276,7 +1276,7 @@
           "model.quantization": "v7"
         },
         "stamp_schema": "version_stamp/v1",
-        "stamped_at": "2026-07-26T13:48:00.401551+00:00"
+        "stamped_at": "2026-07-26T13:52:05.628964+00:00"
       }
     },
     "row_reports": [
@@ -1294,8 +1294,8 @@
     ]
   },
   "version_stamp": {
-    "code_commit": "d84e4387e088c8af2594596119d78038bc00aa70",
-    "code_dirty": true,
+    "code_commit": "15bee58f6815a7e944862b810382f8d791f6756c",
+    "code_dirty": false,
     "components": {
       "data.flow.operator_policy_corpus": "v4",
       "harness.experiments.typed_operator_policy": "v8",
@@ -1303,6 +1303,6 @@
       "model.quantization": "v7"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-26T13:48:00.401551+00:00"
+    "stamped_at": "2026-07-26T13:52:05.628964+00:00"
   }
 }
