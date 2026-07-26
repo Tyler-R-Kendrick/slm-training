@@ -182,7 +182,9 @@ class PlanEvidenceRow:
     total_tokens: int
     latency_ms: float
     metrics: Mapping[str, float]
-    gates: Mapping[str, bool]
+    # Preserve verifier's tri-state result.  In particular, G12 is normally
+    # ``skip`` here: it is observational evidence, never a human-rating gate.
+    gates: Mapping[str, str | bool]
     result_ref: str
     plan_length: int
     binder_count: int
@@ -202,6 +204,11 @@ class PlanEvidenceRow:
             raise ValueError("functional metrics must be finite")
         if set(GATES) != set(self.gates):
             raise ValueError("every row must retain the complete G0-G12 vector")
+        if any(
+            value not in (True, False, "pass", "fail", "skip")
+            for value in self.gates.values()
+        ):
+            raise ValueError("G0-G12 statuses must be pass, fail, or skip")
         if self.arm == "no_plan" and self.plan_tokens is not None:
             raise ValueError("no_plan must not carry plan tokens")
         if self.arm != "no_plan" and self.plan_tokens is None:
@@ -244,6 +251,29 @@ def validate_rows(protocol: AbstractPlanProtocolV1, rows: Iterable[PlanEvidenceR
     return collected
 
 
+def locked_shard_ids(
+    protocol: AbstractPlanProtocolV1, *, shard_index: int, shard_count: int
+) -> tuple[str, ...]:
+    """Return a deterministic non-overlapping local shard of locked rows.
+
+    A full AP-022 matrix is deliberately executed as many capped local
+    processes.  This function fixes membership before any decode so merging
+    cannot select a convenient subset after outcomes are visible.
+    """
+    if not 0 < shard_count <= len(protocol.record_ids):
+        raise ValueError("shard count must be between one and locked record count")
+    if not 0 <= shard_index < shard_count:
+        raise IndexError(f"shard index {shard_index} is outside {shard_count}")
+    digest = protocol.to_dict()["protocol_sha256"]
+    ordered = sorted(
+        protocol.record_ids,
+        key=lambda record_id: hashlib.sha256(
+            f"{digest}:{record_id}".encode("utf-8")
+        ).hexdigest(),
+    )
+    return tuple(record_id for rank, record_id in enumerate(ordered) if rank % shard_count == shard_index)
+
+
 def _paired_ci(rows: list[PlanEvidenceRow], control: str, metric: str) -> dict[str, Any]:
     learned = {(row.record_id, row.path): row for row in rows if row.arm == "learned_abstract_plan" and row.path == "constrained"}
     baseline = {(row.record_id, row.path): row for row in rows if row.arm == control and row.path == "constrained"}
@@ -269,8 +299,17 @@ def summarize_functional_evidence(
         control: {metric: _paired_ci(materialized, control, metric) for metric in PRIMARY_METRICS}
         for control in _DESTRUCTIVE
     }
-    positive = all(float(intervals[control]["binding_aware_meaningful_v2"]["low"]) > 0.0 for control in _DESTRUCTIVE)
-    destructive_drop = any(float(intervals[control]["binding_aware_meaningful_v2"]["low"]) > 0.0 for control in _DESTRUCTIVE)
+    # AP-022 allows either semantic endpoint to establish a non-zero paired
+    # effect.  We require that result for *each* content-destroying control;
+    # a plan that survives only one ablation is not demonstrated functional.
+    def excludes_zero(control: str) -> bool:
+        return any(
+            float(intervals[control][metric]["low"]) > 0.0
+            for metric in PRIMARY_METRICS
+        )
+
+    positive = all(excludes_zero(control) for control in _DESTRUCTIVE)
+    destructive_drop = positive
     verdict = FunctionalVerdict.FUNCTIONAL if positive and destructive_drop else FunctionalVerdict.IGNORED_OR_COLLAPSED
     return {
         "verdict": verdict.value,

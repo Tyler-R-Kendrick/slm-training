@@ -8999,7 +8999,7 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
@@ -9010,6 +9010,11 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-313 preserves tri-state G0-G12 evidence, deterministically partitions capped local shards, and accepts the preregistered meaningful-v2 or binder/reference-F1 paired endpoint."
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
