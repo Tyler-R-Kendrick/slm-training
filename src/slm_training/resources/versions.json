@@ -6383,7 +6383,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -6396,6 +6396,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-26",
+          "note": "fix(train_data): _normalize_record never rewrote persisted template markers to opaque :slot_<ordinal> identities (unlike its test_data mirror), so a freshly built fixture corpus broke every SFT run at load time (TwoTowerModel.from_records rejects named markers). Canonicalize + assert opaque markers on both _normalize_record return paths, stamping the canonicalized record rather than pre-canonical bytes. Reapplied from an equivalent fix independently developed on sibling never-merged autotrain-smoke-loop branches (occ98f 1dbe07b/f39403a, gjrfue 71cfff7/76e8787, eexsx0 d537485); unblocks the wf_smoke_v2 fixture rebuild for the continuing smoke loop."
+        },
         {
           "version": "v21",
           "date": "2026-07-26",
