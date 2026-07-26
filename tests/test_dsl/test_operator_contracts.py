@@ -140,6 +140,25 @@ def test_action_effect_requires_typed_delta_buckets() -> None:
         )
 
 
+def test_action_effect_records_explicit_node_flow() -> None:
+    removed = ActionEffectV1(
+        consumed_nodes=(NodeRef("req-1", "node"),),
+        topology_deltas=(
+            EffectDeltaV1(
+                EffectDeltaKind.TOPOLOGY,
+                NodeRef("req-1", "node"),
+                "present",
+                "removed",
+            ),
+        ),
+    )
+    moved = replace(removed, produced_nodes=(NodeRef("req-1", "node"),))
+    assert removed.to_dict()["consumed_nodes"] == [
+        NodeRef("req-1", "node").to_dict()
+    ]
+    assert removed.fingerprint != moved.fingerprint
+
+
 def test_successful_application_records_deterministic_identity_and_provenance() -> None:
     operator = _operator()
     effect = _effect()

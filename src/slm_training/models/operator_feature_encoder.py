@@ -41,6 +41,7 @@ from slm_training.dsl.operators import (
     LegalSetCoverage,
     OperatorSupportVerdict,
     RefKind,
+    SelectorFact,
 )
 from slm_training.harnesses.experiments.candidate_selector import (
     brier_score,
@@ -119,7 +120,9 @@ class OperatorFeatureVocabularyV1:
         return cls(
             ref_kinds=tuple(kind.value for kind in RefKind),
             binding_phases=tuple(phase.value for phase in BindingPhase),
-            compiler_facts=tuple(fact.value for fact in CompilerFact),
+            compiler_facts=tuple(
+                fact.value for fact in (*CompilerFact, *SelectorFact)
+            ),
             effect_kinds=tuple(kind.value for kind in EffectDeltaKind),
         )
 
@@ -243,7 +246,7 @@ class OperatorFeatureEncoder(nn.Module):
         self.n_identity_buckets = n_identity_buckets
 
         if arm is FeatureArm.HASH_SCALAR:
-            self.reference_projection = nn.Linear(4, dim)
+            self.reference_projection = nn.Linear(6, dim)
             self.action_projection = nn.Linear(4, dim)
         else:
             self.ref_kind_embedding = nn.Embedding(len(vocabulary.ref_kinds) + 1, dim)
@@ -253,7 +256,7 @@ class OperatorFeatureEncoder(nn.Module):
             self.compiler_fact_embedding = nn.Embedding(
                 len(vocabulary.compiler_facts) + 1, dim
             )
-            self.reference_position = nn.Linear(2, dim)
+            self.reference_position = nn.Linear(4, dim)
             self.reference_projection = nn.Linear(dim * 3, dim)
 
             self.operator_embedding = nn.Embedding(len(vocabulary.operator_ids) + 1, dim)
@@ -282,6 +285,8 @@ class OperatorFeatureEncoder(nn.Module):
                         _stable_scalar(row.value_type),
                         _stable_scalar(row.has_parent),
                         (row.relative_position or 0) / _POSITION_NORMALIZER,
+                        float(row.selector_cardinality or 0) / _POSITION_NORMALIZER,
+                        float(row.selector_max_fanout or 0) / _POSITION_NORMALIZER,
                     ]
                 )
             return self.reference_projection(torch.tensor(rows, dtype=torch.float32))
@@ -313,6 +318,8 @@ class OperatorFeatureEncoder(nn.Module):
                 [
                     float(row.has_parent),
                     (row.relative_position or 0) / _POSITION_NORMALIZER,
+                    float(row.selector_cardinality or 0) / _POSITION_NORMALIZER,
+                    float(row.selector_max_fanout or 0) / _POSITION_NORMALIZER,
                 ]
                 for row in view.reference_rows
             ],
