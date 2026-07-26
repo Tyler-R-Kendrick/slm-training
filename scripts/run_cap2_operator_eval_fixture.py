@@ -21,7 +21,7 @@ from slm_training.versioning import build_version_stamp
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = (
-    ROOT / "src/slm_training/resources/evals/cap2_operator_v1.json"
+    ROOT / "src/slm_training/resources/evals/cap2_operator_v2.json"
 )
 DEFAULT_SOURCE = (
     ROOT
@@ -152,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = time.perf_counter() - started
     agentv = publish_agentv_evaluation(
         output_dir,
-        name="cap2-operator-fixture-v1",
+        name=f"cap2-operator-fixture-{suite['suite_version'].removeprefix('cap2_operator_')}",
         claim="frozen_cap2_symbolic_fixture_contract_not_ship",
         cases=_agentv_cases(suite, scores),
     )
@@ -164,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
             "device": "cpu",
             "steps": 0,
             "context_backend": "none",
-            "matrix_set": "cap2_operator_v1",
+            "matrix_set": suite["suite_version"],
             "suite_n": len(suite["cases"]),
             "honesty": "fixture_wiring_only",
             "max_wall_minutes": 3,
