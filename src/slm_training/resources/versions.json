@@ -9004,7 +9004,7 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
@@ -9016,6 +9016,11 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-26",
+          "note": "SLM-313 preserves deterministic singleton bypass rows with explicit metadata instead of falsely requiring every legal decode to invoke the plan adapter."
+        },
         {
           "version": "v8",
           "date": "2026-07-26",

@@ -299,6 +299,17 @@ def _record_complexity(record: Any) -> tuple[int, int]:
     return binder_count, reference_diameter
 
 
+def _arm_evidence(adapter: Any, record: Any, arm: str) -> dict[str, Any]:
+    """Retain a row when deterministic singleton decode bypasses generation."""
+    evidence = adapter.evidence.get(str(record.id))
+    if evidence is not None:
+        return evidence
+    if arm == "no_plan":
+        return {"plan_tokens": None, "deterministic_singleton_bypass": True}
+    _, metadata = adapter._vector(record)
+    return {**metadata, "deterministic_singleton_bypass": True}
+
+
 def execute_local_shard(
     *,
     root: Path,
@@ -353,7 +364,7 @@ def execute_local_shard(
                 prediction = str(detail.get("prediction") or "")
                 gate_report = verify_record(replace(record, openui=prediction))
                 gates = {item.gate.value: item.status.value for item in gate_report.results}
-                arm_evidence = adapter.evidence[str(record.id)]
+                arm_evidence = _arm_evidence(adapter, record, arm)
                 plan_tokens = arm_evidence["plan_tokens"]
                 prompt_tokens, _ = model.count_batch_tokens([record])
                 output_tokens = len(model.tokenizer.encode(prediction))

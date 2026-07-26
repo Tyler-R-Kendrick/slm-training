@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from scripts.run_abstract_plan_functional_evidence import (
+    _arm_evidence,
     _load_complete_shards,
     _locked_records,
     _pair_map,
@@ -49,3 +52,24 @@ def test_locked_rows_are_projected_to_opaque_request_local_slots() -> None:
 def test_merge_refuses_partial_locked_coverage(tmp_path) -> None:
     with pytest.raises(ValueError, match="incomplete locked shard coverage"):
         _load_complete_shards(tmp_path, protocol=load_locked_protocol(), shard_count=226)
+
+
+def test_singleton_bypass_retains_no_plan_and_plan_metadata() -> None:
+    record = SimpleNamespace(id="locked-1")
+
+    class Adapter:
+        evidence = {}
+
+        @staticmethod
+        def _vector(_record):
+            return None, {"plan_tokens": (7, 9)}
+
+    adapter = Adapter()
+    assert _arm_evidence(adapter, record, "no_plan") == {
+        "plan_tokens": None,
+        "deterministic_singleton_bypass": True,
+    }
+    assert _arm_evidence(adapter, record, "learned_abstract_plan") == {
+        "plan_tokens": (7, 9),
+        "deterministic_singleton_bypass": True,
+    }
