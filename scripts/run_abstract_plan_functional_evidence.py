@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import time
+from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -24,6 +25,7 @@ from slm_training.harnesses.experiments.abstract_plan_functional_evidence import
     build_campaign,
     locked_shard_ids,
     load_locked_protocol,
+    summarize_functional_evidence,
 )
 from slm_training.versioning import build_version_stamp
 
@@ -395,6 +397,159 @@ def execute_local_shard(
     }
 
 
+def _row_from_dict(payload: dict[str, Any]) -> PlanEvidenceRow:
+    """Restore the strict row contract from a persisted local shard."""
+    fields = PlanEvidenceRow.__dataclass_fields__
+    row = {key: payload[key] for key in fields}
+    if row["plan_tokens"] is not None:
+        row["plan_tokens"] = tuple(int(token) for token in row["plan_tokens"])
+    return PlanEvidenceRow(**row)
+
+
+def _load_complete_shards(
+    root: Path, *, protocol: Any, shard_count: int
+) -> tuple[list[PlanEvidenceRow], dict[str, Any]]:
+    """Fail closed unless every pre-locked shard is present and compatible."""
+    if not 0 < shard_count <= len(protocol.record_ids):
+        raise ValueError("shard count must be between one and locked record count")
+    shard_dir = root / "shards"
+    expected = [shard_dir / f"shard-{index:03d}-of-{shard_count:03d}.json" for index in range(shard_count)]
+    missing = [str(path) for path in expected if not path.is_file()]
+    if missing:
+        raise ValueError(f"incomplete locked shard coverage: missing {len(missing)} shard(s)")
+    rows: list[PlanEvidenceRow] = []
+    checkpoint: dict[str, Any] | None = None
+    protocol_sha = protocol.to_dict()["protocol_sha256"]
+    for index, path in enumerate(expected):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        expected_ids = list(locked_shard_ids(protocol, shard_index=index, shard_count=shard_count))
+        if (
+            payload.get("schema") != "slm313_abstract_plan_functional_shard/v1"
+            or payload.get("protocol_sha256") != protocol_sha
+            or payload.get("locked_eval_manifest_sha256") != protocol.manifest_sha256
+            or payload.get("shard_index") != index
+            or payload.get("shard_count") != shard_count
+            or payload.get("record_ids") != expected_ids
+        ):
+            raise ValueError(f"incompatible locked shard artifact: {path}")
+        candidate_checkpoint = {
+            "checkpoint": payload.get("checkpoint"),
+            "checkpoint_sha256": payload.get("checkpoint_sha256"),
+        }
+        if checkpoint is None:
+            checkpoint = candidate_checkpoint
+        elif checkpoint != candidate_checkpoint:
+            raise ValueError("all locked shards must use the exact same checkpoint")
+        rows.extend(_row_from_dict(row) for row in payload.get("rows") or ())
+    return rows, checkpoint or {}
+
+
+def _mean(rows: list[PlanEvidenceRow], getter: Any) -> float:
+    return round(sum(float(getter(row)) for row in rows) / len(rows), 6) if rows else 0.0
+
+
+def _strata(rows: list[PlanEvidenceRow]) -> dict[str, dict[str, dict[str, Any]]]:
+    """Report every requested static stratum without selecting a favorable slice."""
+    output: dict[str, dict[str, dict[str, Any]]] = {}
+    for field in ("plan_length", "binder_count", "reference_diameter", "factor"):
+        groups: dict[str, list[PlanEvidenceRow]] = defaultdict(list)
+        for row in rows:
+            groups[str(getattr(row, field))].append(row)
+        output[field] = {
+            key: {
+                "n": len(group),
+                "meaningful_v2": _mean(group, lambda row: row.metrics["binding_aware_meaningful_v2"]),
+                "binder_reference_f1": _mean(group, lambda row: row.metrics["binder_reference_f1"]),
+                "total_tokens": _mean(group, lambda row: row.total_tokens),
+                "latency_ms": _mean(group, lambda row: row.latency_ms),
+            }
+            for key, group in sorted(groups.items())
+        }
+    return output
+
+
+def _token_rank_curves(rows: list[PlanEvidenceRow]) -> dict[str, list[dict[str, Any]]]:
+    """Keep observed plan-token rank positions; this is diagnostic, not importance."""
+    curves: dict[str, list[dict[str, Any]]] = {}
+    for arm in ARMS:
+        ranked: dict[int, list[int]] = defaultdict(list)
+        for row in rows:
+            if row.arm == arm and row.path == "constrained" and row.plan_tokens:
+                for rank, token in enumerate(row.plan_tokens, start=1):
+                    ranked[rank].append(token)
+        curves[arm] = [
+            {"rank": rank, "n": len(tokens), "mean_token_id": round(sum(tokens) / len(tokens), 6)}
+            for rank, tokens in sorted(ranked.items())
+        ]
+    return curves
+
+
+def _merge_local_shards(*, root: Path, shard_count: int) -> dict[str, Any]:
+    protocol = load_locked_protocol(LOCKED_MANIFEST)
+    rows, checkpoint = _load_complete_shards(root, protocol=protocol, shard_count=shard_count)
+    result = summarize_functional_evidence(protocol, rows, learned_available=True)
+    constrained = [row for row in rows if row.path == "constrained"]
+    gate_status: dict[str, dict[str, int]] = {}
+    for gate in sorted(next(iter(rows)).gates):
+        counts: dict[str, int] = defaultdict(int)
+        for row in rows:
+            counts[str(row.gates[gate])] += 1
+        gate_status[gate] = dict(sorted(counts.items()))
+    efficiency: dict[str, dict[str, float]] = {}
+    baseline = [row for row in constrained if row.arm == "no_plan"]
+    baseline_tokens = _mean(baseline, lambda row: row.total_tokens)
+    baseline_latency = _mean(baseline, lambda row: row.latency_ms)
+    for arm in ARMS:
+        arm_rows = [row for row in constrained if row.arm == arm]
+        tokens = _mean(arm_rows, lambda row: row.total_tokens)
+        latency = _mean(arm_rows, lambda row: row.latency_ms)
+        efficiency[arm] = {
+            "mean_total_tokens": tokens,
+            "mean_total_latency_ms": latency,
+            "token_reduction_vs_no_plan": round((baseline_tokens - tokens) / baseline_tokens, 6) if baseline_tokens else 0.0,
+            "latency_delta_vs_no_plan_ms": round(latency - baseline_latency, 6),
+        }
+    return {
+        **result,
+        **checkpoint,
+        "reason": "All pre-locked local shards were present and merged with exact arm/path coverage.",
+        "meaningful_parse": "measured_full_locked_matrix",
+        "numeric_evidence_valid": True,
+        "promotion_eligible": False,
+        "shard_count": shard_count,
+        "row_count": len(rows),
+        "strata": _strata(constrained),
+        "token_rank_curves": _token_rank_curves(constrained),
+        "gate_status": gate_status,
+        "efficiency": efficiency,
+    }
+
+
+def _initialize_campaign(store: CampaignStore, campaign: Any) -> None:
+    """Reuse the pre-outcome campaign spec; the lock still verifies full content."""
+    candidate = CampaignSpec(
+        campaign_id=campaign.campaign_id,
+        objective="Measure locked AbstractPlan function without proxy controls.",
+        primary_metric="binding_aware_meaningful_v2",
+        track="twotower",
+        budget=campaign.budget,
+        created_at=campaign.created_at,
+    )
+    campaign_path = store.root / "campaign.json"
+    if not campaign_path.is_file():
+        store.initialize(candidate)
+        return
+    existing = store.load_campaign()
+    if (
+        existing.campaign_id != candidate.campaign_id
+        or existing.objective != candidate.objective
+        or existing.primary_metric != candidate.primary_metric
+        or existing.track != candidate.track
+        or existing.budget != candidate.budget
+    ):
+        raise FileExistsError(f"campaign already exists with incompatible spec: {campaign_path}")
+
+
 def run_preflight(
     *,
     root: Path,
@@ -408,16 +563,7 @@ def run_preflight(
     )
     campaign = build_campaign(protocol)
     store = CampaignStore(campaign.campaign_id, root)
-    store.initialize(
-        CampaignSpec(
-            campaign_id=campaign.campaign_id,
-            objective="Measure locked AbstractPlan function without proxy controls.",
-            primary_metric="binding_aware_meaningful_v2",
-            track="twotower",
-            budget=campaign.budget,
-            created_at=campaign.created_at,
-        )
-    )
+    _initialize_campaign(store, campaign)
     lock = store.lock_experiment_campaign(campaign)
     available = checkpoint is not None and checkpoint.is_file()
     stamp = build_version_stamp("harness.experiments", COMPONENT)
@@ -454,8 +600,8 @@ def run_preflight(
         "protocol": protocol.to_dict(),
         "campaign_manifest_sha256": lock.manifest_sha256,
         "recipe": {
-            "device": "not_run",
-            "backend": "not_run",
+            "device": "cpu" if available else "not_run",
+            "backend": "scratch" if available else "not_run",
             "locked_test_used_for_selection": False,
             "human_rating_gate": "not_required",
             "checkpoint": str(checkpoint) if checkpoint else None,
@@ -489,8 +635,91 @@ def run_preflight(
     return report
 
 
+def run_merged_evidence(*, root: Path, agentv_dir: Path, shard_count: int) -> dict[str, Any]:
+    """Finalize only an exact, fully local, pre-locked shard matrix."""
+    protocol = load_locked_protocol(LOCKED_MANIFEST)
+    campaign = build_campaign(protocol)
+    store = CampaignStore(campaign.campaign_id, root)
+    _initialize_campaign(store, campaign)
+    lock = store.lock_experiment_campaign(campaign)
+    stamp = build_version_stamp("harness.experiments", COMPONENT)
+    try:
+        result = _merge_local_shards(root=root, shard_count=shard_count)
+    except Exception as exc:  # noqa: BLE001 - incomplete evidence must stay durable and fail closed
+        result = {
+            "verdict": "invalid_local_run",
+            "reason": f"Locked matrix did not merge: {type(exc).__name__}: {exc}",
+            "promotion_eligible": False,
+            "meaningful_parse": "not_measured",
+            "numeric_evidence_valid": False,
+        }
+    report: dict[str, Any] = {
+        "schema": "slm313_abstract_plan_functional_evidence/v1",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "claim_class": "diagnostic",
+        "protocol": protocol.to_dict(),
+        "campaign_manifest_sha256": lock.manifest_sha256,
+        "recipe": {
+            "device": "cpu",
+            "backend": "scratch",
+            "locked_test_used_for_selection": False,
+            "human_rating_gate": "not_required",
+            "shard_count": shard_count,
+        },
+        "result": result,
+        "version_stamp": stamp,
+    }
+    report["agentv"] = _portable(
+        publish_agentv_evaluation(
+            agentv_dir,
+            name="slm313-abstract-plan-functional-evidence",
+            claim="abstract_plan_preflight_not_ship",
+            version_stamp=stamp,
+            cases=[{
+                "id": "complete-locked-matrix-does-not-promote",
+                "criteria": "Only exact locked coverage may classify plan function; scratch evidence never promotes.",
+                "assertions": [{
+                    "id": "complete_matrix_is_not_ship",
+                    "actual": result["promotion_eligible"] is False,
+                    "operator": "eq",
+                    "expected": True,
+                }],
+                "result": result,
+            }],
+        ),
+        agentv_dir,
+    )
+    _rewrite_agentv_paths(agentv_dir)
+    return report
+
+
+def _record_attempt(json_out: Path, report: dict[str, Any]) -> None:
+    """Retain compact run history while the latest report carries current evidence."""
+    history: list[dict[str, Any]] = []
+    if json_out.is_file():
+        try:
+            history = list(json.loads(json_out.read_text(encoding="utf-8")).get("execution_attempts") or ())
+        except json.JSONDecodeError:
+            pass
+    result = report["result"]
+    history.append({
+        "generated_at": report["generated_at"],
+        "verdict": result["verdict"],
+        "reason": result["reason"],
+        "shard_index": report["recipe"].get("shard_index"),
+        "shard_count": report["recipe"].get("shard_count"),
+        "numeric_evidence_valid": result.get("numeric_evidence_valid"),
+    })
+    report["execution_attempts"] = history
+
+
 def _markdown(report: dict[str, Any]) -> str:
     result = report["result"]
+    history = report.get("execution_attempts") or ()
+    attempts = "\n".join(
+        f"  - {item['generated_at']}: {item['verdict']} — {item['reason']}"
+        for item in history
+    )
     return (
         "# SLM-313 AbstractPlan functional evidence\n\n"
         "This locked functional-evidence record makes no model or promotion claim.\n\n"
@@ -499,6 +728,8 @@ def _markdown(report: dict[str, Any]) -> str:
         f"- Locked manifest: {report['protocol']['locked_eval_manifest_sha256']}.\n"
         f"- Meaningful-parse status: {result['meaningful_parse']}.\n"
         "- AgentEvals/AgentV records the fail-closed non-promotion assertion.\n"
+        "\n## Execution history\n\n"
+        f"{attempts}\n"
     )
 
 
@@ -511,23 +742,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--agentv-dir", type=Path, default=DEFAULT_AGENTV)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=226)
+    parser.add_argument("--merge-shards", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
     if args.dry_run:
         print(json.dumps({"claim": "no execution", "root": str(args.root)}, sort_keys=True))
         return 0
-    report = run_preflight(
-        root=args.root,
-        checkpoint=args.checkpoint,
-        agentv_dir=args.agentv_dir,
-        shard_index=args.shard_index,
-        shard_count=args.shard_count,
+    report = (
+        run_merged_evidence(root=args.root, agentv_dir=args.agentv_dir, shard_count=args.shard_count)
+        if args.merge_shards
+        else run_preflight(
+            root=args.root,
+            checkpoint=args.checkpoint,
+            agentv_dir=args.agentv_dir,
+            shard_index=args.shard_index,
+            shard_count=args.shard_count,
+        )
     )
     if report["result"].get("verdict") == "partial_locked_shard":
         shard_path = args.root / "shards" / f"shard-{args.shard_index:03d}-of-{args.shard_count:03d}.json"
         shard_path.parent.mkdir(parents=True, exist_ok=True)
         shard_path.write_text(json.dumps(report["result"], indent=2, sort_keys=True) + "\n", encoding="utf-8")
         report["result"]["shard_artifact"] = str(shard_path)
+    _record_attempt(args.json_out, report)
     args.json_out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     args.markdown_out.write_text(_markdown(report), encoding="utf-8")
     print(json.dumps({"json": str(args.json_out), "verdict": report["result"]["verdict"]}, sort_keys=True))

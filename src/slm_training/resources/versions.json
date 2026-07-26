@@ -9004,7 +9004,7 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v6",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
@@ -9016,6 +9016,16 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "SLM-313 reuses only the existing compatible pre-outcome campaign envelope while the immutable experiment lock remains the full-content authority."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "SLM-313 now preserves compact execution history and fail-closes final disposition unless every deterministic local shard has matching protocol, coverage, and checkpoint identity."
+        },
         {
           "version": "v6",
           "date": "2026-07-26",
