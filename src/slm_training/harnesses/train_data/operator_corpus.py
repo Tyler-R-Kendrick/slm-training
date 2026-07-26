@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, replace
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from slm_training.dsl.operators import (
     ApplicationProvenanceV1,
@@ -447,6 +447,8 @@ def build_symbolic_operator_corpus(
     version: str,
     version_stamp: dict[str, Any],
     config: OperatorCorpusConfig,
+    on_collapsed_trace: Callable[[ConversationTraceV1, Any, Callable[..., Any]], None]
+    | None = None,
 ) -> dict[str, Any]:
     """Build only after every generated transition and trace replays exactly."""
     base_pack = get_pack("openui")
@@ -684,6 +686,12 @@ def build_symbolic_operator_corpus(
                         "verified multi-turn trace failed symbolic collapse"
                     )
                 collapsed = collapse_decision.collapse
+                if on_collapsed_trace is not None:
+                    on_collapsed_trace(
+                        next_trace,
+                        collapsed,
+                        lambda node: authorities[node.state_id],
+                    )
                 collapsed_records.append(
                     CollapsedOperatorExampleV1(
                         example_id=_fingerprint(

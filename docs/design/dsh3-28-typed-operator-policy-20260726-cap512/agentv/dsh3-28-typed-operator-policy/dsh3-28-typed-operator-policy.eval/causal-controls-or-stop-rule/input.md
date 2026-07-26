@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_local_current_surface_not_ship", "result": {"complete_train_rows": 2, "enabled_vs_random": {"changed": 1, "correct": 1, "eligible": 2, "wrong": 0}, "enabled_vs_zero": {"changed": 0, "correct": 0, "eligible": 2, "wrong": 0}, "prediction_replay_matched": true}}

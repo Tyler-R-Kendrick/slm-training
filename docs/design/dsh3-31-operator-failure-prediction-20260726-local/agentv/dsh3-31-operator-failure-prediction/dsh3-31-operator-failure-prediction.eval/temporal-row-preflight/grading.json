@@ -1,0 +1,53 @@
+{
+  "assertions": [
+    {
+      "text": "temporal-row-preflight:domain_criterion",
+      "passed": false,
+      "evidence": "actual=False operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 1,
+    "total": 1,
+    "pass_rate": 0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "temporal-row-preflight:domain_criterion",
+      "type": "code-grader",
+      "score": 0,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "fail",
+      "assertions": [
+        {
+          "text": "temporal-row-preflight:domain_criterion",
+          "passed": false,
+          "evidence": "actual=False operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "temporal-row-preflight:domain_criterion",
+        "actual": false,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dd1783f9238963aceeec7c1c384e99f1b9fae06c",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v61",
+      "harness.experiments.operator_failure_prediction": "v1"
+    },
+    "stamped_at": "2026-07-26T16:19:17.732899+00:00"
+  }
+}
