@@ -1912,7 +1912,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v124",
+      "version": "v125",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -1921,6 +1921,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v125",
+          "date": "2026-07-25",
+          "note": "add SLM-269 DCA0-01 fail-closed activation audit (slm269_dca0_activation.py): prerequisite evidence unqualified (SLM-260 fixture-only, SLM-261 missing, SLM-268 blocked) -> inconclusive, no corpus/training launched"
+        },
         {
           "version": "v124",
           "date": "2026-07-25",
@@ -1982,36 +1987,6 @@
           "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"
         },
         {
-          "version": "v113",
-          "date": "2026-07-25",
-          "note": "SLM-328 AP-030 CAP2-06 program-factor latent size/width/codec rate-distortion sweep wiring/fixture harness"
-        },
-        {
-          "version": "v112",
-          "date": "2026-07-25",
-          "note": "SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
-        },
-        {
-          "version": "v111",
-          "date": "2026-07-25",
-          "note": "SLM-268 fail-closed activation audit for verified-data scaling"
-        },
-        {
-          "version": "v111",
-          "date": "2026-07-25",
-          "note": "add SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
-        },
-        {
-          "version": "v110",
-          "date": "2026-07-25",
-          "note": "SLM-300 self-context curriculum: validate manifest inside run_fixture_self_context_curriculum (trust-boundary hardening) and make _arm_label lossless for arbitrary caller-supplied rates (address CodeRabbit review on PR #895)"
-        },
-        {
-          "version": "v109",
-          "date": "2026-07-25",
-          "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
-        },
-        {
           "version": "v117",
           "date": "2026-07-25",
           "note": "add SLM-258 LOT4-02 LotusOpenUIDispositionV1 fail-closed publisher (lotus_openui_disposition.py): aggregates the real upstream gate artifacts; inconclusive_missing_evidence, no adoption, production defaults unchanged"
@@ -2055,6 +2030,41 @@
           "version": "v109",
           "date": "2026-07-25",
           "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code"
+        },
+        {
+          "version": "v114",
+          "date": "2026-07-25",
+          "note": "add SLM-269 DCA0-01 fail-closed activation audit (slm269_dca0_activation.py): prerequisite evidence unqualified (SLM-260 fixture-only, SLM-261 missing, SLM-268 blocked) -> inconclusive, no corpus/training launched"
+        },
+        {
+          "version": "v113",
+          "date": "2026-07-25",
+          "note": "SLM-328 AP-030 CAP2-06 program-factor latent size/width/codec rate-distortion sweep wiring/fixture harness"
+        },
+        {
+          "version": "v112",
+          "date": "2026-07-25",
+          "note": "SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
+        },
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed activation audit for verified-data scaling"
+        },
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "add SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness"
+        },
+        {
+          "version": "v110",
+          "date": "2026-07-25",
+          "note": "SLM-300 self-context curriculum: validate manifest inside run_fixture_self_context_curriculum (trust-boundary hardening) and make _arm_label lossless for arbitrary caller-supplied rates (address CodeRabbit review on PR #895)"
+        },
+        {
+          "version": "v109",
+          "date": "2026-07-25",
+          "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
         },
         {
           "version": "v108",
@@ -9930,6 +9940,25 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-258 LOT4-02 disposition publisher aggregates upstream gates fail-closed"
+        }
+      ]
+    },
+    "harness.experiments.slm269_dca0_activation": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm269_dca0_activation.py",
+        "scripts/audit_dca0_target_policy_activation.py",
+        "tests/test_harnesses/experiments/test_slm269_dca0_activation.py",
+        "tests/test_scripts/test_audit_dca0_target_policy_activation.py",
+        "docs/design/iter-slm269-dca0-01-activation-20260725.json",
+        "docs/design/iter-slm269-dca0-01-activation-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-269 DCA0-01 activation audit closes inconclusive/blocked against real prerequisite artifacts"
         }
       ]
     }
