@@ -16,6 +16,7 @@ import torch
 from slm_training.data.flow.operator_policy_corpus import (
     OperatorPolicyRowV1,
     build_operator_policy_corpus,
+    freeze_collapse_negative_ablation,
     materialize_operator_policy_selection,
 )
 from slm_training.dsl.operators.contracts import _fingerprint
@@ -402,6 +403,14 @@ def _markdown(report: dict[str, Any]) -> str:
             f"{arm['action_and_arguments_accuracy']:.3f} | {arm['singleton_forwards']} | "
             f"{arm['partial_forced']} |"
         )
+    if not report["matrix"] and report.get("negative_ablation") is not None:
+        lines.extend(
+            [
+                "| - | - | - | - | - | - | - |",
+                "",
+                "No SLM-405 training arm ran: the frozen replay-negative preflight failed closed.",
+            ]
+        )
     lines.extend(
         [
             "",
@@ -456,6 +465,11 @@ def main(argv: list[str] | None = None) -> int:
         help="record SLM-404 evaluator-only 100/75/50/25 controlled PARTIAL slices",
     )
     parser.add_argument(
+        "--freeze-negative-ablation",
+        action="store_true",
+        help="freeze and fail-close SLM-405's replay-backed negative-type arms",
+    )
+    parser.add_argument(
         "--max-combinations",
         type=int,
         default=512,
@@ -486,7 +500,7 @@ def main(argv: list[str] | None = None) -> int:
         "model.operator_policy_view",
         "evals.cap2_operator",
     )
-    train, train_evidence, _train_runtime = _collect_rows(
+    train, train_evidence, train_runtime = _collect_rows(
         source=TRAIN_SOURCE,
         split="train",
         output_dir=corpus_work_dir / "train",
@@ -504,6 +518,14 @@ def main(argv: list[str] | None = None) -> int:
         max_combinations_per_operator=args.max_combinations,
         record_id=args.held_out_record_id,
     )
+    negative_ablation = (
+        freeze_collapse_negative_ablation(
+            tuple(runtime.row for runtime in train_runtime.values())
+            + tuple(runtime.row for runtime in held_out_runtime.values())
+        )
+        if args.freeze_negative_ablation
+        else None
+    )
     matrix = [
         _run_arm(
             head_family=head_family,  # type: ignore[arg-type]
@@ -516,7 +538,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         for head_family in head_families
         for arm in ("zero", "random", "shuffled_labels", "enabled")
-    ]
+    ] if negative_ablation is None or negative_ablation.ready else []
     cap2_suite = (
         build_frozen_cap2_suite(
             manifest_path=CAP2_MANIFEST,
@@ -561,7 +583,7 @@ def main(argv: list[str] | None = None) -> int:
         row.view.coverage.value == "complete" for row in held_out
     )
     controls = {}
-    for head_family in head_families:
+    for head_family in head_families if matrix else ():
         torch.manual_seed(97)
         replay_model = TypedOperatorPolicyScorer.from_examples(
             train, dim=16, head_family=head_family  # type: ignore[arg-type]
@@ -591,7 +613,12 @@ def main(argv: list[str] | None = None) -> int:
         and change["changed"] > 0
         and change["correct"] > change["wrong"]
     ]
-    if args.controlled_partial and complete_held_out_rows == 0:
+    if negative_ablation is not None and not negative_ablation.ready:
+        decision = {
+            "verdict": "reject",
+            "reason": negative_ablation.stop_reason,
+        }
+    elif args.controlled_partial and complete_held_out_rows == 0:
         decision = {
             "verdict": "reject",
             "reason": "no COMPLETE held-out shadow rows for the controlled coverage matrix",
@@ -678,6 +705,16 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 "result": controlled_partial,
             },
+            {
+                "id": "negative-ablation-preflight",
+                "criteria": "SLM-405 runs only with replay-verified conflict and different-result rows in both source-disjoint splits.",
+                "pass": negative_ablation is None or negative_ablation.ready,
+                "result": (
+                    None
+                    if negative_ablation is None
+                    else negative_ablation.to_dict()
+                ),
+            },
         ],
     )
     _rewrite_agentv_paths(output_dir)
@@ -698,6 +735,7 @@ def main(argv: list[str] | None = None) -> int:
             "ship_claim": False,
             "label": args.label,
             "controlled_partial": args.controlled_partial,
+            "freeze_negative_ablation": args.freeze_negative_ablation,
         },
         "counts": {
             "train_rows": len(train),
@@ -708,6 +746,9 @@ def main(argv: list[str] | None = None) -> int:
         "matrix": matrix,
         "cap2": cap2,
         "controlled_partial": controlled_partial,
+        "negative_ablation": (
+            None if negative_ablation is None else negative_ablation.to_dict()
+        ),
         "controls": controls,
         "train_evidence": _portable(
             train_evidence, output_dir=output_dir, corpus_work_dir=corpus_work_dir

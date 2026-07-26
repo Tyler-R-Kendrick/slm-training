@@ -186,7 +186,7 @@
       ]
     },
     "data.flow.operator_policy_corpus": {
-      "version": "v5",
+      "version": "v6",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/flow/operator_policy_corpus.py",
@@ -194,6 +194,11 @@
         "docs/design/dsh3-24-operator-policy-corpus.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-405: freeze replay-derived conflict and different-result labels outside the policy input and fail closed when either source-disjoint split lacks a matched stratum"
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
@@ -6926,7 +6931,7 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
@@ -6934,9 +6939,15 @@
         "tests/test_harnesses/experiments/test_typed_operator_policy.py",
         "tests/test_scripts/test_run_dsh3_28_typed_operator_policy.py",
         "docs/design/dsh3-28-typed-operator-policy.md",
-        "docs/design/dsh3-29-operator-ecoc-coverage.md"
+        "docs/design/dsh3-29-operator-ecoc-coverage.md",
+        "docs/design/dsh3-30-collapse-negative-ablation.md"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-26",
+          "note": "SLM-405: add the replay-negative matched-arm preflight to the canonical bounded local policy matrix; no arm runs without both labels in both source-disjoint splits"
+        },
         {
           "version": "v10",
           "date": "2026-07-26",

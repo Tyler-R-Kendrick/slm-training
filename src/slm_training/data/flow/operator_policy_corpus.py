@@ -39,6 +39,8 @@ from slm_training.models.operator_policy_view import (
 )
 
 __all__ = [
+    "CollapseNegativeAblationManifestV1",
+    "FrozenCollapseNegativeExampleV1",
     "OperatorPolicyCorpusQualityReportV1",
     "OperatorPolicyHardNegativeV1",
     "OperatorPolicyMaterializationV1",
@@ -47,6 +49,7 @@ __all__ = [
     "RowRejectionKind",
     "build_operator_policy_corpus",
     "build_operator_policy_rows",
+    "freeze_collapse_negative_ablation",
     "materialize_operator_policy_selection",
     "build_operator_termination_rows",
 ]
@@ -100,6 +103,63 @@ class OperatorPolicyHardNegativeV1:
             "alternate_action_row": self.alternate_action_row,
             "conflict_code": self.conflict_code,
             "observed_final_state_digest": self.observed_final_state_digest,
+        }
+
+
+@dataclass(frozen=True)
+class FrozenCollapseNegativeExampleV1:
+    """Replay-backed negative kept outside the model-facing policy input."""
+
+    row_id: str
+    source_trace_id: str
+    split: str
+    outcome: HardNegativeOutcome
+    evidence: dict[str, Any]
+    schema: str = "frozen_collapse_negative_example/v1"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": self.schema,
+            "row_id": self.row_id,
+            "source_trace_id": self.source_trace_id,
+            "split": self.split,
+            "outcome": self.outcome.value,
+            "evidence": self.evidence,
+        }
+
+
+@dataclass(frozen=True)
+class CollapseNegativeAblationManifestV1:
+    """Frozen, split-safe input contract for SLM-405's five matched arms.
+
+    The manifest deliberately records hard-negative outcomes as evaluator/training
+    labels only.  ``OperatorPolicyInputV1`` is not copied here and remains the
+    sole model-facing input boundary.
+    """
+
+    examples: tuple[FrozenCollapseNegativeExampleV1, ...]
+    positive_row_ids: dict[str, tuple[str, ...]]
+    ready: bool
+    stop_reason: str | None
+    schema: str = "collapse_negative_ablation_manifest/v1"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": self.schema,
+            "arms": [
+                "no_negatives",
+                "conflict_only",
+                "different_result_only",
+                "equal_mix",
+                "curriculum_mix",
+            ],
+            "examples": [example.to_dict() for example in self.examples],
+            "positive_row_ids": {
+                split: list(row_ids)
+                for split, row_ids in sorted(self.positive_row_ids.items())
+            },
+            "ready": self.ready,
+            "stop_reason": self.stop_reason,
         }
 
 
@@ -438,6 +498,64 @@ def build_operator_policy_rows(
             )
         )
     return tuple(rows), tuple(rejected)
+
+
+def freeze_collapse_negative_ablation(
+    rows: tuple[OperatorPolicyRowV1, ...] | list[OperatorPolicyRowV1],
+) -> CollapseNegativeAblationManifestV1:
+    """Freeze replay-proven negative labels for a matched SLM-405 ablation.
+
+    The two comparison types must appear in both train and dev, and a source
+    trace may belong to exactly one split.  Until then the manifest is an
+    explicit stop record, not a permissive partial experiment.
+    """
+    source_splits: dict[str, str] = {}
+    positives: dict[str, list[str]] = {}
+    examples: list[FrozenCollapseNegativeExampleV1] = []
+    for row in sorted(rows, key=lambda item: (item.split, item.collapse_id, item.row_id)):
+        previous = source_splits.setdefault(row.collapse_id, row.split)
+        if previous != row.split:
+            raise ValueError("source trace appears in more than one split")
+        positives.setdefault(row.split, []).append(row.row_id)
+        if row.hard_negative is None:
+            continue
+        examples.append(
+            FrozenCollapseNegativeExampleV1(
+                row_id=row.row_id,
+                source_trace_id=row.collapse_id,
+                split=row.split,
+                outcome=row.hard_negative.outcome,
+                evidence=row.hard_negative.to_dict(),
+            )
+        )
+    counts = {
+        split: {
+            outcome: sum(
+                example.split == split and example.outcome.value == outcome
+                for example in examples
+            )
+            for outcome in ("conflict", "different_result")
+        }
+        for split in ("train", "dev")
+    }
+    missing = [
+        f"{split}:{outcome}"
+        for split, values in counts.items()
+        for outcome, count in values.items()
+        if count == 0
+    ]
+    return CollapseNegativeAblationManifestV1(
+        examples=tuple(examples),
+        positive_row_ids={
+            split: tuple(row_ids) for split, row_ids in sorted(positives.items())
+        },
+        ready=not missing,
+        stop_reason=(
+            None
+            if not missing
+            else "missing replay-verified matched negative strata: " + ", ".join(missing)
+        ),
+    )
 
 
 def materialize_operator_policy_selection(
