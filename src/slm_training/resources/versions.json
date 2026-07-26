@@ -1759,7 +1759,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/legal_set_kl.py",
@@ -1767,6 +1767,7 @@
         "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/operator_decision_state.py",
         "src/slm_training/harnesses/distill/operator_teacher_ceiling.py",
+        "src/slm_training/harnesses/distill/self_distill_collect.py",
         "scripts/run_spv2_05_semantic_repair_fixture.py",
         "scripts/run_dsh4_01_operator_decision_state_fixture.py",
         "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
@@ -1774,14 +1775,21 @@
         "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
+        "tests/test_harnesses/distill/test_self_distill_collect.py",
         "docs/design/iter-spv2-05-semantic-repair-20260720.md",
         "docs/design/iter-spv2-05-semantic-repair-20260720.json",
         "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
         "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
-        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json"
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
+        "docs/design/ap020-on-policy-abstract-self-distillation.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-309 AP-020: on-policy abstract self-distillation collector -- samples prompt-only AP-017 abstract traces, verifies each candidate independently (never the generating policy) via an injectable verifier cascade, writes deterministic/resumable/duplicate-free records compatible with the existing select.py corpus filters, and a training_example_from_capture adapter reusing AP-019's masked SFT loss; default-on, no-op when disabled"
+        },
         {
           "version": "v4",
           "date": "2026-07-25",

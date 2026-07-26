@@ -13,6 +13,13 @@ from slm_training.harnesses.distill.select import (
     corpus_label,
     select_traces,
 )
+from slm_training.harnesses.distill.self_distill_collect import (
+    CollectionSummary,
+    SelfDistillCollectConfig,
+    collect_on_policy_traces,
+    segment_ids_for_capture,
+    training_example_from_capture,
+)
 from slm_training.harnesses.distill.trace_store import (
     DecodeTraceRecorder,
     TraceStore,
@@ -39,16 +46,21 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
+    "CollectionSummary",
     "DecodeTraceRecorder",
     "DistillSFTConfig",
     "SelectConfig",
+    "SelfDistillCollectConfig",
     "TraceStore",
     "checkpoint_sha",
+    "collect_on_policy_traces",
     "corpus_label",
     "decode_config_hash",
     "extract_failure_cone",
     "repair_records_from_traces",
+    "segment_ids_for_capture",
     "select_traces",
+    "training_example_from_capture",
     "traces_to_records",
     "train_self_distill",
 ]
