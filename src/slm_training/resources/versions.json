@@ -9419,6 +9419,24 @@
         }
       ]
     },
+    "harness.experiments.operator_systems_benchmark": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_systems_benchmark.py",
+        "scripts/run_dsh3_32_operator_systems_benchmark.py",
+        "tests/test_harnesses/experiments/test_operator_systems_benchmark.py",
+        "tests/test_scripts/test_run_dsh3_32_operator_systems_benchmark.py",
+        "docs/design/dsh3-32-operator-serving-work.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-407: canonical full-denominator operator serving work contract and local no-claim preflight"
+        }
+      ]
+    },
     "model.block_attention": {
       "version": "v1",
       "kind": "harness",
