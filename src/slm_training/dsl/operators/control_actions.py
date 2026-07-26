@@ -1,6 +1,6 @@
 """Conversation control-plane action set, separate from ``AstOperatorV1`` (DSH5-08).
 
-STOP/CONTINUE, UNDO, REDO, CHECKOUT, FORK, and MERGE_BRANCHES navigate or
+STOP, UNDO, REDO, CHECKOUT, FORK, and MERGE_BRANCHES navigate or
 merge conversation history; they never mutate an AST. Conflating them with
 ``AstOperatorV1`` would let a model-generated ID cross into a namespace it
 doesn't belong to (a control command could never be "the same kind of thing"
@@ -516,7 +516,11 @@ def enumerate_conversation_control_legal_set(
                 verdict=(
                     ControlSupportVerdict.SUPPORTED
                     if merge_actions
-                    else ControlSupportVerdict.UNSUPPORTED
+                    else (
+                        ControlSupportVerdict.UNKNOWN
+                        if authority_resolver is None
+                        else ControlSupportVerdict.UNSUPPORTED
+                    )
                 ),
                 rejection_reasons=tuple(merge_rejections),
             )

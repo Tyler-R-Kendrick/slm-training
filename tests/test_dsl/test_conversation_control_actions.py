@@ -413,7 +413,7 @@ def test_merge_branches_without_authority_resolver_is_unknown_not_unsupported() 
     merge_entry = next(
         e for e in legal_set.entries if e.kind is ConversationControlKind.MERGE_BRANCHES
     )
-    assert merge_entry.verdict is ControlSupportVerdict.UNSUPPORTED
+    assert merge_entry.verdict is ControlSupportVerdict.UNKNOWN
     assert merge_entry.rejection_reasons == ("no_authority_resolver",)
 
 

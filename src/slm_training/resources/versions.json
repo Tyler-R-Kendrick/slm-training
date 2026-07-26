@@ -616,7 +616,7 @@
       ]
     },
     "dsl.operators.control_actions": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/control_actions.py",
@@ -624,6 +624,11 @@
         "docs/design/dsh5-08-conversation-control-actions.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "fix SLM-416 missing-authority MERGE_BRANCHES classification to remain UNKNOWN rather than collapsing it into proven UNSUPPORTED"
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
