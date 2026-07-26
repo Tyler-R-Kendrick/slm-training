@@ -50,6 +50,25 @@ unbounded enum default while re-enumerating a collapsed state. That was a
 local resource-safety and reproducibility defect, not evidence of model
 quality.
 
+## Bounded COMPLETE-row control result (2026-07-26)
+
+[`dsh3-28-typed-operator-policy-20260726-cap512/report.json`](dsh3-28-typed-operator-policy-20260726-cap512/report.json)
+and its [`summary`](dsh3-28-typed-operator-policy-20260726-cap512/summary.md)
+record a completed CPU-only, four-step local preflight. It uses one explicit
+train root (`train_text_only_01`) and one held-out root (`held_out_input_01`)
+at an exact 512-combination cap. The admitted source snapshot repeats record
+IDs, so the runner chooses the first source-order instance deterministically
+rather than treating duplicates as independent roots.
+
+Both train rows and both held-out rows were COMPLETE. The three AgentEvals
+structural assertions passed under pinned AgentV: live typed-domain selection,
+zero forwards for singleton routing, and replay/control denominator integrity.
+The learned arm matched zero control (0/2 choice changes); it differed from
+the random control on 1/2 rows, correctly. This is a measured negative causal
+preflight: it does not meet the required >=5% enabled-versus-disabled choice
+change or a held-out improvement, is not a CAP2 ship evaluation, creates no
+checkpoint, and does not clear SLM-403.
+
 ## Remaining evaluation scope
 
 This is the reusable scored-policy boundary and its unit proof, not a

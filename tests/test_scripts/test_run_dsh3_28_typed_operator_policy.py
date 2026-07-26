@@ -1,0 +1,31 @@
+"""Regression coverage for the bounded SLM-403 policy-matrix runner."""
+
+from __future__ import annotations
+
+import json
+
+import pytest
+
+from scripts.run_dsh3_28_typed_operator_policy import _select_source_records
+
+
+def test_record_slice_uses_first_source_order_duplicate(tmp_path) -> None:
+    source = tmp_path / "records.jsonl"
+    source.write_text(
+        "\n".join(
+            json.dumps(record)
+            for record in (
+                {"id": "target", "prompt": "first", "openui": "Button()"},
+                {"id": "other", "prompt": "other", "openui": "Stack([])"},
+                {"id": "target", "prompt": "second", "openui": "Text()"},
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    selected = _select_source_records(source, "target")
+
+    assert [record.prompt for record in selected] == ["first"]
+    with pytest.raises(ValueError, match="does not contain record"):
+        _select_source_records(source, "missing")
