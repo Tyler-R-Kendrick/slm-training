@@ -77,11 +77,14 @@ def _rewrite_agentv_paths(root: Path) -> None:
 
 def _locked_records() -> dict[str, Any]:
     """Read the immutable held-out rows; the manifest remains authoritative."""
+    from slm_training.data.contract import canonicalize_example_template_markers
     from slm_training.dsl.schema import ExampleRecord
 
     payload = json.loads(LOCKED_MANIFEST.read_text(encoding="utf-8"))
     return {
-        str(row["record"]["id"]): ExampleRecord.from_dict(row["record"])
+        str(row["record"]["id"]): canonicalize_example_template_markers(
+            ExampleRecord.from_dict(row["record"])
+        )
         for row in payload["rows"]
         if row.get("partition") == "locked_test"
     }

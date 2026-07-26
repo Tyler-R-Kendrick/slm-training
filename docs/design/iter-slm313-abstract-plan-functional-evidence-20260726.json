@@ -33,7 +33,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/slm313-abstract-plan-functional-evidence.eval.jsonl",
     "summary": {
-      "durationMs": 78,
+      "durationMs": 631,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -41,9 +41,9 @@
       "total": 1
     }
   },
-  "campaign_manifest_sha256": "c06ce7dcc725726206b6f6f788bf83f86e055fb2a8f05d4cae513664f76fa28f",
+  "campaign_manifest_sha256": "690eb69ec6df87db659b367e1700c977b7ec91a9714baca40822990f714a9216",
   "claim_class": "diagnostic",
-  "generated_at": "2026-07-26T06:16:44.706421+00:00",
+  "generated_at": "2026-07-26T06:19:46.504419+00:00",
   "protocol": {
     "arms": [
       "no_plan",
@@ -308,18 +308,18 @@
     "meaningful_parse": "not_measured",
     "numeric_evidence_valid": false,
     "promotion_eligible": false,
-    "reason": "Local shard did not complete: ValueError: grammar_constrained=False is unsafe for OpenUI generation; use constrained generation and shadow logits for diagnostics",
+    "reason": "Local shard did not complete: ValueError: persisted template markers must use opaque :slot_<ordinal> identities",
     "verdict": "invalid_local_run"
   },
   "schema": "slm313_abstract_plan_functional_evidence/v1",
   "version_stamp": {
-    "code_commit": "20c6e372f71ea6010e7f9f0cae7e8fdd2bda7346",
-    "code_dirty": false,
+    "code_commit": "23c29594d68e5b8490110e85d64bfd6eb6c65938",
+    "code_dirty": true,
     "components": {
       "harness.experiments": "v115",
-      "harness.experiments.slm313_abstract_plan_functional_evidence": "v3"
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v4"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-26T06:16:44.381371+00:00"
+    "stamped_at": "2026-07-26T06:19:44.315231+00:00"
   }
 }

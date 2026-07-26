@@ -9004,7 +9004,7 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
@@ -9016,6 +9016,11 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-313 projects legacy locked placeholders to canonical request-local opaque slots before shared evaluation, preserving frozen rows without restoring name authority."
+        },
         {
           "version": "v4",
           "date": "2026-07-26",
