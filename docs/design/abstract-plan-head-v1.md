@@ -3,11 +3,9 @@
 `slm_training.models.abstract_plan_head.AbstractPlanHead` predicts a short
 sequence of `AbstractPlanV1` (AP-016 / SLM-302) codebook indices from the
 `TwoTowerModel` context tower's pooled hidden state. It is a pure side
-channel: `TwoTowerModel.training_loss()`/`forward()` never call it, so no
-plan signal reaches the decoder unless a caller explicitly invokes the new
-`TwoTowerModel.abstract_plan_trace(...)` method. Wiring an actual connector
-into the decoder is AP-027's job (`TwoTowerConfig.semantic_connector`), not
-this issue's.
+channel by default: `TwoTowerModel.training_loss()`/`forward()` do not call it
+unless SLM-313 explicitly enables both `abstract_plan_loss_weight` and
+`abstract_plan_train_conditioning`.
 
 ## Modes
 
@@ -53,9 +51,20 @@ and `training_loss()`/`forward()` are byte-for-byte untouched by this change
 no `abstract_plan_mode` kwarg at all and one with it explicitly set to
 `"disabled"`) and
 `::test_abstract_plan_head_never_participates_in_training_loss_graph` (with
-the mode enabled, `abstract_plan_head.proj.weight.grad` is `None` after
+the mode enabled but SLM-313's loss/conditioning flags left off,
+`abstract_plan_head.proj.weight.grad` is `None` after
 `training_loss(...).backward()`, and every shared parameter's gradient is
 still bit-identical to the fully-disabled baseline).
+
+## SLM-313 opt-in training contract
+
+`abstract_plan_loss_weight > 0` supervises four opaque, bounded structural
+facts extracted from training labels only: node count, leaf count, maximum
+depth, and placeholder-binding count. These targets contain no component
+spellings or caller identifiers. With `abstract_plan_train_conditioning`, the
+teacher-forced plan also conditions reconstruction through the existing
+connector; locked evaluation receives only a predicted plan. All four settings
+default off, and invalid partial activation fails closed.
 
 ## Reproduction
 

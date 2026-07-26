@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/slm313-abstract-plan-functional-evidence.eval.jsonl",
+    "timestamp": "2026-07-26T05:06:04.825Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "unavailable-does-not-promote"
+    ],
+    "experiment": "slm313-abstract-plan-functional-evidence"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0.005,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "no_proxy_promotion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "35e53d3cce2f54ccfa71c3bd7ab8d68f36eb0e90",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v115",
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v1"
+    },
+    "stamped_at": "2026-07-26T05:06:03.881037+00:00"
+  }
+}

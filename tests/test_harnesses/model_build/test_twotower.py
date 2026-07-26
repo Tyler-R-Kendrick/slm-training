@@ -799,6 +799,41 @@ def test_abstract_plan_connector_never_participates_in_training_loss_graph() -> 
             assert torch.equal(parameter.grad, enabled_grads[name].grad), name
 
 
+def test_abstract_plan_training_conditions_the_reconstruction_loss() -> None:
+    """SLM-313: the opt-in path trains both opaque plan and connector."""
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    model = _plan_connector_model(
+        abstract_plan_mode="teacher_forced",
+        abstract_plan_connector_arm="learned",
+        abstract_plan_loss_weight=1.0,
+        abstract_plan_train_conditioning=True,
+    )
+    model.training_loss(records).backward()
+
+    assert model.abstract_plan_head is not None
+    assert model.abstract_plan_connector is not None
+    assert model.abstract_plan_head.proj.weight.grad is not None
+    assert model.abstract_plan_connector.gate.grad is not None
+    assert model.denoiser._plan_vector is None
+    assert model.last_training_metrics["abstract_plan_loss"] > 0.0
+    assert model.last_training_metrics["abstract_plan_train_conditioning"] is True
+
+
+def test_model_build_config_preserves_abstract_plan_training_options() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        abstract_plan_mode="teacher_forced",
+        abstract_plan_connector_arm="learned",
+        abstract_plan_loss_weight=0.5,
+        abstract_plan_train_conditioning=True,
+    )
+    resolved = _twotower_config_from_build(config)
+    assert resolved.abstract_plan_mode == "teacher_forced"
+    assert resolved.abstract_plan_connector_arm == "learned"
+    assert resolved.abstract_plan_loss_weight == 0.5
+    assert resolved.abstract_plan_train_conditioning is True
+
+
 def test_abstract_plan_connector_is_constructed_and_wired_into_denoiser() -> None:
     model = _plan_connector_model(
         abstract_plan_mode="sampled", abstract_plan_connector_arm="oracle"

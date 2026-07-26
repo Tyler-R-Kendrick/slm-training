@@ -150,7 +150,9 @@ double registration, and the optimizer prefix now reads
   per `project` call (one per round), each carrying a per-call
   `choice_changed_count`/`position_count`.
 - "No production default change." -- `abstract_plan_connector_arm` defaults
-  to `"disabled"`; `training_loss`/`forward` never call the connector.
+  to `"disabled"`; ordinary `training_loss`/`forward` never call the
+  connector. SLM-313's explicit opt-in training contract is the sole
+  exception and requires a positive plan loss plus enabled head/connector.
 
 ## Tests
 
