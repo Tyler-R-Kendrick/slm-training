@@ -1938,7 +1938,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v129",
+      "version": "v130",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -1947,6 +1947,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v130",
+          "date": "2026-07-25",
+          "note": "register SLM-274 DCA2-01 in the DCA activation gate registry; closes not_activated/blocked off unqualified prerequisites"
+        },
         {
           "version": "v129",
           "date": "2026-07-25",
@@ -2076,6 +2081,11 @@
           "version": "v109",
           "date": "2026-07-25",
           "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code"
+        },
+        {
+          "version": "v119",
+          "date": "2026-07-25",
+          "note": "register SLM-274 DCA2-01 in the DCA activation gate registry; closes not_activated/blocked off unqualified prerequisites"
         },
         {
           "version": "v118",
@@ -10029,7 +10039,7 @@
       ]
     },
     "harness.experiments.dca_activation_gate": {
-      "version": "v4",
+      "version": "v5",
       "kind": "gate",
       "paths": [
         "docs/design/iter-slm270-dca0-02-activation-20260725.json",
@@ -10040,6 +10050,8 @@
         "docs/design/iter-slm272-dca1-01-activation-20260725.md",
         "docs/design/iter-slm273-dca1-02-activation-20260725.json",
         "docs/design/iter-slm273-dca1-02-activation-20260725.md",
+        "docs/design/iter-slm274-dca2-01-activation-20260725.json",
+        "docs/design/iter-slm274-dca2-01-activation-20260725.md",
         "scripts/audit_dca_activation.py",
         "src/slm_training/harnesses/experiments/dca_activation_gate.py",
         "tests/test_harnesses/experiments/test_dca_activation_gate.py",
@@ -10047,9 +10059,14 @@
       ],
       "history": [
         {
-          "version": "v4",
+          "version": "v5",
           "date": "2026-07-25",
-          "note": "add SLM-273 DCA1-02 registry entry + blocked iter docs (cross-pack-transfer-activation-gate-v1)"
+          "note": "add SLM-274 DCA2-01 registry entry + blocked iter docs (block-conversion-activation-v1)"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "add SLM-274 DCA2-01 registry entry + blocked iter docs (block-conversion-activation-v1)"
         },
         {
           "version": "v4",
