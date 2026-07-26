@@ -8,6 +8,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from slm_training.models.abstract_plan_connector import (
+    AbstractPlanConnector,
+    PlanConnectorTrace,
+)
+
 
 class RMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6) -> None:
@@ -233,6 +238,12 @@ class DenoiserTower(nn.Module):
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         self.max_len = max_len
         self._runtime_symbol_features: torch.Tensor | None = None
+        # AP-024 (SLM-316): default-off gated-additive plan-conditioning bias.
+        # None/None keeps `project` byte-identical to the pre-AP-024 baseline.
+        self._plan_connector: AbstractPlanConnector | None = None
+        self._plan_vector: torch.Tensor | None = None
+        self._plan_connector_arm: str = "disabled"
+        self._plan_connector_traces: list[PlanConnectorTrace] = []
         self.tie_output_embedding = bool(tie_output_embedding)
         if self.tie_output_embedding:
             # Tie embeddings: shared storage and gradients.
@@ -245,6 +256,27 @@ class DenoiserTower(nn.Module):
     def set_runtime_symbol_features(self, features: torch.Tensor | None) -> None:
         """Attach request-local vocabulary-row deltas (not checkpoint state)."""
         self._runtime_symbol_features = features
+
+    def set_plan_connector(
+        self, connector: AbstractPlanConnector | None, *, arm: str = "disabled"
+    ) -> None:
+        """Attach the AP-024 connector module (not checkpoint state on its own)."""
+        self._plan_connector = connector
+        self._plan_connector_arm = arm
+
+    def set_plan_vector(self, plan_vector: torch.Tensor | None) -> None:
+        """Set (or clear, with ``None``) the pooled plan vector for every
+        subsequent :meth:`project` call, until cleared. Threads the plan
+        signal through every refinement round without changing the round
+        loop itself, since every round already calls ``project``.
+        """
+        self._plan_vector = plan_vector
+
+    def pop_plan_connector_traces(self) -> list[PlanConnectorTrace]:
+        """Drain and return the connector traces recorded since the last call."""
+        traces = self._plan_connector_traces
+        self._plan_connector_traces = []
+        return traces
 
     def _features_for_batch(self, batch_size: int) -> torch.Tensor | None:
         features = self._runtime_symbol_features
@@ -308,8 +340,18 @@ class DenoiserTower(nn.Module):
         self,
         hidden: torch.Tensor,
         candidate_ids: torch.Tensor | None = None,
+        *,
+        _apply_plan_bias: bool = True,
     ) -> torch.Tensor:
-        """Project hidden states to the full vocabulary or gathered candidates."""
+        """Project hidden states to the full vocabulary or gathered candidates.
+
+        ``_apply_plan_bias`` is an internal switch: the reshape-and-recurse
+        branch below turns a per-row compiler/tree-scorer slice into a
+        synthetic ``[1, N, D]`` batch so it can reuse this same method, but
+        that recursive call is still a per-row score, not a genuine batched
+        MaskGIT/tree round -- so it must not pick up the AP-024 plan bias a
+        second time (or at all) via the batch-shape check alone.
+        """
         if self._runtime_symbol_features is not None and hidden.dim() != 3:
             # Compiler/tree scorers project [D] or [N,D] slices. Feature rows
             # are per-request, so this is only well-defined when exactly one
@@ -320,13 +362,15 @@ class DenoiserTower(nn.Module):
                     "when more than one request is active"
                 )
             flat = hidden.reshape(1, -1, hidden.size(-1))
-            out = self.project(flat, candidate_ids)
+            out = self.project(flat, candidate_ids, _apply_plan_bias=False)
             return out.reshape(*hidden.shape[:-1], out.size(-1))
         features = self._features_for_batch(hidden.size(0))
         if candidate_ids is None:
             logits = self.lm_head(hidden)
             if features is not None:
                 logits = logits + torch.einsum("btd,bvd->btv", hidden, features)
+            if _apply_plan_bias:
+                return self._apply_plan_connector_bias(logits, candidate_ids=None)
             return logits
         raw_weight = self.lm_head.weight
         weight = raw_weight() if callable(raw_weight) else raw_weight
@@ -337,7 +381,47 @@ class DenoiserTower(nn.Module):
         if features is not None:
             selected = features.index_select(1, candidate_ids)
             logits = logits + torch.einsum("btd,bkd->btk", hidden, selected)
+        if _apply_plan_bias:
+            return self._apply_plan_connector_bias(logits, candidate_ids=candidate_ids)
         return logits
+
+    def _apply_plan_connector_bias(
+        self, logits: torch.Tensor, *, candidate_ids: torch.Tensor | None
+    ) -> torch.Tensor:
+        """AP-024 (SLM-316): gated-additive plan bias, applied once every
+        round this method is called from (every MaskGIT/tree round already
+        calls ``project``, so no round-loop change is needed). Skipped
+        (byte-identical to the pre-AP-024 baseline) unless both a connector
+        and a plan vector are attached and ``logits`` is batch-shaped.
+        """
+        if self._plan_connector is None or self._plan_vector is None:
+            return logits
+        if logits.dim() != 3:
+            # Per-row compiler/tree scorer slices are a different decode
+            # strategy than the batched MaskGIT/tree round loop this
+            # connector targets; leave them untouched rather than guess.
+            return logits
+        if self._plan_vector.size(0) != logits.size(0):
+            raise ValueError(
+                f"plan vector batch {self._plan_vector.size(0)} != logits "
+                f"batch {logits.size(0)}"
+            )
+        bias = self._plan_connector.bias_for_vocab(
+            self._plan_vector, candidate_ids=candidate_ids
+        )
+        before = logits.argmax(dim=-1)
+        biased = logits + bias.unsqueeze(1)
+        after = biased.argmax(dim=-1)
+        self._plan_connector_traces.append(
+            PlanConnectorTrace(
+                arm=self._plan_connector_arm,
+                gate_value=float(torch.tanh(self._plan_connector.gate).item()),
+                bias_norm=float(bias.norm().item()),
+                choice_changed_count=int((before != after).sum().item()),
+                position_count=int(before.numel()),
+            )
+        )
+        return biased
 
     def forward(
         self,

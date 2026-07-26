@@ -17,6 +17,7 @@ from slm_training.dsl.operators.contracts import (
     OperatorRef,
     RefKind,
     RoleRef,
+    SelectorRef,
     SymbolRef,
     TemplateRef,
     ValueRef,
@@ -35,6 +36,7 @@ _REF_TYPES = {
     RefKind.VALUE: ValueRef,
     RefKind.SYMBOL: SymbolRef,
     RefKind.TEMPLATE: TemplateRef,
+    RefKind.SELECTOR: SelectorRef,
 }
 
 
@@ -365,8 +367,8 @@ def _domains(
 ) -> tuple[OperatorArgumentDomainV1, ...]:
     declaration = library.lookup(operator_id)
     by_kind: dict[RefKind, list[tuple[str, OperatorRef]]] = {}
-    for entry in reference_table.entries:
-        by_kind.setdefault(entry.descriptor.ref_kind, []).append(
+    for entry in (*reference_table.entries, *reference_table.selectors):
+        by_kind.setdefault(entry.ref.KIND, []).append(
             (entry.descriptor.fingerprint, entry.ref)
         )
     for values in by_kind.values():
@@ -440,7 +442,7 @@ def enumerate_operator_legal_set(
 
     descriptor_by_ref = {
         entry.ref: entry.descriptor.fingerprint
-        for entry in reference_table.entries
+        for entry in (*reference_table.entries, *reference_table.selectors)
     }
     entries: list[OperatorLegalEntryV1] = []
     for declaration in library.declarations:
