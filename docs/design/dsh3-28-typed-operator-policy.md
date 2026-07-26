@@ -91,10 +91,17 @@ still needs its current-surface reconciliation.
 ## Remaining evaluation scope
 
 This is the reusable scored-policy boundary and its unit proof, not a
-promotion or ship claim. The issue still requires the matched five-head CAP2
-matrix on a current suite whose legal-set coverage supplies COMPLETE ambiguous
-rows, with per-decision causal-change denominators and full-generation/
-serialized baselines. No checkpoint is created by this step.
+promotion or ship claim. `TypedOperatorPolicyEvidencePlugin` now composes a
+policy decision with the existing `ModelPlugin` generation-evidence channel:
+the delegate remains the sole owner of materialized OpenUI, while normal
+evaluation records a request-aligned `typed_operator_policy_evidence/v1` side
+channel. Evidence-count mismatch fails closed. The integration regression
+proves the unchanged delegate output receives meaningful-program scoring.
+
+The issue still requires the matched five-head CAP2 matrix on a current suite
+whose legal-set coverage supplies COMPLETE ambiguous rows, with per-decision
+causal-change denominators and full-generation/serialized baselines. No
+checkpoint is created by this step.
 
 The legacy CAP2 v1 generator currently detects drift after later
 selector/effect-contract evolution. That is an in-repository compatibility

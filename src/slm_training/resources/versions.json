@@ -6909,7 +6909,7 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
@@ -6918,6 +6918,11 @@
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "Attach typed policy decisions through request-aligned ModelPlugin evidence."
+        },
         {
           "version": "v6",
           "date": "2026-07-26",

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.operators import (
     BindingPhase,
     CompilerFact,
@@ -11,14 +14,22 @@ from slm_training.dsl.operators import (
     OperatorSupportVerdict,
     RefKind,
 )
+from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.harnesses.model_build import ModelBuildConfig
+from slm_training.harnesses.model_build.eval_runner import evaluate
+from slm_training.harnesses.model_build.plugin import StubModel
 from slm_training.harnesses.experiments.typed_operator_policy import (
     TYPED_OPERATOR_POLICY_HEAD_FAMILIES,
+    TypedOperatorPolicyDecisionV1,
+    TypedOperatorPolicyEvidencePlugin,
+    TypedOperatorPolicyEvidenceV1,
     TypedOperatorPolicyExampleV1,
     TypedOperatorPolicyScorer,
     decide_typed_operator_policy,
     train_typed_operator_policy,
     typed_operator_policy_loss,
 )
+from slm_training.models.operator_policy_objective import OperatorPolicyRouteV1
 from slm_training.models.operator_policy_view import (
     OperatorActionViewV1,
     OperatorArgumentSlotViewV1,
@@ -149,3 +160,120 @@ def test_each_typed_head_preserves_complete_and_partial_authority(head_family: s
     assert singleton_decision.selected_action_row == 0
     assert partial_decision.selected_action_row is None
     assert partial_decision.model_forwards == 0
+
+
+def test_model_plugin_side_channel_preserves_openui_and_request_alignment() -> None:
+    class Delegate:
+        def generate_batch_requests(
+            self, requests: list[GenerationRequest], **_kwargs: object
+        ) -> list[str]:
+            return ["root = Separator()" for _ in requests]
+
+        def consume_generation_evidence(self) -> list[dict[str, object]]:
+            return [{"grammar_constrained": True}]
+
+    decision = TypedOperatorPolicyDecisionV1(
+        route=OperatorPolicyRouteV1.COMPLETE_AMBIGUOUS,
+        selected_action_row=1,
+        selected_argument_rows=(("value", 0),),
+        model_forwards=1,
+    )
+    plugin = TypedOperatorPolicyEvidencePlugin(
+        Delegate(),  # type: ignore[arg-type]
+        lambda _request: TypedOperatorPolicyEvidenceV1("local_flat", decision),
+    )
+    requests = [GenerationRequest(prompt="add a separator")]
+
+    assert plugin.generate_batch_requests(requests) == ["root = Separator()"]
+    assert plugin.consume_generation_evidence() == [
+        {
+            "grammar_constrained": True,
+            "typed_operator_policy": {
+                "schema": "typed_operator_policy_evidence/v1",
+                "head_family": "local_flat",
+                "route": "complete_ambiguous",
+                "selected_action_row": 1,
+                "selected_argument_rows": [
+                    {"slot_id": "value", "reference_row": 0}
+                ],
+                "model_forwards": 1,
+            },
+        }
+    ]
+
+
+def test_model_plugin_side_channel_rejects_misaligned_delegate_evidence() -> None:
+    class Delegate:
+        def generate_batch_requests(
+            self, requests: list[GenerationRequest], **_kwargs: object
+        ) -> list[str]:
+            return ["root = Separator()" for _ in requests]
+
+        def consume_generation_evidence(self) -> list[dict[str, object]]:
+            return [{}, {}]
+
+    decision = TypedOperatorPolicyDecisionV1(
+        route=OperatorPolicyRouteV1.PARTIAL_UNKNOWN,
+        selected_action_row=None,
+        selected_argument_rows=(),
+        model_forwards=0,
+    )
+    plugin = TypedOperatorPolicyEvidencePlugin(
+        Delegate(),  # type: ignore[arg-type]
+        lambda _request: TypedOperatorPolicyEvidenceV1("local_flat", decision),
+    )
+
+    plugin.generate_batch_requests([GenerationRequest(prompt="add a separator")])
+    with pytest.raises(ValueError, match="request-aligned"):
+        plugin.consume_generation_evidence()
+
+
+def test_model_plugin_side_channel_keeps_normal_eval_scoring(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "eval"
+    suite_dir = test_dir / "suites" / "smoke"
+    suite_dir.mkdir(parents=True)
+    gold = 'root = TextContent(":slot_0")'
+    record = ExampleRecord(
+        id="side-channel",
+        prompt="add label",
+        openui=gold,
+        placeholders=[":slot_0"],
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(suite_dir / "records.jsonl", [record])
+    decision = TypedOperatorPolicyDecisionV1(
+        route=OperatorPolicyRouteV1.COMPLETE_AMBIGUOUS,
+        selected_action_row=1,
+        selected_argument_rows=(),
+        model_forwards=1,
+    )
+    plugin = TypedOperatorPolicyEvidencePlugin(
+        StubModel(memory={record.prompt: gold}),
+        lambda _request: TypedOperatorPolicyEvidenceV1("local_flat", decision),
+    )
+
+    metrics = evaluate(
+        ModelBuildConfig(
+            train_dir=train_dir,
+            test_dir=test_dir,
+            suite="smoke",
+            run_root=tmp_path / "runs",
+            run_id="typed-policy-side-channel",
+            model_name="stub",
+            context_backend="scratch",
+        ),
+        model=plugin,
+        publish_agentv=False,
+    )
+
+    assert metrics["meaningful_program_rate"] == 1.0
+    assert metrics["details"][0]["prediction"] == gold
+    assert metrics["details"][0]["topology_evidence"]["typed_operator_policy"] == {
+        "schema": "typed_operator_policy_evidence/v1",
+        "head_family": "local_flat",
+        "route": "complete_ambiguous",
+        "selected_action_row": 1,
+        "selected_argument_rows": [],
+        "model_forwards": 1,
+    }

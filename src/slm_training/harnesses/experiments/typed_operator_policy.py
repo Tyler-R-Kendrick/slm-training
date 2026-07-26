@@ -7,6 +7,7 @@ enter the encoder.  This is experiment machinery, not a serving default.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import json
 import math
@@ -40,6 +41,8 @@ from slm_training.models.operator_policy_view import (
     operator_policy_input_from_dict,
 )
 from slm_training.dsl.operators import LegalSetCoverage, OperatorSupportVerdict
+from slm_training.data.contract import GenerationRequest
+from slm_training.harnesses.model_build.plugin import ModelPlugin
 
 
 TypedOperatorPolicyHeadFamily = Literal[
@@ -154,6 +157,70 @@ class TypedOperatorPolicyDecisionV1:
     selected_action_row: int | None
     selected_argument_rows: tuple[tuple[str, int], ...]
     model_forwards: int
+
+
+@dataclass(frozen=True)
+class TypedOperatorPolicyEvidenceV1:
+    """Policy-decision evidence attached to, never substituted for, OpenUI output."""
+
+    head_family: TypedOperatorPolicyHeadFamily
+    decision: TypedOperatorPolicyDecisionV1
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "typed_operator_policy_evidence/v1",
+            "head_family": self.head_family,
+            "route": self.decision.route.value,
+            "selected_action_row": self.decision.selected_action_row,
+            "selected_argument_rows": [
+                {"slot_id": slot_id, "reference_row": reference_row}
+                for slot_id, reference_row in self.decision.selected_argument_rows
+            ],
+            "model_forwards": self.decision.model_forwards,
+        }
+
+
+class TypedOperatorPolicyEvidencePlugin:
+    """Attach typed-policy evidence through the canonical ModelPlugin channel.
+
+    The delegate alone owns materialized OpenUI generation.  This wrapper only
+    records request-aligned decision evidence for normal evaluation scoring.
+    """
+
+    def __init__(
+        self,
+        delegate: ModelPlugin,
+        evidence_for_request: Callable[[GenerationRequest], TypedOperatorPolicyEvidenceV1],
+    ) -> None:
+        self.delegate = delegate
+        self.evidence_for_request = evidence_for_request
+        self._policy_evidence: list[dict[str, object]] = []
+
+    def generate_batch_requests(
+        self, requests: list[GenerationRequest], **kwargs: object
+    ) -> list[str]:
+        predictions = self.delegate.generate_batch_requests(requests, **kwargs)
+        if len(predictions) != len(requests):
+            raise ValueError("typed policy evidence requires one prediction per request")
+        self._policy_evidence = [
+            self.evidence_for_request(request).to_dict() for request in requests
+        ]
+        return predictions
+
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        policy_evidence, self._policy_evidence = self._policy_evidence, []
+        delegate_evidence = self.delegate.consume_generation_evidence()
+        if delegate_evidence and len(delegate_evidence) != len(policy_evidence):
+            raise ValueError("delegate generation evidence is not request-aligned")
+        if not delegate_evidence:
+            return [{"typed_operator_policy": row} for row in policy_evidence]
+        return [
+            {**dict(row), "typed_operator_policy": policy}
+            for row, policy in zip(delegate_evidence, policy_evidence, strict=True)
+        ]
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self.delegate, name)
 
 
 class TypedOperatorPolicyScorer(nn.Module):
