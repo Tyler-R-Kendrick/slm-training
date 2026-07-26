@@ -2,7 +2,23 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **120** (latest `autotrain_wf_smoke_20260725_iter120`).
+Total iterations: **133** (latest `autotrain_wf_smoke_20260725_iter133`).
+
+Between iter120 and iter121, `harnesses/train_data/pipeline.py` gained a
+marker-canonicalization fix (`harness.train_data` v20 -> v21; see
+[iter121 measured results](autotrain-wf-smoke-20260725-iter121-measured-results.md)):
+`_normalize_record` never rewrote persisted markers to opaque `:slot_<ordinal>`
+identities, so a freshly built `wf_smoke_v2` fixture broke every SFT run
+(`TwoTowerModel.from_records` rejects named markers unconditionally). Every
+iter1-iter120 row below reused an already-built corpus from before this gap was
+exposed; iter121 onward rebuilds `wf_smoke_v2` from scratch with the fix and
+record_count drops 103 -> 101 (2 records now correctly collapse as duplicates
+once markers are opaque). Per `synthesis-feedback`: the iter121 rebuild's
+`synthesis_feedback.json` flags 3 small `eval_leakage_source` recommendations
+(1-2 decontamination drops each, `human_curated`/`prompt_paraphrase`/
+`template`) — expected noise at this ~100-record fixture scale, not a
+regression from this fix; no harness change made here, filed for a future
+full-scale `quality` build to size properly.
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s | max_wall |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -126,3 +142,16 @@ Total iterations: **120** (latest `autotrain_wf_smoke_20260725_iter120`).
 | `autotrain_wf_smoke_20260725_iter118` | True | 8 | steps | 28.879148483276367 | 60.13 | 2.5833333333333335 |
 | `autotrain_wf_smoke_20260725_iter119` | True | 8 | steps | 41.54469680786133 | 57.06 | 2.5833333333333335 |
 | `autotrain_wf_smoke_20260725_iter120` | True | 8 | steps | 34.804710388183594 | 59.66 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter121` | True | 8 | steps | 38.951087951660156 | 2.54 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter122` | True | 8 | steps | 38.951087951660156 | 1.96 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter123` | True | 8 | steps | 38.951087951660156 | 1.94 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter124` | True | 8 | steps | 38.951087951660156 | 2.15 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter125` | True | 8 | steps | 38.95109558105469 | 2.15 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter126` | True | 8 | steps | 38.951087951660156 | 2.2 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter127` | True | 8 | steps | 38.951087951660156 | 2.22 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter128` | True | 8 | steps | 38.18849563598633 | 2.2 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter129` | True | 8 | steps | 37.44559097290039 | 1.92 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter130` | True | 8 | steps | 35.64334487915039 | 2.02 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter131` | True | 8 | steps | 26.404794692993164 | 2.1 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter132` | True | 8 | steps | 41.731746673583984 | 1.9 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260725_iter133` | True | 8 | steps | 28.04134178161621 | 2.18 | 2.5833333333333335 |
