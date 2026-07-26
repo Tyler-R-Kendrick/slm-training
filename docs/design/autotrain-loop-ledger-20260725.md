@@ -2,7 +2,18 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **210** (latest `autotrain_wf_smoke_20260725_iter210`).
+Total iterations: **211** (latest `autotrain_wf_smoke_20260726_iter211`).
+
+**iter211 provenance note:** the `--source fixture` build no longer produces
+opaque `:slot_<ordinal>` markers, so `TwoTowerModel.from_records` rejects it
+(`assert_canonical_template_markers`, `src/slm_training/data/contract.py:184`).
+iter211 trained on a filtered canonical subset of the committed
+`e937_role_safe_all_targets_v2` corpus instead — see
+[iter211 measured results](autotrain-wf-smoke-20260726-iter211-measured-results.md)
+for the full caveat. Continuing this ledger with the historical `fixture`
+recipe requires either restoring canonical markers to the legacy
+`openui_verified_v1` seed corpus or repointing the smoke recipe at a
+canonical-slot corpus permanently.
 
 ## Latest 30
 
@@ -38,3 +49,4 @@ Total iterations: **210** (latest `autotrain_wf_smoke_20260725_iter210`).
 | `autotrain_wf_smoke_20260725_iter208` | True | 8 | steps | 42.70003890991211 | 58.34 |
 | `autotrain_wf_smoke_20260725_iter209` | True | 8 | steps | 27.557567596435547 | 59.0 |
 | `autotrain_wf_smoke_20260725_iter210` | True | 8 | steps | 32.258583068847656 | 57.85 |
+| `autotrain_wf_smoke_20260726_iter211` | True | 8 | steps | 27.732410430908203 | 3.16 |
