@@ -302,6 +302,58 @@
     "human_rating_gate": "not_required",
     "locked_test_used_for_selection": false
   },
+  "execution_attempts": [
+    {
+      "run_id": "slm313_local_plan_v1",
+      "kind": "local_cpu_train",
+      "train_snapshot": "slm230_symbol_only_v1",
+      "outcome": "rejected_before_optimizer_step",
+      "reason": "persisted template markers must use opaque :slot_<ordinal> identities",
+      "checkpoint_written": false,
+      "numeric_evidence_valid": false
+    },
+    {
+      "run_id": "slm313_local_plan_v1",
+      "kind": "local_cpu_train",
+      "train_snapshot": "e1281_text_form_input_required_direct_natural_v1",
+      "recipe": {
+        "device": "cpu",
+        "target_token_budget": 5000,
+        "abstract_plan_mode": "sampled",
+        "abstract_plan_connector_arm": "learned",
+        "abstract_plan_loss_weight": 0.5,
+        "abstract_plan_train_conditioning": true,
+        "checkpoint_sync": false
+      },
+      "outcome": "interrupted_at_run_cap",
+      "steps": 18,
+      "seen_target_tokens": 2016,
+      "checkpoint_written": false,
+      "numeric_evidence_valid": false
+    },
+    {
+      "run_id": "slm313_local_plan_1k_v1",
+      "kind": "local_cpu_train",
+      "train_snapshot": "e1281_text_form_input_required_direct_natural_v1",
+      "recipe": {
+        "device": "cpu",
+        "steps": 9,
+        "target_token_budget": 1000,
+        "seen_target_tokens": 1006,
+        "elapsed_wall_seconds": 18.473637685994618,
+        "abstract_plan_mode": "sampled",
+        "abstract_plan_connector_arm": "learned",
+        "abstract_plan_loss_weight": 0.5,
+        "abstract_plan_train_conditioning": true,
+        "checkpoint_sync": false
+      },
+      "outcome": "completed_for_locked_interventions_only",
+      "checkpoint": "outputs/runs/slm313_local_plan_1k_v1/checkpoints/last.pt",
+      "checkpoint_sha256": "15bfaf30328d149cecc57e393bd190f498450c37a785002e543ab98872033ac6",
+      "numeric_evidence_valid": false,
+      "promotion_eligible": false
+    }
+  ],
   "result": {
     "meaningful_parse": "not_measured",
     "promotion_eligible": false,

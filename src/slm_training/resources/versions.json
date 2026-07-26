@@ -4595,6 +4595,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-313's scratch checkpoint roster and README summary are unrelated to the SLM-228 spectral disposition."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-25",
           "note": "no-bump: README change is the agent-hook coverage table and parity audit link only; no metric, gate, or experiment behavior touched"
         },
@@ -8999,17 +9004,23 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
         "scripts/run_abstract_plan_functional_evidence.py",
         "tests/test_harnesses/experiments/test_abstract_plan_functional_evidence.py",
+        "tests/test_scripts/test_run_abstract_plan_functional_evidence.py",
         "docs/design/abstract-plan-functional-evidence.md",
         "docs/design/iter-slm313-abstract-plan-functional-evidence-20260726.json",
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-313 records capped local training outcomes and executes fixed-point-free plan interventions through the shared evaluator; incomplete or timed-out shards remain non-evidence."
+        },
         {
           "version": "v2",
           "date": "2026-07-26",
