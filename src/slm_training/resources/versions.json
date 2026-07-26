@@ -6849,6 +6849,24 @@
         }
       ]
     },
+    "model.operator_permutation_consistency": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_permutation_consistency.py",
+        "tests/test_models/test_operator_permutation_consistency.py",
+        "scripts/run_dsh3_27_operator_permutation_fixture.py",
+        "docs/design/dsh3-27-operator-permutation-consistency.md",
+        "docs/design/dsh3-27-operator-permutation-consistency.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-402 (DSH3-27): evaluator-only semantic action and descriptor alignment, cross-boundary-safe permutation cache, and default-off fixture stop-rule probe"
+        }
+      ]
+    },
     "model.operator_policy_view": {
       "version": "v1",
       "kind": "model",
