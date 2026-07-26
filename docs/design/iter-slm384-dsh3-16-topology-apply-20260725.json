@@ -1,0 +1,557 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/dsh3-16-topology-apply-arms/benchmark.json",
+      "indexPath": "output-dir://agentv/dsh3-16-topology-apply-arms/index.jsonl",
+      "runDir": "output-dir://agentv/dsh3-16-topology-apply-arms",
+      "timingPath": "output-dir://agentv/dsh3-16-topology-apply-arms/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 4,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "matched-quality:domain_criterion",
+          "expected": true,
+          "id": "matched-quality:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "authority-preserved:domain_criterion",
+          "expected": true,
+          "id": "authority-preserved:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "node-pass-work:domain_criterion",
+          "expected": true,
+          "id": "node-pass-work:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "honest-scope:domain_criterion",
+          "expected": true,
+          "id": "honest-scope:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 4
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/dsh3-16-topology-apply-arms.eval.jsonl",
+    "summary": {
+      "durationMs": 489,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 4,
+      "total": 4
+    }
+  },
+  "result": {
+    "acceptance": {
+      "exact_singleton_authority_preserved": true,
+      "head_always_defers_off_mode": true,
+      "legal_terminal_set_unchanged": true,
+      "matched_quality_every_step": true,
+      "matched_workload_identical_action_sequences": true,
+      "node_pass_improvement_at_matched_quality": true,
+      "zero_model_forwards_without_head": true
+    },
+    "arms": {
+      "HIERARCHICAL_HEAD": {
+        "elapsed_seconds": 23.02030753501458,
+        "peak_memory_bytes": 242970624,
+        "requests": [
+          {
+            "action_sequence": [
+              "d0b98738049015128764bc020f1e6ff46a234c796b2c4a12e00987fb635f1b3b"
+            ],
+            "active_nodes": 1,
+            "compiler_expansions": 131,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 0,
+            "matched_steps": 1,
+            "model_forwards": 0,
+            "node_passes": 2,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-singleton",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 1,
+            "steps": 1,
+            "terminal_digest": "0aea5c70f43633f1b4630fb0308e3febd0b1734073e434ccad8c84bcb3dfd798",
+            "terminal_source": "root = Card([])",
+            "verifier_calls": 1
+          },
+          {
+            "action_sequence": [
+              "0d2057a9ff20939a2ac4732ef973d3f02777f15866b20d585440feb3ce5d2958",
+              "d5cab040bf42440b42094ff39c99d6167b03ccf74c01c6cac230439ed077890c",
+              "895a9c867e189df19085f4f75010056a4c9e8d2aa2d575bd08638fcea80deef4",
+              "9908ae6bd5fcc77ee25866a6b901b85fa0327b8d1ac476e8a586cacfb0f584b4",
+              "a6014b74d0609f612b2cc8024ef5fc3b4c046c5c6753ee2355f9fe440f2c07ad",
+              "5956a5a1458579ca40c4aa709dccf0866d6b734bf518a77f44d153692b5c0c07",
+              "414f772dc261ed3e4c887300dce7a1e472536c9665b717247c1635f5b4c8c723"
+            ],
+            "active_nodes": 1,
+            "compiler_expansions": 2375,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 8,
+            "matched_steps": 7,
+            "model_forwards": 16,
+            "node_passes": 13,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-move",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 0,
+            "steps": 7,
+            "terminal_digest": "13021795c8835f61c5db56f537bb8123340846c82c8e0dc39cb3860e4441ca10",
+            "terminal_source": "root = Card([1, 0], \"clear\")",
+            "verifier_calls": 9
+          },
+          {
+            "action_sequence": [
+              "ed761810c896b2b52851c29cc6ddc155b798df7562c3def13c1b934a25969661",
+              "2af1bbdc1213a26c0ad4545872340dd5b7331098a29b4a1b477c86ba81fd6b08",
+              "4a712797ded35d284e44b2fc7bf3a36163cad1ed506cf35c0d9e6487b34cad94",
+              "84032396a02c14d9e1b27f7a6327be0dd50b25421d5b3b989917419e8464f227"
+            ],
+            "active_nodes": 3,
+            "compiler_expansions": 1491,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 4,
+            "matched_steps": 4,
+            "model_forwards": 8,
+            "node_passes": 9,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-expand",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 1,
+            "steps": 4,
+            "terminal_digest": "3e6e9ef434df2d2ad7f14684423413eab1d1766f881c763bec7c8b9752f30fcf",
+            "terminal_source": "root = Card([TextContent(\":expanded.value\"), TextContent(\":expanded.value\")])",
+            "verifier_calls": 10
+          },
+          {
+            "action_sequence": [
+              "24ddbf017800d08609b77b1edc188e7d94b93ead78eb50e9ae9d308507be96b1",
+              "b456293b985c1ba746f2ee4305f55d104a87c61295bb5d705ed3cefe9e74cb1e",
+              "d46add6e37cef5df96e41a7908d2834be0ef007a025033d2d3c784eeb4a1b40c",
+              "8e6a9781b50b63ca72dce4ad6a1688139e2ebead184b74756787eed6580d6248",
+              "4208992b4a8f0ac236a7fc635209ab5b3347c5678ea0c7e4404696bf47c7d996",
+              "5dc97247d9cb4c43057ecce6b4aad9eaeda2b1cf856724a5e08f2af3f4fa4140",
+              "98b446121bed3b3441f5c4b232f3611a765d1756326e37c559e4b7780fa3da1a",
+              "3b32e656955c994c1013de17988ffdd6b8b224277a489af3fdd6e08d4445fcb9"
+            ],
+            "active_nodes": 5,
+            "compiler_expansions": 3293,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 8,
+            "matched_steps": 8,
+            "model_forwards": 16,
+            "node_passes": 22,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-contract",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 0,
+            "steps": 8,
+            "terminal_digest": "46a89e0aa539b49effb6ff62e2201268326631550e6e85b784af4deced2c27d0",
+            "terminal_source": "root = Stack([Card([TextContent(\":expanded.value\")]), Stack([TextContent(\":expanded.value\")], \"column\")])",
+            "verifier_calls": 11
+          }
+        ],
+        "totals": {
+          "active_nodes": 10,
+          "compiler_expansions": 7290,
+          "deferred_applies": 0,
+          "direct_applies": 0,
+          "head_defers": 20,
+          "matched_steps": 20,
+          "model_forwards": 40,
+          "node_passes": 46,
+          "remask_phases": 0,
+          "rewrite_phases": 0,
+          "singleton_bypasses": 2,
+          "steps": 20,
+          "verifier_calls": 31
+        }
+      },
+      "RECOMPUTE_ONLY": {
+        "elapsed_seconds": 26.013033213996096,
+        "peak_memory_bytes": 241004544,
+        "requests": [
+          {
+            "action_sequence": [
+              "d0b98738049015128764bc020f1e6ff46a234c796b2c4a12e00987fb635f1b3b"
+            ],
+            "active_nodes": 1,
+            "compiler_expansions": 131,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 0,
+            "matched_steps": 1,
+            "model_forwards": 0,
+            "node_passes": 2,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-singleton",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 1,
+            "steps": 1,
+            "terminal_digest": "0aea5c70f43633f1b4630fb0308e3febd0b1734073e434ccad8c84bcb3dfd798",
+            "terminal_source": "root = Card([])",
+            "verifier_calls": 1
+          },
+          {
+            "action_sequence": [
+              "0d2057a9ff20939a2ac4732ef973d3f02777f15866b20d585440feb3ce5d2958",
+              "d5cab040bf42440b42094ff39c99d6167b03ccf74c01c6cac230439ed077890c",
+              "895a9c867e189df19085f4f75010056a4c9e8d2aa2d575bd08638fcea80deef4",
+              "9908ae6bd5fcc77ee25866a6b901b85fa0327b8d1ac476e8a586cacfb0f584b4",
+              "a6014b74d0609f612b2cc8024ef5fc3b4c046c5c6753ee2355f9fe440f2c07ad",
+              "5956a5a1458579ca40c4aa709dccf0866d6b734bf518a77f44d153692b5c0c07",
+              "414f772dc261ed3e4c887300dce7a1e472536c9665b717247c1635f5b4c8c723"
+            ],
+            "active_nodes": 1,
+            "compiler_expansions": 2338,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 0,
+            "matched_steps": 7,
+            "model_forwards": 0,
+            "node_passes": 13,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-move",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 0,
+            "steps": 7,
+            "terminal_digest": "13021795c8835f61c5db56f537bb8123340846c82c8e0dc39cb3860e4441ca10",
+            "terminal_source": "root = Card([1, 0], \"clear\")",
+            "verifier_calls": 9
+          },
+          {
+            "action_sequence": [
+              "ed761810c896b2b52851c29cc6ddc155b798df7562c3def13c1b934a25969661",
+              "2af1bbdc1213a26c0ad4545872340dd5b7331098a29b4a1b477c86ba81fd6b08",
+              "4a712797ded35d284e44b2fc7bf3a36163cad1ed506cf35c0d9e6487b34cad94",
+              "84032396a02c14d9e1b27f7a6327be0dd50b25421d5b3b989917419e8464f227"
+            ],
+            "active_nodes": 3,
+            "compiler_expansions": 1474,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 0,
+            "matched_steps": 4,
+            "model_forwards": 0,
+            "node_passes": 9,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-expand",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 1,
+            "steps": 4,
+            "terminal_digest": "3e6e9ef434df2d2ad7f14684423413eab1d1766f881c763bec7c8b9752f30fcf",
+            "terminal_source": "root = Card([TextContent(\":expanded.value\"), TextContent(\":expanded.value\")])",
+            "verifier_calls": 10
+          },
+          {
+            "action_sequence": [
+              "24ddbf017800d08609b77b1edc188e7d94b93ead78eb50e9ae9d308507be96b1",
+              "b456293b985c1ba746f2ee4305f55d104a87c61295bb5d705ed3cefe9e74cb1e",
+              "d46add6e37cef5df96e41a7908d2834be0ef007a025033d2d3c784eeb4a1b40c",
+              "8e6a9781b50b63ca72dce4ad6a1688139e2ebead184b74756787eed6580d6248",
+              "4208992b4a8f0ac236a7fc635209ab5b3347c5678ea0c7e4404696bf47c7d996",
+              "5dc97247d9cb4c43057ecce6b4aad9eaeda2b1cf856724a5e08f2af3f4fa4140",
+              "98b446121bed3b3441f5c4b232f3611a765d1756326e37c559e4b7780fa3da1a",
+              "3b32e656955c994c1013de17988ffdd6b8b224277a489af3fdd6e08d4445fcb9"
+            ],
+            "active_nodes": 5,
+            "compiler_expansions": 3182,
+            "deferred_applies": 0,
+            "direct_applies": 0,
+            "edit_kinds": {},
+            "head_defers": 0,
+            "matched_steps": 8,
+            "model_forwards": 0,
+            "node_passes": 22,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-contract",
+            "rewrite_phases": 0,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 0,
+            "steps": 8,
+            "terminal_digest": "46a89e0aa539b49effb6ff62e2201268326631550e6e85b784af4deced2c27d0",
+            "terminal_source": "root = Stack([Card([TextContent(\":expanded.value\")]), Stack([TextContent(\":expanded.value\")], \"column\")])",
+            "verifier_calls": 11
+          }
+        ],
+        "totals": {
+          "active_nodes": 10,
+          "compiler_expansions": 7125,
+          "deferred_applies": 0,
+          "direct_applies": 0,
+          "head_defers": 0,
+          "matched_steps": 20,
+          "model_forwards": 0,
+          "node_passes": 46,
+          "remask_phases": 0,
+          "rewrite_phases": 0,
+          "singleton_bypasses": 2,
+          "steps": 20,
+          "verifier_calls": 31
+        }
+      },
+      "TOPOLOGY_APPLY": {
+        "elapsed_seconds": 26.43409739798517,
+        "peak_memory_bytes": 242970624,
+        "requests": [
+          {
+            "action_sequence": [
+              "d0b98738049015128764bc020f1e6ff46a234c796b2c4a12e00987fb635f1b3b"
+            ],
+            "active_nodes": 1,
+            "compiler_expansions": 131,
+            "deferred_applies": 0,
+            "direct_applies": 1,
+            "edit_kinds": {
+              "rewrite": 1
+            },
+            "head_defers": 0,
+            "matched_steps": 1,
+            "model_forwards": 0,
+            "node_passes": 2,
+            "remask_phases": 0,
+            "request_id": "dsh3-16-singleton",
+            "rewrite_phases": 1,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 1,
+            "steps": 1,
+            "terminal_digest": "0aea5c70f43633f1b4630fb0308e3febd0b1734073e434ccad8c84bcb3dfd798",
+            "terminal_source": "root = Card([])",
+            "verifier_calls": 1
+          },
+          {
+            "action_sequence": [
+              "0d2057a9ff20939a2ac4732ef973d3f02777f15866b20d585440feb3ce5d2958",
+              "d5cab040bf42440b42094ff39c99d6167b03ccf74c01c6cac230439ed077890c",
+              "895a9c867e189df19085f4f75010056a4c9e8d2aa2d575bd08638fcea80deef4",
+              "9908ae6bd5fcc77ee25866a6b901b85fa0327b8d1ac476e8a586cacfb0f584b4",
+              "a6014b74d0609f612b2cc8024ef5fc3b4c046c5c6753ee2355f9fe440f2c07ad",
+              "5956a5a1458579ca40c4aa709dccf0866d6b734bf518a77f44d153692b5c0c07",
+              "414f772dc261ed3e4c887300dce7a1e472536c9665b717247c1635f5b4c8c723"
+            ],
+            "active_nodes": 1,
+            "compiler_expansions": 2338,
+            "deferred_applies": 0,
+            "direct_applies": 7,
+            "edit_kinds": {
+              "contract": 2,
+              "move": 2,
+              "rewrite": 3
+            },
+            "head_defers": 0,
+            "matched_steps": 7,
+            "model_forwards": 0,
+            "node_passes": 11,
+            "remask_phases": 4,
+            "request_id": "dsh3-16-move",
+            "rewrite_phases": 3,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 0,
+            "steps": 7,
+            "terminal_digest": "13021795c8835f61c5db56f537bb8123340846c82c8e0dc39cb3860e4441ca10",
+            "terminal_source": "root = Card([1, 0], \"clear\")",
+            "verifier_calls": 9
+          },
+          {
+            "action_sequence": [
+              "ed761810c896b2b52851c29cc6ddc155b798df7562c3def13c1b934a25969661",
+              "2af1bbdc1213a26c0ad4545872340dd5b7331098a29b4a1b477c86ba81fd6b08",
+              "4a712797ded35d284e44b2fc7bf3a36163cad1ed506cf35c0d9e6487b34cad94",
+              "84032396a02c14d9e1b27f7a6327be0dd50b25421d5b3b989917419e8464f227"
+            ],
+            "active_nodes": 3,
+            "compiler_expansions": 1474,
+            "deferred_applies": 0,
+            "direct_applies": 4,
+            "edit_kinds": {
+              "contract": 1,
+              "expand": 1,
+              "rewrite": 2
+            },
+            "head_defers": 0,
+            "matched_steps": 4,
+            "model_forwards": 0,
+            "node_passes": 8,
+            "remask_phases": 2,
+            "request_id": "dsh3-16-expand",
+            "rewrite_phases": 2,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 1,
+            "steps": 4,
+            "terminal_digest": "3e6e9ef434df2d2ad7f14684423413eab1d1766f881c763bec7c8b9752f30fcf",
+            "terminal_source": "root = Card([TextContent(\":expanded.value\"), TextContent(\":expanded.value\")])",
+            "verifier_calls": 10
+          },
+          {
+            "action_sequence": [
+              "24ddbf017800d08609b77b1edc188e7d94b93ead78eb50e9ae9d308507be96b1",
+              "b456293b985c1ba746f2ee4305f55d104a87c61295bb5d705ed3cefe9e74cb1e",
+              "d46add6e37cef5df96e41a7908d2834be0ef007a025033d2d3c784eeb4a1b40c",
+              "8e6a9781b50b63ca72dce4ad6a1688139e2ebead184b74756787eed6580d6248",
+              "4208992b4a8f0ac236a7fc635209ab5b3347c5678ea0c7e4404696bf47c7d996",
+              "5dc97247d9cb4c43057ecce6b4aad9eaeda2b1cf856724a5e08f2af3f4fa4140",
+              "98b446121bed3b3441f5c4b232f3611a765d1756326e37c559e4b7780fa3da1a",
+              "3b32e656955c994c1013de17988ffdd6b8b224277a489af3fdd6e08d4445fcb9"
+            ],
+            "active_nodes": 5,
+            "compiler_expansions": 3182,
+            "deferred_applies": 0,
+            "direct_applies": 8,
+            "edit_kinds": {
+              "contract": 2,
+              "expand": 4,
+              "rewrite": 2
+            },
+            "head_defers": 0,
+            "matched_steps": 8,
+            "model_forwards": 0,
+            "node_passes": 19,
+            "remask_phases": 6,
+            "request_id": "dsh3-16-contract",
+            "rewrite_phases": 2,
+            "schema": "topology_apply_stats/v1",
+            "singleton_bypasses": 0,
+            "steps": 8,
+            "terminal_digest": "46a89e0aa539b49effb6ff62e2201268326631550e6e85b784af4deced2c27d0",
+            "terminal_source": "root = Stack([Card([TextContent(\":expanded.value\")]), Stack([TextContent(\":expanded.value\")], \"column\")])",
+            "verifier_calls": 11
+          }
+        ],
+        "totals": {
+          "active_nodes": 10,
+          "compiler_expansions": 7125,
+          "deferred_applies": 0,
+          "direct_applies": 20,
+          "head_defers": 0,
+          "matched_steps": 20,
+          "model_forwards": 0,
+          "node_passes": 40,
+          "remask_phases": 12,
+          "rewrite_phases": 8,
+          "singleton_bypasses": 2,
+          "steps": 20,
+          "verifier_calls": 31
+        }
+      }
+    },
+    "disposition": "execution_sparsity_supported",
+    "enumeration_budget_note": "Operator legal-set enumeration is budget-capped; truncated operators stay UNKNOWN (never UNSUPPORTED) and forced-singleton detection requires COMPLETE coverage, exactly as in enumerate_operator_legal_set.",
+    "evidence_tier": "fixture_wiring",
+    "experiment_id": "DSH3-16",
+    "issue": "SLM-384",
+    "max_combinations_per_operator": 128,
+    "max_steps": 8,
+    "requests": [
+      {
+        "request_id": "dsh3-16-singleton",
+        "seed": 7,
+        "source": "root = Card([], \"clear\")",
+        "template_aliases": [],
+        "values": [
+          "'scroll'"
+        ]
+      },
+      {
+        "request_id": "dsh3-16-move",
+        "seed": 11,
+        "source": "root = Card([TextContent(\":source.a\"), TextContent(\":source.b\")], \"clear\")",
+        "template_aliases": [],
+        "values": [
+          "'clear'",
+          "'scroll'",
+          "[1, 0]"
+        ]
+      },
+      {
+        "request_id": "dsh3-16-expand",
+        "seed": 23,
+        "source": "root = TextContent(\":compact.value\")",
+        "template_aliases": [
+          "fb41a7da776e1ef4c9c2fd0bfbb2bbd6bd869e990d0f14050b0d01094773ed62"
+        ],
+        "values": []
+      },
+      {
+        "request_id": "dsh3-16-contract",
+        "seed": 37,
+        "source": "root = Card([TextContent(\":expanded.value\")])",
+        "template_aliases": [
+          "fb41a7da776e1ef4c9c2fd0bfbb2bbd6bd869e990d0f14050b0d01094773ed62",
+          "334d7d01c0ae716c45ca0914bcde5c8beac168e5aec597147b74189304c6984c"
+        ],
+        "values": []
+      }
+    ],
+    "schema": "topology_apply_arms/v1",
+    "scope_note": "Fixture/wiring-scale arm comparison (CPU, deterministic small request set). Node-pass counters model the production decode path; the harness re-materializes authoritative trees every step to certify matched quality, so arm wall-clock here is conservative against topology-apply. No wall-clock or systems claim is made; serialized target compression is not reported as inference speed.",
+    "systems_claim": false
+  },
+  "run": {
+    "backend": "operator_legal_set+topology_apply+hierarchical_head(off)",
+    "checkpoint": null,
+    "device": "cpu",
+    "elapsed_seconds": 75.46784763099276,
+    "experiment_id": "DSH3-16",
+    "issue": "SLM-384",
+    "max_wall_minutes": 15,
+    "peak_memory_bytes": 242970624,
+    "ship_claim": false
+  },
+  "schema": "topology_apply_arms_report/v1",
+  "version_stamp": {
+    "code_commit": "9cbab9063aadfe287e8dc9d4bdeb2d43d3be6482",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.hierarchical_head": "v1",
+      "dsl.operators.legal_set": "v2",
+      "dsl.operators.topology_apply": "v1",
+      "harness.experiments.topology_apply_arms": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T00:58:56.701849+00:00"
+  }
+}

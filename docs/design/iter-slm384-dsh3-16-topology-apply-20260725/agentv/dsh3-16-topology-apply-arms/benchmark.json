@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "eval_file": "output-dir:///agentv/dsh3-16-topology-apply-arms.eval.jsonl",
+    "timestamp": "2026-07-26T01:00:12.593Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "authority-preserved",
+      "honest-scope",
+      "matched-quality",
+      "node-pass-work"
+    ],
+    "experiment": "dsh3-16-topology-apply-arms"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "matched-quality:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "authority-preserved:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "node-pass-work:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "honest-scope:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9cbab9063aadfe287e8dc9d4bdeb2d43d3be6482",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.topology_apply": "v1",
+      "dsl.operators.legal_set": "v2",
+      "dsl.operators.hierarchical_head": "v1",
+      "harness.experiments.topology_apply_arms": "v1"
+    },
+    "stamped_at": "2026-07-26T00:58:56.701849+00:00"
+  }
+}
