@@ -21,6 +21,7 @@ from slm_training.data.contract import (
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate, train
 from slm_training.harnesses.model_build.factory import (
     _resolve_freeze_context,
+    _twotower_config_from_build,
     apply_runtime_overrides,
 )
 from slm_training.harnesses.model_build.train_loop import (
@@ -205,6 +206,18 @@ def test_ltr_tail_mask_selects_only_final_real_suffix_tokens() -> None:
     target = torch.tensor([[model.tokenizer.bos_id, 7, 8, 9, model.tokenizer.pad_id]])
     suffix = torch.tensor([[False, True, True, True, False]])
     assert model._ltr_tail_mask(target, suffix).tolist() == [[False, False, True, True, False]]
+
+
+def test_model_build_config_threads_ltr_tail_controls() -> None:
+    config = _twotower_config_from_build(
+        ModelBuildConfig(
+            train_dir=Path("fixtures"),
+            context_backend="scratch",
+            ltr_tail_loss_weight=1.25,
+            ltr_tail_tokens=2,
+        )
+    )
+    assert (config.ltr_tail_loss_weight, config.ltr_tail_tokens) == (1.25, 2)
 
 
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:

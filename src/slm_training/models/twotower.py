@@ -24,12 +24,15 @@ from slm_training.dsl.language_contract import (
     assert_symbol_only_output,
     require_current_output_contract,
 )
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
     ChoiceGenerationResult,
     RuntimeSymbol,
+    assert_canonical_template_markers,
+    assert_no_template_semantic_labels,
     choice_generation_fingerprint,
 )
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -332,6 +335,9 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    # Extra weight on the final real LTR tokens (default-off).
+    ltr_tail_loss_weight: float = 0.0
+    ltr_tail_tokens: int = 32
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
@@ -2540,6 +2546,17 @@ class TwoTowerModel(nn.Module):
                     noisy[i, j] = self.tokenizer.mask_id
         return noisy, predict_mask, ltr_suffix
 
+    def _ltr_tail_mask(
+        self, target_ids: torch.Tensor, ltr_suffix: torch.Tensor
+    ) -> torch.Tensor:
+        """Select the final configured number of real LTR-suffix tokens."""
+        count = int(self.config.ltr_tail_tokens or 0)
+        if count <= 0:
+            return torch.zeros_like(ltr_suffix)
+        real_suffix = ltr_suffix & target_ids.ne(self.tokenizer.pad_id)
+        from_end = real_suffix.flip(1).cumsum(dim=1).flip(1)
+        return real_suffix & from_end.le(count)
+
     def _placeholder_ids(self) -> set[int]:
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
@@ -2791,7 +2808,10 @@ class TwoTowerModel(nn.Module):
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         _require_symbol_only_tokenizer(self.tokenizer)
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -2940,6 +2960,12 @@ class TwoTowerModel(nn.Module):
                     content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
                     prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
                     weights = weights + (prefix_w * prefix.reshape(-1).float())
+                tail_w = float(
+                    getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0
+                )
+                if tail_w > 0.0:
+                    tail = self._ltr_tail_mask(target_ids, ltr_suffix)
+                    weights = weights + (tail_w * tail.reshape(-1).float())
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -4097,7 +4123,9 @@ class TwoTowerModel(nn.Module):
                 token_id: index for index, token_id in enumerate(component_ids)
             }
             plan_logits = self.binder_component_plan_head(
-                self._pool_context(ctx, ctx_pad)
+                # Preserve the primary objective's gradients while this
+                # auxiliary planner learns its own legal-decision signal.
+                self._pool_context(ctx, ctx_pad).detach()
             ).view(len(batch), len(binder_ids), len(component_ids))
             plan_losses: list[torch.Tensor] = []
             plan_hits: list[torch.Tensor] = []
@@ -13912,7 +13940,10 @@ class TwoTowerModel(nn.Module):
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
         for record in records:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "

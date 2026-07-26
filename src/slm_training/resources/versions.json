@@ -7099,7 +7099,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v250",
+      "version": "v251",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7138,6 +7138,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v251",
+          "date": "2026-07-25",
+          "note": "SLM-315 CI repair: restore training-time canonical opaque-marker and role-safe output validation, and complete the existing default-off LTR-tail configuration path from ModelBuildConfig through TwoTower loss weighting."
+        },
         {
           "version": "v250",
           "date": "2026-07-25",
