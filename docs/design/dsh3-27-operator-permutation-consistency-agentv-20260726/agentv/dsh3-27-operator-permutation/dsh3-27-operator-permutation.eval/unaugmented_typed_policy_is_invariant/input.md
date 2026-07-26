@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "fixture_permutation_stop_rule_not_ship", "result": {"disposition": "closed_negative_unaugmented_invariant", "probe": {"accepted_set_mass_drift": 0.0, "cache": {"entries": 4, "hits": 4, "misses": 4}, "calibration_confidence_drift": 0.0, "comparable": 7, "comparisons": 7, "incomparable_reasons": [], "schema": "operator_permutation_report/v1", "score_disagreement": 0.0, "top1_flips": 0}}}

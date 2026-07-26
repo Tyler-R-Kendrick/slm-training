@@ -28,14 +28,21 @@ def _reports():
             / "docs/design/e803-reserved-operator-baseline-20260723/report.json"
         ).read_text()
     )
-    return cap2, token
+    hierarchical_head = json.loads(
+        (
+            ROOT
+            / "docs/design/dsh3-15-hierarchical-operator-head-baseline-20260725/report.json"
+        ).read_text()
+    )
+    return cap2, token, hierarchical_head
 
 
 def test_disposition_rejects_certificate_and_covers_every_capability() -> None:
-    cap2, token = _reports()
+    cap2, token, hierarchical_head = _reports()
     result = build_cap2_disposition(
         cap2_report=cap2,
         token_report=token,
+        hierarchical_head_report=hierarchical_head,
         version_stamp={"stamp_schema": "version_stamp/v1"},
     )
     assert result.cert_cap2_issued is False
@@ -51,6 +58,11 @@ def test_disposition_rejects_certificate_and_covers_every_capability() -> None:
     )
     assert (
         by_capability[Cap2Capability.HIERARCHICAL_HEAD].verdict
+        is Cap2CapabilityVerdict.REJECTED
+    )
+    assert by_capability[Cap2Capability.HIERARCHICAL_HEAD].evidence_ids
+    assert (
+        by_capability[Cap2Capability.TOPOLOGY_APPLICATION].verdict
         is Cap2CapabilityVerdict.UNRUN_CONDITIONAL
     )
     assert all(
@@ -74,12 +86,26 @@ def test_supported_verdict_cannot_exist_without_implemented_evidence() -> None:
 
 
 def test_tampered_positive_token_result_fails_closed() -> None:
-    cap2, token = _reports()
+    cap2, token, hierarchical_head = _reports()
     token["result"]["verdict"] = "accept"
     token["result"]["accepted"] = True
     with pytest.raises(ValueError, match="does not support"):
         build_cap2_disposition(
             cap2_report=cap2,
             token_report=token,
+            hierarchical_head_report=hierarchical_head,
+            version_stamp={"stamp_schema": "version_stamp/v1"},
+        )
+
+
+def test_tampered_positive_hierarchical_head_result_fails_closed() -> None:
+    cap2, token, hierarchical_head = _reports()
+    hierarchical_head["result"]["verdict"] = "accept"
+    hierarchical_head["result"]["accepted"] = True
+    with pytest.raises(ValueError, match="does not support its rejection"):
+        build_cap2_disposition(
+            cap2_report=cap2,
+            token_report=token,
+            hierarchical_head_report=hierarchical_head,
             version_stamp={"stamp_schema": "version_stamp/v1"},
         )

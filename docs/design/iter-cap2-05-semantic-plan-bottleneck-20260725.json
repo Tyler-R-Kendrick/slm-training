@@ -1,0 +1,184 @@
+{
+  "arms": [
+    {
+      "arm_id": "plan_fsq_2_3_3_4_5",
+      "capacity": 360,
+      "code_utilization": 0.025,
+      "codec": "fsq",
+      "codec_levels": [
+        2,
+        3,
+        3,
+        4,
+        5
+      ],
+      "elapsed_seconds": 2.9312538299998323,
+      "empirical_entropy_bits": 3.1699249744415283,
+      "exact_reconstruction_rate": 1.0,
+      "factor_distortion": {
+        "archetype": 0.0,
+        "bindings": 0.0,
+        "cardinality": 0.0,
+        "component_family": 0.0,
+        "role_set": 0.0,
+        "symbol_role": 0.0,
+        "topology": 0.0
+      },
+      "leakage": false,
+      "no_bypass_ok": true,
+      "nominal_bits": 8.491853096329674,
+      "nominal_bytes_per_example": 1.0614816370412092,
+      "notes": [
+        "program-factor fsq codec hidden_dim=64 steps=1600 feature_dim=45; utilization=0.0250 entropy_bits=3.1699"
+      ],
+      "num_records": 9,
+      "occupied_codewords": 9,
+      "seed": 0,
+      "serialized_bytes_per_example": 1.25
+    },
+    {
+      "arm_id": "plan_lfq_d6",
+      "capacity": 64,
+      "code_utilization": 0.140625,
+      "codec": "lfq",
+      "codec_levels": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "elapsed_seconds": 1.4832471329998498,
+      "empirical_entropy_bits": 3.1699249744415283,
+      "exact_reconstruction_rate": 1.0,
+      "factor_distortion": {
+        "archetype": 0.0,
+        "bindings": 0.0,
+        "cardinality": 0.0,
+        "component_family": 0.0,
+        "role_set": 0.0,
+        "symbol_role": 0.0,
+        "topology": 0.0
+      },
+      "leakage": false,
+      "no_bypass_ok": true,
+      "nominal_bits": 6.0,
+      "nominal_bytes_per_example": 0.75,
+      "notes": [
+        "program-factor lfq codec hidden_dim=64 steps=1600 feature_dim=45; utilization=0.1406 entropy_bits=3.1699"
+      ],
+      "num_records": 9,
+      "occupied_codewords": 9,
+      "seed": 0,
+      "serialized_bytes_per_example": 0.75
+    },
+    {
+      "arm_id": "plan_vq_64_d8",
+      "capacity": 64,
+      "code_utilization": 0.140625,
+      "codec": "vq",
+      "codec_levels": [
+        64
+      ],
+      "elapsed_seconds": 4.251163666999901,
+      "empirical_entropy_bits": 3.1699249744415283,
+      "exact_reconstruction_rate": 1.0,
+      "factor_distortion": {
+        "archetype": 0.0,
+        "bindings": 0.0,
+        "cardinality": 0.0,
+        "component_family": 0.0,
+        "role_set": 0.0,
+        "symbol_role": 0.0,
+        "topology": 0.0
+      },
+      "leakage": false,
+      "no_bypass_ok": true,
+      "nominal_bits": 6.0,
+      "nominal_bytes_per_example": 0.75,
+      "notes": [
+        "program-factor vq codec hidden_dim=64 steps=4000 feature_dim=45; utilization=0.1406 entropy_bits=3.1699"
+      ],
+      "num_records": 9,
+      "occupied_codewords": 9,
+      "seed": 0,
+      "serialized_bytes_per_example": 0.75
+    },
+    {
+      "arm_id": "plan_continuous_d6",
+      "capacity": 6,
+      "code_utilization": 1.5,
+      "codec": "continuous",
+      "codec_levels": [
+        6
+      ],
+      "elapsed_seconds": 0.7983254639998449,
+      "empirical_entropy_bits": 0.0,
+      "exact_reconstruction_rate": 1.0,
+      "factor_distortion": {
+        "archetype": 0.0,
+        "bindings": 0.0,
+        "cardinality": 0.0,
+        "component_family": 0.0,
+        "role_set": 0.0,
+        "symbol_role": 0.0,
+        "topology": 0.0
+      },
+      "leakage": false,
+      "no_bypass_ok": true,
+      "nominal_bits": 6.0,
+      "nominal_bytes_per_example": 0.75,
+      "notes": [
+        "program-factor continuous codec hidden_dim=64 steps=1200 feature_dim=45; utilization=1.0000 entropy_bits=0.0000"
+      ],
+      "num_records": 9,
+      "occupied_codewords": 9,
+      "seed": 0,
+      "serialized_bytes_per_example": 24
+    },
+    {
+      "arm_id": "plan_uniform_b2d6",
+      "capacity": 64,
+      "code_utilization": 0.140625,
+      "codec": "uniform_scalar",
+      "codec_levels": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "elapsed_seconds": 3.329614227999855,
+      "empirical_entropy_bits": 3.1699249744415283,
+      "exact_reconstruction_rate": 1.0,
+      "factor_distortion": {
+        "archetype": 0.0,
+        "bindings": 0.0,
+        "cardinality": 0.0,
+        "component_family": 0.0,
+        "role_set": 0.0,
+        "symbol_role": 0.0,
+        "topology": 0.0
+      },
+      "leakage": false,
+      "no_bypass_ok": true,
+      "nominal_bits": 6.0,
+      "nominal_bytes_per_example": 0.75,
+      "notes": [
+        "program-factor uniform_scalar codec hidden_dim=64 steps=3000 feature_dim=45; utilization=0.1406 entropy_bits=3.1699"
+      ],
+      "num_records": 9,
+      "occupied_codewords": 9,
+      "seed": 0,
+      "serialized_bytes_per_example": 0.75
+    }
+  ],
+  "corpus_path": null,
+  "mode": "fixture",
+  "num_records": 9,
+  "run_id": "22524489f96cc202",
+  "timestamp": "2026-07-25T10:45:33.054727+00:00",
+  "version": "cap2-05-v1"
+}

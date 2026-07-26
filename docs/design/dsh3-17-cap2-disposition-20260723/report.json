@@ -6,11 +6,58 @@
       "runDir": "output-dir://agentv/cap2-capability-disposition-v1",
       "timingPath": "output-dir://agentv/cap2-capability-disposition-v1/timing.json"
     },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 4,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "complete-capability-ledger:domain_criterion",
+          "expected": true,
+          "id": "complete-capability-ledger:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "exact-evidence-identities:domain_criterion",
+          "expected": true,
+          "id": "exact-evidence-identities:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "unrun-is-not-benefit:domain_criterion",
+          "expected": true,
+          "id": "unrun-is-not-benefit:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "cert-cap2-rejected:domain_criterion",
+          "expected": true,
+          "id": "cert-cap2-rejected:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 4
+    },
     "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
     "sdk": "@agentv/core",
     "spec": "output-dir://agentv/cap2-capability-disposition-v1.eval.jsonl",
     "summary": {
-      "durationMs": 19,
+      "durationMs": 162,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -50,11 +97,13 @@
       },
       {
         "capability": "hierarchical_head",
-        "evidence_ids": [],
+        "evidence_ids": [
+          "SLM-383.hierarchical_operator_head_baseline"
+        ],
         "implemented_benefit": false,
-        "reason": "SLM-383 stayed closed because its token-baseline prerequisite failed.",
+        "reason": "The follow-up causal-attribution experiment ran (AGENTS.md IV.11's encoder-side gap): the enabled head strictly beats its own frozen weight-zero capacity control, so it is trainable and not a dead architecture, but it ties exactly with the matched-capacity token baseline and does not causally improve beyond it, so DSH3-15's acceptance bar is unmet.",
         "schema": "cap2_capability_verdict/v1",
-        "verdict": "unrun_conditional"
+        "verdict": "rejected"
       },
       {
         "capability": "topology_application",
@@ -199,19 +248,111 @@
           "held_out_n": 4,
           "suite": "CAP2 held-out operator decisions"
         }
+      },
+      {
+        "checkpoint_identity": null,
+        "code_identity": "64d508d0b28d2a695f2b49cd3362865c671dfeb7",
+        "config_identity": {
+          "learning_rate": 0.05,
+          "parameter_count": 641,
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "steps_per_arm": 24
+        },
+        "data_identity": {
+          "held_out_decision_n": 12,
+          "shapes": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              3,
+              1
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ]
+          ],
+          "train_decision_n": 30
+        },
+        "evidence_class": "bounded_matched_negative",
+        "evidence_id": "SLM-383.hierarchical_operator_head_baseline",
+        "hardware_identity": {
+          "backend": "dynamic_pointer_scorer+hashed_token_scorer",
+          "device": "cpu",
+          "efficiency_claim": false,
+          "exact_hardware": null
+        },
+        "result_identity": {
+          "acceptance": {
+            "cap0_retention": {
+              "available": true,
+              "pass": true,
+              "reason": "default_off_path_is_unchanged"
+            },
+            "cap1_retention": {
+              "available": false,
+              "dependency_issue": "SLM-379",
+              "pass": null,
+              "reason": "CERT_CAP1_unavailable"
+            },
+            "causal_change_rate_at_least_0_05_vs_weight_zero": true,
+            "correct_changes_exceed_wrong_changes_vs_weight_zero": false,
+            "enabled_beats_weight_zero_capacity_control": true,
+            "enabled_causally_improves_beyond_token_baseline": false,
+            "zero_false_legal_admissions": true
+          },
+          "agentv": {
+            "durationMs": 244,
+            "executionErrors": 0,
+            "failed": 0,
+            "meanScore": 1,
+            "passed": 6,
+            "total": 6
+          },
+          "mean_operator_accuracy": {
+            "ENABLED": 1.0,
+            "TOKEN_BASELINE": 1.0,
+            "WEIGHT_ZERO": 0.5
+          },
+          "verdict": "reject"
+        },
+        "schema": "cap2_capability_evidence/v1",
+        "suite_identity": {
+          "held_out_n": 12,
+          "suite": "typed candidate-group-size fixture decisions"
+        }
       }
     ],
     "schema": "cap2_capability_disposition/v1",
     "version_stamp": {
-      "code_commit": "41c2a57d8c070c33b2a8cf52f82ddb6a228aae4d",
+      "code_commit": "64d508d0b28d2a695f2b49cd3362865c671dfeb7",
       "code_dirty": true,
       "components": {
-        "evals.cap2_disposition": "v1",
+        "evals.cap2_disposition": "v2",
         "evals.cap2_operator": "v1",
+        "harness.experiments.hierarchical_operator_head_baseline": "v1",
         "harness.experiments.reserved_operator_baseline": "v1"
       },
       "stamp_schema": "version_stamp/v1",
-      "stamped_at": "2026-07-23T18:55:23.267150+00:00"
+      "stamped_at": "2026-07-25T13:51:54.444641+00:00"
     }
   },
   "run": {
@@ -223,14 +364,15 @@
   },
   "schema": "cap2_capability_disposition_report/v1",
   "version_stamp": {
-    "code_commit": "41c2a57d8c070c33b2a8cf52f82ddb6a228aae4d",
+    "code_commit": "64d508d0b28d2a695f2b49cd3362865c671dfeb7",
     "code_dirty": true,
     "components": {
-      "evals.cap2_disposition": "v1",
+      "evals.cap2_disposition": "v2",
       "evals.cap2_operator": "v1",
+      "harness.experiments.hierarchical_operator_head_baseline": "v1",
       "harness.experiments.reserved_operator_baseline": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-23T18:55:23.267150+00:00"
+    "stamped_at": "2026-07-25T13:51:54.444641+00:00"
   }
 }

@@ -1,0 +1,77 @@
+{
+  "schema": "operator_feature_encoding_report/v1",
+  "claim_class": "wiring",
+  "arms": {
+    "hash_scalar": {
+      "n": 20,
+      "top1_recall": 1.0,
+      "ndcg": 1.0,
+      "accepted_set_mass": 0.9996233463287354,
+      "brier_score": 1.41867991487743e-07,
+      "calibration_error": 0.00037665367126460403,
+      "final_train_loss": 0.0003785370208788663,
+      "param_count": 97
+    },
+    "typed": {
+      "n": 20,
+      "top1_recall": 1.0,
+      "ndcg": 1.0,
+      "accepted_set_mass": 1.0,
+      "brier_score": 0.0,
+      "calibration_error": 0.0,
+      "final_train_loss": 0.0,
+      "param_count": 841
+    },
+    "typed_identity_bucket": {
+      "n": 20,
+      "top1_recall": 1.0,
+      "ndcg": 1.0,
+      "accepted_set_mass": 1.0,
+      "brier_score": 0.0,
+      "calibration_error": 0.0,
+      "final_train_loss": 0.0,
+      "param_count": 969
+    }
+  },
+  "permutation_robustness": {
+    "hash_scalar": {
+      "n": 20,
+      "matches": 20,
+      "invariant": true
+    },
+    "typed": {
+      "n": 20,
+      "matches": 20,
+      "invariant": true
+    },
+    "typed_identity_bucket": {
+      "n": 20,
+      "matches": 3,
+      "invariant": false
+    }
+  },
+  "recipe": {
+    "n_train": 30,
+    "n_eval": 20,
+    "steps": 150,
+    "lr": 0.05,
+    "seed": 0,
+    "dim": 8
+  },
+  "disposition": "wiring_underpowered",
+  "note": "Fixture-scale only (30 train / 20 eval decisions): typed top-1 recall 1.000 vs hash-scalar 1.000 is directional, not a powered claim. Per the DSH3-23 stop rule, adopt typed encoding only on a supported benefit at production scale; this run alone does not clear that bar in either direction.",
+  "schema_version": 1,
+  "run_id": "dsh3_23_operator_feature_encoder_fixture",
+  "run_class": "fixture_demo",
+  "n_candidates": 5,
+  "honest_verdict": "fixture_wiring",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "36d6f072464dce682d1e1e6e5abc8eb530c3999c",
+    "code_dirty": true,
+    "components": {
+      "model.operator_feature_encoder": "v1"
+    },
+    "stamped_at": "2026-07-25T15:36:18.408853+00:00"
+  }
+}

@@ -1,0 +1,480 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh3-28-typed-operator-policy",
+      "timingPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 3,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "legal-row-selection:domain_criterion",
+          "expected": true,
+          "id": "legal-row-selection:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "singleton-bypass:domain_criterion",
+          "expected": true,
+          "id": "singleton-bypass:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "causal-controls-or-stop-rule:domain_criterion",
+          "expected": true,
+          "id": "causal-controls-or-stop-rule:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 3
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh3-28-typed-operator-policy.eval.jsonl",
+    "summary": {
+      "durationMs": 574,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 3,
+      "total": 3
+    }
+  },
+  "controls": {
+    "enabled_vs_random": {
+      "changed": 1,
+      "correct": 1,
+      "eligible": 2,
+      "wrong": 0
+    },
+    "enabled_vs_zero": {
+      "changed": 0,
+      "correct": 0,
+      "eligible": 2,
+      "wrong": 0
+    },
+    "prediction_replay_matched": true
+  },
+  "counts": {
+    "complete_train_rows": 2,
+    "held_out_rows": 2,
+    "train_rows": 2
+  },
+  "decision": {
+    "reason": "bounded local control matrix completed; this is not a ship decision",
+    "verdict": "measured"
+  },
+  "held_out_evidence": {
+    "corpus": {
+      "collapsed_record_count": 1,
+      "collapsed_records_path": "local-scratch://held_out/operator_collapsed_records.jsonl",
+      "content_fingerprint": "4e0bd1c10449dfd927b6b708e724064ab321d9ea2b1baa0730fc6b8f89bbd207",
+      "record_count": 10,
+      "records_path": "local-scratch://held_out/operator_records.jsonl",
+      "report_path": "local-scratch://held_out/operator_coverage.json",
+      "root_count": 1
+    },
+    "corpus_summary": {
+      "application_coverage": {
+        "emitted_illegal_targets": 0,
+        "legal_successes": 64,
+        "rejected_combinations": 2699
+      },
+      "collapse": {
+        "hard_negative_count": 1,
+        "nl_available": false,
+        "nl_unavailable_reason": "CERT_CAP1_unavailable",
+        "symbolic_only": true
+      },
+      "config": {
+        "actions_per_state": 2,
+        "max_combinations_per_operator": 512,
+        "max_roots": 1,
+        "sibling_forks": true
+      },
+      "coverage_gap_count": 12,
+      "schema": "symbolic_operator_corpus_report/v1",
+      "strata": {
+        "argument_kinds": {
+          "node,role,template": 6,
+          "node,role,template,index": 3,
+          "none": 1
+        },
+        "kind": {
+          "next_turn": 3,
+          "sibling_fork": 1,
+          "single_turn": 6
+        },
+        "operator_family": {
+          "history.fork": 1,
+          "openui.add_child": 9
+        },
+        "outcome": {
+          "fork": 1,
+          "success": 9
+        },
+        "scope_complexity": {
+          "4": 7,
+          "7": 3
+        },
+        "semantic_family": {
+          "fixture": 10
+        },
+        "state_size": {
+          "3": 7,
+          "6": 3
+        },
+        "target_view": {
+          "dual": 3,
+          "history_only": 1,
+          "operator_only": 3,
+          "result_ast_only": 3
+        }
+      },
+      "version": "dsh3-28-dev",
+      "version_stamp": {
+        "code_commit": "430c4605a870329828400efeccb5bfa2345c669b",
+        "code_dirty": true,
+        "components": {
+          "data.flow.operator_policy_corpus": "v4",
+          "harness.experiments.typed_operator_policy": "v5",
+          "model.operator_policy_view": "v3"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-26T12:36:34.937670+00:00"
+      }
+    },
+    "row_reports": [
+      {
+        "accepted_rows": 2,
+        "hard_negative_counts": {
+          "conflict": 1
+        },
+        "positive_only_rows": 1,
+        "rejected_rows": 0,
+        "rejection_counts": {},
+        "schema": "operator_policy_corpus_quality_report/v1",
+        "total_steps": 2
+      }
+    ]
+  },
+  "issue": "SLM-403",
+  "matrix": [
+    {
+      "action_accuracy": 0.5,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "zero",
+      "loss": [],
+      "n": 2,
+      "parameters": 2882,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": true,
+          "correct_action_and_arguments": false,
+          "model_forwards": 1,
+          "route": "complete_ambiguous",
+          "row_id": "row_e8a0426180e372c8c71fd3c2",
+          "selected_action_row": 0,
+          "selected_argument_rows": [
+            [
+              "parent",
+              3
+            ],
+            [
+              "role",
+              6
+            ],
+            [
+              "child",
+              22
+            ],
+            [
+              "index",
+              0
+            ]
+          ]
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_c69639812830bd6504fca6b7",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "random",
+      "loss": [],
+      "n": 2,
+      "parameters": 2882,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 1,
+          "route": "complete_ambiguous",
+          "row_id": "row_e8a0426180e372c8c71fd3c2",
+          "selected_action_row": 5,
+          "selected_argument_rows": [
+            [
+              "node",
+              3
+            ],
+            [
+              "role",
+              6
+            ]
+          ]
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_c69639812830bd6504fca6b7",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "shuffled_labels",
+      "loss": [
+        1.8728232383728027,
+        0.2117043435573578,
+        0.004606780130416155,
+        6.556247535627335e-05
+      ],
+      "n": 2,
+      "parameters": 2882,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 1,
+          "route": "complete_ambiguous",
+          "row_id": "row_e8a0426180e372c8c71fd3c2",
+          "selected_action_row": 1,
+          "selected_argument_rows": [
+            [
+              "node",
+              3
+            ]
+          ]
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_c69639812830bd6504fca6b7",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.5,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "enabled",
+      "loss": [
+        1.4935173988342285,
+        1.1228501796722412,
+        0.9721091985702515,
+        0.929305911064148
+      ],
+      "n": 2,
+      "parameters": 2882,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": true,
+          "correct_action_and_arguments": false,
+          "model_forwards": 1,
+          "route": "complete_ambiguous",
+          "row_id": "row_e8a0426180e372c8c71fd3c2",
+          "selected_action_row": 0,
+          "selected_argument_rows": [
+            [
+              "parent",
+              3
+            ],
+            [
+              "role",
+              6
+            ],
+            [
+              "child",
+              22
+            ],
+            [
+              "index",
+              2
+            ]
+          ]
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_c69639812830bd6504fca6b7",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    }
+  ],
+  "run": {
+    "backend": "typed_operator_feature_encoder",
+    "checkpoint": null,
+    "device": "cpu",
+    "held_out_record_id": "held_out_input_01",
+    "learning_rate": 0.03,
+    "max_combinations_per_operator": 512,
+    "ship_claim": false,
+    "steps": 4,
+    "timestamp": "2026-07-26T12:37:34.048743+00:00",
+    "train_record_id": "train_text_only_01"
+  },
+  "schema": "dsh3_28_typed_operator_policy_report/v1",
+  "train_evidence": {
+    "corpus": {
+      "collapsed_record_count": 1,
+      "collapsed_records_path": "local-scratch://train/operator_collapsed_records.jsonl",
+      "content_fingerprint": "fab37f00b3576fc0226b166c7a7f711b10828f7e4397a9239fbe5eef1e9648b6",
+      "record_count": 10,
+      "records_path": "local-scratch://train/operator_records.jsonl",
+      "report_path": "local-scratch://train/operator_coverage.json",
+      "root_count": 1
+    },
+    "corpus_summary": {
+      "application_coverage": {
+        "emitted_illegal_targets": 0,
+        "legal_successes": 22,
+        "rejected_combinations": 835
+      },
+      "collapse": {
+        "hard_negative_count": 1,
+        "nl_available": false,
+        "nl_unavailable_reason": "CERT_CAP1_unavailable",
+        "symbolic_only": true
+      },
+      "config": {
+        "actions_per_state": 2,
+        "max_combinations_per_operator": 512,
+        "max_roots": 2,
+        "sibling_forks": true
+      },
+      "coverage_gap_count": 12,
+      "schema": "symbolic_operator_corpus_report/v1",
+      "strata": {
+        "argument_kinds": {
+          "node,role,template": 6,
+          "node,role,template,index": 3,
+          "none": 1
+        },
+        "kind": {
+          "next_turn": 3,
+          "sibling_fork": 1,
+          "single_turn": 6
+        },
+        "operator_family": {
+          "history.fork": 1,
+          "openui.add_child": 9
+        },
+        "outcome": {
+          "fork": 1,
+          "success": 9
+        },
+        "scope_complexity": {
+          "4": 10
+        },
+        "semantic_family": {
+          "human_curated": 10
+        },
+        "state_size": {
+          "2": 7,
+          "3": 3
+        },
+        "target_view": {
+          "dual": 3,
+          "history_only": 1,
+          "operator_only": 3,
+          "result_ast_only": 3
+        }
+      },
+      "version": "dsh3-28-train",
+      "version_stamp": {
+        "code_commit": "430c4605a870329828400efeccb5bfa2345c669b",
+        "code_dirty": true,
+        "components": {
+          "data.flow.operator_policy_corpus": "v4",
+          "harness.experiments.typed_operator_policy": "v5",
+          "model.operator_policy_view": "v3"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-26T12:36:34.937670+00:00"
+      }
+    },
+    "row_reports": [
+      {
+        "accepted_rows": 2,
+        "hard_negative_counts": {
+          "conflict": 1
+        },
+        "positive_only_rows": 1,
+        "rejected_rows": 0,
+        "rejection_counts": {},
+        "schema": "operator_policy_corpus_quality_report/v1",
+        "total_steps": 2
+      }
+    ]
+  },
+  "version_stamp": {
+    "code_commit": "430c4605a870329828400efeccb5bfa2345c669b",
+    "code_dirty": true,
+    "components": {
+      "data.flow.operator_policy_corpus": "v4",
+      "harness.experiments.typed_operator_policy": "v5",
+      "model.operator_policy_view": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T12:36:34.937670+00:00"
+  }
+}

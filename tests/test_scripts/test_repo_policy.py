@@ -188,3 +188,34 @@ def test_skill_discovery_entries_must_be_canonical_symlinks(tmp_path: Path) -> N
     discovery.rmdir()
     discovery.symlink_to("../../.agents/skills/example", target_is_directory=True)
     assert validate_skill_mirrors(tmp_path) == []
+
+
+def test_canonical_skills_must_be_mirrored_into_every_discovery_root(
+    tmp_path: Path,
+) -> None:
+    """A canonical skill with no discovery entry is invisible to that client.
+
+    The policy used to walk only discovery -> canonical, so a newly added skill
+    could ship unseen by Claude Code and Cursor with a green check.
+    """
+    (tmp_path / ".agents/skills/example").mkdir(parents=True)
+    (tmp_path / ".agents/skills/unmirrored").mkdir(parents=True)
+    for root in (".claude/skills", ".cursor/skills"):
+        discovery = tmp_path / root
+        discovery.mkdir(parents=True)
+        (discovery / "example").symlink_to(
+            "../../.agents/skills/example", target_is_directory=True
+        )
+
+    assert sorted(validate_skill_mirrors(tmp_path)) == [
+        "unmirrored skill: .claude/skills/unmirrored is missing; "
+        "add a symlink to ../../.agents/skills/unmirrored",
+        "unmirrored skill: .cursor/skills/unmirrored is missing; "
+        "add a symlink to ../../.agents/skills/unmirrored",
+    ]
+
+    for root in (".claude/skills", ".cursor/skills"):
+        (tmp_path / root / "unmirrored").symlink_to(
+            "../../.agents/skills/unmirrored", target_is_directory=True
+        )
+    assert validate_skill_mirrors(tmp_path) == []

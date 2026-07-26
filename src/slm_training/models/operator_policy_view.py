@@ -29,6 +29,9 @@ from slm_training.dsl.operators import (
     RefKind,
     ReferenceDescriptorV1,
     ReferenceTableV1,
+    SelectorDescriptorV1,
+    SelectorFact,
+    SelectorKind,
 )
 from slm_training.dsl.operators.legal_set import OperatorLegalSetV1
 
@@ -41,6 +44,7 @@ __all__ = [
     "OperatorPolicyViewError",
     "ReferenceModelViewV1",
     "build_operator_policy_input",
+    "operator_policy_input_from_dict",
     "validate_no_forbidden_fields",
 ]
 
@@ -127,7 +131,7 @@ def validate_no_forbidden_fields(value: Any, *, _path: str = "$") -> None:
 
 @dataclass(frozen=True)
 class ReferenceModelViewV1:
-    """One allowlisted, row-local view over a fresh ``ReferenceDescriptorV1``.
+    """One allowlisted, row-local view over a fresh reference or selector.
 
     ``row`` is this entry's position in the owning ``OperatorPolicyInputV1``.
     ``parent_row`` is a row-local join into the same table (``None`` when the
@@ -139,10 +143,13 @@ class ReferenceModelViewV1:
     row: int
     ref_kind: RefKind
     value_type: str
-    compiler_facts: tuple[CompilerFact, ...]
+    compiler_facts: tuple[CompilerFact | SelectorFact, ...]
     has_parent: bool
     parent_row: int | None
     relative_position: int | None
+    selector_kind: SelectorKind | None = None
+    selector_cardinality: int | None = None
+    selector_max_fanout: int | None = None
     schema: str = "operator_reference_model_view/v1"
 
     def __post_init__(self) -> None:
@@ -156,6 +163,30 @@ class ReferenceModelViewV1:
             raise ValueError("relative_position must be non-negative")
         if self.ref_kind is not RefKind.INDEX and self.relative_position is not None:
             raise ValueError("only index references carry a relative position")
+        if self.ref_kind is RefKind.SELECTOR:
+            if (
+                self.selector_kind is None
+                or self.selector_cardinality is None
+                or self.selector_max_fanout is None
+            ):
+                raise ValueError("selector rows require kind, cardinality, and fanout")
+            if self.selector_cardinality < 0 or self.selector_max_fanout <= 0:
+                raise ValueError("selector cardinality/fanout must be valid")
+            if self.selector_cardinality > self.selector_max_fanout:
+                raise ValueError("selector cardinality cannot exceed fanout")
+            if any(not isinstance(fact, SelectorFact) for fact in self.compiler_facts):
+                raise ValueError("selector rows require selector facts")
+        elif any(
+            value is not None
+            for value in (
+                self.selector_kind,
+                self.selector_cardinality,
+                self.selector_max_fanout,
+            )
+        ):
+            raise ValueError("only selector rows carry selector metadata")
+        elif any(not isinstance(fact, CompilerFact) for fact in self.compiler_facts):
+            raise ValueError("reference rows require compiler facts")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -167,6 +198,11 @@ class ReferenceModelViewV1:
             "has_parent": self.has_parent,
             "parent_row": self.parent_row,
             "relative_position": self.relative_position,
+            "selector_kind": (
+                None if self.selector_kind is None else self.selector_kind.value
+            ),
+            "selector_cardinality": self.selector_cardinality,
+            "selector_max_fanout": self.selector_max_fanout,
         }
 
 
@@ -279,14 +315,13 @@ class OperatorPolicyInputV1:
                     raise ValueError("candidate_rows must join existing reference rows")
         validate_no_forbidden_fields(self.to_dict())
 
-    def to_dict(self) -> dict[str, Any]:
-        """Canonicalize row order by allowlisted content, then remap joins.
+    def canonical_row_maps(self) -> tuple[dict[int, int], dict[int, int]]:
+        """Map live row indices onto the persisted canonical row order.
 
-        Two views built from opaque-ID/order permutations of the same
-        underlying reference table serialize identically: rows are ordered by
-        their own allowed content only (never by build-time row number), and
-        every ``parent_row`` / ``candidate_rows`` join is remapped to the new
-        canonical numbering so cross-references stay internally consistent.
+        Policy labels are evaluator-only, but they still join the sanitized
+        input by row index.  Callers persisting a view together with labels
+        must use these maps; otherwise a legal-set permutation can make a
+        correct live label point at a different canonical candidate.
         """
 
         def reference_key(index: int) -> tuple[Any, ...]:
@@ -298,29 +333,59 @@ class OperatorPolicyInputV1:
                 view.has_parent,
                 view.relative_position is None,
                 view.relative_position or 0,
+                "" if view.selector_kind is None else view.selector_kind.value,
+                view.selector_cardinality if view.selector_cardinality is not None else -1,
+                view.selector_max_fanout if view.selector_max_fanout is not None else -1,
             )
 
-        canonical_order = sorted(range(len(self.reference_rows)), key=reference_key)
-        new_row_of_old = {old: new for new, old in enumerate(canonical_order)}
+        canonical_references = sorted(
+            range(len(self.reference_rows)), key=reference_key
+        )
+        reference_map = {
+            old_row: new_row
+            for new_row, old_row in enumerate(canonical_references)
+        }
+
+        def action_key(index: int) -> tuple[Any, ...]:
+            action = self.action_rows[index]
+            return (action.operator_id, action.operator_version, action.verdict.value)
+
+        canonical_actions = sorted(range(len(self.action_rows)), key=action_key)
+        action_map = {
+            old_row: new_row for new_row, old_row in enumerate(canonical_actions)
+        }
+        return reference_map, action_map
+
+    def to_dict(self) -> dict[str, Any]:
+        """Canonicalize row order by allowlisted content, then remap joins.
+
+        Two views built from opaque-ID/order permutations of the same
+        underlying reference table serialize identically: rows are ordered by
+        their own allowed content only (never by build-time row number), and
+        every ``parent_row`` / ``candidate_rows`` join is remapped to the new
+        canonical numbering so cross-references stay internally consistent.
+        """
+
+        reference_map, action_map = self.canonical_row_maps()
+        canonical_order = sorted(reference_map, key=reference_map.__getitem__)
 
         reference_payloads = []
         for new_row, old_row in enumerate(canonical_order):
             payload = self.reference_rows[old_row].to_dict()
             payload["row"] = new_row
             if payload["parent_row"] is not None:
-                payload["parent_row"] = new_row_of_old[payload["parent_row"]]
+                payload["parent_row"] = reference_map[payload["parent_row"]]
             reference_payloads.append(payload)
 
-        def action_key(action: OperatorActionViewV1) -> tuple[Any, ...]:
-            return (action.operator_id, action.operator_version, action.verdict.value)
-
         action_payloads = []
-        for new_row, action in enumerate(sorted(self.action_rows, key=action_key)):
+        for old_row in sorted(action_map, key=action_map.__getitem__):
+            new_row = action_map[old_row]
+            action = self.action_rows[old_row]
             payload = action.to_dict()
             payload["row"] = new_row
             for slot_payload in payload["argument_slots"]:
                 slot_payload["candidate_rows"] = sorted(
-                    new_row_of_old[old_row] for old_row in slot_payload["candidate_rows"]
+                    reference_map[old_row] for old_row in slot_payload["candidate_rows"]
                 )
             action_payloads.append(payload)
 
@@ -333,11 +398,112 @@ class OperatorPolicyInputV1:
         }
 
 
+def operator_policy_input_from_dict(value: Mapping[str, Any]) -> OperatorPolicyInputV1:
+    """Rehydrate one persisted canonical policy view without widening its input.
+
+    Corpus labels live beside this payload, so a trainer must consume the exact
+    canonical rows that the corpus validated rather than rebuilding a new view
+    from runtime objects (which could reorder the legal set).
+    """
+    if value.get("schema") != "operator_policy_input/v1":
+        raise OperatorPolicyViewError("policy_view.schema_unsupported")
+    validate_no_forbidden_fields(value)
+    try:
+        references = tuple(
+            ReferenceModelViewV1(
+                row=int(row["row"]),
+                ref_kind=RefKind(row["ref_kind"]),
+                value_type=str(row["value_type"]),
+                compiler_facts=tuple(
+                    SelectorFact(fact)
+                    if RefKind(row["ref_kind"]) is RefKind.SELECTOR
+                    else CompilerFact(fact)
+                    for fact in row["compiler_facts"]
+                ),
+                has_parent=bool(row["has_parent"]),
+                parent_row=(
+                    None if row["parent_row"] is None else int(row["parent_row"])
+                ),
+                relative_position=(
+                    None
+                    if row["relative_position"] is None
+                    else int(row["relative_position"])
+                ),
+                selector_kind=(
+                    None
+                    if row.get("selector_kind") is None
+                    else SelectorKind(row["selector_kind"])
+                ),
+                selector_cardinality=(
+                    None
+                    if row.get("selector_cardinality") is None
+                    else int(row["selector_cardinality"])
+                ),
+                selector_max_fanout=(
+                    None
+                    if row.get("selector_max_fanout") is None
+                    else int(row["selector_max_fanout"])
+                ),
+            )
+            for row in value["reference_rows"]
+        )
+        actions = tuple(
+            OperatorActionViewV1(
+                row=int(action["row"]),
+                operator_id=str(action["operator_id"]),
+                operator_version=str(action["operator_version"]),
+                locality=str(action["locality"]),
+                cost=float(action["cost"]),
+                effect_signature=tuple(
+                    EffectDeltaKind(kind) for kind in action["effect_signature"]
+                ),
+                argument_slots=tuple(
+                    OperatorArgumentSlotViewV1(
+                        slot_id=str(slot["slot_id"]),
+                        ref_kind=RefKind(slot["ref_kind"]),
+                        binding_phase=BindingPhase(slot["binding_phase"]),
+                        required=bool(slot["required"]),
+                        repeated=bool(slot["repeated"]),
+                        candidate_rows=tuple(
+                            int(row) for row in slot["candidate_rows"]
+                        ),
+                        domain_complete=bool(slot["domain_complete"]),
+                    )
+                    for slot in action["argument_slots"]
+                ),
+                verdict=OperatorSupportVerdict(action["verdict"]),
+                coverage=LegalSetCoverage(action["coverage"]),
+            )
+            for action in value["action_rows"]
+        )
+        return OperatorPolicyInputV1(
+            reference_rows=references,
+            action_rows=actions,
+            ordinary_action_count=int(value["ordinary_action_count"]),
+            coverage=LegalSetCoverage(value["coverage"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise OperatorPolicyViewError("policy_view.invalid_payload") from exc
+
+
 def _reference_view(
     row: int,
-    descriptor: ReferenceDescriptorV1,
+    descriptor: ReferenceDescriptorV1 | SelectorDescriptorV1,
     row_by_semantic_fingerprint: Mapping[str, int],
 ) -> ReferenceModelViewV1:
+    if isinstance(descriptor, SelectorDescriptorV1):
+        return ReferenceModelViewV1(
+            row=row,
+            ref_kind=RefKind.SELECTOR,
+            value_type=f"openui.selector.{descriptor.selector_kind.value}",
+            compiler_facts=descriptor.compiler_facts,
+            has_parent=False,
+            parent_row=None,
+            relative_position=None,
+            selector_kind=descriptor.selector_kind,
+            selector_cardinality=descriptor.cardinality,
+            selector_max_fanout=descriptor.max_fanout,
+        )
     has_parent = descriptor.parent_fingerprint is not None
     parent_row = (
         row_by_semantic_fingerprint.get(descriptor.parent_fingerprint)
@@ -374,17 +540,18 @@ def build_operator_policy_input(
     if legal_set.registry_fingerprint != library.registry_fingerprint:
         raise OperatorPolicyViewError("policy_view.registry_mismatch")
 
+    table_entries = (*reference_table.entries, *reference_table.selectors)
     row_by_semantic_fingerprint: dict[str, int] = {
         entry.descriptor.semantic_fingerprint: row
         for row, entry in enumerate(reference_table.entries)
     }
     reference_rows = tuple(
         _reference_view(row, entry.descriptor, row_by_semantic_fingerprint)
-        for row, entry in enumerate(reference_table.entries)
+        for row, entry in enumerate(table_entries)
     )
     row_by_ref: dict[tuple[RefKind, str], int] = {
         (entry.ref.KIND, entry.ref.opaque_id): row
-        for row, entry in enumerate(reference_table.entries)
+        for row, entry in enumerate(table_entries)
     }
 
     action_rows = tuple(
