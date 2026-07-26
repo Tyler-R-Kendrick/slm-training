@@ -6909,7 +6909,7 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
@@ -6918,6 +6918,11 @@
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-403: add the required matched five-family typed action-policy matrix over the shared sanitized scorer"
+        },
         {
           "version": "v5",
           "date": "2026-07-26",

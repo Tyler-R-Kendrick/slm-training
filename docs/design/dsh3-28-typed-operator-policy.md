@@ -69,6 +69,25 @@ preflight: it does not meet the required >=5% enabled-versus-disabled choice
 change or a held-out improvement, is not a CAP2 ship evaluation, creates no
 checkpoint, and does not clear SLM-403.
 
+## Five-family bounded control result (2026-07-26)
+
+[`dsh3-28-typed-operator-policy-20260726-cap512-fiveheads/report.json`](dsh3-28-typed-operator-policy-20260726-cap512-fiveheads/report.json)
+records the required local-flat, ternary-ECOC, factorized, independent-set, and
+recurrent-set policy heads under identical CPU-only data, seed, four-step
+budget, and controls. The run retained exactly two COMPLETE train rows and two
+COMPLETE held-out rows. Each head ran enabled, weight-zero, shuffled-label, and
+random controls; all three AgentEvals assertions passed under pinned AgentV.
+
+Every enabled head made **0/2** held-out choice changes relative to its
+weight-zero control. Each had one correct difference from random, but that is
+not a causal enabled-versus-disabled effect. The runner therefore records the
+preregistered stop-rule verdict **reject**: no family caused a beneficial
+held-out change at this tiny local scale. This keeps all five implementation
+families and their control evidence, but advances neither DSH5 nor a ship
+claim. It also does not satisfy SLM-403's full CAP2 acceptance: normal eval
+still lacks the ModelPlugin side-channel integration and the frozen CAP2 suite
+still needs its current-surface reconciliation.
+
 ## Remaining evaluation scope
 
 This is the reusable scored-policy boundary and its unit proof, not a

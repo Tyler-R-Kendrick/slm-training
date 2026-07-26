@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from slm_training.dsl.operators import (
     BindingPhase,
     CompilerFact,
@@ -10,6 +12,7 @@ from slm_training.dsl.operators import (
     RefKind,
 )
 from slm_training.harnesses.experiments.typed_operator_policy import (
+    TYPED_OPERATOR_POLICY_HEAD_FAMILIES,
     TypedOperatorPolicyExampleV1,
     TypedOperatorPolicyScorer,
     decide_typed_operator_policy,
@@ -123,3 +126,26 @@ def test_partial_policy_defers_without_force_or_hard_prune() -> None:
     assert decision.selected_action_row is None
     assert decision.selected_argument_rows == ()
     assert decision.model_forwards == 0
+
+
+@pytest.mark.parametrize("head_family", TYPED_OPERATOR_POLICY_HEAD_FAMILIES)
+def test_each_typed_head_preserves_complete_and_partial_authority(head_family: str) -> None:
+    ambiguous = _example(coverage=LegalSetCoverage.COMPLETE, action_count=2)
+    singleton = _example(coverage=LegalSetCoverage.COMPLETE, action_count=1)
+    partial = _example(coverage=LegalSetCoverage.PARTIAL, action_count=2)
+    scorer = TypedOperatorPolicyScorer.from_examples(
+        (ambiguous,), dim=8, head_family=head_family  # type: ignore[arg-type]
+    )
+
+    loss = typed_operator_policy_loss(scorer, ambiguous)
+    decision = decide_typed_operator_policy(scorer, ambiguous)
+    singleton_decision = decide_typed_operator_policy(scorer, singleton)
+    partial_decision = decide_typed_operator_policy(scorer, partial)
+
+    assert loss.requires_grad
+    assert decision.selected_action_row in {0, 1}
+    assert decision.selected_argument_rows == (("value", 0),)
+    assert singleton_decision.model_forwards == 0
+    assert singleton_decision.selected_action_row == 0
+    assert partial_decision.selected_action_row is None
+    assert partial_decision.model_forwards == 0
