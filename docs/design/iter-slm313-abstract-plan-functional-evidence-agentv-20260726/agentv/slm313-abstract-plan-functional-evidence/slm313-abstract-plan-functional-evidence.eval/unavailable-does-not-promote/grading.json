@@ -1,0 +1,53 @@
+{
+  "assertions": [
+    {
+      "text": "no_proxy_promotion",
+      "passed": true,
+      "evidence": "actual=True operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "no_proxy_promotion",
+      "type": "code-grader",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "no_proxy_promotion",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "no_proxy_promotion",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "35e53d3cce2f54ccfa71c3bd7ab8d68f36eb0e90",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v115",
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v1"
+    },
+    "stamped_at": "2026-07-26T05:06:03.881037+00:00"
+  }
+}

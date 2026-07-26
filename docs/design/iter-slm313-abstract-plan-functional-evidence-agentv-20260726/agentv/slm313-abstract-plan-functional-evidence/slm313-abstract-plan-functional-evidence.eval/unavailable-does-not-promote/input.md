@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "abstract_plan_preflight_not_ship", "result": {"meaningful_parse": "not_measured", "promotion_eligible": false, "reason": "No trained learned-plan checkpoint was supplied; AP-023's side-channel head and AP-024's zero-gate connector are not evidence of learned plan function.", "verdict": "unavailable"}}

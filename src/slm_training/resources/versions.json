@@ -7128,7 +7128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v253",
+      "version": "v254",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7170,6 +7170,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v254",
+          "date": "2026-07-26",
+          "note": "SLM-313 AP-022: add an explicit, default-off shared TwoTower training path for the AbstractPlan head and its existing gated connector. A positive abstract_plan_loss_weight supervises opaque structural targets derived only from training labels; abstract_plan_train_conditioning additionally routes the teacher-forced plan through the connector during reconstruction. The feature fails closed on partial activation, preserves the disabled/default graph, is available through ModelBuildConfig/train_model, and has gradient/config regression tests."
+        },
         {
           "version": "v253",
           "date": "2026-07-26",
@@ -8990,6 +8995,25 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "initial SLM-311 bounded T-iteration Abstract-CoT fixture: campaign lock, append-only resume ledger, per-phase AP-020 collection and AP-019 segment payload evidence, and fail-closed incomplete iteration preservation"
+        }
+      ]
+    },
+    "harness.experiments.slm313_abstract_plan_functional_evidence": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
+        "scripts/run_abstract_plan_functional_evidence.py",
+        "tests/test_harnesses/experiments/test_abstract_plan_functional_evidence.py",
+        "docs/design/abstract-plan-functional-evidence.md",
+        "docs/design/iter-slm313-abstract-plan-functional-evidence-20260726.json",
+        "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial SLM-313 locked AbstractPlan functional-evidence protocol with complete arm/path contracts, paired constrained CI rules, raw-path non-promotion, and fail-closed unavailable disposition"
         }
       ]
     },
