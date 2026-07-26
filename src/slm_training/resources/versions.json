@@ -1912,18 +1912,35 @@
       ]
     },
     "harness.experiments": {
-      "version": "v115",
+      "version": "v116",
       "kind": "harness",
       "paths": [
-        "src/slm_training/harnesses/experiments/",
         "scripts/run_slm298_capacity_context_curriculum.py",
+        "src/slm_training/harnesses/experiments/",
         "tests/test_harnesses/experiments/test_slm298_capacity_context_curriculum.py",
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
-        {"version": "v115", "date": "2026-07-26", "note": "no-bump: migrate the CAP2 local-action fixture to TernaryECOCHead.entry_for without changing its action-code lookup."},
-        {"version": "v115", "date": "2026-07-25", "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"},
-        {"version": "v114", "date": "2026-07-25", "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"},
+        {
+          "version": "v116",
+          "date": "2026-07-25",
+          "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code"
+        },
+        {
+          "version": "v115",
+          "date": "2026-07-26",
+          "note": "no-bump: migrate the CAP2 local-action fixture to TernaryECOCHead.entry_for without changing its action-code lookup."
+        },
+        {
+          "version": "v115",
+          "date": "2026-07-25",
+          "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"
+        },
+        {
+          "version": "v114",
+          "date": "2026-07-25",
+          "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"
+        },
         {
           "version": "v113",
           "date": "2026-07-25",
@@ -1953,6 +1970,11 @@
           "version": "v109",
           "date": "2026-07-25",
           "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
+        },
+        {
+          "version": "v109",
+          "date": "2026-07-25",
+          "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code"
         },
         {
           "version": "v108",
@@ -9520,11 +9542,31 @@
         "tests/test_harnesses/test_slm332_latent_geometry.py"
       ],
       "history": [
-        {"version": "v5", "date": "2026-07-25", "note": "normalize AgentV code-grader paths to portable repo URIs in committed evidence"},
-        {"version": "v4", "date": "2026-07-25", "note": "retain declared opaque binding-target ordinals so AP-009 binding swaps survive factorization"},
-        {"version": "v3", "date": "2026-07-25", "note": "add bounded local control-versus-combined runner with AgentEvals non-promotion assertion"},
-        {"version": "v2", "date": "2026-07-25", "note": "wire admitted AP-009 binding pairs through the codec-only geometry harness"},
-        {"version": "v1", "date": "2026-07-25", "note": "initial SLM-332 fail-closed latent geometry primitive"}
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "normalize AgentV code-grader paths to portable repo URIs in committed evidence"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "retain declared opaque binding-target ordinals so AP-009 binding swaps survive factorization"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "add bounded local control-versus-combined runner with AgentEvals non-promotion assertion"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "wire admitted AP-009 binding pairs through the codec-only geometry harness"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial SLM-332 fail-closed latent geometry primitive"
+        }
       ]
     },
     "matrix.self_context_curriculum": {
@@ -9692,6 +9734,25 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "SLM-307: default-off packed block-structured bottleneck mask and masked SFT loss, with no-plan leakage and direct target-plan bypass canaries"
+        }
+      ]
+    },
+    "harness.experiments.lot1_01_activation_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lot1_01_activation_gate.py",
+        "scripts/evaluate_lot1_01_activation_gate.py",
+        "tests/test_harnesses/experiments/test_lot1_01_activation_gate.py",
+        "tests/test_scripts/test_evaluate_lot1_01_activation_gate.py",
+        "docs/design/iter-slm250-lot1-01-not-authorized-20260725.json",
+        "docs/design/iter-slm250-lot1-01-not-authorized-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-250 LOT1-01 hard-activation-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts"
         }
       ]
     }
