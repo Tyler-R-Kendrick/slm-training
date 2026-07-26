@@ -2,22 +2,20 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **550** (latest `autotrain_wf_smoke_20260725_iter551`).
+Total iterations: **561** (latest `autotrain_wf_smoke_20260726_iter561`).
+
+Iterations 552-561 are real measured `scripts.train_model` runs (twotower,
+CPU, `DEFAULT_TRAIN_DATA_DIR`, 8 steps, `--no-full-state-checkpoint`), each
+with a JSON+markdown pair under `docs/design/` carrying the writer-emitted
+`version_stamp` — closing the Iron Law JSON-companion gap left by earlier
+rows in this ledger (markdown-only, no JSON sidecar; iter551's row in
+particular has no matching measured-results doc at all and predates this
+gap fix). No ship claim; `fixture_or_scratch` wiring only.
 
 ## Latest 30
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter522` | True | 8 | steps | 31.23372459411621 | 2.82 |
-| `autotrain_wf_smoke_20260725_iter523` | True | 8 | steps | 23.382976531982422 | 2.59 |
-| `autotrain_wf_smoke_20260725_iter524` | True | 8 | steps | 37.17886734008789 | 2.47 |
-| `autotrain_wf_smoke_20260725_iter525` | True | 8 | steps | 27.54132843017578 | 2.44 |
-| `autotrain_wf_smoke_20260725_iter526` | True | 8 | steps | 31.84210968017578 | 2.27 |
-| `autotrain_wf_smoke_20260725_iter527` | True | 8 | steps | 29.955520629882812 | 2.25 |
-| `autotrain_wf_smoke_20260725_iter528` | True | 8 | steps | 32.92068862915039 | 2.01 |
-| `autotrain_wf_smoke_20260725_iter529` | True | 8 | steps | 28.611759185791016 | 1.92 |
-| `autotrain_wf_smoke_20260725_iter530` | True | 8 | steps | 30.90883445739746 | 2.41 |
-| `autotrain_wf_smoke_20260725_iter531` | True | 8 | steps | 38.01243209838867 | 2.31 |
 | `autotrain_wf_smoke_20260725_iter532` | True | 8 | steps | 23.04449462890625 | 2.8 |
 | `autotrain_wf_smoke_20260725_iter533` | True | 8 | steps | 35.9559211730957 | 2.98 |
 | `autotrain_wf_smoke_20260725_iter534` | True | 8 | steps | 29.153064727783203 | 2.4 |
@@ -38,3 +36,13 @@ Total iterations: **550** (latest `autotrain_wf_smoke_20260725_iter551`).
 | `autotrain_wf_smoke_20260725_iter549` | True | 8 | steps | 31.088762283325195 | 2.13 |
 | `autotrain_wf_smoke_20260725_iter550` | True | 8 | steps | 27.85626792907715 | 2.23 |
 | `autotrain_wf_smoke_20260725_iter551` | True | 8 | steps | 33.277069091796875 | 2.12 |
+| `autotrain_wf_smoke_20260726_iter552` | True | 8 | steps | 35.1600341796875 | 3.24 |
+| `autotrain_wf_smoke_20260726_iter553` | True | 8 | steps | 40.51862716674805 | 3.48 |
+| `autotrain_wf_smoke_20260726_iter554` | True | 8 | steps | 33.008544921875 | 3.34 |
+| `autotrain_wf_smoke_20260726_iter555` | True | 8 | steps | 25.35677146911621 | 3.38 |
+| `autotrain_wf_smoke_20260726_iter556` | True | 8 | steps | 33.0897216796875 | 4.06 |
+| `autotrain_wf_smoke_20260726_iter557` | True | 8 | steps | 35.35194396972656 | 3.76 |
+| `autotrain_wf_smoke_20260726_iter558` | True | 8 | steps | 26.30024528503418 | 3.6 |
+| `autotrain_wf_smoke_20260726_iter559` | True | 8 | steps | 32.689674377441406 | 3.6 |
+| `autotrain_wf_smoke_20260726_iter560` | True | 8 | steps | 33.653297424316406 | 3.26 |
+| `autotrain_wf_smoke_20260726_iter561` | True | 8 | steps | 46.510379791259766 | 3.51 |
