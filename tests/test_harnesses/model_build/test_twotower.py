@@ -720,6 +720,113 @@ def test_abstract_plan_trace_emits_valid_plan_for_every_enabled_mode(
     )
 
 
+def _plan_connector_model(**kwargs) -> TwoTowerModel:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(123)
+    return TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            **kwargs,
+        ),
+    )
+
+
+def test_abstract_plan_connector_disabled_by_default_and_none() -> None:
+    model = _plan_connector_model()
+    assert model.config.abstract_plan_connector_arm == "disabled"
+    assert model.abstract_plan_connector is None
+    assert model.denoiser._plan_connector is None
+    assert not any(
+        name.startswith("denoiser._plan_connector.")
+        for name, _ in model.named_parameters()
+    )
+
+
+def test_abstract_plan_connector_requires_abstract_plan_mode_enabled() -> None:
+    with pytest.raises(ValueError):
+        TwoTowerConfig(abstract_plan_connector_arm="learned")
+
+
+def test_abstract_plan_connector_rejects_unknown_arm() -> None:
+    with pytest.raises(ValueError):
+        TwoTowerConfig(
+            abstract_plan_mode="sampled", abstract_plan_connector_arm="not_a_real_arm"
+        )
+
+
+def test_abstract_plan_connector_is_bit_exact_with_baseline_when_disabled() -> None:
+    """Off mode remains bit-exact (SLM-316 acceptance)."""
+    baseline = _plan_connector_model()
+    explicit_off = _plan_connector_model(abstract_plan_connector_arm="disabled")
+    baseline_state = dict(baseline.named_parameters())
+    for name, parameter in explicit_off.named_parameters():
+        assert torch.equal(parameter, baseline_state[name]), name
+
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(456)
+    baseline_loss = baseline.training_loss(records)
+    torch.manual_seed(456)
+    explicit_off_loss = explicit_off.training_loss(records)
+    torch.testing.assert_close(baseline_loss, explicit_off_loss)
+
+
+def test_abstract_plan_connector_never_participates_in_training_loss_graph() -> None:
+    """training_loss/forward never call the connector -- it is generation-time only."""
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    baseline = _plan_connector_model()
+    enabled = _plan_connector_model(
+        abstract_plan_mode="sampled", abstract_plan_connector_arm="learned"
+    )
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    torch.manual_seed(456)
+    enabled.training_loss(records).backward()
+
+    assert enabled.abstract_plan_connector is not None
+    assert enabled.abstract_plan_connector.proj.weight.grad is None
+    assert enabled.abstract_plan_connector.plan_embed.weight.grad is None
+
+    enabled_grads = dict(enabled.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if parameter.grad is None:
+            assert enabled_grads[name].grad is None, name
+        else:
+            assert torch.equal(parameter.grad, enabled_grads[name].grad), name
+
+
+def test_abstract_plan_connector_is_constructed_and_wired_into_denoiser() -> None:
+    model = _plan_connector_model(
+        abstract_plan_mode="sampled", abstract_plan_connector_arm="oracle"
+    )
+    assert model.abstract_plan_connector is not None
+    assert model.denoiser._plan_connector is model.abstract_plan_connector
+    assert model.denoiser._plan_connector_arm == "oracle"
+    assert any(
+        name.startswith("denoiser._plan_connector.")
+        for name, _ in model.named_parameters()
+    )
+
+
+def test_abstract_plan_connector_rejects_shared_recursive_denoiser_arch() -> None:
+    with pytest.raises(ValueError):
+        TwoTowerConfig(
+            abstract_plan_mode="sampled",
+            abstract_plan_connector_arm="learned",
+            denoiser_arch="shared_recursive",
+        )
+
+
+def test_generate_with_plan_connector_raises_when_disabled() -> None:
+    model = _plan_connector_model()
+    with pytest.raises(ValueError):
+        model.generate_with_plan_connector("Hero")
+
+
 def test_binder_component_plan_does_not_change_base_gradients() -> None:
     records = [
         ExampleRecord(

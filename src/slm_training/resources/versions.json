@@ -4414,6 +4414,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-316 AP-024 added a default-off plan-conditioning bias hook to DenoiserTower.project/__init__ (see model.twotower v252); unrelated to output-head tying/untying and behavior-neutral for this component's concern"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-211 SDE5-04 default-on output-head tying control, copy-init untied arm, explicit checkpoint migration, optimizer deduplication, and spectral/Cactus metadata"
         }
@@ -7113,14 +7118,17 @@
       ]
     },
     "model.twotower": {
-      "version": "v251",
+      "version": "v252",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
         "src/slm_training/models/abstract_plan_head.py",
+        "src/slm_training/models/abstract_plan_connector.py",
         "tests/test_models/test_abstract_plan_head.py",
+        "tests/test_models/test_abstract_plan_connector.py",
         "tests/test_harnesses/model_build/test_twotower.py",
         "docs/design/abstract-plan-head-v1.md",
+        "docs/design/abstract-plan-connector-v1.md",
         "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
@@ -7152,6 +7160,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v252",
+          "date": "2026-07-26",
+          "note": "SLM-316 (AP-024): default-off gated-additive AbstractPlanConnector conditioning MaskGIT denoising on the discrete abstract plan (new src/slm_training/models/abstract_plan_connector.py). Wired as a post-hoc logit bias inside DenoiserTower.project (no round-loop scheduling changed) with per-call PlanConnectorTrace instrumentation (gate norm, argmax choice-change count); seven arms (disabled/learned/oracle/detached/empty/random/shuffled) share one resolve_plan_vector code path. abstract_plan_connector_arm='disabled' (the default) constructs nothing, requires abstract_plan_mode != 'disabled', and rejects denoiser_arch='shared_recursive' (tree/recursive-denoiser wiring deferred, not silently no-op'd). New TwoTowerModel.generate_with_plan_connector(...) delegates to the existing unmodified generate() so every arm shares scheduling/seed (tests/test_harnesses/model_build/test_twotower.py::test_abstract_plan_connector_is_bit_exact_with_baseline_when_disabled)."
+        },
         {
           "version": "v251",
           "date": "2026-07-25",
