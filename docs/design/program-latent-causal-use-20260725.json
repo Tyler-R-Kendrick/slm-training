@@ -1,0 +1,964 @@
+{
+  "arms": [
+    {
+      "arm_id": "continuous_n2_w64",
+      "causally_necessary": true,
+      "codec": "continuous",
+      "conditions": [
+        {
+          "condition": "zero",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 6,
+            "discordant": 6,
+            "effect": -0.8571428571428571,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.031250000000000014,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.053859561681747437,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.04389094794169068,
+            "high": 0.05285107240945633,
+            "low": 0.03714047940447926,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "shares code with the prompt-only control"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.8571428571428571,
+            "high": 1.0,
+            "low": 0.5714285714285714,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.0
+        },
+        {
+          "condition": "random",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 5,
+            "discordant": 5,
+            "effect": -0.7142857142857142,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.0625,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.02216840162873268,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.012199784163385631,
+            "high": 0.021930987214935676,
+            "low": 0.004057853000371585,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "fresh draw per-dimension N(mean, std) matched to the correct-latent marginal"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.7142857142857142,
+            "high": 1.0,
+            "low": 0.42857142857142855,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.1428571492433548
+        },
+        {
+          "condition": "shuffled_between_example",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 3,
+            "discordant": 3,
+            "effect": -0.42857142857142855,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.25000000000000006,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.035676006227731705,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.025707389294568984,
+            "high": 0.0416150421702436,
+            "low": 0.007493100785982926,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.42857142857142855,
+            "high": 0.8571428571428571,
+            "low": 0.1428571428571428,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.4285714328289032
+        },
+        {
+          "condition": "slot_permuted",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.00996861606836319,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.8571428656578064
+        },
+        {
+          "condition": "quantized",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.00996861606836319,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "sanity control: re-runs hard encode fresh with no perturbation; should reproduce 'correct' exactly (deterministic pipeline check)."
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.8571428656578064
+        },
+        {
+          "condition": "noise_perturbed_sigma0.25",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 1,
+            "discordant": 1,
+            "effect": -0.1428571428571428,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.010469858534634113,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0005012421336557191,
+            "high": 0.0013156799882251234,
+            "low": 5.126036038356269e-05,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 0.25 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.1428571428571428,
+            "high": 0.4285714285714286,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.7142857313156128
+        },
+        {
+          "condition": "noise_perturbed_sigma0.5",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 2,
+            "discordant": 2,
+            "effect": -0.2857142857142857,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.5,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.012826329097151756,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.002857713760542018,
+            "high": 0.0048242928426978846,
+            "low": 0.0013318603409321172,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 0.5 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.2857142857142857,
+            "high": 0.5714285714285714,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.5714285969734192
+        },
+        {
+          "condition": "noise_perturbed_sigma1.0",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 4,
+            "discordant": 4,
+            "effect": -0.5714285714285714,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.125,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.01808701641857624,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.008118401348058668,
+            "high": 0.012551180664117315,
+            "low": 0.003692286925589932,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 1.0 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.5714285714285714,
+            "high": 0.8571428571428572,
+            "low": 0.2857142857142857,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        }
+      ],
+      "effective_rank": 1.0596952438354492,
+      "latent_dim": 2,
+      "mean_variance": 0.038299381732940674,
+      "no_bypass_ok": true,
+      "noise_sweep": [
+        {
+          "mean_mse_overall": 0.00996861606836319,
+          "sigma_multiplier": 0.0,
+          "strict_semantics_proxy_rate": 0.8571428656578064
+        },
+        {
+          "mean_mse_overall": 0.010517509654164314,
+          "sigma_multiplier": 0.25,
+          "strict_semantics_proxy_rate": 0.7142857313156128
+        }
+      ],
+      "notes": [
+        "strict_semantics_proxy_rate is an MSE-threshold proxy (AP-030's DISTORTION_THRESHOLD=0.05), not the real binding_aware_meaningful_v2 scorer -- no decoder from factors to full OpenUI program text exists yet in this repo (see module scope decision).",
+        "the 'zero' condition doubles as the prompt-only control: this pipeline stage has no separate prompt input to the decoder.",
+        "role_swapped omitted: this arm's codec has no >=2 distinct slot widths ('roles') with a same-width pair to swap -- homogeneous codecs (e.g. binary LFQ, element-wise continuous/VQ) would make a role-preserving permutation identical to slot_permuted; not fabricated as a separate result."
+      ],
+      "num_holdout": 7,
+      "num_latents": 2,
+      "robust_semantic_radius": 0.0,
+      "robust_semantic_radius_censored": false,
+      "role_swap_applicable": false,
+      "seed": 0,
+      "spectral_entropy": 0.05798137273278696,
+      "stable_rank": 1.0105428802552203,
+      "total_variance": 0.07659876346588135,
+      "weaker_decoder_note": "omitted: no smaller/weaker frozen-decoder checkpoint fixture exists in this repo (src/slm_training/resources/checkpoints/ has none for this factor-reconstruction stage) -- not fabricated.",
+      "width": 64
+    },
+    {
+      "arm_id": "lfq_n2_w64",
+      "causally_necessary": false,
+      "codec": "lfq",
+      "conditions": [
+        {
+          "condition": "zero",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 2,
+            "discordant": 2,
+            "effect": -0.2857142857142857,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.5,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.022974785417318344,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.008967896258192404,
+            "high": 0.01035843857098371,
+            "low": 0.007566134921008988,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "shares code with the prompt-only control"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.2857142857142857,
+            "high": 0.5714285714285714,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.0
+        },
+        {
+          "condition": "random",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 2,
+            "discordant": 2,
+            "effect": -0.2857142857142857,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.5,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.01928454264998436,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.005277654688273157,
+            "high": 0.0068890863663649965,
+            "low": 0.003600129325475012,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "fresh draw per-dimension N(mean, std) matched to the correct-latent marginal"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.2857142857142857,
+            "high": 0.5714285714285714,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.0
+        },
+        {
+          "condition": "shuffled_between_example",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 2,
+            "discordant": 2,
+            "effect": -0.2857142857142857,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.5,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.03469736501574516,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.02069048077932426,
+            "high": 0.03317552429756947,
+            "low": 0.005142954843384881,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.2857142857142857,
+            "high": 0.5714285714285714,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.0
+        },
+        {
+          "condition": "slot_permuted",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.01400688849389553,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "condition": "quantized",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.01400688849389553,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "sanity control: re-runs hard encode fresh with no perturbation; should reproduce 'correct' exactly (deterministic pipeline check)."
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "condition": "noise_perturbed_sigma0.25",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.014559856615960598,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0005529688538185185,
+            "high": 0.0015597059807207958,
+            "low": -2.8019927309027733e-05,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 0.25 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "condition": "noise_perturbed_sigma0.5",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 1,
+            "discordant": 1,
+            "effect": -0.14285714285714285,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.016485992819070816,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0024791063208665157,
+            "high": 0.005108096906250077,
+            "low": 0.0004742408969572627,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 0.5 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.14285714285714285,
+            "high": 0.42857142857142855,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.1428571492433548
+        },
+        {
+          "condition": "noise_perturbed_sigma1.0",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 1,
+            "discordant": 1,
+            "effect": -0.14285714285714285,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.016893958672881126,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.002887071376400336,
+            "high": 0.005815817681806428,
+            "low": -0.00013078559589172958,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 1.0 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.14285714285714285,
+            "high": 0.42857142857142855,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.1428571492433548
+        }
+      ],
+      "effective_rank": 1.0,
+      "latent_dim": 2,
+      "mean_variance": 0.8163265585899353,
+      "no_bypass_ok": true,
+      "noise_sweep": [
+        {
+          "mean_mse_overall": 0.01400688849389553,
+          "sigma_multiplier": 0.0,
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "mean_mse_overall": 0.01423242874443531,
+          "sigma_multiplier": 0.25,
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "mean_mse_overall": 0.01504368893802166,
+          "sigma_multiplier": 0.5,
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "mean_mse_overall": 0.021469589322805405,
+          "sigma_multiplier": 0.75,
+          "strict_semantics_proxy_rate": 0.0
+        }
+      ],
+      "notes": [
+        "strict_semantics_proxy_rate is an MSE-threshold proxy (AP-030's DISTORTION_THRESHOLD=0.05), not the real binding_aware_meaningful_v2 scorer -- no decoder from factors to full OpenUI program text exists yet in this repo (see module scope decision).",
+        "the 'zero' condition doubles as the prompt-only control: this pipeline stage has no separate prompt input to the decoder.",
+        "role_swapped omitted: this arm's codec has no >=2 distinct slot widths ('roles') with a same-width pair to swap -- homogeneous codecs (e.g. binary LFQ, element-wise continuous/VQ) would make a role-preserving permutation identical to slot_permuted; not fabricated as a separate result."
+      ],
+      "num_holdout": 7,
+      "num_latents": 2,
+      "robust_semantic_radius": 0.5,
+      "robust_semantic_radius_censored": false,
+      "role_swap_applicable": false,
+      "seed": 0,
+      "spectral_entropy": 1.9538056603918177e-30,
+      "stable_rank": 1.0,
+      "total_variance": 1.6326531171798706,
+      "weaker_decoder_note": "omitted: no smaller/weaker frozen-decoder checkpoint fixture exists in this repo (src/slm_training/resources/checkpoints/ has none for this factor-reconstruction stage) -- not fabricated.",
+      "width": 64
+    },
+    {
+      "arm_id": "fsq_typed_2_3_3_4_5",
+      "causally_necessary": false,
+      "codec": "fsq_typed",
+      "conditions": [
+        {
+          "condition": "zero",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 2,
+            "discordant": 2,
+            "effect": -0.2857142857142857,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.5,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.06705989688634872,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.05328080231057746,
+            "high": 0.05550291182340257,
+            "low": 0.05117319683943476,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "shares code with the prompt-only control"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.2857142857142857,
+            "high": 0.5714285714285714,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.0
+        },
+        {
+          "condition": "random",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 1,
+            "discordant": 1,
+            "effect": -0.14285714285714285,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.040122002363204956,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.026342907255249362,
+            "high": 0.04160748380236328,
+            "low": 0.012635843116523965,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "fresh draw per-dimension N(mean, std) matched to the correct-latent marginal"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.14285714285714285,
+            "high": 0.42857142857142855,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.1428571492433548
+        },
+        {
+          "condition": "shuffled_between_example",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 2,
+            "discordant": 2,
+            "effect": -0.2857142857142857,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 0.5,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.03557928651571274,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.02180019074252673,
+            "high": 0.0348515773591186,
+            "low": 0.010205382614263465,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.2857142857142857,
+            "high": 0.5714285714285714,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.0
+        },
+        {
+          "condition": "slot_permuted",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 1,
+            "discordant": 1,
+            "effect": -0.14285714285714285,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.044781409204006195,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.031002316357834,
+            "high": 0.041500462378774375,
+            "low": 0.019125279311888982,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.14285714285714285,
+            "high": 0.42857142857142855,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.1428571492433548
+        },
+        {
+          "condition": "role_swapped",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.014286837540566921,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0005077409691044265,
+            "high": 0.0007774001785687058,
+            "low": 0.00023615981585213046,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "permutation constrained to same-width ('same-role') slots only"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "condition": "quantized",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.013779095374047756,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "sanity control: re-runs hard encode fresh with no perturbation; should reproduce 'correct' exactly (deterministic pipeline check)."
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "condition": "noise_perturbed_sigma0.25",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.014383435249328613,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0006043396757117354,
+            "high": 0.0010859823569522376,
+            "low": 0.0002349842871938428,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 0.25 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "condition": "noise_perturbed_sigma0.5",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 0,
+            "discordant": 0,
+            "effect": 0.0,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.01801343634724617,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.004234339642737594,
+            "high": 0.005475767382553646,
+            "low": 0.0029936854594520175,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 0.5 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.0,
+            "high": 0.0,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "condition": "noise_perturbed_sigma1.0",
+          "exact_paired_test_vs_correct": {
+            "candidate_only": 0,
+            "control_only": 1,
+            "discordant": 1,
+            "effect": -0.14285714285714285,
+            "method": "two_sided_exact_mcnemar",
+            "n": 7,
+            "p_value": 1.0,
+            "schema": "exact_paired_binary_test/v1"
+          },
+          "mean_mse_overall": 0.021857384592294693,
+          "mse_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.008078287621693951,
+            "high": 0.010607390664517881,
+            "low": 0.005669204029254613,
+            "resamples": 1000
+          },
+          "n": 7,
+          "notes": [
+            "additive Gaussian noise at 1.0 x per-dimension std"
+          ],
+          "rate_ci_vs_correct": {
+            "alpha": 0.05,
+            "estimate": 0.14285714285714285,
+            "high": 0.42857142857142855,
+            "low": 0.0,
+            "resamples": 1000
+          },
+          "strict_semantics_proxy_rate": 0.1428571492433548
+        }
+      ],
+      "effective_rank": 1.0,
+      "latent_dim": 17,
+      "mean_variance": 0.07202881574630737,
+      "no_bypass_ok": true,
+      "noise_sweep": [
+        {
+          "mean_mse_overall": 0.013779095374047756,
+          "sigma_multiplier": 0.0,
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "mean_mse_overall": 0.015440666116774082,
+          "sigma_multiplier": 0.25,
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "mean_mse_overall": 0.017249858006834984,
+          "sigma_multiplier": 0.5,
+          "strict_semantics_proxy_rate": 0.2857142984867096
+        },
+        {
+          "mean_mse_overall": 0.02694561518728733,
+          "sigma_multiplier": 0.75,
+          "strict_semantics_proxy_rate": 0.1428571492433548
+        }
+      ],
+      "notes": [
+        "strict_semantics_proxy_rate is an MSE-threshold proxy (AP-030's DISTORTION_THRESHOLD=0.05), not the real binding_aware_meaningful_v2 scorer -- no decoder from factors to full OpenUI program text exists yet in this repo (see module scope decision).",
+        "the 'zero' condition doubles as the prompt-only control: this pipeline stage has no separate prompt input to the decoder."
+      ],
+      "num_holdout": 7,
+      "num_latents": 2,
+      "robust_semantic_radius": 0.5,
+      "robust_semantic_radius_censored": false,
+      "role_swap_applicable": true,
+      "seed": 0,
+      "spectral_entropy": 2.016573699914229e-14,
+      "stable_rank": 1.0000000000000007,
+      "total_variance": 1.2244898080825806,
+      "weaker_decoder_note": "omitted: no smaller/weaker frozen-decoder checkpoint fixture exists in this repo (src/slm_training/resources/checkpoints/ has none for this factor-reconstruction stage) -- not fabricated.",
+      "width": 64
+    }
+  ],
+  "disposition": "continue",
+  "disposition_reasons": [
+    "correct latents materially outperformed destructive controls for some but not all evaluated arms; see per-arm causally_necessary."
+  ],
+  "fixture_count": 32,
+  "fixture_seed": 0,
+  "num_holdout": 7,
+  "num_train": 25,
+  "run_id": "cbfe4e1fe36d28be",
+  "timestamp": "2026-07-25T17:50:11.896209+00:00",
+  "version": "cap2-07-v1"
+}

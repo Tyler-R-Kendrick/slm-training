@@ -1,0 +1,19 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2a814f089866a5bde2297ae889751cee1757c83c",
+    "code_dirty": true,
+    "components": {
+      "model.operator_permutation_consistency": "v1"
+    },
+    "stamped_at": "2026-07-26T10:10:53.009929+00:00"
+  }
+}

@@ -141,10 +141,22 @@ def validate_top_level(paths: Iterable[str]) -> list[str]:
 def validate_skill_mirrors(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     canonical = root / ".agents/skills"
+    canonical_names = (
+        {entry.name for entry in canonical.iterdir() if entry.is_dir()}
+        if canonical.is_dir()
+        else set()
+    )
     for relative_root in DISCOVERY_ROOTS:
         discovery = root / relative_root
         if not discovery.is_dir():
             continue
+        # A canonical skill with no discovery entry is invisible to that client.
+        # Checking only the other direction let a newly added skill ship unseen.
+        for name in sorted(canonical_names - {entry.name for entry in discovery.iterdir()}):
+            errors.append(
+                f"unmirrored skill: {relative_root / name} is missing; "
+                f"add a symlink to ../../.agents/skills/{name}"
+            )
         for entry in sorted(discovery.iterdir()):
             source = canonical / entry.name
             if not source.is_dir():

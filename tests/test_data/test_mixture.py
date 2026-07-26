@@ -184,6 +184,23 @@ def test_capacity_aware_sampling_is_deterministic_and_cycles() -> None:
     assert len({record.id for record in first[3:6]}) == 3
 
 
+def test_capacity_aware_sampling_uses_one_random_key_per_record() -> None:
+    class KeyOnlyRandom(random.Random):
+        def choices(self, *args: object, **kwargs: object) -> list[object]:
+            raise AssertionError("capacity-aware sampling must not rebuild choices per draw")
+
+    records = [_rec(f"r{i}", "rico_real") for i in range(8)]
+    batch = sample_mixture_batch(
+        records,
+        weights={"rico_real": 1.0},
+        batch_size=8,
+        rng=KeyOnlyRandom(4),
+        sampling_policy="capacity_aware",
+    )
+
+    assert len({record.id for record in batch}) == 8
+
+
 def test_quota_capacity_aware_sampling_preserves_task_allocation() -> None:
     records = [
         ExampleRecord(
