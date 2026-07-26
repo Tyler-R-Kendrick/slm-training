@@ -1912,7 +1912,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v116",
+      "version": "v117",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -1921,6 +1921,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v117",
+          "date": "2026-07-25",
+          "note": "add SLM-251 LOT1-02 launch-gate evaluator (lot1_02_activation_gate.py): reuses the LOT1-01 gate plus SLM-249 allowed_lot1_implementation and closes not_authorized in plan-only mode, no training/curriculum code"
+        },
         {
           "version": "v116",
           "date": "2026-07-25",
@@ -1970,6 +1975,11 @@
           "version": "v109",
           "date": "2026-07-25",
           "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
+        },
+        {
+          "version": "v110",
+          "date": "2026-07-25",
+          "note": "add SLM-251 LOT1-02 launch-gate evaluator (lot1_02_activation_gate.py): reuses the LOT1-01 gate plus SLM-249 allowed_lot1_implementation and closes not_authorized in plan-only mode, no training/curriculum code"
         },
         {
           "version": "v109",
@@ -9753,6 +9763,25 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-250 LOT1-01 hard-activation-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts"
+        }
+      ]
+    },
+    "harness.experiments.lot1_02_activation_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lot1_02_activation_gate.py",
+        "scripts/evaluate_lot1_02_activation_gate.py",
+        "tests/test_harnesses/experiments/test_lot1_02_activation_gate.py",
+        "tests/test_scripts/test_evaluate_lot1_02_activation_gate.py",
+        "docs/design/iter-slm251-lot1-02-not-authorized-20260725.json",
+        "docs/design/iter-slm251-lot1-02-not-authorized-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-251 LOT1-02 launch-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts and the LOT1-01 not_authorized disposition"
         }
       ]
     }
