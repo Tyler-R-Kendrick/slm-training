@@ -1,0 +1,53 @@
+{
+  "assertions": [
+    {
+      "text": "t3_policy_lineage_complete",
+      "passed": true,
+      "evidence": "actual=True operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "t3_policy_lineage_complete",
+      "type": "code-grader",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "t3_policy_lineage_complete",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "t3_policy_lineage_complete",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "50217db8c0792de229cde72152887401cc1cc57b",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v115",
+      "harness.experiments.slm311_abstract_cot_warmup": "v1"
+    },
+    "stamped_at": "2026-07-26T04:39:37.185753+00:00"
+  }
+}
