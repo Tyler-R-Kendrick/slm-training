@@ -707,7 +707,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -715,6 +715,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "SLM-426: canonical DslPack owns finite tree-edit inventory and property domains; this is a no-quality-claim extension point for TreeEditSpace."
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -5270,7 +5275,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -5281,9 +5286,16 @@
         "src/slm_training/models/tree_edit_diffusion.py",
         "docs/design/iter-slm305-edit-language-20260724.json",
         "docs/design/iter-slm305-edit-language-20260724.md",
-        "tests/test_models/test_tree_edit_diffusion.py"
+        "tests/test_models/test_tree_edit_diffusion.py",
+        "docs/design/var0-03-pack-derived-inventory-20260726.json",
+        "docs/design/var0-03-pack-derived-inventory-20260726.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-426: TreeEditSpace and the SLM-299 analyzer resolve finite edit inventory, rest domains, and statement templates from canonical DslPack metadata; pack extension is tested without a model edit. Current-corpus audit is explicitly scope-limited because the frozen train input is unavailable and RICO grew from 6 to 35 records."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -5321,6 +5333,11 @@
         "docs/design/var1-01-set-property-probe-20260725.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-426 migrates VAR1 fixture monkeypatches from the removed analyzer module tuple to the actual TreeEditSpace domain; the hypothetical probe behavior is unchanged."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -9283,7 +9300,7 @@
       ]
     },
     "dsl.variants": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/variants.py",
@@ -9291,6 +9308,11 @@
         "tests/test_dsl/test_variants.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-426: tree_edit_diffusion now declares pack-derived inventory after importing the canonical DslPack authority; regenerated the derived variant registry and retained the false-authority rejection test."
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

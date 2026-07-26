@@ -32,6 +32,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from slm_training.dsl.parser import validate, validate_output
+from slm_training.dsl.pack import get_pack
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -66,30 +67,43 @@ N_ACTIONS = 11
 MAX_STMTS = 24
 MAX_SLOTS = 16
 
-# Leaf components take a single placeholder argument; containers hold a
-# child-reference list. Derived from the fixed grammar rather than hardcoded
-# beyond this split so the action space stays grammar-coupled.
-LEAF_COMPONENTS = ("TextContent", "Button", "Image", "TextInput")
-CONTAINER_COMPONENTS = ("Stack", "Card", "Form")
+@dataclass(frozen=True)
+class EditDomain:
+    """Pack-owned finite domains for the tree-edit variant."""
 
-# Canonical rest texts for containers minted by ADD_CONTAINER / INSERT_SUBTREE.
-# Fixed candidate set (indexed by ``Edit.target``) so minted containers are
-# deterministic and the reachability invariants can reason about them exactly.
-CONTAINER_RESTS: tuple[str, ...] = (', "column"', "")
+    leaf_components: tuple[str, ...]
+    container_components: tuple[str, ...]
+    container_rests: tuple[str, ...]
+    statement_templates: tuple[tuple[str, str], ...]
+
+
+def edit_domain(pack_id: str = "openui") -> EditDomain:
+    """Resolve the edit alphabet from its declared pack, failing closed."""
+    pack = get_pack(pack_id)
+    rests = tuple(
+        value
+        for values in pack.component_property_domains.values()
+        for value in values.get("rest", ())
+    )
+    if not pack.leaf_components or not pack.container_components or not rests:
+        raise ValueError(f"pack {pack_id!r} does not provide a tree-edit domain")
+    return EditDomain(
+        leaf_components=tuple(pack.leaf_components),
+        container_components=tuple(pack.container_components),
+        container_rests=tuple(dict.fromkeys(rests)),
+        statement_templates=tuple(pack.statement_templates),
+    )
+
+
+# Compatibility exports for existing default-OpenUI callers. New edit-space
+# and reachability code reads ``EditDomain`` from the declared pack instead.
+_DEFAULT_DOMAIN = edit_domain()
+LEAF_COMPONENTS = _DEFAULT_DOMAIN.leaf_components
+CONTAINER_COMPONENTS = _DEFAULT_DOMAIN.container_components
+CONTAINER_RESTS = _DEFAULT_DOMAIN.container_rests
 CONTAINER_REST = CONTAINER_RESTS[0]
-
-# V0.5 statement component names (state/query/mutation/action pack forms).
+V05_TEMPLATES = _DEFAULT_DOMAIN.statement_templates
 V05_COMPONENTS = ("Query", "Mutation", "Action", "State", "Resource")
-
-# Bounded canonical V0.5 statement templates: (component, canonical arg text).
-# Construction is canonical-AST-backed: each inserted/replaced line is built
-# from this structured spec and fragment-validated through the canonical
-# grammar (``validate_output(..., kind="statement")``) before acceptance —
-# never regex string surgery on existing program text.
-V05_TEMPLATES: tuple[tuple[str, str], ...] = (
-    ("Query", '"tool", {arg: $x}, {default: []}, 15'),
-    ("Mutation", '"tool", {arg: $x}'),
-)
 
 
 def v05_template_index(stmt: Statement) -> int | None:
@@ -109,7 +123,7 @@ def v05_template_index(stmt: Statement) -> int | None:
 _STMT_RE = re.compile(r"^(?P<name>\w+)\s*=\s*(?P<comp>\w+)\((?P<args>.*)\)\s*$")
 
 
-def _grammar_components() -> tuple[str, ...]:
+def _grammar_components(domain: EditDomain) -> tuple[str, ...]:
     """Component inventory from the fixed lexer grammar vocabulary — deterministic
     and corpus-independent, so checkpoint round-trips keep head sizes stable."""
     try:
@@ -123,7 +137,7 @@ def _grammar_components() -> tuple[str, ...]:
         )
     except Exception:  # noqa: BLE001
         comps = []
-    merged = list(dict.fromkeys([*LEAF_COMPONENTS, *CONTAINER_COMPONENTS, *comps]))
+    merged = list(dict.fromkeys([*domain.leaf_components, *domain.container_components, *comps]))
     return tuple(merged)
 
 
@@ -246,11 +260,19 @@ class TreeEditSpace:
     the all-valid-states invariant is the point of the baseline.
     """
 
-    def __init__(self, components: tuple[str, ...] | None = None) -> None:
+    def __init__(
+        self, components: tuple[str, ...] | None = None, *, pack_id: str = "openui"
+    ) -> None:
+        self.pack_id = pack_id
+        self.domain = edit_domain(pack_id)
         if components is None:
-            components = _grammar_components()
+            components = _grammar_components(self.domain)
         self.components: tuple[str, ...] = tuple(components)
         self.comp_index = {c: i for i, c in enumerate(self.components)}
+        self.leaf_components = self.domain.leaf_components
+        self.container_components = self.domain.container_components
+        self.container_rests = self.domain.container_rests
+        self.statement_templates = self.domain.statement_templates
 
     def fresh_name(self, statements: list[Statement]) -> str:
         taken = {s.name for s in statements}
@@ -304,7 +326,7 @@ class TreeEditSpace:
             target = working[edit.stmt]
             new_comp = self.components[edit.comp]
             leaf_like = not target.has_list
-            if leaf_like != (new_comp in LEAF_COMPONENTS):
+            if leaf_like != (new_comp in self.leaf_components):
                 return None
             if target.comp == new_comp:
                 return None
@@ -316,7 +338,7 @@ class TreeEditSpace:
                 return None
             parent = working[edit.stmt]
             comp = self.components[edit.comp]
-            if not parent.has_list or comp not in LEAF_COMPONENTS:
+            if not parent.has_list or comp not in self.leaf_components:
                 return None
             if not inventory or not (0 <= edit.slot < len(inventory)):
                 return None
@@ -345,7 +367,7 @@ class TreeEditSpace:
                 if target.name in other.children:
                     other.children = [c for c in other.children if c != target.name]
                     referenced = True
-            if not referenced and target.comp not in V05_COMPONENTS:
+            if not referenced and target.comp not in {comp for comp, _ in self.statement_templates}:
                 # Unreferenced UI leaves stay immutable (old behavior); V0.5
                 # pack statements are unreferenced by construction and are
                 # removable (inverse of INSERT_STATEMENT).
@@ -361,16 +383,16 @@ class TreeEditSpace:
                 return None
             parent = working[edit.stmt]
             comp = self.components[edit.comp]
-            if not parent.has_list or comp not in CONTAINER_COMPONENTS:
+            if not parent.has_list or comp not in self.container_components:
                 return None
-            if not (0 <= edit.target < len(CONTAINER_RESTS)):
+            if not (0 <= edit.target < len(self.container_rests)):
                 return None
             name = self.fresh_name(working)
             parent.children.append(name)
             working.append(
                 Statement(
                     name=name, comp=comp, children=[],
-                    rest=CONTAINER_RESTS[edit.target], has_list=True,
+                    rest=self.container_rests[edit.target], has_list=True,
                 )
             )
         elif edit.action == ACTION_REMOVE_CONTAINER:
@@ -417,16 +439,16 @@ class TreeEditSpace:
                 return None
             parent = working[edit.stmt]
             root_comp = self.components[edit.comp]
-            if not parent.has_list or root_comp not in CONTAINER_COMPONENTS:
+            if not parent.has_list or root_comp not in self.container_components:
                 return None
             if not (0 <= edit.payload < len(self.components)):
                 return None
             leaf_comp = self.components[edit.payload]
-            if leaf_comp not in LEAF_COMPONENTS:
+            if leaf_comp not in self.leaf_components:
                 return None
             if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
                 return None
-            if not (0 <= edit.target < len(CONTAINER_RESTS)):
+            if not (0 <= edit.target < len(self.container_rests)):
                 return None
             placeholder = self._placeholder(inventory, edit.slot)
             cname = self.fresh_name(working)
@@ -435,7 +457,7 @@ class TreeEditSpace:
             )
             parent.children.append(cname)
             working.append(
-                Statement(cname, root_comp, [lname], CONTAINER_RESTS[edit.target], True)
+                Statement(cname, root_comp, [lname], self.container_rests[edit.target], True)
             )
             working.append(
                 Statement(
@@ -462,7 +484,7 @@ class TreeEditSpace:
             if not (0 <= edit.payload < len(self.components)):
                 return None
             leaf_comp = self.components[edit.payload]
-            if leaf_comp not in LEAF_COMPONENTS:
+            if leaf_comp not in self.leaf_components:
                 return None
             if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
                 return None
@@ -477,9 +499,9 @@ class TreeEditSpace:
             # Inverse: REMOVE (pack statements are unreferenced).
             if len(working) >= MAX_STMTS:
                 return None
-            if not (0 <= edit.payload < len(V05_TEMPLATES)):
+            if not (0 <= edit.payload < len(self.statement_templates)):
                 return None
-            comp, args = V05_TEMPLATES[edit.payload]
+            comp, args = self.statement_templates[edit.payload]
             candidate = Statement(self.fresh_v05_name(working, comp), comp, [], args, False)
             try:
                 validate_output(candidate.render(), kind="statement")
@@ -496,9 +518,9 @@ class TreeEditSpace:
             target = working[edit.stmt]
             if v05_template_index(target) is None:
                 return None
-            if not (0 <= edit.payload < len(V05_TEMPLATES)):
+            if not (0 <= edit.payload < len(self.statement_templates)):
                 return None
-            comp, args = V05_TEMPLATES[edit.payload]
+            comp, args = self.statement_templates[edit.payload]
             if target.comp == comp and target.rest.strip() == args:
                 return None
             candidate = Statement(target.name, comp, [], args, False)
