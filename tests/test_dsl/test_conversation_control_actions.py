@@ -466,7 +466,29 @@ def test_deterministic_priority_bypasses_forced_and_empty_sets_then_orders_by_ki
     assert child_decision.action.kind is ConversationControlKind.UNDO
 
 
-def test_conversation_control_policy_report_reuses_calibration_helpers() -> None:
+def test_control_actions_module_does_not_import_flow_termination() -> None:
+    """Regression test for a real CI failure.
+
+    Importing flow.termination.brier_score/expected_calibration_error
+    transitively pulled in numpy via flow.reference.generator, breaking the
+    numpy-free python-static CI lane (every module in dsl/operators/ must
+    stay importable without numpy/torch). The calibration math is now
+    duplicated locally (_brier_score/_expected_calibration_error) instead
+    of imported. This checks module attributes rather than doing a live
+    numpy-free import probe, because control_actions is reached through
+    slm_training's top-level package __init__, which eagerly imports far
+    more than this one module and would make a live probe fail for
+    reasons unrelated to this module's own dependencies.
+    """
+    from slm_training.dsl.operators import control_actions
+
+    assert not hasattr(control_actions, "brier_score")
+    assert not hasattr(control_actions, "expected_calibration_error")
+    assert hasattr(control_actions, "_brier_score")
+    assert hasattr(control_actions, "_expected_calibration_error")
+
+
+def test_conversation_control_policy_report_computes_calibration_locally() -> None:
     stop_action = LegalControlActionV1(
         kind=ConversationControlKind.STOP, proof_checks=("always_legal",), serialized="CONTROL STOP"
     )
@@ -487,3 +509,27 @@ def test_conversation_control_policy_report_reuses_calibration_helpers() -> None
     assert 0.0 <= report.stop_ece <= 1.0
     assert report.premature_stop_rate == pytest.approx(1 / 3)
     assert report.late_stop_rate == 0.0
+
+
+def test_conversation_control_policy_report_rejects_mismatched_lengths() -> None:
+    stop_action = LegalControlActionV1(
+        kind=ConversationControlKind.STOP, proof_checks=("always_legal",), serialized="CONTROL STOP"
+    )
+    with pytest.raises(ValueError):
+        ConversationControlPolicyReportV1.from_predictions(
+            predicted_actions=[stop_action, stop_action],
+            expected_actions=[stop_action],
+            stop_probabilities=[0.9, 0.1],
+            stop_targets=[1, 0],
+            premature=[False, False],
+            late=[False, False],
+        )
+    with pytest.raises(ValueError):
+        ConversationControlPolicyReportV1.from_predictions(
+            predicted_actions=[stop_action],
+            expected_actions=[stop_action],
+            stop_probabilities=[0.9, 0.1],
+            stop_targets=[1],
+            premature=[False],
+            late=[False],
+        )
