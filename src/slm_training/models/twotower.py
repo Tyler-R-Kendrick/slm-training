@@ -24,12 +24,15 @@ from slm_training.dsl.language_contract import (
     assert_symbol_only_output,
     require_current_output_contract,
 )
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
     ChoiceGenerationResult,
     RuntimeSymbol,
+    assert_canonical_template_markers,
+    assert_no_template_semantic_labels,
     choice_generation_fingerprint,
 )
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -108,12 +111,19 @@ from slm_training.dsl.action_shortlist import (
     retrieve_then_rerank,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
+from slm_training.dsl.abstract_plan import AbstractPlanV1
+from slm_training.models.abstract_plan_head import (
+    AbstractPlanHead,
+    AbstractPlanMode,
+    AbstractPlanTrace,
+)
 from slm_training.models.tokenizer import (
     OpenUITokenizer,
     load_tokenizer_sidecar,
     tokenize_text,
 )
 
+_ABSTRACT_PLAN_MODES: tuple[str, ...] = tuple(mode.value for mode in AbstractPlanMode)
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
     "twotower_opaque_projection_models",
     default=frozenset(),
@@ -325,6 +335,9 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    # Extra weight on the final real LTR tokens (default-off).
+    ltr_tail_loss_weight: float = 0.0
+    ltr_tail_tokens: int = 32
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
@@ -573,6 +586,15 @@ class TwoTowerConfig:
     # sparse grammar-action scorer.  ``none`` is identity; other values select a
     # standalone connector variant for future wiring.
     semantic_connector: str = "none"  # none | linear | low_rank | cross_attention
+    # AP-023 (SLM-315): default-off discrete abstract-plan head over pooled
+    # context-tower states. ``disabled`` builds no head at all, so
+    # compatibility_fingerprint/RNG stream/optimizer groups stay bit-exact
+    # with the pre-existing baseline. A connector into the decoder stays
+    # off regardless of this mode until AP-027 evidence clears (see
+    # ``semantic_connector`` above) -- this only ever populates
+    # ``TwoTowerModel.abstract_plan_trace(...)``, a side channel that
+    # ``training_loss``/``forward`` never call.
+    abstract_plan_mode: str = "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
     connector_hidden_dim: int = 256
     connector_rank: int = 32
     connector_n_queries: int = 4
@@ -683,6 +705,14 @@ class TwoTowerConfig:
                 raise ValueError(
                     f"{field_name}={value!r} is not one of {supported!r}"
                 )
+        # AP-023 (SLM-315): reject typo'd/unknown modes early so an invalid
+        # value can never silently take the "enabled" branch in __init__ and
+        # break the disabled-by-default bit-exact guarantee.
+        if self.abstract_plan_mode not in _ABSTRACT_PLAN_MODES:
+            raise ValueError(
+                f"abstract_plan_mode={self.abstract_plan_mode!r} is not one of "
+                f"{_ABSTRACT_PLAN_MODES!r}"
+            )
         if self.denoiser_arch not in SHARED_RECURSIVE_ARCH_Z_STATE_MODES and any(
             value != default for value, _, default in repair_modes.values()
         ):
@@ -1660,6 +1690,24 @@ class TwoTowerModel(nn.Module):
             if root_reference_identity_enabled and _is_choice_output(self.config)
             else None
         )
+        # AP-023 (SLM-315): default-off discrete abstract-plan head over
+        # pooled context-tower states. ``disabled`` constructs nothing (zero
+        # params, RNG/optimizer/fingerprint untouched); see
+        # ``abstract_plan_trace`` for the only caller of this head.
+        abstract_plan_mode = str(
+            getattr(self.config, "abstract_plan_mode", "disabled") or "disabled"
+        )
+        self.abstract_plan: AbstractPlanV1 | None = (
+            AbstractPlanV1() if abstract_plan_mode != "disabled" else None
+        )
+        self.abstract_plan_head: AbstractPlanHead | None = (
+            isolated_aux_init(
+                lambda: AbstractPlanHead(self.config.d_model, self.abstract_plan),
+                116,
+            )
+            if abstract_plan_mode != "disabled"
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -1873,6 +1921,7 @@ class TwoTowerModel(nn.Module):
             "root_reference_identity_head.",
             "trust_gate.",
             "survival_head.",
+            "abstract_plan_head.",
         )
         grouped: dict[str, list[nn.Parameter]] = {"base": []}
         seen: set[int] = set()
@@ -2196,6 +2245,32 @@ class TwoTowerModel(nn.Module):
                     device=self.device_name,
                 )
 
+    def abstract_plan_trace(
+        self,
+        prompts: list[str],
+        *,
+        target_plan_ids: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+        cache_keys: list[str] | None = None,
+    ) -> AbstractPlanTrace | None:
+        """Predict a plan trace from pooled context-tower states (AP-023 / SLM-315).
+
+        Returns ``None`` when ``abstract_plan_mode == "disabled"`` (the
+        default). A pure side channel: neither ``training_loss`` nor
+        ``forward`` ever calls this, so no plan signal reaches the decoder
+        unless a caller invokes it explicitly.
+        """
+        if self.abstract_plan_head is None:
+            return None
+        ctx, ctx_pad = self._encode_context(prompts, cache_keys=cache_keys)
+        return self.abstract_plan_head(
+            ctx,
+            ctx_pad,
+            mode=self.config.abstract_plan_mode,
+            target_plan_ids=target_plan_ids,
+            generator=generator,
+        )
+
     def apply_dynamic_quant(self) -> bool:
         """P5: dynamically quantize Linear layers to int8 (CPU). Returns True on success."""
         if str(self.device_name) != "cpu":
@@ -2471,6 +2546,17 @@ class TwoTowerModel(nn.Module):
                     noisy[i, j] = self.tokenizer.mask_id
         return noisy, predict_mask, ltr_suffix
 
+    def _ltr_tail_mask(
+        self, target_ids: torch.Tensor, ltr_suffix: torch.Tensor
+    ) -> torch.Tensor:
+        """Select the final configured number of real LTR-suffix tokens."""
+        count = int(self.config.ltr_tail_tokens or 0)
+        if count <= 0:
+            return torch.zeros_like(ltr_suffix)
+        real_suffix = ltr_suffix & target_ids.ne(self.tokenizer.pad_id)
+        from_end = real_suffix.flip(1).cumsum(dim=1).flip(1)
+        return real_suffix & from_end.le(count)
+
     def _placeholder_ids(self) -> set[int]:
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
@@ -2722,7 +2808,10 @@ class TwoTowerModel(nn.Module):
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         _require_symbol_only_tokenizer(self.tokenizer)
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -2871,6 +2960,12 @@ class TwoTowerModel(nn.Module):
                     content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
                     prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
                     weights = weights + (prefix_w * prefix.reshape(-1).float())
+                tail_w = float(
+                    getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0
+                )
+                if tail_w > 0.0:
+                    tail = self._ltr_tail_mask(target_ids, ltr_suffix)
+                    weights = weights + (tail_w * tail.reshape(-1).float())
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -4028,7 +4123,9 @@ class TwoTowerModel(nn.Module):
                 token_id: index for index, token_id in enumerate(component_ids)
             }
             plan_logits = self.binder_component_plan_head(
-                self._pool_context(ctx, ctx_pad)
+                # Preserve the primary objective's gradients while this
+                # auxiliary planner learns its own legal-decision signal.
+                self._pool_context(ctx, ctx_pad).detach()
             ).view(len(batch), len(binder_ids), len(component_ids))
             plan_losses: list[torch.Tensor] = []
             plan_hits: list[torch.Tensor] = []
@@ -13843,7 +13940,10 @@ class TwoTowerModel(nn.Module):
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
         for record in records:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "

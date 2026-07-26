@@ -21,6 +21,7 @@ from slm_training.data.contract import (
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate, train
 from slm_training.harnesses.model_build.factory import (
     _resolve_freeze_context,
+    _twotower_config_from_build,
     apply_runtime_overrides,
 )
 from slm_training.harnesses.model_build.train_loop import (
@@ -205,6 +206,18 @@ def test_ltr_tail_mask_selects_only_final_real_suffix_tokens() -> None:
     target = torch.tensor([[model.tokenizer.bos_id, 7, 8, 9, model.tokenizer.pad_id]])
     suffix = torch.tensor([[False, True, True, True, False]])
     assert model._ltr_tail_mask(target, suffix).tolist() == [[False, False, True, True, False]]
+
+
+def test_model_build_config_threads_ltr_tail_controls() -> None:
+    config = _twotower_config_from_build(
+        ModelBuildConfig(
+            train_dir=Path("fixtures"),
+            context_backend="scratch",
+            ltr_tail_loss_weight=1.25,
+            ltr_tail_tokens=2,
+        )
+    )
+    assert (config.ltr_tail_loss_weight, config.ltr_tail_tokens) == (1.25, 2)
 
 
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
@@ -501,6 +514,7 @@ def test_optional_heads_do_not_shift_training_rng() -> None:
     assert torch.equal(baseline, state_after(binder_arity_loss_weight=1.0))
     assert torch.equal(baseline, state_after(binder_topology_loss_weight=1.0))
     assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
+    assert torch.equal(baseline, state_after(abstract_plan_mode="sampled"))
 
 
 def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:
@@ -581,6 +595,129 @@ def test_auxiliary_loss_does_not_change_base_gradients() -> None:
     auxiliary_loss.backward()
     assert arity.binder_arity_head is not None
     assert arity.binder_arity_head.weight.grad is not None
+
+
+def test_abstract_plan_mode_disabled_by_default_and_head_none() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(123)
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+        ),
+    )
+    assert model.config.abstract_plan_mode == "disabled"
+    assert model.abstract_plan_head is None
+    assert model.abstract_plan is None
+    assert model.abstract_plan_trace(["Hero"]) is None
+    assert not any(
+        name.startswith("abstract_plan_head.") for name, _ in model.named_parameters()
+    )
+
+
+def test_abstract_plan_head_is_bit_exact_with_baseline_when_disabled() -> None:
+    """Feature-off model is bit-exact with the current baseline (SLM-315 acceptance)."""
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    explicit_off = model(abstract_plan_mode="disabled")
+    baseline_state = dict(baseline.named_parameters())
+    for name, parameter in explicit_off.named_parameters():
+        assert torch.equal(parameter, baseline_state[name]), name
+    torch.manual_seed(456)
+    baseline_loss = baseline.training_loss(records)
+    torch.manual_seed(456)
+    explicit_off_loss = explicit_off.training_loss(records)
+    torch.testing.assert_close(baseline_loss, explicit_off_loss)
+
+
+def test_abstract_plan_head_never_participates_in_training_loss_graph() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    enabled = model(abstract_plan_mode="sampled")
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    torch.manual_seed(456)
+    enabled.training_loss(records).backward()
+
+    assert enabled.abstract_plan_head is not None
+    assert enabled.abstract_plan_head.proj.weight.grad is None
+
+    enabled_grads = dict(enabled.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if parameter.grad is None:
+            assert enabled_grads[name].grad is None, name
+        else:
+            assert torch.equal(parameter.grad, enabled_grads[name].grad), name
+
+
+@pytest.mark.parametrize(
+    "mode", ["teacher_forced", "sampled", "oracle", "random", "shuffled"]
+)
+def test_abstract_plan_trace_emits_valid_plan_for_every_enabled_mode(
+    mode: str,
+) -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(123)
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            abstract_plan_mode=mode,
+        ),
+    )
+    assert model.abstract_plan is not None
+    target_plan_ids = torch.randint(
+        0, model.abstract_plan.slot_count, (1, model.abstract_plan.rounds)
+    )
+
+    trace = model.abstract_plan_trace(["Hero"], target_plan_ids=target_plan_ids)
+
+    assert trace is not None
+    assert trace.mode == mode
+    assert trace.plan_tokens.shape == (1, model.abstract_plan.rounds)
+    assert bool(
+        (
+            (trace.plan_tokens >= 0) & (trace.plan_tokens < model.abstract_plan.slot_count)
+        ).all()
+    )
 
 
 def test_binder_component_plan_does_not_change_base_gradients() -> None:
