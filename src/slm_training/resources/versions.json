@@ -2198,16 +2198,6 @@
           "note": "add SLM-269 DCA0-01 fail-closed activation audit (slm269_dca0_activation.py): prerequisite evidence unqualified (SLM-260 fixture-only, SLM-261 missing, SLM-268 blocked) -> inconclusive, no corpus/training launched"
         },
         {
-          "version": "v115",
-          "date": "2026-07-25",
-          "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"
-        },
-        {
-          "version": "v114",
-          "date": "2026-07-25",
-          "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"
-        },
-        {
           "version": "v113",
           "date": "2026-07-25",
           "note": "SLM-328 AP-030 CAP2-06 program-factor latent size/width/codec rate-distortion sweep wiring/fixture harness"
@@ -7878,17 +7868,12 @@
         {
           "version": "v258",
           "date": "2026-07-26",
-          "note": "AP-025 (SLM-318) merge resolution: rebase the role_sequence masking change onto main's v257; see the AP-025 v257 history entry below for the semantic change (optional role_sequence param, zero new params, None bit-exact, fail-closed out-of-role targets)"
+          "note": "AP-025 (SLM-318): AbstractPlanHead.forward gains an optional role_sequence param (zero new parameters -- masks the existing proj's logits/RANDOM-mode sampling to each round's declared RoleSpanV1 range); None is bit-exact identical to pre-AP-025 behavior, and target_plan_ids outside the declared role now fail closed"
         },
         {
           "version": "v257",
           "date": "2026-07-26",
           "note": "SLM-428 (VAR2-01): format_context_text and _format_one_context gain an optional history_ops_text parameter (omitted by every existing caller -- exact prior output when absent); ModelBuildConfig.encoder_ops_conditioning / TwoTowerConfig.encoder_ops_conditioning is a new default-off lever gating the effect at the model layer, wired through _twotower_config_from_build. First real consumer of the shared OPS_VOCAB kernel (I13)."
-        },
-        {
-          "version": "v257",
-          "date": "2026-07-26",
-          "note": "AP-025 (SLM-318): AbstractPlanHead.forward gains an optional role_sequence param (zero new parameters -- masks the existing proj's logits/RANDOM-mode sampling to each round's declared RoleSpanV1 range); None is bit-exact identical to pre-AP-025 behavior, and target_plan_ids outside the declared role now fail closed"
         },
         {
           "version": "v256",
@@ -7904,11 +7889,6 @@
           "version": "v254",
           "date": "2026-07-26",
           "note": "SLM-313 AP-022: add an explicit, default-off shared TwoTower training path for the AbstractPlan head and its existing gated connector. A positive abstract_plan_loss_weight supervises opaque structural targets derived only from training labels; abstract_plan_train_conditioning additionally routes the teacher-forced plan through the connector during reconstruction. The feature fails closed on partial activation, preserves the disabled/default graph, is available through ModelBuildConfig/train_model, and has gradient/config regression tests."
-        },
-        {
-          "version": "v254",
-          "date": "2026-07-26",
-          "note": "AP-025 (SLM-318): AbstractPlanHead.forward gains an optional role_sequence param (zero new parameters -- masks the existing proj's logits/RANDOM-mode sampling to each round's declared RoleSpanV1 range); None is bit-exact identical to pre-AP-025 behavior, and target_plan_ids outside the declared role now fail closed"
         },
         {
           "version": "v253",
@@ -9952,8 +9932,8 @@
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/abstract_plan.py",
-        "src/slm_training/dsl/role_slot_probe.py",
         "tests/test_dsl/test_abstract_plan.py",
+        "src/slm_training/dsl/role_slot_probe.py",
         "tests/test_dsl/test_role_slot_probe.py",
         "scripts/run_role_slot_probe.py"
       ],
