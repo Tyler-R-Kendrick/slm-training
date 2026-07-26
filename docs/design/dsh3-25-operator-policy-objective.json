@@ -1,0 +1,64 @@
+{
+  "schema": "operator_policy_objective_report/v1",
+  "claim_class": "wiring",
+  "unknown_fractions": {
+    "unknown_fraction_0.00": {
+      "routes": {
+        "complete_ambiguous": 1
+      },
+      "mean_loss": {
+        "known_supported_ce": 2.4849066734313965,
+        "positive_unlabeled_risk": 0.6935011744499207,
+        "defer_abstention": 2.4849066734313965
+      }
+    },
+    "unknown_fraction_0.25": {
+      "routes": {
+        "partial_witnessed": 1
+      },
+      "mean_loss": {
+        "known_supported_ce": 2.4849066734313965,
+        "positive_unlabeled_risk": 0.6935011744499207,
+        "defer_abstention": 2.4849066734313965
+      }
+    },
+    "unknown_fraction_0.50": {
+      "routes": {
+        "partial_unknown": 1
+      },
+      "mean_loss": {
+        "known_supported_ce": null,
+        "positive_unlabeled_risk": null,
+        "defer_abstention": null
+      }
+    },
+    "unknown_fraction_0.75": {
+      "routes": {
+        "partial_unknown": 1
+      },
+      "mean_loss": {
+        "known_supported_ce": null,
+        "positive_unlabeled_risk": null,
+        "defer_abstention": null
+      }
+    }
+  },
+  "false_hard_eliminations": 0,
+  "disposition": "wiring_underpowered",
+  "note": "Fixture-scale only: three arms are wired and structurally distinguished (DEFER abstains on PARTIAL_UNKNOWN, the naive CE arm never does), but no claim is made that PU risk or DEFER beats naive CE at production scale in either direction, per the DSH3-25 stop rule.",
+  "schema_version": 1,
+  "run_id": "dsh3_25_operator_policy_objective_fixture",
+  "run_class": "fixture_demo",
+  "n_candidates": 12,
+  "gold_index": 7,
+  "honest_verdict": "fixture_wiring",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "875c7c2e47c365e64bda1442d2249ca6c8b70243",
+    "code_dirty": true,
+    "components": {
+      "model.operator_policy_objective": "v1"
+    },
+    "stamped_at": "2026-07-26T09:15:04.621224+00:00"
+  }
+}

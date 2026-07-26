@@ -6826,6 +6826,24 @@
         }
       ]
     },
+    "model.operator_policy_objective": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_policy_objective.py",
+        "tests/test_models/test_operator_policy_objective.py",
+        "scripts/run_dsh3_25_operator_policy_objective_fixture.py",
+        "docs/design/dsh3-25-operator-policy-objective.md",
+        "docs/design/dsh3-25-operator-policy-objective.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-400 (DSH3-25): orthogonal compiler-support/target-utility labels, InferenceRoute (including PARTIAL_UNKNOWN DEFER), and matched known_supported_ce/positive_unlabeled_risk/defer_abstention arms over the sanitized OperatorPolicyInputV1 boundary"
+        }
+      ]
+    },
     "model.operator_feature_encoder": {
       "version": "v1",
       "kind": "model",
