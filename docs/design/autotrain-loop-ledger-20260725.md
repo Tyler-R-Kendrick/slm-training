@@ -4,6 +4,13 @@
 
 Total iterations: **250** (latest `autotrain_wf_smoke_20260725_iter250`).
 
+**iter251 attempted 2026-07-26, blocked before training** — fresh-checkout
+`slm data build-train --source fixture` output fails `assert_canonical_template_markers`
+at SFT time (harness bug, not a training result). Not counted toward the
+250 total above; see
+[autotrain-wf-smoke-20260726-iter251-blocked.md](autotrain-wf-smoke-20260726-iter251-blocked.md)
+for repro, root cause, and why the obvious one-line fix regresses dedup.
+
 ## Latest 30
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
