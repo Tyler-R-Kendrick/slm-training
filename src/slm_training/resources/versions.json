@@ -6860,6 +6860,22 @@
         }
       ]
     },
+    "model.operator_policy_objective": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_policy_objective.py",
+        "tests/test_models/test_operator_policy_objective.py",
+        "docs/design/dsh3-25-operator-policy-objective.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-400 (DSH3-25): coverage-aware operator-policy labels, safe known-supported and PU denominators, explicit DEFER attribution, controlled partial projections, and fail-closed routing"
+        }
+      ]
+    },
     "model.legal_edit_batch": {
       "version": "v2",
       "kind": "model",
