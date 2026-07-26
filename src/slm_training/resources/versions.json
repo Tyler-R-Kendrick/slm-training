@@ -767,19 +767,29 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-411 updates the DSH5-02 scope note to point at the selector enumeration now owned by dsl.operators.legal_set; the bulk executor contract is unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-25",
           "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
     "dsl.operators.legal_set": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/legal_set.py",
         "tests/test_dsl/test_operator_legal_set.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-411: enumerate exact state-bound SelectorRef candidates alongside ordinary references so bulk actions have a complete compiler-owned legal domain and semantic action identity"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -6874,7 +6884,7 @@
       ]
     },
     "model.operator_feature_encoder": {
-      "version": "v1",
+      "version": "v2",
       "kind": "model",
       "paths": [
         "src/slm_training/models/operator_feature_encoder.py",
@@ -6884,6 +6894,11 @@
         "docs/design/dsh3-23-operator-feature-encoder.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-411: encode allowlisted selector cardinality and fanout alongside selector kind/facts from the sanitized operator-policy view"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -6910,7 +6925,7 @@
       ]
     },
     "model.operator_policy_view": {
-      "version": "v3",
+      "version": "v4",
       "kind": "model",
       "paths": [
         "src/slm_training/models/operator_policy_view.py",
@@ -6918,6 +6933,11 @@
         "docs/design/dsh3-22-operator-policy-view.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "SLM-411: project exact SelectorRef rows with only closed selector kind, allowlisted facts, cardinality, and fanout; preserve target/scope identities as runtime-only"
+        },
         {
           "version": "v3",
           "date": "2026-07-26",
@@ -9416,6 +9436,24 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "AP-017 (SLM-304): initial registration -- codebook-only abstract trace decoding (prompt/abstract/answer phases, m_max hard cap with recorded forced end, malformed/nested delimiter hard errors, independent abstract/answer sampling params + seeds, per-phase token counts and per-token logprobs), default-off in CausalLMOpenUIPlugin"
+        }
+      ]
+    },
+    "evals.bulk_operator_matrix": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/bulk_operator_matrix.py",
+        "scripts/run_dsh5_03_bulk_operator_crossover.py",
+        "tests/test_evals/test_bulk_operator_matrix.py",
+        "tests/test_scripts/test_run_dsh5_03_bulk_operator_crossover.py",
+        "docs/design/dsh5-03-bulk-operator-crossover.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-411: exact legal-set/replay bulk crossover preflight that retains the unavailable matched-policy verdict until all serving arms are measured"
         }
       ]
     },
