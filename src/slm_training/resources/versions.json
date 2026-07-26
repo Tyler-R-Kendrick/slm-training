@@ -9423,6 +9423,25 @@
         }
       ]
     },
+    "harness.experiments.ap027_discrete_plan_pareto": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/discrete_plan_pareto.py",
+        "scripts/run_discrete_plan_pareto.py",
+        "tests/test_harnesses/experiments/test_discrete_plan_pareto.py",
+        "tests/test_scripts/test_run_discrete_plan_pareto.py",
+        "docs/design/discrete-plan-pareto.md",
+        "docs/design/iter-slm322-discrete-plan-pareto-20260726.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial AP-027/SLM-322 discrete-plan Pareto contract: extends AP-022's arm/campaign pattern with a 1/2/4/8 refinement-round axis and the issue's named successor arm (learned_plan_binder_precision), structurally enforcing that AP-022's closed ignored_or_collapsed verdict for learned_abstract_plan can never be marked promotion_eligible"
+        }
+      ]
+    },
     "harness.experiments.slm332_latent_geometry": {
       "version": "v5",
       "kind": "harness",
