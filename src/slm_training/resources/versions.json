@@ -5275,7 +5275,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -5288,9 +5288,16 @@
         "docs/design/iter-slm305-edit-language-20260724.md",
         "tests/test_models/test_tree_edit_diffusion.py",
         "docs/design/var0-03-pack-derived-inventory-20260726.json",
-        "docs/design/var0-03-pack-derived-inventory-20260726.md"
+        "docs/design/var0-03-pack-derived-inventory-20260726.md",
+        "docs/design/var1-02-set-property-action-20260726.json",
+        "docs/design/var1-02-set-property-action-20260726.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-425: add the real pack-owned SET_PROPERTY action to TreeEditSpace, its format-3 migration and SLM-299 production enumeration. The finite declared rest domain remains narrower than VAR1-01's hypothetical row control; the local audit is capability evidence only."
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
@@ -7469,7 +7476,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v255",
+      "version": "v256",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7511,6 +7518,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v256",
+          "date": "2026-07-26",
+          "note": "SLM-425: migrate tree-edit checkpoints from format 2 to 3 while preserving the existing action-head prefix and initializing the new property-value head."
+        },
         {
           "version": "v255",
           "date": "2026-07-26",
@@ -9300,7 +9312,7 @@
       ]
     },
     "dsl.variants": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/variants.py",
@@ -9308,6 +9320,11 @@
         "tests/test_dsl/test_variants.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-425: tree_edit_diffusion declares openui.set_property as its realized kernel operation and regenerates the derived contract registry."
+        },
         {
           "version": "v2",
           "date": "2026-07-26",
