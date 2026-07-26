@@ -1,0 +1,36 @@
+{
+ "contract_hash": "a3ab38d654e99eaf24c0bc912d27a5b0ed7f42a54674d1a9b39e345c1ba9f98b",
+ "contract_id": "diffusion-rl-activation-v1",
+ "disposition": "inconclusive",
+ "issue": {
+  "activation_requirement": "SLM-260 scorer oracle clean; SLM-272 offline program preference disposition; SLM-274 selected diffusion SFT parent and rollout implementation; plus a nonzero semantic baseline with usable within-group reward variance. Otherwise close reward_variance_insufficient without training.",
+  "alias": "DCA2-02",
+  "gate_contract_id": "diffusion-rl-activation-v1",
+  "linear_issue": "SLM-275",
+  "slug": "dca2-02-diffusion-rl",
+  "title": "Gate and run diffusion-native coupled-GRPO with static-analysis rewards and training-only AST hints"
+ },
+ "prerequisite_verdicts": {
+  "SLM-261_loss_ledger": "missing_or_unqualified",
+  "SLM-268_data_regime": "blocked",
+  "SLM-269_target_policy": "blocked_or_inconclusive"
+ },
+ "schema_version": "dca_activation_gate/v1",
+ "successor_conditions": [
+  "qualified LossLedgerV1 artifact (SLM-261 successor)",
+  "SLM-268 successor with activation_status != blocked (selected regime or negative result)",
+  "SLM-269 successor with a selected target policy or no-effect disposition",
+  "then re-run scripts/audit_dca_activation --issue SLM-275 (reads artifacts live) and re-file the campaign"
+ ],
+ "verdict": "blocked",
+ "verdict_rationale": "DCA2-02 (SLM-275) activation requires: SLM-260 scorer oracle clean; SLM-272 offline program preference disposition; SLM-274 selected diffusion SFT parent and rollout implementation; plus a nonzero semantic baseline with usable within-group reward variance. Otherwise close reward_variance_insufficient without training. Audited prerequisite artifacts are unqualified: SLM-261_loss_ledger=missing_or_unqualified, SLM-268_data_regime=blocked, SLM-269_target_policy=blocked_or_inconclusive. No training, surgery, curriculum, or tournament is launched; closing blocked/inconclusive.",
+ "version_stamp": {
+  "code_commit": "822ce412f079b7a27d7026e589e6eaea9feaa273",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments": "v120"
+  },
+  "stamp_schema": "version_stamp/v1",
+  "stamped_at": "2026-07-25T21:50:37.127881+00:00"
+ }
+}
