@@ -7009,6 +7009,24 @@
         }
       ]
     },
+    "model.operator_ecoc_coverage": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_ecoc_coverage.py",
+        "src/slm_training/models/semantic_cost.py",
+        "tests/test_models/test_operator_ecoc.py",
+        "scripts/run_dsh3_29_ecoc_partial_coverage.py",
+        "docs/design/dsh3-29-ecoc-partial-coverage.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-404 (DSH3-29): cost-aware pairwise action-cost matrix from declaration cost/effect signature/locality, a 100/75/50/25% controlled-PARTIAL coverage ladder that hides the highest-cost-of-confusion actions first, and a cost-weighted selective-risk report classifying TernaryECOCHead decode outcomes (compiler defer, model abstain/refine, detected_error, retained-wrong-action, correct)"
+        }
+      ]
+    },
     "model.operator_termination": {
       "version": "v1",
       "kind": "model",

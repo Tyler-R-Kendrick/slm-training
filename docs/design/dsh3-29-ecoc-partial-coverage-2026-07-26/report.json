@@ -1,0 +1,178 @@
+{
+  "cost_aware": {
+    "levels": [
+      {
+        "budget": 4,
+        "compiler_defer_count": 0,
+        "correct": 0,
+        "cost_weighted_risk": 1.0,
+        "coverage_fraction": 1.0,
+        "defer_count": 0,
+        "detected_errors": 3,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.25,
+        "retained_wrong_actions": 1,
+        "total_decisions": 4
+      },
+      {
+        "budget": 3,
+        "compiler_defer_count": 1,
+        "correct": 0,
+        "cost_weighted_risk": 3.0,
+        "coverage_fraction": 0.75,
+        "defer_count": 1,
+        "detected_errors": 0,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.75,
+        "retained_wrong_actions": 3,
+        "total_decisions": 4
+      },
+      {
+        "budget": 2,
+        "compiler_defer_count": 2,
+        "correct": 0,
+        "cost_weighted_risk": 0.0,
+        "coverage_fraction": 0.5,
+        "defer_count": 2,
+        "detected_errors": 0,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.5,
+        "retained_wrong_actions": 2,
+        "total_decisions": 4
+      },
+      {
+        "budget": 1,
+        "compiler_defer_count": 3,
+        "correct": 1,
+        "cost_weighted_risk": 0.0,
+        "coverage_fraction": 0.25,
+        "defer_count": 3,
+        "detected_errors": 0,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.0,
+        "retained_wrong_actions": 0,
+        "total_decisions": 4
+      }
+    ],
+    "overall_cost_weighted_risk": 1.0
+  },
+  "cost_matrix_source": "declaration_effect_locality/v1",
+  "decision": {
+    "reason": "cost-aware ECOC codeword assignment strictly reduced cost-weighted retained-wrong-action risk versus uniform assignment on this small synthetic fixture; this is fixture-scale positive signal, not a ship claim -- real-corpus PARTIAL-coverage incidence remains too low per DSH3-28 to run this at scale, so re-run once operator_policy_corpus supplies natural PARTIAL rows before treating this as more than wiring evidence",
+    "verdict": "fixture-scale-positive-signal"
+  },
+  "issue": "SLM-404",
+  "local_flat_head_baseline": {
+    "levels": [
+      {
+        "budget": 4,
+        "forced_singleton": 0,
+        "gold_witnessed": 4,
+        "states": 4
+      },
+      {
+        "budget": 3,
+        "forced_singleton": 0,
+        "gold_witnessed": 3,
+        "states": 4
+      },
+      {
+        "budget": 2,
+        "forced_singleton": 0,
+        "gold_witnessed": 2,
+        "states": 4
+      },
+      {
+        "budget": 1,
+        "forced_singleton": 4,
+        "gold_witnessed": 1,
+        "states": 4
+      }
+    ],
+    "note": "LocalFlatHead has no ECOC codeword geometry, so no cost-weighted confusion risk is computed for it; this is coverage-structure context only (gold-witnessed / forced-singleton counts), not a risk comparison."
+  },
+  "run": {
+    "actions_per_state": 4,
+    "hidden_dim": 8,
+    "ship_claim": false,
+    "states": 4,
+    "timestamp": "2026-07-26T15:48:15.514691+00:00"
+  },
+  "schema": "dsh3_29_ecoc_partial_coverage_report/v1",
+  "uniform": {
+    "levels": [
+      {
+        "budget": 4,
+        "compiler_defer_count": 0,
+        "correct": 0,
+        "cost_weighted_risk": 4.0,
+        "coverage_fraction": 1.0,
+        "defer_count": 0,
+        "detected_errors": 2,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.5,
+        "retained_wrong_actions": 2,
+        "total_decisions": 4
+      },
+      {
+        "budget": 3,
+        "compiler_defer_count": 1,
+        "correct": 0,
+        "cost_weighted_risk": 3.0,
+        "coverage_fraction": 0.75,
+        "defer_count": 1,
+        "detected_errors": 0,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.75,
+        "retained_wrong_actions": 3,
+        "total_decisions": 4
+      },
+      {
+        "budget": 2,
+        "compiler_defer_count": 2,
+        "correct": 0,
+        "cost_weighted_risk": 0.0,
+        "coverage_fraction": 0.5,
+        "defer_count": 2,
+        "detected_errors": 0,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.5,
+        "retained_wrong_actions": 2,
+        "total_decisions": 4
+      },
+      {
+        "budget": 1,
+        "compiler_defer_count": 3,
+        "correct": 1,
+        "cost_weighted_risk": 0.0,
+        "coverage_fraction": 0.25,
+        "defer_count": 3,
+        "detected_errors": 0,
+        "invalid_codewords": 0,
+        "model_abstain_count": 0,
+        "plain_risk": 0.0,
+        "retained_wrong_actions": 0,
+        "total_decisions": 4
+      }
+    ],
+    "overall_cost_weighted_risk": 1.75
+  },
+  "version_stamp": {
+    "code_commit": "a2727068d184068a9c9b1c9ef52d3d3f4590737e",
+    "code_dirty": true,
+    "components": {
+      "model.operator_ecoc_coverage": "v1",
+      "model.operator_policy_objective": "v1",
+      "model.operator_policy_view": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T15:48:15.514642+00:00"
+  }
+}

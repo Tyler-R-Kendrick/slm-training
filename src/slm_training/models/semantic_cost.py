@@ -11,13 +11,16 @@ from __future__ import annotations
 import itertools
 import math
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 from slm_training.models.action_code_registry import (
     ActionCodeEntry,
     ActionSchema,
     CodeAssignment,
 )
+
+if TYPE_CHECKING:
+    from slm_training.models.operator_policy_view import OperatorActionViewV1
 
 
 def _validate_trit_word(word: tuple[int, ...]) -> None:
@@ -121,6 +124,45 @@ def fingerprint_cost(
                 != (fb[i] if i < len(fb) else None)
             )
             costs[(a, b)] = float(diff)
+    return costs
+
+
+#: ``cost_matrix_source`` label for :func:`build_operator_action_cost_matrix`.
+OPERATOR_ACTION_COST_MATRIX_SOURCE = "declaration_effect_locality/v1"
+
+
+def build_operator_action_cost_matrix(
+    action_rows: "Sequence[OperatorActionViewV1]",
+    *,
+    effect_weight: float = 2.0,
+    locality_weight: float = 1.0,
+) -> CostMatrix:
+    """Pairwise cost from declared cost, effect signature, and locality (DSH3-29).
+
+    Combines three ``OperatorActionViewV1``-only signals: (a) absolute
+    declaration-cost delta, (b) ``EffectDeltaKind`` symmetric-difference size
+    (a stand-in for canonical-AST-cost divergence -- the sanitized view never
+    carries a raw AST, so effect/locality are the closest available proxy),
+    and (c) a locality-mismatch indicator. Deterministic and symmetric by
+    construction; never reads any field outside ``OperatorActionViewV1``, so
+    it cannot reference a forbidden after-state/proof/target field.
+    """
+    keys = [row.operator_id for row in action_rows]
+    if len(set(keys)) != len(keys):
+        raise ValueError("action_rows must have unique operator_id keys")
+    costs: CostMatrix = {}
+    for i, a in enumerate(action_rows):
+        for b in action_rows[i + 1 :]:
+            declaration_delta = abs(a.cost - b.cost)
+            effect_delta = len(set(a.effect_signature) ^ set(b.effect_signature))
+            locality_delta = 0.0 if a.locality == b.locality else 1.0
+            value = (
+                declaration_delta
+                + effect_weight * effect_delta
+                + locality_weight * locality_delta
+            )
+            costs[(a.operator_id, b.operator_id)] = value
+            costs[(b.operator_id, a.operator_id)] = value
     return costs
 
 
