@@ -1020,6 +1020,24 @@
         }
       ]
     },
+    "evals.operator_systems_benchmark": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/operator_systems_benchmark.py",
+        "scripts/run_operator_systems_benchmark.py",
+        "tests/test_evals/test_operator_systems_benchmark.py",
+        "docs/design/dsh3-32-operator-systems-benchmark-20260726.md",
+        "docs/design/dsh3-32-operator-systems-benchmark-20260726.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "DSH3-32 (SLM-407): initial fixture-scale OperatorServingWorkV1 numeraire over compiler_only_forced, serialized_actions, typed_policy_singleton_bypass_on/off, and x22_tree_edit arms; full_generation left explicitly unrun"
+        }
+      ]
+    },
     "evals.cap2_operator": {
       "version": "v2",
       "kind": "metric",
@@ -5234,7 +5252,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -5248,6 +5266,11 @@
         "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "DSH3-32 (SLM-407): add forwards/forward_rows counters to _decode_one's evidence dict so a systems benchmark can charge X22's real batched forward-equivalent work"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
