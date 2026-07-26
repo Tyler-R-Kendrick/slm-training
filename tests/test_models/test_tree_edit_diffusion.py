@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import random
+from dataclasses import replace
 
 import pytest
 
@@ -65,6 +66,7 @@ from slm_training.models.tree_edit_diffusion import (  # noqa: E402
     ACTION_REMOVE_CONTAINER,
     ACTION_REPLACE_STATEMENT,
     ACTION_REPLACE_SUBTREE,
+    ACTION_SET_PROPERTY,
     Edit,
 )
 
@@ -130,6 +132,64 @@ def test_extended_actions_apply_and_invert_exactly() -> None:
     assert space.apply(base, Edit(ACTION_REPLACE_STATEMENT, 0, payload=0), INVENTORY) is None
 
 
+def test_set_property_round_trips_root_and_non_root_and_fails_closed() -> None:
+    """SLM-425 mutates a pack-owned container property, including root."""
+    space = TreeEditSpace()
+    base = parse_statements(PROGRAM)
+    assert base is not None
+
+    # The default pack's ``rest`` domain is (column, empty), so property 0
+    # and target 1 select the empty form on the root.
+    root_mutation = Edit(ACTION_SET_PROPERTY, 0, comp=0, target=1)
+    root_changed = space.apply(base, root_mutation, INVENTORY)
+    assert root_changed is not None
+    assert root_changed[0].rest == ""
+    root_restored = space.apply(
+        root_changed, Edit(ACTION_SET_PROPERTY, 0, comp=0, target=0), INVENTORY
+    )
+    assert root_restored is not None
+    assert render_statements(root_restored) == PROGRAM
+
+    # The same structured rebuild works on an existing non-root container.
+    child_mutation = Edit(ACTION_SET_PROPERTY, 1, comp=0, target=0)
+    child_changed = space.apply(base, child_mutation, INVENTORY)
+    assert child_changed is not None
+    assert child_changed[1].rest == ', "column"'
+    child_restored = space.apply(
+        child_changed, Edit(ACTION_SET_PROPERTY, 1, comp=0, target=1), INVENTORY
+    )
+    assert child_restored is not None
+    assert render_statements(child_restored) == PROGRAM
+
+    # No undeclared property/value can silently mutate the source.
+    assert space.apply(base, Edit(ACTION_SET_PROPERTY, 0, comp=1, target=0), INVENTORY) is None
+    assert space.apply(base, Edit(ACTION_SET_PROPERTY, 0, comp=0, target=3), INVENTORY) is None
+
+
+def test_set_property_rejects_a_pack_value_the_parser_does_not_accept() -> None:
+    """Pack metadata is an input domain, never a substitute for parsing."""
+    import slm_training.dsl.pack as pack_mod
+    from slm_training.dsl.pack import get_pack
+
+    base_pack = get_pack("openui")
+    custom = replace(
+        base_pack,
+        pack_id="tree-edit-invalid-property",
+        component_property_domains={
+            **base_pack.component_property_domains,
+            "Stack": {"rest": (', "unterminated',)},
+        },
+    )
+    pack_mod.register_pack(custom)
+    try:
+        space = TreeEditSpace(pack_id=custom.pack_id)
+        base = parse_statements(PROGRAM)
+        assert base is not None
+        assert space.apply(base, Edit(ACTION_SET_PROPERTY, 0), INVENTORY) is None
+    finally:
+        pack_mod._PACKS.pop(custom.pack_id, None)
+
+
 def test_extended_sample_mutation_loop_restores() -> None:
     space = TreeEditSpace()
     rng = random.Random(11)
@@ -148,6 +208,30 @@ def test_extended_sample_mutation_loop_restores() -> None:
         seen_actions.add(inverse.action)
     # The seeded loop exercised the extended inverse-edit supervision.
     assert seen_actions - {0}
+
+
+def test_tree_edit_space_reads_a_registered_pack_inventory() -> None:
+    """A pack extension widens the edit alphabet without editing the model."""
+    import slm_training.dsl.pack as pack_mod
+    from slm_training.dsl.pack import get_pack
+
+    base = get_pack("openui")
+    custom = replace(
+        base,
+        pack_id="tree-edit-extra-container",
+        container_components=(*base.container_components, "ExtraContainer"),
+        component_property_domains={
+            **base.component_property_domains,
+            "ExtraContainer": {"rest": (', "column"',)},
+        },
+    )
+    pack_mod.register_pack(custom)
+    try:
+        space = TreeEditSpace(pack_id=custom.pack_id)
+        assert "ExtraContainer" in space.components
+        assert "ExtraContainer" in space.container_components
+    finally:
+        pack_mod._PACKS.pop(custom.pack_id, None)
 
 
 def test_edit_new_fields_default() -> None:
@@ -171,29 +255,32 @@ def test_checkpoint_format2_fail_closed_and_migration(tmp_path) -> None:
     model = TreeEditDiffusionModel.from_records(records, config=cfg, device="cpu")
     path = tmp_path / "ckpt.pt"
     model.save(path)
-    # Round-trip at format 2.
+    # Round-trip at the current format.
     loaded = TreeEditDiffusionModel.from_checkpoint(path, device="cpu")
     assert loaded.policy.action_head.out_features == model.policy.action_head.out_features
 
-    # Simulate a format-1 checkpoint: shrink the action head to 4 rows.
+    # Simulate a format-2 checkpoint: shrink the action head to the prior 11
+    # actions and remove the SLM-425 property-value head.
     import torch as _torch
 
     payload = _torch.load(path, map_location="cpu", weights_only=False)
-    payload["format_version"] = 1
+    payload["format_version"] = 2
     sd = payload["state_dict"]
-    old_w = sd["policy.action_head.weight"][:4].clone()
-    old_b = sd["policy.action_head.bias"][:4].clone()
+    old_w = sd["policy.action_head.weight"][:11].clone()
+    old_b = sd["policy.action_head.bias"][:11].clone()
     sd["policy.action_head.weight"] = old_w
     sd["policy.action_head.bias"] = old_b
-    old_path = tmp_path / "ckpt_v1.pt"
+    del sd["policy.property_value_head.weight"]
+    del sd["policy.property_value_head.bias"]
+    old_path = tmp_path / "ckpt_v2.pt"
     _torch.save(payload, old_path)
-    (tmp_path / "ckpt_v1.tokenizer.json").write_text(
+    (tmp_path / "ckpt_v2.tokenizer.json").write_text(
         (tmp_path / "ckpt.tokenizer.json").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
 
     # Unmigrated old checkpoint fails closed with a clear error.
-    with pytest.raises(ValueError, match="format_version=1"):
+    with pytest.raises(ValueError, match="format_version=2"):
         TreeEditDiffusionModel.from_checkpoint(old_path, device="cpu")
 
     # Migration warm-starts: old action rows preserved, new rows initialized.
@@ -203,15 +290,26 @@ def test_checkpoint_format2_fail_closed_and_migration(tmp_path) -> None:
     report = migrate_tree_edit_checkpoint(
         source_checkpoint=old_path, output_checkpoint=out_path
     )
-    assert report["source_format_version"] == 1
-    assert report["output_format_version"] == 2
-    assert report["preserved_action_head_rows"] == 4
+    assert report["source_format_version"] == 2
+    assert report["output_format_version"] == 3
+    assert report["preserved_action_head_rows"] == 11
     assert (tmp_path / "ckpt_migrated.migrate.json").exists()
     migrated = TreeEditDiffusionModel.from_checkpoint(out_path, device="cpu")
     new_w = migrated.policy.action_head.weight
     assert new_w.shape[0] == model.policy.action_head.weight.shape[0]
-    assert _torch.allclose(new_w[:4], old_w)
-    assert _torch.allclose(migrated.policy.action_head.bias[:4], old_b)
+    assert _torch.allclose(new_w[:11], old_w)
+    assert _torch.allclose(migrated.policy.action_head.bias[:11], old_b)
+    assert migrated.policy.property_value_head.out_features == 2
+
+    # Existing action logits are bit-identical after the format migration.
+    state = model._state_batch([PROGRAM])
+    ctx = _torch.zeros((1, 1, cfg.d_model))
+    ctx_pad = _torch.zeros((1, 1), dtype=_torch.bool)
+    model.eval()
+    migrated.eval()
+    before = model.policy(state, model.tokenizer.pad_id, ctx, ctx_pad)["action"]
+    after = migrated.policy(state, migrated.tokenizer.pad_id, ctx, ctx_pad)["action"]
+    assert _torch.equal(before[:, :11], after[:, :11])
 
 
 def test_training_loss_decode_all_valid_and_checkpoint(tmp_path) -> None:

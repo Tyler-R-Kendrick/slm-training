@@ -24,17 +24,29 @@ from slm_training.dsl.operators import (
     RefKind,
     ReferenceDescriptorV1,
     RegisteredOperatorV1,
+    SelectorFact,
+    SelectorKind,
+    branch_fingerprint,
+    build_bulk_selector,
+    build_openui_bulk_operator_library,
+    build_openui_local_operator_context,
     build_reference_table,
     enumerate_operator_legal_set,
 )
 from slm_training.dsl.operators.legal_set import OperatorLegalSetV1
 from slm_training.dsl.operators.references import ReferenceTableV1
+from slm_training.dsl.operators.local import NodeLocationV1
 from slm_training.dsl.pack import get_pack
 from slm_training.models.operator_policy_view import (
     FORBIDDEN_FIELD_NAMES,
     ForbiddenFieldError,
+    OperatorActionViewV1,
+    OperatorArgumentSlotViewV1,
+    OperatorPolicyInputV1,
     OperatorPolicyViewError,
+    ReferenceModelViewV1,
     build_operator_policy_input,
+    operator_policy_input_from_dict,
     validate_no_forbidden_fields,
 )
 
@@ -167,6 +179,73 @@ def test_partial_legal_set_from_unbounded_repeated_slot_is_explicit() -> None:
     assert view.coverage is LegalSetCoverage.PARTIAL
 
 
+def test_bulk_selector_row_is_sanitized_and_joined_to_the_live_legal_set() -> None:
+    base_pack = get_pack("openui")
+    source = 'root = Card([Stack([TextContent(":item")])], "clear")'
+    state = OperatorStateV1.from_source(base_pack, source)
+    context = build_openui_local_operator_context(
+        base_pack,
+        state,
+        request_id="request-1",
+        branch_digest=branch_fingerprint(state.state_digest, _sha("branch")),
+        seed=7,
+        values=("row",),
+    )
+    target = next(
+        ref
+        for ref in context.references(RefKind.NODE)
+        if isinstance(context.payload(ref), NodeLocationV1)
+        and context.payload(ref).path == ("root", "props", "children", 0)
+    )
+    context, selector = build_bulk_selector(
+        context,
+        selector_kind=SelectorKind.COMPONENT_TYPE_IN_SCOPE,
+        scope_fingerprint=_sha("root-scope"),
+        matching_refs=(target,),
+        max_fanout=1,
+        seed=11,
+        compiler_facts=(
+            SelectorFact.EXACT_FINITE,
+            SelectorFact.FANOUT_BOUNDED,
+            SelectorFact.PACK_AUTHORIZED,
+            SelectorFact.SCOPE_ROOTED,
+        ),
+    )
+    library = build_openui_bulk_operator_library(context)
+    provenance = ApplicationProvenanceV1(
+        pack_id="openui",
+        compiler_id="openui.fixture",
+        compiler_version="v1",
+        source_artifact_digest=_sha(source),
+        request_id="request-1",
+    )
+    legal_set = enumerate_operator_legal_set(
+        pack=replace(base_pack, operator_library=library),
+        library=library,
+        state=state,
+        reference_table=context.reference_table,
+        provenance=provenance,
+    )
+    view = build_operator_policy_input(context.reference_table, legal_set, library)
+
+    selector_row = next(row for row in view.reference_rows if row.ref_kind is RefKind.SELECTOR)
+    assert selector_row.compiler_facts == (
+        SelectorFact.EXACT_FINITE,
+        SelectorFact.FANOUT_BOUNDED,
+        SelectorFact.PACK_AUTHORIZED,
+        SelectorFact.SCOPE_ROOTED,
+    )
+    assert selector_row.selector_kind is SelectorKind.COMPONENT_TYPE_IN_SCOPE
+    assert selector_row.selector_cardinality == selector_row.selector_max_fanout == 1
+    bulk_action = next(action for action in view.action_rows if action.operator_id == "openui.map_set_property")
+    selector_slot = next(slot for slot in bulk_action.argument_slots if slot.slot_id == "selector")
+    assert selector_slot.candidate_rows == (selector_row.row,)
+    payload = view.to_dict()
+    assert "target_fingerprints" not in str(payload)
+    assert "opaque_id" not in str(payload)
+    assert operator_policy_input_from_dict(payload).to_dict() == payload
+
+
 def test_index_reference_exposes_parent_row_and_relative_position() -> None:
     harness = _Harness(allowed_indices=frozenset())
     parent_semantic = _sha("parent-node")
@@ -227,6 +306,81 @@ def test_changing_only_allocation_seed_leaves_the_view_unchanged() -> None:
     actions_b = {action.application_id for action in legal_set_b.operator_actions}
     assert actions_a.isdisjoint(actions_b), "fixture did not actually vary the hash chain"
     assert view_a.to_dict() == view_b.to_dict()
+
+
+def test_canonical_row_maps_keep_external_labels_joined_to_persisted_rows() -> None:
+    """Supervision stored beside a canonical view must remap both join axes."""
+    view = OperatorPolicyInputV1(
+        reference_rows=(
+            ReferenceModelViewV1(
+                row=0,
+                ref_kind=RefKind.VALUE,
+                value_type="openui.string",
+                compiler_facts=(CompilerFact.VALUE_VISIBLE,),
+                has_parent=False,
+                parent_row=None,
+                relative_position=None,
+            ),
+            ReferenceModelViewV1(
+                row=1,
+                ref_kind=RefKind.NODE,
+                value_type="openui.element",
+                compiler_facts=(CompilerFact.NODE_VISIBLE,),
+                has_parent=False,
+                parent_row=None,
+                relative_position=None,
+            ),
+        ),
+        action_rows=(
+            OperatorActionViewV1(
+                row=0,
+                operator_id="openui.z_action",
+                operator_version="v1",
+                locality="node",
+                cost=1.0,
+                effect_signature=(),
+                argument_slots=(
+                    OperatorArgumentSlotViewV1(
+                        slot_id="value",
+                        ref_kind=RefKind.VALUE,
+                        binding_phase=BindingPhase.APPLICATION,
+                        required=True,
+                        repeated=False,
+                        candidate_rows=(0,),
+                        domain_complete=True,
+                    ),
+                ),
+                verdict=OperatorSupportVerdict.SUPPORTED,
+                coverage=LegalSetCoverage.COMPLETE,
+            ),
+            OperatorActionViewV1(
+                row=1,
+                operator_id="openui.a_action",
+                operator_version="v1",
+                locality="node",
+                cost=1.0,
+                effect_signature=(),
+                argument_slots=(),
+                verdict=OperatorSupportVerdict.SUPPORTED,
+                coverage=LegalSetCoverage.COMPLETE,
+            ),
+        ),
+        ordinary_action_count=0,
+        coverage=LegalSetCoverage.COMPLETE,
+    )
+
+    reference_rows, action_rows = view.canonical_row_maps()
+    persisted = view.to_dict()
+    assert reference_rows == {0: 1, 1: 0}
+    assert action_rows == {0: 1, 1: 0}
+    assert persisted["action_rows"][action_rows[0]]["operator_id"] == "openui.z_action"
+    assert (
+        persisted["action_rows"][action_rows[0]]["argument_slots"][0][
+            "candidate_rows"
+        ]
+        == [reference_rows[0]]
+    )
+    assert operator_policy_input_from_dict(persisted).to_dict() == persisted
 
 
 def test_stale_reference_table_cannot_produce_a_view() -> None:

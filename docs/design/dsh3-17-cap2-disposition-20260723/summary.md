@@ -1,6 +1,6 @@
 # DSH3-17 CAP2 capability disposition (SLM-385)
 
-Date: 2026-07-23
+Date: 2026-07-25 (rerun; original disposition published 2026-07-23)
 Status: CERT_CAP2 rejected; DSH4 action distillation closed
 Scope: terminal evidence disposition; no model, checkpoint, or ship claim
 
@@ -17,17 +17,19 @@ but no learned operator representation earned a capability certificate.
 | `symbolic_transform` | `contract_only` | false | SLM-381.cap2_operator_v1 |
 | `nl_transform` | `unavailable` | false | none |
 | `discrete_token_action` | `rejected` | false | SLM-382.E803 |
-| `hierarchical_head` | `unrun_conditional` | false | none |
+| `hierarchical_head` | `rejected` | false | SLM-383.hierarchical_operator_head_baseline |
 | `topology_application` | `unrun_conditional` | false | none |
 | `bounded_merge` | `contract_only` | false | SLM-381.cap2_operator_v1 |
 | `efficiency` | `unavailable` | false | SLM-382.E803 |
 
 Symbolic transformation and bounded merge are `contract_only`: exact fixture
 generation/replay exists, but no learned benefit passed. E803 rejects the
-discrete token action. NL is unavailable without CERT_CAP1. The hierarchical
-head and topology application remain unrun conditionals because their
-prerequisite failed. No exact-hardware matched-quality efficiency evidence
-exists.
+discrete token action. NL is unavailable without CERT_CAP1. SLM-383's
+follow-up causal experiment now rejects the hierarchical head too -- it
+beats its own weight-zero capacity control but ties the token baseline, so
+it does not causally improve beyond it. Topology application remains an
+unrun conditional because no accepted hierarchical-head arm exists. No
+exact-hardware matched-quality efficiency evidence exists.
 
 ## Certificate and downstream gate
 
@@ -58,9 +60,19 @@ exists.
 - config: `{"learning_rate": 0.03, "parameter_count": 34913, "seeds": [11, 29, 47], "steps_per_arm": 8}`
 - hardware: `{"backend": "hashed_token_scorer", "device": "cpu", "efficiency_claim": false, "exact_hardware": null}`
 
+### `SLM-383.hierarchical_operator_head_baseline`
+
+- class: `bounded_matched_negative`
+- code: `64d508d0b28d2a695f2b49cd3362865c671dfeb7`
+- checkpoint: `None`
+- data: `{"held_out_decision_n": 12, "shapes": [[1, 2], [2, 1], [1, 3], [3, 1], [2, 3], [3, 2]], "train_decision_n": 30}`
+- suite: `{"held_out_n": 12, "suite": "typed candidate-group-size fixture decisions"}`
+- config: `{"learning_rate": 0.05, "parameter_count": 641, "seeds": [11, 29, 47], "steps_per_arm": 24}`
+- hardware: `{"backend": "dynamic_pointer_scorer+hashed_token_scorer", "device": "cpu", "efficiency_claim": false, "exact_hardware": null}`
+
 ## Integrity result
 
 AgentV passed 4/4 cases with mean 1.0 and 0 execution errors.
-No experiment was rerun for this disposition; it consumes the immutable
-SLM-381 and E803 reports and preserves their positive, negative, unavailable,
-and unrun boundaries.
+This disposition consumes the immutable SLM-381, E803, and SLM-383
+(hierarchical-operator-head-baseline) reports and preserves their positive,
+negative, unavailable, and unrun boundaries.

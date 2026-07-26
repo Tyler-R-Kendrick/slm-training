@@ -1,0 +1,116 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh3-32-operator-systems-benchmark/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh3-32-operator-systems-benchmark/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh3-32-operator-systems-benchmark",
+      "timingPath": "agentv-dir://agentv/dsh3-32-operator-systems-benchmark/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 2,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "full-denominator-contract:domain_criterion",
+          "expected": true,
+          "id": "full-denominator-contract:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "no-unmatched-efficiency-claim:domain_criterion",
+          "expected": true,
+          "id": "no-unmatched-efficiency-claim:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 2
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh3-32-operator-systems-benchmark.eval.jsonl",
+    "summary": {
+      "durationMs": 76,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 2,
+      "total": 2
+    }
+  },
+  "benchmark": {
+    "comparisons": {},
+    "efficiency_claim_supported_arms": [],
+    "identity": {
+      "batch_size": 1,
+      "cache_mode": "unmeasured",
+      "context_fingerprint": "dsh3-28-local-preflight",
+      "device": "cpu",
+      "precision": "unmeasured",
+      "quality_metric": "meaningful_parse",
+      "schema": "operator_serving_identity/v1",
+      "target_model": "unmeasured",
+      "target_model_revision": "unmeasured"
+    },
+    "measured_arms": [],
+    "missing_arms": [
+      "x22",
+      "full_generation",
+      "serialized_operator",
+      "typed_operator",
+      "compiler_forced"
+    ],
+    "observed_crossover": {},
+    "per_arm": {},
+    "primary_metric": "target_forward_equivalents",
+    "raw_rows": [],
+    "reason": "required arms are not all measured under one serving identity",
+    "required_arms": [
+      "x22",
+      "full_generation",
+      "serialized_operator",
+      "typed_operator",
+      "compiler_forced"
+    ],
+    "schema": "operator_serving_benchmark_report/v1",
+    "typed_policy_quality_preflight": {
+      "decision": {
+        "reason": "no typed head caused a beneficial enabled-versus-zero held-out choice change",
+        "verdict": "reject"
+      },
+      "path": "docs/design/dsh3-28-typed-operator-policy-20260726-cap512-fiveheads/report.json",
+      "ready_for_efficiency_comparison": false
+    },
+    "verdict": "unavailable"
+  },
+  "run": {
+    "backend": "local_operator_serving_accounting",
+    "device": "cpu",
+    "human_rating_gate": false,
+    "ship_claim": false,
+    "suite_n": 0,
+    "timestamp": "2026-07-26T16:48:16.405847+00:00"
+  },
+  "schema": "dsh3_32_operator_systems_benchmark_preflight/v1",
+  "version_stamp": {
+    "code_commit": "ba73337655ad6bc21d7f82aa71a734195508fdf0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.operator_systems_benchmark": "v1",
+      "harness.experiments.typed_operator_policy": "v11"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T16:48:16.024750+00:00"
+  }
+}
