@@ -15,13 +15,13 @@
   "generators": [
     {
       "component_id": "pack.corpus_generator",
-      "version": "v21"
+      "version": "v22"
     }
   ],
   "validators": [
     {
       "component_id": "pack.oracle",
-      "version": "v21"
+      "version": "v22"
     },
     {
       "component_id": "symbolic_surface",

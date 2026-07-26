@@ -11,7 +11,7 @@ run started from a clean container with no cached `outputs/`, so it exercised
 the **fresh** `slm data build-train` path instead of reusing an
 already-canonical fixture corpus. It failed immediately:
 
-```
+```text
 ValueError: persisted template markers must use opaque :slot_<ordinal> identities
 ```
 

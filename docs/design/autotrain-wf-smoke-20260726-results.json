@@ -7,6 +7,16 @@
   "date": "2026-07-26",
   "train_version": "wf_smoke_20260726",
   "eval_version": "wf_smoke_20260726",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7cddae6463f814bef42706612db4e2a272cb48c7",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v22",
+      "harness.model_build.train": "v25",
+      "harness.model_build.eval": "v60"
+    }
+  },
   "regression_found_and_fixed": {
     "component": "harness.train_data",
     "summary": "build_train_data never canonicalized persisted template markers to opaque :slot_<ordinal> identities before writing records.jsonl/manifest.json (build_test_data already did this at harnesses/test_data/pipeline.py:119). Every fresh `slm data build-train --source fixture` build therefore persisted named markers (e.g. :auth.title) and unconditionally failed assert_canonical_template_markers at SFT load time (TwoTowerModel.from_records) for all 103/103 records in this fixture corpus.",

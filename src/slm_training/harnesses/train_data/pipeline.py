@@ -1720,6 +1720,7 @@ def build_train_data(
 
     cross_corpus_dropped: list[dict] = []
     if config.dedup_against:
+        from slm_training.data.contract import canonicalize_example_template_markers
         from slm_training.data.store import DataStore
 
         store = DataStore()
@@ -1730,18 +1731,23 @@ def build_train_data(
             manifest_path = base / "manifest.json"
             if manifest_path.is_file():
                 payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+                # Only trustworthy for corpora built by this or a later
+                # harness.train_data version; a manifest published before the
+                # canonicalization fix still carries named-marker
+                # fingerprints. Rebuild (bump the version) to refresh a
+                # legacy corpus's fingerprints, per train-data.md.
                 pairs = {str(item) for item in payload.get("pair_fingerprints") or []}
             if not pairs and (base / "records.jsonl").is_file():
                 pairs = {
-                    fingerprint_pair(record.prompt, record.openui)
+                    fingerprint_pair(canonical.prompt, canonical.openui)
                     for record in load_jsonl(base / "records.jsonl")
+                    for canonical in (canonicalize_example_template_markers(record),)
                 }
             if not pairs:
                 raise ValueError(
                     f"--dedup-against target has no resolvable fingerprints: {value}"
                 )
             index |= pairs
-        from slm_training.data.contract import canonicalize_example_template_markers
 
         remaining: list[ExampleRecord] = []
         for record in deduped:
@@ -1841,6 +1847,26 @@ def build_train_data(
     from slm_training.data.contract import canonicalize_example_template_markers
 
     deduped = [canonicalize_example_template_markers(record) for record in deduped]
+
+    # Canonicalization can collapse two records that were only distinct by
+    # placeholder spelling (e.g. ":hero.title" vs ":auth.title" on an
+    # otherwise identical structure) into the same persisted prompt/openui
+    # pair; the earlier dedup gate fingerprinted the pre-canonical text and
+    # would not have caught them. Canonical identity is the final identity.
+    canonical_seen: set[str] = set()
+    canonical_kept: list[ExampleRecord] = []
+    canonical_dup_dropped: list[dict] = []
+    for record in deduped:
+        pair = fingerprint_pair(record.prompt, record.openui)
+        if pair in canonical_seen:
+            canonical_dup_dropped.append(
+                {"id": record.id, "reason": "canonical_pair_duplicate"}
+            )
+            continue
+        canonical_seen.add(pair)
+        canonical_kept.append(record)
+    deduped = canonical_kept
+    _mirror_drops("dedup", canonical_dup_dropped)
 
     # Prompt contracts are training-only projections, not admission signals.
     # Apply them after every quality/decontamination/dedup gate so enabling a
