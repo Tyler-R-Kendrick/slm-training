@@ -117,6 +117,18 @@ row order, exactly as `references.py`'s own permutation contract requires;
 artifacts, it is not claiming the live object's row order is itself
 canonical.
 
+`canonical_row_maps()` exposes that same live-to-canonical remapping for
+evaluator-only supervision stored beside `to_dict()`. Callers must remap
+accepted action rows, argument rows, and hard-negative rows through it;
+otherwise a canonical evidence payload could retain a valid-looking label
+that points at a different row. The maps contain only row integers and do not
+extend the model-input allowlist.
+
+`operator_policy_input_from_dict()` rehydrates only this canonical,
+forbidden-field-checked payload. It lets a trainer consume the exact row order
+the corpus labels target; it never rebuilds a policy view from runtime
+objects or adds an identity/proof field to the model boundary.
+
 ## Verification matrix
 
 Covered in `tests/test_models/test_operator_policy_view.py`:
@@ -137,6 +149,13 @@ Covered in `tests/test_models/test_operator_policy_view.py`:
   (`test_stale_reference_table_cannot_produce_a_view`).
 * Opaque-ID and candidate-order permutation preserve the exact view
   (`test_opaque_id_and_candidate_order_permutation_preserve_the_view`).
+* Canonical action/reference maps preserve evaluator-only joins after both
+  axes reorder (`test_canonical_row_maps_keep_external_labels_joined_to_persisted_rows`).
+* Exact selector rows join the same live legal-set domain as ordinary
+  references while exposing only the closed selector kind, allowlisted
+  selector facts, cardinality, and fanout. Target fingerprints, scope
+  fingerprints, target order, and opaque IDs remain excluded
+  (`test_bulk_selector_row_is_sanitized_and_joined_to_the_live_legal_set`).
 
 ## Adversarial controls
 
