@@ -8967,6 +8967,26 @@
         }
       ]
     },
+    "harness.experiments.slm320_binder_precision_channel": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/data/progspec/binder_graph.py",
+        "src/slm_training/data/progspec/capsules.py",
+        "src/slm_training/data/progspec/__init__.py",
+        "src/slm_training/models/binder_precision_channel.py",
+        "tests/test_data/test_binder_graph.py",
+        "tests/test_models/test_binder_precision_channel.py",
+        "docs/design/binder-precision-channel-v1.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial registration; SLM-320 (AP-026) BinderGraphV1 structural type (definitions/uses/directed reference edges/scopes/unresolved placeholders), reusing capsules.py's ScopeNode/ScopeEdge/DependencyKind walk (extracted into shared derive_node_edge_walk) but collecting forward/undefined references as UnresolvedPlaceholder data instead of raising; a G3-shaped check_g3() (one root, resolved binders, reachability, no cycles) and an alpha-rename-invariant structural fingerprint; the BinderChannelArm oracle/predicted_soft/absent/shuffled/corrupted/disabled connector in models/binder_precision_channel.py mirroring AbstractPlanConnector's matched-arm discipline, gated by confirm_predicted_edges (a predicted reference edge is never legal on its own authority -- only edges also present in the deterministic verifier graph are confirmed) and a zero-initialized BinderChannelGate scalar. Structural wiring only: no training run, no DenoiserTower/TwoTowerModel integration, no hard-valid contrast-pair training loop -- deferred to a follow-up issue per the design doc's honesty note."
+        }
+      ]
+    },
     "harness.experiments.slm311_abstract_cot_warmup": {
       "version": "v1",
       "kind": "harness",
