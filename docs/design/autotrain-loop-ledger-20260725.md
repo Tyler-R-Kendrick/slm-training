@@ -2,6 +2,10 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
+**Status (iter96):** loop blocked on a fresh `--source fixture` build — see
+[autotrain-wf-smoke-20260726-iter96-blocked.md](autotrain-wf-smoke-20260726-iter96-blocked.md)
+for root cause and the next-step decision needed before resuming.
+
 | run_id | ok | steps | stopped_on | last_loss | wall_s | max_wall | train_version |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `autotrain_wf_smoke_20260725` | True | 8 | steps | 41.52362060546875 | 55.16 | 2.5833333333333335 | wf_smoke_v1 |
@@ -99,3 +103,4 @@
 | `autotrain_wf_smoke_20260725_iter93` | True | 8 | steps | 18.60668182373047 | 52.34 | 2.5833333333333335 | wf_smoke_v2 |
 | `autotrain_wf_smoke_20260725_iter94` | True | 8 | steps | 31.899532318115234 | 60.47 | 2.5833333333333335 | wf_smoke_v2 |
 | `autotrain_wf_smoke_20260725_iter95` | True | 8 | steps | 43.52022933959961 | 52.79 | 2.5833333333333335 | wf_smoke_v2 |
+| `autotrain_wf_smoke_20260726_iter96` | False | 0 | canonical_template_marker_gate | — | — | 2.5833333333333335 | wf_smoke_v4 |
