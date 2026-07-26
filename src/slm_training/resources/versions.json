@@ -1698,12 +1698,17 @@
       ]
     },
     "harness.core": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-26",
+          "note": "Record version stamps from the caller worktree before falling back to the packaged source checkout."
+        },
         {
           "version": "v9",
           "date": "2026-07-24",
