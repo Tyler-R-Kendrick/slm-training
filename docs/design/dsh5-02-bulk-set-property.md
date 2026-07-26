@@ -263,16 +263,12 @@ fully registered, executable operator.
   live OpenUI semantics. That extraction layer (deciding *which* table
   entries satisfy a given `SelectorKind` from real pack facts) remains a
   later issue; this one proves the *bulk-operator* half of the contract.
-* **`enumerate_operator_legal_set` does not yet enumerate
-  `openui.map_set_property`'s selector domain.** `legal_set.py`'s
-  `_domains()` builds argument candidates from `reference_table.entries`
-  only; selectors live in the separate `reference_table.selectors` tuple, so
-  today the bulk operator's `selector` slot always has zero legal-set
-  candidates (an `UNSUPPORTED` verdict with `total_combinations == 0`, never
-  a wrong-but-plausible one). This is a pre-existing DSH5-01 gap, not a
-  DSH5-02 regression — no selector-typed slot is enumerable via that path
-  yet regardless of which operator declares it — and is out of scope for
-  this issue's three required test files.
+* **Selector domains are enumerated by the shared legal-set owner.** SLM-411
+  extends `legal_set.py` to include the exact state-bound
+  `reference_table.selectors` collection in both domain construction and
+  semantic action identity. `openui.map_set_property` therefore enters a
+  model-facing action surface only through a complete compiler-owned legal
+  set; the selector descriptor's targets and opaque ID remain runtime-only.
 * **No bulk unset/inverse operator.** `openui.map_set_property` declares no
   `inverse_operator_id`: inverting a bulk write would need each target's
   original per-node value, which the model does not supply as a single

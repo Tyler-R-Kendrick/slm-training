@@ -32,30 +32,53 @@ from slm_training.dsl.openui_tokens import (
     ABSTRACT_PLAN_BEGIN,
     ABSTRACT_PLAN_END,
     MAX_ABSTRACT_PLAN_SLOTS,
-    STRUCTURAL_TOKENS as _FALLBACK_STRUCTURAL_TOKENS,
+    # Canonical for the default DSL — not a fallback; see
+    # _active_structural_tokens below.
+    STRUCTURAL_TOKENS as _CANONICAL_STRUCTURAL_TOKENS,
     abstract_plan_slot_token,
 )
 from slm_training.models.tokenizer import validate_token_layout
 
 
-def _active_structural_tokens() -> frozenset[str]:
-    """Structural tokens routed through the active grammar backend (pack seam).
+DEFAULT_GRAMMAR_DSL = "openui"
 
-    Mirrors ``models.grammar.structural_tokens``: the backend is authoritative,
-    the ``dsl.openui_tokens`` constant is the fail-open fallback (identical for
-    the default OpenUI backend, so vocab layout is unchanged).
+
+def _active_structural_tokens() -> frozenset[str]:
+    """Structural tokens for the vocabulary of the active grammar DSL.
+
+    For the default OpenUI DSL the ``dsl.openui_tokens`` constant is
+    **authoritative**: the vocabulary is a frozen, checkpoint-bound contract
+    (``DSL_TOKENIZER_VERSION`` + ``resources/tokenizer_layout_registry.json``),
+    so it may not be re-derived from whichever backend happens to be live.
+    Routing it through the backend made ``vocab_size`` depend on whether
+    ``src/apps/openui_bridge/node_modules`` was installed — the lang-core
+    backend and the Lark fallback disagree, and the fallback silently widened
+    the vocabulary by 36 tokens (see
+    ``docs/design/agent-harness-parity-audit.md``). Backend agreement is
+    asserted by ``scripts.verify_tokenizer_grammar_invariants``, which is where
+    a real library change should surface.
+
+    The backend seam still applies to a non-default ``SLM_GRAMMAR_DSL``: those
+    DSLs have no frozen constant, so their backend is the only source. It fails
+    closed — an unusable backend raises rather than silently handing back the
+    OpenUI vocabulary for a different grammar.
     """
     import os
 
-    try:
-        from slm_training.dsl.grammar.backends import get_backend
+    dsl = os.getenv("SLM_GRAMMAR_DSL") or DEFAULT_GRAMMAR_DSL
+    if dsl == DEFAULT_GRAMMAR_DSL:
+        return _CANONICAL_STRUCTURAL_TOKENS
 
-        tokens = get_backend(
-            os.getenv("SLM_GRAMMAR_DSL") or "openui"
-        ).structural_tokens()
-        return tokens or _FALLBACK_STRUCTURAL_TOKENS
-    except Exception:  # noqa: BLE001 - tokenizer must build without a backend
-        return _FALLBACK_STRUCTURAL_TOKENS
+    from slm_training.dsl.grammar.backends import get_backend
+
+    tokens = get_backend(dsl).structural_tokens()
+    if not tokens:
+        raise ValueError(
+            f"grammar DSL {dsl!r} exposes no structural tokens; refusing to "
+            "build a tokenizer vocabulary from the OpenUI constant for a "
+            "different grammar"
+        )
+    return frozenset(tokens)
 
 
 STRUCTURAL_TOKENS = _active_structural_tokens()

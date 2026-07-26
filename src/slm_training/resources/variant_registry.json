@@ -1,0 +1,42 @@
+{
+  "count": 3,
+  "fingerprint": "cd09cb02571e27c1cd6cf952a3240ec9ee835110213c99ad2cbd45ebdb209209",
+  "schema": "variant_contract/v1",
+  "variants": [
+    {
+      "action_alphabet_fingerprint": "647e09b2259d5a132c3a925755f7d6d9c01f66b9ef67e491159a2631b614154d",
+      "action_alphabet_id": "repl_operators.legal_actions",
+      "inventory_source": "pack",
+      "kernel_ops": [],
+      "pack_id": "openui",
+      "schema": "variant_contract/v1",
+      "seed_policy_id": "repl_operators.caller_supplied_state",
+      "source_path": "slm_training/dsl/operators/registry.py",
+      "variant_id": "repl_operators"
+    },
+    {
+      "action_alphabet_fingerprint": "1de83afe8bc7db333bf0cac040a19fa355c34d28653a508343e45f136a1dac4c",
+      "action_alphabet_id": "tree_edit_diffusion.edit_actions",
+      "inventory_source": "pack",
+      "kernel_ops": [
+        "openui.set_property"
+      ],
+      "pack_id": "openui",
+      "schema": "variant_contract/v1",
+      "seed_policy_id": "tree_edit_diffusion.minimal_valid_program_seed",
+      "source_path": "slm_training/models/tree_edit_diffusion.py",
+      "variant_id": "tree_edit_diffusion"
+    },
+    {
+      "action_alphabet_fingerprint": "a429e7ddd2ec3b781fa7c9e7b70ca470437aa694d7d3833f76c3791a00ab149d",
+      "action_alphabet_id": "twotower_prompt_ast.structural_tokens",
+      "inventory_source": "n/a",
+      "kernel_ops": [],
+      "pack_id": "openui",
+      "schema": "variant_contract/v1",
+      "seed_policy_id": "twotower_prompt_ast.full_mask_seed",
+      "source_path": "slm_training/models/twotower.py",
+      "variant_id": "twotower_prompt_ast"
+    }
+  ]
+}
