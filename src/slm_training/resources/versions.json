@@ -4680,6 +4680,11 @@
         {
           "version": "v1",
           "date": "2026-07-26",
+          "note": "no-bump: add the SLM-322/AP-027 scratch checkpoint roster row; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
           "note": "no-bump: replace the SLM-313 scratch checkpoint roster row with its measured rejected result; SLM-228 behavior is unchanged."
         },
         {
@@ -9424,7 +9429,7 @@
       ]
     },
     "harness.experiments.ap027_discrete_plan_pareto": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/discrete_plan_pareto.py",
@@ -9435,6 +9440,11 @@
         "docs/design/iter-slm322-discrete-plan-pareto-20260726.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "ParetoLatencyRow.to_dict() and summarize_pareto's Pareto point ids now canonicalize aliased arm names (e.g. oracle_plan) instead of persisting the raw alias, which previously disagreed with the canonicalized measured_arms field; added a metrics_provenance field so proxy metrics (parse_rate/placeholder_fidelity standing in for meaning-v2/binder-F1 at screening scale) travel with each JSON row instead of only being documented in the generated Markdown caption; deduplicated the version-stamp component pair into a shared STAMP_COMPONENTS constant"
+        },
         {
           "version": "v1",
           "date": "2026-07-26",

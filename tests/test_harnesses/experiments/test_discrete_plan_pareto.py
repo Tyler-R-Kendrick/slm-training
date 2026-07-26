@@ -57,6 +57,23 @@ def test_oracle_plan_alias_resolves_to_ap022s_gold_semantic_plan() -> None:
     _row(arm="oracle_plan").validate()
 
 
+def test_to_dict_serializes_the_canonical_arm_not_the_alias() -> None:
+    payload = _row(arm="oracle_plan").to_dict()
+    assert payload["arm"] == "gold_semantic_plan"
+
+
+def test_summarize_pareto_point_ids_use_the_canonical_arm() -> None:
+    report = summarize_pareto([_row(arm="oracle_plan", refinement_round=1)])
+    assert report["measured_arms"] == ["gold_semantic_plan"]
+    assert all(point.startswith("gold_semantic_plan@") for point in report["non_dominated"])
+
+
+def test_metrics_provenance_must_be_a_subset_of_metrics_keys() -> None:
+    with pytest.raises(ValueError, match="metrics_provenance keys must be a subset"):
+        _row(metrics_provenance={"not_a_metric": "proxy"}).validate()
+    _row(metrics_provenance={"binding_aware_meaningful_v2": "parse_rate_proxy"}).validate()
+
+
 def test_unknown_arm_or_path_or_round_rejected() -> None:
     with pytest.raises(ValueError, match="unknown discrete-plan-pareto arm"):
         _row(arm="not_a_real_arm").validate()

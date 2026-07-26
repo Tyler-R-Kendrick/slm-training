@@ -27,7 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Iterable, Mapping
 
 from slm_training.autoresearch.experiment_campaign import (
@@ -85,11 +85,16 @@ def _sha(value: object) -> str:
     ).hexdigest()
 
 
+# Shared by this module and scripts/run_discrete_plan_pareto.py so the two
+# stamps can never desync from an independently-typo'd literal pair.
+STAMP_COMPONENTS: tuple[str, ...] = (
+    "harness.experiments.ap027_discrete_plan_pareto",
+    "harness.experiments.slm313_abstract_plan_functional_evidence",
+)
+
+
 def _sha_stamp() -> dict[str, Any]:
-    stamp = build_version_stamp(
-        "harness.experiments.ap027_discrete_plan_pareto",
-        "harness.experiments.slm313_abstract_plan_functional_evidence",
-    )
+    stamp = build_version_stamp(*STAMP_COMPONENTS)
     return {"code_commit": str(stamp["code_commit"]), "code_dirty": bool(stamp["code_dirty"])}
 
 
@@ -115,6 +120,12 @@ class ParetoLatencyRow:
     output_tokens: int
     metrics: Mapping[str, float]
     promotion_eligible: bool = False
+    # Records which ``metrics`` entries are proxy stand-ins rather than the
+    # canonical metric itself (e.g. ``parse_rate`` reported under the
+    # ``binding_aware_meaningful_v2`` key). Empty when every metric is exact.
+    # Travels with the row into JSON so a reader of that file alone -- not
+    # just this run's Markdown caption -- can tell proxy from real.
+    metrics_provenance: Mapping[str, str] = field(default_factory=dict)
 
     def validate(self) -> None:
         arm = canonical_arm(self.arm)
@@ -143,6 +154,8 @@ class ParetoLatencyRow:
             raise ValueError("output_tokens must be non-negative")
         if any(not math.isfinite(float(value)) for value in self.metrics.values()):
             raise ValueError("metrics must be finite")
+        if set(self.metrics_provenance) - set(self.metrics):
+            raise ValueError("metrics_provenance keys must be a subset of metrics keys")
         if self.path == "raw" and self.promotion_eligible:
             raise ValueError("raw decode is diagnostic-only and cannot be promoted")
         # Structural I14 enforcement: AP-022's closed verdict can never be
@@ -155,7 +168,9 @@ class ParetoLatencyRow:
 
     def to_dict(self) -> dict[str, Any]:
         self.validate()
-        return dict(asdict(self))
+        payload = dict(asdict(self))
+        payload["arm"] = canonical_arm(self.arm)
+        return payload
 
 
 def pareto_frontier(
@@ -308,7 +323,7 @@ def summarize_pareto(rows: Iterable[ParetoLatencyRow]) -> dict[str, Any]:
     closed = tuple(sorted(KNOWN_COLLAPSED_ARMS))
     points = [
         (
-            f"{row.arm}@{row.refinement_round}",
+            f"{canonical_arm(row.arm)}@{row.refinement_round}",
             row.total_latency_ms,
             float(row.metrics.get("binding_aware_meaningful_v2", 0.0)),
         )

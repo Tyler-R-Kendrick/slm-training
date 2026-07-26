@@ -1,6 +1,6 @@
 {
   "schema": "ap027_discrete_plan_pareto_run/v1",
-  "generated_at": "2026-07-26T09:40:14.921516+00:00",
+  "generated_at": "2026-07-26T10:08:31.924776+00:00",
   "campaign_id": "ap027-discrete-plan-pareto",
   "arms": [
     "no_plan",
@@ -23,10 +23,10 @@
     8
   ],
   "rounds_measured": [
-    1,
-    2
+    1
   ],
   "rounds_pending": [
+    2,
     4,
     8
   ],
@@ -36,68 +36,42 @@
       "arm": "no_plan",
       "refinement_round": 1,
       "path": "constrained",
-      "total_latency_ms": 54492.11,
+      "total_latency_ms": 118829.03,
       "plan_latency_ms": 0.0,
-      "generation_latency_ms": 33.465,
-      "verification_latency_ms": 3.6289999999999996,
-      "peak_memory_proxy": 11.0,
-      "output_tokens": 11,
+      "generation_latency_ms": 45.088,
+      "verification_latency_ms": 8.754999999999999,
+      "peak_memory_proxy": 22.0,
+      "output_tokens": 22,
       "metrics": {
         "binding_aware_meaningful_v2": 0.0,
         "binder_reference_f1": 0.0
       },
-      "promotion_eligible": false
+      "promotion_eligible": false,
+      "metrics_provenance": {
+        "binding_aware_meaningful_v2": "parse_rate_proxy",
+        "binder_reference_f1": "placeholder_fidelity_proxy"
+      }
     },
     {
       "record_id": "ap027_discrete_plan_pareto_round1",
       "arm": "current_auxiliary_heads",
       "refinement_round": 1,
       "path": "constrained",
-      "total_latency_ms": 54492.11,
+      "total_latency_ms": 118829.03,
       "plan_latency_ms": 0.0,
-      "generation_latency_ms": 33.465,
-      "verification_latency_ms": 3.6289999999999996,
-      "peak_memory_proxy": 11.0,
-      "output_tokens": 11,
+      "generation_latency_ms": 45.088,
+      "verification_latency_ms": 8.754999999999999,
+      "peak_memory_proxy": 22.0,
+      "output_tokens": 22,
       "metrics": {
         "binding_aware_meaningful_v2": 0.0,
         "binder_reference_f1": 0.0
       },
-      "promotion_eligible": false
-    },
-    {
-      "record_id": "ap027_discrete_plan_pareto_round2",
-      "arm": "no_plan",
-      "refinement_round": 2,
-      "path": "constrained",
-      "total_latency_ms": 55778.71,
-      "plan_latency_ms": 0.0,
-      "generation_latency_ms": 13.367,
-      "verification_latency_ms": 2.907,
-      "peak_memory_proxy": 11.0,
-      "output_tokens": 11,
-      "metrics": {
-        "binding_aware_meaningful_v2": 0.0,
-        "binder_reference_f1": 0.0
-      },
-      "promotion_eligible": false
-    },
-    {
-      "record_id": "ap027_discrete_plan_pareto_round2",
-      "arm": "current_auxiliary_heads",
-      "refinement_round": 2,
-      "path": "constrained",
-      "total_latency_ms": 55778.71,
-      "plan_latency_ms": 0.0,
-      "generation_latency_ms": 13.367,
-      "verification_latency_ms": 2.907,
-      "peak_memory_proxy": 11.0,
-      "output_tokens": 11,
-      "metrics": {
-        "binding_aware_meaningful_v2": 0.0,
-        "binder_reference_f1": 0.0
-      },
-      "promotion_eligible": false
+      "promotion_eligible": false,
+      "metrics_provenance": {
+        "binding_aware_meaningful_v2": "parse_rate_proxy",
+        "binder_reference_f1": "placeholder_fidelity_proxy"
+      }
     }
   ],
   "summary": {
@@ -135,13 +109,13 @@
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "875c7c2e47c365e64bda1442d2249ca6c8b70243",
+    "code_commit": "841ca817bfa02437fe6618601b003faacbfd90de",
     "code_dirty": true,
     "components": {
       "harness.experiments.ap027_discrete_plan_pareto": "v1",
       "harness.experiments.slm313_abstract_plan_functional_evidence": "v11"
     },
-    "stamped_at": "2026-07-26T09:40:14.921503+00:00"
+    "stamped_at": "2026-07-26T10:08:31.924757+00:00"
   },
   "max_harness_wall_seconds": 155
 }

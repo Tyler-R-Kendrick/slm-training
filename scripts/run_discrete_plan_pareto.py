@@ -35,6 +35,7 @@ from typing import Any
 from slm_training.harnesses.experiments.discrete_plan_pareto import (
     ARMS,
     REFINEMENT_ROUNDS,
+    STAMP_COMPONENTS,
     ParetoLatencyRow,
     build_campaign,
     summarize_pareto,
@@ -76,6 +77,10 @@ def _phase_latencies(row: dict[str, Any]) -> tuple[float, float, float]:
     verification_ms = _val("finalize_ms") + _val("dfa_sync_ms") + _val("stream_check_ms")
     # No connector is attached to this checkpoint (see module docstring): the
     # plan phase genuinely costs zero on the measured arms.
+    # ponytail: hardcodes plan_ms=0.0 regardless of checkpoint; once a
+    # connector-bearing checkpoint is measured, its cost (folded into
+    # denoiser_ms today) must be split out explicitly here rather than
+    # silently misattributed to generation_ms.
     return 0.0, generation_ms, verification_ms
 
 
@@ -114,6 +119,14 @@ def run_screening(
             "binding_aware_meaningful_v2": float(result.get("parse_rate") or 0.0),
             "binder_reference_f1": float(result.get("placeholder_fidelity") or 0.0),
         }
+        # Screening scale only: no meaning-v2/binder-F1 evaluator ran, so
+        # these are proxy stand-ins. Recorded on the row itself (not only in
+        # the generated Markdown caption) so a JSON-only reader can't mistake
+        # a proxy for the canonical metric.
+        metrics_provenance = {
+            "binding_aware_meaningful_v2": "parse_rate_proxy",
+            "binder_reference_f1": "placeholder_fidelity_proxy",
+        }
         for arm in MEASURED_ARM_LABELS:
             rows.append(
                 ParetoLatencyRow(
@@ -129,6 +142,7 @@ def run_screening(
                     output_tokens=int(result.get("tokens_emitted") or 0),
                     metrics=metrics,
                     promotion_eligible=False,
+                    metrics_provenance=metrics_provenance,
                 )
             )
     return rows
@@ -168,10 +182,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     report = summarize_pareto(rows)
     campaign = build_campaign()
-    stamp = build_version_stamp(
-        "harness.experiments.ap027_discrete_plan_pareto",
-        "harness.experiments.slm313_abstract_plan_functional_evidence",
-    )
+    stamp = build_version_stamp(*STAMP_COMPONENTS)
     rounds_pending = tuple(r for r in REFINEMENT_ROUNDS if r not in args.rounds)
     payload = {
         "schema": "ap027_discrete_plan_pareto_run/v1",

@@ -4,8 +4,8 @@
 1 prompts, scratch CPU checkpoint `outputs/runs/slm322_ap027_scratch_v1/checkpoints/last.pt`) -- far
 below the issue's own >=3/5-seed acceptance bar; that full run is out of
 scope for this PR (see "What this PR does not claim" below). Refinement
-rounds measured this invocation: [1, 2]; rounds
-[4, 8] remain pending under the repo's
+rounds measured this invocation: [1]; rounds
+[2, 4, 8] remain pending under the repo's
 155s harness wall-clock cap (AP-022's own
 partial-shard precedent: a bounded run reports exactly what it measured).
 
@@ -29,8 +29,7 @@ Measured across refinement rounds [1, 2, 4, 8]:
 
 | refinement_round | total_latency_ms | meaning_v2 (parse_rate proxy) | non-dominated |
 | --- | --- | --- | --- |
-| 1 | 54492.11 | 0.0000 | yes |
-| 2 | 55778.71 | 0.0000 | no |
+| 1 | 118829.03 | 0.0000 | yes |
 
 Non-dominated (arm@round) points on (lower latency, higher meaning_v2):
 no_plan@1, current_auxiliary_heads@1.
