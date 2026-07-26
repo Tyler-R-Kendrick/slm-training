@@ -8967,6 +8967,32 @@
         }
       ]
     },
+    "harness.experiments.slm311_abstract_cot_warmup": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/reasoning/abstract_cot_warmup.py",
+        "src/slm_training/harnesses/reasoning/__init__.py",
+        "scripts/run_abstract_cot_warmup.py",
+        "tests/test_harnesses/reasoning/test_abstract_cot_warmup.py",
+        "docs/design/abstract-cot-warmup.md",
+        "docs/design/iter-slm311-abstract-cot-warmup-20260726.json",
+        "docs/design/iter-slm311-abstract-cot-warmup-20260726.md",
+        "docs/design/iter-slm311-abstract-cot-warmup-agentv-20260726/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: refresh committed local fixture and AgentV evidence after rebasing SLM-311; orchestration behavior and the v1 contract are unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial SLM-311 bounded T-iteration Abstract-CoT fixture: campaign lock, append-only resume ledger, per-phase AP-020 collection and AP-019 segment payload evidence, and fail-closed incomplete iteration preservation"
+        }
+      ]
+    },
     "harness.experiments.slm332_latent_geometry": {
       "version": "v5",
       "kind": "harness",
