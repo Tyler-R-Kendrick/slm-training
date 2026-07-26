@@ -2,7 +2,17 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **145** (latest `autotrain_wf_smoke_20260725_iter145`).
+Total iterations: **150** (latest `autotrain_wf_smoke_20260726_iter150`).
+
+`iter146` onward rebuilds on `wf_smoke_v3` (fresh fixture corpus; `outputs/`
+does not persist across containers) and carries the `harness.train_data` v21
+canonical-template-marker fix (`canonicalize_example_template_markers` +
+`assert_canonical_template_markers` in `_normalize_record`, cherry-picked from
+the unmerged canonicalization fix) so the fresh build does not regress into
+the earlier `canonical_template_marker_gate` failure. `iter147`-`iter150`
+reuse the already-built `wf_smoke_v3` train/eval dirs (`data_train`/`data_test`
+skipped, artifacts present), so `last_loss` is identical run-to-run
+(deterministic seed=0/cpu over unchanged data) — expected, not a regression.
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s | max_wall |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -151,3 +161,8 @@ Total iterations: **145** (latest `autotrain_wf_smoke_20260725_iter145`).
 | `autotrain_wf_smoke_20260725_iter143` | True | 8 | steps | 22.095991134643555 | 59.52 | 2.5833333333333335 |
 | `autotrain_wf_smoke_20260725_iter144` | True | 8 | steps | 34.957889556884766 | 58.55 | 2.5833333333333335 |
 | `autotrain_wf_smoke_20260725_iter145` | True | 8 | steps | 39.63420867919922 | 58.18 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260726_iter146` | True | 8 | steps | 30.91221809387207 | 61.48 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260726_iter147` | True | 8 | steps | 30.91221809387207 | 48.82 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260726_iter148` | True | 8 | steps | 30.91221809387207 | 48.26 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260726_iter149` | True | 8 | steps | 30.91221809387207 | 49.49 | 2.5833333333333335 |
+| `autotrain_wf_smoke_20260726_iter150` | True | 8 | steps | 30.91221809387207 | 49.08 | 2.5833333333333335 |
