@@ -246,7 +246,10 @@ def _local_eval_config(*, root: Path, suite: str):
         context_backend="scratch",
         local_files_only=True,
         optimizer_name="adamw",
-        batch_size=4,
+        # Keep the five-second watchdog per decode, not per multi-record
+        # evaluator chunk; a slow neighboring row must not invalidate a
+        # completed row's bounded local evidence.
+        batch_size=1,
         grammar_ltr_max_tokens=8,
         grammar_ltr_primary=True,
         gen_steps=1,

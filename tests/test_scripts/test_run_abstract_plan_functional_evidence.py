@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -9,6 +10,7 @@ import pytest
 from scripts.run_abstract_plan_functional_evidence import (
     _arm_evidence,
     _load_complete_shards,
+    _local_eval_config,
     _locked_records,
     _pair_map,
     _path_overrides,
@@ -73,3 +75,7 @@ def test_singleton_bypass_retains_no_plan_and_plan_metadata() -> None:
         "plan_tokens": (7, 9),
         "deterministic_singleton_bypass": True,
     }
+
+
+def test_local_runner_times_out_each_decode_not_a_multi_record_chunk() -> None:
+    assert _local_eval_config(root=Path("outputs/fixture"), suite="fixture").batch_size == 1
