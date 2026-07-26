@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
@@ -13,9 +13,19 @@ from urllib.parse import quote
 
 import torch
 
-from slm_training.data.flow.operator_policy_corpus import build_operator_policy_corpus
+from slm_training.data.flow.operator_policy_corpus import (
+    OperatorPolicyRowV1,
+    build_operator_policy_corpus,
+    materialize_operator_policy_selection,
+)
+from slm_training.dsl.operators.contracts import _fingerprint
 from slm_training.dsl.schema import load_jsonl
 from slm_training.evals.agentv import publish_agentv_evaluation
+from slm_training.evals.cap2_operator import (
+    build_frozen_cap2_suite,
+    oracle_prediction,
+    score_cap2_predictions,
+)
 from slm_training.harnesses.experiments.typed_operator_policy import (
     TYPED_OPERATOR_POLICY_HEAD_FAMILIES,
     TypedOperatorPolicyHeadFamily,
@@ -37,6 +47,14 @@ HELD_OUT_SOURCE = (
     / "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722"
     / "suites/held_out/records.jsonl"
 )
+CAP2_MANIFEST = ROOT / "src/slm_training/resources/evals/cap2_operator_v2.json"
+
+
+@dataclass(frozen=True)
+class _RuntimePolicyRow:
+    row: OperatorPolicyRowV1
+    trace: Any
+    authority_resolver: Any
 
 
 def _portable(value: Any, *, output_dir: Path, corpus_work_dir: Path) -> Any:
@@ -100,9 +118,10 @@ def _collect_rows(
     max_roots: int,
     max_combinations_per_operator: int,
     record_id: str | None = None,
-) -> tuple[list[TypedOperatorPolicyExampleV1], dict[str, Any]]:
+) -> tuple[list[TypedOperatorPolicyExampleV1], dict[str, Any], dict[str, _RuntimePolicyRow]]:
     rows = []
     reports = []
+    runtime_rows: dict[str, _RuntimePolicyRow] = {}
 
     def collect(trace, collapse, authority_resolver) -> None:
         built, report = build_operator_policy_corpus(
@@ -113,6 +132,12 @@ def _collect_rows(
             max_combinations_per_operator=max_combinations_per_operator,
         )
         rows.extend(built)
+        runtime_rows.update(
+            {
+                row.row_id: _RuntimePolicyRow(row, trace, authority_resolver)
+                for row in built
+            }
+        )
         reports.append(report.to_dict())
 
     corpus = build_symbolic_operator_corpus(
@@ -159,7 +184,7 @@ def _collect_rows(
         }
         | {"coverage_gap_count": len(corpus_report["coverage_gaps"])},
         "row_reports": reports,
-    }
+    }, runtime_rows
 
 
 def _zero(model: TypedOperatorPolicyScorer) -> None:
@@ -222,6 +247,72 @@ def _changes(control: dict[str, Any], treatment: dict[str, Any]) -> dict[str, in
         correct += bool(item["correct_action"] and not prior["correct_action"])
         wrong += bool(prior["correct_action"] and not item["correct_action"])
     return {"eligible": treatment["n"], "changed": changed, "correct": correct, "wrong": wrong}
+
+
+def _cap2_transition_score(
+    *,
+    arm: dict[str, Any],
+    suite: dict[str, Any],
+    runtime_rows: dict[str, _RuntimePolicyRow],
+    held_out_evidence: dict[str, Any],
+    max_combinations_per_operator: int,
+) -> dict[str, Any]:
+    """Score selected policy rows on CAP2 v2, oracle-replaying other strata."""
+    predictions = {case["case_id"]: oracle_prediction(case) for case in suite["cases"]}
+    corpus_rows = [
+        json.loads(line)
+        for line in Path(held_out_evidence["corpus"]["records_path"]).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    case_by_application = {
+        str(row["legal_action"]["application_id"]): f"transition:{row['example_id']}"
+        for row in corpus_rows
+        if row["target_view"] == "dual" and row["outcome"] == "success"
+    }
+    case_by_id = {case["case_id"]: case for case in suite["cases"]}
+    materialized: list[dict[str, Any]] = []
+    for prediction in arm["predictions"]:
+        runtime = runtime_rows[prediction["row_id"]]
+        case_id = case_by_application.get(runtime.row.accepted_application_id)
+        if case_id is None:
+            continue
+        if prediction["selected_action_row"] is None:
+            predictions[case_id] = {}
+            materialized.append({"row_id": runtime.row.row_id, "case_id": case_id, "deferred": True})
+            continue
+        selected_arguments = tuple(
+            (str(slot_id), int(reference_row))
+            for slot_id, reference_row in prediction["selected_argument_rows"]
+        )
+        applied = materialize_operator_policy_selection(
+            trace=runtime.trace,
+            row=runtime.row,
+            authority_resolver=runtime.authority_resolver,
+            selected_action_row=int(prediction["selected_action_row"]),
+            selected_argument_rows=selected_arguments,
+            max_combinations_per_operator=max_combinations_per_operator,
+        )
+        case = case_by_id[case_id]
+        exact = applied.application_id == case["evidence"]["application_id"]
+        application = applied.result.application
+        assert application is not None and applied.result.state is not None
+        arguments = [argument.to_dict() for argument in application.arguments]
+        predictions[case_id] = {
+            "schema": "cap2_operator_prediction/v1",
+            "case_id": case_id,
+            "accepted_legal_action_mass": 1.0,
+            "operator_id": runtime.row.policy_input["action_rows"][prediction["selected_action_row"]]["operator_id"],
+            "argument_fingerprint": _fingerprint({"schema": "cap2_argument_target/v1", "arguments": arguments}),
+            "result_ast": applied.result.state.source,
+            "effect_fingerprint": application.proof.effect_fingerprint if application.proof is not None else "",
+            "locality_violations": case["gold"]["locality_violations"] if exact else -1,
+            "unintended_edits": 0 if exact else -1,
+            "final_state_id": case["gold"]["final_state_id"] if exact else applied.result.state.state_digest,
+            "operator_count": 1,
+            "telemetry": {"active_nodes": 1, "node_passes": 1, "remask_phases": 0, "model_calls": prediction["model_forwards"], "compiler_calls": 1, "verifier_calls": 1, "latency_ms": 0.0, "peak_memory_bytes": 0},
+        }
+        materialized.append({**applied.to_dict(), "case_id": case_id, "exact_gold_application": exact})
+    return {"score": score_cap2_predictions(suite, predictions), "materialized": materialized, "suite_identity": {"suite_version": suite["suite_version"], "suite_hash": suite["suite_hash"], "suite_n": len(suite["cases"])}}
 
 
 def _run_arm(
@@ -352,6 +443,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=12)
     parser.add_argument("--learning-rate", type=float, default=0.03)
     parser.add_argument(
+        "--cap2-v2",
+        action="store_true",
+        help="materialize held-out policy selections into CAP2 v2 transition predictions",
+    )
+    parser.add_argument(
         "--max-combinations",
         type=int,
         default=512,
@@ -380,8 +476,9 @@ def main(argv: list[str] | None = None) -> int:
         "data.flow.operator_policy_corpus",
         "model.quantization",
         "model.operator_policy_view",
+        "evals.cap2_operator",
     )
-    train, train_evidence = _collect_rows(
+    train, train_evidence, _train_runtime = _collect_rows(
         source=TRAIN_SOURCE,
         split="train",
         output_dir=corpus_work_dir / "train",
@@ -390,12 +487,12 @@ def main(argv: list[str] | None = None) -> int:
         max_combinations_per_operator=args.max_combinations,
         record_id=args.train_record_id,
     )
-    held_out, held_out_evidence = _collect_rows(
+    held_out, held_out_evidence, held_out_runtime = _collect_rows(
         source=HELD_OUT_SOURCE,
         split="dev",
         output_dir=corpus_work_dir / "held_out",
         stamp=stamp,
-        max_roots=1,
+        max_roots=2 if args.cap2_v2 else 1,
         max_combinations_per_operator=args.max_combinations,
         record_id=args.held_out_record_id,
     )
@@ -412,6 +509,31 @@ def main(argv: list[str] | None = None) -> int:
         for head_family in head_families
         for arm in ("zero", "random", "shuffled_labels", "enabled")
     ]
+    cap2_suite = (
+        build_frozen_cap2_suite(
+            manifest_path=CAP2_MANIFEST,
+            source_records_path=HELD_OUT_SOURCE,
+            work_dir=corpus_work_dir / "cap2-suite",
+            version_stamp=stamp,
+        )
+        if args.cap2_v2
+        else None
+    )
+    cap2 = (
+        {
+            f"{item['head_family']}/{item['arm']}": _cap2_transition_score(
+                arm=item,
+                suite=cap2_suite,
+                runtime_rows=held_out_runtime,
+                held_out_evidence=held_out_evidence,
+                max_combinations_per_operator=args.max_combinations,
+            )
+            for item in matrix
+            if not item.get("skipped")
+        }
+        if args.cap2_v2
+        else {}
+    )
     by_head_arm = {
         (item["head_family"], item["arm"]): item for item in matrix
     }
@@ -544,6 +666,7 @@ def main(argv: list[str] | None = None) -> int:
             "held_out_rows": len(held_out),
         },
         "matrix": matrix,
+        "cap2": cap2,
         "controls": controls,
         "train_evidence": _portable(
             train_evidence, output_dir=output_dir, corpus_work_dir=corpus_work_dir

@@ -6926,15 +6926,21 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
         "src/slm_training/harnesses/experiments/typed_operator_policy.py",
         "tests/test_harnesses/experiments/test_typed_operator_policy.py",
+        "tests/test_scripts/test_run_dsh3_28_typed_operator_policy.py",
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-26",
+          "note": "SLM-403: materialize held-out selected policy rows through fresh legal-set enumeration and compiler application into current CAP2 v2 transitions."
+        },
         {
           "version": "v8",
           "date": "2026-07-26",
