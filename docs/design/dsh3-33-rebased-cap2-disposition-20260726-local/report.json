@@ -1,0 +1,479 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh3-33-rebased-cap2-disposition/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh3-33-rebased-cap2-disposition/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh3-33-rebased-cap2-disposition",
+      "timingPath": "agentv-dir://agentv/dsh3-33-rebased-cap2-disposition/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 3,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "complete-claim-ledger:domain_criterion",
+          "expected": true,
+          "id": "complete-claim-ledger:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "negative-and-unavailable-retained:domain_criterion",
+          "expected": true,
+          "id": "negative-and-unavailable-retained:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "dsh5-remains-closed:domain_criterion",
+          "expected": true,
+          "id": "dsh5-remains-closed:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 3
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh3-33-rebased-cap2-disposition.eval.jsonl",
+    "summary": {
+      "durationMs": 133,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 3,
+      "total": 3
+    }
+  },
+  "disposition": {
+    "claims": [
+      {
+        "claim": "runtime_correctness",
+        "evidence_ids": [
+          "SLM-381.cap2-v2-fixture"
+        ],
+        "reason": "Current CAP2 v2 replay is fixture wiring evidence, not learned capability.",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "fixture_only"
+      },
+      {
+        "claim": "model_view_hygiene",
+        "evidence_ids": [
+          "SLM-403.cap2-v2"
+        ],
+        "reason": "The sanitized policy-view boundary is exercised only by bounded local evidence.",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "fixture_only"
+      },
+      {
+        "claim": "training_validity",
+        "evidence_ids": [
+          "SLM-403.cap2-v2"
+        ],
+        "reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "negative"
+      },
+      {
+        "claim": "complete_partial_safety",
+        "evidence_ids": [
+          "SLM-404.coverage"
+        ],
+        "reason": "no COMPLETE held-out shadow rows for the controlled coverage matrix",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "negative"
+      },
+      {
+        "claim": "stop_calibration",
+        "evidence_ids": [],
+        "reason": "No current powered stop/action comparison is compatible with the rejected typed-policy run.",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "unrun_conditional"
+      },
+      {
+        "claim": "permutation_invariance",
+        "evidence_ids": [
+          "SLM-402.permutation"
+        ],
+        "reason": "Permutation evidence is fixture wiring only and cannot establish held-out benefit.",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "fixture_only"
+      },
+      {
+        "claim": "held_out_semantics",
+        "evidence_ids": [
+          "SLM-403.cap2-v2",
+          "SLM-405.negative-ablation"
+        ],
+        "reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "negative"
+      },
+      {
+        "claim": "systems_efficiency",
+        "evidence_ids": [
+          "SLM-407.systems"
+        ],
+        "reason": "No compatible five-arm measured serving comparison exists.",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "unavailable"
+      },
+      {
+        "claim": "cap0_retention",
+        "evidence_ids": [],
+        "reason": "No learned CAP2 candidate reached a retention evaluation.",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "unrun_conditional"
+      },
+      {
+        "claim": "cap1_retention",
+        "evidence_ids": [],
+        "reason": "No CAP1-compatible learned candidate or retention artifact exists.",
+        "schema": "rebased_cap2_claim/v1",
+        "verdict": "unavailable"
+      }
+    ],
+    "dsh5": {
+      "allowed_actions": [],
+      "allowed_heads": [],
+      "allowed_objectives": [],
+      "may_start": false,
+      "reason": "No typed action form improved held-out CAP2 semantics; DSH5 remains closed."
+    },
+    "evidence": [
+      {
+        "artifact_path": "docs/design/dsh3-28-typed-operator-policy-20260726-cap2-v2-fiveheads/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "9bd36687abd278f5f9bc005685cca5297f87c75b",
+        "data_identity": {
+          "collapsed_record_count": 2,
+          "collapsed_records_path": "local-scratch://held_out/operator_collapsed_records.jsonl",
+          "content_fingerprint": "a922536b82a0825853a87f5eaa5129de7e0ae984a7b4a8db6ba5bc1e347597cf",
+          "record_count": 20,
+          "records_path": "local-scratch://held_out/operator_records.jsonl",
+          "report_path": "local-scratch://held_out/operator_coverage.json",
+          "root_count": 2
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-403.cap2-v2",
+        "hardware_identity": {
+          "backend": "typed_operator_feature_encoder",
+          "device": "cpu"
+        },
+        "objective_identity": "coverage-aware DEFER",
+        "policy_view_schema": "operator_policy_input/v1",
+        "registry_identity": null,
+        "report_schema": "dsh3_28_typed_operator_policy_report/v1",
+        "result_identity": {
+          "reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run",
+          "verdict": "reject"
+        },
+        "schema": "rebased_cap2_evidence/v1",
+        "suite_identity": {
+          "n": 4,
+          "suite": "cap2_operator_v2"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "9bd36687abd278f5f9bc005685cca5297f87c75b",
+          "code_dirty": true,
+          "components": {
+            "data.flow.operator_policy_corpus": "v5",
+            "evals.cap2_operator": "v2",
+            "harness.experiments.typed_operator_policy": "v9",
+            "model.operator_policy_view": "v3",
+            "model.quantization": "v7"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T15:12:45.778890+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh3-29-operator-ecoc-coverage-20260726-local/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "a2727068d184068a9c9b1c9ef52d3d3f4590737e",
+        "data_identity": {
+          "collapsed_record_count": 1,
+          "collapsed_records_path": "local-scratch://held_out/operator_collapsed_records.jsonl",
+          "content_fingerprint": "51a3f125d7dcd4fbb272b55d6a8eed7ddcaca4b45df220d606b9b04fcf440120",
+          "record_count": 10,
+          "records_path": "local-scratch://held_out/operator_records.jsonl",
+          "report_path": "local-scratch://held_out/operator_coverage.json",
+          "root_count": 1
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-404.coverage",
+        "hardware_identity": {
+          "backend": "typed_operator_feature_encoder",
+          "device": "cpu"
+        },
+        "objective_identity": "coverage-aware DEFER",
+        "policy_view_schema": "operator_policy_input/v1",
+        "registry_identity": null,
+        "report_schema": "dsh3_28_typed_operator_policy_report/v1",
+        "result_identity": {
+          "reason": "no COMPLETE held-out shadow rows for the controlled coverage matrix",
+          "verdict": "reject"
+        },
+        "schema": "rebased_cap2_evidence/v1",
+        "suite_identity": {
+          "n": 2,
+          "suite": "controlled PARTIAL"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "a2727068d184068a9c9b1c9ef52d3d3f4590737e",
+          "code_dirty": true,
+          "components": {
+            "data.flow.operator_policy_corpus": "v5",
+            "evals.cap2_operator": "v2",
+            "harness.experiments.typed_operator_policy": "v10",
+            "model.operator_policy_view": "v3",
+            "model.quantization": "v7"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T15:35:10.880637+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh3-30-collapse-negative-ablation-20260726-local/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "36530cca7fb9e9d1af9f220bbff9c52896e035c9",
+        "data_identity": {
+          "collapsed_record_count": 1,
+          "collapsed_records_path": "local-scratch://held_out/operator_collapsed_records.jsonl",
+          "content_fingerprint": "dcae4cd3bfecb1a47ef4dc81ff4f2347a14362fc73f1a20b5659f798da477f5c",
+          "record_count": 10,
+          "records_path": "local-scratch://held_out/operator_records.jsonl",
+          "report_path": "local-scratch://held_out/operator_coverage.json",
+          "root_count": 1
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-405.negative-ablation",
+        "hardware_identity": {
+          "backend": "typed_operator_feature_encoder",
+          "device": "cpu"
+        },
+        "objective_identity": "coverage-aware DEFER",
+        "policy_view_schema": "operator_policy_input/v1",
+        "registry_identity": null,
+        "report_schema": "dsh3_28_typed_operator_policy_report/v1",
+        "result_identity": {
+          "reason": "missing replay-verified matched negative strata: train:different_result, dev:different_result",
+          "verdict": "reject"
+        },
+        "schema": "rebased_cap2_evidence/v1",
+        "suite_identity": {
+          "n": 2,
+          "suite": "replay-negative strata"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "36530cca7fb9e9d1af9f220bbff9c52896e035c9",
+          "code_dirty": true,
+          "components": {
+            "data.flow.operator_policy_corpus": "v6",
+            "evals.cap2_operator": "v2",
+            "harness.experiments.typed_operator_policy": "v11",
+            "model.operator_policy_view": "v3",
+            "model.quantization": "v7"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T15:54:36.972086+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh3-31-operator-failure-prediction-20260726-local/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "dd1783f9238963aceeec7c1c384e99f1b9fae06c",
+        "data_identity": {
+          "sources": []
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-406.failure-prediction",
+        "hardware_identity": {
+          "backend": "unknown",
+          "device": "unknown"
+        },
+        "objective_identity": null,
+        "policy_view_schema": null,
+        "registry_identity": null,
+        "report_schema": "operator_failure_prediction_report/v1",
+        "result_identity": {
+          "reason": "local evaluation evidence was unavailable before generation",
+          "verdict": "unavailable"
+        },
+        "schema": "rebased_cap2_evidence/v1",
+        "suite_identity": {
+          "n": 0,
+          "suite": "local preflight"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "dd1783f9238963aceeec7c1c384e99f1b9fae06c",
+          "code_dirty": true,
+          "components": {
+            "harness.experiments.operator_failure_prediction": "v1",
+            "harness.model_build.eval": "v61"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T16:19:17.732899+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh3-32-operator-serving-work-20260726-local/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "ba73337655ad6bc21d7f82aa71a734195508fdf0",
+        "data_identity": {
+          "context": "dsh3-28-local-preflight"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-407.systems",
+        "hardware_identity": {
+          "backend": "local_operator_serving_accounting",
+          "device": "cpu"
+        },
+        "objective_identity": null,
+        "policy_view_schema": null,
+        "registry_identity": null,
+        "report_schema": "dsh3_32_operator_systems_benchmark_preflight/v1",
+        "result_identity": {
+          "missing_arms": [
+            "x22",
+            "full_generation",
+            "serialized_operator",
+            "typed_operator",
+            "compiler_forced"
+          ],
+          "verdict": "unavailable"
+        },
+        "schema": "rebased_cap2_evidence/v1",
+        "suite_identity": {
+          "n": 0,
+          "suite": "operator-serving preflight"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "ba73337655ad6bc21d7f82aa71a734195508fdf0",
+          "code_dirty": true,
+          "components": {
+            "harness.experiments.operator_systems_benchmark": "v1",
+            "harness.experiments.typed_operator_policy": "v11"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T16:48:16.024750+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh3-27-operator-permutation-consistency.json",
+        "checkpoint_identity": null,
+        "code_commit": "2a814f089866a5bde2297ae889751cee1757c83c",
+        "data_identity": {
+          "kind": "fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-402.permutation",
+        "hardware_identity": {
+          "backend": "unknown",
+          "device": "unknown"
+        },
+        "objective_identity": null,
+        "policy_view_schema": null,
+        "registry_identity": null,
+        "report_schema": "dsh3_27_operator_permutation_fixture/v1",
+        "result_identity": {
+          "verdict": "fixture_wiring_stop_rule_negative"
+        },
+        "schema": "rebased_cap2_evidence/v1",
+        "suite_identity": {
+          "n": 0,
+          "suite": "operator permutation fixture"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "2a814f089866a5bde2297ae889751cee1757c83c",
+          "code_dirty": true,
+          "components": {
+            "model.operator_permutation_consistency": "v1"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T10:10:53.009929+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh3-28-cap2-operator-v2-20260726/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "e304679415688356693ad4382306db1f61dcbc16",
+        "data_identity": {
+          "matrix_set": "cap2_operator_v2"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-381.cap2-v2-fixture",
+        "hardware_identity": {
+          "backend": "frozen_symbolic_operator_fixture",
+          "device": "cpu"
+        },
+        "objective_identity": null,
+        "policy_view_schema": null,
+        "registry_identity": null,
+        "report_schema": "cap2_operator_fixture_report/v1",
+        "result_identity": {
+          "honesty": "fixture_wiring_only"
+        },
+        "schema": "rebased_cap2_evidence/v1",
+        "suite_identity": {
+          "suite_n": 20,
+          "suite_version": "cap2_operator_v2"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "e304679415688356693ad4382306db1f61dcbc16",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.collapse": "v1",
+            "dsl.operators.contracts": "v15",
+            "dsl.operators.conversation": "v4",
+            "dsl.operators.legal_set": "v2",
+            "dsl.operators.merge": "v3",
+            "evals.cap2_operator": "v2"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T14:30:34.863928+00:00"
+        }
+      }
+    ],
+    "historical_disposition": "docs/design/dsh3-17-cap2-disposition-20260723/report.json (historical, immutable)",
+    "schema": "rebased_cap2_operator_policy_disposition/v1",
+    "version_stamp": {
+      "code_commit": "5c49ccbc5d7d9293d0582dcbaf4d13d342ceb00d",
+      "code_dirty": true,
+      "components": {
+        "evals.cap2_operator_policy_disposition": "v1"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-07-26T17:03:57.998240+00:00"
+    }
+  },
+  "schema": "dsh3_33_rebased_cap2_disposition_report/v1",
+  "version_stamp": {
+    "code_commit": "5c49ccbc5d7d9293d0582dcbaf4d13d342ceb00d",
+    "code_dirty": true,
+    "components": {
+      "evals.cap2_operator_policy_disposition": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T17:03:57.998240+00:00"
+  }
+}

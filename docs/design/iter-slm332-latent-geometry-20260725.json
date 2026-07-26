@@ -1,0 +1,109 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/slm332-latent-geometry/benchmark.json",
+      "indexPath": "agentv-dir://agentv/slm332-latent-geometry/index.jsonl",
+      "runDir": "agentv-dir://agentv/slm332-latent-geometry",
+      "timingPath": "agentv-dir://agentv/slm332-latent-geometry/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 1,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "non_promotable_without_decoder",
+          "expected": true,
+          "id": "non_promotable_without_decoder",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 1
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/slm332-latent-geometry.eval.jsonl",
+    "summary": {
+      "durationMs": 98,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 1,
+      "total": 1
+    }
+  },
+  "combined": {
+    "ap030_oracle_semantic_gate": "unavailable_no_verified_latent_to_program_decoder",
+    "contrast_distance": 5.9966959953308105,
+    "contrast_margin_loss": 0.0,
+    "effective_rank": 1.2781492471694946,
+    "interpolation_traversal": "unavailable_no_verified_latent_to_program_decoder",
+    "promotion_eligible": false,
+    "reconstruction_mse": 0.005569774191826582,
+    "within_noise_mse": 0.0025848746299743652
+  },
+  "comparison": {
+    "contrast_distance_delta": 5.976798053830862,
+    "reconstruction_mse_delta": 0.0009890557266771793,
+    "within_noise_mse_delta": 4.314817488193512e-05
+  },
+  "control": {
+    "ap030_oracle_semantic_gate": "unavailable_no_verified_latent_to_program_decoder",
+    "contrast_distance": 0.0198979414999485,
+    "contrast_margin_loss": 0.9801021218299866,
+    "effective_rank": 1.2148237228393555,
+    "interpolation_traversal": "unavailable_no_verified_latent_to_program_decoder",
+    "promotion_eligible": false,
+    "reconstruction_mse": 0.004580718465149403,
+    "within_noise_mse": 0.00254172645509243
+  },
+  "generated_at": "2026-07-25T21:24:46.797977+00:00",
+  "interpolation": {
+    "reason": "no_verified_latent_to_program_decoder",
+    "required_when_available": [
+      "decoded_program",
+      "verifier_verdict",
+      "factor_fingerprint",
+      "boundary_crossing"
+    ],
+    "status": "unavailable_fail_closed"
+  },
+  "recipe": {
+    "backend": "local",
+    "device": "cpu",
+    "matched_initialization": true,
+    "pair_transforms": [
+      "binding_swap_symbol",
+      "binding_swap_symbol_reverse"
+    ],
+    "pairs": 366,
+    "seed": 332,
+    "steps": 40
+  },
+  "schema": "slm332_latent_geometry/v1",
+  "strict_semantics": {
+    "ap030_factor_proxy_is_not_substituted": true,
+    "promotion_eligible": false,
+    "reason": "no_verified_latent_to_program_decoder",
+    "status": "unavailable_fail_closed"
+  },
+  "version_stamp": {
+    "code_commit": "84f670bfa99450744d9a939808c80526609a3303",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v115",
+      "harness.experiments.slm332_latent_geometry": "v5"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T21:24:46.797951+00:00"
+  }
+}
