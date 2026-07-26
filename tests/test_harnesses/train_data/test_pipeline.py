@@ -113,6 +113,7 @@ def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> N
     # Persisted markers are opaque ordinals (:slot_N), never the seed's named
     # spelling (:hero.title) -- the opaque-vocabulary invariant covers prompts too.
     assert "Placeholders: :slot_0, :slot_1" in rows["t1"].prompt
+    assert rows["t1"].placeholders == [":slot_0", ":slot_1"]
     assert result["stats"]["prompt_component_contract"] is True
     assert result["stats"]["prompt_slot_contract"] is True
     assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
