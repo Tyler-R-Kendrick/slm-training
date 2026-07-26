@@ -1698,12 +1698,17 @@
       ]
     },
     "harness.core": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-26",
+          "note": "Record version stamps from the caller worktree before falling back to the packaged source checkout."
+        },
         {
           "version": "v9",
           "date": "2026-07-24",
@@ -1864,6 +1869,7 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {"version": "v115", "date": "2026-07-26", "note": "no-bump: migrate the CAP2 local-action fixture to TernaryECOCHead.entry_for without changing its action-code lookup."},
         {"version": "v115", "date": "2026-07-25", "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"},
         {"version": "v114", "date": "2026-07-25", "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"},
         {
@@ -6909,7 +6915,7 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v5",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
@@ -6918,6 +6924,26 @@
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "no-bump: document the review-corrected bounded control rerun and its unchanged reject verdict."
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "Preserve every typed-head matrix cell in AgentV evidence and validate selected head families."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "Attach typed policy decisions through request-aligned ModelPlugin evidence."
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-403: add the required matched five-family typed action-policy matrix over the shared sanitized scorer"
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
@@ -6998,13 +7024,18 @@
       ]
     },
     "model.quantization": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "Expose ECOC entries for legal-set scoring and make singleton independent-set loss finite."
+        },
         {
           "version": "v6",
           "date": "2026-07-25",

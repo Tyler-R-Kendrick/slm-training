@@ -7,8 +7,11 @@ enter the encoder.  This is experiment machinery, not a serving default.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Sequence
+import json
+import math
+from typing import Any, Literal, Sequence
 
 import torch
 import torch.nn.functional as F
@@ -19,6 +22,12 @@ from slm_training.models.operator_feature_encoder import (
     FeatureArm,
     OperatorFeatureEncoder,
     OperatorFeatureVocabularyV1,
+)
+from slm_training.models.action_code_registry import ActionCodeRegistry
+from slm_training.models.local_action_head import (
+    LocalFlatHead,
+    StateContext,
+    TernaryECOCHead,
 )
 from slm_training.models.operator_policy_objective import (
     OperatorPolicyObjectiveV1,
@@ -32,6 +41,50 @@ from slm_training.models.operator_policy_view import (
     operator_policy_input_from_dict,
 )
 from slm_training.dsl.operators import LegalSetCoverage, OperatorSupportVerdict
+from slm_training.data.contract import GenerationRequest
+from slm_training.harnesses.model_build.plugin import ModelPlugin
+
+
+TypedOperatorPolicyHeadFamily = Literal[
+    "local_flat",
+    "ternary_ecoc",
+    "factorized",
+    "independent_set",
+    "recurrent_set",
+]
+
+TYPED_OPERATOR_POLICY_HEAD_FAMILIES: tuple[TypedOperatorPolicyHeadFamily, ...] = (
+    "local_flat",
+    "ternary_ecoc",
+    "factorized",
+    "independent_set",
+    "recurrent_set",
+)
+
+
+def _semantic_action_identity(view: OperatorPolicyInputV1, row: int) -> str:
+    """Stable parameter/decode key built only from the sanitized action view."""
+    action = view.action_rows[row]
+    payload = {
+        "operator_id": action.operator_id,
+        "operator_version": action.operator_version,
+        "locality": action.locality,
+        "cost": action.cost,
+        "effect_signature": sorted(effect.value for effect in action.effect_signature),
+        "slots": [
+            {
+                "slot_id": slot.slot_id,
+                "ref_kind": slot.ref_kind.value,
+                "binding_phase": slot.binding_phase.value,
+                "required": slot.required,
+                "repeated": slot.repeated,
+            }
+            for slot in action.argument_slots
+        ],
+    }
+    # Hex preserves an exact, dot-free semantic key for LocalFlatHead's
+    # ParameterDict. It is derived only from fields the policy may observe.
+    return "typed_" + json.dumps(payload, sort_keys=True, separators=(",", ":")).encode().hex()
 
 
 @dataclass(frozen=True)
@@ -106,25 +159,212 @@ class TypedOperatorPolicyDecisionV1:
     model_forwards: int
 
 
-class TypedOperatorPolicyScorer(nn.Module):
-    """Ragged typed action/argument scorer over sanitized policy views."""
+@dataclass(frozen=True)
+class TypedOperatorPolicyEvidenceV1:
+    """Policy-decision evidence attached to, never substituted for, OpenUI output."""
 
-    def __init__(self, vocabulary: OperatorFeatureVocabularyV1, *, dim: int = 16) -> None:
+    head_family: TypedOperatorPolicyHeadFamily
+    decision: TypedOperatorPolicyDecisionV1
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "typed_operator_policy_evidence/v1",
+            "head_family": self.head_family,
+            "route": self.decision.route.value,
+            "selected_action_row": self.decision.selected_action_row,
+            "selected_argument_rows": [
+                {"slot_id": slot_id, "reference_row": reference_row}
+                for slot_id, reference_row in self.decision.selected_argument_rows
+            ],
+            "model_forwards": self.decision.model_forwards,
+        }
+
+
+class TypedOperatorPolicyEvidencePlugin:
+    """Attach typed-policy evidence through the canonical ModelPlugin channel.
+
+    The delegate alone owns materialized OpenUI generation.  This wrapper only
+    records request-aligned decision evidence for normal evaluation scoring.
+    """
+
+    def __init__(
+        self,
+        delegate: ModelPlugin,
+        evidence_for_request: Callable[[GenerationRequest], TypedOperatorPolicyEvidenceV1],
+    ) -> None:
+        self.delegate = delegate
+        self.evidence_for_request = evidence_for_request
+        self._policy_evidence: list[dict[str, object]] = []
+
+    def generate_batch_requests(
+        self, requests: list[GenerationRequest], **kwargs: object
+    ) -> list[str]:
+        predictions = self.delegate.generate_batch_requests(requests, **kwargs)
+        if len(predictions) != len(requests):
+            raise ValueError("typed policy evidence requires one prediction per request")
+        self._policy_evidence = [
+            self.evidence_for_request(request).to_dict() for request in requests
+        ]
+        return predictions
+
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        policy_evidence, self._policy_evidence = self._policy_evidence, []
+        delegate_evidence = self.delegate.consume_generation_evidence()
+        if delegate_evidence and len(delegate_evidence) != len(policy_evidence):
+            raise ValueError("delegate generation evidence is not request-aligned")
+        if not delegate_evidence:
+            return [{"typed_operator_policy": row} for row in policy_evidence]
+        return [
+            {**dict(row), "typed_operator_policy": policy}
+            for row, policy in zip(delegate_evidence, policy_evidence, strict=True)
+        ]
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self.delegate, name)
+
+
+class TypedOperatorPolicyScorer(nn.Module):
+    """Ragged typed scorer with one selected legal-action head family.
+
+    All families score only rows supplied by ``OperatorPolicyInputV1``. The
+    family switch is an experiment lever, never a legality or routing switch.
+    """
+
+    def __init__(
+        self,
+        vocabulary: OperatorFeatureVocabularyV1,
+        *,
+        dim: int = 16,
+        head_family: TypedOperatorPolicyHeadFamily = "local_flat",
+    ) -> None:
         super().__init__()
+        if head_family not in TYPED_OPERATOR_POLICY_HEAD_FAMILIES:
+            raise ValueError(f"unknown typed policy head family {head_family!r}")
+        self.head_family = head_family
         self.encoder = OperatorFeatureEncoder(vocabulary, dim=dim, arm=FeatureArm.TYPED)
-        self.action_head = nn.Linear(dim, 1)
         self.argument_head = CandidateScoringHead(dim)
+        self.context_projection = nn.Linear(dim * 2, dim)
+        self.local_flat: LocalFlatHead | None = None
+        self.ecoc: TernaryECOCHead | None = None
+        self.factor_projections: nn.ModuleList | None = None
+        self.independent_query: nn.Linear | None = None
+        self.independent_key: nn.Linear | None = None
+        self.independent_value: nn.Linear | None = None
+        self.independent_score: nn.Linear | None = None
+        self.recurrent: nn.GRU | None = None
+        self.recurrent_score: nn.Linear | None = None
+        if head_family == "local_flat":
+            self.local_flat = LocalFlatHead(dim, unseen_action_policy="unk")
+        elif head_family == "ternary_ecoc":
+            self.ecoc = TernaryECOCHead(dim, registry=ActionCodeRegistry())
+        elif head_family == "factorized":
+            self.factor_projections = nn.ModuleList(nn.Linear(dim, 1) for _ in range(3))
+        elif head_family == "independent_set":
+            self.independent_query = nn.Linear(dim, dim, bias=False)
+            self.independent_key = nn.Linear(dim, dim, bias=False)
+            self.independent_value = nn.Linear(dim, dim, bias=False)
+            self.independent_score = nn.Linear(dim * 2, 1)
+        elif head_family == "recurrent_set":
+            self.recurrent = nn.GRU(dim, dim, batch_first=True)
+            self.recurrent_score = nn.Linear(dim, 1)
+        else:  # pragma: no cover - membership validation above is exhaustive
+            raise ValueError(f"unhandled typed policy head family {head_family!r}")
 
     @classmethod
     def from_examples(
-        cls, examples: Sequence[TypedOperatorPolicyExampleV1], *, dim: int = 16
+        cls,
+        examples: Sequence[TypedOperatorPolicyExampleV1],
+        *,
+        dim: int = 16,
+        head_family: TypedOperatorPolicyHeadFamily = "local_flat",
     ) -> "TypedOperatorPolicyScorer":
         if not examples:
             raise ValueError("typed operator policy requires examples")
-        return cls(
+        scorer = cls(
             OperatorFeatureVocabularyV1.from_inputs([example.view for example in examples]),
             dim=dim,
+            head_family=head_family,
         )
+        if scorer.local_flat is not None:
+            scorer.local_flat.materialize(
+                _semantic_action_identity(example.view, action.row)
+                for example in examples
+                for action in example.view.action_rows
+            )
+        return scorer
+
+    def _context(
+        self, action_embeddings: torch.Tensor, reference_embeddings: torch.Tensor
+    ) -> torch.Tensor:
+        action_mean = action_embeddings.mean(dim=0)
+        reference_mean = reference_embeddings.mean(dim=0)
+        return torch.tanh(self.context_projection(torch.cat((action_mean, reference_mean))).unsqueeze(0))
+
+    def _action_logits(
+        self,
+        view: OperatorPolicyInputV1,
+        action_embeddings: torch.Tensor,
+        reference_embeddings: torch.Tensor,
+    ) -> torch.Tensor:
+        identities = [_semantic_action_identity(view, action.row) for action in view.action_rows]
+        context = self._context(action_embeddings, reference_embeddings)
+        if self.local_flat is not None:
+            output = self.local_flat.score(
+                context,
+                StateContext(state_family_id="typed_operator_policy"),
+                identities,
+            )
+            assert output.logits is not None
+            return output.logits.squeeze(0)
+        if self.ecoc is not None:
+            output = self.ecoc.score(
+                context,
+                StateContext(state_family_id="typed_operator_policy"),
+                identities,
+            )
+            assert output.trits is not None
+            entry = self.ecoc.entry_for(identities)
+            log_probs = F.log_softmax(output.trits.squeeze(0), dim=-1)
+            return torch.stack(
+                [
+                    sum(log_probs[position, digit] for position, digit in enumerate(assignment.codeword))
+                    for assignment in entry.assignments
+                ]
+            )
+        if self.factor_projections is not None:
+            factors = [
+                projection(action_embeddings).squeeze(-1)
+                for projection in self.factor_projections
+            ]
+            return factors[0] * factors[1] * factors[2]
+        if self.independent_query is not None:
+            assert self.independent_key is not None
+            assert self.independent_value is not None
+            assert self.independent_score is not None
+            query = self.independent_query(action_embeddings)
+            key = self.independent_key(action_embeddings)
+            value = self.independent_value(action_embeddings)
+            if action_embeddings.shape[0] == 1:
+                neighbors = torch.zeros_like(value)
+            else:
+                affinity = query @ key.T / math.sqrt(action_embeddings.shape[-1])
+                affinity = affinity.masked_fill(
+                    torch.eye(
+                        affinity.shape[0], dtype=torch.bool, device=affinity.device
+                    ),
+                    float("-inf"),
+                )
+                neighbors = F.softmax(affinity, dim=-1) @ value
+            return self.independent_score(torch.cat((action_embeddings, neighbors), dim=-1)).squeeze(-1)
+        assert self.recurrent is not None
+        assert self.recurrent_score is not None
+        order = sorted(range(len(identities)), key=identities.__getitem__)
+        order_tensor = torch.tensor(order, dtype=torch.long, device=action_embeddings.device)
+        outputs, _ = self.recurrent(action_embeddings[order_tensor].unsqueeze(0))
+        sorted_logits = self.recurrent_score(outputs.squeeze(0)).squeeze(-1)
+        logits = torch.empty_like(sorted_logits)
+        logits[order_tensor] = sorted_logits
+        return logits
 
     def forward(
         self, view: OperatorPolicyInputV1
@@ -132,7 +372,7 @@ class TypedOperatorPolicyScorer(nn.Module):
         """Return scores only for compiler-provided action and slot candidates."""
         reference_embeddings = self.encoder.encode_reference_rows(view)
         action_embeddings = self.encoder.encode(view)
-        action_logits = self.action_head(action_embeddings).squeeze(-1)
+        action_logits = self._action_logits(view, action_embeddings, reference_embeddings)
         argument_logits: dict[tuple[int, str], tuple[torch.Tensor, tuple[int, ...]]] = {}
         for action in view.action_rows:
             for slot in action.argument_slots:

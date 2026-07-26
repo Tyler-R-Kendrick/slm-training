@@ -17,6 +17,8 @@ from slm_training.data.flow.operator_policy_corpus import build_operator_policy_
 from slm_training.dsl.schema import load_jsonl
 from slm_training.evals.agentv import publish_agentv_evaluation
 from slm_training.harnesses.experiments.typed_operator_policy import (
+    TYPED_OPERATOR_POLICY_HEAD_FAMILIES,
+    TypedOperatorPolicyHeadFamily,
     TypedOperatorPolicyExampleV1,
     TypedOperatorPolicyScorer,
     decide_typed_operator_policy,
@@ -224,6 +226,7 @@ def _changes(control: dict[str, Any], treatment: dict[str, Any]) -> dict[str, in
 
 def _run_arm(
     *,
+    head_family: TypedOperatorPolicyHeadFamily,
     name: str,
     train: Sequence[TypedOperatorPolicyExampleV1],
     held_out: Sequence[TypedOperatorPolicyExampleV1],
@@ -232,7 +235,9 @@ def _run_arm(
     learning_rate: float,
 ) -> dict[str, Any]:
     torch.manual_seed(seed)
-    model = TypedOperatorPolicyScorer.from_examples(train, dim=16)
+    model = TypedOperatorPolicyScorer.from_examples(
+        train, dim=16, head_family=head_family
+    )
     history = []
     complete_train = [
         row for row in train if row.view.coverage.value == "complete"
@@ -241,7 +246,12 @@ def _run_arm(
         _zero(model)
     elif name == "enabled":
         if not complete_train:
-            return {"arm": name, "seed": seed, "skipped": "no_complete_train_rows"}
+            return {
+                "head_family": head_family,
+                "arm": name,
+                "seed": seed,
+                "skipped": "no_complete_train_rows",
+            }
         history = train_typed_operator_policy(
             model, train, steps=steps, learning_rate=learning_rate
         )
@@ -256,7 +266,12 @@ def _run_arm(
             if len(row.view.action_rows) > 1
         ]
         if not shuffled:
-            return {"arm": name, "seed": seed, "skipped": "no_complete_train_rows"}
+            return {
+                "head_family": head_family,
+                "arm": name,
+                "seed": seed,
+                "skipped": "no_complete_train_rows",
+            }
         history = train_typed_operator_policy(
             model, shuffled, steps=steps, learning_rate=learning_rate
         )
@@ -264,6 +279,7 @@ def _run_arm(
         raise ValueError(f"unknown arm {name}")
     result = _evaluate(model, held_out)
     return {
+        "head_family": head_family,
         "arm": name,
         "seed": seed,
         "parameters": sum(parameter.numel() for parameter in model.parameters()),
@@ -280,17 +296,17 @@ def _markdown(report: dict[str, Any]) -> str:
         "",
         "## Matrix",
         "",
-        "| Arm | Seed | Action | Action + arguments | Singleton forwards | Partial forced |",
-        "| --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Head | Arm | Seed | Action | Action + arguments | Singleton forwards | Partial forced |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for arm in report["matrix"]:
         if arm.get("skipped"):
             lines.append(
-                f"| `{arm['arm']}` | {arm['seed']} | - | - | - | - |"
+                f"| `{arm['head_family']}` | `{arm['arm']}` | {arm['seed']} | - | - | - | - |"
             )
             continue
         lines.append(
-            f"| `{arm['arm']}` | {arm['seed']} | {arm['action_accuracy']:.3f} | "
+            f"| `{arm['head_family']}` | `{arm['arm']}` | {arm['seed']} | {arm['action_accuracy']:.3f} | "
             f"{arm['action_and_arguments_accuracy']:.3f} | {arm['singleton_forwards']} | "
             f"{arm['partial_forced']} |"
         )
@@ -321,6 +337,11 @@ def main(argv: list[str] | None = None) -> int:
         help="ignored local corpus artifacts; durable report and AgentV stay in --output-dir",
     )
     parser.add_argument(
+        "--head-families",
+        default=",".join(TYPED_OPERATOR_POLICY_HEAD_FAMILIES),
+        help="comma-separated typed policy heads; default runs the required five-family matrix",
+    )
+    parser.add_argument(
         "--train-record-id",
         help="optional one-record training slice; its ID is persisted in the report",
     )
@@ -342,9 +363,22 @@ def main(argv: list[str] | None = None) -> int:
     corpus_work_dir = args.corpus_work_dir.resolve()
     if args.max_combinations <= 0:
         parser.error("--max-combinations must be positive")
+    head_families = tuple(
+        family.strip() for family in args.head_families.split(",") if family.strip()
+    )
+    if not head_families or any(
+        family not in TYPED_OPERATOR_POLICY_HEAD_FAMILIES for family in head_families
+    ):
+        parser.error(
+            "--head-families must name one or more of "
+            + ", ".join(TYPED_OPERATOR_POLICY_HEAD_FAMILIES)
+        )
+    if len(set(head_families)) != len(head_families):
+        parser.error("--head-families must not repeat a family")
     stamp = build_version_stamp(
         "harness.experiments.typed_operator_policy",
         "data.flow.operator_policy_corpus",
+        "model.quantization",
         "model.operator_policy_view",
     )
     train, train_evidence = _collect_rows(
@@ -367,6 +401,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     matrix = [
         _run_arm(
+            head_family=head_family,  # type: ignore[arg-type]
             name=arm,
             train=train,
             held_out=held_out,
@@ -374,28 +409,67 @@ def main(argv: list[str] | None = None) -> int:
             steps=args.steps,
             learning_rate=args.learning_rate,
         )
+        for head_family in head_families
         for arm in ("zero", "random", "shuffled_labels", "enabled")
     ]
-    by_arm = {item["arm"]: item for item in matrix}
+    by_head_arm = {
+        (item["head_family"], item["arm"]): item for item in matrix
+    }
     complete_train_rows = sum(
         row.view.coverage.value == "complete" for row in train
     )
-    torch.manual_seed(97)
-    replay_model = TypedOperatorPolicyScorer.from_examples(train, dim=16)
-    replay_first = _evaluate(replay_model, held_out)
-    replay_second = _evaluate(replay_model, held_out)
-    enabled = by_arm["enabled"]
-    controls = {
-        "enabled_vs_zero": (
-            None if enabled.get("skipped") else _changes(by_arm["zero"], enabled)
-        ),
-        "enabled_vs_random": (
-            None if enabled.get("skipped") else _changes(by_arm["random"], enabled)
-        ),
-        "prediction_replay_matched": (
-            replay_first["predictions"] == replay_second["predictions"]
-        ),
-    }
+    controls = {}
+    for head_family in head_families:
+        torch.manual_seed(97)
+        replay_model = TypedOperatorPolicyScorer.from_examples(
+            train, dim=16, head_family=head_family  # type: ignore[arg-type]
+        )
+        replay_first = _evaluate(replay_model, held_out)
+        replay_second = _evaluate(replay_model, held_out)
+        enabled = by_head_arm[(head_family, "enabled")]
+        controls[head_family] = {
+            "enabled_vs_zero": (
+                None
+                if enabled.get("skipped")
+                else _changes(by_head_arm[(head_family, "zero")], enabled)
+            ),
+            "enabled_vs_random": (
+                None
+                if enabled.get("skipped")
+                else _changes(by_head_arm[(head_family, "random")], enabled)
+            ),
+            "prediction_replay_matched": (
+                replay_first["predictions"] == replay_second["predictions"]
+            ),
+        }
+    beneficial_heads = [
+        head_family
+        for head_family, control in controls.items()
+        if (change := control["enabled_vs_zero"]) is not None
+        and change["changed"] > 0
+        and change["correct"] > change["wrong"]
+    ]
+    decision = (
+        {
+            "verdict": "reject",
+            "reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run",
+        }
+        if complete_train_rows == 0
+        else (
+            {
+                "verdict": "reject",
+                "reason": "no typed head caused a beneficial enabled-versus-zero held-out choice change",
+            }
+            if not beneficial_heads
+            else {
+                "verdict": "measured",
+                "reason": (
+                    f"bounded local {len(head_families)}-head control matrix completed; "
+                    "this is not a ship decision"
+                ),
+            }
+        )
+    )
     agentv = publish_agentv_evaluation(
         output_dir,
         name="dsh3-28-typed-operator-policy",
@@ -409,7 +483,8 @@ def main(argv: list[str] | None = None) -> int:
                     item.get("skipped") or item["partial_forced"] == 0 for item in matrix
                 ),
                 "result": {
-                    item["arm"]: item.get("partial_forced") for item in matrix
+                    f"{item['head_family']}/{item['arm']}": item.get("partial_forced")
+                    for item in matrix
                 },
             },
             {
@@ -419,33 +494,34 @@ def main(argv: list[str] | None = None) -> int:
                     item.get("skipped") or item["singleton_forwards"] == 0 for item in matrix
                 ),
                 "result": {
-                    item["arm"]: item.get("singleton_forwards") for item in matrix
+                    f"{item['head_family']}/{item['arm']}": item.get("singleton_forwards")
+                    for item in matrix
                 },
             },
             {
                 "id": "causal-controls-or-stop-rule",
                 "criteria": "Causal controls have denominators when COMPLETE supervision exists; otherwise the no-COMPLETE stop rule is recorded.",
                 "pass": (
-                    complete_train_rows == 0
-                    or controls["enabled_vs_zero"] is None
-                    or controls["enabled_vs_zero"]["eligible"] == len(held_out)
+                    (
+                        complete_train_rows == 0
+                        or all(
+                        control["enabled_vs_zero"] is None
+                        or control["enabled_vs_zero"]["eligible"] == len(held_out)
+                        for control in controls.values()
+                        )
+                    )
+                    and (bool(beneficial_heads) == (decision["verdict"] == "measured"))
                 ),
-                "result": {"complete_train_rows": complete_train_rows, **controls},
+                "result": {
+                    "complete_train_rows": complete_train_rows,
+                    "beneficial_heads": beneficial_heads,
+                    "decision": decision,
+                    **controls,
+                },
             },
         ],
     )
     _rewrite_agentv_paths(output_dir)
-    decision = (
-        {
-            "verdict": "reject",
-            "reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run",
-        }
-        if complete_train_rows == 0
-        else {
-            "verdict": "measured",
-            "reason": "bounded local control matrix completed; this is not a ship decision",
-        }
-    )
     report = {
         "schema": "dsh3_28_typed_operator_policy_report/v1",
         "issue": "SLM-403",
@@ -456,6 +532,7 @@ def main(argv: list[str] | None = None) -> int:
             "steps": args.steps,
             "learning_rate": args.learning_rate,
             "max_combinations_per_operator": args.max_combinations,
+            "head_families": list(head_families),
             "train_record_id": args.train_record_id,
             "held_out_record_id": args.held_out_record_id,
             "checkpoint": None,

@@ -69,13 +69,46 @@ preflight: it does not meet the required >=5% enabled-versus-disabled choice
 change or a held-out improvement, is not a CAP2 ship evaluation, creates no
 checkpoint, and does not clear SLM-403.
 
+## Five-family bounded control result (2026-07-26)
+
+[`dsh3-28-typed-operator-policy-20260726-cap512-fiveheads/report.json`](dsh3-28-typed-operator-policy-20260726-cap512-fiveheads/report.json)
+records the required local-flat, ternary-ECOC, factorized, independent-set, and
+recurrent-set policy heads under identical CPU-only data, seed, four-step
+budget, and controls. The run retained exactly two COMPLETE train rows and two
+COMPLETE held-out rows. Each head ran enabled, weight-zero, shuffled-label, and
+random controls; all three AgentEvals assertions passed under pinned AgentV.
+
+Every enabled head made **0/2** held-out choice changes relative to its
+weight-zero control. Each had one correct difference from random, but that is
+not a causal enabled-versus-disabled effect. The runner therefore records the
+preregistered stop-rule verdict **reject**: no family caused a beneficial
+held-out change at this tiny local scale. This keeps all five implementation
+families and their control evidence, but advances neither DSH5 nor a ship
+claim. It also does not satisfy SLM-403's full CAP2 acceptance: the normal
+eval ModelPlugin side channel is now integrated, but the frozen CAP2 suite
+still needs its current-surface reconciliation.
+
+The review-corrected rerun retains all 20 `(head_family, arm)` values in the
+two structural AgentV cases (instead of collapsing them by arm), uses a
+genuinely multiplicative factorized head, and records the current clean-source
+stamp (`harness.experiments.typed_operator_policy` v8 and `model.quantization`
+v7). Its three AgentEvals assertions pass; the negative causal conclusion is
+unchanged.
+
 ## Remaining evaluation scope
 
 This is the reusable scored-policy boundary and its unit proof, not a
-promotion or ship claim. The issue still requires the matched five-head CAP2
-matrix on a current suite whose legal-set coverage supplies COMPLETE ambiguous
-rows, with per-decision causal-change denominators and full-generation/
-serialized baselines. No checkpoint is created by this step.
+promotion or ship claim. `TypedOperatorPolicyEvidencePlugin` now composes a
+policy decision with the existing `ModelPlugin` generation-evidence channel:
+the delegate remains the sole owner of materialized OpenUI, while normal
+evaluation records a request-aligned `typed_operator_policy_evidence/v1` side
+channel. Evidence-count mismatch fails closed. The integration regression
+proves the unchanged delegate output receives meaningful-program scoring.
+
+The issue still requires the matched five-head CAP2 matrix on a current suite
+whose legal-set coverage supplies COMPLETE ambiguous rows, with per-decision
+causal-change denominators and full-generation/serialized baselines. No
+checkpoint is created by this step.
 
 The legacy CAP2 v1 generator currently detects drift after later
 selector/effect-contract evolution. That is an in-repository compatibility
