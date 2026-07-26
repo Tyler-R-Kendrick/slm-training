@@ -8982,6 +8982,24 @@
           "note": "initial registration; DSH3-18 CAP2 operator-policy rebase addendum -- read-only inventory of existing CAP2 symbols, DSH3-14/15/17 update proposals, and a machine-readable DSH3-19..DSH3-33 dependency map gating DSH3 M5/M6/M7; no runtime behavior change"
         }
       ]
+    },
+    "model.causal_abstract_decode": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/abstract_decode.py",
+        "src/slm_training/models/causal_lm_openui.py",
+        "tests/test_models/test_abstract_decode.py",
+        "docs/design/iter-slm304-ap017-abstract-decode-20260725.md",
+        "docs/design/iter-slm304-ap017-abstract-decode-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "AP-017 (SLM-304): initial registration -- codebook-only abstract trace decoding (prompt/abstract/answer phases, m_max hard cap with recorded forced end, malformed/nested delimiter hard errors, independent abstract/answer sampling params + seeds, per-phase token counts and per-token logprobs), default-off in CausalLMOpenUIPlugin"
+        }
+      ]
     }
   }
 }
