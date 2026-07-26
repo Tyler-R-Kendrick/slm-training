@@ -41,7 +41,10 @@ def resolve_turn_op_ids(
         application = turn.get("application")
         if not application:
             raise OpsVocabConditioningError("ast_edit turn is missing its application")
-        declaration = library.lookup_by_fingerprint(application["operator_fingerprint"])
+        try:
+            declaration = library.lookup_by_fingerprint(application["operator_fingerprint"])
+        except KeyError as exc:
+            raise OpsVocabConditioningError(str(exc)) from exc
         return (declaration.operator_id,)
     if operation == ConversationOperation.TRANSACTION_COMMIT.value:
         transaction = turn.get("transaction")
@@ -49,10 +52,13 @@ def resolve_turn_op_ids(
             raise OpsVocabConditioningError(
                 "transaction_commit turn is missing its transaction"
             )
-        return tuple(
-            library.lookup_by_fingerprint(action["operator_fingerprint"]).operator_id
-            for action in transaction["prepared_actions"]
-        )
+        try:
+            return tuple(
+                library.lookup_by_fingerprint(action["operator_fingerprint"]).operator_id
+                for action in transaction["prepared_actions"]
+            )
+        except KeyError as exc:
+            raise OpsVocabConditioningError(str(exc)) from exc
     # Every remaining ConversationOperation member is a history-family op by
     # construction (`dsl.ops_vocab._history_op_ids`) — never a model label.
     return (f"conversation.{operation}",)

@@ -260,6 +260,10 @@ def build_campaign(*, ops_fp: str, corpus_fp: str) -> ExperimentCampaignV1:
 def _adequacy_audit(
     examples: list[dict[str, Any]], library: OperatorLibraryV1
 ) -> dict[str, Any]:
+    # Derived from the caller-supplied library rather than a fixed literal:
+    # this is exactly the set of ids library.lookup() can resolve an arity
+    # for, so it can never silently drift from the actual registry.
+    local_op_ids = {declaration.operator_id for declaration in library.declarations}
     used_op_ids: set[str] = set()
     unrepresentable: list[dict[str, str]] = []
     arity_mismatches: list[dict[str, Any]] = []
@@ -280,7 +284,7 @@ def _adequacy_audit(
                 continue
             used_op_ids.add(op_id)
         argument_kinds = example.get("argument_kinds") or ()
-        single_ast_op = len(op_ids) == 1 and op_ids[0] in _LOCAL_OP_IDS
+        single_ast_op = len(op_ids) == 1 and op_ids[0] in local_op_ids
         if single_ast_op:
             declared = len(library.lookup(op_ids[0]).argument_slots)
             observed = len(argument_kinds)
@@ -329,16 +333,6 @@ def _adequacy_audit(
 
 
 _TOKEN_BY_OP_ID = {symbol.op_id: symbol.token for symbol in OPS_VOCAB}
-_LOCAL_OP_IDS = frozenset(
-    {
-        "openui.add_child",
-        "openui.remove_node",
-        "openui.reorder_children",
-        "openui.replace_node",
-        "openui.set_property",
-        "openui.unset_property",
-    }
-)
 
 
 def _wiring_probe(

@@ -1,7 +1,7 @@
 {
   "schema": "var2_01_ops_vocab_first_consumer/v1",
   "issue": "SLM-428 (VAR2-01)",
-  "generated_at": "2026-07-26T21:49:27Z",
+  "generated_at": "2026-07-26T22:12:13Z",
   "ops_vocab_fingerprint": "e039ebe5ab2ea6d746bd0757d16f65e2768fb4c0b8f4f37aa42c3e32472ecb93",
   "corpus_content_fingerprint": "07a33b539530403f0d9881ae01b26af37ba5abc766efe5e847e7fd4b60653380",
   "corpus_config": {
@@ -97,10 +97,10 @@
       }
     ],
     "claim_class": "wiring",
-    "source_commit": "9cabb9dec5ce830d48fa53917847379072630fc4",
+    "source_commit": "4b94da39f7f148f00ef2c0c7ac3ffc9031570b47",
     "source_dirty": true,
     "author": "scripts.run_var2_01_ops_vocab_first_consumer",
-    "created_at": "2026-07-26T21:49:29.265265Z",
+    "created_at": "2026-07-26T22:12:15.248366Z",
     "requires_rl": false,
     "rl_readiness_report_sha256": null,
     "rl_evaluation_sha256": null,
@@ -312,11 +312,11 @@
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "9cabb9dec5ce830d48fa53917847379072630fc4",
+    "code_commit": "4b94da39f7f148f00ef2c0c7ac3ffc9031570b47",
     "code_dirty": true,
     "components": {
       "harness.experiments.var2_01_ops_vocab_first_consumer": "v1"
     },
-    "stamped_at": "2026-07-26T21:49:29.265715+00:00"
+    "stamped_at": "2026-07-26T22:12:15.249060+00:00"
   }
 }

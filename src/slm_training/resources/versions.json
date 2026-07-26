@@ -404,6 +404,11 @@
         {
           "version": "v16",
           "date": "2026-07-26",
+          "note": "no-bump: pre-merge review fixup -- resolve_turn_op_ids now translates an unrecognized operator_fingerprint KeyError (CodeRabbit) into OpsVocabConditioningError, so a genuinely unrepresentable turn becomes a real unrepresentable_intents finding instead of crashing the caller; added a regression test."
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-26",
           "note": "no-bump: SLM-428 (VAR2-01) adds src/slm_training/dsl/operators/ops_vocab_conditioning.py under this directory's wildcard path; tracked separately by the new harness.experiments.var2_01_ops_vocab_first_consumer component. No change to contracts.py itself."
         },
         {
@@ -5382,6 +5387,11 @@
         "docs/design/var2-01-ops-vocab-first-consumer-20260726.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: pre-merge review fixup -- derive the local-operator-id set used by the arity_mismatches check from library.declarations instead of a hardcoded literal (CodeRabbit), so registry drift can't silently skip newly added/removed local operators; regenerated the published report/doc (same corpus, identical result)."
+        },
         {
           "version": "v1",
           "date": "2026-07-26",

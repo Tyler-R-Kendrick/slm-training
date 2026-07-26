@@ -111,6 +111,16 @@ def test_transaction_commit_turn_without_transaction_is_a_typed_error() -> None:
         )
 
 
+def test_ast_edit_turn_with_unrecognized_fingerprint_is_a_typed_error() -> None:
+    # A fingerprint the resolution library doesn't recognize must become a
+    # real unrepresentable_intents finding for a caller (e.g. the adequacy
+    # audit script), never an uncaught KeyError.
+    library, application = _library_and_application()
+    application = {**application, "operator_fingerprint": "0" * 64}
+    with pytest.raises(OpsVocabConditioningError, match="operator fingerprint"):
+        resolve_turn_op_ids({"operation": "ast_edit", "application": application}, library)
+
+
 @pytest.mark.parametrize(
     "operation, expected",
     [

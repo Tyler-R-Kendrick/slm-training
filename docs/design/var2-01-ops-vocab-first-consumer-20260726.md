@@ -2,7 +2,7 @@
 
 - **Status:** wiring reachable; adequacy audit published
 - **Claim class:** `measurement` (adequacy audit), `wiring` (matched-arm probe)
-- generated_at: `2026-07-26T21:49:27Z`
+- generated_at: `2026-07-26T22:12:13Z`
 - ops_vocab fingerprint: `e039ebe5ab2ea6d746bd0757d16f65e2768fb4c0b8f4f37aa42c3e32472ecb93`
 - corpus content fingerprint: `07a33b539530403f0d9881ae01b26af37ba5abc766efe5e847e7fd4b60653380`
 
