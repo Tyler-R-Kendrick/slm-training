@@ -49,7 +49,7 @@
     "sdk": "@agentv/core",
     "spec": "output-dir://agentv/slm394-merge-conflict-audit.eval.jsonl",
     "summary": {
-      "durationMs": 279,
+      "durationMs": 2034,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -91,14 +91,14 @@
   },
   "schema": "MergeConflictAuditV1",
   "version_stamp": {
-    "code_commit": "5d5cc62feb71460a6475f32b0250f143ec96851e",
-    "code_dirty": true,
+    "code_commit": "5b49224cb2f5fe7e1a5e5793e4de2868025274cf",
+    "code_dirty": false,
     "components": {
       "dsl.operators.contracts": "v15",
-      "dsl.operators.merge": "v2",
+      "dsl.operators.merge": "v3",
       "evals.agentv": "v5"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-25T21:58:58.778854+00:00"
+    "stamped_at": "2026-07-26T01:19:57.365380+00:00"
   }
 }
