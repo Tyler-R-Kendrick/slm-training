@@ -9437,6 +9437,23 @@
         }
       ]
     },
+    "evals.cap2_operator_policy_disposition": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/cap2_operator_policy_disposition.py",
+        "scripts/publish_dsh3_33_operator_policy_disposition.py",
+        "tests/test_evals/test_cap2_operator_policy_disposition.py",
+        "docs/design/dsh3-33-rebased-cap2-disposition.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-408: claim-separated rebased CAP2 operator-policy disposition that preserves negative and unavailable evidence"
+        }
+      ]
+    },
     "model.block_attention": {
       "version": "v1",
       "kind": "harness",
