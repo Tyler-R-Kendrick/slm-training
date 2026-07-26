@@ -75,6 +75,18 @@ DCA_ISSUES: dict[str, DcaIssueSpec] = {
             "policy or no-effect disposition."
         ),
     ),
+    "SLM-271": DcaIssueSpec(
+        linear_issue="SLM-271",
+        alias="DCA0-03",
+        title="Implement a LIFT-style decision-difficulty mask curriculum with exposure-matched rare-action controls",
+        gate_contract_id="mask-curriculum-activation-gate-v1",
+        slug="dca0-03-mask-curriculum",
+        activation_requirement=(
+            "SLM-261 fixed corruption suite and loss ledger; SLM-268 "
+            "selected verified data regime; SLM-269 selected target policy; "
+            "SLM-270 selected objective set."
+        ),
+    ),
 }
 
 

@@ -75,3 +75,10 @@ def test_render_markdown_covers_legs() -> None:
     assert "SLM-270" in markdown
     assert "blocked" in markdown
     assert "Successor conditions" in markdown
+
+
+def test_slm271_real_artifacts_are_blocked() -> None:
+    contract = evaluate_dca_gate(DCA_ISSUES["SLM-271"], REPO_ROOT)
+
+    assert contract.verdict == "blocked"
+    assert contract.contract_id == "mask-curriculum-activation-gate-v1"
