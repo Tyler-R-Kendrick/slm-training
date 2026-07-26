@@ -15,6 +15,7 @@ issue's -- see ``TwoTowerConfig.semantic_connector``.
 from __future__ import annotations
 
 import enum
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import torch
@@ -92,6 +93,7 @@ class AbstractPlanHead(nn.Module):
         mode: str | AbstractPlanMode,
         target_plan_ids: torch.Tensor | None = None,
         generator: torch.Generator | None = None,
+        role_sequence: Sequence[str] | None = None,
     ) -> AbstractPlanTrace:
         mode = AbstractPlanMode(mode)
         if mode is AbstractPlanMode.DISABLED:
@@ -124,6 +126,37 @@ class AbstractPlanHead(nn.Module):
                 f"device {device!r}; construct the generator on the same device"
             )
 
+        # AP-025 (SLM-318): an optional, zero-parameter restriction of each
+        # round's legal codebook range to one declared role. `None` (the
+        # default) is bit-exact identical to the pre-AP-025 behavior -- this
+        # is a masking of the *same* projection's output, not a new head.
+        role_mask: torch.Tensor | None = None
+        if role_sequence is not None:
+            if not self.plan.is_role_factorized:
+                raise ValueError(
+                    "role_sequence requires an AbstractPlanV1 with role_spans set"
+                )
+            if len(role_sequence) != self.plan.rounds:
+                raise ValueError(
+                    f"role_sequence length {len(role_sequence)} != "
+                    f"plan.rounds {self.plan.rounds}"
+                )
+            role_mask = torch.tensor(
+                [self.plan.role_slot_mask(role) for role in role_sequence],
+                dtype=torch.bool,
+                device=device,
+            )  # [rounds, slot_count]
+            if target_plan_ids is not None:
+                allowed = role_mask.unsqueeze(0).expand(batch_size, -1, -1)
+                picked = torch.gather(
+                    allowed, -1, target_plan_ids.unsqueeze(-1)
+                ).squeeze(-1)
+                if not bool(picked.all()):
+                    raise ValueError(
+                        "target_plan_ids contains a slot outside its round's "
+                        "assigned role_sequence range"
+                    )
+
         hidden_states = _masked_mean_pool(context, context_pad_mask)
 
         logits: torch.Tensor | None = None
@@ -132,6 +165,8 @@ class AbstractPlanHead(nn.Module):
             logits = self.proj(hidden_states).view(
                 batch_size, self.plan.rounds, self.plan.slot_count
             )
+            if role_mask is not None:
+                logits = logits.masked_fill(~role_mask.unsqueeze(0), float("-inf"))
             probs = F.softmax(logits, dim=-1)
             entropy = -(probs * torch.log(probs.clamp_min(1e-12))).sum(dim=-1)
 
@@ -140,13 +175,18 @@ class AbstractPlanHead(nn.Module):
         elif mode is AbstractPlanMode.TEACHER_FORCED:
             plan_tokens = target_plan_ids
         elif mode is AbstractPlanMode.RANDOM:
-            plan_tokens = torch.randint(
-                0,
-                self.plan.slot_count,
-                (batch_size, self.plan.rounds),
-                device=device,
-                generator=generator,
-            )
+            if role_mask is not None:
+                plan_tokens = _sample_masked_uniform(
+                    role_mask, batch_size, device, generator
+                )
+            else:
+                plan_tokens = torch.randint(
+                    0,
+                    self.plan.slot_count,
+                    (batch_size, self.plan.rounds),
+                    device=device,
+                    generator=generator,
+                )
         elif mode is AbstractPlanMode.SAMPLED:
             plan_tokens = _sample_categorical(probs, generator)
         else:  # AbstractPlanMode.SHUFFLED
@@ -164,6 +204,9 @@ class AbstractPlanHead(nn.Module):
                 "mode": mode.value,
                 "compatibility_fingerprint": self.plan.compatibility_fingerprint,
                 "used_target_plan_ids": mode in _REQUIRES_TARGET,
+                "role_sequence": list(role_sequence)
+                if role_sequence is not None
+                else None,
             },
         )
 
@@ -175,6 +218,25 @@ def _sample_categorical(
     flat = probs.reshape(-1, slot_count)
     drawn = torch.multinomial(flat, num_samples=1, generator=generator)
     return drawn.view(batch_size, rounds)
+
+
+def _sample_masked_uniform(
+    role_mask: torch.Tensor,
+    batch_size: int,
+    device: torch.device,
+    generator: torch.Generator | None,
+) -> torch.Tensor:
+    """Uniform-random slot index per round, restricted to ``role_mask``'s
+    True entries -- the RANDOM-mode analog of the role-masked softmax path."""
+    rounds, slot_count = role_mask.shape
+    columns = []
+    for r in range(rounds):
+        allowed = torch.nonzero(role_mask[r], as_tuple=True)[0]
+        pick = torch.randint(
+            0, allowed.numel(), (batch_size,), device=device, generator=generator
+        )
+        columns.append(allowed[pick])
+    return torch.stack(columns, dim=1)
 
 
 def _shuffle_rounds(

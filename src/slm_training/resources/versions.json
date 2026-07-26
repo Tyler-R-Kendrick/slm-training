@@ -1998,7 +1998,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v132",
+      "version": "v133",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2007,6 +2007,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v133",
+          "date": "2026-07-26",
+          "note": "AP-025 (SLM-318): role-factorized abstract token families -- RoleSpanV1/AbstractPlanV1.role_spans, optional role_sequence masking on AbstractPlanHead.forward (zero new params, None bit-exact, fail-closed out-of-role targets), role_slot_probe interventions (swap/dropout/truncate) with run_role_probes/causal_effect_matrix, and fixture-only scripts/run_role_slot_probe.py wiring demo"
+        },
         {
           "version": "v132",
           "date": "2026-07-25",
@@ -7817,7 +7822,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v257",
+      "version": "v258",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7856,9 +7861,15 @@
         "scripts/build_speculative_ngram_table.py",
         "tests/test_dsl/test_speculative_rank.py",
         "tests/test_runtime/test_decode_schedule.py",
-        "src/slm_training/resources/decode/speculative_ngram_v1.json"
+        "src/slm_training/resources/decode/speculative_ngram_v1.json",
+        "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v258",
+          "date": "2026-07-26",
+          "note": "AP-025 (SLM-318): AbstractPlanHead.forward gains an optional role_sequence param (zero new parameters -- masks the existing proj's logits/RANDOM-mode sampling to each round's declared RoleSpanV1 range); None is bit-exact identical to pre-AP-025 behavior, and target_plan_ids outside the declared role now fail closed"
+        },
         {
           "version": "v257",
           "date": "2026-07-26",
@@ -9917,13 +9928,21 @@
       ]
     },
     "dsl.abstract_plan": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/abstract_plan.py",
-        "tests/test_dsl/test_abstract_plan.py"
+        "tests/test_dsl/test_abstract_plan.py",
+        "src/slm_training/dsl/role_slot_probe.py",
+        "tests/test_dsl/test_role_slot_probe.py",
+        "scripts/run_role_slot_probe.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "AP-025 (SLM-318): add RoleSpanV1 (ordered, non-overlapping named codebook ranges with an optional per-role max_length budget), AbstractPlanV1.role_spans (mutually exclusive with role_metadata) plus role_for_slot/role_slot_indices/role_slot_token_ids/role_slot_mask helpers, and the new role_slot_probe module (swap_role/dropout_role/truncate_role cross-example interventions, run_role_probes/causal_effect_matrix orchestration) with a fixture-only wiring demo script"
+        },
         {
           "version": "v2",
           "date": "2026-07-25",
