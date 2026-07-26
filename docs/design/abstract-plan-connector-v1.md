@@ -104,6 +104,15 @@ double registration, and the optimizer prefix now reads
   `denoiser_arch="shared_recursive"` with a clear `ValueError` rather than
   silently no-op'ing or crashing with `AttributeError` at generation time.
   Wiring the tree denoiser is follow-on work, not represented as done here.
+- **HF-backed denoising.** `HFDenoiserTower` (`models/hf_denoiser.py`) is a
+  standalone `nn.Module` -- not a `DenoiserTower` subclass -- with its own
+  `project()` and no plan-connector hook at all. `__post_init__` rejects
+  `abstract_plan_connector_arm != "disabled"` combined with
+  `denoiser_backend in {"hf", "huggingface", "transformers"}` the same way.
+  `StackedMatchedStateDenoiserTower` (`models/recursive_denoiser.py`,
+  `denoiser_arch="stacked_matched_state"`) is deliberately *not* rejected:
+  it subclasses `DenoiserTower` without overriding `project()`, so it
+  inherits the hook correctly and needs no guard.
 - **`GrammarDiffusionModel`** (`models/grammar_diffusion.py`) is an
   independent model/decoder with its own `GrammarDenoiser` and its own
   per-phase refinement loop; it is not touched by this change.

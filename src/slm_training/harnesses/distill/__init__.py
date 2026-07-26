@@ -22,6 +22,8 @@ from slm_training.harnesses.distill.trace_store import (
 
 _SELF_DISTILL_COLLECT_NAMES = {
     "CollectionSummary",
+    "GenerateAbstractTrace",
+    "SOURCE_FAMILY",
     "SelfDistillCollectConfig",
     "collect_on_policy_traces",
     "segment_ids_for_capture",
@@ -63,6 +65,8 @@ __all__ = [
     "CollectionSummary",
     "DecodeTraceRecorder",
     "DistillSFTConfig",
+    "GenerateAbstractTrace",
+    "SOURCE_FAMILY",
     "SelectConfig",
     "SelfDistillCollectConfig",
     "TraceStore",

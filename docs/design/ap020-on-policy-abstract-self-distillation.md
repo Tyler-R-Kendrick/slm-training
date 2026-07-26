@@ -33,9 +33,9 @@ verifier accepts it.
   (deterministic sharding: `prompts[shard_index::num_shards]`),
   `reject_forced_end`, `min_abstract_tokens` (configurable acceptance
   filters beyond the verifier's own pass/fail).
-- `CollectionSummary` -- processed/accepted/rejected/duplicate/skipped-resumed
-  counts and a trace-length (abstract token count) histogram, so collection
-  yield and trace-length distribution are always reported.
+- `CollectionSummary` -- processed/accepted/rejected/duplicate/errored/
+  skipped-resumed counts and a trace-length (abstract token count) histogram,
+  so collection yield and trace-length distribution are always reported.
 - `segment_ids_for_capture` / `training_example_from_capture` -- adapters
   from a collected `AbstractTraceCapture` to the `input_ids`/`segment_ids`
   pair AP-019's `CausalLMOpenUIPlugin.forward_with_segments` already expects.
@@ -76,9 +76,19 @@ decode_config_hash)`:
   for a *different* prompt (e.g. mode collapse onto a generic fallback)
   without ever flagging the (already resume-guarded) same-prompt case twice.
 
-Rejected candidates are written with `labels.accepted = False` and a
-`reject_reason` string -- nothing is discarded silently; the "rejected"
-corpus already recognized by `select.py`'s `corpus_label` covers them.
+Every candidate -- accepted, verifier-rejected, duplicate, or errored -- is
+written with `labels.accepted = False` (except accepted ones) and a
+`reject_reason` string; nothing is discarded silently, and the "rejected"
+corpus already recognized by `select.py`'s `corpus_label` covers them. A
+`generate`/verifier exception on one prompt is caught, recorded as a minimal
+error row (`reject_reason` = `"generation_error"`/`"verification_error"`,
+with the exception type/message under `error`), and collection continues
+with the next prompt rather than aborting the whole run. Unlike a duplicate
+or verifier rejection (both settled outcomes), an error row deliberately
+omits `prompt_fingerprint` -- the failure is presumed transient
+infrastructure trouble, not a semantic judgment, so the prompt remains
+eligible for a retry on the next run rather than being resume-skipped
+forever.
 
 ## Acceptance criteria mapping
 
@@ -94,19 +104,23 @@ corpus already recognized by `select.py`'s `corpus_label` covers them.
   `abstract_decode.py` nor `block_attention.py`/`causal_lm_openui.py` is
   modified by this change.
 - "Failed/rejected samples remain auditable." -- every candidate is appended
-  regardless of verdict.
+  regardless of verdict, including duplicates and `generate`/verifier
+  exceptions.
 
 ## Tests
 
 `tests/test_harnesses/distill/test_self_distill_collect.py` covers: accept
 plus auditable-rejection wiring, resume (a second run against the same store
 never re-invokes `generate` for already-collected prompts and appends no
-duplicate rows), cross-prompt answer-duplicate detection, the disabled/no-op
-path, deterministic shard partitioning (disjoint, reproducible, and covers
-every prompt across shards), the configurable acceptance filters
-(`reject_forced_end`, `min_abstract_tokens`), and the
-`training_example_from_capture` / `segment_ids_for_capture` adapters against
-AP-019's `loss_position_mask`.
+duplicate rows), cross-prompt answer-duplicate detection (now asserting the
+duplicate itself is persisted as an auditable row), the disabled/no-op path,
+deterministic shard partitioning (disjoint, reproducible, and covers every
+prompt across shards), the configurable acceptance filters
+(`reject_forced_end`, `min_abstract_tokens`), a `generate`/verifier exception
+being isolated to one prompt (recorded, run continues, and the errored
+prompt -- but not an already-accepted one -- is retried on the next resumed
+run), and the `training_example_from_capture` / `segment_ids_for_capture`
+adapters against AP-019's `loss_position_mask`.
 
 Tests use a hermetic fixture `VerifierCascade` rather than
 `default_openui_cascade()`, because the real G2 schema gate depends on the

@@ -821,6 +821,30 @@ def test_abstract_plan_connector_rejects_shared_recursive_denoiser_arch() -> Non
         )
 
 
+def test_abstract_plan_connector_rejects_hf_denoiser_backend() -> None:
+    """HFDenoiserTower is not a DenoiserTower subclass and has no
+    set_plan_connector/plan-bias hook (SLM-316 review follow-up)."""
+    with pytest.raises(ValueError):
+        TwoTowerConfig(
+            abstract_plan_mode="sampled",
+            abstract_plan_connector_arm="learned",
+            denoiser_backend="hf",
+        )
+
+
+def test_abstract_plan_connector_allows_stacked_matched_state_denoiser_arch() -> None:
+    """StackedMatchedStateDenoiserTower subclasses DenoiserTower without
+    overriding project(), so it inherits the plan-connector hook correctly
+    and must not be rejected the way shared_recursive/hf are."""
+    model = _plan_connector_model(
+        abstract_plan_mode="sampled",
+        abstract_plan_connector_arm="learned",
+        denoiser_arch="stacked_matched_state",
+    )
+    assert model.abstract_plan_connector is not None
+    assert model.denoiser._plan_connector is model.abstract_plan_connector
+
+
 def test_generate_with_plan_connector_raises_when_disabled() -> None:
     model = _plan_connector_model()
     with pytest.raises(ValueError):

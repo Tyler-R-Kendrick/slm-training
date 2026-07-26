@@ -1759,7 +1759,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/__init__.py",
@@ -1786,6 +1786,11 @@
         "docs/design/ap020-on-policy-abstract-self-distillation.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "SLM-309 AP-020 review follow-up (CodeRabbit on PR #976): a duplicate-answer candidate now persists an auditable reject_reason='duplicate_answer' row instead of being silently skipped; generate()/verifier exceptions are isolated per-prompt (recorded as a minimal reject_reason='generation_error'/'verification_error' row with the exception type/message, run continues) rather than aborting the whole collection -- an error row deliberately omits prompt_fingerprint so the prompt stays eligible for retry on the next resumed run, unlike a settled duplicate/rejection; adds CollectionSummary.errored; also fixes the package's lazy re-export set to include SOURCE_FAMILY/GenerateAbstractTrace (declared in self_distill_collect.py's own __all__ but missing from __init__.py's, raising AttributeError on import)"
+        },
         {
           "version": "v6",
           "date": "2026-07-26",
@@ -4412,6 +4417,11 @@
         "docs/design/iter-slm211-untied-output-head-20260721.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-316 AP-024 review fix (CodeRabbit on PR #976) -- DenoiserTower.project's runtime-symbol-features reshape-and-recurse branch (a per-row compiler/LTR score reshaped to a synthetic [1,N,D] batch to reuse this method) was incorrectly picking up the plan-connector bias a second time because the recursive call is 3D; added an internal _apply_plan_bias switch so that recursion never applies the bias, plus a regression test combining runtime_symbol_features with an attached plan connector. Unrelated to output-head tying/untying and behavior-neutral for this component's concern"
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
@@ -7118,7 +7128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v252",
+      "version": "v253",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7160,6 +7170,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v253",
+          "date": "2026-07-26",
+          "note": "SLM-316 AP-024 review follow-up (CodeRabbit on PR #976): TwoTowerConfig.__post_init__ now also rejects abstract_plan_connector_arm != 'disabled' combined with denoiser_backend in {'hf','huggingface','transformers'} -- HFDenoiserTower is a standalone nn.Module with its own project() and no plan-connector hook -- while explicitly allowing denoiser_arch='stacked_matched_state' (StackedMatchedStateDenoiserTower subclasses DenoiserTower without overriding project(), so it inherits the hook correctly); added a regression test (test_project_skips_plan_bias_inside_runtime_symbol_feature_reshape_recursion in tests/test_models/test_abstract_plan_connector.py) proving the plan-connector bias fix in DenoiserTower.project's runtime-symbol-features reshape recursion (see harness.experiments.slm211_untied_output_head, which owns blocks.py)"
+        },
         {
           "version": "v252",
           "date": "2026-07-26",

@@ -183,7 +183,93 @@ def test_duplicate_answer_across_different_prompts_is_flagged(tmp_path: Path) ->
     assert summary.processed == 1
     assert summary.accepted == 1
     assert summary.duplicate == 1
-    assert len(list(store.iter_traces())) == 1
+    rows = list(store.iter_traces())
+    assert len(rows) == 2  # accepted row + an auditable duplicate-rejection row
+    duplicate_rows = [r for r in rows if r["labels"]["reject_reason"] == "duplicate_answer"]
+    assert len(duplicate_rows) == 1
+    assert duplicate_rows[0]["meta"]["prompt"] == "prompt two"
+    assert duplicate_rows[0]["labels"]["accepted"] is False
+
+
+def test_generate_exception_is_isolated_and_auditable_and_retriable(tmp_path: Path) -> None:
+    prompts = ["flaky prompt", "hero card"]
+    generations = {
+        "hero card": _generation(VALID_OPENUI, prompt_tokens=(3, 4)),
+    }
+
+    def _flaky_generate(prompt: str) -> AbstractTracedGeneration:
+        if prompt == "flaky prompt":
+            raise RuntimeError("simulated model inference failure")
+        return generations[prompt]
+
+    store = TraceStore(tmp_path / "store")
+    summary = collect_on_policy_traces(
+        generate=_flaky_generate,
+        policy_checkpoint_sha="policy-a",
+        prompts=prompts,
+        store=store,
+        verifier=_fixture_verifier(),
+    )
+
+    # The flaky prompt doesn't abort collection of the remaining prompt.
+    assert summary.errored == 1
+    assert summary.accepted == 1
+    assert summary.processed == 1
+
+    rows = list(store.iter_traces())
+    error_rows = [r for r in rows if r["labels"]["reject_reason"] == "generation_error"]
+    assert len(error_rows) == 1
+    assert error_rows[0]["meta"]["prompt"] == "flaky prompt"
+    assert error_rows[0]["error"]["type"] == "RuntimeError"
+    # An error row must not carry a prompt_fingerprint: it is presumed
+    # transient and must remain eligible for a retry on the next run.
+    assert "prompt_fingerprint" not in error_rows[0]["meta"]
+
+    # A resumed run retries the errored prompt (not skipped) rather than
+    # regenerating the already-accepted one.
+    calls: list[str] = []
+
+    def _tracking_generate(prompt: str) -> AbstractTracedGeneration:
+        calls.append(prompt)
+        if prompt == "flaky prompt":
+            return _generation(VALID_OPENUI_B, prompt_tokens=(1, 2))
+        raise AssertionError(f"resume must not regenerate {prompt!r}")
+
+    second = collect_on_policy_traces(
+        generate=_tracking_generate,
+        policy_checkpoint_sha="policy-a",
+        prompts=prompts,
+        store=store,
+        verifier=_fixture_verifier(),
+    )
+    assert calls == ["flaky prompt"]
+    assert second.accepted == 1
+    assert second.skipped_resumed == 1
+
+
+def test_verifier_exception_is_isolated_and_auditable(tmp_path: Path) -> None:
+    prompts = ["hero card"]
+    generations = {"hero card": _generation(VALID_OPENUI, prompt_tokens=(1, 2))}
+
+    class _FlakyCascade:
+        def evaluate(self, *, candidate_id: str, source: str):
+            raise RuntimeError("simulated verifier failure")
+
+    store = TraceStore(tmp_path / "store")
+    summary = collect_on_policy_traces(
+        generate=_fixed_generator(generations),
+        policy_checkpoint_sha="policy-a",
+        prompts=prompts,
+        store=store,
+        verifier=_FlakyCascade(),
+    )
+
+    assert summary.errored == 1
+    assert summary.accepted == 0
+    rows = list(store.iter_traces())
+    assert len(rows) == 1
+    assert rows[0]["labels"]["reject_reason"] == "verification_error"
+    assert "prompt_fingerprint" not in rows[0]["meta"]
 
 
 def test_disabled_collector_is_a_pure_no_op(tmp_path: Path) -> None:

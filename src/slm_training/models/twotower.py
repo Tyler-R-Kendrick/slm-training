@@ -752,6 +752,20 @@ class TwoTowerConfig:
                 f"denoiser_arch={self.denoiser_arch!r} (shared-recursive "
                 "tree denoising); use the default 'stacked' denoiser_arch"
             )
+        if self.abstract_plan_connector_arm != "disabled" and str(
+            self.denoiser_backend
+        ).lower() in {"hf", "huggingface", "transformers"}:
+            # HFDenoiserTower is a standalone nn.Module (not a DenoiserTower
+            # subclass): it has its own project() with no plan-bias hook and
+            # no set_plan_connector at all. StackedMatchedStateDenoiserTower
+            # is deliberately not rejected here -- it subclasses DenoiserTower
+            # without overriding project(), so it inherits the hook correctly.
+            raise ValueError(
+                "abstract_plan_connector_arm is not yet supported with "
+                f"denoiser_backend={self.denoiser_backend!r} (HFDenoiserTower "
+                "has no plan-connector hook); use the default 'scratch' "
+                "denoiser_backend"
+            )
         if self.denoiser_arch not in SHARED_RECURSIVE_ARCH_Z_STATE_MODES and any(
             value != default for value, _, default in repair_modes.values()
         ):

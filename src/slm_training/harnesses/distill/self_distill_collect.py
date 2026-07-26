@@ -24,10 +24,15 @@ Collection is:
   generated *answer* text, independent of which prompt produced it) catches
   the same output recurring for a different prompt -- e.g. mode collapse onto
   a generic fallback -- and is never appended twice.
-* **auditable on rejection** -- failed/rejected candidates are still written
-  (with ``labels.accepted = False`` and a ``reject_reason``); nothing is
-  discarded silently, matching :func:`~slm_training.harnesses.distill.select.corpus_label`'s
-  existing "rejected" corpus.
+* **auditable on rejection** -- failed/rejected/duplicate/errored candidates
+  are all still written (with ``labels.accepted = False`` and a
+  ``reject_reason``); nothing is discarded silently, matching
+  :func:`~slm_training.harnesses.distill.select.corpus_label`'s existing
+  "rejected" corpus. A ``generate``/verifier exception on one prompt is
+  recorded and the run continues with the next prompt rather than aborting;
+  unlike a settled duplicate/rejection, an errored prompt's fingerprint is
+  *not* persisted for resume-skip purposes, since the failure is presumed
+  transient (infra, not a semantic judgment) and worth retrying next run.
 
 When ``SelfDistillCollectConfig.enabled`` is ``False`` this is a pure no-op:
 the store is untouched and ``generate`` is never called, so a bottleneck-only
@@ -113,6 +118,7 @@ class CollectionSummary:
     duplicate: int
     accepted: int
     rejected: int
+    errored: int = 0
     trace_length_counts: dict[int, int] = field(default_factory=dict)
 
     @property
@@ -128,6 +134,7 @@ class CollectionSummary:
             "duplicate": self.duplicate,
             "accepted": self.accepted,
             "rejected": self.rejected,
+            "errored": self.errored,
             "trace_length_counts": dict(self.trace_length_counts),
             "yield_rate": self.yield_rate,
         }
@@ -182,6 +189,79 @@ def _existing_fingerprints(store: TraceStore) -> tuple[set[str], set[str]]:
     return prompt_fingerprints, answer_fingerprints
 
 
+def _duplicate_trace(
+    *,
+    prompt: str,
+    prompt_fp: str,
+    answer_fp: str,
+    answer_text: str,
+    policy_checkpoint_sha: str,
+    tokenizer_sha: str,
+    decode_config_hash: str,
+) -> dict[str, Any]:
+    """Minimal auditable row for an answer that duplicates an earlier one.
+
+    Carries both fingerprints (a duplicate is a settled outcome, so its
+    prompt is correctly excluded from a future resume, same as an accepted
+    or verifier-rejected one).
+    """
+    return {
+        "version": TRACE_VERSION,
+        "kind": "decode",
+        "meta": {
+            "source": SOURCE_FAMILY,
+            "prompt": prompt,
+            "prompt_fingerprint": prompt_fp,
+            "answer_fingerprint": answer_fp,
+            "policy_checkpoint_sha": policy_checkpoint_sha,
+            "tokenizer_sha": tokenizer_sha,
+            "decode_config_hash": decode_config_hash,
+        },
+        "final": {"text": answer_text},
+        "labels": {
+            "accepted": False,
+            "exact_gold": False,
+            "reject_reason": "duplicate_answer",
+        },
+    }
+
+
+def _error_trace(
+    *,
+    prompt: str,
+    stage: str,
+    error: Exception,
+    policy_checkpoint_sha: str,
+    tokenizer_sha: str,
+    decode_config_hash: str,
+) -> dict[str, Any]:
+    """Minimal auditable row for a ``generate``/verifier exception.
+
+    Deliberately omits ``prompt_fingerprint``: unlike a duplicate or a
+    verifier rejection, an exception is presumed to be a transient
+    infrastructure failure, not a settled semantic judgment, so it must not
+    exclude this prompt from a future resume.
+    """
+    return {
+        "version": TRACE_VERSION,
+        "kind": "decode",
+        "meta": {
+            "source": SOURCE_FAMILY,
+            "prompt": prompt,
+            "policy_checkpoint_sha": policy_checkpoint_sha,
+            "tokenizer_sha": tokenizer_sha,
+            "decode_config_hash": decode_config_hash,
+        },
+        "final": {"text": ""},
+        "labels": {
+            "accepted": False,
+            "exact_gold": False,
+            "reject_reason": f"{stage}_error",
+        },
+        "error": {"stage": stage, "type": type(error).__name__, "message": str(error)},
+    }
+
+
 def collect_on_policy_traces(
     *,
     generate: GenerateAbstractTrace,
@@ -223,6 +303,7 @@ def collect_on_policy_traces(
     duplicate = 0
     accepted = 0
     rejected = 0
+    errored = 0
     trace_length_counts: dict[int, int] = {}
 
     for index, prompt in enumerate(shard):
@@ -238,7 +319,22 @@ def collect_on_policy_traces(
             skipped_resumed += 1
             continue
 
-        generation = generate(prompt)
+        try:
+            generation = generate(prompt)
+        except Exception as exc:  # noqa: BLE001 - isolate one bad prompt from the whole run
+            errored += 1
+            store.append(
+                _error_trace(
+                    prompt=prompt,
+                    stage="generation",
+                    error=exc,
+                    policy_checkpoint_sha=policy_checkpoint_sha,
+                    tokenizer_sha=tokenizer_sha,
+                    decode_config_hash=decode_config_hash,
+                )
+            )
+            continue
+
         capture = generation.capture
         answer_fp = _answer_fingerprint(
             policy_checkpoint_sha=policy_checkpoint_sha,
@@ -250,11 +346,36 @@ def collect_on_policy_traces(
         seen_prompt_fps.add(prompt_fp)
         if answer_fp in seen_answer_fps:
             duplicate += 1
+            store.append(
+                _duplicate_trace(
+                    prompt=prompt,
+                    prompt_fp=prompt_fp,
+                    answer_fp=answer_fp,
+                    answer_text=generation.text,
+                    policy_checkpoint_sha=policy_checkpoint_sha,
+                    tokenizer_sha=tokenizer_sha,
+                    decode_config_hash=decode_config_hash,
+                )
+            )
             continue
 
-        cascade_result = cascade.evaluate(
-            candidate_id=f"{SOURCE_FAMILY}:{index}", source=generation.text
-        )
+        try:
+            cascade_result = cascade.evaluate(
+                candidate_id=f"{SOURCE_FAMILY}:{index}", source=generation.text
+            )
+        except Exception as exc:  # noqa: BLE001 - isolate one bad prompt from the whole run
+            errored += 1
+            store.append(
+                _error_trace(
+                    prompt=prompt,
+                    stage="verification",
+                    error=exc,
+                    policy_checkpoint_sha=policy_checkpoint_sha,
+                    tokenizer_sha=tokenizer_sha,
+                    decode_config_hash=decode_config_hash,
+                )
+            )
+            continue
         abstract_length = capture.abstract.token_count
         trace_length_counts[abstract_length] = trace_length_counts.get(abstract_length, 0) + 1
 
@@ -320,6 +441,7 @@ def collect_on_policy_traces(
         duplicate=duplicate,
         accepted=accepted,
         rejected=rejected,
+        errored=errored,
         trace_length_counts=trace_length_counts,
     )
 

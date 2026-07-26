@@ -236,3 +236,28 @@ def test_project_skips_plan_bias_for_non_batched_hidden_slices() -> None:
     logits = tower.project(single_row_hidden)
     assert logits.shape == (VOCAB,)
     assert tower.pop_plan_connector_traces() == []
+
+
+def test_project_skips_plan_bias_inside_runtime_symbol_feature_reshape_recursion() -> None:
+    """The runtime-symbol-features reshape-and-recurse path (a batch-size-1
+    per-row compiler/LTR score reshaped to [1, N, D] to reuse this method)
+    must not pick up the plan bias just because the recursive call is 3D.
+    """
+    tower = _tower()
+    tower.set_runtime_symbol_features(torch.randn(1, VOCAB, D_MODEL))
+
+    connector = AbstractPlanConnector(D_MODEL, PLAN_SLOTS, VOCAB)
+    with torch.no_grad():
+        connector.gate.fill_(5.0)
+    tower.set_plan_connector(connector, arm="learned")
+    tower.set_plan_vector(torch.randn(1, D_MODEL))
+
+    single_row_hidden = torch.randn(D_MODEL)
+    logits = tower.project(single_row_hidden)
+    assert logits.shape == (VOCAB,)
+    assert tower.pop_plan_connector_traces() == []
+
+    multi_row_hidden = torch.randn(3, D_MODEL)
+    logits = tower.project(multi_row_hidden)
+    assert logits.shape == (3, VOCAB)
+    assert tower.pop_plan_connector_traces() == []

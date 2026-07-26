@@ -340,8 +340,18 @@ class DenoiserTower(nn.Module):
         self,
         hidden: torch.Tensor,
         candidate_ids: torch.Tensor | None = None,
+        *,
+        _apply_plan_bias: bool = True,
     ) -> torch.Tensor:
-        """Project hidden states to the full vocabulary or gathered candidates."""
+        """Project hidden states to the full vocabulary or gathered candidates.
+
+        ``_apply_plan_bias`` is an internal switch: the reshape-and-recurse
+        branch below turns a per-row compiler/tree-scorer slice into a
+        synthetic ``[1, N, D]`` batch so it can reuse this same method, but
+        that recursive call is still a per-row score, not a genuine batched
+        MaskGIT/tree round -- so it must not pick up the AP-024 plan bias a
+        second time (or at all) via the batch-shape check alone.
+        """
         if self._runtime_symbol_features is not None and hidden.dim() != 3:
             # Compiler/tree scorers project [D] or [N,D] slices. Feature rows
             # are per-request, so this is only well-defined when exactly one
@@ -352,14 +362,16 @@ class DenoiserTower(nn.Module):
                     "when more than one request is active"
                 )
             flat = hidden.reshape(1, -1, hidden.size(-1))
-            out = self.project(flat, candidate_ids)
+            out = self.project(flat, candidate_ids, _apply_plan_bias=False)
             return out.reshape(*hidden.shape[:-1], out.size(-1))
         features = self._features_for_batch(hidden.size(0))
         if candidate_ids is None:
             logits = self.lm_head(hidden)
             if features is not None:
                 logits = logits + torch.einsum("btd,bvd->btv", hidden, features)
-            return self._apply_plan_connector_bias(logits, candidate_ids=None)
+            if _apply_plan_bias:
+                return self._apply_plan_connector_bias(logits, candidate_ids=None)
+            return logits
         raw_weight = self.lm_head.weight
         weight = raw_weight() if callable(raw_weight) else raw_weight
         if weight.is_quantized:
@@ -369,7 +381,9 @@ class DenoiserTower(nn.Module):
         if features is not None:
             selected = features.index_select(1, candidate_ids)
             logits = logits + torch.einsum("btd,bkd->btk", hidden, selected)
-        return self._apply_plan_connector_bias(logits, candidate_ids=candidate_ids)
+        if _apply_plan_bias:
+            return self._apply_plan_connector_bias(logits, candidate_ids=candidate_ids)
+        return logits
 
     def _apply_plan_connector_bias(
         self, logits: torch.Tensor, *, candidate_ids: torch.Tensor | None
