@@ -9416,6 +9416,26 @@
         }
       ]
     },
+    "harness.experiments.cap2_selective_hybrid_latent": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/selective_latent_connector.py",
+        "src/slm_training/harnesses/experiments/cap2_selective_hybrid_latent.py",
+        "scripts/run_cap2_selective_hybrid_latent.py",
+        "tests/test_models/test_selective_latent_connector.py",
+        "tests/test_harnesses/experiments/test_cap2_08_selective_hybrid_latent.py",
+        "docs/design/selective-hybrid-latent-objective.md",
+        "docs/design/selective-hybrid-latent-objective-20260726.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial registration: CAP2-08 selective-hybrid continuous/discrete program-factor latent audit (SLM-333/AP-033) -- SelectiveLatentConnector (AbstractPlanConnector's gated-additive idiom applied to a continuous soft-factor vector, structurally drop-in-compatible with DenoiserTower.set_plan_connector), the soft/precision-critical factor routing split, and the six-arm (discrete_only/continuous_only/selective_hybrid/all_continuous/random_continuous/oracle_continuous) fixture-scale audit reusing AP-029/030/031's tensorizer, fixture corpus, DISTORTION_THRESHOLD, and SLM-183 paired-CI stats unchanged"
+        }
+      ]
+    },
     "evals.cap2_operator_policy_rebase": {
       "version": "v1",
       "kind": "gate",
