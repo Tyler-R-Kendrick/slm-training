@@ -399,6 +399,11 @@
         {
           "version": "v15",
           "date": "2026-07-26",
+          "note": "no-bump: SLM-418 (DSH5-10) re-exports OperatorEventMemoryReportV1/OperatorReplayPreferenceRowV1/ReplayPreferenceRelation/extract_replay_preference_rows from operators/__init__.py (new dsl.operators.replay_preference component); no change to contracts.py itself"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-26",
           "note": "no-bump: SLM-415 (DSH5-07) re-exports BranchApplicationSequenceV1/BranchSequenceMergeArtifactV1/BranchSequenceMergeConflictV1/BranchSequenceMergeDecisionV1/merge_branch_application_sequences/replay_branch_sequence_merge/sequence_from_branch_edits/sequence_merged_continuation_node from operators/__init__.py (new dsl.operators.sequence_merge component); no change to contracts.py itself"
         },
         {
@@ -880,6 +885,21 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial semantic-gated lexicographic AST and operator-sequence preference contract with simplify/expand direction and explicit defect policy"
+        }
+      ]
+    },
+    "dsl.operators.replay_preference": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/replay_preference.py",
+        "tests/test_dsl/test_replay_preference.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-418 (DSH5-10) first slice: replay-grounded preference rows for edit-then-undo and undo-then-redo, checked against the exact legal set at the shared input state; partial (2 of ~7 verified patterns), no SFT/preference training or held-out measurement"
         }
       ]
     },
