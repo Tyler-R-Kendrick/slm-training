@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "eval_file": "output-dir:///agentv/dsh3-15-hierarchical-operator-head-baseline.eval.jsonl",
+    "timestamp": "2026-07-25T13:48:08.320Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "capacity-control",
+      "causal-choice-audit",
+      "compiler-membership",
+      "honest-stop-rule",
+      "matched-architecture",
+      "retention-boundary"
+    ],
+    "experiment": "dsh3-15-hierarchical-operator-head-baseline"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "matched-architecture:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler-membership:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "causal-choice-audit:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "capacity-control:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "honest-stop-rule:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "retention-boundary:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": []
+}

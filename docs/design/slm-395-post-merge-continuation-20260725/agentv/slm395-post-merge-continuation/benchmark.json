@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "eval_file": "output-dir:///agentv/slm395-post-merge-continuation.eval.jsonl",
+    "timestamp": "2026-07-26T00:35:24.967Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "followup-trace-replay-and-legacy-terminal",
+      "fresh-canonical-table",
+      "old-table-refusal-and-permutation"
+    ],
+    "experiment": "slm395-post-merge-continuation"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "fresh-canonical-table:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "old-table-refusal-and-permutation:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "followup-trace-replay-and-legacy-terminal:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5e182534ea577d247eaf13434351bd08e1d80ed4",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.merge": "v3",
+      "evals.agentv": "v5"
+    },
+    "stamped_at": "2026-07-26T00:35:23.776941+00:00"
+  }
+}

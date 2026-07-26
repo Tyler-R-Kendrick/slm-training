@@ -1,0 +1,52 @@
+{
+  "assertions": [
+    {
+      "text": "stop_rule_negative",
+      "passed": true,
+      "evidence": "actual=True operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "stop_rule_negative",
+      "type": "code-grader",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "stop_rule_negative",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "stop_rule_negative",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2a814f089866a5bde2297ae889751cee1757c83c",
+    "code_dirty": true,
+    "components": {
+      "model.operator_permutation_consistency": "v1"
+    },
+    "stamped_at": "2026-07-26T10:10:53.009929+00:00"
+  }
+}

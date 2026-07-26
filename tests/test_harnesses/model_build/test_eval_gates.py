@@ -186,7 +186,8 @@ def test_evaluate_applies_offset_before_limit(
         ExampleRecord(
             id=f"s{index}",
             prompt=f"Prompt {index}",
-            openui='root = TextContent(":value")',
+            openui='root = TextContent(":slot_0")',
+            placeholders=[":slot_0"],
             split="smoke",
             meta={"suite": "smoke"},
         )
@@ -218,7 +219,7 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
     test_dir = tmp_path / "eval"
     suite_dir = test_dir / "suites" / "smoke"
     suite_dir.mkdir(parents=True)
-    gold = 'root = TextContent(":value")'
+    gold = 'root = TextContent(":slot_0")'
     write_jsonl(
         suite_dir / "records.jsonl",
         [
@@ -226,7 +227,7 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
                 id="audit",
                 prompt="Value",
                 openui=gold,
-                placeholders=[":value"],
+                placeholders=[":slot_0"],
                 split="smoke",
                 meta={"semantic_factor": "content"},
             )
@@ -666,12 +667,18 @@ def test_evaluate_suites_scoreboard(
     (test_dir / "suites" / "smoke").mkdir(parents=True)
     hero = (
         'root = Stack([hero], "column")\n'
-        'hero_title = TextContent(":hero.title")\n'
-        'hero_body = TextContent(":hero.body")\n'
+        'hero_title = TextContent(":slot_0")\n'
+        'hero_body = TextContent(":slot_1")\n'
         "hero = Card([hero_title, hero_body])"
     )
     records = [
-        ExampleRecord(id="a", prompt="Hero", openui=hero, split="train"),
+        ExampleRecord(
+            id="a",
+            prompt="Hero",
+            openui=hero,
+            placeholders=[":slot_0", ":slot_1"],
+            split="train",
+        ),
     ]
     write_jsonl(train_dir / "records.jsonl", records)
     write_jsonl(
@@ -681,6 +688,7 @@ def test_evaluate_suites_scoreboard(
                 id="s1",
                 prompt="Hero",
                 openui=hero,
+                placeholders=[":slot_0", ":slot_1"],
                 split="smoke",
                 meta={"suite": "smoke"},
             )
@@ -774,11 +782,12 @@ def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = TextContent(":copy.value")'
+    gold = 'root = TextContent(":slot_0")'
     record = ExampleRecord(
         id="stats-1",
         prompt="Copy value",
         openui=gold,
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -811,7 +820,8 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     record = ExampleRecord(
         id="timeout-1",
         prompt="Copy value",
-        openui='root = TextContent(":copy.value")',
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -843,12 +853,12 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
+    gold = 'root = Stack([cta])\ncta = Button(":slot_0")'
     record = ExampleRecord(
         id="s1",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -865,10 +875,11 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
             assert len(requests) == 1
             request = requests[0]
             assert request.prompt == "CTA"
-            assert request.slot_contract == (":prod.cta",)
+            assert request.slot_contract == (":slot_0",)
             assert len(request.runtime_symbols) == 1
-            assert request.runtime_symbols[0].surface == ":prod.cta"
-            assert request.runtime_symbols[0].semantic_role == "cta"
+            assert request.runtime_symbols[0].surface == ":slot_0"
+            # Opaque markers: no semantic metadata derived from surface text.
+            assert request.runtime_symbols[0].semantic_role is None
             assert not hasattr(request, "openui")
             return [gold]
 
@@ -901,12 +912,12 @@ def test_evaluate_passes_reported_canvas_cap_to_request_generation(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Button(":prod.cta")'
+    gold = 'root = Button(":slot_0")'
     record = ExampleRecord(
         id="canvas-cap",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -945,12 +956,12 @@ def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Button(":prod.cta")'
+    gold = 'root = Button(":slot_0")'
     record = ExampleRecord(
         id="request-stats",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -961,7 +972,7 @@ def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
         def generate_batch_requests(
             self, requests: list[GenerationRequest]
         ) -> list[str]:
-            assert requests[0].slot_contract == (":prod.cta",)
+            assert requests[0].slot_contract == (":slot_0",)
             return [gold]
 
         def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
@@ -987,12 +998,12 @@ def test_topology_composite_keeps_quality_structure_trace_and_efficiency(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
+    gold = 'root = Stack([cta])\ncta = Button(":slot_0")'
     record = ExampleRecord(
         id="s1",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
