@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -48,7 +49,19 @@ def tok() -> DSLNativeTokenizer:
 
 def test_vocab_is_fixed_and_typed(tok: DSLNativeTokenizer) -> None:
     # Fixed corpus-independent vocabulary incl. 64 reserved <MACRO_i> rows (C3).
-    assert tok.vocab_size <= 512
+    # Assert against the checked-in layout registry rather than a hand-written
+    # cap: a magic number goes stale silently. This one did — main #920 folded
+    # STRUCTURAL_ID_ATOMS into the fixed literal set (505 -> 569) and left
+    # `<= 512` behind, red on main but never selected by the changed-tests
+    # runner. tests/test_dsl/test_tokenizer_grammar_invariants.py pins the
+    # exact version, size, and layout SHA.
+    registry = json.loads(
+        (
+            Path(__file__).resolve().parents[3]
+            / "src/slm_training/resources/tokenizer_layout_registry.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert tok.vocab_size == registry["codecs"]["dsl_native"]["vocab_size"]
     assert tok.kind_of(tok.token_to_id["Stack"]) == TokenKind.COMPONENT
     assert tok.kind_of(tok.token_to_id["="]) == TokenKind.STRUCT
     assert tok.kind_of(tok.sym_id(0)) == TokenKind.SYM
