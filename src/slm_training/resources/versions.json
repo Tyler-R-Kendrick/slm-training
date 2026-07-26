@@ -1912,7 +1912,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v118",
+      "version": "v119",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -1921,6 +1921,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v119",
+          "date": "2026-07-25",
+          "note": "register SLM-253 LOT2-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1-02 launch gate"
+        },
         {
           "version": "v118",
           "date": "2026-07-25",
@@ -1980,6 +1985,11 @@
           "version": "v109",
           "date": "2026-07-25",
           "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
+        },
+        {
+          "version": "v112",
+          "date": "2026-07-25",
+          "note": "register SLM-253 LOT2-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1-02 launch gate"
         },
         {
           "version": "v111",
@@ -9796,17 +9806,29 @@
       ]
     },
     "harness.experiments.lot_downstream_gate": {
-      "version": "v1",
+      "version": "v2",
       "kind": "gate",
       "paths": [
-        "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
-        "scripts/evaluate_lot_downstream_gate.py",
-        "tests/test_harnesses/experiments/test_lot_downstream_gate.py",
-        "tests/test_scripts/test_evaluate_lot_downstream_gate.py",
         "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json",
-        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.md"
+        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.md",
+        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.json",
+        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.md",
+        "scripts/evaluate_lot_downstream_gate.py",
+        "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
+        "tests/test_harnesses/experiments/test_lot_downstream_gate.py",
+        "tests/test_scripts/test_evaluate_lot_downstream_gate.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "add SLM-253 LOT2-02 registry entry + not_authorized iter docs (structured-latent-readout-gate-v1)"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "add SLM-253 LOT2-02 registry entry + not_authorized iter docs (structured-latent-readout-gate-v1)"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

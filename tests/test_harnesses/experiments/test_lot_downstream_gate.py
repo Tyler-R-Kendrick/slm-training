@@ -97,3 +97,14 @@ def test_render_markdown_covers_chain() -> None:
     assert "SLM-252" in markdown
     assert "not_authorized" in markdown
     assert "LOT1-02" in markdown
+
+
+def test_slm253_real_contracts_are_not_authorized() -> None:
+    """LOT2-02 additionally requires LOT2-01's selected routing; with the
+    LOT1 chain unmet there is no faithful checkpoint or routing contract.
+    """
+    fidelity, trace = _real_contracts()
+    contract = evaluate_downstream_gate(DOWNSTREAM_ISSUES["SLM-253"], fidelity, trace)
+
+    assert contract.verdict == NOT_AUTHORIZED
+    assert contract.contract_id == "structured-latent-readout-gate-v1"

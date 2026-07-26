@@ -37,3 +37,12 @@ def test_run_against_explicit_contract_paths(tmp_path: Path) -> None:
     markdown = (out / "lot2_01_supervision_routing_gate.md").read_text()
     assert "SLM-252" in markdown
     assert "not_authorized" in markdown
+
+
+def test_slm253_run_reports_not_authorized(tmp_path: Path) -> None:
+    out = tmp_path / "gate253"
+    rc = evaluate_lot_downstream_gate.main(["--issue", "SLM-253", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "lot2_02_structured_readout_gate.json").read_text())
+    assert data["verdict"] == "not_authorized"
+    assert data["issue"]["alias"] == "LOT2-02"
