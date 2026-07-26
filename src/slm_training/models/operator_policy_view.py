@@ -41,6 +41,7 @@ __all__ = [
     "OperatorPolicyViewError",
     "ReferenceModelViewV1",
     "build_operator_policy_input",
+    "operator_policy_input_from_dict",
     "validate_no_forbidden_fields",
 ]
 
@@ -279,14 +280,13 @@ class OperatorPolicyInputV1:
                     raise ValueError("candidate_rows must join existing reference rows")
         validate_no_forbidden_fields(self.to_dict())
 
-    def to_dict(self) -> dict[str, Any]:
-        """Canonicalize row order by allowlisted content, then remap joins.
+    def canonical_row_maps(self) -> tuple[dict[int, int], dict[int, int]]:
+        """Map live row indices onto the persisted canonical row order.
 
-        Two views built from opaque-ID/order permutations of the same
-        underlying reference table serialize identically: rows are ordered by
-        their own allowed content only (never by build-time row number), and
-        every ``parent_row`` / ``candidate_rows`` join is remapped to the new
-        canonical numbering so cross-references stay internally consistent.
+        Policy labels are evaluator-only, but they still join the sanitized
+        input by row index.  Callers persisting a view together with labels
+        must use these maps; otherwise a legal-set permutation can make a
+        correct live label point at a different canonical candidate.
         """
 
         def reference_key(index: int) -> tuple[Any, ...]:
@@ -300,27 +300,54 @@ class OperatorPolicyInputV1:
                 view.relative_position or 0,
             )
 
-        canonical_order = sorted(range(len(self.reference_rows)), key=reference_key)
-        new_row_of_old = {old: new for new, old in enumerate(canonical_order)}
+        canonical_references = sorted(
+            range(len(self.reference_rows)), key=reference_key
+        )
+        reference_map = {
+            old_row: new_row
+            for new_row, old_row in enumerate(canonical_references)
+        }
+
+        def action_key(index: int) -> tuple[Any, ...]:
+            action = self.action_rows[index]
+            return (action.operator_id, action.operator_version, action.verdict.value)
+
+        canonical_actions = sorted(range(len(self.action_rows)), key=action_key)
+        action_map = {
+            old_row: new_row for new_row, old_row in enumerate(canonical_actions)
+        }
+        return reference_map, action_map
+
+    def to_dict(self) -> dict[str, Any]:
+        """Canonicalize row order by allowlisted content, then remap joins.
+
+        Two views built from opaque-ID/order permutations of the same
+        underlying reference table serialize identically: rows are ordered by
+        their own allowed content only (never by build-time row number), and
+        every ``parent_row`` / ``candidate_rows`` join is remapped to the new
+        canonical numbering so cross-references stay internally consistent.
+        """
+
+        reference_map, action_map = self.canonical_row_maps()
+        canonical_order = sorted(reference_map, key=reference_map.__getitem__)
 
         reference_payloads = []
         for new_row, old_row in enumerate(canonical_order):
             payload = self.reference_rows[old_row].to_dict()
             payload["row"] = new_row
             if payload["parent_row"] is not None:
-                payload["parent_row"] = new_row_of_old[payload["parent_row"]]
+                payload["parent_row"] = reference_map[payload["parent_row"]]
             reference_payloads.append(payload)
 
-        def action_key(action: OperatorActionViewV1) -> tuple[Any, ...]:
-            return (action.operator_id, action.operator_version, action.verdict.value)
-
         action_payloads = []
-        for new_row, action in enumerate(sorted(self.action_rows, key=action_key)):
+        for old_row in sorted(action_map, key=action_map.__getitem__):
+            new_row = action_map[old_row]
+            action = self.action_rows[old_row]
             payload = action.to_dict()
             payload["row"] = new_row
             for slot_payload in payload["argument_slots"]:
                 slot_payload["candidate_rows"] = sorted(
-                    new_row_of_old[old_row] for old_row in slot_payload["candidate_rows"]
+                    reference_map[old_row] for old_row in slot_payload["candidate_rows"]
                 )
             action_payloads.append(payload)
 
@@ -331,6 +358,76 @@ class OperatorPolicyInputV1:
             "ordinary_action_count": self.ordinary_action_count,
             "coverage": self.coverage.value,
         }
+
+
+def operator_policy_input_from_dict(value: Mapping[str, Any]) -> OperatorPolicyInputV1:
+    """Rehydrate one persisted canonical policy view without widening its input.
+
+    Corpus labels live beside this payload, so a trainer must consume the exact
+    canonical rows that the corpus validated rather than rebuilding a new view
+    from runtime objects (which could reorder the legal set).
+    """
+    if value.get("schema") != "operator_policy_input/v1":
+        raise OperatorPolicyViewError("policy_view.schema_unsupported")
+    validate_no_forbidden_fields(value)
+    try:
+        references = tuple(
+            ReferenceModelViewV1(
+                row=int(row["row"]),
+                ref_kind=RefKind(row["ref_kind"]),
+                value_type=str(row["value_type"]),
+                compiler_facts=tuple(
+                    CompilerFact(fact) for fact in row["compiler_facts"]
+                ),
+                has_parent=bool(row["has_parent"]),
+                parent_row=(
+                    None if row["parent_row"] is None else int(row["parent_row"])
+                ),
+                relative_position=(
+                    None
+                    if row["relative_position"] is None
+                    else int(row["relative_position"])
+                ),
+            )
+            for row in value["reference_rows"]
+        )
+        actions = tuple(
+            OperatorActionViewV1(
+                row=int(action["row"]),
+                operator_id=str(action["operator_id"]),
+                operator_version=str(action["operator_version"]),
+                locality=str(action["locality"]),
+                cost=float(action["cost"]),
+                effect_signature=tuple(
+                    EffectDeltaKind(kind) for kind in action["effect_signature"]
+                ),
+                argument_slots=tuple(
+                    OperatorArgumentSlotViewV1(
+                        slot_id=str(slot["slot_id"]),
+                        ref_kind=RefKind(slot["ref_kind"]),
+                        binding_phase=BindingPhase(slot["binding_phase"]),
+                        required=bool(slot["required"]),
+                        repeated=bool(slot["repeated"]),
+                        candidate_rows=tuple(
+                            int(row) for row in slot["candidate_rows"]
+                        ),
+                        domain_complete=bool(slot["domain_complete"]),
+                    )
+                    for slot in action["argument_slots"]
+                ),
+                verdict=OperatorSupportVerdict(action["verdict"]),
+                coverage=LegalSetCoverage(action["coverage"]),
+            )
+            for action in value["action_rows"]
+        )
+        return OperatorPolicyInputV1(
+            reference_rows=references,
+            action_rows=actions,
+            ordinary_action_count=int(value["ordinary_action_count"]),
+            coverage=LegalSetCoverage(value["coverage"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise OperatorPolicyViewError("policy_view.invalid_payload") from exc
 
 
 def _reference_view(

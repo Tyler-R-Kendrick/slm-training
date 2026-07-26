@@ -186,7 +186,7 @@
       ]
     },
     "data.flow.operator_policy_corpus": {
-      "version": "v2",
+      "version": "v4",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/flow/operator_policy_corpus.py",
@@ -194,6 +194,16 @@
         "docs/design/dsh3-24-operator-policy-corpus.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "SLM-403: apply the caller's bounded legal-combination cap during policy and termination row reprojection instead of expanding the unbounded default"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-403: remap accepted and hard-negative action/reference labels onto the persisted canonical OperatorPolicyInputV1 row order"
+        },
         {
           "version": "v2",
           "date": "2026-07-26",
@@ -6373,7 +6383,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -6386,6 +6396,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-26",
+          "note": "SLM-403: expose each replay-verified collapsed trace to the canonical typed-policy experiment callback without changing generated corpus artifacts"
+        },
         {
           "version": "v20",
           "date": "2026-07-25",
@@ -6868,7 +6883,7 @@
       ]
     },
     "model.operator_policy_view": {
-      "version": "v1",
+      "version": "v3",
       "kind": "model",
       "paths": [
         "src/slm_training/models/operator_policy_view.py",
@@ -6877,9 +6892,46 @@
       ],
       "history": [
         {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-403: rehydrate persisted canonical OperatorPolicyInputV1 payloads for label-aligned typed-policy training without rebuilding runtime order"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-403: expose canonical live-to-persisted row maps so evaluator-only labels retain their action/reference joins"
+        },
+        {
           "version": "v1",
           "date": "2026-07-25",
           "note": "SLM-397 (DSH3-22): freeze the sanitized OperatorPolicyInputV1 model boundary over ReferenceTableV1/OperatorLegalSetV1, with recursive forbidden-field validation and row-local joins only"
+        }
+      ]
+    },
+    "harness.experiments.typed_operator_policy": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_dsh3_28_typed_operator_policy.py",
+        "src/slm_training/harnesses/experiments/typed_operator_policy.py",
+        "tests/test_harnesses/experiments/test_typed_operator_policy.py",
+        "docs/design/dsh3-28-typed-operator-policy.md"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-403: keep durable local matrix evidence summary-only and retain raw corpus artifacts in ignored local scratch"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-403: add the bounded local matrix runner and explicit no-COMPLETE-supervision stop-rule evidence"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-403 (DSH3-28): default-off typed action and argument scorer over persisted sanitized policy rows, with COMPLETE singleton bypass and PARTIAL defer-only routing"
         }
       ]
     },
