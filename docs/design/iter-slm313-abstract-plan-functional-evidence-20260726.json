@@ -15,9 +15,9 @@
       "results": [
         {
           "actual": true,
-          "criterion_id": "no_proxy_promotion",
+          "criterion_id": "complete_matrix_is_not_ship",
           "expected": true,
-          "id": "no_proxy_promotion",
+          "id": "complete_matrix_is_not_ship",
           "operator": "eq",
           "pass": true
         }
@@ -33,7 +33,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/slm313-abstract-plan-functional-evidence.eval.jsonl",
     "summary": {
-      "durationMs": 144,
+      "durationMs": 173,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -41,9 +41,19 @@
       "total": 1
     }
   },
-  "campaign_manifest_sha256": "59d39aec502f879ce8d87192e3cf4be49396666040cd52873bf6901e8ea912c0",
+  "campaign_manifest_sha256": "53227064c59b062b4a60136fb93640c7ef53380378e989ca7bd5efb10d8dd7a5",
   "claim_class": "diagnostic",
-  "generated_at": "2026-07-26T05:06:03.881060+00:00",
+  "execution_attempts": [
+    {
+      "generated_at": "2026-07-26T06:34:28.351038+00:00",
+      "numeric_evidence_valid": false,
+      "reason": "Locked matrix did not merge: ValueError: incomplete locked shard coverage: missing 225 shard(s)",
+      "shard_count": 226,
+      "shard_index": null,
+      "verdict": "invalid_local_run"
+    }
+  ],
+  "generated_at": "2026-07-26T06:34:28.351038+00:00",
   "protocol": {
     "arms": [
       "no_plan",
@@ -296,27 +306,28 @@
     "seed": 313
   },
   "recipe": {
-    "backend": "not_run",
-    "checkpoint": null,
-    "device": "not_run",
+    "backend": "scratch",
+    "device": "cpu",
     "human_rating_gate": "not_required",
-    "locked_test_used_for_selection": false
+    "locked_test_used_for_selection": false,
+    "shard_count": 226
   },
   "result": {
     "meaningful_parse": "not_measured",
+    "numeric_evidence_valid": false,
     "promotion_eligible": false,
-    "reason": "No trained learned-plan checkpoint was supplied; AP-023's side-channel head and AP-024's zero-gate connector are not evidence of learned plan function.",
-    "verdict": "unavailable"
+    "reason": "Locked matrix did not merge: ValueError: incomplete locked shard coverage: missing 225 shard(s)",
+    "verdict": "invalid_local_run"
   },
   "schema": "slm313_abstract_plan_functional_evidence/v1",
   "version_stamp": {
-    "code_commit": "35e53d3cce2f54ccfa71c3bd7ab8d68f36eb0e90",
+    "code_commit": "2ae600bb1762d46fe628354065d692e5479b320c",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v115",
-      "harness.experiments.slm313_abstract_plan_functional_evidence": "v1"
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v6"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-26T05:06:03.881037+00:00"
+    "stamped_at": "2026-07-26T06:34:28.310234+00:00"
   }
 }

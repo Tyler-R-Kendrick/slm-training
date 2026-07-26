@@ -1,7 +1,7 @@
 {
   "assertions": [
     {
-      "text": "no_proxy_promotion",
+      "text": "complete_matrix_is_not_ship",
       "passed": true,
       "evidence": "actual=True operator=eq expected=True"
     }
@@ -19,7 +19,7 @@
   },
   "graders": [
     {
-      "name": "no_proxy_promotion",
+      "name": "complete_matrix_is_not_ship",
       "type": "code-grader",
       "score": 1,
       "reasoning": "",
@@ -27,13 +27,13 @@
       "verdict": "pass",
       "assertions": [
         {
-          "text": "no_proxy_promotion",
+          "text": "complete_matrix_is_not_ship",
           "passed": true,
           "evidence": "actual=True operator=eq expected=True"
         }
       ],
       "details": {
-        "criterion_id": "no_proxy_promotion",
+        "criterion_id": "complete_matrix_is_not_ship",
         "actual": true,
         "operator": "eq",
         "expected": true

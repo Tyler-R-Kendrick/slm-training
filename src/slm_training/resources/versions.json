@@ -4595,6 +4595,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-313's scratch checkpoint roster and README summary are unrelated to the SLM-228 spectral disposition."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-25",
           "note": "no-bump: README change is the agent-hook coverage table and parity audit link only; no metric, gate, or experiment behavior touched"
         },
@@ -8999,17 +9004,48 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v2",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
         "scripts/run_abstract_plan_functional_evidence.py",
         "tests/test_harnesses/experiments/test_abstract_plan_functional_evidence.py",
+        "tests/test_scripts/test_run_abstract_plan_functional_evidence.py",
         "docs/design/abstract-plan-functional-evidence.md",
         "docs/design/iter-slm313-abstract-plan-functional-evidence-20260726.json",
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "SLM-313 reuses only the existing compatible pre-outcome campaign envelope while the immutable experiment lock remains the full-content authority."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "SLM-313 now preserves compact execution history and fail-closes final disposition unless every deterministic local shard has matching protocol, coverage, and checkpoint identity."
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-313 derives plan-length/binder/reference outcome strata from locked program structure instead of assuming a fixed plan-head round count."
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-313 projects legacy locked placeholders to canonical request-local opaque slots before shared evaluation, preserving frozen rows without restoring name authority."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "SLM-313 raw-path diagnostics now use constrained raw-logit shadow emission, preserving the repository's fail-closed OpenUI decode invariant."
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-313 records capped local training outcomes and executes fixed-point-free plan interventions through the shared evaluator; incomplete or timed-out shards remain non-evidence."
+        },
         {
           "version": "v2",
           "date": "2026-07-26",

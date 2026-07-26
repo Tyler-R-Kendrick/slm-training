@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "abstract_plan_preflight_not_ship", "result": {"meaningful_parse": "not_measured", "numeric_evidence_valid": false, "promotion_eligible": false, "reason": "Locked matrix did not merge: ValueError: incomplete locked shard coverage: missing 225 shard(s)", "verdict": "invalid_local_run"}}
