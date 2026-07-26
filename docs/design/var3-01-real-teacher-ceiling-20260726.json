@@ -1,0 +1,873 @@
+{
+  "caveats": [
+    "SLM-387 (DSH4-02): synthetic stand-in teacher only -- no real external LLM teacher is called or scored. A production KD-readiness claim requires swapping a real teacher behind OperatorTeacherAdapter and re-running this exact harness.",
+    "claim_class=wiring; this report is fixture/wiring evidence, never a ship or KD-readiness claim.",
+    "LegalOperatorActionV1 does not carry full ActionEffectV1 for unapplied candidates (only proof/effect digests); descriptor features are bounded by that same DSH3-06 visibility."
+  ],
+  "fixture": "var3-01-real-teacher-ceiling",
+  "gold_weights": [
+    0.1,
+    0.15,
+    0.5,
+    0.15,
+    0.1
+  ],
+  "metrics_by_family": {
+    "gold_large": {
+      "baseline:compiler_order": {
+        "accepted_set_mass": {
+          "mean": null,
+          "n": 0
+        },
+        "calibration_ece": {
+          "mean": null,
+          "n": 0
+        },
+        "mrr": {
+          "mean": 0.41333333333333333,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.4769765845238192,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": null,
+          "n": 0
+        },
+        "top_3_recall": {
+          "mean": 0.8,
+          "n": 15
+        }
+      },
+      "baseline:current_scorer": {
+        "accepted_set_mass": {
+          "mean": 0.21502376406225834,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.024928310223974008,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 0.59,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.5841239671428611,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 0.5487897287897288,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 0.7333333333333333,
+          "n": 15
+        }
+      },
+      "baseline:descriptor_similarity": {
+        "accepted_set_mass": {
+          "mean": 0.2,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.0,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 0.29555555555555557,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.21745730047619433,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 1.0,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 0.4,
+          "n": 15
+        }
+      },
+      "baseline:frequency": {
+        "accepted_set_mass": {
+          "mean": 0.2380952380952381,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.011428571428571444,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 0.5633333333333332,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.48412396714286104,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 0.4525215525215526,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 0.5333333333333333,
+          "n": 15
+        }
+      },
+      "oracle:accepted_set": {
+        "accepted_set_mass": {
+          "mean": 1.0,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.0,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 1.0,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 1.0,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 0.0,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 1.0,
+          "n": 15
+        }
+      },
+      "teacher:prompted_v1": {
+        "accepted_set_mass": {
+          "mean": null,
+          "n": 0
+        },
+        "calibration_ece": {
+          "mean": null,
+          "n": 0
+        },
+        "mrr": {
+          "mean": 0.41333333333333333,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.4769765845238192,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": null,
+          "n": 0
+        },
+        "top_3_recall": {
+          "mean": 0.8,
+          "n": 15
+        }
+      }
+    },
+    "on_policy_large": {
+      "baseline:compiler_order": {
+        "accepted_set_mass": {
+          "mean": null,
+          "n": 0
+        },
+        "calibration_ece": {
+          "mean": null,
+          "n": 0
+        },
+        "mrr": {
+          "mean": 0.44,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.5015812676190553,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": null,
+          "n": 0
+        },
+        "top_3_recall": {
+          "mean": 0.8,
+          "n": 15
+        }
+      },
+      "baseline:current_scorer": {
+        "accepted_set_mass": {
+          "mean": 0.21786004495466835,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.0493415680465857,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 0.5988888888888888,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.6174573004761944,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 0.5803034003034002,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 0.8,
+          "n": 15
+        }
+      },
+      "baseline:descriptor_similarity": {
+        "accepted_set_mass": {
+          "mean": 0.2,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.0,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 0.35,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.29285261738095814,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 0.9856654456654457,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 0.4666666666666667,
+          "n": 15
+        }
+      },
+      "baseline:frequency": {
+        "accepted_set_mass": {
+          "mean": 0.2438095238095238,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.011428571428571444,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 0.5977777777777777,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.5928526173809582,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 0.6966790616790617,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 0.7333333333333333,
+          "n": 15
+        }
+      },
+      "oracle:accepted_set": {
+        "accepted_set_mass": {
+          "mean": 1.0,
+          "n": 15
+        },
+        "calibration_ece": {
+          "mean": 0.0,
+          "n": 75
+        },
+        "mrr": {
+          "mean": 1.0,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 1.0,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": 0.0,
+          "n": 15
+        },
+        "top_3_recall": {
+          "mean": 1.0,
+          "n": 15
+        }
+      },
+      "teacher:prompted_v1": {
+        "accepted_set_mass": {
+          "mean": null,
+          "n": 0
+        },
+        "calibration_ece": {
+          "mean": null,
+          "n": 0
+        },
+        "mrr": {
+          "mean": 0.44,
+          "n": 15
+        },
+        "ndcg_at_3": {
+          "mean": 0.5015812676190553,
+          "n": 15
+        },
+        "selective_risk_aurc": {
+          "mean": null,
+          "n": 0
+        },
+        "top_3_recall": {
+          "mean": 0.8,
+          "n": 15
+        }
+      }
+    }
+  },
+  "metrics_overall": {
+    "baseline:compiler_order": {
+      "accepted_set_mass": {
+        "mean": null,
+        "n": 0
+      },
+      "calibration_ece": {
+        "mean": null,
+        "n": 0
+      },
+      "mrr": {
+        "mean": 0.4266666666666667,
+        "n": 30
+      },
+      "ndcg_at_3": {
+        "mean": 0.48927892607143725,
+        "n": 30
+      },
+      "selective_risk_aurc": {
+        "mean": null,
+        "n": 0
+      },
+      "top_3_recall": {
+        "mean": 0.8,
+        "n": 30
+      }
+    },
+    "baseline:current_scorer": {
+      "accepted_set_mass": {
+        "mean": 0.21644190450846335,
+        "n": 30
+      },
+      "calibration_ece": {
+        "mean": 0.03713493913527984,
+        "n": 150
+      },
+      "mrr": {
+        "mean": 0.5944444444444444,
+        "n": 30
+      },
+      "ndcg_at_3": {
+        "mean": 0.6007906338095277,
+        "n": 30
+      },
+      "selective_risk_aurc": {
+        "mean": 0.5769545011716342,
+        "n": 30
+      },
+      "top_3_recall": {
+        "mean": 0.7666666666666667,
+        "n": 30
+      }
+    },
+    "baseline:descriptor_similarity": {
+      "accepted_set_mass": {
+        "mean": 0.2,
+        "n": 30
+      },
+      "calibration_ece": {
+        "mean": 0.0,
+        "n": 150
+      },
+      "mrr": {
+        "mean": 0.3227777777777778,
+        "n": 30
+      },
+      "ndcg_at_3": {
+        "mean": 0.25515495892857626,
+        "n": 30
+      },
+      "selective_risk_aurc": {
+        "mean": 0.9940323682277705,
+        "n": 30
+      },
+      "top_3_recall": {
+        "mean": 0.43333333333333335,
+        "n": 30
+      }
+    },
+    "baseline:frequency": {
+      "accepted_set_mass": {
+        "mean": 0.24095238095238095,
+        "n": 30
+      },
+      "calibration_ece": {
+        "mean": 0.011428571428571444,
+        "n": 150
+      },
+      "mrr": {
+        "mean": 0.5805555555555556,
+        "n": 30
+      },
+      "ndcg_at_3": {
+        "mean": 0.5384882922619096,
+        "n": 30
+      },
+      "selective_risk_aurc": {
+        "mean": 0.5559649657307001,
+        "n": 30
+      },
+      "top_3_recall": {
+        "mean": 0.6333333333333333,
+        "n": 30
+      }
+    },
+    "oracle:accepted_set": {
+      "accepted_set_mass": {
+        "mean": 1.0,
+        "n": 30
+      },
+      "calibration_ece": {
+        "mean": 0.0,
+        "n": 150
+      },
+      "mrr": {
+        "mean": 1.0,
+        "n": 30
+      },
+      "ndcg_at_3": {
+        "mean": 1.0,
+        "n": 30
+      },
+      "selective_risk_aurc": {
+        "mean": 0.0,
+        "n": 30
+      },
+      "top_3_recall": {
+        "mean": 1.0,
+        "n": 30
+      }
+    },
+    "teacher:prompted_v1": {
+      "accepted_set_mass": {
+        "mean": null,
+        "n": 0
+      },
+      "calibration_ece": {
+        "mean": null,
+        "n": 0
+      },
+      "mrr": {
+        "mean": 0.4266666666666667,
+        "n": 30
+      },
+      "ndcg_at_3": {
+        "mean": 0.48927892607143725,
+        "n": 30
+      },
+      "selective_risk_aurc": {
+        "mean": null,
+        "n": 0
+      },
+      "top_3_recall": {
+        "mean": 0.8,
+        "n": 30
+      }
+    }
+  },
+  "n_eval_states": 30,
+  "n_eval_traces": 30,
+  "n_frequency_training_traces": 30,
+  "n_train_states": 30,
+  "paired_comparisons": [
+    {
+      "baseline_source_id": "baseline:frequency",
+      "ci_high": 0.018333333333333313,
+      "ci_low": -0.32000000000000006,
+      "family": null,
+      "mean_diff": -0.1538888888888889,
+      "metric_name": "mrr",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.4666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:frequency",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": null,
+      "mean_diff": 0.0,
+      "metric_name": "accepted_set_mass",
+      "n_paired": 0,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.0
+    },
+    {
+      "baseline_source_id": "baseline:frequency",
+      "ci_high": 0.4,
+      "ci_low": -0.06666666666666667,
+      "family": null,
+      "mean_diff": 0.16666666666666666,
+      "metric_name": "top_3_recall",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.8666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:frequency",
+      "ci_high": 0.1408601936904926,
+      "ci_low": -0.22539531690476386,
+      "family": null,
+      "mean_diff": -0.04920936619047233,
+      "metric_name": "ndcg_at_3",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.4666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:frequency",
+      "ci_high": 0.06999999999999999,
+      "ci_low": -0.37333333333333335,
+      "family": "gold_large",
+      "mean_diff": -0.15000000000000002,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.5333333333333333
+    },
+    {
+      "baseline_source_id": "baseline:frequency",
+      "ci_high": 0.1,
+      "ci_low": -0.4000000000000001,
+      "family": "on_policy_large",
+      "mean_diff": -0.15777777777777782,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.4
+    },
+    {
+      "baseline_source_id": "baseline:compiler_order",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": null,
+      "mean_diff": 0.0,
+      "metric_name": "mrr",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 1.0
+    },
+    {
+      "baseline_source_id": "baseline:compiler_order",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": null,
+      "mean_diff": 0.0,
+      "metric_name": "accepted_set_mass",
+      "n_paired": 0,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.0
+    },
+    {
+      "baseline_source_id": "baseline:compiler_order",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": null,
+      "mean_diff": 0.0,
+      "metric_name": "top_3_recall",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 1.0
+    },
+    {
+      "baseline_source_id": "baseline:compiler_order",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": null,
+      "mean_diff": 0.0,
+      "metric_name": "ndcg_at_3",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 1.0
+    },
+    {
+      "baseline_source_id": "baseline:compiler_order",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": "gold_large",
+      "mean_diff": 0.0,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 1.0
+    },
+    {
+      "baseline_source_id": "baseline:compiler_order",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": "on_policy_large",
+      "mean_diff": 0.0,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 1.0
+    },
+    {
+      "baseline_source_id": "baseline:current_scorer",
+      "ci_high": 0.009999999999999997,
+      "ci_low": -0.3366666666666667,
+      "family": null,
+      "mean_diff": -0.1677777777777778,
+      "metric_name": "mrr",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.4666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:current_scorer",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": null,
+      "mean_diff": 0.0,
+      "metric_name": "accepted_set_mass",
+      "n_paired": 0,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.0
+    },
+    {
+      "baseline_source_id": "baseline:current_scorer",
+      "ci_high": 0.23333333333333334,
+      "ci_low": -0.16666666666666666,
+      "family": null,
+      "mean_diff": 0.03333333333333333,
+      "metric_name": "top_3_recall",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.8666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:current_scorer",
+      "ci_high": 0.07697658452381918,
+      "ci_low": -0.2781783744047571,
+      "family": null,
+      "mean_diff": -0.11151170773809041,
+      "metric_name": "ndcg_at_3",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.4666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:current_scorer",
+      "ci_high": 0.041111111111111105,
+      "ci_low": -0.38888888888888895,
+      "family": "gold_large",
+      "mean_diff": -0.1766666666666667,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.5333333333333333
+    },
+    {
+      "baseline_source_id": "baseline:current_scorer",
+      "ci_high": 0.11444444444444445,
+      "ci_low": -0.4066666666666667,
+      "family": "on_policy_large",
+      "mean_diff": -0.1588888888888889,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.4
+    },
+    {
+      "baseline_source_id": "baseline:descriptor_similarity",
+      "ci_high": 0.2,
+      "ci_low": 0.010555555555555547,
+      "family": null,
+      "mean_diff": 0.10388888888888889,
+      "metric_name": "mrr",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": true,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.7333333333333333
+    },
+    {
+      "baseline_source_id": "baseline:descriptor_similarity",
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "family": null,
+      "mean_diff": 0.0,
+      "metric_name": "accepted_set_mass",
+      "n_paired": 0,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.0
+    },
+    {
+      "baseline_source_id": "baseline:descriptor_similarity",
+      "ci_high": 0.6333333333333333,
+      "ci_low": 0.13333333333333333,
+      "family": null,
+      "mean_diff": 0.36666666666666664,
+      "metric_name": "top_3_recall",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": true,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.8666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:descriptor_similarity",
+      "ci_high": 0.384123967142861,
+      "ci_low": 0.07103099178571526,
+      "family": null,
+      "mean_diff": 0.23412396714286102,
+      "metric_name": "ndcg_at_3",
+      "n_paired": 30,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": true,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.7666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:descriptor_similarity",
+      "ci_high": 0.20444444444444443,
+      "ci_low": 0.026666666666666672,
+      "family": "gold_large",
+      "mean_diff": 0.11777777777777777,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": true,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.8666666666666667
+    },
+    {
+      "baseline_source_id": "baseline:descriptor_similarity",
+      "ci_high": 0.26333333333333336,
+      "ci_low": -0.08555555555555558,
+      "family": "on_policy_large",
+      "mean_diff": 0.09,
+      "metric_name": "mrr",
+      "n_paired": 15,
+      "schema": "operator_teacher_paired_comparison/v1",
+      "teacher_significantly_better": false,
+      "teacher_source_id": "teacher:prompted_v1",
+      "win_rate": 0.6
+    }
+  ],
+  "perturbation": {
+    "bound": 0.0,
+    "kind_distances": {
+      "candidate_order": 0.0,
+      "description_length": 0.0,
+      "opaque_id_relabel": 0.0,
+      "prompt_template": 0.0
+    },
+    "n_traces_compared": {
+      "candidate_order": 30,
+      "description_length": 30,
+      "opaque_id_relabel": 30,
+      "prompt_template": 30
+    },
+    "schema": "operator_teacher_perturbation_report/v1",
+    "within_bound": true
+  },
+  "preconditions_met": {
+    "precondition_1_real_teacher_implemented": true,
+    "precondition_2_real_output_re_run": false,
+    "precondition_3_honest_stop_rule_read": false
+  },
+  "real_llm_used": false,
+  "schema": "dsh4-02.v1",
+  "stop_rule": {
+    "beats_required_baselines": false,
+    "correlation_positive": false,
+    "failing_baselines": [
+      "baseline:compiler_order",
+      "baseline:current_scorer",
+      "baseline:frequency"
+    ],
+    "go": false,
+    "insufficient_data_baselines": [],
+    "perturbation_within_bound": true,
+    "primary_metric": "mrr",
+    "reasons": [
+      "teacher does not significantly beat required baselines on 'mrr' (paired CI lower bound <= 0): ['baseline:compiler_order', 'baseline:current_scorer', 'baseline:frequency']",
+      "teacher scores do not positively correlate with verifier-backed (accepted) outcomes (correlation=None)"
+    ],
+    "recommendation": "no_go_defer",
+    "schema": "operator_teacher_stop_rule_verdict/v1",
+    "verifier_regret_correlation": null
+  },
+  "teacher_model": "gpt-5.6-sol",
+  "teacher_source_id": "teacher:prompted_v1",
+  "top_k": 3,
+  "verifier_regret_correlation": {
+    "baseline:compiler_order": null,
+    "baseline:current_scorer": 0.19745818007116533,
+    "baseline:descriptor_similarity": null,
+    "baseline:frequency": 0.13664859862498716,
+    "oracle:accepted_set": 1.0,
+    "teacher:prompted_v1": null
+  },
+  "version_stamp": {
+    "code_commit": "16e344f92d8d982bf80be04d8dab4038f5a51611",
+    "code_dirty": true,
+    "components": {
+      "harness.distill": "v7"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T23:46:15.171971+00:00"
+  }
+}

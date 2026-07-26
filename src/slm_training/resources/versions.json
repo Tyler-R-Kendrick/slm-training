@@ -1933,7 +1933,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/__init__.py",
@@ -1942,10 +1942,12 @@
         "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/operator_decision_state.py",
         "src/slm_training/harnesses/distill/operator_teacher_ceiling.py",
+        "src/slm_training/harnesses/distill/prompted_teacher.py",
         "src/slm_training/harnesses/distill/self_distill_collect.py",
         "scripts/run_spv2_05_semantic_repair_fixture.py",
         "scripts/run_dsh4_01_operator_decision_state_fixture.py",
         "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
+        "scripts/run_var3_01_real_teacher_ceiling.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
         "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
@@ -1957,9 +1959,16 @@
         "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.md",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.json",
         "docs/design/ap020-on-policy-abstract-self-distillation.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "SLM-429 (VAR3-01): PromptedTeacherV1, a real OpenAI-Responses-backed OperatorTeacherAdapter (dependency-injected client, same convention as autoresearch.providers.OpenAIResearchProvider), swappable into compare_operator_teacher_ceiling with no harness change. Anti-leak prompt construction covered by offline unit tests (no client needed). scripts/run_var3_01_real_teacher_ceiling.py reruns the exact DSH4-02 comparison against it; this sandboxed environment has no openai package/API key configured, so the published report is stamped real_llm_used=false (wiring-only: precondition 1 met, preconditions 2/3 not met) rather than claiming a real-teacher verdict it did not produce."
+        },
         {
           "version": "v7",
           "date": "2026-07-26",

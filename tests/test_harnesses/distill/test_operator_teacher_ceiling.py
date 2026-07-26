@@ -50,6 +50,7 @@ from slm_training.harnesses.distill.operator_decision_state import (
     capture_operator_decision_state,
 )
 from slm_training.harnesses.distill import operator_teacher_ceiling as otc
+from slm_training.harnesses.distill import prompted_teacher as pt
 
 OPERATOR_ID = "openui.dsh4_02_test_fixture"
 
@@ -454,6 +455,136 @@ def test_synthetic_teacher_empty_legal_set() -> None:
     ranking = otc.SyntheticDescriptorTeacherV1().rank(otc.default_teacher_query(fx.trace))
     assert ranking is not None
     assert ranking.application_order == ()
+
+
+# --------------------------------------------------------------------------- #
+# PromptedTeacherV1 (SLM-429 / VAR3-01): a real, prompted-LLM teacher
+# --------------------------------------------------------------------------- #
+
+
+class _FakeResponse:
+    def __init__(self, output_parsed) -> None:
+        self.output_parsed = output_parsed
+
+
+class _FakeResponses:
+    def __init__(self, output_parsed, *, raises: Exception | None = None) -> None:
+        self._output_parsed = output_parsed
+        self._raises = raises
+        self.calls: list[dict] = []
+
+    def parse(self, *, model, input, text_format):  # noqa: A002 - matches openai SDK signature
+        self.calls.append({"model": model, "input": input, "text_format": text_format})
+        if self._raises is not None:
+            raise self._raises
+        return _FakeResponse(self._output_parsed)
+
+
+class _FakeClient:
+    def __init__(self, output_parsed=None, *, raises: Exception | None = None) -> None:
+        self.responses = _FakeResponses(output_parsed, raises=raises)
+
+
+def test_prompted_teacher_prompt_never_leaks_scores_or_accepted_or_real_ids() -> None:
+    fx = _build(
+        trace_id="prompted-anti-leak",
+        n_candidates=5,
+        accepted_indices=(2,),
+        current_scores_by_index={0: 0.91234, 1: 0.05, 2: 0.02, 3: 0.019, 4: 0.001},
+    )
+    query = otc.default_teacher_query(fx.trace)
+    prompt = pt.build_prompt(query)
+
+    assert fx.trace.current_scores is not None
+    for score in fx.trace.current_scores.values():
+        assert str(score) not in prompt
+    for accepted_id in fx.trace.accepted_application_ids:
+        assert accepted_id not in prompt
+    for action in fx.trace.legal_set.operator_actions:
+        assert action.application_id not in prompt
+        # Only the caller-controlled presentation label may appear, never the
+        # real application_id -- assert the rendered label is present instead.
+        assert query.opaque_id_labels[action.application_id] in prompt
+
+
+def test_prompted_teacher_prompt_changes_under_perturbation() -> None:
+    # Unlike SyntheticDescriptorTeacherV1, a real prompted teacher's *prompt
+    # text* legitimately varies with presentation -- this is what
+    # run_perturbation_robustness measures, not something this module hides.
+    fx = _build(trace_id="prompted-perturb", n_candidates=4)
+    canonical = otc.default_teacher_query(fx.trace)
+    perturbed = otc.perturb_candidate_order(canonical, seed=1)
+    assert pt.build_prompt(canonical) != pt.build_prompt(perturbed)
+
+
+def test_prompted_teacher_maps_a_well_formed_response_to_a_valid_ranking() -> None:
+    fx = _build(trace_id="prompted-happy", n_candidates=3)
+    query = otc.default_teacher_query(fx.trace)
+    labels = [query.opaque_id_labels[aid] for aid in reversed(query.candidate_order)]
+    client = _FakeClient(
+        pt.PromptedTeacherResponseV1(ranked_candidate_labels=labels, confidence=[0.6, 0.3, 0.1])
+    )
+    teacher = pt.PromptedTeacherV1(client=client)
+
+    ranking = teacher.rank(query)
+
+    assert ranking is not None
+    assert ranking.application_order == tuple(reversed(query.candidate_order))
+    assert ranking.probabilities == (0.6, 0.3, 0.1)
+    assert len(client.responses.calls) == 1
+
+
+def test_prompted_teacher_returns_none_for_unrecognized_label() -> None:
+    fx = _build(trace_id="prompted-bad-label", n_candidates=3)
+    query = otc.default_teacher_query(fx.trace)
+    client = _FakeClient(
+        pt.PromptedTeacherResponseV1(ranked_candidate_labels=["not-a-real-label"])
+    )
+    teacher = pt.PromptedTeacherV1(client=client)
+    assert teacher.rank(query) is None
+
+
+def test_prompted_teacher_returns_none_for_incomplete_ranking() -> None:
+    fx = _build(trace_id="prompted-partial", n_candidates=3)
+    query = otc.default_teacher_query(fx.trace)
+    only_one_label = [query.opaque_id_labels[query.candidate_order[0]]]
+    client = _FakeClient(pt.PromptedTeacherResponseV1(ranked_candidate_labels=only_one_label))
+    teacher = pt.PromptedTeacherV1(client=client)
+    assert teacher.rank(query) is None
+
+
+def test_prompted_teacher_returns_none_on_client_failure() -> None:
+    fx = _build(trace_id="prompted-error", n_candidates=3)
+    query = otc.default_teacher_query(fx.trace)
+    client = _FakeClient(raises=RuntimeError("simulated transport failure"))
+    teacher = pt.PromptedTeacherV1(client=client)
+    assert teacher.rank(query) is None
+
+
+def test_prompted_teacher_empty_legal_set_never_calls_the_client() -> None:
+    fx = _build(trace_id="prompted-empty", n_candidates=0)
+    query = otc.default_teacher_query(fx.trace)
+    client = _FakeClient(pt.PromptedTeacherResponseV1(ranked_candidate_labels=["unused"]))
+    teacher = pt.PromptedTeacherV1(client=client)
+
+    ranking = teacher.rank(query)
+
+    assert ranking is not None
+    assert ranking.application_order == ()
+    assert client.responses.calls == []
+
+
+def test_prompted_teacher_requires_openai_or_an_injected_client() -> None:
+    with pytest.raises(RuntimeError, match="install slm-training\\[research\\]"):
+        pt.PromptedTeacherV1()
+
+
+def test_prompted_teacher_satisfies_the_operator_teacher_adapter_protocol() -> None:
+    # OperatorTeacherAdapter is a structural (non-runtime-checkable) Protocol
+    # -- assert the shape directly rather than isinstance() against it.
+    teacher = pt.PromptedTeacherV1(client=_FakeClient(None))
+    assert isinstance(teacher.source_id, str)
+    assert callable(teacher.rank)
 
 
 # --------------------------------------------------------------------------- #
