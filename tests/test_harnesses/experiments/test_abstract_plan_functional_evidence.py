@@ -10,6 +10,7 @@ from slm_training.harnesses.experiments.abstract_plan_functional_evidence import
     GATES,
     PlanEvidenceRow,
     build_campaign,
+    locked_shard_ids,
     load_locked_protocol,
     summarize_functional_evidence,
 )
@@ -74,3 +75,31 @@ def test_locked_protocol_has_certified_heldout_records() -> None:
     protocol = load_locked_protocol()
     assert protocol.manifest_sha256 == "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48"
     assert len(protocol.record_ids) == 226
+
+
+def test_locked_shards_are_deterministic_and_exactly_partition_the_protocol() -> None:
+    protocol = AbstractPlanProtocolV1("a" * 64, tuple(str(index) for index in range(11)))
+    shards = [
+        locked_shard_ids(protocol, shard_index=index, shard_count=3)
+        for index in range(3)
+    ]
+    assert shards == [
+        locked_shard_ids(protocol, shard_index=index, shard_count=3)
+        for index in range(3)
+    ]
+    assert set().union(*(set(shard) for shard in shards)) == set(protocol.record_ids)
+    assert sum(len(shard) for shard in shards) == len(protocol.record_ids)
+
+
+def test_f1_can_establish_a_control_effect_when_meaning_is_flat() -> None:
+    rows = _rows()
+    changed = []
+    for row in rows:
+        metrics = dict(row.metrics)
+        metrics["binding_aware_meaningful_v2"] = 0.0
+        metrics["binder_reference_f1"] = 1.0 if row.arm == "learned_abstract_plan" else 0.0
+        changed.append(PlanEvidenceRow(**{**row.__dict__, "metrics": metrics}))
+    report = summarize_functional_evidence(
+        AbstractPlanProtocolV1("a" * 64, ("a", "b")), changed, learned_available=True
+    )
+    assert report["verdict"] == FunctionalVerdict.FUNCTIONAL.value
