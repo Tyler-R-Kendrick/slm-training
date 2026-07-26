@@ -22,10 +22,10 @@ from __future__ import annotations
 import json
 import random
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import torch
 import torch.nn as nn
@@ -62,7 +62,15 @@ ACTION_REPLACE_SUBTREE = 7  # replace a canonical one-leaf container subtree's l
 ACTION_INSERT_STATEMENT = 8  # insert a canonical V0.5 state/query/mutation statement
 ACTION_REPLACE_STATEMENT = 9  # swap one canonical V0.5 statement for another
 ACTION_BIND_PLACEHOLDER = 10  # (re)bind a leaf's slot to an inventory placeholder
-N_ACTIONS = 11
+# SLM-425 (VAR1-02): property mutation on an EXISTING node -- orthogonal to
+# every action above (all structural: add/remove/replace a node or subtree).
+# VAR1-01 (SLM-424) proved this the missing action class behind
+# reachable_fraction=0.0 via a hypothetical probe; this is the real action,
+# gated on that probe's confirmed result. Domain is pack-provided (see
+# ``EditDomain.component_property_domains`` / ``.property_names`` below), not
+# a module constant.
+ACTION_SET_PROPERTY = 11  # rebind an existing container's declared property
+N_ACTIONS = 12
 
 MAX_STMTS = 24
 MAX_SLOTS = 16
@@ -75,6 +83,14 @@ class EditDomain:
     container_components: tuple[str, ...]
     container_rests: tuple[str, ...]
     statement_templates: tuple[tuple[str, str], ...]
+    # SLM-425 (VAR1-02): the full per-component property->value-domain map
+    # (currently just each container's "rest"/direction arg) plus the sorted
+    # property-name alphabet ``ACTION_SET_PROPERTY.comp`` indexes into. Both
+    # are pack-derived, never module constants.
+    component_property_domains: Mapping[str, Mapping[str, tuple[str, ...]]] = field(
+        default_factory=dict
+    )
+    property_names: tuple[str, ...] = ()
 
 
 def edit_domain(pack_id: str = "openui") -> EditDomain:
@@ -87,11 +103,24 @@ def edit_domain(pack_id: str = "openui") -> EditDomain:
     )
     if not pack.leaf_components or not pack.container_components or not rests:
         raise ValueError(f"pack {pack_id!r} does not provide a tree-edit domain")
+    property_names = tuple(
+        sorted(
+            {
+                prop
+                for values in pack.component_property_domains.values()
+                for prop in values
+            }
+        )
+    )
     return EditDomain(
         leaf_components=tuple(pack.leaf_components),
         container_components=tuple(pack.container_components),
         container_rests=tuple(dict.fromkeys(rests)),
         statement_templates=tuple(pack.statement_templates),
+        component_property_domains={
+            comp: dict(values) for comp, values in pack.component_property_domains.items()
+        },
+        property_names=property_names,
     )
 
 
@@ -273,6 +302,8 @@ class TreeEditSpace:
         self.container_components = self.domain.container_components
         self.container_rests = self.domain.container_rests
         self.statement_templates = self.domain.statement_templates
+        self.component_property_domains = self.domain.component_property_domains
+        self.property_names = self.domain.property_names
 
     def fresh_name(self, statements: list[Statement]) -> str:
         taken = {s.name for s in statements}
@@ -545,6 +576,46 @@ class TreeEditSpace:
                 return None
             placeholder = self._placeholder(inventory, edit.slot)
             target.rest = json.dumps(placeholder, ensure_ascii=False)
+        elif edit.action == ACTION_SET_PROPERTY:
+            # SLM-425 (VAR1-02): rebind an EXISTING container's declared
+            # property (currently the "rest" enum/direction arg) to another
+            # value from the SAME pack-declared domain for that component. No
+            # statement is minted or removed -- this is the orthogonal
+            # property-mutation action class VAR1-01 proved missing
+            # (structural edits alone cannot flip a container's own rest,
+            # including the root's -- see needs_direction_change in
+            # slm299_edit_reachability). Preconditions: target is a
+            # container -- root included. Unlike REMOVE_CONTAINER (which can
+            # never touch root because removal would have to re-mint it),
+            # SET_PROPERTY only ever rewrites an existing field in place, so
+            # the root guard used by the structural actions does not apply
+            # here; edit.comp indexes a known property name, edit.target
+            # indexes a legal value for THIS component's declared domain, and
+            # the new value must be a real change. Rebuilt via the
+            # structured ``Statement`` fields -- never regex/text surgery on
+            # program text (see the V0.5 construction note above) -- and the
+            # common tail below re-validates the rebuilt statement through
+            # the real parser. Inverse: SET_PROPERTY restoring the prior
+            # value's index -- always expressible (same domain both ways,
+            # root included).
+            if not (0 <= edit.stmt < len(working)):
+                return None
+            target = working[edit.stmt]
+            if not target.has_list:
+                return None
+            domain = self.component_property_domains.get(target.comp)
+            if not domain or not (0 <= edit.comp < len(self.property_names)):
+                return None
+            prop = self.property_names[edit.comp]
+            values = domain.get(prop)
+            if prop != "rest" or not values or not (0 <= edit.target < len(values)):
+                return None
+            new_value = values[edit.target]
+            if new_value == target.rest:
+                return None
+            working[edit.stmt] = Statement(
+                target.name, target.comp, list(target.children), new_value, target.has_list
+            )
         else:
             return None
         if pre_validate is not None and not pre_validate(working):
@@ -575,6 +646,7 @@ class TreeEditSpace:
                     ACTION_INSERT_STATEMENT,
                     ACTION_REPLACE_STATEMENT,
                     ACTION_BIND_PLACEHOLDER,
+                    ACTION_SET_PROPERTY,
                 )
             )
             if kind == ACTION_REPLACE:
@@ -817,6 +889,34 @@ class TreeEditSpace:
                     continue
                 inverse = Edit(ACTION_BIND_PLACEHOLDER, idx, slot=old_slot)
                 return mutated, inverse
+            if kind == ACTION_SET_PROPERTY:
+                # Mutation = rebind an existing container's "rest" (root
+                # included -- see the guard note on ACTION_SET_PROPERTY in
+                # ``apply``); inverse = SET_PROPERTY restoring the old value.
+                containers = [i for i, s in enumerate(statements) if s.has_list]
+                if not containers:
+                    continue
+                idx = rng.choice(containers)
+                stmt = statements[idx]
+                domain = self.component_property_domains.get(stmt.comp)
+                if not domain or "rest" not in self.property_names:
+                    continue
+                values = domain.get("rest")
+                if not values or stmt.rest not in values:
+                    continue
+                prop_idx = self.property_names.index("rest")
+                old_idx = values.index(stmt.rest)
+                choices = [i for i in range(len(values)) if i != old_idx]
+                if not choices:
+                    continue
+                mutation = Edit(
+                    ACTION_SET_PROPERTY, idx, prop_idx, target=rng.choice(choices)
+                )
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(ACTION_SET_PROPERTY, idx, prop_idx, target=old_idx)
+                return mutated, inverse
             # Mutation = remove a leaf; inverse = ADD it back.
             removable = [
                 i
@@ -951,9 +1051,12 @@ class TreeEditDiffusionModel(nn.Module):
     """Prompt-conditioned Kapur-style edit policy + value search (X22)."""
 
     # Format 2 (SLM-305): action_head grew to N_ACTIONS=11 with the extended
-    # edit language. Format-1 checkpoints fail closed here; warm-start them
-    # via ``checkpoint_migrate.migrate_tree_edit_checkpoint``.
-    CHECKPOINT_FORMAT = 2
+    # edit language. Format 3 (SLM-425/VAR1-02): action_head grew again to
+    # N_ACTIONS=12 for ACTION_SET_PROPERTY (property mutation on an existing
+    # node). Format-1 and format-2 checkpoints both fail closed here; warm-
+    # start them via ``checkpoint_migrate.migrate_tree_edit_checkpoint``
+    # (format-agnostic: it upgrades any ``source_format < CHECKPOINT_FORMAT``).
+    CHECKPOINT_FORMAT = 3
 
     def __init__(
         self,
@@ -1260,6 +1363,13 @@ class TreeEditDiffusionModel(nn.Module):
                     Edit(ACTION_REMOVE_CONTAINER, stmt),
                 )
             )
+            for rest_idx in range(len(CONTAINER_RESTS)):
+                scored.append(
+                    (
+                        float(action_lp[ACTION_SET_PROPERTY]) + base,
+                        Edit(ACTION_SET_PROPERTY, stmt, target=rest_idx),
+                    )
+                )
             for payload in range(len(V05_TEMPLATES)):
                 scored.append(
                     (

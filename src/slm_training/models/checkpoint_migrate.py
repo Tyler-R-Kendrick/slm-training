@@ -301,13 +301,18 @@ def migrate_tree_edit_checkpoint(
     output_checkpoint: Path | str,
     device: str = "cpu",
 ) -> dict:
-    """Warm-start a tree-edit-diffusion format-1 checkpoint to format 2.
+    """Warm-start an older tree-edit-diffusion checkpoint to the current format.
 
-    SLM-305 grew ``action_head`` from 4 to ``N_ACTIONS`` rows (extended edit
-    language). All same-shape tensors are copied verbatim; the old action-head
-    rows are preserved in the first rows of the new head and the new action
-    rows stay randomly initialized. A ``.migrate.json`` report is written next
-    to the output checkpoint.
+    Format-agnostic: it upgrades any checkpoint whose
+    ``format_version < TreeEditDiffusionModel.CHECKPOINT_FORMAT`` (format 1
+    or format 2 today) to the live format by shape, not by a hardcoded source
+    version. SLM-305 grew ``action_head`` from 4 to 11 rows (extended edit
+    language, format 1 -> 2); SLM-425 (VAR1-02) grew it again from 11 to 12
+    rows for ``ACTION_SET_PROPERTY`` (format 2 -> 3). All same-shape tensors
+    are copied verbatim; the old action-head rows are preserved in the first
+    rows of the new head (bit-identical logits on those rows) and the new
+    action row(s) stay randomly initialized. A ``.migrate.json`` report is
+    written next to the output checkpoint.
     """
     from slm_training.models.tree_edit_diffusion import (
         TreeEditDiffusionConfig,

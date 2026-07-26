@@ -66,6 +66,7 @@ from slm_training.models.tree_edit_diffusion import (  # noqa: E402
     ACTION_REMOVE_CONTAINER,
     ACTION_REPLACE_STATEMENT,
     ACTION_REPLACE_SUBTREE,
+    ACTION_SET_PROPERTY,
     Edit,
 )
 
@@ -229,7 +230,7 @@ def test_checkpoint_format2_fail_closed_and_migration(tmp_path) -> None:
         source_checkpoint=old_path, output_checkpoint=out_path
     )
     assert report["source_format_version"] == 1
-    assert report["output_format_version"] == 2
+    assert report["output_format_version"] == TreeEditDiffusionModel.CHECKPOINT_FORMAT
     assert report["preserved_action_head_rows"] == 4
     assert (tmp_path / "ckpt_migrated.migrate.json").exists()
     migrated = TreeEditDiffusionModel.from_checkpoint(out_path, device="cpu")
@@ -290,3 +291,190 @@ def test_training_loss_decode_all_valid_and_checkpoint(tmp_path) -> None:
         ]
     )
     assert reproduced == outputs
+
+
+# --- SLM-425 (VAR1-02): SET_PROPERTY action --------------------------------
+
+
+def test_set_property_apply_and_invert_root_and_non_root() -> None:
+    """(a) SET_PROPERTY applies and inverts exactly on both the root
+    container and a non-root one, restoring byte-identical program text."""
+    space = TreeEditSpace()
+    base = parse_statements(PROGRAM)
+    assert base is not None
+    prop_idx = space.property_names.index("rest")
+
+    def round_trip(stmt_idx: int) -> None:
+        rests = space.component_property_domains[base[stmt_idx].comp]["rest"]
+        old_idx = rests.index(base[stmt_idx].rest)
+        new_idx = next(i for i in range(len(rests)) if i != old_idx)
+        mutated = space.apply(
+            base,
+            Edit(ACTION_SET_PROPERTY, stmt_idx, prop_idx, target=new_idx),
+            INVENTORY,
+        )
+        assert mutated is not None, f"stmt {stmt_idx} did not apply"
+        assert mutated[stmt_idx].rest == rests[new_idx]
+        assert mutated[stmt_idx].rest != base[stmt_idx].rest
+        validate(render_statements(mutated))
+        restored = space.apply(
+            mutated,
+            Edit(ACTION_SET_PROPERTY, stmt_idx, prop_idx, target=old_idx),
+            INVENTORY,
+        )
+        assert restored is not None
+        validate(render_statements(restored))
+        # Byte-identical restoration -- the safe-inverse contract.
+        assert render_statements(restored) == PROGRAM
+
+    # root (stmt 0): the guard that blocks REMOVE/REMOVE_CONTAINER on root
+    # must NOT block SET_PROPERTY -- this is exactly the reachability gap
+    # VAR1-01 proved (needs_direction_change on the root's own rest).
+    assert base[0].name == "root"
+    round_trip(0)
+    # non-root container ("inline_card" = Card([title]), stmt 1).
+    assert base[1].name == "inline_card" and base[1].has_list
+    round_trip(1)
+
+    # Out-of-precondition edits fail closed: a leaf statement has no
+    # container property domain to index into.
+    leaf_idx = next(i for i, s in enumerate(base) if not s.has_list)
+    assert (
+        space.apply(
+            base, Edit(ACTION_SET_PROPERTY, leaf_idx, prop_idx, target=0), INVENTORY
+        )
+        is None
+    )
+    # A same-value "mutation" is not a real change -- rejected, not silently
+    # applied as a no-op edit.
+    same_idx = space.component_property_domains["Stack"]["rest"].index(base[0].rest)
+    assert (
+        space.apply(
+            base,
+            Edit(ACTION_SET_PROPERTY, 0, prop_idx, target=same_idx),
+            INVENTORY,
+        )
+        is None
+    )
+
+
+def test_set_property_rejects_out_of_domain_value_via_real_parser() -> None:
+    """(b) An illegal property value is rejected by the real parser/validator
+    -- never silently applied -- even when a (mistaken) pack declares it as
+    part of the domain. This proves the rejection is not merely an index
+    bounds-check: the final full-program re-validation is the actual
+    fail-closed backstop."""
+    import slm_training.dsl.pack as pack_mod
+    from slm_training.dsl.pack import get_pack
+
+    base_pack = get_pack("openui")
+    bogus_pack = replace(
+        base_pack,
+        pack_id="tree-edit-bogus-rest",
+        component_property_domains={
+            **base_pack.component_property_domains,
+            # ``, [`` is not valid grammar for the direction/rest argument
+            # (an unterminated list literal) -- a pack authoring mistake
+            # that must still fail closed through the real parser.
+            "Stack": {"rest": (', "column"', ", [")},
+        },
+    )
+    pack_mod.register_pack(bogus_pack)
+    try:
+        space = TreeEditSpace(pack_id=bogus_pack.pack_id)
+        prop_idx = space.property_names.index("rest")
+        statements = parse_statements('root = Stack([], "column")')
+        assert statements is not None
+        bogus_idx = space.component_property_domains["Stack"]["rest"].index(", [")
+        result = space.apply(
+            statements,
+            Edit(ACTION_SET_PROPERTY, 0, prop_idx, target=bogus_idx),
+            [],
+        )
+        assert result is None
+    finally:
+        pack_mod._PACKS.pop(bogus_pack.pack_id, None)
+
+
+def test_checkpoint_format2_fails_closed_and_migration_preserves_logits(
+    tmp_path,
+) -> None:
+    """(c) A genuine format-2 checkpoint (N_ACTIONS=11, pre-VAR1-02 width)
+    fails closed with a clear pointer to the migration path. (d) Migrating
+    it to format 3 produces bit-identical action logits on the 11
+    pre-existing rows; only the new (SET_PROPERTY) row differs."""
+    records = [
+        ExampleRecord(
+            id="a",
+            prompt="Hero card with title, body, and a CTA button.",
+            openui=PROGRAM,
+            placeholders=INVENTORY,
+        )
+    ]
+    cfg = TreeEditDiffusionConfig(
+        d_model=32, n_heads=4, context_layers=1, denoiser_layers=1,
+        dropout=0.0, seed=5,
+    )
+    model = TreeEditDiffusionModel.from_records(records, config=cfg, device="cpu")
+    assert model.policy.action_head.out_features == 12  # current N_ACTIONS
+    path = tmp_path / "ckpt.pt"
+    model.save(path)
+
+    # Simulate a genuine format-2 checkpoint: truncate action_head to the
+    # pre-VAR1-02 width (11 rows) and stamp format_version=2.
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    payload["format_version"] = 2
+    sd = payload["state_dict"]
+    old_w = sd["policy.action_head.weight"][:11].clone()
+    old_b = sd["policy.action_head.bias"][:11].clone()
+    sd["policy.action_head.weight"] = old_w
+    sd["policy.action_head.bias"] = old_b
+    v2_path = tmp_path / "ckpt_v2.pt"
+    torch.save(payload, v2_path)
+    (tmp_path / "ckpt_v2.tokenizer.json").write_text(
+        (tmp_path / "ckpt.tokenizer.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    # (c) Fails closed, pointing at the migration path.
+    with pytest.raises(ValueError, match="format_version=2") as excinfo:
+        TreeEditDiffusionModel.from_checkpoint(v2_path, device="cpu")
+    assert "migrate_tree_edit_checkpoint" in str(excinfo.value)
+
+    from slm_training.models.checkpoint_migrate import migrate_tree_edit_checkpoint
+
+    out_path = tmp_path / "ckpt_migrated_v3.pt"
+    report = migrate_tree_edit_checkpoint(
+        source_checkpoint=v2_path, output_checkpoint=out_path
+    )
+    assert report["source_format_version"] == 2
+    assert report["output_format_version"] == 3
+    assert report["preserved_action_head_rows"] == 11
+
+    migrated = TreeEditDiffusionModel.from_checkpoint(out_path, device="cpu")
+    new_w = migrated.policy.action_head.weight
+    new_b = migrated.policy.action_head.bias
+    assert new_w.shape[0] == 12
+    assert torch.allclose(new_w[:11], old_w)
+    assert torch.allclose(new_b[:11], old_b)
+
+    # (d) Bit-identical logits on the pre-existing rows: the migrated
+    # checkpoint's non-action_head weights are copied verbatim from the same
+    # trained model as the untouched original, so a forward pass over the
+    # same input must match exactly on rows 0..10; only the new row 11 (a
+    # fresh random init) is expected to differ.
+    reference = TreeEditDiffusionModel.from_checkpoint(path, device="cpu")
+    migrated.eval()
+    reference.eval()
+    prompt_text = migrated._format_context(records[0].prompt)
+    with torch.no_grad():
+        ctx_m, ctx_pad_m = migrated._encode_context([prompt_text])
+        out_m = migrated.policy(
+            migrated._state_batch([PROGRAM]), migrated.tokenizer.pad_id, ctx_m, ctx_pad_m
+        )
+        ctx_r, ctx_pad_r = reference._encode_context([prompt_text])
+        out_r = reference.policy(
+            reference._state_batch([PROGRAM]), reference.tokenizer.pad_id, ctx_r, ctx_pad_r
+        )
+    assert torch.allclose(out_m["action"][:, :11], out_r["action"][:, :11])
+    assert not torch.allclose(out_m["action"][:, 11], out_r["action"][:, 11])

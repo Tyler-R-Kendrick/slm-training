@@ -42,6 +42,7 @@ from slm_training.models.tree_edit_diffusion import (
     ACTION_REPLACE,
     ACTION_REPLACE_STATEMENT,
     ACTION_REPLACE_SUBTREE,
+    ACTION_SET_PROPERTY,
     MAX_SLOTS,
     Edit,
     Statement,
@@ -179,10 +180,14 @@ def set_property_action(
 ) -> ExtraAction:
     """VAR1-01 hypothetical: rebind an existing container's ``rest`` (its
     enum/direction argument) in place, without minting or removing any
-    statement. No real action in the deployed edit space edits ``rest`` on an
-    existing node — see ``_check_invariants``'s ``needs_direction_change``
-    reason. This is a *what-if* probe of a property-mutation action class,
-    never a production action; see VAR1-01 (SLM-424).
+    statement, drawing from ``rests`` — which may be WIDER than the real
+    ``TreeEditSpace.container_rests`` domain (the default includes ``"row"``,
+    which the pack does not declare). SLM-425 (VAR1-02) added a REAL
+    ``ACTION_SET_PROPERTY`` gated on this probe's confirmed result, but its
+    domain is exactly the pack-declared ``container_rests`` — narrower than
+    this what-if's default. This factory (and the capability it grants) stays
+    useful for exploring domains wider than the pack currently declares; see
+    VAR1-01 (SLM-424) and VAR1-02 (SLM-425).
     """
 
     def _generate(
@@ -375,6 +380,7 @@ def _check_invariants(
     capabilities: frozenset[str] = frozenset(),
     *,
     extended: bool = False,
+    hypothetical_set_property_domain: bool = False,
 ) -> str | None:
     """Structural impossibility proofs over the EXACT action set.
 
@@ -386,7 +392,17 @@ def _check_invariants(
     leaves only to
     inventory slots, and the V0.5 statement actions mint only canonical
     templates — the invariant reasons fire only when the corresponding REAL
-    action of the analyzed mode is absent.
+    action of the analyzed mode is absent. SLM-425 (VAR1-02): the extended
+    space also has a REAL ``ACTION_SET_PROPERTY`` that rebinds any existing
+    container's (root included) ``rest`` to another value of
+    ``space.container_rests`` — the pack-declared domain, narrower than a
+    hypothetical ``set_property_action()``'s (default, wider) ``rests``.
+    ``hypothetical_set_property_domain`` distinguishes the two: it is True
+    only when the ``set_property`` capability comes from an *extra_action*
+    (VAR1-01 what-if, unbounded domain — the cheap proof below cannot rule
+    those out generically, so it is skipped entirely, as before); it is False
+    when the capability is the real, pack-domain-bounded action (forced on
+    in extended mode), where the cheap proof stays precise.
     """
     seed_containers = [s for s in seed if s.has_list]
     target_containers = [s for s in target if s.has_list]
@@ -431,28 +447,38 @@ def _check_invariants(
         if normalized not in inventory:
             return REASON_NEEDS_SLOT_REBIND
 
-    # REPLACE preserves the container's raw enum/direction arg text (rest);
-    # no real action edits it. Containers minted by the container-creating
-    # actions carry exactly one of CONTAINER_RESTS. Every target container
-    # rest must therefore be a seed rest or (with container_add) a candidate
-    # mint rest; without any container-creating action the multisets must
-    # match exactly.
-    if "set_property" in capabilities:
-        # A rest-mutation action can produce any target rest on any
-        # container, root included -- skip both rest checks below entirely.
+    # REPLACE preserves the container's raw enum/direction arg text (rest).
+    # Containers minted by the container-creating actions carry exactly one
+    # of CONTAINER_RESTS; SET_PROPERTY (SLM-425/VAR1-02) rewrites an
+    # existing container's rest to exactly one of CONTAINER_RESTS too, root
+    # included. Every target container rest must therefore be a seed rest or
+    # a candidate mint/set rest; without either capability the multisets
+    # must match exactly.
+    if "set_property" in capabilities and hypothetical_set_property_domain:
+        # VAR1-01 what-if only: an ExtraAction may draw from ANY domain (its
+        # own ``rests``, unbounded by the pack), so no cheap proof is
+        # derivable generically here -- defer entirely to BFS (legacy
+        # behavior, unchanged since VAR1-01).
         return None
 
     seed_rests = sorted(s.rest for s in seed_containers)
     target_rests = sorted(s.rest for s in target_containers)
-    # Root can never be removed or re-minted, and REPLACE preserves rest:
-    # the target root's rest must equal the seed root's rest in every mode.
     seed_root_rest = next(
         (s.rest for s in seed_containers if s.name == "root"), None
     )
-    for stmt in target_containers:
-        if stmt.name == "root" and stmt.rest != seed_root_rest:
-            return REASON_NEEDS_DIRECTION_CHANGE
-    if "container_add" in capabilities:
+    if "set_property" not in capabilities:
+        # No action edits an existing container's rest in place: the root
+        # can never be removed or re-minted, and REPLACE preserves rest, so
+        # the target root's rest must equal the seed root's rest.
+        for stmt in target_containers:
+            if stmt.name == "root" and stmt.rest != seed_root_rest:
+                return REASON_NEEDS_DIRECTION_CHANGE
+    if "container_add" in capabilities or "set_property" in capabilities:
+        # Either a fresh container can be minted with any of
+        # space.container_rests, or an existing one's rest (root included)
+        # can be rewritten to any of space.container_rests -- so every
+        # target rest must be drawn from the seed's own rests or that real
+        # domain.
         allowed = set(seed_rests) | set(space.container_rests)
         if any(rest not in allowed for rest in target_rests):
             return REASON_NEEDS_DIRECTION_CHANGE
@@ -599,6 +625,23 @@ def _enumerate_children(
                                     },
                                 )
                             )
+            # SLM-425 (VAR1-02): rebind this container's rest in place (root
+            # included) to another value of the same pack-declared domain --
+            # the property-mutation action class VAR1-01 proved missing.
+            for rest_idx in range(len(space.container_rests)):
+                edit = Edit(ACTION_SET_PROPERTY, stmt_idx, target=rest_idx)
+                nxt = space.apply(statements, edit, inventory, pre)
+                if nxt is not None:
+                    children.append(
+                        (
+                            nxt,
+                            {
+                                "action": "SET_PROPERTY",
+                                "stmt": stmt_idx,
+                                "rest": space.container_rests[rest_idx],
+                            },
+                        )
+                    )
         else:
             for slot_idx in range(n_slots):
                 edit = Edit(ACTION_BIND_PLACEHOLDER, stmt_idx, slot=slot_idx)
@@ -714,16 +757,27 @@ def analyze_reachability(
             details=details,
         )
 
-    capabilities = frozenset().union(
+    extra_capabilities = frozenset().union(
         *(a.capabilities for a in extra_actions)
     ) if extra_actions else frozenset()
+    capabilities = extra_capabilities
     if mode == "extended":
         # ADD_CONTAINER / INSERT_SUBTREE are REAL actions in the extended
         # space, so the container_add invariant must not fire; the synthetic
         # add_container_action what-if lane is retired for this space.
-        capabilities = capabilities | frozenset({"container_add"})
+        # SET_PROPERTY (SLM-425/VAR1-02) is likewise REAL in the extended
+        # space (pack-domain-bounded); see ``_check_invariants``'s
+        # ``hypothetical_set_property_domain`` for how that differs from an
+        # extra_action's (potentially wider) what-if domain.
+        capabilities = capabilities | frozenset({"container_add", "set_property"})
     fired = _check_invariants(
-        target, seed, inventory, space, capabilities, extended=(mode == "extended")
+        target,
+        seed,
+        inventory,
+        space,
+        capabilities,
+        extended=(mode == "extended"),
+        hypothetical_set_property_domain="set_property" in extra_capabilities,
     )
     if fired is not None:
         return ReachabilityCase(
