@@ -249,7 +249,7 @@ def build_variant_contracts() -> tuple[VariantContractV1, ...]:
             action_alphabet_fingerprint=_alphabet_fingerprint(_tree_edit_action_names()),
             kernel_ops=(),
             seed_policy_id="tree_edit_diffusion.minimal_valid_program_seed",
-            inventory_source="module_constant",
+            inventory_source="pack",
             source_path=_TREE_EDIT_DIFFUSION_SOURCE,
         ),
         VariantContractV1(

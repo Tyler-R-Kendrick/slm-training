@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import random
+from dataclasses import replace
 
 import pytest
 
@@ -148,6 +149,30 @@ def test_extended_sample_mutation_loop_restores() -> None:
         seen_actions.add(inverse.action)
     # The seeded loop exercised the extended inverse-edit supervision.
     assert seen_actions - {0}
+
+
+def test_tree_edit_space_reads_a_registered_pack_inventory() -> None:
+    """A pack extension widens the edit alphabet without editing the model."""
+    import slm_training.dsl.pack as pack_mod
+    from slm_training.dsl.pack import get_pack
+
+    base = get_pack("openui")
+    custom = replace(
+        base,
+        pack_id="tree-edit-extra-container",
+        container_components=(*base.container_components, "ExtraContainer"),
+        component_property_domains={
+            **base.component_property_domains,
+            "ExtraContainer": {"rest": (', "column"',)},
+        },
+    )
+    pack_mod.register_pack(custom)
+    try:
+        space = TreeEditSpace(pack_id=custom.pack_id)
+        assert "ExtraContainer" in space.components
+        assert "ExtraContainer" in space.container_components
+    finally:
+        pack_mod._PACKS.pop(custom.pack_id, None)
 
 
 def test_edit_new_fields_default() -> None:
