@@ -72,6 +72,16 @@ across a five-pattern, five-baseline, multi-metric matrix) and is left for
 follow-on work rather than rushed to a false "Done." The issue should stay
 open against the patterns and training/evaluation work enumerated above.
 
+## Review fixes (v2)
+
+* Rejection candidates are now drawn from the full legal set (operator
+  actions and history controls such as `undo`/`redo:<state>` alike), not
+  only operator actions -- a valid row is no longer dropped just because the
+  only unchosen alternative at a state happens to be a control action.
+* `OperatorEventMemoryReportV1` now carries and serializes a `version_stamp`
+  (`dsl.operators.replay_preference`), matching the repository's result-artifact
+  contract.
+
 ## Reproducibility
 
 ```bash

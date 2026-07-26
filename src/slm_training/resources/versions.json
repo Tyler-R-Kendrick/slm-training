@@ -889,13 +889,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "Review fixes: rejection candidates are drawn from the full legal set (operator actions and history controls alike), not just operator actions, so a valid row is never dropped for lack of an AST-edit alternative; OperatorEventMemoryReportV1 now carries and serializes a version_stamp"
+        },
         {
           "version": "v1",
           "date": "2026-07-26",

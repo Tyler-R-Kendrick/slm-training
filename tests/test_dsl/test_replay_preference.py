@@ -76,9 +76,10 @@ def test_no_rows_without_any_history_operation() -> None:
 def test_rows_replay_independently_to_their_recorded_output_state() -> None:
     """Acceptance: every row shares one exact input state and replays.
 
-    The chosen action's output state is exactly the state the underlying
-    conversation turn already produced and validated -- never an assumed
-    or reconstructed state.
+    Re-derive the chosen action from ``row.input_state_id`` on ``edited``
+    (independently of the trace the row was extracted from) and confirm it
+    lands on exactly ``row.chosen_output_state_id`` -- never an assumed or
+    merely-existing state.
     """
     pack, library, root = _fixture()
     edited, _application = _append(pack, library, root)
@@ -89,4 +90,21 @@ def test_rows_replay_independently_to_their_recorded_output_state() -> None:
     )
 
     row = report.rows[0]
-    assert undone.node(row.chosen_output_state_id).state_id == root.root_state_id
+    assert row.input_state_id == edited.current_state_id
+    replayed = undo_conversation(edited, provenance=_provenance(edited.current.state))
+    assert replayed.current_state_id == row.chosen_output_state_id
+    assert row.chosen_output_state_id == root.root_state_id
+
+
+def test_report_carries_a_version_stamp() -> None:
+    pack, library, root = _fixture()
+    edited, _application = _append(pack, library, root)
+    undone = undo_conversation(edited, provenance=_provenance(edited.current.state))
+
+    report = extract_replay_preference_rows(
+        undone, pack=pack, library=library, provenance_for=_provenance
+    )
+
+    assert report.version_stamp["stamp_schema"]
+    assert report.version_stamp["components"]["dsl.operators.replay_preference"]
+    assert report.to_dict()["version_stamp"] == report.version_stamp

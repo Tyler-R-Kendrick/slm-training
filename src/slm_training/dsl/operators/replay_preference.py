@@ -32,6 +32,7 @@ from slm_training.dsl.operators.legal_set import (
 )
 from slm_training.dsl.operators.registry import OperatorLibraryV1, OperatorStateV1
 from slm_training.dsl.pack import DslPack
+from slm_training.harness_core.versioning import build_version_stamp
 
 ProvenanceFactory = Callable[[OperatorStateV1], ApplicationProvenanceV1]
 
@@ -82,6 +83,7 @@ class OperatorEventMemoryReportV1:
     """
 
     rows: tuple[OperatorReplayPreferenceRowV1, ...]
+    version_stamp: dict
     schema: str = "operator_event_memory_report/v1"
 
     @property
@@ -97,6 +99,7 @@ class OperatorEventMemoryReportV1:
             "schema": self.schema,
             "rows": [row.to_dict() for row in self.rows],
             "counts_by_relation": self.counts_by_relation,
+            "version_stamp": self.version_stamp,
         }
 
 
@@ -141,6 +144,19 @@ def _legal_set_at(
     )
 
 
+def _pick_rejected(legal_set: OperatorLegalSetV1, chosen: str) -> str | None:
+    """A deterministic legal alternative to ``chosen``, or ``None`` if none exists.
+
+    Drawn from the full legal set -- operator actions and available history
+    controls (``undo``/``redo:<state>``) alike -- so a row is never dropped
+    just because the only unchosen alternative happens to be a control.
+    """
+    candidates = sorted(
+        action for action in legal_set.all_serialized_actions if action != chosen
+    )
+    return candidates[0] if candidates else None
+
+
 def extract_replay_preference_rows(
     trace: ConversationTraceV1,
     *,
@@ -173,15 +189,13 @@ def extract_replay_preference_rows(
                 state_id=decision_state_id,
                 provenance_for=provenance_for,
             )
-            alternatives = [
-                action.serialized for action in legal_set.operator_actions
-            ]
-            if "undo" in legal_set.all_serialized_actions and alternatives:
+            rejected = _pick_rejected(legal_set, "undo")
+            if "undo" in legal_set.all_serialized_actions and rejected is not None:
                 rows.append(
                     OperatorReplayPreferenceRowV1(
                         input_state_id=decision_state_id,
                         chosen_action="undo",
-                        rejected_action=alternatives[0],
+                        rejected_action=rejected,
                         chosen_output_state_id=following.output_state_id,
                         semantic_relation=ReplayPreferenceRelation.EDIT_THEN_UNDO,
                         correction_reason="user_undid_without_redo",
@@ -203,15 +217,13 @@ def extract_replay_preference_rows(
                 provenance_for=provenance_for,
             )
             chosen = f"redo:{following.output_state_id}"
-            alternatives = [
-                action.serialized for action in legal_set.operator_actions
-            ]
-            if chosen in legal_set.all_serialized_actions and alternatives:
+            rejected = _pick_rejected(legal_set, chosen)
+            if chosen in legal_set.all_serialized_actions and rejected is not None:
                 rows.append(
                     OperatorReplayPreferenceRowV1(
                         input_state_id=decision_state_id,
                         chosen_action=chosen,
-                        rejected_action=alternatives[0],
+                        rejected_action=rejected,
                         chosen_output_state_id=following.output_state_id,
                         semantic_relation=ReplayPreferenceRelation.UNDO_THEN_REDO,
                         correction_reason="user_redid_after_reconsidering",
@@ -219,4 +231,7 @@ def extract_replay_preference_rows(
                     )
                 )
 
-    return OperatorEventMemoryReportV1(rows=tuple(rows))
+    return OperatorEventMemoryReportV1(
+        rows=tuple(rows),
+        version_stamp=build_version_stamp("dsl.operators.replay_preference"),
+    )
