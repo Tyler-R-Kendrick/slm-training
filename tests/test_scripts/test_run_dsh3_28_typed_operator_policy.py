@@ -6,7 +6,11 @@ import json
 
 import pytest
 
-from scripts.run_dsh3_28_typed_operator_policy import _select_source_records, main
+from scripts.run_dsh3_28_typed_operator_policy import (
+    CAP2_MANIFEST,
+    _select_source_records,
+    main,
+)
 
 
 def test_record_slice_uses_first_source_order_duplicate(tmp_path) -> None:
@@ -43,3 +47,10 @@ def test_duplicate_head_family_is_rejected_before_matrix_execution(tmp_path) -> 
                 "local_flat,local_flat",
             ]
         )
+
+
+def test_cap2_mode_is_bound_to_the_current_immutable_fixture() -> None:
+    manifest = json.loads(CAP2_MANIFEST.read_text(encoding="utf-8"))
+
+    assert manifest["suite_version"] == "cap2_operator_v2"
+    assert manifest["generation"]["max_combinations_per_operator"] == 32

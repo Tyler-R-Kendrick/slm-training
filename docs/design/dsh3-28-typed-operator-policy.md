@@ -132,3 +132,21 @@ SLM-403 work.
 the scorer selects only live typed rows, COMPLETE singleton decisions execute
 zero scorer forwards, and PARTIAL inputs defer. The policy-view/corpus tests
 prove that canonical persistence keeps evaluator-only label joins intact.
+
+## CAP2 v2 current-surface stop-rule result (2026-07-26)
+
+[`dsh3-28-typed-operator-policy-20260726-cap2-v2-fiveheads/report.json`](dsh3-28-typed-operator-policy-20260726-cap2-v2-fiveheads/report.json)
+records the five-head CPU-only matrix against the executable current-surface
+CAP2 v2 fixture. The two train and four held-out policy rows were all
+PARTIAL at the fixture's immutable 32-combination cap. The harness therefore
+did not force a selected action or train enabled/shuffled-label arms; each
+head's zero/random controls materialized four evaluator-side selections via
+fresh legal-set enumeration and compiler application. The remaining 16
+fixture cases replayed through the fixture oracle, while all four deferred transition
+rows failed closed, yielding 16/20 CAP2 cases rather than a false pass.
+
+AgentV passed its three structural assertions. No enabled-versus-zero causal
+denominator exists because no COMPLETE training row exists, so the
+preregistered verdict is **reject**. This closes the trained-policy hypothesis
+at the current CAP2 v2 coverage budget; it is neither a ship claim nor evidence
+that a larger complete-coverage corpus would fail.
