@@ -529,7 +529,8 @@ class TernaryECOCHead(LocalActionHead):
         self.max_trits = 8
         self.trit_logits = nn.Linear(hidden_dim, self.max_trits * 3)
 
-    def _get_entry(self, legal_actions: list[str]) -> ActionCodeEntry:
+    def entry_for(self, legal_actions: list[str]) -> ActionCodeEntry:
+        """Return the registered ECOC entry for this exact legal-action set."""
         if self.registry is None:
             raise ValueError("TernaryECOCHead requires a registry")
         schema = ActionSchema(
@@ -553,7 +554,7 @@ class TernaryECOCHead(LocalActionHead):
         state_context: StateContext,
         legal_actions: list[str],
     ) -> LocalActionOutput:
-        entry = self._get_entry(legal_actions)
+        entry = self.entry_for(legal_actions)
         m = len(entry.alphabet_radices)
         flat = self.trit_logits(hidden)
         batch = hidden.shape[0]
@@ -581,7 +582,7 @@ class TernaryECOCHead(LocalActionHead):
         if forced is not None:
             return forced
         assert output.trits is not None
-        entry = self._get_entry(legal_actions)
+        entry = self.entry_for(legal_actions)
         hard_trits = output.trits.argmax(dim=-1)  # [batch, m]
         codeword = tuple(int(t) for t in hard_trits[0].tolist())
         action = entry.action_for_codeword(codeword)

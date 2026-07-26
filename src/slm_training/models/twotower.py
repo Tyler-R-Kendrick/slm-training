@@ -600,6 +600,11 @@ class TwoTowerConfig:
     # ``TwoTowerModel.abstract_plan_trace(...)``, a side channel that
     # ``training_loss``/``forward`` never call on their own.
     abstract_plan_mode: str = "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
+    # AP-022 (SLM-313): default-off auxiliary supervision and conditioning for
+    # the discrete plan.  The structural target is derived only from training
+    # labels; held-out decoding always uses the predicted plan.
+    abstract_plan_loss_weight: float = 0.0
+    abstract_plan_train_conditioning: bool = False
     # AP-024 (SLM-316): default-off gated-additive conditioning of MaskGIT/
     # tree denoising on the discrete abstract plan (see
     # ``models/abstract_plan_connector.py``). ``disabled`` builds no
@@ -738,6 +743,15 @@ class TwoTowerConfig:
             raise ValueError(
                 "abstract_plan_connector_arm requires abstract_plan_mode != "
                 "'disabled' (the connector conditions on the plan head's trace)"
+            )
+        if self.abstract_plan_train_conditioning and (
+            self.abstract_plan_mode == "disabled"
+            or self.abstract_plan_connector_arm == "disabled"
+            or self.abstract_plan_loss_weight <= 0.0
+        ):
+            raise ValueError(
+                "abstract_plan_train_conditioning requires an enabled abstract "
+                "plan head, connector, and positive abstract_plan_loss_weight"
             )
         if (
             self.abstract_plan_connector_arm != "disabled"
@@ -1829,6 +1843,7 @@ class TwoTowerModel(nn.Module):
         self._component_token_ids_cache: tuple[int, ...] | None = None
         self._binder_token_ids_cache: tuple[int, ...] | None = None
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
+        self._abstract_plan_target_cache: dict[str, tuple[int, ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_role_properties: list[dict[str, tuple[str, ...]]] | None = None
@@ -1973,6 +1988,7 @@ class TwoTowerModel(nn.Module):
         self._target_ids_cache.clear()
         self._compiler_decision_cache.clear()
         self._context_token_count_cache.clear()
+        self._abstract_plan_target_cache.clear()
         if is_hf_context(self.context) and hasattr(
             self.context, "clear_backbone_cache"
         ):
@@ -2358,6 +2374,63 @@ class TwoTowerModel(nn.Module):
             target_plan_ids=target_plan_ids,
             generator=generator,
         )
+
+    def _abstract_plan_targets(self, batch: list[ExampleRecord]) -> torch.Tensor:
+        """Return opaque structural supervision for the optional plan head.
+
+        Targets are extracted from training labels only.  They encode four
+        bounded program facts (node count, leaf count, maximum depth, and
+        placeholder bindings), not component spellings or caller identifiers.
+        The slots remain opaque at inference; this is supervision for a
+        compact latent code, not a runtime semantic authority.
+        """
+        if self.abstract_plan is None:
+            raise ValueError("abstract plan targets require an enabled plan")
+        from slm_training.dsl.parser import parse
+
+        rows: list[tuple[int, ...]] = []
+        for record in batch:
+            cached = self._abstract_plan_target_cache.get(record.openui)
+            if cached is None:
+                root = parse(record.openui).root
+                node_count = 0
+                leaf_count = 0
+                max_depth = 0
+                binding_count = 0
+
+                def walk(node: object, depth: int) -> None:
+                    nonlocal node_count, leaf_count, max_depth, binding_count
+                    if not isinstance(node, dict):
+                        return
+                    node_count += 1
+                    max_depth = max(max_depth, depth)
+                    props = node.get("props")
+                    children = props.get("children") if isinstance(props, dict) else None
+                    if not isinstance(children, list) or not children:
+                        leaf_count += 1
+                    if isinstance(props, dict):
+                        binding_count += sum(
+                            isinstance(value, str) and value.startswith(":")
+                            for key, value in props.items()
+                            if key != "children"
+                        )
+                    if isinstance(children, list):
+                        for child in children:
+                            walk(child, depth + 1)
+
+                walk(root, 1)
+                facts = (node_count, leaf_count, max_depth, binding_count)
+                cached = tuple(
+                    min(self.abstract_plan.slot_count - 1, value) for value in facts
+                )
+                self._abstract_plan_target_cache[record.openui] = cached
+            rows.append(cached)
+        base = torch.tensor(rows, dtype=torch.long, device=self.device_name)
+        rounds = self.abstract_plan.rounds
+        if base.size(1) < rounds:
+            repeats = (rounds + base.size(1) - 1) // base.size(1)
+            base = base.repeat(1, repeats)
+        return base[:, :rounds]
 
     @property
     def abstract_plan_connector(self) -> AbstractPlanConnector | None:
@@ -3023,6 +3096,36 @@ class TwoTowerModel(nn.Module):
 
         from slm_training.runtime.telemetry import timed
 
+        abstract_trace: AbstractPlanTrace | None = None
+        abstract_targets: torch.Tensor | None = None
+        train_plan_conditioning = bool(
+            getattr(self.config, "abstract_plan_train_conditioning", False)
+        )
+        abstract_plan_w = float(
+            getattr(self.config, "abstract_plan_loss_weight", 0.0) or 0.0
+        )
+        if abstract_plan_w > 0.0:
+            if self.abstract_plan_head is None or self.abstract_plan is None:
+                raise ValueError(
+                    "abstract_plan_loss_weight requires abstract_plan_mode != 'disabled'"
+                )
+            abstract_targets = self._abstract_plan_targets(batch)
+            abstract_trace = self.abstract_plan_head(
+                ctx,
+                ctx_pad,
+                mode="teacher_forced",
+                target_plan_ids=abstract_targets,
+            )
+            if train_plan_conditioning:
+                connector = self.abstract_plan_connector
+                if connector is None:
+                    raise ValueError(
+                        "abstract_plan_train_conditioning requires a plan connector"
+                    )
+                vector = connector.plan_vector_from_trace(abstract_trace)
+                arm = PlanConnectorArm(self.config.abstract_plan_connector_arm)
+                self.denoiser.set_plan_vector(resolve_plan_vector(vector, arm=arm))
+
         depth_logits: list[torch.Tensor] | None = None
         with timed("denoiser_forward"):
             self._set_runtime_symbol_features(
@@ -3053,6 +3156,8 @@ class TwoTowerModel(nn.Module):
                 # bias it. (Same defect class as PR #275's loss-suite fix —
                 # cleared here at the source.)
                 self.denoiser.set_runtime_symbol_features(None)
+                if train_plan_conditioning:
+                    self.denoiser.set_plan_vector(None)
 
         # SLM-237/SLM-238 (RSC-A01/RSC-A02): validate/normalize before any loss
         # term is computed from depth_logits. This runs unconditionally (not
@@ -3253,6 +3358,28 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics["recursive_intermediate_aux_loss"] = 0.0
             self.last_training_metrics["recursive_final_depth_aux_contribution"] = 0.0
             self.last_training_metrics["combined_training_loss"] = 0.0
+
+        if abstract_trace is not None and abstract_targets is not None:
+            assert abstract_trace.logits is not None
+            plan_loss = F.cross_entropy(
+                abstract_trace.logits.reshape(-1, abstract_trace.logits.size(-1)),
+                abstract_targets.reshape(-1),
+            )
+            mask_loss = mask_loss + abstract_plan_w * plan_loss
+            self.last_training_metrics.update(
+                {
+                    "abstract_plan_loss": float(plan_loss.detach().cpu()),
+                    "abstract_plan_accuracy": float(
+                        abstract_trace.logits.argmax(dim=-1)
+                        .eq(abstract_targets)
+                        .float()
+                        .mean()
+                        .detach()
+                        .cpu()
+                    ),
+                    "abstract_plan_train_conditioning": train_plan_conditioning,
+                }
+            )
 
         # SLM-238 (RSC-A02): the required RecursiveObjectiveContractV2 schema,
         # built from (never a second source of truth alongside) the flat

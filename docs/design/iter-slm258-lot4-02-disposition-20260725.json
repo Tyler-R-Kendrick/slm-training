@@ -1,0 +1,123 @@
+{
+  "adoption_blockers": [
+    "fidelity_contract verdict 'needs_target_trace_contract' != 'authorize_bounded_implementation'",
+    "trace_gate verdict 'inconclusive' != 'oracle_ceiling_positive'",
+    "slm250_activation verdict 'not_authorized' != 'authorized_wiring_only'",
+    "slm251_launch verdict 'not_authorized' != 'authorized_wiring_only'",
+    "slm252_routing verdict 'not_authorized' != 'authorized_wiring_only'",
+    "slm253_readout verdict 'not_authorized' != 'authorized_wiring_only'",
+    "slm254_causal_use verdict 'not_authorized' != 'authorized_wiring_only'",
+    "slm255_alternative_valid verdict 'not_authorized' != 'authorized_wiring_only'",
+    "slm256_capacity verdict 'not_authorized' != 'authorized_wiring_only'",
+    "slm257_frontier verdict 'not_authorized' != 'authorized_wiring_only'"
+  ],
+  "adoption_verdict": "inconclusive_missing_evidence",
+  "allowed_code_config_default_changes": [
+    "none: production defaults, decode paths, and serving configs are unchanged"
+  ],
+  "allowed_language": [
+    "latent computation",
+    "latent representation"
+  ],
+  "blocked_claims": [
+    "no adopt_default or production default change (none exists in V1)",
+    "no interpretable-reasoning/planning language (causal-use gate not positive)",
+    "no equal-quality cost, latency, throughput, FLOPs, or energy claim",
+    "no claim that explicit trace benefit implies latent benefit",
+    "no universal latent-method dominance claim"
+  ],
+  "date": "2026-07-25",
+  "disposition_hash": "b5a48f79127c74f983b241ecbd21e2f658a18d6dfc88cfcaa74945bf3f83da81",
+  "disposition_id": "lotus-openui-disposition-v1",
+  "gate_refs": {
+    "fidelity_contract": {
+      "contract_hash": "801ce267b64f52b88e6e80fa091084c5f1a6628de60658d2d161db82f5117af2",
+      "path": "docs/design/lotus-openui-fidelity-contract-v1.json"
+    },
+    "slm250_activation": {
+      "contract_hash": "2fad1057fe77352daebf2b8b792d599cf62494ca023169da0570bab9e133d3f7",
+      "path": "docs/design/iter-slm250-lot1-01-not-authorized-20260725.json"
+    },
+    "slm251_launch": {
+      "contract_hash": "f358dcc954a6a96c6e494acbabc8635b79184ca15b9d80f3f59ff7d3e7416ace",
+      "path": "docs/design/iter-slm251-lot1-02-not-authorized-20260725.json"
+    },
+    "slm252_routing": {
+      "contract_hash": "b1a3a36449cad0aead49593a1894907ab283d44c6c692ce62c549231eacf8ce9",
+      "path": "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json"
+    },
+    "slm253_readout": {
+      "contract_hash": "d312bc70e05cbff00233edb79e34408bb4a9e7e7c09dffd14c64497e73f61eaa",
+      "path": "docs/design/iter-slm253-lot2-02-not-authorized-20260725.json"
+    },
+    "slm254_causal_use": {
+      "contract_hash": "99053bd6cd87993e05a2d3585b94b382a51e21183a25dad2b31d286da0cbea73",
+      "path": "docs/design/iter-slm254-lot3-01-not-authorized-20260725.json"
+    },
+    "slm255_alternative_valid": {
+      "contract_hash": "f7de49d6dafc7c7ae46f0b628f6428840dfde7c51ebd209fd7c44cac98df0e92",
+      "path": "docs/design/iter-slm255-lot3-02-not-authorized-20260725.json"
+    },
+    "slm256_capacity": {
+      "contract_hash": "238793d40b979f3667ddc5ab5a56877681c8d3201116834310704238218fa866",
+      "path": "docs/design/iter-slm256-lot2-03-not-authorized-20260725.json"
+    },
+    "slm257_frontier": {
+      "contract_hash": "3840a7e57f9829623bd91f26ff0bf8c3d4388c830a82f720f86395702b00bf06",
+      "path": "docs/design/iter-slm257-lot4-01-not-authorized-20260725.json"
+    },
+    "trace_gate": {
+      "contract_hash": "6cdd695bf5b32036519f1ee2e787a44e4afbb045fc059f75a92a2d069f0ee7c5",
+      "path": "docs/design/compiler-reasoning-trace-v1.json"
+    }
+  },
+  "linear_issue": "SLM-258",
+  "mechanism_dispositions": {
+    "accepted_alternative_training": "not_identifiable",
+    "activation_gate_evaluators": "keep_diagnostic",
+    "causal_intervention_tooling": "not_identifiable",
+    "compiler_reasoning_trace_contract": "keep_diagnostic",
+    "depth_width_inference_scaling": "not_identifiable",
+    "explicit_to_latent_curriculum": "not_identifiable",
+    "kxc_causal_workspace": "not_identifiable",
+    "original_embedding_addition": "not_identifiable",
+    "post_loop_vs_per_iteration_timing": "not_identifiable",
+    "recurrent_whole_backbone_looping": "not_identifiable",
+    "semantic_block_factorization_order": "not_identifiable",
+    "set_valued_objective": "not_identifiable",
+    "shared_auxiliary_structured_readout": "not_identifiable"
+  },
+  "negative_result_registry": [
+    "LOT1-01 faithful K x c implementation: not_authorized (trace contract prerequisite)",
+    "LOT1-02 explicit-to-latent curriculum campaign: not_authorized (no model path)",
+    "LOT2-01/02/03, LOT3-01/02, LOT4-01 downstream work: not_authorized (unmet LOT1-02 launch gate)"
+  ],
+  "project": "LOTUS-Faithful Causal OpenUI Transfer & Causal Mediation",
+  "required_follow_ups": [
+    "run the SLM-249 oracle-ceiling campaign (matched continued explicit control, >=3 paired seeds) to replace the inconclusive trace gate",
+    "if the ceiling is positive, re-run scripts/evaluate_lot1_01_activation_gate and scripts/evaluate_lot_downstream_gate (they read contracts live) and re-file LOT1-01/LOT1-02 implementation issues",
+    "keep CompilerReasoningTraceV1 and the gate evaluators as diagnostic assets"
+  ],
+  "schema_version": "lotus_openui_disposition/v1",
+  "upstream_verdicts": {
+    "fidelity_contract": "needs_target_trace_contract",
+    "slm250_activation": "not_authorized",
+    "slm251_launch": "not_authorized",
+    "slm252_routing": "not_authorized",
+    "slm253_readout": "not_authorized",
+    "slm254_causal_use": "not_authorized",
+    "slm255_alternative_valid": "not_authorized",
+    "slm256_capacity": "not_authorized",
+    "slm257_frontier": "not_authorized",
+    "trace_gate": "inconclusive"
+  },
+  "version_stamp": {
+    "code_commit": "338da8f2f9173294f5420c82c80098501867188e",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v117"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T16:26:55.724991+00:00"
+  }
+}
