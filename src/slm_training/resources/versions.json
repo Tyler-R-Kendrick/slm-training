@@ -4680,6 +4680,11 @@
         {
           "version": "v1",
           "date": "2026-07-26",
+          "note": "no-bump: add the SLM-322/AP-027 scratch checkpoint roster row; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
           "note": "no-bump: replace the SLM-313 scratch checkpoint roster row with its measured rejected result; SLM-228 behavior is unchanged."
         },
         {
@@ -9420,6 +9425,30 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "initial SLM-313 locked AbstractPlan functional-evidence protocol with complete arm/path contracts, paired constrained CI rules, raw-path non-promotion, and fail-closed unavailable disposition"
+        }
+      ]
+    },
+    "harness.experiments.ap027_discrete_plan_pareto": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/discrete_plan_pareto.py",
+        "scripts/run_discrete_plan_pareto.py",
+        "tests/test_harnesses/experiments/test_discrete_plan_pareto.py",
+        "tests/test_scripts/test_run_discrete_plan_pareto.py",
+        "docs/design/discrete-plan-pareto.md",
+        "docs/design/iter-slm322-discrete-plan-pareto-20260726.json"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "ParetoLatencyRow.to_dict() and summarize_pareto's Pareto point ids now canonicalize aliased arm names (e.g. oracle_plan) instead of persisting the raw alias, which previously disagreed with the canonicalized measured_arms field; added a metrics_provenance field so proxy metrics (parse_rate/placeholder_fidelity standing in for meaning-v2/binder-F1 at screening scale) travel with each JSON row instead of only being documented in the generated Markdown caption; deduplicated the version-stamp component pair into a shared STAMP_COMPONENTS constant"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial AP-027/SLM-322 discrete-plan Pareto contract: extends AP-022's arm/campaign pattern with a 1/2/4/8 refinement-round axis and the issue's named successor arm (learned_plan_binder_precision), structurally enforcing that AP-022's closed ignored_or_collapsed verdict for learned_abstract_plan can never be marked promotion_eligible"
         }
       ]
     },
