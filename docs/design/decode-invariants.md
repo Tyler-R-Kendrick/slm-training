@@ -367,7 +367,13 @@ The contract is in place: an 11-action tree-edit language
 **Status: partial — full-AST output is the shipped default.** The reserved
 patch-target arm was experimentally rejected, and the SLM-299/305 reachability
 audit measured `reachable_fraction = 0.0` from the standard seed on all suites
-([`iter-slm305-edit-language-20260724.md`](iter-slm305-edit-language-20260724.md)).
+([`iter-slm305-edit-language-20260724.md`](iter-slm305-edit-language-20260724.md))
+— **for the `tree_edit_diffusion` variant only** (alphabet fingerprint
+`ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab`; VAR0-01/
+VAR0-02, [`var0-02-reachability-matrix-20260726.md`](var0-02-reachability-matrix-20260726.md)).
+The `repl_operators` and `twotower_prompt_ast` variants are `not_measured_deferred`
+and `not_applicable` respectively — reachability is a `(variant, suite)` cell,
+never a program-wide scalar (I14).
 
 **Rejected approach, live goal.** Full-AST output is the *bootstrap* mode, not
 the end state. **Successor approach:** attack reachability first —
@@ -387,7 +393,11 @@ dated, documented waiver — in the same measured-results doc, and links it here
 
 Status labels like `rejected`, `unavailable`, `nl_available=False`, and
 `reachable_fraction=0.0` describe **current approach state**. They may never be
-cited as a reason an invariant does not apply.
+cited as a reason an invariant does not apply. A variant-scoped measurement
+may also never be cited as a program-scoped status (VAR0-02): a
+`reachable_fraction` is attributed to one registered variant's action
+alphabet and says nothing about any other variant until that variant is
+separately measured.
 
 Open goals with named successors, at a glance:
 

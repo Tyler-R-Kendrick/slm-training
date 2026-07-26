@@ -5265,7 +5265,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -5279,6 +5279,11 @@
         "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "VAR0-02 (SLM-423): add an optional variant: VariantContractV1 parameter to analyze_reachability()/analyze_record(), defaulting to tree_edit_variant() (bit-for-bit identical to omitting it -- this module's BFS engine has only ever analyzed that one variant). Passing any other registered variant raises ReachabilityNotMeasuredError rather than silently running the tree-edit engine against a different alphabet. Reachability is now explicitly a (variant, suite) cell, never a program-wide scalar."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -5330,6 +5335,23 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "SLM-424 (VAR1-01): four-arm hypothetical property-mutation/component-widening reachability probe over the SLM-299 suite corpora (A baseline, B set_property, C component_widen, D both). hypothetical=true throughout; no production action space change. node_budget reduced from the issue's suggested 120 to 15 to fit the repository's MAX_RUN_MINUTES=3 hard cap -- see the report's methodology note."
+        }
+      ]
+    },
+    "harness.experiments.var0_02_reachability_matrix": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_var0_02_reachability_matrix.py",
+        "tests/test_harnesses/experiments/test_var0_02_reachability_matrix.py",
+        "docs/design/var0-02-reachability-matrix-20260726.json",
+        "docs/design/var0-02-reachability-matrix-20260726.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-423 (VAR0-02): per-(variant, suite) reachability matrix, superseding the SLM-299/305 audit's program-wide scalar. tree_edit_diffusion row is measured via the existing analyzer (variant param, bit-for-bit unchanged default); repl_operators is not_measured_deferred (enumeration primitives exist but a new BFS engine is out of scope); twotower_prompt_ast is not_applicable (no discrete edit-action space -- denoises directly, nothing to search). No action alphabet, checkpoint, or decode path changed."
         }
       ]
     },
@@ -9214,7 +9236,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v4",
+      "version": "v5",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -9222,6 +9244,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "VAR0-02 (SLM-423): I12's bare reachable_fraction=0.0 citation is now attributed to the tree_edit_diffusion variant and its alphabet fingerprint (see var0-02-reachability-matrix-20260726.md); I14's guard gains one sentence -- a variant-scoped measurement may not be cited as a program-scoped status. No check logic changed, no invariant weakened."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
