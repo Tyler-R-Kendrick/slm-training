@@ -12,6 +12,7 @@ from slm_training.data.flow.operator_policy_corpus import (
     build_operator_policy_corpus,
     build_operator_policy_rows,
     build_operator_termination_rows,
+    materialize_operator_policy_selection,
 )
 from slm_training.dsl.operators import (
     ActionEffectV1,
@@ -265,6 +266,31 @@ def test_corpus_quality_report_aggregates_hard_negatives_and_rejections() -> Non
     assert report.positive_only_rows == 1
     payload = report.to_dict()
     assert payload["schema"] == "operator_policy_corpus_quality_report/v1"
+
+
+def test_policy_selection_is_replayed_only_from_a_fresh_live_legal_set() -> None:
+    _pack, _library, trace, collapse, authority_resolver = _different_result_fixture()
+    rows, _rejected = build_operator_policy_rows(
+        trace=trace, collapse=collapse, authority_resolver=authority_resolver
+    )
+    row = rows[0]
+    materialized = materialize_operator_policy_selection(
+        trace=trace,
+        row=row,
+        authority_resolver=authority_resolver,
+        selected_action_row=row.accepted_action_row,
+        selected_argument_rows=row.accepted_argument_rows,
+    )
+    assert materialized.application_id == row.accepted_application_id
+    assert materialized.result.state is not None
+    with pytest.raises(ValueError, match="outside policy input"):
+        materialize_operator_policy_selection(
+            trace=trace,
+            row=row,
+            authority_resolver=authority_resolver,
+            selected_action_row=999,
+            selected_argument_rows=(),
+        )
 
 
 def test_policy_reprojection_rejects_an_unbounded_combination_cap() -> None:

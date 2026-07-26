@@ -121,6 +121,15 @@ see scope notes), `tests/test_dsl/test_operator_legal_set.py`,
 `tests/test_models/test_operator_policy_view.py`,
 `tests/test_models/test_operator_feature_encoder.py` — all pass unchanged.
 
+### Evaluator-side materialization (SLM-403)
+
+`materialize_operator_policy_selection` is the only path from a selected
+row-local policy output back to a runtime action. It re-enumerates the row's
+exact legal set, checks the persisted sanitized view and legal-set fingerprint,
+maps canonical rows back to live references, then applies the matching action
+through the compiler. Runtime application, proof, and result data remain
+evaluator evidence and are never added to `OperatorPolicyInputV1`.
+
 ## Stop-rule disposition
 
 The ticket's stop rule fires "if too few states have certified nontrivial
