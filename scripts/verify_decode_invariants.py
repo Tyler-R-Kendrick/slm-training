@@ -16,6 +16,8 @@ side effect. It certifies six things:
 6. The reserved operator-token channel has not drifted from default-off
    without a documented decision, and the shared encoder/decoder ops
    vocabulary matches its committed fingerprint (I13).
+7. Every registered model variant's contract (VAR0-01) matches its live
+   sources, and no variant falsely claims pack-derived component inventory.
 
 Run: ``python -m scripts.verify_decode_invariants``
 """
@@ -354,6 +356,44 @@ def check_ops_vocab() -> dict[str, Any]:
     return {"fingerprint": live["fingerprint"], "count": live["count"]}
 
 
+def check_variant_contracts() -> dict[str, Any]:
+    """VAR0-01: every registered model variant matches its live sources.
+
+    This one check imports, like ``check_ops_vocab``, because the point is
+    comparing a committed registry against values derived from each
+    variant's live sources (module-level action constants, the live operator
+    registry, the pack registry) — a pure text check could not tell an
+    honest classification from a stale or false one. Building
+    ``slm_training.dsl.variants`` itself stays torch-free, so this adds no
+    heavy dependency to the static CI job.
+    """
+    try:
+        from slm_training.dsl.variants import fingerprint, load_registry, manifest
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(f"variant registry is unimportable: {exc}") from exc
+
+    try:
+        committed = load_registry()
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(
+            f"committed variant registry is unreadable: {exc}"
+        ) from exc
+    live = manifest()
+    if committed.get("fingerprint") != fingerprint():
+        raise DecodeInvariantError(
+            "variant registry drifted from its committed contracts; a variant "
+            "was added, removed, or reclassified. Rebuild with "
+            "`python -c 'from slm_training.dsl.variants import write_registry;"
+            " write_registry()'` and bump `dsl.variants` in versions.json "
+            f"(see {CANONICAL_DOC})"
+        )
+    if committed != live:
+        raise DecodeInvariantError("committed variant registry is stale")
+    if not live["count"]:
+        raise DecodeInvariantError("variant registry is empty")
+    return {"fingerprint": live["fingerprint"], "count": live["count"]}
+
+
 def certify() -> dict[str, Any]:
     levers = _weakening_levers()
     return {
@@ -367,6 +407,7 @@ def certify() -> dict[str, Any]:
         "linking_docs": check_docs_link_canonical(),
         "reserved_ops": check_reserved_ops_default_off(),
         "ops_vocab": check_ops_vocab(),
+        "variant_contracts": check_variant_contracts(),
     }
 
 

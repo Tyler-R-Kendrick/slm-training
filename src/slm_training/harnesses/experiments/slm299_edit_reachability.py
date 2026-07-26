@@ -62,6 +62,8 @@ __all__ = [
     "Verdict",
     "add_container_action",
     "analyze_reachability",
+    "component_widen_action",
+    "set_property_action",
 ]
 
 EXPERIMENT_ID = "slm299-edit-reachability"
@@ -167,6 +169,103 @@ def add_container_action(
 
     return ExtraAction(
         name="ADD_CONTAINER", generate=_generate, capabilities=frozenset({"container_add"})
+    )
+
+
+# Candidate rest values for the set_property what-if: the grammar's full
+# direction-property domain, wider than CONTAINER_RESTS (which only lists
+# what the real container-*minting* actions currently produce — see VAR0-03).
+# Both are grammar-legal (checked against the real parser below regardless).
+_HYPOTHETICAL_PROPERTY_DOMAIN: tuple[str, ...] = (', "column"', ', "row"', "")
+
+
+def set_property_action(
+    rests: Sequence[str] = _HYPOTHETICAL_PROPERTY_DOMAIN,
+) -> ExtraAction:
+    """VAR1-01 hypothetical: rebind an existing container's ``rest`` (its
+    enum/direction argument) in place, without minting or removing any
+    statement. No real action in the deployed edit space edits ``rest`` on an
+    existing node — see ``_check_invariants``'s ``needs_direction_change``
+    reason. This is a *what-if* probe of a property-mutation action class,
+    never a production action; see VAR1-01 (SLM-424).
+    """
+
+    def _generate(
+        statements: list[Statement], inventory: list[str]
+    ) -> list[tuple[list[Statement], dict[str, Any]]]:
+        del inventory
+        out: list[tuple[list[Statement], dict[str, Any]]] = []
+        for idx, stmt in enumerate(statements):
+            if not stmt.has_list:
+                continue
+            for rest in rests:
+                if rest == stmt.rest:
+                    continue
+                working = [
+                    Statement(s.name, s.comp, list(s.children), s.rest, s.has_list)
+                    for s in statements
+                ]
+                working[idx] = Statement(
+                    stmt.name, stmt.comp, list(stmt.children), rest, stmt.has_list
+                )
+                rendered = render_statements(working)
+                try:
+                    validate(rendered)
+                except Exception:  # noqa: BLE001
+                    continue
+                out.append(
+                    (working, {"action": "SET_PROPERTY", "stmt": stmt.name, "rest": rest})
+                )
+        return out
+
+    return ExtraAction(
+        name="SET_PROPERTY", generate=_generate, capabilities=frozenset({"set_property"})
+    )
+
+
+def component_widen_action(components: Sequence[str]) -> ExtraAction:
+    """VAR1-01 hypothetical: replace an existing statement's component with
+    one of ``components`` — names the *analyzed target itself* already uses
+    (so they are provably grammar-legal; the target parsed and validated) but
+    that ``LEAF_COMPONENTS``/``CONTAINER_COMPONENTS`` excludes. Bounded to the
+    specific record under analysis, never an open-ended vocabulary widening,
+    and every candidate is re-validated through the real parser exactly like
+    a production REPLACE. See VAR1-01 (SLM-424).
+    """
+
+    def _generate(
+        statements: list[Statement], inventory: list[str]
+    ) -> list[tuple[list[Statement], dict[str, Any]]]:
+        del inventory
+        out: list[tuple[list[Statement], dict[str, Any]]] = []
+        for idx, stmt in enumerate(statements):
+            for comp in components:
+                if comp == stmt.comp:
+                    continue
+                working = [
+                    Statement(s.name, s.comp, list(s.children), s.rest, s.has_list)
+                    for s in statements
+                ]
+                working[idx] = Statement(
+                    stmt.name, comp, list(stmt.children), stmt.rest, stmt.has_list
+                )
+                rendered = render_statements(working)
+                try:
+                    validate(rendered)
+                except Exception:  # noqa: BLE001
+                    continue
+                out.append(
+                    (
+                        working,
+                        {"action": "COMPONENT_WIDEN", "stmt": stmt.name, "comp": comp},
+                    )
+                )
+        return out
+
+    return ExtraAction(
+        name="COMPONENT_WIDEN",
+        generate=_generate,
+        capabilities=frozenset({"component_widen"}),
     )
 
 
@@ -318,12 +417,13 @@ def _check_invariants(
         return REASON_NEEDS_CONTAINER_REMOVE
 
     known = set(space.components)
-    for stmt in target_containers:
-        if stmt.comp not in CONTAINER_COMPONENTS or stmt.comp not in known:
-            return REASON_UNSUPPORTED_COMPONENT
-    for stmt in target_leaves:
-        if stmt.comp not in LEAF_COMPONENTS or stmt.comp not in known:
-            return REASON_UNSUPPORTED_COMPONENT
+    if "component_widen" not in capabilities:
+        for stmt in target_containers:
+            if stmt.comp not in CONTAINER_COMPONENTS or stmt.comp not in known:
+                return REASON_UNSUPPORTED_COMPONENT
+        for stmt in target_leaves:
+            if stmt.comp not in LEAF_COMPONENTS or stmt.comp not in known:
+                return REASON_UNSUPPORTED_COMPONENT
 
     # ADD / INSERT_SUBTREE / REPLACE_SUBTREE / BIND_PLACEHOLDER bind only
     # inventory slots, and the seed carries no leaves. So every target leaf
@@ -342,6 +442,11 @@ def _check_invariants(
     # rest must therefore be a seed rest or (with container_add) a candidate
     # mint rest; without any container-creating action the multisets must
     # match exactly.
+    if "set_property" in capabilities:
+        # A rest-mutation action can produce any target rest on any
+        # container, root included -- skip both rest checks below entirely.
+        return None
+
     seed_rests = sorted(s.rest for s in seed_containers)
     target_rests = sorted(s.rest for s in target_containers)
     # Root can never be removed or re-minted, and REPLACE preserves rest:
