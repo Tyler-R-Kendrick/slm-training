@@ -112,6 +112,12 @@ from slm_training.dsl.action_shortlist import (
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
 from slm_training.dsl.abstract_plan import AbstractPlanV1
+from slm_training.models.abstract_plan_connector import (
+    AbstractPlanConnector,
+    PlanConnectorArm,
+    PlanConnectorTrace,
+    resolve_plan_vector,
+)
 from slm_training.models.abstract_plan_head import (
     AbstractPlanHead,
     AbstractPlanMode,
@@ -124,6 +130,7 @@ from slm_training.models.tokenizer import (
 )
 
 _ABSTRACT_PLAN_MODES: tuple[str, ...] = tuple(mode.value for mode in AbstractPlanMode)
+_PLAN_CONNECTOR_ARMS: tuple[str, ...] = tuple(arm.value for arm in PlanConnectorArm)
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
     "twotower_opaque_projection_models",
     default=frozenset(),
@@ -589,12 +596,17 @@ class TwoTowerConfig:
     # AP-023 (SLM-315): default-off discrete abstract-plan head over pooled
     # context-tower states. ``disabled`` builds no head at all, so
     # compatibility_fingerprint/RNG stream/optimizer groups stay bit-exact
-    # with the pre-existing baseline. A connector into the decoder stays
-    # off regardless of this mode until AP-027 evidence clears (see
-    # ``semantic_connector`` above) -- this only ever populates
+    # with the pre-existing baseline. This only ever populates
     # ``TwoTowerModel.abstract_plan_trace(...)``, a side channel that
-    # ``training_loss``/``forward`` never call.
+    # ``training_loss``/``forward`` never call on their own.
     abstract_plan_mode: str = "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
+    # AP-024 (SLM-316): default-off gated-additive conditioning of MaskGIT/
+    # tree denoising on the discrete abstract plan (see
+    # ``models/abstract_plan_connector.py``). ``disabled`` builds no
+    # connector at all -- bit-exact with the pre-AP-024 baseline. Requires
+    # ``abstract_plan_mode != "disabled"``, since every arm conditions on
+    # that head's trace (see ``AbstractPlanConnector``/``PlanConnectorArm``).
+    abstract_plan_connector_arm: str = "disabled"  # disabled | learned | oracle | detached | empty | random | shuffled
     connector_hidden_dim: int = 256
     connector_rank: int = 32
     connector_n_queries: int = 4
@@ -712,6 +724,47 @@ class TwoTowerConfig:
             raise ValueError(
                 f"abstract_plan_mode={self.abstract_plan_mode!r} is not one of "
                 f"{_ABSTRACT_PLAN_MODES!r}"
+            )
+        # AP-024 (SLM-316): same fail-closed convention as abstract_plan_mode above.
+        if self.abstract_plan_connector_arm not in _PLAN_CONNECTOR_ARMS:
+            raise ValueError(
+                f"abstract_plan_connector_arm={self.abstract_plan_connector_arm!r} "
+                f"is not one of {_PLAN_CONNECTOR_ARMS!r}"
+            )
+        if (
+            self.abstract_plan_connector_arm != "disabled"
+            and self.abstract_plan_mode == "disabled"
+        ):
+            raise ValueError(
+                "abstract_plan_connector_arm requires abstract_plan_mode != "
+                "'disabled' (the connector conditions on the plan head's trace)"
+            )
+        if (
+            self.abstract_plan_connector_arm != "disabled"
+            and self.denoiser_arch in SHARED_RECURSIVE_ARCH_Z_STATE_MODES
+        ):
+            # SharedRecursiveDenoiserTower duck-types DenoiserTower's public
+            # contract but does not (yet) implement set_plan_connector/
+            # project's plan-bias hook; wiring the tree/recursive denoiser is
+            # deferred rather than silently no-op'd or left to crash.
+            raise ValueError(
+                "abstract_plan_connector_arm is not yet supported with "
+                f"denoiser_arch={self.denoiser_arch!r} (shared-recursive "
+                "tree denoising); use the default 'stacked' denoiser_arch"
+            )
+        if self.abstract_plan_connector_arm != "disabled" and str(
+            self.denoiser_backend
+        ).lower() in {"hf", "huggingface", "transformers"}:
+            # HFDenoiserTower is a standalone nn.Module (not a DenoiserTower
+            # subclass): it has its own project() with no plan-bias hook and
+            # no set_plan_connector at all. StackedMatchedStateDenoiserTower
+            # is deliberately not rejected here -- it subclasses DenoiserTower
+            # without overriding project(), so it inherits the hook correctly.
+            raise ValueError(
+                "abstract_plan_connector_arm is not yet supported with "
+                f"denoiser_backend={self.denoiser_backend!r} (HFDenoiserTower "
+                "has no plan-connector hook); use the default 'scratch' "
+                "denoiser_backend"
             )
         if self.denoiser_arch not in SHARED_RECURSIVE_ARCH_Z_STATE_MODES and any(
             value != default for value, _, default in repair_modes.values()
@@ -1708,6 +1761,38 @@ class TwoTowerModel(nn.Module):
             if abstract_plan_mode != "disabled"
             else None
         )
+        # AP-024 (SLM-316): default-off gated-additive plan-conditioning
+        # connector. ``disabled`` constructs nothing (zero params, RNG/
+        # optimizer/fingerprint untouched, denoiser.project byte-identical);
+        # __post_init__ already rejects this being enabled while
+        # abstract_plan_mode is disabled.
+        abstract_plan_connector_arm = str(
+            getattr(self.config, "abstract_plan_connector_arm", "disabled")
+            or "disabled"
+        )
+        _abstract_plan_connector: AbstractPlanConnector | None = (
+            isolated_aux_init(
+                lambda: AbstractPlanConnector(
+                    self.config.d_model,
+                    self.abstract_plan.slot_count,
+                    tokenizer.vocab_size,
+                ),
+                117,
+            )
+            if abstract_plan_connector_arm != "disabled"
+            else None
+        )
+        # Registered only once, as `denoiser._plan_connector` -- not also as a
+        # direct TwoTowerModel submodule attribute, which would register the
+        # same parameters under two module paths. named_parameters() dedups
+        # by identity and (silently) keeps whichever path it visits first, so
+        # a second registration wouldn't raise -- it would just make
+        # `optimizer_parameter_groups`'s prefix match nothing.
+        # `abstract_plan_connector` (the property below) reads it back out.
+        if _abstract_plan_connector is not None:
+            self.denoiser.set_plan_connector(
+                _abstract_plan_connector, arm=abstract_plan_connector_arm
+            )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -1922,6 +2007,9 @@ class TwoTowerModel(nn.Module):
             "trust_gate.",
             "survival_head.",
             "abstract_plan_head.",
+            # Registered under the denoiser (see the property of the same
+            # name), not as a direct top-level submodule -- see __init__.
+            "denoiser._plan_connector.",
         )
         grouped: dict[str, list[nn.Parameter]] = {"base": []}
         seen: set[int] = set()
@@ -2270,6 +2358,63 @@ class TwoTowerModel(nn.Module):
             target_plan_ids=target_plan_ids,
             generator=generator,
         )
+
+    @property
+    def abstract_plan_connector(self) -> AbstractPlanConnector | None:
+        """The AP-024 connector, or ``None`` when disabled.
+
+        Reads through to ``denoiser._plan_connector`` -- its single point of
+        registration -- rather than being a second submodule attribute of its
+        own (see the comment at construction time in ``__init__``).
+        """
+        return self.denoiser._plan_connector
+
+    def generate_with_plan_connector(
+        self,
+        prompt: str,
+        *,
+        gold: ExampleRecord | None = None,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+        design_md: str | None = None,
+        target_plan_ids: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+    ) -> tuple[str, list[PlanConnectorTrace]]:
+        """Generate one sample with the AP-024 plan connector active (SLM-316).
+
+        Delegates to the existing, unmodified :meth:`generate` for the actual
+        decode -- every connector arm shares the exact same call, scheduling,
+        and (when ``generator`` is supplied for arm-specific randomness)
+        prompt/seed; only the plan vector fed to the denoiser differs by arm.
+        Off by default: raises unless ``abstract_plan_connector_arm`` is
+        non-disabled. The plan vector is cleared from the denoiser (even on
+        an exception) so this call never leaks conditioning into unrelated
+        ``generate`` calls.
+        """
+        if self.abstract_plan_connector is None:
+            raise ValueError(
+                "abstract plan connector is default-off: set "
+                "TwoTowerConfig.abstract_plan_connector_arm to a non-disabled arm"
+            )
+        trace = self.abstract_plan_trace(
+            [prompt], target_plan_ids=target_plan_ids, generator=generator
+        )
+        assert trace is not None  # abstract_plan_head is required to be enabled too
+        vector = self.abstract_plan_connector.plan_vector_from_trace(trace)
+        arm = PlanConnectorArm(self.config.abstract_plan_connector_arm)
+        resolved = resolve_plan_vector(vector, arm=arm, generator=generator)
+        self.denoiser.set_plan_vector(resolved)
+        try:
+            text = self.generate(
+                prompt,
+                gold=gold,
+                max_len=max_len,
+                grammar_constrained=grammar_constrained,
+                design_md=design_md,
+            )
+        finally:
+            self.denoiser.set_plan_vector(None)
+        return text, self.denoiser.pop_plan_connector_traces()
 
     def apply_dynamic_quant(self) -> bool:
         """P5: dynamically quantize Linear layers to int8 (CPU). Returns True on success."""

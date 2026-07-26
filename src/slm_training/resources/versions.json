@@ -1759,14 +1759,16 @@
       ]
     },
     "harness.distill": {
-      "version": "v4",
+      "version": "v7",
       "kind": "harness",
       "paths": [
+        "src/slm_training/harnesses/distill/__init__.py",
         "src/slm_training/harnesses/distill/legal_set_kl.py",
         "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
         "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/operator_decision_state.py",
         "src/slm_training/harnesses/distill/operator_teacher_ceiling.py",
+        "src/slm_training/harnesses/distill/self_distill_collect.py",
         "scripts/run_spv2_05_semantic_repair_fixture.py",
         "scripts/run_dsh4_01_operator_decision_state_fixture.py",
         "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
@@ -1774,14 +1776,31 @@
         "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
+        "tests/test_harnesses/distill/test_self_distill_collect.py",
         "docs/design/iter-spv2-05-semantic-repair-20260720.md",
         "docs/design/iter-spv2-05-semantic-repair-20260720.json",
         "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
         "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
-        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json"
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
+        "docs/design/ap020-on-policy-abstract-self-distillation.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "SLM-309 AP-020 review follow-up (CodeRabbit on PR #976): a duplicate-answer candidate now persists an auditable reject_reason='duplicate_answer' row instead of being silently skipped; generate()/verifier exceptions are isolated per-prompt (recorded as a minimal reject_reason='generation_error'/'verification_error' row with the exception type/message, run continues) rather than aborting the whole collection -- an error row deliberately omits prompt_fingerprint so the prompt stays eligible for retry on the next resumed run, unlike a settled duplicate/rejection; adds CollectionSummary.errored; also fixes the package's lazy re-export set to include SOURCE_FAMILY/GenerateAbstractTrace (declared in self_distill_collect.py's own __all__ but missing from __init__.py's, raising AttributeError on import)"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-309 AP-020 follow-up: fix a circular import introduced by v5 -- harnesses.distill.__init__ eagerly importing self_distill_collect reached back into models.abstract_decode while models.causal_trace's own harnesses.distill.trace_store import was still resolving this package's __init__ for the first time, raising ImportError for a partially initialized module. self_distill_collect's names now load lazily via __getattr__, matching the existing sft.py pattern; added a subprocess-based regression test since a same-process pytest run can't reliably reproduce the cycle once modules are cached"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-309 AP-020: on-policy abstract self-distillation collector -- samples prompt-only AP-017 abstract traces, verifies each candidate independently (never the generating policy) via an injectable verifier cascade, writes deterministic/resumable/duplicate-free records compatible with the existing select.py corpus filters, and a training_example_from_capture adapter reusing AP-019's masked SFT loss; default-on, no-op when disabled"
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -4398,6 +4417,16 @@
         "docs/design/iter-slm211-untied-output-head-20260721.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-316 AP-024 review fix (CodeRabbit on PR #976) -- DenoiserTower.project's runtime-symbol-features reshape-and-recurse branch (a per-row compiler/LTR score reshaped to a synthetic [1,N,D] batch to reuse this method) was incorrectly picking up the plan-connector bias a second time because the recursive call is 3D; added an internal _apply_plan_bias switch so that recursion never applies the bias, plus a regression test combining runtime_symbol_features with an attached plan connector. Unrelated to output-head tying/untying and behavior-neutral for this component's concern"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-316 AP-024 added a default-off plan-conditioning bias hook to DenoiserTower.project/__init__ (see model.twotower v252); unrelated to output-head tying/untying and behavior-neutral for this component's concern"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
@@ -7099,14 +7128,17 @@
       ]
     },
     "model.twotower": {
-      "version": "v251",
+      "version": "v253",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
         "src/slm_training/models/abstract_plan_head.py",
+        "src/slm_training/models/abstract_plan_connector.py",
         "tests/test_models/test_abstract_plan_head.py",
+        "tests/test_models/test_abstract_plan_connector.py",
         "tests/test_harnesses/model_build/test_twotower.py",
         "docs/design/abstract-plan-head-v1.md",
+        "docs/design/abstract-plan-connector-v1.md",
         "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
@@ -7138,6 +7170,16 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v253",
+          "date": "2026-07-26",
+          "note": "SLM-316 AP-024 review follow-up (CodeRabbit on PR #976): TwoTowerConfig.__post_init__ now also rejects abstract_plan_connector_arm != 'disabled' combined with denoiser_backend in {'hf','huggingface','transformers'} -- HFDenoiserTower is a standalone nn.Module with its own project() and no plan-connector hook -- while explicitly allowing denoiser_arch='stacked_matched_state' (StackedMatchedStateDenoiserTower subclasses DenoiserTower without overriding project(), so it inherits the hook correctly); added a regression test (test_project_skips_plan_bias_inside_runtime_symbol_feature_reshape_recursion in tests/test_models/test_abstract_plan_connector.py) proving the plan-connector bias fix in DenoiserTower.project's runtime-symbol-features reshape recursion (see harness.experiments.slm211_untied_output_head, which owns blocks.py)"
+        },
+        {
+          "version": "v252",
+          "date": "2026-07-26",
+          "note": "SLM-316 (AP-024): default-off gated-additive AbstractPlanConnector conditioning MaskGIT denoising on the discrete abstract plan (new src/slm_training/models/abstract_plan_connector.py). Wired as a post-hoc logit bias inside DenoiserTower.project (no round-loop scheduling changed) with per-call PlanConnectorTrace instrumentation (gate norm, argmax choice-change count); seven arms (disabled/learned/oracle/detached/empty/random/shuffled) share one resolve_plan_vector code path. abstract_plan_connector_arm='disabled' (the default) constructs nothing, requires abstract_plan_mode != 'disabled', and rejects denoiser_arch='shared_recursive' (tree/recursive-denoiser wiring deferred, not silently no-op'd). New TwoTowerModel.generate_with_plan_connector(...) delegates to the existing unmodified generate() so every arm shares scheduling/seed (tests/test_harnesses/model_build/test_twotower.py::test_abstract_plan_connector_is_bit_exact_with_baseline_when_disabled)."
+        },
         {
           "version": "v251",
           "date": "2026-07-25",
