@@ -132,3 +132,11 @@ def test_slm255_real_contracts_are_not_authorized() -> None:
 
     assert contract.verdict == NOT_AUTHORIZED
     assert contract.contract_id == "alternative-valid-latent-gate-v1"
+
+
+def test_slm256_real_contracts_are_not_authorized() -> None:
+    fidelity, trace = _real_contracts()
+    contract = evaluate_downstream_gate(DOWNSTREAM_ISSUES["SLM-256"], fidelity, trace)
+
+    assert contract.verdict == NOT_AUTHORIZED
+    assert contract.contract_id == "latent-workspace-capacity-gate-v1"
