@@ -6958,6 +6958,22 @@
         }
       ]
     },
+    "harness.experiments.operator_transaction_policy": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_transaction_policy.py",
+        "tests/test_harnesses/experiments/test_operator_transaction_policy.py",
+        "docs/design/dsh5-06-operator-transaction-policy.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-414: bounded K=2/K=4 set-valued transaction selection over DSH3-28's independent-set/recurrent-set per-action logits; every ranked subset is re-verified by the real DSH5-05 build_operator_transaction/commit_operator_transaction before it can be selected. Fixture-scale wiring evidence only, no held-out claim yet."
+        }
+      ]
+    },
     "harness.experiments.typed_operator_policy": {
       "version": "v11",
       "kind": "harness",
