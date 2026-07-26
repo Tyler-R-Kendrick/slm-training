@@ -1,2 +1,2 @@
 @[user]:
-{"claim": "bounded_local_current_surface_not_ship", "result": {"enabled": 0, "random": 0, "shuffled_labels": 0, "zero": 0}}
+{"claim": "bounded_local_current_surface_not_ship", "result": {"factorized/enabled": 0, "factorized/random": 0, "factorized/shuffled_labels": 0, "factorized/zero": 0, "independent_set/enabled": 0, "independent_set/random": 0, "independent_set/shuffled_labels": 0, "independent_set/zero": 0, "local_flat/enabled": 0, "local_flat/random": 0, "local_flat/shuffled_labels": 0, "local_flat/zero": 0, "recurrent_set/enabled": 0, "recurrent_set/random": 0, "recurrent_set/shuffled_labels": 0, "recurrent_set/zero": 0, "ternary_ecoc/enabled": 0, "ternary_ecoc/random": 0, "ternary_ecoc/shuffled_labels": 0, "ternary_ecoc/zero": 0}}
