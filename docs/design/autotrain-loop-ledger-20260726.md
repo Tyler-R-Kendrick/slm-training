@@ -10,3 +10,4 @@ in a fresh container (no cached `outputs/`), which surfaced and fixed a real
 | run_id | ok | steps | stopped_on | last_loss | wall_s (sft) | max_wall | note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `autotrain_wf_smoke_20260726` | True | 8 | steps | 33.309722900390625 | 1.84 | 2.5833333333333335 | fresh build; fixed `harness.train_data` marker-canonicalization bug (v20→v21) |
+| `autotrain_wf_smoke_20260726_iter2` | True | 8 | steps | 41.331092834472656 | 3.05 | 2.5833333333333335 | reproduced end-to-end (fresh container, #978 fix applied) — see [`autotrain-wf-smoke-20260726-iter2-measured-results.md`](autotrain-wf-smoke-20260726-iter2-measured-results.md) |
