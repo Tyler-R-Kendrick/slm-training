@@ -1,0 +1,97 @@
+{
+  "ablation": {
+    "arms": [
+      {
+        "arm": "none",
+        "mean_margin_loss": 0.0,
+        "negative_type_counts": {},
+        "ranking_correct": 0,
+        "schema": "hard_negative_arm_result/v1",
+        "total_rows": 0,
+        "unusable_rows": 0,
+        "usable_negative_rate": 0.0,
+        "usable_rows": 0
+      },
+      {
+        "arm": "conflict_only",
+        "mean_margin_loss": 0.0,
+        "negative_type_counts": {
+          "conflict": 2
+        },
+        "ranking_correct": 0,
+        "schema": "hard_negative_arm_result/v1",
+        "total_rows": 2,
+        "unusable_rows": 2,
+        "usable_negative_rate": 0.0,
+        "usable_rows": 0
+      },
+      {
+        "arm": "different_result_only",
+        "mean_margin_loss": 1.0,
+        "negative_type_counts": {
+          "different_result": 4
+        },
+        "ranking_correct": 2,
+        "schema": "hard_negative_arm_result/v1",
+        "total_rows": 4,
+        "unusable_rows": 0,
+        "usable_negative_rate": 1.0,
+        "usable_rows": 4
+      },
+      {
+        "arm": "equal_mix",
+        "mean_margin_loss": 1.0,
+        "negative_type_counts": {
+          "conflict": 2,
+          "different_result": 2
+        },
+        "ranking_correct": 1,
+        "schema": "hard_negative_arm_result/v1",
+        "total_rows": 4,
+        "unusable_rows": 2,
+        "usable_negative_rate": 0.5,
+        "usable_rows": 2
+      },
+      {
+        "arm": "curriculum_mix",
+        "mean_margin_loss": 1.0,
+        "negative_type_counts": {
+          "conflict": 2,
+          "different_result": 4
+        },
+        "ranking_correct": 2,
+        "schema": "hard_negative_arm_result/v1",
+        "total_rows": 6,
+        "unusable_rows": 2,
+        "usable_negative_rate": 0.6666666666666666,
+        "usable_rows": 4
+      }
+    ],
+    "best_arm_by_usable_negative_rate": "different_result_only",
+    "schema": "collapse_negative_ablation_report/v1"
+  },
+  "decision": {
+    "reason": "different_result_only strictly exceeds conflict_only's usable-negative-rate on this small synthetic fixture -- fixture-scale positive signal for DSH3-30's hypothesis that DIFFERENT_RESULT hard negatives carry denser, more sample-efficient ordering supervision than CONFLICT ones. This is not a claim about downstream trained-model quality (no real gradient training happened here -- the scorer is a fixed deterministic label-free proxy) and not a real-corpus-scale incidence measurement (real verified-trace CONFLICT/DIFFERENT_RESULT incidence remains unmeasured, per DSH3-24's own documented scope gap). It does not by itself justify wiring hard-negative-aware loss into DSH3-28's typed_operator_policy_loss at production scale -- that needs the real corpus's actual CONFLICT/DIFFERENT_RESULT incidence measured first.",
+    "verdict": "fixture-scale-positive-signal"
+  },
+  "issue": "SLM-405",
+  "run": {
+    "conflict_rows": 2,
+    "different_result_rows": 4,
+    "no_negative_rows": 3,
+    "ship_claim": false,
+    "timestamp": "2026-07-26T16:05:30.401824+00:00",
+    "total_rows": 9
+  },
+  "schema": "dsh3_30_collapse_negative_ablation_report/v1",
+  "version_stamp": {
+    "code_commit": "7a190721ef56781297bcccfcab4f009a785f7cdd",
+    "code_dirty": true,
+    "components": {
+      "model.operator_hard_negative_training": "v1",
+      "model.operator_policy_view": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T16:05:30.401799+00:00"
+  }
+}

@@ -7027,6 +7027,23 @@
         }
       ]
     },
+    "model.operator_hard_negative_training": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_hard_negative_training.py",
+        "tests/test_models/test_operator_hard_negative_training.py",
+        "scripts/run_dsh3_30_collapse_negative_ablation.py",
+        "docs/design/dsh3-30-collapse-negative-ablation.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-405 (DSH3-30): five matched hard-negative arms (none/conflict_only/different_result_only/equal_mix/curriculum_mix) over collapse-derived OperatorPolicyRowV1 hard negatives, a deterministic label-free proxy scorer plus margin-loss mechanics, and a per-arm usable-negative-rate ablation report showing DIFFERENT_RESULT negatives structurally preserve a live alternate action to rank against while CONFLICT negatives structurally don't"
+        }
+      ]
+    },
     "model.operator_termination": {
       "version": "v1",
       "kind": "model",
