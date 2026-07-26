@@ -7044,6 +7044,23 @@
         }
       ]
     },
+    "evals.operator_failure_prediction": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/operator_failure_prediction.py",
+        "tests/test_evals/test_operator_failure_prediction.py",
+        "scripts/run_dsh3_31_operator_failure_prediction.py",
+        "docs/design/dsh3-31-operator-failure-prediction.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-406 (DSH3-31): a 7-label replay-grounded operator-decode failure/defer taxonomy (illegal_selection/executor_rejection/replay_failure/semantic_miss/dead_end/timeout/safe_defer) with a strict-precedence classifier over boolean replay evidence, plus a deterministic feature-arm evaluation harness (compact-subset/all-counters/entropy-margin-baseline/context-free-baseline) with pure-Python AUROC/AUPRC and reused calibration_error, showing the compact DecodeStats counter subset strictly beats the selector_regret-only margin baseline on a fixture-scale synthetic set"
+        }
+      ]
+    },
     "model.operator_termination": {
       "version": "v1",
       "kind": "model",
