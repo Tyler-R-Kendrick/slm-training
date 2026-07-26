@@ -273,6 +273,7 @@ def build_operator_policy_rows(
     collapse: CollapsedInstructionV1,
     authority_resolver: OperatorAuthorityResolver,
     split: str = "train",
+    max_combinations_per_operator: int = 64,
 ) -> tuple[tuple[OperatorPolicyRowV1, ...], tuple[dict[str, Any], ...]]:
     """Build one row per collapsed step. Returns ``(rows, rejected)``.
 
@@ -282,6 +283,8 @@ def build_operator_policy_rows(
     planner membership" requirement. A step whose recorded application is
     absent from that fresh live set is rejected, not silently forced in.
     """
+    if max_combinations_per_operator <= 0:
+        raise ValueError("max_combinations_per_operator must be positive")
     if collapse.turn_ids != tuple(turn.turn_id for turn in trace.turns):
         raise ValueError("collapse turn lineage differs from the source trace")
     negatives_by_left_step = {
@@ -305,6 +308,7 @@ def build_operator_policy_rows(
             state=state,
             reference_table=reference_table,
             provenance=application.provenance,
+            max_combinations_per_operator=max_combinations_per_operator,
         )
         accepted_action_row = _accepted_action_row(
             legal_set, operator_id, application.application_id
@@ -342,6 +346,7 @@ def build_operator_policy_rows(
             continue
 
         policy_input = build_operator_policy_input(reference_table, legal_set, library)
+        reference_row_map, action_row_map = policy_input.canonical_row_maps()
         policy_input_dict = policy_input.to_dict()
 
         hard_negative = None
@@ -351,8 +356,13 @@ def build_operator_policy_rows(
             hard_negative = OperatorPolicyHardNegativeV1(
                 outcome=negative.outcome,
                 alternate_operator_id=alternate_operator_id,
-                alternate_action_row=_action_row_for_operator(
-                    legal_set, alternate_operator_id
+                alternate_action_row=(
+                    None
+                    if (alternate_row := _action_row_for_operator(
+                        legal_set, alternate_operator_id
+                    ))
+                    is None
+                    else action_row_map[alternate_row]
                 ),
                 conflict_code=negative.conflict_code,
                 observed_final_state_digest=negative.observed_final_state_digest,
@@ -380,8 +390,11 @@ def build_operator_policy_rows(
                 policy_input_digest=_fingerprint(policy_input_dict),
                 policy_input=policy_input_dict,
                 accepted_operator_id=operator_id,
-                accepted_action_row=accepted_action_row,
-                accepted_argument_rows=accepted_argument_rows,
+                accepted_action_row=action_row_map[accepted_action_row],
+                accepted_argument_rows=tuple(
+                    (slot_id, reference_row_map[row])
+                    for slot_id, row in accepted_argument_rows
+                ),
                 accepted_application_id=application.application_id,
                 hard_negative=hard_negative,
                 split=split,
@@ -395,12 +408,15 @@ def build_operator_termination_rows(
     trace: ConversationTraceV1,
     authority_resolver: OperatorAuthorityResolver,
     split: str = "train",
+    max_combinations_per_operator: int = 64,
 ) -> tuple[OperatorTerminationRowV1, ...]:
     """Re-enumerate every trace state and label only its replay endpoint STOP.
 
     The endpoint may retain legal actions; STOP is a control-plane target, not
     evidence that the compiler's action domain is empty.
     """
+    if max_combinations_per_operator <= 0:
+        raise ValueError("max_combinations_per_operator must be positive")
     states = [trace.node(turn.input_state_id) for turn in trace.turns]
     states.append(trace.current)
     rows: list[OperatorTerminationRowV1] = []
@@ -418,6 +434,7 @@ def build_operator_termination_rows(
             state=node.state,
             reference_table=node.reference_table,
             provenance=provenance,
+            max_combinations_per_operator=max_combinations_per_operator,
         )
         policy_input = build_operator_policy_input(
             node.reference_table, legal_set, library
@@ -478,6 +495,7 @@ def build_operator_policy_corpus(
     collapse: CollapsedInstructionV1,
     authority_resolver: OperatorAuthorityResolver,
     split: str = "train",
+    max_combinations_per_operator: int = 64,
 ) -> tuple[tuple[OperatorPolicyRowV1, ...], OperatorPolicyCorpusQualityReportV1]:
     """``build_operator_policy_rows`` plus its aggregate quality report."""
     rows, rejected = build_operator_policy_rows(
@@ -485,6 +503,7 @@ def build_operator_policy_corpus(
         collapse=collapse,
         authority_resolver=authority_resolver,
         split=split,
+        max_combinations_per_operator=max_combinations_per_operator,
     )
     rejection_counts: dict[str, int] = {}
     for entry in rejected:

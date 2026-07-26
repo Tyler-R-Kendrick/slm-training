@@ -42,12 +42,19 @@ already exists.
      membership rather than copying planner membership" requirement: even
      though the outcome is the same registry and (for these fixtures) the
      same result, the membership is recomputed, not read off `collapse`.
+     The caller supplies the same positive `max_combinations_per_operator`
+     bound used to create the source trace; reprojection never silently falls
+     back to an unbounded legal-set enumeration.
   3. Builds the SLM-397 sanitized view (`build_operator_policy_input`) over
      that fresh legal set.
   4. Locates the recorded application inside the fresh legal set by
      `application_id`. If it isn't there, the step is **rejected**
      (`RowRejectionKind.ACCEPTED_ACTION_NOT_LIVE`), never forced in.
-  5. Looks up whether this step is the *left* side of one of
+  5. Remaps accepted action/argument and hard-negative rows through
+     `OperatorPolicyInputV1.canonical_row_maps()` before storing the canonical
+     `policy_input` payload, so every evaluator-only row label still joins to
+     the persisted candidate it names.
+  6. Looks up whether this step is the *left* side of one of
      `collapse.hard_negatives`' `swapped_step_indices` pairs, and if so
      re-projects it onto this step's fresh action rows.
 * `OperatorPolicyCorpusQualityReportV1` / `build_operator_policy_corpus` —

@@ -33,8 +33,13 @@ from slm_training.dsl.pack import get_pack
 from slm_training.models.operator_policy_view import (
     FORBIDDEN_FIELD_NAMES,
     ForbiddenFieldError,
+    OperatorActionViewV1,
+    OperatorArgumentSlotViewV1,
+    OperatorPolicyInputV1,
     OperatorPolicyViewError,
+    ReferenceModelViewV1,
     build_operator_policy_input,
+    operator_policy_input_from_dict,
     validate_no_forbidden_fields,
 )
 
@@ -227,6 +232,81 @@ def test_changing_only_allocation_seed_leaves_the_view_unchanged() -> None:
     actions_b = {action.application_id for action in legal_set_b.operator_actions}
     assert actions_a.isdisjoint(actions_b), "fixture did not actually vary the hash chain"
     assert view_a.to_dict() == view_b.to_dict()
+
+
+def test_canonical_row_maps_keep_external_labels_joined_to_persisted_rows() -> None:
+    """Supervision stored beside a canonical view must remap both join axes."""
+    view = OperatorPolicyInputV1(
+        reference_rows=(
+            ReferenceModelViewV1(
+                row=0,
+                ref_kind=RefKind.VALUE,
+                value_type="openui.string",
+                compiler_facts=(CompilerFact.VALUE_VISIBLE,),
+                has_parent=False,
+                parent_row=None,
+                relative_position=None,
+            ),
+            ReferenceModelViewV1(
+                row=1,
+                ref_kind=RefKind.NODE,
+                value_type="openui.element",
+                compiler_facts=(CompilerFact.NODE_VISIBLE,),
+                has_parent=False,
+                parent_row=None,
+                relative_position=None,
+            ),
+        ),
+        action_rows=(
+            OperatorActionViewV1(
+                row=0,
+                operator_id="openui.z_action",
+                operator_version="v1",
+                locality="node",
+                cost=1.0,
+                effect_signature=(),
+                argument_slots=(
+                    OperatorArgumentSlotViewV1(
+                        slot_id="value",
+                        ref_kind=RefKind.VALUE,
+                        binding_phase=BindingPhase.APPLICATION,
+                        required=True,
+                        repeated=False,
+                        candidate_rows=(0,),
+                        domain_complete=True,
+                    ),
+                ),
+                verdict=OperatorSupportVerdict.SUPPORTED,
+                coverage=LegalSetCoverage.COMPLETE,
+            ),
+            OperatorActionViewV1(
+                row=1,
+                operator_id="openui.a_action",
+                operator_version="v1",
+                locality="node",
+                cost=1.0,
+                effect_signature=(),
+                argument_slots=(),
+                verdict=OperatorSupportVerdict.SUPPORTED,
+                coverage=LegalSetCoverage.COMPLETE,
+            ),
+        ),
+        ordinary_action_count=0,
+        coverage=LegalSetCoverage.COMPLETE,
+    )
+
+    reference_rows, action_rows = view.canonical_row_maps()
+    persisted = view.to_dict()
+    assert reference_rows == {0: 1, 1: 0}
+    assert action_rows == {0: 1, 1: 0}
+    assert persisted["action_rows"][action_rows[0]]["operator_id"] == "openui.z_action"
+    assert (
+        persisted["action_rows"][action_rows[0]]["argument_slots"][0][
+            "candidate_rows"
+        ]
+        == [reference_rows[0]]
+    )
+    assert operator_policy_input_from_dict(persisted).to_dict() == persisted
 
 
 def test_stale_reference_table_cannot_produce_a_view() -> None:

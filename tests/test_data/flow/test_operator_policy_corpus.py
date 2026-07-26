@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 from dataclasses import replace
 
+import pytest
+
 from slm_training.data.flow.operator_policy_corpus import (
     RowRejectionKind,
     build_operator_policy_corpus,
@@ -263,6 +265,17 @@ def test_corpus_quality_report_aggregates_hard_negatives_and_rejections() -> Non
     assert report.positive_only_rows == 1
     payload = report.to_dict()
     assert payload["schema"] == "operator_policy_corpus_quality_report/v1"
+
+
+def test_policy_reprojection_rejects_an_unbounded_combination_cap() -> None:
+    _pack, _library, trace, collapse, authority_resolver = _different_result_fixture()
+    with pytest.raises(ValueError, match="max_combinations_per_operator must be positive"):
+        build_operator_policy_rows(
+            trace=trace,
+            collapse=collapse,
+            authority_resolver=authority_resolver,
+            max_combinations_per_operator=0,
+        )
 
 
 def test_termination_rows_are_fresh_and_keep_distance_proofs_out_of_model_input() -> (

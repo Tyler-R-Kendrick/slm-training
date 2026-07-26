@@ -53,12 +53,16 @@ def test_symbolic_operator_corpus_is_closed_replayable_and_deterministic(
         max_combinations_per_operator=32,
         sibling_forks=True,
     )
+    observed_collapses = []
     first = build_symbolic_operator_corpus(
         records=[_record()],
         output_dir=tmp_path / "first",
         version="fixture-v1",
         version_stamp=STAMP,
         config=config,
+        on_collapsed_trace=lambda trace, collapse, resolver: observed_collapses.append(
+            (trace, collapse, resolver)
+        ),
     )
     second = build_symbolic_operator_corpus(
         records=[_record()],
@@ -89,6 +93,10 @@ def test_symbolic_operator_corpus_is_closed_replayable_and_deterministic(
         "nl_unavailable_reason": "CERT_CAP1_unavailable",
         "hard_negative_count": 1,
     }
+    assert len(observed_collapses) == 1
+    callback_trace, callback_collapse, callback_authority = observed_collapses[0]
+    assert callback_collapse.final_state_id == callback_trace.current_state_id
+    assert callback_authority(callback_trace.current)[0].pack_id == "openui"
 
     rows = [
         json.loads(line)
