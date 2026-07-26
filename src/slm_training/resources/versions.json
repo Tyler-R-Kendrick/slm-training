@@ -414,6 +414,11 @@
         {
           "version": "v15",
           "date": "2026-07-26",
+          "note": "no-bump: SLM-418 (DSH5-10) re-exports OperatorEventMemoryReportV1/OperatorReplayPreferenceRowV1/ReplayPreferenceRelation/extract_replay_preference_rows from operators/__init__.py (new dsl.operators.replay_preference component); no change to contracts.py itself"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-26",
           "note": "no-bump: SLM-416 (DSH5-08) re-exports ConversationControlDecision/ConversationControlEntryV1/ConversationControlKind/ConversationControlLegalSetV1/ConversationControlPolicyReportV1/ConversationControlResultV1/ControlSupportVerdict/LegalControlActionV1/MergeCandidateV1/apply_conversation_control_action/deterministic_control_priority/enumerate_conversation_control_legal_set from operators/__init__.py (new dsl.operators.control_actions component); no change to contracts.py itself"
         },
         {
@@ -926,6 +931,26 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial semantic-gated lexicographic AST and operator-sequence preference contract with simplify/expand direction and explicit defect policy"
+        }
+      ]
+    },
+    "dsl.operators.replay_preference": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/replay_preference.py",
+        "tests/test_dsl/test_replay_preference.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "Review fixes: rejection candidates are drawn from the full legal set (operator actions and history controls alike), not just operator actions, so a valid row is never dropped for lack of an AST-edit alternative; OperatorEventMemoryReportV1 now carries and serializes a version_stamp"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-418 (DSH5-10) first slice: replay-grounded preference rows for edit-then-undo and undo-then-redo, checked against the exact legal set at the shared input state; partial (2 of ~7 verified patterns), no SFT/preference training or held-out measurement"
         }
       ]
     },
