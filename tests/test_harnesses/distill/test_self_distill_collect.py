@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -304,3 +307,26 @@ def test_training_example_from_capture_targets_only_abstract_and_answer() -> Non
     mask = loss_position_mask(segment_ids)
     assert int(mask.sum().item()) == 5  # 3 abstract + 2 target positions
     assert torch.equal(segment_ids_for_capture(capture), segment_ids)
+
+
+def test_importing_abstract_decode_does_not_hit_a_circular_import() -> None:
+    """Regression: models.abstract_decode -> models.causal_trace ->
+    harnesses.distill.trace_store re-enters harnesses.distill.__init__ mid-init
+    the first time anything imports either model module in a fresh process.
+    If __init__.py ever goes back to eagerly importing self_distill_collect
+    (which imports models.abstract_decode) at package-init time, that import
+    fails with an ImportError for a partially initialized module. A same-process
+    pytest run can't reliably reproduce this (modules may already be cached by
+    an earlier test), so this spawns a fresh interpreter.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    env = {**os.environ, "PYTHONPATH": "src"}
+    result = subprocess.run(
+        [sys.executable, "-c", "import slm_training.models.abstract_decode"],
+        cwd=str(repo_root),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr

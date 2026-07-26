@@ -1759,9 +1759,10 @@
       ]
     },
     "harness.distill": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
+        "src/slm_training/harnesses/distill/__init__.py",
         "src/slm_training/harnesses/distill/legal_set_kl.py",
         "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
         "src/slm_training/harnesses/distill/semantic_repair.py",
@@ -1785,6 +1786,11 @@
         "docs/design/ap020-on-policy-abstract-self-distillation.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-309 AP-020 follow-up: fix a circular import introduced by v5 -- harnesses.distill.__init__ eagerly importing self_distill_collect reached back into models.abstract_decode while models.causal_trace's own harnesses.distill.trace_store import was still resolving this package's __init__ for the first time, raising ImportError for a partially initialized module. self_distill_collect's names now load lazily via __getattr__, matching the existing sft.py pattern; added a subprocess-based regression test since a same-process pytest run can't reliably reproduce the cycle once modules are cached"
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
