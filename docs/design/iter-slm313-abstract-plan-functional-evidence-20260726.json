@@ -33,7 +33,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/slm313-abstract-plan-functional-evidence.eval.jsonl",
     "summary": {
-      "durationMs": 173,
+      "durationMs": 178,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -41,7 +41,7 @@
       "total": 1
     }
   },
-  "campaign_manifest_sha256": "53227064c59b062b4a60136fb93640c7ef53380378e989ca7bd5efb10d8dd7a5",
+  "campaign_manifest_sha256": "647c09b2600883472dbb3a5ad0dd457dcff5ed02bd30d1bebdfcbdbc89bd4329",
   "claim_class": "diagnostic",
   "execution_attempts": [
     {
@@ -51,9 +51,465 @@
       "shard_count": 226,
       "shard_index": null,
       "verdict": "invalid_local_run"
+    },
+    {
+      "generated_at": "2026-07-26T06:49:15.265896+00:00",
+      "numeric_evidence_valid": false,
+      "reason": "Local shard did not complete: KeyError: 'rico_eval_test_2188'",
+      "shard_count": 57,
+      "shard_index": 0,
+      "verdict": "invalid_local_run"
+    },
+    {
+      "generated_at": "2026-07-26T06:56:14.570718+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 57,
+      "shard_index": 0,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T06:57:50.099622+00:00",
+      "numeric_evidence_valid": false,
+      "reason": "Local shard did not complete: TimeoutError: SLM-313 shuffle_between_examples/repaired shard 0 timed out; numeric evidence is invalid",
+      "shard_count": 46,
+      "shard_index": 0,
+      "verdict": "invalid_local_run"
+    },
+    {
+      "generated_at": "2026-07-26T07:02:07.259680+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 0,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:04:49.281169+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 1,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:05:59.403624+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 1,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:08:04.010986+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 2,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:10:02.021038+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 3,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:12:02.392334+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 4,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:13:38.366271+00:00",
+      "numeric_evidence_valid": false,
+      "reason": "Local shard did not complete: TimeoutError: SLM-313 length_matched_verbal/repaired shard 5 timed out; numeric evidence is invalid",
+      "shard_count": 46,
+      "shard_index": 5,
+      "verdict": "invalid_local_run"
+    },
+    {
+      "generated_at": "2026-07-26T07:17:53.840056+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 0,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:19:47.759123+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 1,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:21:43.411670+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 2,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:23:38.810572+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 3,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:26:21.523846+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 4,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:28:23.573603+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 5,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:30:23.028467+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 6,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:32:29.823002+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 7,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:34:19.074760+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 8,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:36:13.886407+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 9,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:38:13.176749+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 10,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:40:11.393954+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 11,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:42:08.312989+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 12,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:44:03.745870+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 13,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:46:02.478675+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 14,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:47:51.870429+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 15,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:49:59.149072+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 16,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:51:54.528917+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 17,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:53:52.725861+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 18,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:55:52.610422+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 19,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T07:57:55.495974+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 20,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:00:01.524524+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 21,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:02:02.806702+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 22,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:03:59.556960+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 23,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:06:01.957102+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 24,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:08:00.835470+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 25,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:09:58.646637+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 26,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:12:00.125995+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 27,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:14:02.101485+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 28,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:16:06.627458+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 29,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:18:19.017285+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 30,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:20:23.802806+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 31,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:22:27.913898+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 32,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:24:24.255315+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 33,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:26:22.705179+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 34,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:28:20.457597+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 35,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:30:11.562144+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 36,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:32:13.459255+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 37,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:34:26.140725+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 38,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:36:22.819661+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 39,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:38:17.833407+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 40,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:40:04.212873+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 41,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:41:40.452646+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 42,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:43:18.365912+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 43,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:44:57.767339+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 44,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:46:34.414134+00:00",
+      "numeric_evidence_valid": null,
+      "reason": "A complete shard is measured; final disposition requires exact merge coverage across every locked shard.",
+      "shard_count": 46,
+      "shard_index": 45,
+      "verdict": "partial_locked_shard"
+    },
+    {
+      "generated_at": "2026-07-26T08:47:04.039396+00:00",
+      "numeric_evidence_valid": true,
+      "reason": "All pre-locked local shards were present and merged with exact arm/path coverage.",
+      "shard_count": 46,
+      "shard_index": null,
+      "verdict": "ignored_or_collapsed"
     }
   ],
-  "generated_at": "2026-07-26T06:34:28.351038+00:00",
+  "generated_at": "2026-07-26T08:47:04.039396+00:00",
   "protocol": {
     "arms": [
       "no_plan",
@@ -310,24 +766,694 @@
     "device": "cpu",
     "human_rating_gate": "not_required",
     "locked_test_used_for_selection": false,
-    "shard_count": 226
+    "shard_count": 46
   },
   "result": {
-    "meaningful_parse": "not_measured",
-    "numeric_evidence_valid": false,
+    "checkpoint": "outputs/runs/slm313_local_plan_1k_v2/checkpoints/last.pt",
+    "checkpoint_sha256": "66bd535f09beb861c435793fa46d4168c804853c8596fafe3e936273b3868ce4",
+    "efficiency": {
+      "empty": {
+        "latency_delta_vs_no_plan_ms": 74.474115,
+        "mean_total_latency_ms": 691.821327,
+        "mean_total_tokens": 266.0,
+        "token_reduction_vs_no_plan": -0.011407
+      },
+      "gold_semantic_plan": {
+        "latency_delta_vs_no_plan_ms": 181.467124,
+        "mean_total_latency_ms": 798.814336,
+        "mean_total_tokens": 266.0,
+        "token_reduction_vs_no_plan": -0.011407
+      },
+      "learned_abstract_plan": {
+        "latency_delta_vs_no_plan_ms": 56.551284,
+        "mean_total_latency_ms": 673.898496,
+        "mean_total_tokens": 266.0,
+        "token_reduction_vs_no_plan": -0.011407
+      },
+      "length_matched_verbal": {
+        "latency_delta_vs_no_plan_ms": 172.811062,
+        "mean_total_latency_ms": 790.158274,
+        "mean_total_tokens": 266.0,
+        "token_reduction_vs_no_plan": -0.011407
+      },
+      "no_plan": {
+        "latency_delta_vs_no_plan_ms": 0.0,
+        "mean_total_latency_ms": 617.347212,
+        "mean_total_tokens": 263.0,
+        "token_reduction_vs_no_plan": 0.0
+      },
+      "prefix_truncation": {
+        "latency_delta_vs_no_plan_ms": 112.380133,
+        "mean_total_latency_ms": 729.727345,
+        "mean_total_tokens": 264.0,
+        "token_reduction_vs_no_plan": -0.003802
+      },
+      "random_norm_matched": {
+        "latency_delta_vs_no_plan_ms": 165.603496,
+        "mean_total_latency_ms": 782.950708,
+        "mean_total_tokens": 266.0,
+        "token_reduction_vs_no_plan": -0.011407
+      },
+      "shuffle_between_examples": {
+        "latency_delta_vs_no_plan_ms": 216.840708,
+        "mean_total_latency_ms": 834.18792,
+        "mean_total_tokens": 266.0,
+        "token_reduction_vs_no_plan": -0.011407
+      },
+      "within_plan_permutation": {
+        "latency_delta_vs_no_plan_ms": 45.072876,
+        "mean_total_latency_ms": 662.420088,
+        "mean_total_tokens": 266.0,
+        "token_reduction_vs_no_plan": -0.011407
+      }
+    },
+    "gate_status": {
+      "G0": {
+        "pass": 6102
+      },
+      "G1": {
+        "pass": 6102
+      },
+      "G10": {
+        "pass": 6102
+      },
+      "G11": {
+        "skip": 6102
+      },
+      "G12": {
+        "skip": 6102
+      },
+      "G2": {
+        "pass": 6102
+      },
+      "G3": {
+        "pass": 6102
+      },
+      "G4": {
+        "fail": 6102
+      },
+      "G5": {
+        "skip": 6102
+      },
+      "G6": {
+        "skip": 6102
+      },
+      "G7": {
+        "skip": 6102
+      },
+      "G8": {
+        "pass": 6102
+      },
+      "G9": {
+        "skip": 6102
+      }
+    },
+    "meaningful_parse": "measured_full_locked_matrix",
+    "meaningful_parse_primary": "binding_aware_meaningful_v2",
+    "numeric_evidence_valid": true,
+    "paired_intervals": {
+      "empty": {
+        "binder_reference_f1": {
+          "alpha": 0.05,
+          "estimate": 0.0,
+          "high": 0.0,
+          "low": 0.0,
+          "resamples": 1000
+        },
+        "binding_aware_meaningful_v2": {
+          "alpha": 0.05,
+          "estimate": 0.0,
+          "high": 0.0,
+          "low": 0.0,
+          "resamples": 1000
+        }
+      },
+      "random_norm_matched": {
+        "binder_reference_f1": {
+          "alpha": 0.05,
+          "estimate": 0.0,
+          "high": 0.0,
+          "low": 0.0,
+          "resamples": 1000
+        },
+        "binding_aware_meaningful_v2": {
+          "alpha": 0.05,
+          "estimate": 0.0,
+          "high": 0.0,
+          "low": 0.0,
+          "resamples": 1000
+        }
+      },
+      "shuffle_between_examples": {
+        "binder_reference_f1": {
+          "alpha": 0.05,
+          "estimate": 0.0,
+          "high": 0.0,
+          "low": 0.0,
+          "resamples": 1000
+        },
+        "binding_aware_meaningful_v2": {
+          "alpha": 0.05,
+          "estimate": 0.0,
+          "high": 0.0,
+          "low": 0.0,
+          "resamples": 1000
+        }
+      }
+    },
     "promotion_eligible": false,
-    "reason": "Locked matrix did not merge: ValueError: incomplete locked shard coverage: missing 225 shard(s)",
-    "verdict": "invalid_local_run"
+    "protocol": {
+      "arms": [
+        "no_plan",
+        "empty",
+        "random_norm_matched",
+        "shuffle_between_examples",
+        "within_plan_permutation",
+        "prefix_truncation",
+        "length_matched_verbal",
+        "gold_semantic_plan",
+        "learned_abstract_plan"
+      ],
+      "locked_eval_manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+      "paths": [
+        "raw",
+        "constrained",
+        "repaired"
+      ],
+      "protocol_sha256": "c6616e811ed7e8c7b6a8663f48affe6b846e74e7961add4209a4d423060806f3",
+      "raw_diagnostic_only": true,
+      "record_ids": [
+        "rico_eval_test_1299",
+        "rico_eval_test_1545",
+        "rico_eval_test_1553",
+        "rico_eval_test_1690",
+        "rico_eval_test_1975",
+        "rico_eval_test_2150",
+        "rico_eval_test_2383",
+        "rico_eval_test_631",
+        "rico_eval_test_82",
+        "rico_eval_test_917",
+        "rico_eval_test_1101",
+        "rico_eval_test_2447",
+        "rico_eval_test_3",
+        "rico_eval_test_796",
+        "rico_eval_test_928",
+        "rico_eval_test_1838",
+        "rico_eval_test_1398",
+        "rico_eval_test_1810",
+        "rico_eval_test_643",
+        "rico_eval_test_1706",
+        "rico_eval_test_522",
+        "rico_eval_test_1021",
+        "rico_eval_test_1071",
+        "rico_eval_test_116",
+        "rico_eval_test_1173",
+        "rico_eval_test_1227",
+        "rico_eval_test_1246",
+        "rico_eval_test_132",
+        "rico_eval_test_1339",
+        "rico_eval_test_1343",
+        "rico_eval_test_1370",
+        "rico_eval_test_1405",
+        "rico_eval_test_1426",
+        "rico_eval_test_1452",
+        "rico_eval_test_150",
+        "rico_eval_test_1509",
+        "rico_eval_test_1779",
+        "rico_eval_test_1813",
+        "rico_eval_test_1814",
+        "rico_eval_test_1820",
+        "rico_eval_test_1821",
+        "rico_eval_test_1841",
+        "rico_eval_test_1890",
+        "rico_eval_test_1944",
+        "rico_eval_test_1946",
+        "rico_eval_test_1986",
+        "rico_eval_test_20",
+        "rico_eval_test_2052",
+        "rico_eval_test_2153",
+        "rico_eval_test_2174",
+        "rico_eval_test_2188",
+        "rico_eval_test_222",
+        "rico_eval_test_2423",
+        "rico_eval_test_2460",
+        "rico_eval_test_2470",
+        "rico_eval_test_2483",
+        "rico_eval_test_287",
+        "rico_eval_test_312",
+        "rico_eval_test_34",
+        "rico_eval_test_340",
+        "rico_eval_test_363",
+        "rico_eval_test_381",
+        "rico_eval_test_422",
+        "rico_eval_test_457",
+        "rico_eval_test_477",
+        "rico_eval_test_538",
+        "rico_eval_test_559",
+        "rico_eval_test_58",
+        "rico_eval_test_60",
+        "rico_eval_test_602",
+        "rico_eval_test_616",
+        "rico_eval_test_641",
+        "rico_eval_test_725",
+        "rico_eval_test_739",
+        "rico_eval_test_742",
+        "rico_eval_test_806",
+        "rico_eval_test_822",
+        "rico_eval_test_889",
+        "rico_eval_test_922",
+        "rico_eval_test_982",
+        "rico_eval_test_1040",
+        "rico_eval_test_1084",
+        "rico_eval_test_1288",
+        "rico_eval_test_1422",
+        "rico_eval_test_1475",
+        "rico_eval_test_1552",
+        "rico_eval_test_1588",
+        "rico_eval_test_1794",
+        "rico_eval_test_2019",
+        "rico_eval_test_2034",
+        "rico_eval_test_218",
+        "rico_eval_test_2250",
+        "rico_eval_test_233",
+        "rico_eval_test_2432",
+        "rico_eval_test_2477",
+        "rico_eval_test_309",
+        "rico_eval_test_337",
+        "rico_eval_test_42",
+        "rico_eval_test_448",
+        "rico_eval_test_456",
+        "rico_eval_test_760",
+        "rico_eval_test_77",
+        "rico_eval_test_954",
+        "rico_eval_test_1348",
+        "rico_eval_test_209",
+        "rico_eval_test_255",
+        "rico_eval_test_1541",
+        "rico_eval_test_179",
+        "rico_eval_test_1818",
+        "rico_eval_test_49",
+        "rico_eval_test_1083",
+        "rico_eval_test_1096",
+        "rico_eval_test_1329",
+        "rico_eval_test_1716",
+        "rico_eval_test_2075",
+        "rico_eval_test_2356",
+        "rico_eval_test_586",
+        "rico_eval_test_896",
+        "rico_eval_test_1023",
+        "rico_eval_test_1045",
+        "rico_eval_test_1106",
+        "rico_eval_test_1117",
+        "rico_eval_test_1121",
+        "rico_eval_test_1123",
+        "rico_eval_test_1125",
+        "rico_eval_test_1147",
+        "rico_eval_test_1166",
+        "rico_eval_test_1197",
+        "rico_eval_test_1199",
+        "rico_eval_test_1201",
+        "rico_eval_test_1213",
+        "rico_eval_test_1230",
+        "rico_eval_test_1286",
+        "rico_eval_test_1289",
+        "rico_eval_test_1309",
+        "rico_eval_test_1358",
+        "rico_eval_test_146",
+        "rico_eval_test_1481",
+        "rico_eval_test_1503",
+        "rico_eval_test_1518",
+        "rico_eval_test_1531",
+        "rico_eval_test_1567",
+        "rico_eval_test_1581",
+        "rico_eval_test_1611",
+        "rico_eval_test_1619",
+        "rico_eval_test_1628",
+        "rico_eval_test_1633",
+        "rico_eval_test_164",
+        "rico_eval_test_1685",
+        "rico_eval_test_170",
+        "rico_eval_test_1737",
+        "rico_eval_test_1743",
+        "rico_eval_test_1770",
+        "rico_eval_test_1846",
+        "rico_eval_test_185",
+        "rico_eval_test_1850",
+        "rico_eval_test_1854",
+        "rico_eval_test_1863",
+        "rico_eval_test_1876",
+        "rico_eval_test_1911",
+        "rico_eval_test_1950",
+        "rico_eval_test_1951",
+        "rico_eval_test_1964",
+        "rico_eval_test_199",
+        "rico_eval_test_2",
+        "rico_eval_test_2025",
+        "rico_eval_test_2033",
+        "rico_eval_test_2058",
+        "rico_eval_test_2106",
+        "rico_eval_test_2147",
+        "rico_eval_test_2195",
+        "rico_eval_test_2243",
+        "rico_eval_test_228",
+        "rico_eval_test_2317",
+        "rico_eval_test_2346",
+        "rico_eval_test_2366",
+        "rico_eval_test_2409",
+        "rico_eval_test_2412",
+        "rico_eval_test_243",
+        "rico_eval_test_2430",
+        "rico_eval_test_2446",
+        "rico_eval_test_2461",
+        "rico_eval_test_25",
+        "rico_eval_test_252",
+        "rico_eval_test_296",
+        "rico_eval_test_327",
+        "rico_eval_test_499",
+        "rico_eval_test_523",
+        "rico_eval_test_570",
+        "rico_eval_test_623",
+        "rico_eval_test_625",
+        "rico_eval_test_636",
+        "rico_eval_test_681",
+        "rico_eval_test_692",
+        "rico_eval_test_695",
+        "rico_eval_test_750",
+        "rico_eval_test_752",
+        "rico_eval_test_755",
+        "rico_eval_test_762",
+        "rico_eval_test_764",
+        "rico_eval_test_828",
+        "rico_eval_test_849",
+        "rico_eval_test_860",
+        "rico_eval_test_863",
+        "rico_eval_test_866",
+        "rico_eval_test_898",
+        "rico_eval_test_909",
+        "rico_eval_test_918",
+        "rico_eval_test_923",
+        "rico_eval_test_937",
+        "rico_eval_test_2098",
+        "rico_eval_test_2281",
+        "rico_eval_test_341",
+        "rico_eval_test_594",
+        "rico_eval_test_1092",
+        "rico_eval_test_1167",
+        "rico_eval_test_1382",
+        "rico_eval_test_149",
+        "rico_eval_test_1556",
+        "rico_eval_test_1652",
+        "rico_eval_test_1749",
+        "rico_eval_test_1958",
+        "rico_eval_test_2128",
+        "rico_eval_test_259",
+        "rico_eval_test_435",
+        "rico_eval_test_463"
+      ],
+      "schema": "abstract_plan_functional_evidence/v1",
+      "seed": 313
+    },
+    "raw_diagnostic_only": true,
+    "reason": "All pre-locked local shards were present and merged with exact arm/path coverage.",
+    "row_count": 6102,
+    "shard_count": 46,
+    "ship_eligible": false,
+    "strata": {
+      "binder_count": {
+        "10": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 694.405556,
+          "meaningful_v2": 0.0,
+          "n": 171,
+          "total_tokens": 265.444444
+        },
+        "11": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 692.093069,
+          "meaningful_v2": 0.0,
+          "n": 378,
+          "total_tokens": 265.444444
+        },
+        "12": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 754.10246,
+          "meaningful_v2": 0.0,
+          "n": 252,
+          "total_tokens": 265.444444
+        },
+        "13": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 648.838611,
+          "meaningful_v2": 0.0,
+          "n": 36,
+          "total_tokens": 265.444444
+        },
+        "16": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 808.201111,
+          "meaningful_v2": 0.0,
+          "n": 9,
+          "total_tokens": 265.444444
+        },
+        "3": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 621.763704,
+          "meaningful_v2": 0.0,
+          "n": 27,
+          "total_tokens": 265.444444
+        },
+        "4": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 754.332963,
+          "meaningful_v2": 0.0,
+          "n": 648,
+          "total_tokens": 265.444444
+        },
+        "5": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 680.901111,
+          "meaningful_v2": 0.0,
+          "n": 81,
+          "total_tokens": 265.444444
+        },
+        "6": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 632.847778,
+          "meaningful_v2": 0.0,
+          "n": 18,
+          "total_tokens": 265.444444
+        },
+        "7": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 790.251313,
+          "meaningful_v2": 0.0,
+          "n": 99,
+          "total_tokens": 265.444444
+        },
+        "8": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 756.460881,
+          "meaningful_v2": 0.0,
+          "n": 261,
+          "total_tokens": 265.444444
+        },
+        "9": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 713.86037,
+          "meaningful_v2": 0.0,
+          "n": 54,
+          "total_tokens": 265.444444
+        }
+      },
+      "factor": {
+        "rico": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 731.258412,
+          "meaningful_v2": 0.0,
+          "n": 2034,
+          "total_tokens": 265.444444
+        }
+      },
+      "plan_length": {
+        "0": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 617.347212,
+          "meaningful_v2": 0.0,
+          "n": 226,
+          "total_tokens": 263.0
+        },
+        "1": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 729.727345,
+          "meaningful_v2": 0.0,
+          "n": 226,
+          "total_tokens": 264.0
+        },
+        "3": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 747.750164,
+          "meaningful_v2": 0.0,
+          "n": 1582,
+          "total_tokens": 266.0
+        }
+      },
+      "reference_diameter": {
+        "1": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 731.496508,
+          "meaningful_v2": 0.0,
+          "n": 189,
+          "total_tokens": 265.444444
+        },
+        "2": {
+          "binder_reference_f1": 0.0,
+          "latency_ms": 731.234022,
+          "meaningful_v2": 0.0,
+          "n": 1845,
+          "total_tokens": 265.444444
+        }
+      }
+    },
+    "token_rank_curves": {
+      "empty": [
+        {
+          "mean_token_id": 30.504425,
+          "n": 226,
+          "rank": 1
+        },
+        {
+          "mean_token_id": 32.840708,
+          "n": 226,
+          "rank": 2
+        },
+        {
+          "mean_token_id": 32.707965,
+          "n": 226,
+          "rank": 3
+        }
+      ],
+      "gold_semantic_plan": [
+        {
+          "mean_token_id": 10.389381,
+          "n": 226,
+          "rank": 1
+        },
+        {
+          "mean_token_id": 6.800885,
+          "n": 226,
+          "rank": 2
+        },
+        {
+          "mean_token_id": 2.90708,
+          "n": 226,
+          "rank": 3
+        }
+      ],
+      "learned_abstract_plan": [
+        {
+          "mean_token_id": 32.473451,
+          "n": 226,
+          "rank": 1
+        },
+        {
+          "mean_token_id": 32.876106,
+          "n": 226,
+          "rank": 2
+        },
+        {
+          "mean_token_id": 32.747788,
+          "n": 226,
+          "rank": 3
+        }
+      ],
+      "length_matched_verbal": [
+        {
+          "mean_token_id": 29.756637,
+          "n": 226,
+          "rank": 1
+        },
+        {
+          "mean_token_id": 31.725664,
+          "n": 226,
+          "rank": 2
+        },
+        {
+          "mean_token_id": 30.539823,
+          "n": 226,
+          "rank": 3
+        }
+      ],
+      "no_plan": [],
+      "prefix_truncation": [
+        {
+          "mean_token_id": 32.252212,
+          "n": 226,
+          "rank": 1
+        }
+      ],
+      "random_norm_matched": [
+        {
+          "mean_token_id": 31.411504,
+          "n": 226,
+          "rank": 1
+        },
+        {
+          "mean_token_id": 32.115044,
+          "n": 226,
+          "rank": 2
+        },
+        {
+          "mean_token_id": 30.964602,
+          "n": 226,
+          "rank": 3
+        }
+      ],
+      "shuffle_between_examples": [
+        {
+          "mean_token_id": 31.539823,
+          "n": 226,
+          "rank": 1
+        },
+        {
+          "mean_token_id": 30.20354,
+          "n": 226,
+          "rank": 2
+        },
+        {
+          "mean_token_id": 31.526549,
+          "n": 226,
+          "rank": 3
+        }
+      ],
+      "within_plan_permutation": [
+        {
+          "mean_token_id": 30.486726,
+          "n": 226,
+          "rank": 1
+        },
+        {
+          "mean_token_id": 31.942478,
+          "n": 226,
+          "rank": 2
+        },
+        {
+          "mean_token_id": 32.517699,
+          "n": 226,
+          "rank": 3
+        }
+      ]
+    },
+    "verdict": "ignored_or_collapsed"
   },
   "schema": "slm313_abstract_plan_functional_evidence/v1",
   "version_stamp": {
-    "code_commit": "2ae600bb1762d46fe628354065d692e5479b320c",
+    "code_commit": "6c85fda1de3089c3f9e31910f7e0e3e7ec975f14",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v115",
-      "harness.experiments.slm313_abstract_plan_functional_evidence": "v6"
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v11"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-26T06:34:28.310234+00:00"
+    "stamped_at": "2026-07-26T08:47:01.990473+00:00"
   }
 }

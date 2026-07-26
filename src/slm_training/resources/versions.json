@@ -4596,6 +4596,11 @@
         {
           "version": "v1",
           "date": "2026-07-26",
+          "note": "no-bump: replace the SLM-313 scratch checkpoint roster row with its measured rejected result; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
           "note": "no-bump: SLM-313's scratch checkpoint roster and README summary are unrelated to the SLM-228 spectral disposition."
         },
         {
@@ -9004,7 +9009,7 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v8",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
@@ -9016,6 +9021,26 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-26",
+          "note": "no-bump: record the measured SLM-313 local matrix result and scratch checkpoint disposition; harness behavior is unchanged."
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-26",
+          "note": "SLM-313 retains a bounded ten-second per-record decode watchdog after a valid local shard exposed a five-second false timeout; the outer 170-second run cap is unchanged."
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-26",
+          "note": "SLM-313 applies its bounded decode watchdog per record rather than across a multi-record evaluator chunk."
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-26",
+          "note": "SLM-313 preserves deterministic singleton bypass rows with explicit metadata instead of falsely requiring every legal decode to invoke the plan adapter."
+        },
         {
           "version": "v8",
           "date": "2026-07-26",
