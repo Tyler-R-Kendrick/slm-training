@@ -186,7 +186,7 @@
       ]
     },
     "data.flow.operator_policy_corpus": {
-      "version": "v4",
+      "version": "v5",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/flow/operator_policy_corpus.py",
@@ -194,6 +194,11 @@
         "docs/design/dsh3-24-operator-policy-corpus.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-403: materialize selected policy rows only by fresh legal-set re-enumeration and compiler application outside the sanitized model boundary"
+        },
         {
           "version": "v4",
           "date": "2026-07-26",
