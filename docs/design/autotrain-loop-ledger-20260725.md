@@ -2,13 +2,12 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **789** (latest `autotrain_wf_smoke_20260725_iter790`).
+Total iterations: **790** (latest `autotrain_wf_smoke_20260725_iter791`).
 
 ## Latest 30
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter761` | True | 8 | steps | 32.56936264038086 | 20.38 |
 | `autotrain_wf_smoke_20260725_iter762` | True | 8 | steps | 38.73179626464844 | 20.78 |
 | `autotrain_wf_smoke_20260725_iter763` | True | 8 | steps | 30.519359588623047 | 18.18 |
 | `autotrain_wf_smoke_20260725_iter764` | True | 8 | steps | 29.837949752807617 | 20.27 |
@@ -38,3 +37,4 @@ Total iterations: **789** (latest `autotrain_wf_smoke_20260725_iter790`).
 | `autotrain_wf_smoke_20260725_iter788` | True | 8 | steps | 34.729305267333984 | 21.27 |
 | `autotrain_wf_smoke_20260725_iter789` | True | 8 | steps | 26.250732421875 | 23.11 |
 | `autotrain_wf_smoke_20260725_iter790` | True | 8 | steps | 21.74964714050293 | 23.42 |
+| `autotrain_wf_smoke_20260725_iter791` | True | 8 | steps | 29.628036499023438 | 24.17 |
