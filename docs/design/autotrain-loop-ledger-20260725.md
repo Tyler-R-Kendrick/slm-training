@@ -2,9 +2,22 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **340** (latest `autotrain_wf_smoke_20260725_iter340`).
+Total successful iterations: **340** (latest
+`autotrain_wf_smoke_20260725_iter340`).
 
-## Latest 30
+## BLOCKED as of iter341 (2026-07-26)
+
+The loop cannot produce further genuine iterations right now:
+`data build-train --source fixture` → `sft train --model twotower` fails on
+**100% of records** (all 103) because `train_seeds.jsonl` uses named
+placeholder markers (`:auth.title`, …) that PR #952 (`7cddae64`, 2026-07-25)
+now rejects via `assert_canonical_template_markers`. See
+[`autotrain-wf-smoke-20260726-iter341-measured-results.md`](autotrain-wf-smoke-20260726-iter341-measured-results.md)
+for full repro, root cause, and evidence. No new iteration is fabricated
+past this point until the seed corpus is canonicalized (harness fix, out of
+this loop's scope — see `improve-openui-harnesses`).
+
+## Latest 30 (through last successful iteration, iter340)
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
