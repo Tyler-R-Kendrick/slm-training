@@ -351,7 +351,15 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
             rico_limit=80,
         )
     )
-    assert result["stats"]["record_count"] >= 1
+    # Deterministic on this fixture: 80 seeds -> 4 survivors after verifier
+    # rejection, fuzzy dedup, and n-gram decontamination account for the rest.
+    # Assert both the survivor floor and the full accounting so this can't
+    # silently regress to near-total data loss.
+    assert result["stats"]["record_count"] >= 4
+    assert (
+        result["stats"]["record_count"] + result["stats"]["rejected_total"]
+        == result["stats"]["seed_count"]
+    )
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
 

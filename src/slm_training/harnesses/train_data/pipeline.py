@@ -462,7 +462,12 @@ def _normalize_record(
     judge = independent_judge(out)
     out.meta["independent_judge_passed"] = bool(judge["ok"])
     # Re-run F2 after F1 projection even when a producer supplied an earlier stamp.
-    return _finalize(stamp_record(out))
+    # Canonicalize before stamping: stamp_record's verification report must
+    # describe the persisted canonical bytes, not pre-canonical named markers.
+    finalized = _finalize(out)
+    stamped = stamp_record(finalized)
+    assert_canonical_template_markers(stamped)
+    return stamped
 
 
 def _write_scope_preference_pairs(out_dir: Path, scope_pairs: list) -> Path:
