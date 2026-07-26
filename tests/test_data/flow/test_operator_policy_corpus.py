@@ -9,6 +9,7 @@ from slm_training.data.flow.operator_policy_corpus import (
     RowRejectionKind,
     build_operator_policy_corpus,
     build_operator_policy_rows,
+    build_operator_termination_rows,
 )
 from slm_training.dsl.operators import (
     ActionEffectV1,
@@ -262,3 +263,19 @@ def test_corpus_quality_report_aggregates_hard_negatives_and_rejections() -> Non
     assert report.positive_only_rows == 1
     payload = report.to_dict()
     assert payload["schema"] == "operator_policy_corpus_quality_report/v1"
+
+
+def test_termination_rows_are_fresh_and_keep_distance_proofs_out_of_model_input() -> (
+    None
+):
+    _pack, _library, trace, _collapse, authority_resolver = _different_result_fixture()
+    rows = build_operator_termination_rows(
+        trace=trace, authority_resolver=authority_resolver
+    )
+    assert len(rows) == len(trace.turns) + 1
+    assert [row.stop for row in rows] == [False, False, True]
+    assert rows[-1].remaining_distance == 0
+    for row in rows:
+        validate_no_forbidden_fields(row.model_input())
+        assert "distance" not in str(row.model_input())
+        assert "proof" not in str(row.model_input())
