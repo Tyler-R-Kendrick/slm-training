@@ -1,0 +1,53 @@
+{
+  "assertions": [
+    {
+      "text": "non_promotable_without_decoder",
+      "passed": true,
+      "evidence": "actual=True operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "non_promotable_without_decoder",
+      "type": "code-grader",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "non_promotable_without_decoder",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "non_promotable_without_decoder",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "84f670bfa99450744d9a939808c80526609a3303",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v115",
+      "harness.experiments.slm332_latent_geometry": "v5"
+    },
+    "stamped_at": "2026-07-25T21:24:46.797951+00:00"
+  }
+}

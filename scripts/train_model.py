@@ -616,6 +616,29 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias compiler-legal components by role and remaining planned count.",
     )
     parser.add_argument(
+        "--abstract-plan-mode",
+        choices=("disabled", "teacher_forced", "sampled", "oracle", "random", "shuffled"),
+        default="disabled",
+        help="Default-off discrete plan head mode.",
+    )
+    parser.add_argument(
+        "--abstract-plan-connector-arm",
+        choices=("disabled", "learned", "oracle", "detached", "empty", "random", "shuffled"),
+        default="disabled",
+        help="Default-off plan-conditioning connector arm.",
+    )
+    parser.add_argument(
+        "--abstract-plan-loss-weight",
+        type=float,
+        default=0.0,
+        help="Auxiliary structural plan supervision weight.",
+    )
+    parser.add_argument(
+        "--abstract-plan-train-conditioning",
+        action="store_true",
+        help="Condition reconstruction loss on teacher-forced plan targets during training.",
+    )
+    parser.add_argument(
         "--slot-component-loss-weight",
         type=float,
         default=0.0,
@@ -1456,6 +1479,10 @@ def main(argv: list[str] | None = None) -> int:
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_loss_weight=args.component_plan_loss_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
+        abstract_plan_mode=args.abstract_plan_mode,
+        abstract_plan_connector_arm=args.abstract_plan_connector_arm,
+        abstract_plan_loss_weight=args.abstract_plan_loss_weight,
+        abstract_plan_train_conditioning=args.abstract_plan_train_conditioning,
         slot_component_loss_weight=args.slot_component_loss_weight,
         slot_component_focal_gamma=args.slot_component_focal_gamma,
         slot_component_class_balance_power=(args.slot_component_class_balance_power),

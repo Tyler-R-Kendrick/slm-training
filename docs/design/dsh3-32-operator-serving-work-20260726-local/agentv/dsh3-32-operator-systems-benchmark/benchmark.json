@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/dsh3-32-operator-systems-benchmark.eval.jsonl",
+    "timestamp": "2026-07-26T16:48:16.336Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "full-denominator-contract",
+      "no-unmatched-efficiency-claim"
+    ],
+    "experiment": "dsh3-32-operator-systems-benchmark"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "full-denominator-contract:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "no-unmatched-efficiency-claim:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ba73337655ad6bc21d7f82aa71a734195508fdf0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.operator_systems_benchmark": "v1",
+      "harness.experiments.typed_operator_policy": "v11"
+    },
+    "stamped_at": "2026-07-26T16:48:16.024750+00:00"
+  }
+}
