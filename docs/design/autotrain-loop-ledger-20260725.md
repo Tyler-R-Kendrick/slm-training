@@ -2,39 +2,39 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **699** (latest `autotrain_wf_smoke_20260725_iter700`).
+Total iterations: **729** (latest `autotrain_wf_smoke_20260725_iter730`).
 
 ## Latest 30
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter671` | True | 8 | steps | 30.43132781982422 | 1.87 |
-| `autotrain_wf_smoke_20260725_iter672` | True | 8 | steps | 32.2456169128418 | 2.41 |
-| `autotrain_wf_smoke_20260725_iter673` | True | 8 | steps | 43.06698989868164 | 2.02 |
-| `autotrain_wf_smoke_20260725_iter674` | True | 8 | steps | 27.75589942932129 | 3.36 |
-| `autotrain_wf_smoke_20260725_iter675` | True | 8 | steps | 35.5415153503418 | 2.1 |
-| `autotrain_wf_smoke_20260725_iter676` | True | 8 | steps | 26.61166000366211 | 2.05 |
-| `autotrain_wf_smoke_20260725_iter677` | True | 8 | steps | 21.08614158630371 | 2.08 |
-| `autotrain_wf_smoke_20260725_iter678` | True | 8 | steps | 36.09998321533203 | 2.27 |
-| `autotrain_wf_smoke_20260725_iter679` | True | 8 | steps | 39.51469802856445 | 2.19 |
-| `autotrain_wf_smoke_20260725_iter680` | True | 8 | steps | 27.509746551513672 | 2.29 |
-| `autotrain_wf_smoke_20260725_iter681` | True | 8 | steps | 33.09806823730469 | 2.22 |
-| `autotrain_wf_smoke_20260725_iter682` | True | 8 | steps | 31.927467346191406 | 2.13 |
-| `autotrain_wf_smoke_20260725_iter683` | True | 8 | steps | 36.00273895263672 | 3.87 |
-| `autotrain_wf_smoke_20260725_iter684` | True | 8 | steps | 30.10626983642578 | 2.4 |
-| `autotrain_wf_smoke_20260725_iter685` | True | 8 | steps | 35.00714111328125 | 2.44 |
-| `autotrain_wf_smoke_20260725_iter686` | True | 8 | steps | 23.366518020629883 | 2.53 |
-| `autotrain_wf_smoke_20260725_iter687` | True | 8 | steps | 35.700984954833984 | 2.37 |
-| `autotrain_wf_smoke_20260725_iter688` | True | 8 | steps | 31.089889526367188 | 3.03 |
-| `autotrain_wf_smoke_20260725_iter689` | True | 8 | steps | 26.731891632080078 | 3.63 |
-| `autotrain_wf_smoke_20260725_iter690` | True | 8 | steps | 25.261417388916016 | 2.47 |
-| `autotrain_wf_smoke_20260725_iter691` | True | 8 | steps | 38.7015266418457 | 2.53 |
-| `autotrain_wf_smoke_20260725_iter692` | True | 8 | steps | 34.718910217285156 | 2.44 |
-| `autotrain_wf_smoke_20260725_iter693` | True | 8 | steps | 33.834228515625 | 2.95 |
-| `autotrain_wf_smoke_20260725_iter694` | True | 8 | steps | 30.643150329589844 | 2.67 |
-| `autotrain_wf_smoke_20260725_iter695` | True | 8 | steps | 35.38960266113281 | 2.26 |
-| `autotrain_wf_smoke_20260725_iter696` | True | 8 | steps | 36.36891174316406 | 2.01 |
-| `autotrain_wf_smoke_20260725_iter697` | True | 8 | steps | 31.328210830688477 | 1.76 |
-| `autotrain_wf_smoke_20260725_iter698` | True | 8 | steps | 30.06171417236328 | 3.65 |
-| `autotrain_wf_smoke_20260725_iter699` | True | 8 | steps | 23.892431259155273 | 2.96 |
-| `autotrain_wf_smoke_20260725_iter700` | True | 8 | steps | 25.96822738647461 | 2.19 |
+| `autotrain_wf_smoke_20260725_iter701` | True | 8 | steps | 25.361906051635742 | 3.37 |
+| `autotrain_wf_smoke_20260725_iter702` | True | 8 | steps | 28.268049240112305 | 3.15 |
+| `autotrain_wf_smoke_20260725_iter703` | True | 8 | steps | 26.25794792175293 | 2.97 |
+| `autotrain_wf_smoke_20260725_iter704` | True | 8 | steps | 28.3232421875 | 3.79 |
+| `autotrain_wf_smoke_20260725_iter705` | True | 8 | steps | 35.45568084716797 | 2.91 |
+| `autotrain_wf_smoke_20260725_iter706` | True | 8 | steps | 26.606056213378906 | 2.85 |
+| `autotrain_wf_smoke_20260725_iter707` | True | 8 | steps | 24.785608291625977 | 2.59 |
+| `autotrain_wf_smoke_20260725_iter708` | True | 8 | steps | 34.11713790893555 | 5.25 |
+| `autotrain_wf_smoke_20260725_iter709` | True | 8 | steps | 34.25813293457031 | 4.69 |
+| `autotrain_wf_smoke_20260725_iter710` | True | 8 | steps | 31.678455352783203 | 3.49 |
+| `autotrain_wf_smoke_20260725_iter711` | True | 8 | steps | 28.92843246459961 | 2.95 |
+| `autotrain_wf_smoke_20260725_iter712` | True | 8 | steps | 29.402790069580078 | 2.91 |
+| `autotrain_wf_smoke_20260725_iter713` | True | 8 | steps | 33.07559585571289 | 2.92 |
+| `autotrain_wf_smoke_20260725_iter714` | True | 8 | steps | 28.38961410522461 | 2.44 |
+| `autotrain_wf_smoke_20260725_iter715` | True | 8 | steps | 31.237476348876953 | 2.94 |
+| `autotrain_wf_smoke_20260725_iter716` | True | 8 | steps | 36.275978088378906 | 3.09 |
+| `autotrain_wf_smoke_20260725_iter717` | True | 8 | steps | 32.57198715209961 | 2.63 |
+| `autotrain_wf_smoke_20260725_iter718` | True | 8 | steps | 34.34012985229492 | 5.02 |
+| `autotrain_wf_smoke_20260725_iter719` | True | 8 | steps | 25.056102752685547 | 2.63 |
+| `autotrain_wf_smoke_20260725_iter720` | True | 8 | steps | 25.081329345703125 | 4.54 |
+| `autotrain_wf_smoke_20260725_iter721` | True | 8 | steps | 27.613100051879883 | 9.34 |
+| `autotrain_wf_smoke_20260725_iter722` | True | 8 | steps | 36.139095306396484 | 16.61 |
+| `autotrain_wf_smoke_20260725_iter723` | True | 8 | steps | 35.48696517944336 | 3.91 |
+| `autotrain_wf_smoke_20260725_iter724` | True | 8 | steps | 25.2744083404541 | 2.78 |
+| `autotrain_wf_smoke_20260725_iter725` | True | 8 | steps | 25.738845825195312 | 17.49 |
+| `autotrain_wf_smoke_20260725_iter726` | True | 8 | steps | 29.002532958984375 | 27.28 |
+| `autotrain_wf_smoke_20260725_iter727` | True | 8 | steps | 30.075464248657227 | 32.64 |
+| `autotrain_wf_smoke_20260725_iter728` | True | 8 | steps | 29.917179107666016 | 21.42 |
+| `autotrain_wf_smoke_20260725_iter729` | True | 8 | steps | 26.32215118408203 | 25.48 |
+| `autotrain_wf_smoke_20260725_iter730` | True | 8 | steps | 40.812870025634766 | 24.88 |
