@@ -1,0 +1,20 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dd1783f9238963aceeec7c1c384e99f1b9fae06c",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v61",
+      "harness.experiments.operator_failure_prediction": "v1"
+    },
+    "stamped_at": "2026-07-26T16:19:17.732899+00:00"
+  }
+}

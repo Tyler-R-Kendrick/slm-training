@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "rebased_cap2_disposition_not_ship_or_dsh5_authorization", "result": {"allowed_actions": [], "allowed_heads": [], "allowed_objectives": [], "may_start": false, "reason": "No typed action form improved held-out CAP2 semantics; DSH5 remains closed."}}

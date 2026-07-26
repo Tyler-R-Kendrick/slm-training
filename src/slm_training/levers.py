@@ -30,6 +30,9 @@ MAX_HARNESS_WALL_SECONDS: Final = (
 MAX_HARNESS_WALL_MINUTES: Final = MAX_HARNESS_WALL_SECONDS / 60
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 CHANGED_TEST_WORKERS: Final = 4
+# Superfiltering easy-tail fraction for build-time difficulty curation
+# (records below this NLL percentile are down-weighted / droppable).
+DIFFICULTY_EASY_TAIL_FRACTION: Final = 0.2
 VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "docs/design/*.json",
     "docs/MODEL_CARD.md",
@@ -45,6 +48,58 @@ VERCEL_FUNCTION_EXCLUDE_FILES: Final = (
 # Capability profiles are deliberately expressed as deviations from the
 # model-build defaults. A default-off lever is harmless; activating it requires
 # the listed certificate stage.
+
+# Active, source-controlled corpora. Historical snapshots remain immutable
+# evidence but fail the canonical marker guard and are never CLI defaults.
+DEFAULT_TRAIN_DATA_DIR: Final = Path(
+    "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2"
+)
+DEFAULT_EVAL_DATA_DIR: Final = Path(
+    "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2"
+)
+DEFAULT_CONTEXT_BACKEND: Final = "scratch"
+
+# Template markers are codec identities, never semantic supervision.  Keep this
+# policy beside every other user-facing lever so there is one discoverable
+# source of truth for training and decode configuration.
+TEMPLATE_MARKERS_ARE_OPAQUE: Final = True
+DEFAULT_OUTPUT_TOKENIZER: Final = "lexer"
+DEFAULT_DECODE_TIMEOUT_SECONDS: Final = 12.0
+CHECKPOINT_DECLARED_POLICY: Final = "checkpoint_declared"
+STRICT_COMPILER_TREE_POLICY_ID: Final = "strict_compiler_tree"
+# Every evaluation enforces the symbol-only completion boundary independently
+# of checkpoint provenance. The compiler-tree bundle is the canonical default.
+DEFAULT_EVALUATION_POLICY: Final = STRICT_COMPILER_TREE_POLICY_ID
+STRICT_EVALUATION_POLICY: Final = {
+    "grammar_constrained": True,
+    "grammar_ltr_primary": True,
+    "grammar_finalize_validate": True,
+    "slot_contract_constrained_decode": True,
+    "honest_slot_contract": True,
+    "allow_unconstrained_fallback": False,
+}
+STRICT_COMPILER_TREE_POLICY: Final = {
+    **STRICT_EVALUATION_POLICY,
+    "output_tokenizer": DEFAULT_OUTPUT_TOKENIZER,
+    "compiler_decode_mode": "tree",
+    # Structural AST-plan scoring is part of the policy, not a caller-owned
+    # pair of optional flags. This consumes no marker names or free-form text.
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+}
+PROHIBITED_TEMPLATE_SEMANTIC_LEVERS: Final = {
+    "namespace_augment": "renames opaque markers into user-defined namespaces",
+    "prompt_semantic_role_contract": "adds user-defined marker labels to training prompts",
+    "semantic_role_contract_in_context": "exposes user-defined marker labels",
+    "semantic_role_decode_weight": "scores user-defined marker labels",
+    "semantic_role_schema_candidates": "maps user-defined marker labels to schema",
+    "schema_role_slot_decode_weight": "maps user-defined marker labels to schema",
+    "slot_coverage_close_decode_weight": "uses marker-label-derived schema reachability",
+    "semantic_plan_repeated_slot_margin_decode_weight": (
+        "groups markers by user-defined namespace labels"
+    ),
+}
+
 CAPABILITY_LEVER_MINIMUMS: Final = {
     # CAP1 introduces authored schema / natural-language conditioning.
     "design_md_in_context": (False, Capability.CAP1_SEMANTICS),
@@ -475,6 +530,33 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
         "type": "tuple[str, ...]",
         "source": "slm_training.levers.VERCEL_FUNCTION_INCLUDE_FILES",
     }
+    
+    catalog["template_markers_are_opaque"] = {
+        "category": "data",
+        "default": TEMPLATE_MARKERS_ARE_OPAQUE,
+        "type": "bool",
+        "source": "slm_training.levers.TEMPLATE_MARKERS_ARE_OPAQUE",
+    }
+    catalog["default_train_data_dir"] = {
+        "category": "data",
+        "default": str(DEFAULT_TRAIN_DATA_DIR),
+        "type": "Path",
+        "source": "slm_training.levers.DEFAULT_TRAIN_DATA_DIR",
+    }
+    catalog["default_eval_data_dir"] = {
+        "category": "data",
+        "default": str(DEFAULT_EVAL_DATA_DIR),
+        "type": "Path",
+        "source": "slm_training.levers.DEFAULT_EVAL_DATA_DIR",
+    }
+    catalog["default_context_backend"] = {
+        "category": "model",
+        "default": DEFAULT_CONTEXT_BACKEND,
+        "type": "str",
+        "choices": ["scratch", "hf"],
+        "source": "slm_training.levers.DEFAULT_CONTEXT_BACKEND",
+    }
+
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 
     catalog["evaluation_policy"].update(

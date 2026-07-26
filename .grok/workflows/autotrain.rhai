@@ -37,6 +37,8 @@
 //            matrix closeout verify
 //
 // Docs agents must read (in order):
+//   AGENTS.md                                       (canonical for every agent)
+//   docs/design/decode-invariants.md                (goal law)
 //   docs/openwiki/quickstart.md
 //   docs/openwiki/workflows/train-eval-docs.md
 //   docs/openwiki/operations/checkpoints-and-agents.md
@@ -44,8 +46,13 @@
 //   .agents/skills/autotrain/references/contracts.md
 //   .agents/skills/autotrain/references/<phase>.md  (via `slm guide <slug>`)
 //
-// Contracts: iron law docs, model card, fixture≠ship, RL fail-closed,
-// hard run cap (slm_training.levers.MAX_RUN_MINUTES), no paid without allow_paid.
+// Contracts: AGENTS.md is canonical and outranks tool defaults on process
+// conflicts. Non-negotiable architecture invariants live in
+// docs/design/decode-invariants.md -- never weaken them; a rejected experiment
+// closes an approach, never a goal. Iron law docs (skill:
+// documenting-experiment-results), model card (docs/MODEL_CARD.md + README
+// summary), fixture≠ship, RL fail-closed, hard run cap
+// (slm_training.levers.MAX_RUN_MINUTES), no paid without allow_paid.
 
 let meta = #{
     name: "autotrain",

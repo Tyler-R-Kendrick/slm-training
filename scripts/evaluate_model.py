@@ -606,7 +606,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-unconstrained-fallback",
         action="store_true",
-        help="Disable unconstrained retries so constrained-decode adherence is measured directly.",
+        help=(
+            "Deprecated no-op: unconstrained fallback is already fail-closed "
+            "(ModelBuildConfig rejects allow_unconstrained_fallback=True)."
+        ),
     )
     parser.add_argument(
         "--eval-cache-mode",
@@ -734,7 +737,9 @@ def main(argv: list[str] | None = None) -> int:
         eval_offset=args.eval_offset,
         gen_steps=args.gen_steps,
         generate_max_attempts=max(1, args.max_attempts),
-        allow_unconstrained_fallback=not args.no_unconstrained_fallback,
+        # Fail-closed (decode invariants): never enable unconstrained fallback here.
+        # --no-unconstrained-fallback remains accepted for older scripts.
+        allow_unconstrained_fallback=False,
         # Preserve checkpoint settings unless an explicit override is supplied.
         grammar_skip_exact_stream_probe=(
             True if args.skip_exact_stream_probe else None
