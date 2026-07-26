@@ -1,0 +1,36 @@
+{
+ "contract_hash": "b608bdc1fab65b331759f3f1612fe98de53c5f7f4d0a8c622e37e7d785e3fa1f",
+ "contract_id": "cross-pack-transfer-activation-gate-v1",
+ "disposition": "inconclusive",
+ "issue": {
+  "activation_requirement": "SLM-268 selected verified OpenUI data regime; SLM-269 selected target policy; SLM-270 selected objective; SLM-271 selected mask policy. Pack capabilities block only individual arms.",
+  "alias": "DCA1-02",
+  "gate_contract_id": "cross-pack-transfer-activation-gate-v1",
+  "linear_issue": "SLM-273",
+  "slug": "dca1-02-cross-pack-transfer",
+  "title": "Run GraphQL/design-pattern/nomenclature to OpenUI curriculum transfer at matched OpenUI tokens and total compute"
+ },
+ "prerequisite_verdicts": {
+  "SLM-261_loss_ledger": "missing_or_unqualified",
+  "SLM-268_data_regime": "blocked",
+  "SLM-269_target_policy": "blocked_or_inconclusive"
+ },
+ "schema_version": "dca_activation_gate/v1",
+ "successor_conditions": [
+  "qualified LossLedgerV1 artifact (SLM-261 successor)",
+  "SLM-268 successor with activation_status != blocked (selected regime or negative result)",
+  "SLM-269 successor with a selected target policy or no-effect disposition",
+  "then re-run scripts/audit_dca_activation --issue SLM-273 (reads artifacts live) and re-file the campaign"
+ ],
+ "verdict": "blocked",
+ "verdict_rationale": "DCA1-02 (SLM-273) activation requires: SLM-268 selected verified OpenUI data regime; SLM-269 selected target policy; SLM-270 selected objective; SLM-271 selected mask policy. Pack capabilities block only individual arms. Audited prerequisite artifacts are unqualified: SLM-261_loss_ledger=missing_or_unqualified, SLM-268_data_regime=blocked, SLM-269_target_policy=blocked_or_inconclusive. No training, surgery, curriculum, or tournament is launched; closing blocked/inconclusive.",
+ "version_stamp": {
+  "code_commit": "b7d5e9bb0a2064c8c6e1cf48b42e99993d576143",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments": "v118"
+  },
+  "stamp_schema": "version_stamp/v1",
+  "stamped_at": "2026-07-25T21:46:25.256378+00:00"
+ }
+}

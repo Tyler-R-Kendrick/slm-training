@@ -100,6 +100,18 @@ DCA_ISSUES: dict[str, DcaIssueSpec] = {
             "selected mask policy or no-effect disposition."
         ),
     ),
+    "SLM-273": DcaIssueSpec(
+        linear_issue="SLM-273",
+        alias="DCA1-02",
+        title="Run GraphQL/design-pattern/nomenclature to OpenUI curriculum transfer at matched OpenUI tokens and total compute",
+        gate_contract_id="cross-pack-transfer-activation-gate-v1",
+        slug="dca1-02-cross-pack-transfer",
+        activation_requirement=(
+            "SLM-268 selected verified OpenUI data regime; SLM-269 selected "
+            "target policy; SLM-270 selected objective; SLM-271 selected "
+            "mask policy. Pack capabilities block only individual arms."
+        ),
+    ),
 }
 
 
