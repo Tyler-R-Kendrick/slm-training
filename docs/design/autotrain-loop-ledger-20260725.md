@@ -2,13 +2,26 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **250** (latest `autotrain_wf_smoke_20260725_iter250`).
+Total iterations: **251** (latest `autotrain_wf_smoke_20260725_iter251`).
+
+**iter251 blocker + fix:** a fresh container rebuild of the `wf_smoke_v1`
+fixture (ephemeral `outputs/`) tripped the canonical-marker gate again
+(`ValueError: persisted template markers must use opaque :slot_<ordinal>
+identities`) — the fix from the (unmerged, now-orphaned) `d537485e` /
+`71cfff72` line of commits was never in this branch's history. Reapplied the
+same fix in `_normalize_record` (`harnesses/train_data/pipeline.py`):
+canonicalize + assert opaque `:slot_N` markers on both return paths before
+persisting. Bumped `harness.train_data` v20 -> v21 and updated the 3 tests
+whose fixtures baked in the leaky named-marker behavior
+(`test_prompt_contracts_expose_component_counts_and_slots`,
+`test_semantic_role_contract_uses_only_visible_slots_and_types`,
+`test_build_train_data_from_rico_fixtures`). See
+`docs/design/autotrain-wf-smoke-20260725-iter251-measured-results.md`.
 
 ## Latest 30
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter221` | True | 8 | steps | 31.807716369628906 | 59.54 |
 | `autotrain_wf_smoke_20260725_iter222` | True | 8 | steps | 35.218605041503906 | 66.21 |
 | `autotrain_wf_smoke_20260725_iter223` | True | 8 | steps | 31.524505615234375 | 69.02 |
 | `autotrain_wf_smoke_20260725_iter224` | True | 8 | steps | 31.552364349365234 | 68.99 |
@@ -38,3 +51,4 @@ Total iterations: **250** (latest `autotrain_wf_smoke_20260725_iter250`).
 | `autotrain_wf_smoke_20260725_iter248` | True | 8 | steps | 35.379425048828125 | 74.12 |
 | `autotrain_wf_smoke_20260725_iter249` | True | 8 | steps | 26.19162368774414 | 68.13 |
 | `autotrain_wf_smoke_20260725_iter250` | True | 8 | steps | 27.758634567260742 | 82.96 |
+| `autotrain_wf_smoke_20260725_iter251` | True | 8 | steps | 38.951087951660156 | 2.37 |

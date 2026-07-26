@@ -204,10 +204,23 @@ def _normalize_record(
     *,
     sanitize: "SanitizeOptions | None" = None,
 ) -> ExampleRecord:
-    from slm_training.data.contract import normalize_example_record
+    from slm_training.data.contract import (
+        assert_canonical_template_markers,
+        canonicalize_example_template_markers,
+        normalize_example_record,
+    )
     from slm_training.data.progspec import ProgramSpec, emit_record
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
+
+    def _finalize(normalized: ExampleRecord) -> ExampleRecord:
+        # Every persisted train record must use opaque `:slot_<ordinal>`
+        # markers (see harnesses/test_data/pipeline.py's mirror call) —
+        # TwoTower/grammar-diffusion `from_records` reject named markers
+        # (e.g. `:auth.title`) unconditionally at load time.
+        normalized = canonicalize_example_template_markers(normalized)
+        assert_canonical_template_markers(normalized)
+        return normalized
 
     verbatim_openui = (
         record.openui if bool(record.meta.get("preserve_verbatim")) else None
@@ -284,20 +297,26 @@ def _normalize_record(
                 "templatize_skipped": {},
             }
         surfaces = [primary, *(target.text for target in accepted_outputs)]
-        return ExampleRecord(
-            id=record.id,
-            prompt=record.prompt.strip(),
-            openui=primary,
-            placeholders=sorted(
-                {slot for surface in surfaces for slot in extract_placeholders(surface)}
-            ),
-            split=record.split,
-            source=record.source,
-            meta=meta,
-            design_md=record.design_md,
-            target_kind=record.target_kind,
-            target_category=record.target_category,
-            accepted_outputs=accepted_outputs,
+        return _finalize(
+            ExampleRecord(
+                id=record.id,
+                prompt=record.prompt.strip(),
+                openui=primary,
+                placeholders=sorted(
+                    {
+                        slot
+                        for surface in surfaces
+                        for slot in extract_placeholders(surface)
+                    }
+                ),
+                split=record.split,
+                source=record.source,
+                meta=meta,
+                design_md=record.design_md,
+                target_kind=record.target_kind,
+                target_category=record.target_category,
+                accepted_outputs=accepted_outputs,
+            )
         )
 
     scrubbed = strip_style_literals(record.openui)
@@ -443,7 +462,7 @@ def _normalize_record(
     judge = independent_judge(out)
     out.meta["independent_judge_passed"] = bool(judge["ok"])
     # Re-run F2 after F1 projection even when a producer supplied an earlier stamp.
-    return stamp_record(out)
+    return _finalize(stamp_record(out))
 
 
 def _write_scope_preference_pairs(out_dir: Path, scope_pairs: list) -> Path:
