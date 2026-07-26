@@ -195,6 +195,48 @@ class CausalLMOpenUIPlugin:
         output = self.model(**encoded, labels=encoded["input_ids"])
         return float(output.loss.detach().to(torch.float32).cpu().item())
 
+    def forward_with_segments(
+        self,
+        input_ids: Any,
+        segment_ids: Any,
+        example_ids: Any | None = None,
+    ) -> dict[str, float | int]:
+        """Block-bottleneck-masked forward pass (AP-019 / SLM-307).
+
+        Opt-in and independent of :meth:`forward`'s legacy full-sequence path,
+        which this does not touch. ``segment_ids`` labels every position with
+        a ``block_attention.SegmentKind`` (prompt / privileged_plan / abstract
+        / target); target positions never attend privileged-plan positions
+        regardless of causal order, and only abstract/target positions
+        contribute to the loss. ``example_ids`` (optional) prevents
+        cross-example leakage inside one packed row.
+        """
+        import torch
+
+        from slm_training.models.block_attention import (
+            apply_loss_mask,
+            build_block_bottleneck_mask,
+            loss_position_mask,
+        )
+
+        device = self.model.device
+        input_ids = input_ids.to(device)
+        segment_ids = segment_ids.to(device)
+        if example_ids is not None:
+            example_ids = example_ids.to(device)
+
+        embeds = self.model.get_input_embeddings()(input_ids)
+        mask = build_block_bottleneck_mask(
+            segment_ids, example_ids=example_ids, dtype=embeds.dtype
+        )
+        labels = apply_loss_mask(input_ids, segment_ids)
+        output = self.model(inputs_embeds=embeds, attention_mask=mask, labels=labels)
+        effective_token_count = int(loss_position_mask(segment_ids).sum().item())
+        return {
+            "loss": float(output.loss.detach().to(torch.float32).cpu().item()),
+            "effective_token_count": effective_token_count,
+        }
+
     def generate(self, prompt: str, gold: ExampleRecord | None = None) -> str:
         del gold
         return self.generate_constrained(prompt)

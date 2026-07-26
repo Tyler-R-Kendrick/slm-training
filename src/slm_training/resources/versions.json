@@ -8984,7 +8984,7 @@
       ]
     },
     "model.causal_abstract_decode": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/abstract_decode.py",
@@ -8995,9 +8995,31 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-307: add default-off block-attention integration to the shared CausalLMOpenUIPlugin while preserving AP-017 abstract decoding when the new mode is absent"
+        },
+        {
           "version": "v1",
           "date": "2026-07-25",
           "note": "AP-017 (SLM-304): initial registration -- codebook-only abstract trace decoding (prompt/abstract/answer phases, m_max hard cap with recorded forced end, malformed/nested delimiter hard errors, independent abstract/answer sampling params + seeds, per-phase token counts and per-token logprobs), default-off in CausalLMOpenUIPlugin"
+        }
+      ]
+    },
+    "model.block_attention": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/block_attention.py",
+        "tests/test_models/test_block_attention.py",
+        "tests/test_models/test_causal_lm_openui_block_attention.py",
+        "docs/design/block-attention-bottleneck-v1.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-307: default-off packed block-structured bottleneck mask and masked SFT loss, with no-plan leakage and direct target-plan bypass canaries"
         }
       ]
     }
