@@ -13,7 +13,8 @@ from slm_training.evals.cap2_operator import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-MANIFEST = ROOT / "src/slm_training/resources/evals/cap2_operator_v1.json"
+MANIFEST = ROOT / "src/slm_training/resources/evals/cap2_operator_v2.json"
+HISTORICAL_MANIFEST = ROOT / "src/slm_training/resources/evals/cap2_operator_v1.json"
 SOURCE = (
     ROOT
     / "src/slm_training/resources/data/eval"
@@ -70,6 +71,20 @@ def test_frozen_suite_replays_and_covers_explicit_strata(tmp_path: Path) -> None
         "cap0_retention",
         "cap1_retention",
     } <= set(suite["contract_inventory"])
+
+
+def test_historical_v1_manifest_remains_immutable() -> None:
+    current = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    historical = json.loads(HISTORICAL_MANIFEST.read_text(encoding="utf-8"))
+    assert historical["suite_version"] == "cap2_operator_v1"
+    assert historical["operator_corpus_fingerprint"] == (
+        "5ee0d27141a3fa72be35bedbdec347f97f513c0e7af672ca4be580e5b982682e"
+    )
+    assert historical["suite_hash"] == (
+        "16f210786bac7fd5f5edb64d13888c3cc7d634330a81b5065150e7a41fcb1d4d"
+    )
+    assert current["suite_version"] == "cap2_operator_v2"
+    assert current["operator_corpus_fingerprint"] != historical["operator_corpus_fingerprint"]
 
 
 def test_oracle_passes_and_degenerate_policies_fail(tmp_path: Path) -> None:

@@ -43,7 +43,7 @@ import hashlib
 import json
 import os
 import re
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass, field, fields, replace
 from typing import (
     Any,
     Callable,
@@ -112,6 +112,15 @@ class DslPack:
     backend: GrammarBackend
     placeholder_policy: PlaceholderPolicy
     reward_label: str
+    # Tree-edit inventory is pack-owned. Empty tuples mean the pack does not
+    # support that variant; consumers must fail closed instead of borrowing
+    # OpenUI's alphabet.
+    leaf_components: tuple[str, ...] = ()
+    container_components: tuple[str, ...] = ()
+    component_property_domains: Mapping[str, Mapping[str, tuple[str, ...]]] = field(
+        default_factory=dict
+    )
+    statement_templates: tuple[tuple[str, str], ...] = ()
     canonicalize: Canonicalizer | None = None
     oracle: ValidityOracle | None = None
     corpus_generator: Callable[..., Any] | None = None
@@ -641,6 +650,16 @@ def _ensure_builtin_packs() -> None:
             # schema, references, canonical idempotence) — NOT behavior.
             # Runtime/behavior gates only fire when evidence is supplied.
             reward_label="well_formed_not_behavioral",
+            leaf_components=("TextContent", "Button", "Image", "TextInput"),
+            container_components=("Stack", "Card", "Form"),
+            component_property_domains={
+                component: {"rest": (', "column"', "")}
+                for component in ("Stack", "Card", "Form")
+            },
+            statement_templates=(
+                ("Query", '"tool", {arg: $x}, {default: []}, 15'),
+                ("Mutation", '"tool", {arg: $x}'),
+            ),
             canonicalize=_openui_canonicalize,
             oracle=_openui_oracle,
             corpus_generator=_openui_generator,
@@ -662,6 +681,8 @@ def _ensure_builtin_packs() -> None:
             backend=get_backend("toy-layout"),
             placeholder_policy=shared_policy,
             reward_label="parse_only",
+            leaf_components=("text", "button"),
+            container_components=("row", "col"),
             scope_extractor=_toy_layout_scope_extractor,
             prop_order=_toy_layout_prop_order,
             incremental_engine=_toy_layout_engine,

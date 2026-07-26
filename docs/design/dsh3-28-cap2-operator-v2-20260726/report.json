@@ -1,0 +1,3422 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/cap2-operator-fixture-v2/benchmark.json",
+      "indexPath": "output-dir://agentv/cap2-operator-fixture-v2/index.jsonl",
+      "runDir": "output-dir://agentv/cap2-operator-fixture-v2",
+      "timingPath": "output-dir://agentv/cap2-operator-fixture-v2/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 6,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "frozen-suite-identity:domain_criterion",
+          "expected": true,
+          "id": "frozen-suite-identity:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "oracle-replay:domain_criterion",
+          "expected": true,
+          "id": "oracle-replay:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "anti-cheat-unchanged:domain_criterion",
+          "expected": true,
+          "id": "anti-cheat-unchanged:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "anti-cheat-generic_valid_ast:domain_criterion",
+          "expected": true,
+          "id": "anti-cheat-generic_valid_ast:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "anti-cheat-constant_operator:domain_criterion",
+          "expected": true,
+          "id": "anti-cheat-constant_operator:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "symbol-only-boundary:domain_criterion",
+          "expected": true,
+          "id": "symbol-only-boundary:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 6
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/cap2-operator-fixture-v2.eval.jsonl",
+    "summary": {
+      "durationMs": 200,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 6,
+      "total": 6
+    }
+  },
+  "policy_scores": {
+    "constant_operator": {
+      "case_count": 20,
+      "case_interval": {
+        "confidence_level": 0.95,
+        "estimate": 0.05,
+        "high": 0.236131193446742,
+        "low": 0.008881448800795375,
+        "n": 20
+      },
+      "case_pass_rate": 0.05,
+      "case_successes": 1,
+      "dimensions": {
+        "accepted_legal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "action_effect": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.16666666666666666,
+            "high": 0.5635028221864702,
+            "low": 0.030053369748306635,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.16666666666666666,
+          "successes": 1
+        },
+        "anti_bloat": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.65,
+            "high": 0.8188081758989179,
+            "low": 0.4328542766852363,
+            "n": 20
+          },
+          "n": 20,
+          "pass": false,
+          "rate": 0.65,
+          "successes": 13
+        },
+        "branch_isolation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "canonical_ast": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.1,
+            "high": 0.40415002679523837,
+            "low": 0.017876213095072896,
+            "n": 10
+          },
+          "n": 10,
+          "pass": false,
+          "rate": 0.1,
+          "successes": 1
+        },
+        "conflict_code": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "final_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.125,
+            "high": 0.47088818221285345,
+            "low": 0.02241749145005667,
+            "n": 8
+          },
+          "n": 8,
+          "pass": false,
+          "rate": 0.125,
+          "successes": 1
+        },
+        "history_operation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "history_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "illegal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "intermediate_legality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "locality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "marker_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "marker_result_invariance": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.5,
+            "high": 0.9054687942657693,
+            "low": 0.09453120573423074,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.5,
+          "successes": 1
+        },
+        "marker_semantic_identity": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.5,
+            "high": 0.9054687942657693,
+            "low": 0.09453120573423074,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.5,
+          "successes": 1
+        },
+        "merge_conflict_typed": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_no_mutation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_order_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_replay": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "negative_outcome": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "nonempty": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.8388748419471808,
+            "n": 20
+          },
+          "n": 20,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 20
+        },
+        "nontrivial": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.9444444444444444,
+            "high": 0.9901248090216969,
+            "low": 0.7424269921812742,
+            "n": 18
+          },
+          "n": 18,
+          "pass": false,
+          "rate": 0.9444444444444444,
+          "successes": 17
+        },
+        "operator_id": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.5,
+            "high": 0.8123836935173494,
+            "low": 0.18761630648265054,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.5,
+          "successes": 3
+        },
+        "redo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "required_order": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "typed_arguments": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.16666666666666666,
+            "high": 0.5635028221864702,
+            "low": 0.030053369748306635,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.16666666666666666,
+          "successes": 1
+        },
+        "undo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "unintended_edits": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        }
+      },
+      "gate_pass": false,
+      "mean_accepted_legal_action_mass": 1.0,
+      "retention_diagnostics": {
+        "agentv": {
+          "status": "published_by_runner"
+        },
+        "cap0": {
+          "reason": "fixture policy has no learned checkpoint",
+          "status": "unavailable"
+        },
+        "cap1": {
+          "reason": "CERT_CAP1 has not been issued",
+          "status": "unavailable"
+        },
+        "strict_metrics": {
+          "reason": "fixture contract run is not a model evaluation",
+          "status": "unavailable"
+        }
+      },
+      "rows": [
+        {
+          "case_id": "collapse:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "collapse:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": false,
+            "branch_isolation": false,
+            "canonical_ast": false,
+            "history_operation": false,
+            "history_state": false,
+            "intermediate_legality": false,
+            "nonempty": true
+          },
+          "pass": false,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": false,
+            "branch_isolation": false,
+            "canonical_ast": false,
+            "history_operation": false,
+            "history_state": false,
+            "intermediate_legality": false,
+            "nonempty": true
+          },
+          "pass": false,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "merge:replay-success",
+          "checks": {
+            "anti_bloat": true,
+            "merge_order_invariant": false,
+            "merge_replay": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "merge_replay"
+        },
+        {
+          "case_id": "merge:typed-conflict",
+          "checks": {
+            "anti_bloat": false,
+            "merge_conflict_typed": false,
+            "merge_no_mutation": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "merge_conflict"
+        },
+        {
+          "case_id": "permutation:transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": false,
+            "marker_result_invariance": true,
+            "marker_semantic_identity": true,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "permutation:transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": false,
+            "marker_result_invariance": false,
+            "marker_semantic_identity": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": false,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": false,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "stale:reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": false,
+            "conflict_code": false,
+            "illegal_action_mass": false,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "stale:reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": false,
+            "conflict_code": false,
+            "illegal_action_mass": false,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": true,
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": true,
+            "unintended_edits": true
+          },
+          "pass": true,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:61d218ac6c4f66c456f36d4a8673f9b560c7dc5f52e26a54282f58378d78cdb6",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": true
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": false,
+            "unintended_edits": true
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:6e25316efd3496c02f43d89de3ad5ad1e592981fb47aa401b95c746b255fb72e",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": false,
+            "unintended_edits": true
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:7022e8e58255c3856184f65c481d17fc98480cf145ed5bff774fbdaa26f8070a",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": true
+          },
+          "pass": false,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "transition:a9c05797ebf81053a1392d12fe93fd31d9f5f37d9707b20cbb1cf8c6333cb531",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": false,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": true
+          },
+          "pass": false,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "undo-redo:history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "redo_state": false,
+            "undo_state": false
+          },
+          "pass": false,
+          "stratum": "history_undo_redo"
+        },
+        {
+          "case_id": "undo-redo:history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "redo_state": false,
+            "undo_state": false
+          },
+          "pass": false,
+          "stratum": "history_undo_redo"
+        }
+      ],
+      "schema": "cap2_operator_score/v1",
+      "suite_hash": "e80f703627c4fe1da5f09396c9b5f9284c3d6bc0bc932e00eaa4c95fc4c54491",
+      "telemetry": {
+        "active_nodes": 0.0,
+        "compiler_calls": 0.0,
+        "latency_ms": 0.0,
+        "model_calls": 0.0,
+        "node_passes": 0.0,
+        "peak_memory_bytes": 0.0,
+        "remask_phases": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    "generic_valid_ast": {
+      "case_count": 20,
+      "case_interval": {
+        "confidence_level": 0.95,
+        "estimate": 0.0,
+        "high": 0.1611251580528193,
+        "low": 1.3877787807814457e-17,
+        "n": 20
+      },
+      "case_pass_rate": 0.0,
+      "case_successes": 0,
+      "dimensions": {
+        "accepted_legal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "action_effect": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "anti_bloat": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.8388748419471808,
+            "n": 20
+          },
+          "n": 20,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 20
+        },
+        "branch_isolation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "canonical_ast": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.27753279986288915,
+            "low": 2.7755575615628914e-17,
+            "n": 10
+          },
+          "n": 10,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "conflict_code": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "final_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.3244075648838801,
+            "low": 0.0,
+            "n": 8
+          },
+          "n": 8,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "history_operation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "history_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "illegal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.5101091635454027,
+            "n": 4
+          },
+          "n": 4,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 4
+        },
+        "intermediate_legality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "locality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "marker_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "marker_result_invariance": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "marker_semantic_identity": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_conflict_typed": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_no_mutation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_order_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_replay": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "negative_outcome": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "nonempty": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.8388748419471808,
+            "n": 20
+          },
+          "n": 20,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 20
+        },
+        "nontrivial": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.8241207763533425,
+            "n": 18
+          },
+          "n": 18,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 18
+        },
+        "operator_id": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "redo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "required_order": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "typed_arguments": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "undo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "unintended_edits": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        }
+      },
+      "gate_pass": false,
+      "mean_accepted_legal_action_mass": 0.0,
+      "retention_diagnostics": {
+        "agentv": {
+          "status": "published_by_runner"
+        },
+        "cap0": {
+          "reason": "fixture policy has no learned checkpoint",
+          "status": "unavailable"
+        },
+        "cap1": {
+          "reason": "CERT_CAP1 has not been issued",
+          "status": "unavailable"
+        },
+        "strict_metrics": {
+          "reason": "fixture contract run is not a model evaluation",
+          "status": "unavailable"
+        }
+      },
+      "rows": [
+        {
+          "case_id": "collapse:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "collapse:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": true,
+            "branch_isolation": false,
+            "canonical_ast": false,
+            "history_operation": false,
+            "history_state": false,
+            "intermediate_legality": false,
+            "nonempty": true
+          },
+          "pass": false,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": true,
+            "branch_isolation": false,
+            "canonical_ast": false,
+            "history_operation": false,
+            "history_state": false,
+            "intermediate_legality": false,
+            "nonempty": true
+          },
+          "pass": false,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "merge:replay-success",
+          "checks": {
+            "anti_bloat": true,
+            "merge_order_invariant": false,
+            "merge_replay": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "merge_replay"
+        },
+        {
+          "case_id": "merge:typed-conflict",
+          "checks": {
+            "anti_bloat": true,
+            "merge_conflict_typed": false,
+            "merge_no_mutation": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "merge_conflict"
+        },
+        {
+          "case_id": "permutation:transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": false,
+            "marker_result_invariance": false,
+            "marker_semantic_identity": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "permutation:transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": false,
+            "marker_result_invariance": false,
+            "marker_semantic_identity": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "stale:reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "stale:reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": false,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:61d218ac6c4f66c456f36d4a8673f9b560c7dc5f52e26a54282f58378d78cdb6",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:6e25316efd3496c02f43d89de3ad5ad1e592981fb47aa401b95c746b255fb72e",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:7022e8e58255c3856184f65c481d17fc98480cf145ed5bff774fbdaa26f8070a",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "transition:a9c05797ebf81053a1392d12fe93fd31d9f5f37d9707b20cbb1cf8c6333cb531",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "undo-redo:history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": true,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "redo_state": false,
+            "undo_state": false
+          },
+          "pass": false,
+          "stratum": "history_undo_redo"
+        },
+        {
+          "case_id": "undo-redo:history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": true,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": true,
+            "redo_state": false,
+            "undo_state": false
+          },
+          "pass": false,
+          "stratum": "history_undo_redo"
+        }
+      ],
+      "schema": "cap2_operator_score/v1",
+      "suite_hash": "e80f703627c4fe1da5f09396c9b5f9284c3d6bc0bc932e00eaa4c95fc4c54491",
+      "telemetry": {
+        "active_nodes": 0.0,
+        "compiler_calls": 0.0,
+        "latency_ms": 0.0,
+        "model_calls": 0.0,
+        "node_passes": 0.0,
+        "peak_memory_bytes": 0.0,
+        "remask_phases": 0.0,
+        "verifier_calls": 0.0
+      }
+    },
+    "oracle": {
+      "case_count": 20,
+      "case_interval": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.8388748419471808,
+        "n": 20
+      },
+      "case_pass_rate": 1.0,
+      "case_successes": 20,
+      "dimensions": {
+        "accepted_legal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "action_effect": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "anti_bloat": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.8388748419471808,
+            "n": 20
+          },
+          "n": 20,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 20
+        },
+        "branch_isolation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "canonical_ast": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.7224672001371109,
+            "n": 10
+          },
+          "n": 10,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 10
+        },
+        "conflict_code": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.5101091635454027,
+            "n": 4
+          },
+          "n": 4,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 4
+        },
+        "final_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6755924351161198,
+            "n": 8
+          },
+          "n": 8,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 8
+        },
+        "history_operation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "history_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "illegal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.5101091635454027,
+            "n": 4
+          },
+          "n": 4,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 4
+        },
+        "intermediate_legality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "locality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "marker_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "marker_result_invariance": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "marker_semantic_identity": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "merge_conflict_typed": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.20654931437723745,
+            "n": 1
+          },
+          "n": 1,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 1
+        },
+        "merge_no_mutation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.20654931437723745,
+            "n": 1
+          },
+          "n": 1,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 1
+        },
+        "merge_order_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.20654931437723745,
+            "n": 1
+          },
+          "n": 1,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 1
+        },
+        "merge_replay": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.20654931437723745,
+            "n": 1
+          },
+          "n": 1,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 1
+        },
+        "negative_outcome": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.5101091635454027,
+            "n": 4
+          },
+          "n": 4,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 4
+        },
+        "nonempty": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.7575059933447593,
+            "n": 12
+          },
+          "n": 12,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 12
+        },
+        "nontrivial": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.7224672001371109,
+            "n": 10
+          },
+          "n": 10,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 10
+        },
+        "operator_id": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "redo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "required_order": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.5101091635454027,
+            "n": 4
+          },
+          "n": 4,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 4
+        },
+        "typed_arguments": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        },
+        "undo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.3423802275066532,
+            "n": 2
+          },
+          "n": 2,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 2
+        },
+        "unintended_edits": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.6096657120978348,
+            "n": 6
+          },
+          "n": 6,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 6
+        }
+      },
+      "gate_pass": true,
+      "mean_accepted_legal_action_mass": 1.0,
+      "retention_diagnostics": {
+        "agentv": {
+          "status": "published_by_runner"
+        },
+        "cap0": {
+          "reason": "fixture policy has no learned checkpoint",
+          "status": "unavailable"
+        },
+        "cap1": {
+          "reason": "CERT_CAP1 has not been issued",
+          "status": "unavailable"
+        },
+        "strict_metrics": {
+          "reason": "fixture contract run is not a model evaluation",
+          "status": "unavailable"
+        }
+      },
+      "rows": [
+        {
+          "case_id": "collapse:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "intermediate_legality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": true
+          },
+          "pass": true,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "collapse:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "intermediate_legality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "required_order": true
+          },
+          "pass": true,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": true,
+            "branch_isolation": true,
+            "canonical_ast": true,
+            "history_operation": true,
+            "history_state": true,
+            "intermediate_legality": true,
+            "nonempty": true
+          },
+          "pass": true,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": true,
+            "branch_isolation": true,
+            "canonical_ast": true,
+            "history_operation": true,
+            "history_state": true,
+            "intermediate_legality": true,
+            "nonempty": true
+          },
+          "pass": true,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "merge:replay-success",
+          "checks": {
+            "anti_bloat": true,
+            "merge_order_invariant": true,
+            "merge_replay": true
+          },
+          "pass": true,
+          "stratum": "merge_replay"
+        },
+        {
+          "case_id": "merge:typed-conflict",
+          "checks": {
+            "anti_bloat": true,
+            "merge_conflict_typed": true,
+            "merge_no_mutation": true
+          },
+          "pass": true,
+          "stratum": "merge_conflict"
+        },
+        {
+          "case_id": "permutation:transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": true,
+            "marker_result_invariance": true,
+            "marker_semantic_identity": true,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": true,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "permutation:transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": true,
+            "marker_result_invariance": true,
+            "marker_semantic_identity": true,
+            "nonempty": true,
+            "nontrivial": true
+          },
+          "pass": true,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": true,
+            "illegal_action_mass": true,
+            "negative_outcome": true,
+            "required_order": true
+          },
+          "pass": true,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": true,
+            "illegal_action_mass": true,
+            "negative_outcome": true,
+            "required_order": true
+          },
+          "pass": true,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "stale:reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": true,
+            "illegal_action_mass": true,
+            "negative_outcome": true
+          },
+          "pass": true,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "stale:reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": true,
+            "illegal_action_mass": true,
+            "negative_outcome": true
+          },
+          "pass": true,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": true,
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": true,
+            "unintended_edits": true
+          },
+          "pass": true,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:61d218ac6c4f66c456f36d4a8673f9b560c7dc5f52e26a54282f58378d78cdb6",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": true,
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": true,
+            "unintended_edits": true
+          },
+          "pass": true,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": true,
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": true,
+            "unintended_edits": true
+          },
+          "pass": true,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:6e25316efd3496c02f43d89de3ad5ad1e592981fb47aa401b95c746b255fb72e",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": true,
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": true,
+            "unintended_edits": true
+          },
+          "pass": true,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:7022e8e58255c3856184f65c481d17fc98480cf145ed5bff774fbdaa26f8070a",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": true,
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": true,
+            "unintended_edits": true
+          },
+          "pass": true,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "transition:a9c05797ebf81053a1392d12fe93fd31d9f5f37d9707b20cbb1cf8c6333cb531",
+          "checks": {
+            "accepted_legal_action_mass": true,
+            "action_effect": true,
+            "anti_bloat": true,
+            "canonical_ast": true,
+            "final_state": true,
+            "locality": true,
+            "nonempty": true,
+            "nontrivial": true,
+            "operator_id": true,
+            "typed_arguments": true,
+            "unintended_edits": true
+          },
+          "pass": true,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "undo-redo:history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": true,
+            "intermediate_legality": true,
+            "redo_state": true,
+            "undo_state": true
+          },
+          "pass": true,
+          "stratum": "history_undo_redo"
+        },
+        {
+          "case_id": "undo-redo:history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": true,
+            "intermediate_legality": true,
+            "redo_state": true,
+            "undo_state": true
+          },
+          "pass": true,
+          "stratum": "history_undo_redo"
+        }
+      ],
+      "schema": "cap2_operator_score/v1",
+      "suite_hash": "e80f703627c4fe1da5f09396c9b5f9284c3d6bc0bc932e00eaa4c95fc4c54491",
+      "telemetry": {
+        "active_nodes": 20.0,
+        "compiler_calls": 20.0,
+        "latency_ms": 0.0,
+        "model_calls": 0.0,
+        "node_passes": 20.0,
+        "peak_memory_bytes": 0.0,
+        "remask_phases": 0.0,
+        "verifier_calls": 20.0
+      }
+    },
+    "unchanged": {
+      "case_count": 20,
+      "case_interval": {
+        "confidence_level": 0.95,
+        "estimate": 0.0,
+        "high": 0.1611251580528193,
+        "low": 1.3877787807814457e-17,
+        "n": 20
+      },
+      "case_pass_rate": 0.0,
+      "case_successes": 0,
+      "dimensions": {
+        "accepted_legal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "action_effect": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "anti_bloat": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.8388748419471808,
+            "n": 20
+          },
+          "n": 20,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 20
+        },
+        "branch_isolation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "canonical_ast": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.2,
+            "high": 0.5098375284633582,
+            "low": 0.056682151454375246,
+            "n": 10
+          },
+          "n": 10,
+          "pass": false,
+          "rate": 0.2,
+          "successes": 2
+        },
+        "conflict_code": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "final_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.3244075648838801,
+            "low": 0.0,
+            "n": 8
+          },
+          "n": 8,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "history_operation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "history_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "illegal_action_mass": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.5101091635454027,
+            "n": 4
+          },
+          "n": 4,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 4
+        },
+        "intermediate_legality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "locality": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "marker_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "marker_result_invariance": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "marker_semantic_identity": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_conflict_typed": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_no_mutation": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_order_invariant": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "merge_replay": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.7934506856227626,
+            "low": 0.0,
+            "n": 1
+          },
+          "n": 1,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "negative_outcome": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "nonempty": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 1.0,
+            "high": 1.0,
+            "low": 0.8241207763533425,
+            "n": 18
+          },
+          "n": 18,
+          "pass": true,
+          "rate": 1.0,
+          "successes": 18
+        },
+        "nontrivial": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.19360768053443644,
+            "low": 0.0,
+            "n": 16
+          },
+          "n": 16,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "operator_id": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "redo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "required_order": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.4898908364545972,
+            "low": 0.0,
+            "n": 4
+          },
+          "n": 4,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "typed_arguments": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "undo_state": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.6576197724933468,
+            "low": 0.0,
+            "n": 2
+          },
+          "n": 2,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        },
+        "unintended_edits": {
+          "interval": {
+            "confidence_level": 0.95,
+            "estimate": 0.0,
+            "high": 0.39033428790216523,
+            "low": 0.0,
+            "n": 6
+          },
+          "n": 6,
+          "pass": false,
+          "rate": 0.0,
+          "successes": 0
+        }
+      },
+      "gate_pass": false,
+      "mean_accepted_legal_action_mass": 0.0,
+      "retention_diagnostics": {
+        "agentv": {
+          "status": "published_by_runner"
+        },
+        "cap0": {
+          "reason": "fixture policy has no learned checkpoint",
+          "status": "unavailable"
+        },
+        "cap1": {
+          "reason": "CERT_CAP1 has not been issued",
+          "status": "unavailable"
+        },
+        "strict_metrics": {
+          "reason": "fixture contract run is not a model evaluation",
+          "status": "unavailable"
+        }
+      },
+      "rows": [
+        {
+          "case_id": "collapse:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "collapse:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489",
+          "checks": {
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "sequential_vs_collapsed"
+        },
+        {
+          "case_id": "history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": true,
+            "branch_isolation": false,
+            "canonical_ast": true,
+            "history_operation": false,
+            "history_state": false,
+            "intermediate_legality": false,
+            "nonempty": true
+          },
+          "pass": false,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": true,
+            "branch_isolation": false,
+            "canonical_ast": true,
+            "history_operation": false,
+            "history_state": false,
+            "intermediate_legality": false,
+            "nonempty": true
+          },
+          "pass": false,
+          "stratum": "history_branch_isolation"
+        },
+        {
+          "case_id": "merge:replay-success",
+          "checks": {
+            "anti_bloat": true,
+            "merge_order_invariant": false,
+            "merge_replay": false
+          },
+          "pass": false,
+          "stratum": "merge_replay"
+        },
+        {
+          "case_id": "merge:typed-conflict",
+          "checks": {
+            "anti_bloat": true,
+            "merge_conflict_typed": false,
+            "merge_no_mutation": false
+          },
+          "pass": false,
+          "stratum": "merge_conflict"
+        },
+        {
+          "case_id": "permutation:transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": false,
+            "marker_result_invariance": false,
+            "marker_semantic_identity": false,
+            "nonempty": true,
+            "nontrivial": false
+          },
+          "pass": false,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "permutation:transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "anti_bloat": true,
+            "marker_invariant": false,
+            "marker_result_invariance": false,
+            "marker_semantic_identity": false,
+            "nonempty": true,
+            "nontrivial": false
+          },
+          "pass": false,
+          "stratum": "marker_permutation"
+        },
+        {
+          "case_id": "reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "required_order": false
+          },
+          "pass": false,
+          "stratum": "reordered_noncommuting"
+        },
+        {
+          "case_id": "stale:reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": false
+          },
+          "pass": false,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "stale:reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+          "checks": {
+            "anti_bloat": true,
+            "conflict_code": false,
+            "illegal_action_mass": true,
+            "negative_outcome": false,
+            "nonempty": true,
+            "nontrivial": false
+          },
+          "pass": false,
+          "stratum": "stale_reference"
+        },
+        {
+          "case_id": "transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:61d218ac6c4f66c456f36d4a8673f9b560c7dc5f52e26a54282f58378d78cdb6",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:6e25316efd3496c02f43d89de3ad5ad1e592981fb47aa401b95c746b255fb72e",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_transition"
+        },
+        {
+          "case_id": "transition:7022e8e58255c3856184f65c481d17fc98480cf145ed5bff774fbdaa26f8070a",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "transition:a9c05797ebf81053a1392d12fe93fd31d9f5f37d9707b20cbb1cf8c6333cb531",
+          "checks": {
+            "accepted_legal_action_mass": false,
+            "action_effect": false,
+            "anti_bloat": true,
+            "canonical_ast": false,
+            "final_state": false,
+            "locality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "operator_id": false,
+            "typed_arguments": false,
+            "unintended_edits": false
+          },
+          "pass": false,
+          "stratum": "held_out_composition"
+        },
+        {
+          "case_id": "undo-redo:history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+          "checks": {
+            "anti_bloat": true,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "redo_state": false,
+            "undo_state": false
+          },
+          "pass": false,
+          "stratum": "history_undo_redo"
+        },
+        {
+          "case_id": "undo-redo:history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+          "checks": {
+            "anti_bloat": true,
+            "intermediate_legality": false,
+            "nonempty": true,
+            "nontrivial": false,
+            "redo_state": false,
+            "undo_state": false
+          },
+          "pass": false,
+          "stratum": "history_undo_redo"
+        }
+      ],
+      "schema": "cap2_operator_score/v1",
+      "suite_hash": "e80f703627c4fe1da5f09396c9b5f9284c3d6bc0bc932e00eaa4c95fc4c54491",
+      "telemetry": {
+        "active_nodes": 0.0,
+        "compiler_calls": 0.0,
+        "latency_ms": 0.0,
+        "model_calls": 0.0,
+        "node_passes": 0.0,
+        "peak_memory_bytes": 0.0,
+        "remask_phases": 0.0,
+        "verifier_calls": 0.0
+      }
+    }
+  },
+  "run": {
+    "checkpoint": null,
+    "context_backend": "none",
+    "device": "cpu",
+    "elapsed_seconds": 63.25395404800656,
+    "honesty": "fixture_wiring_only",
+    "kind": "frozen_symbolic_operator_fixture",
+    "matrix_set": "cap2_operator_v2",
+    "max_wall_minutes": 3,
+    "peak_memory_bytes": 17749008,
+    "ship_claim": false,
+    "steps": 0,
+    "suite_n": 20
+  },
+  "schema": "cap2_operator_fixture_report/v1",
+  "suite": {
+    "cases": [
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "collapse:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b",
+        "evidence": {
+          "collapse_id": "fd3d98022bfa0ffd927010612fc3705ab7f58cfa1a237f4c0451cdf81c104fae",
+          "operator_ids": [
+            "openui.replace_node",
+            "openui.remove_node"
+          ],
+          "trace_fingerprint": "f41bfc8782588889103b0f54ef89e2d0115f9fcdea8560e9f3294b1d5b367bad",
+          "turn_ids": [
+            "b98a5739e3fda4894ac240a3fd743295936c679bda592963cad0af096ea7442d",
+            "31e336e5ee6681d4dff96f666d127bce83b290b28c369eed6e0f1f47237bd0b9"
+          ]
+        },
+        "gold": {
+          "final_state_id": "ccdb297159c11cfc7c4557e349a1ec9659bb51b881524c23de7de01951103065",
+          "intermediate_legal": true,
+          "operator_count": 2,
+          "required_order": [
+            0,
+            1
+          ],
+          "result_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "sequential_vs_collapsed"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "collapse:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489",
+        "evidence": {
+          "collapse_id": "44a78ad4e3c62f816719f675cbbf0743a006f74071b5eb20bde00d6dc9003ef1",
+          "operator_ids": [
+            "openui.replace_node",
+            "openui.remove_node"
+          ],
+          "trace_fingerprint": "61eb8027d8f790dbe16f8b7858ef28dc6466396043236c3fde0c7f540b291657",
+          "turn_ids": [
+            "deb7e8f4888b4342dbbdb28766169e65df4a1a953c9d5ba71df4a30102ac47ae",
+            "1bba008c824a394d1750ece00ad9c50f60e00835b367e2fec01c5d3b8003b546"
+          ]
+        },
+        "gold": {
+          "final_state_id": "1ed07f49f833163cb95df10bb5d718e26d324640544bb154a3634d4b75f8704d",
+          "intermediate_legal": true,
+          "operator_count": 2,
+          "required_order": [
+            0,
+            1
+          ],
+          "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "sequential_vs_collapsed"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+        "evidence": {
+          "final_state_id": "63ffa0198486c8928f1d3dc7bf6301bd15d8cabb9a77967754db05ad9bbb1bcb",
+          "root_state_id": "cc74e5c7afcbb8451ee7b611b871ee0be9f895aed19e4e7a918168adbab7ac27",
+          "trace_fingerprint": "aebe35872fe2cc00aceea004d003c1adf91464669b9ae9639744fbf9973f9942"
+        },
+        "gold": {
+          "branch_digest": "66679b1cd588a4b9cc50706123e26843f9a43b3b6d73edf7a1a59a08f934224e",
+          "branch_isolated": true,
+          "history_operation": "FORK",
+          "history_state_id": "63ffa0198486c8928f1d3dc7bf6301bd15d8cabb9a77967754db05ad9bbb1bcb",
+          "intermediate_legal": true,
+          "operator_count": 0,
+          "result_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "history_branch_isolation"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+        "evidence": {
+          "final_state_id": "1e20ff038233c8b85748945163f710d16d7ceb617bc17dc8803b164f5200dfd5",
+          "root_state_id": "40e4c7271a5917dcd4639de4917ccd9847b4f137aa713fa3bc09ed6b96e9740f",
+          "trace_fingerprint": "61982c5693d577bdd2b37f9faeb070c1a55b77790ad2f265396aae09943ae156"
+        },
+        "gold": {
+          "branch_digest": "e741a1fbe02f54ae4db4f6482a251570b5056ea5bac7d4b9fcde0c8d37505f1b",
+          "branch_isolated": true,
+          "history_operation": "FORK",
+          "history_state_id": "1e20ff038233c8b85748945163f710d16d7ceb617bc17dc8803b164f5200dfd5",
+          "intermediate_legal": true,
+          "operator_count": 0,
+          "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "history_branch_isolation"
+      },
+      {
+        "before_ast": "",
+        "case_id": "merge:replay-success",
+        "evidence": {
+          "authority": "replay_branch_merge",
+          "contract": "branch_merge/v1"
+        },
+        "gold": {
+          "merge_replay": true,
+          "operator_count": 2,
+          "order_invariant": true
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "cap2_contract",
+        "stratum": "merge_replay"
+      },
+      {
+        "before_ast": "",
+        "case_id": "merge:typed-conflict",
+        "evidence": {
+          "contract": "merge_conflict/v1",
+          "kinds": [
+            "same_node",
+            "delete_modify",
+            "role_cardinality",
+            "child_order",
+            "scope_binder",
+            "stale_ref",
+            "unsupported_effect"
+          ]
+        },
+        "gold": {
+          "conflict_typed": true,
+          "operator_count": 0,
+          "state_mutated": false
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "cap2_contract",
+        "stratum": "merge_conflict"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "permutation:transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+        "evidence": {
+          "legal_set_fingerprint": "3c1ba031c925524128f7061105005ab0b35fe72d0968b3ca343a89cb757ba3f3",
+          "opaque_serialization_is_not_gold": true
+        },
+        "gold": {
+          "marker_invariant": true,
+          "operator_count": 1,
+          "permutation_seed": 97,
+          "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([Button(\":held.form.submit\")]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+          "semantic_action_id": "164af790af78247ad58bad4dbab079555bf4dfe45d0d1fd6cdb988b43087b365"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "marker_permutation"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "permutation:transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+        "evidence": {
+          "legal_set_fingerprint": "a24a8ee7b10210814feb9d1fd43c1184af2e5f6b33a3c293cc0927c4c617b849",
+          "opaque_serialization_is_not_gold": true
+        },
+        "gold": {
+          "marker_invariant": true,
+          "operator_count": 1,
+          "permutation_seed": 97,
+          "result_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.header\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+          "semantic_action_id": "1b097a601acf6054568806db5a550df14ea11bbd1b8427a337ffbec920463940"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "marker_permutation"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+        "evidence": {
+          "application_ids": [
+            "b56a981a7ebe9c819ae8a9a50265e747de5f9f13520b2072e3e0254fbaaac1c8",
+            "24c600baa674bb99deb53e749b09a8e1fc47797560b5e5060544375be601fdaa"
+          ],
+          "swapped_step_indices": [
+            0,
+            1
+          ]
+        },
+        "gold": {
+          "expected_outcome": "conflict",
+          "illegal_action_mass_max": 0.0,
+          "operator_count": 2,
+          "rejection_code": "ref.missing",
+          "required_order": [
+            0,
+            1
+          ]
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "reordered_noncommuting"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+        "evidence": {
+          "application_ids": [
+            "c93bf573b5cc121b33460c04238b1318d0e7198e28bb2592a68f87c046c1f6fd",
+            "4ca8818a986e3f786e1699ae77bcb371c3d175bf2f0f8a0355efbe5b4dabda9d"
+          ],
+          "swapped_step_indices": [
+            0,
+            1
+          ]
+        },
+        "gold": {
+          "expected_outcome": "conflict",
+          "illegal_action_mass_max": 0.0,
+          "operator_count": 2,
+          "rejection_code": "ref.missing",
+          "required_order": [
+            0,
+            1
+          ]
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "reordered_noncommuting"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "stale:reordered:1d34c5dcab06686adf74ba5ccc5b867252f992d1853db6a6b6841de700f5482b:0",
+        "evidence": {
+          "application_ids": [
+            "b56a981a7ebe9c819ae8a9a50265e747de5f9f13520b2072e3e0254fbaaac1c8",
+            "24c600baa674bb99deb53e749b09a8e1fc47797560b5e5060544375be601fdaa"
+          ],
+          "stale_reference_source": "reordered_application",
+          "swapped_step_indices": [
+            0,
+            1
+          ]
+        },
+        "gold": {
+          "expected_outcome": "conflict",
+          "illegal_action_mass_max": 0.0,
+          "operator_count": 0,
+          "rejection_code": "ref.missing"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "stale_reference"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "stale:reordered:bd26e024101493c379a7f02de75770e8ab125a2caa4dec35ec896caa5530a489:0",
+        "evidence": {
+          "application_ids": [
+            "c93bf573b5cc121b33460c04238b1318d0e7198e28bb2592a68f87c046c1f6fd",
+            "4ca8818a986e3f786e1699ae77bcb371c3d175bf2f0f8a0355efbe5b4dabda9d"
+          ],
+          "stale_reference_source": "reordered_application",
+          "swapped_step_indices": [
+            0,
+            1
+          ]
+        },
+        "gold": {
+          "expected_outcome": "conflict",
+          "illegal_action_mass_max": 0.0,
+          "operator_count": 0,
+          "rejection_code": "ref.missing"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "stale_reference"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "transition:5d7813584ed16435eb18c683a8f0f7046989fd0f1009f1743a34f91c5824da8d",
+        "evidence": {
+          "application_id": "4ca8818a986e3f786e1699ae77bcb371c3d175bf2f0f8a0355efbe5b4dabda9d",
+          "intermediate_replay": true,
+          "legal_set_fingerprint": "3c1ba031c925524128f7061105005ab0b35fe72d0968b3ca343a89cb757ba3f3",
+          "trace_fingerprint": "2c364de103911a8c20fe9232540f810925bc01a6512287974050403caae17828"
+        },
+        "gold": {
+          "accepted_legal_action": true,
+          "argument_fingerprint": "eb424f412d3087932810234ecb85e7d4f1188fbaf9f9bdd2dd0a46eaa0330082",
+          "effect_fingerprint": "d841ec89de3d41d9f7f14a251f070e8f14b7c0a35ab801b46b8ba75bff5ad28c",
+          "final_state_id": "55626def11d7cdc4f3a79f9ee7b69109a4c1c24403701edd9e69f31a3054bf9f",
+          "locality_violations": 0,
+          "operator_count": 1,
+          "operator_id": "openui.replace_node",
+          "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([Button(\":held.form.submit\")]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+          "semantic_action_id": "164af790af78247ad58bad4dbab079555bf4dfe45d0d1fd6cdb988b43087b365",
+          "unintended_edits": 0
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "held_out_transition"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "transition:61d218ac6c4f66c456f36d4a8673f9b560c7dc5f52e26a54282f58378d78cdb6",
+        "evidence": {
+          "application_id": "97b464381311f41678cda32c3b2f4e4fa79ea11dc12425d0445ab3304dc7bcc9",
+          "intermediate_replay": true,
+          "legal_set_fingerprint": "3c1ba031c925524128f7061105005ab0b35fe72d0968b3ca343a89cb757ba3f3",
+          "trace_fingerprint": "aa3267a3b956b273c6c84286696ae0652694c482d1e27f53546bd4d54d97e77d"
+        },
+        "gold": {
+          "accepted_legal_action": true,
+          "argument_fingerprint": "d852084d7e4c7bafc92db89ff76c7a5d608f3d59643e4d2b89b5e18a9eb7ced1",
+          "effect_fingerprint": "b9bdc2ab89cf50593e25e1a5585b7e34dcf2cf1e8eecb6b198780b78f9be3ffc",
+          "final_state_id": "b4f463cf925301978d1867303140e92e2aef8cd330a2ff777a1b122770b05633",
+          "locality_violations": 0,
+          "operator_count": 1,
+          "operator_id": "openui.set_property",
+          "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4, \":held.form.email\")\nv6 = Form(\":held.form.name\", v3, [v5])",
+          "semantic_action_id": "386703455d3086f38b4a6bd254a7933069e775e8ebec1bb0e60b2c22344c5bba",
+          "unintended_edits": 0
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "held_out_transition"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "transition:67c91cbfce3cce8b220dbc2764238b0dfef04a93150649220993119c618b0a35",
+        "evidence": {
+          "application_id": "86e838bac89eab940f466a2d781050ea717f47c9fad64ef56b218d0fa1b10f67",
+          "intermediate_replay": true,
+          "legal_set_fingerprint": "a24a8ee7b10210814feb9d1fd43c1184af2e5f6b33a3c293cc0927c4c617b849",
+          "trace_fingerprint": "edc61bc800e4a12e1c425fc3629ca8a33930bc6d59624f2f83eb35c21c2bc506"
+        },
+        "gold": {
+          "accepted_legal_action": true,
+          "argument_fingerprint": "84a2ea9c82bdd1bf0424b5ad7c8abba9bec13176dc5f81d51abe9f8938eb28e3",
+          "effect_fingerprint": "43ef4e6e01bf9ba91ece8c3f310bf715e5fb6e78a6ddeab8223084d526e9ab22",
+          "final_state_id": "9c7e56305490f932b90f007a58fe03003dc5c359be28ec2d76de9bc264506517",
+          "locality_violations": 0,
+          "operator_count": 1,
+          "operator_id": "openui.replace_node",
+          "result_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.header\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+          "semantic_action_id": "1b097a601acf6054568806db5a550df14ea11bbd1b8427a337ffbec920463940",
+          "unintended_edits": 0
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "held_out_transition"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "transition:6e25316efd3496c02f43d89de3ad5ad1e592981fb47aa401b95c746b255fb72e",
+        "evidence": {
+          "application_id": "24c600baa674bb99deb53e749b09a8e1fc47797560b5e5060544375be601fdaa",
+          "intermediate_replay": true,
+          "legal_set_fingerprint": "a24a8ee7b10210814feb9d1fd43c1184af2e5f6b33a3c293cc0927c4c617b849",
+          "trace_fingerprint": "82ba6face6c350e15f932390db11b2cdc62cc26d6943f1779fec65145152acba"
+        },
+        "gold": {
+          "accepted_legal_action": true,
+          "argument_fingerprint": "ccc5a2e9f4b08233cd48209baeadc4d28fd77f050adbf3770029d39787dff879",
+          "effect_fingerprint": "185720c10b590a42c61d8021782e02c8c1e20f61e23fbfa4dd51a563fbfba22b",
+          "final_state_id": "0b7e003a42ef8927801c92fd8bdfbeba2b58ae4a826d822308def23a60c9c386",
+          "locality_violations": 0,
+          "operator_count": 1,
+          "operator_id": "openui.replace_node",
+          "result_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\"), TextContent(\":held.col.left.body\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+          "semantic_action_id": "045008a289f7d6ecd11564cf3a161999056ba6be47b7604aa92d0bccb0bb414a",
+          "unintended_edits": 0
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "held_out_transition"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\"), TextContent(\":held.col.left.body\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "transition:7022e8e58255c3856184f65c481d17fc98480cf145ed5bff774fbdaa26f8070a",
+        "evidence": {
+          "application_id": "b56a981a7ebe9c819ae8a9a50265e747de5f9f13520b2072e3e0254fbaaac1c8",
+          "intermediate_replay": true,
+          "legal_set_fingerprint": "a8c9281493e01d06046f0ca716ecbe9b1699ccc6fc221dadec7407f2053c486e",
+          "trace_fingerprint": "f41bfc8782588889103b0f54ef89e2d0115f9fcdea8560e9f3294b1d5b367bad"
+        },
+        "gold": {
+          "accepted_legal_action": true,
+          "argument_fingerprint": "55d055ca86c84a7d4bb84ec657d4cdd4dcf0840d6079b2b7184517898d6ab0ec",
+          "effect_fingerprint": "7daffb05eaf2cdbb60f298e9df1b12050cf2fa5089aa7c04a7230248eeab743a",
+          "final_state_id": "ccdb297159c11cfc7c4557e349a1ec9659bb51b881524c23de7de01951103065",
+          "locality_violations": 0,
+          "operator_count": 1,
+          "operator_id": "openui.remove_node",
+          "result_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+          "semantic_action_id": "37d99b2194775ceedce9fa1d8013f01360cc03eeb7101538d514c1c646e0bd9f",
+          "unintended_edits": 0
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "held_out_composition"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([Button(\":held.form.submit\")]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "transition:a9c05797ebf81053a1392d12fe93fd31d9f5f37d9707b20cbb1cf8c6333cb531",
+        "evidence": {
+          "application_id": "c93bf573b5cc121b33460c04238b1318d0e7198e28bb2592a68f87c046c1f6fd",
+          "intermediate_replay": true,
+          "legal_set_fingerprint": "38d992c8425c1957badd8e34fd77cebcec0d45d304e66e745a76a5b6cad9b920",
+          "trace_fingerprint": "61eb8027d8f790dbe16f8b7858ef28dc6466396043236c3fde0c7f540b291657"
+        },
+        "gold": {
+          "accepted_legal_action": true,
+          "argument_fingerprint": "cde57ff26fd62517cc832619bff21b4e3c944a4e2e236d3b4107f4851ad6ab8e",
+          "effect_fingerprint": "37600d37cccb28006176f9952f4f613d0b0cc42f3bb97f390bb3f0b9dc516e36",
+          "final_state_id": "1ed07f49f833163cb95df10bb5d718e26d324640544bb154a3634d4b75f8704d",
+          "locality_violations": 0,
+          "operator_count": 1,
+          "operator_id": "openui.remove_node",
+          "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+          "semantic_action_id": "6a1fa85b11b5fe45a7e291d4fbafc12ddf154db36cee451f22d24e6f52590c74",
+          "unintended_edits": 0
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "held_out_composition"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "case_id": "undo-redo:history:474ceb9d2f0bdac971c55827035e139e7aa7e1c64abd70c6db8f73cffb6f4269",
+        "evidence": {
+          "exact_parent_child_identity": true,
+          "trace_fingerprint": "aebe35872fe2cc00aceea004d003c1adf91464669b9ae9639744fbf9973f9942"
+        },
+        "gold": {
+          "intermediate_legal": true,
+          "operator_count": 0,
+          "redo_state_id": "63ffa0198486c8928f1d3dc7bf6301bd15d8cabb9a77967754db05ad9bbb1bcb",
+          "undo_state_id": "cc74e5c7afcbb8451ee7b611b871ee0be9f895aed19e4e7a918168adbab7ac27"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_dual_card_01",
+        "stratum": "history_undo_redo"
+      },
+      {
+        "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "case_id": "undo-redo:history:be2c80d9a4f6f0ec5c24d20fb7bef3deba9a30d243f72f2d60fb6d2d24392b96",
+        "evidence": {
+          "exact_parent_child_identity": true,
+          "trace_fingerprint": "61982c5693d577bdd2b37f9faeb070c1a55b77790ad2f265396aae09943ae156"
+        },
+        "gold": {
+          "intermediate_legal": true,
+          "operator_count": 0,
+          "redo_state_id": "1e20ff038233c8b85748945163f710d16d7ceb617bc17dc8803b164f5200dfd5",
+          "undo_state_id": "40e4c7271a5917dcd4639de4917ccd9847b4f137aa713fa3bc09ed6b96e9740f"
+        },
+        "schema": "cap2_operator_case/v1",
+        "source_record_id": "held_out_form_01",
+        "stratum": "history_undo_redo"
+      }
+    ],
+    "contract_inventory": {
+      "branch_isolation": "branch-local reference tables and state IDs",
+      "cap0_retention": "diagnostic until a learned checkpoint is supplied",
+      "cap1_retention": "unavailable until CERT_CAP1 exists",
+      "intermediate_legality": "conversation_trace/v1 replay",
+      "marker_permutation": "semantic action identity under opaque marker permutation",
+      "merge_conflict": "typed merge_conflict/v1 refusal",
+      "merge_success": "branch_merge/v1 replay",
+      "sequential_vs_collapsed": "collapsed_instruction/v1 replay",
+      "stale_reference": "typed ref.stale_state/ref.missing refusal",
+      "undo_redo": "exact parent/child state identity"
+    },
+    "nl": {
+      "available": false,
+      "dependency_issue": "SLM-379",
+      "reason": "CERT_CAP1_unavailable"
+    },
+    "operator_corpus_fingerprint": "a922536b82a0825853a87f5eaa5129de7e0ae984a7b4a8db6ba5bc1e347597cf",
+    "schema": "cap2_operator_suite/v1",
+    "source_records_fingerprint": "f18b2fa1d9e271fcb8789c766cbb3717262353d1bbddfd37c5a1b85bca16a00e",
+    "suite_hash": "e80f703627c4fe1da5f09396c9b5f9284c3d6bc0bc932e00eaa4c95fc4c54491",
+    "suite_version": "cap2_operator_v2",
+    "thresholds": {
+      "accepted_legal_action_mass_min": 0.9,
+      "case_wilson_lower_min": 0.75,
+      "dimension_wilson_lower_min": 0.2
+    },
+    "version_stamp": {
+      "code_commit": "e304679415688356693ad4382306db1f61dcbc16",
+      "code_dirty": true,
+      "components": {
+        "dsl.operators.collapse": "v1",
+        "dsl.operators.contracts": "v15",
+        "dsl.operators.conversation": "v4",
+        "dsl.operators.legal_set": "v2",
+        "dsl.operators.merge": "v3",
+        "evals.cap2_operator": "v2"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-07-26T14:30:34.863928+00:00"
+    }
+  },
+  "version_stamp": {
+    "code_commit": "e304679415688356693ad4382306db1f61dcbc16",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.collapse": "v1",
+      "dsl.operators.contracts": "v15",
+      "dsl.operators.conversation": "v4",
+      "dsl.operators.legal_set": "v2",
+      "dsl.operators.merge": "v3",
+      "evals.cap2_operator": "v2"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T14:30:34.863928+00:00"
+  }
+}
