@@ -6926,16 +6926,22 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
         "src/slm_training/harnesses/experiments/typed_operator_policy.py",
         "tests/test_harnesses/experiments/test_typed_operator_policy.py",
         "tests/test_scripts/test_run_dsh3_28_typed_operator_policy.py",
-        "docs/design/dsh3-28-typed-operator-policy.md"
+        "docs/design/dsh3-28-typed-operator-policy.md",
+        "docs/design/dsh3-29-operator-ecoc-coverage.md"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-26",
+          "note": "SLM-404: allow evaluator-only compiler-visible cost-aware ECOC assignments without changing partial DEFER routing or the sanitized policy input."
+        },
         {
           "version": "v9",
           "date": "2026-07-26",

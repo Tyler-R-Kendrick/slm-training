@@ -31,6 +31,7 @@ from slm_training.harnesses.experiments.typed_operator_policy import (
     TypedOperatorPolicyHeadFamily,
     TypedOperatorPolicyExampleV1,
     TypedOperatorPolicyScorer,
+    controlled_partial_coverage_report,
     decide_typed_operator_policy,
     train_typed_operator_policy,
 )
@@ -381,7 +382,7 @@ def _run_arm(
 
 def _markdown(report: dict[str, Any]) -> str:
     lines = [
-        "# DSH3-28 typed dynamic operator policy (SLM-403)",
+        f"# {report['run']['label']} ({report['issue']})",
         "",
         "Status: bounded local measured result; not a ship claim",
         "",
@@ -421,6 +422,8 @@ def _markdown(report: dict[str, Any]) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--issue", default="SLM-403")
+    parser.add_argument("--label", default="DSH3-28 typed dynamic operator policy")
     parser.add_argument(
         "--corpus-work-dir",
         type=Path,
@@ -446,6 +449,11 @@ def main(argv: list[str] | None = None) -> int:
         "--cap2-v2",
         action="store_true",
         help="materialize held-out policy selections into CAP2 v2 transition predictions",
+    )
+    parser.add_argument(
+        "--controlled-partial",
+        action="store_true",
+        help="record SLM-404 evaluator-only 100/75/50/25 controlled PARTIAL slices",
     )
     parser.add_argument(
         "--max-combinations",
@@ -540,6 +548,18 @@ def main(argv: list[str] | None = None) -> int:
     complete_train_rows = sum(
         row.view.coverage.value == "complete" for row in train
     )
+    controlled_partial = (
+        {
+            row.row_id: controlled_partial_coverage_report(row)
+            for row in held_out
+            if row.view.coverage.value == "complete"
+        }
+        if args.controlled_partial
+        else {}
+    )
+    complete_held_out_rows = sum(
+        row.view.coverage.value == "complete" for row in held_out
+    )
     controls = {}
     for head_family in head_families:
         torch.manual_seed(97)
@@ -571,27 +591,29 @@ def main(argv: list[str] | None = None) -> int:
         and change["changed"] > 0
         and change["correct"] > change["wrong"]
     ]
-    decision = (
-        {
+    if args.controlled_partial and complete_held_out_rows == 0:
+        decision = {
+            "verdict": "reject",
+            "reason": "no COMPLETE held-out shadow rows for the controlled coverage matrix",
+        }
+    elif complete_train_rows == 0:
+        decision = {
             "verdict": "reject",
             "reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run",
         }
-        if complete_train_rows == 0
-        else (
-            {
-                "verdict": "reject",
-                "reason": "no typed head caused a beneficial enabled-versus-zero held-out choice change",
-            }
-            if not beneficial_heads
-            else {
-                "verdict": "measured",
-                "reason": (
-                    f"bounded local {len(head_families)}-head control matrix completed; "
-                    "this is not a ship decision"
-                ),
-            }
-        )
-    )
+    elif not beneficial_heads:
+        decision = {
+            "verdict": "reject",
+            "reason": "no typed head caused a beneficial enabled-versus-zero held-out choice change",
+        }
+    else:
+        decision = {
+            "verdict": "measured",
+            "reason": (
+                f"bounded local {len(head_families)}-head control matrix completed; "
+                "this is not a ship decision"
+            ),
+        }
     agentv = publish_agentv_evaluation(
         output_dir,
         name="dsh3-28-typed-operator-policy",
@@ -641,12 +663,27 @@ def main(argv: list[str] | None = None) -> int:
                     **controls,
                 },
             },
+            {
+                "id": "controlled-partial-defer",
+                "criteria": "Controlled PARTIAL projections hide the complete shadow and never run a learned forced path.",
+                "pass": (
+                    (not args.controlled_partial or bool(controlled_partial))
+                    and all(
+                        item["shadow_hidden"]
+                        and item["model_forwards"] == 0
+                        and item["false_hard_eliminations"] == 0
+                        for slices in controlled_partial.values()
+                        for item in slices
+                    )
+                ),
+                "result": controlled_partial,
+            },
         ],
     )
     _rewrite_agentv_paths(output_dir)
     report = {
         "schema": "dsh3_28_typed_operator_policy_report/v1",
-        "issue": "SLM-403",
+        "issue": args.issue,
         "run": {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "device": "cpu",
@@ -659,14 +696,18 @@ def main(argv: list[str] | None = None) -> int:
             "held_out_record_id": args.held_out_record_id,
             "checkpoint": None,
             "ship_claim": False,
+            "label": args.label,
+            "controlled_partial": args.controlled_partial,
         },
         "counts": {
             "train_rows": len(train),
             "complete_train_rows": complete_train_rows,
             "held_out_rows": len(held_out),
+            "complete_held_out_rows": complete_held_out_rows,
         },
         "matrix": matrix,
         "cap2": cap2,
+        "controlled_partial": controlled_partial,
         "controls": controls,
         "train_evidence": _portable(
             train_evidence, output_dir=output_dir, corpus_work_dir=corpus_work_dir

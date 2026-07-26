@@ -54,3 +54,18 @@ def test_cap2_mode_is_bound_to_the_current_immutable_fixture() -> None:
 
     assert manifest["suite_version"] == "cap2_operator_v2"
     assert manifest["generation"]["max_combinations_per_operator"] == 32
+
+
+def test_controlled_partial_flag_is_accepted_before_matrix_execution(tmp_path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "--output-dir",
+                str(tmp_path / "evidence"),
+                "--corpus-work-dir",
+                str(tmp_path / "corpus"),
+                "--controlled-partial",
+                "--head-families",
+                "local_flat,local_flat",
+            ]
+        )
