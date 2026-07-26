@@ -1,0 +1,1081 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh3-28-typed-operator-policy",
+      "timingPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 1,
+      "failures": [
+        "controlled-partial-defer:domain_criterion"
+      ],
+      "pass": false,
+      "passed": 3,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "legal-row-selection:domain_criterion",
+          "expected": true,
+          "id": "legal-row-selection:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "singleton-bypass:domain_criterion",
+          "expected": true,
+          "id": "singleton-bypass:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "causal-controls-or-stop-rule:domain_criterion",
+          "expected": true,
+          "id": "causal-controls-or-stop-rule:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": false,
+          "criterion_id": "controlled-partial-defer:domain_criterion",
+          "expected": true,
+          "id": "controlled-partial-defer:domain_criterion",
+          "operator": "eq",
+          "pass": false
+        }
+      ],
+      "total": 4
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh3-28-typed-operator-policy.eval.jsonl",
+    "summary": {
+      "durationMs": 156,
+      "executionErrors": 0,
+      "failed": 1,
+      "meanScore": 0.75,
+      "passed": 3,
+      "total": 4
+    }
+  },
+  "cap2": {},
+  "controlled_partial": {},
+  "controls": {
+    "factorized": {
+      "enabled_vs_random": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "enabled_vs_zero": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "prediction_replay_matched": true
+    },
+    "independent_set": {
+      "enabled_vs_random": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "enabled_vs_zero": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "prediction_replay_matched": true
+    },
+    "local_flat": {
+      "enabled_vs_random": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "enabled_vs_zero": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "prediction_replay_matched": true
+    },
+    "recurrent_set": {
+      "enabled_vs_random": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "enabled_vs_zero": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "prediction_replay_matched": true
+    },
+    "ternary_ecoc": {
+      "enabled_vs_random": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "enabled_vs_zero": {
+        "changed": 0,
+        "correct": 0,
+        "eligible": 2,
+        "wrong": 0
+      },
+      "prediction_replay_matched": true
+    }
+  },
+  "counts": {
+    "complete_held_out_rows": 0,
+    "complete_train_rows": 2,
+    "held_out_rows": 2,
+    "train_rows": 2
+  },
+  "decision": {
+    "reason": "no COMPLETE held-out shadow rows for the controlled coverage matrix",
+    "verdict": "reject"
+  },
+  "held_out_evidence": {
+    "corpus": {
+      "collapsed_record_count": 1,
+      "collapsed_records_path": "local-scratch://held_out/operator_collapsed_records.jsonl",
+      "content_fingerprint": "51a3f125d7dcd4fbb272b55d6a8eed7ddcaca4b45df220d606b9b04fcf440120",
+      "record_count": 10,
+      "records_path": "local-scratch://held_out/operator_records.jsonl",
+      "report_path": "local-scratch://held_out/operator_coverage.json",
+      "root_count": 1
+    },
+    "corpus_summary": {
+      "application_coverage": {
+        "emitted_illegal_targets": 0,
+        "legal_successes": 64,
+        "rejected_combinations": 3829
+      },
+      "collapse": {
+        "hard_negative_count": 1,
+        "nl_available": false,
+        "nl_unavailable_reason": "CERT_CAP1_unavailable",
+        "symbolic_only": true
+      },
+      "config": {
+        "actions_per_state": 2,
+        "max_combinations_per_operator": 512,
+        "max_roots": 1,
+        "sibling_forks": true
+      },
+      "coverage_gap_count": 12,
+      "schema": "symbolic_operator_corpus_report/v1",
+      "strata": {
+        "argument_kinds": {
+          "node": 3,
+          "node,role,value": 3,
+          "node,template": 3,
+          "none": 1
+        },
+        "kind": {
+          "next_turn": 3,
+          "sibling_fork": 1,
+          "single_turn": 6
+        },
+        "operator_family": {
+          "history.fork": 1,
+          "openui.remove_node": 3,
+          "openui.replace_node": 3,
+          "openui.set_property": 3
+        },
+        "outcome": {
+          "fork": 1,
+          "success": 9
+        },
+        "scope_complexity": {
+          "17": 3,
+          "9": 7
+        },
+        "semantic_family": {
+          "fixture": 10
+        },
+        "state_size": {
+          "15": 3,
+          "8": 7
+        },
+        "target_view": {
+          "dual": 3,
+          "history_only": 1,
+          "operator_only": 3,
+          "result_ast_only": 3
+        }
+      },
+      "version": "dsh3-28-dev",
+      "version_stamp": {
+        "code_commit": "a2727068d184068a9c9b1c9ef52d3d3f4590737e",
+        "code_dirty": true,
+        "components": {
+          "data.flow.operator_policy_corpus": "v5",
+          "evals.cap2_operator": "v2",
+          "harness.experiments.typed_operator_policy": "v10",
+          "model.operator_policy_view": "v3",
+          "model.quantization": "v7"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-26T15:35:10.880637+00:00"
+      }
+    },
+    "row_reports": [
+      {
+        "accepted_rows": 2,
+        "hard_negative_counts": {
+          "conflict": 1
+        },
+        "positive_only_rows": 1,
+        "rejected_rows": 0,
+        "rejection_counts": {},
+        "schema": "operator_policy_corpus_quality_report/v1",
+        "total_steps": 2
+      }
+    ]
+  },
+  "issue": "SLM-404",
+  "matrix": [
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "zero",
+      "head_family": "local_flat",
+      "loss": [],
+      "n": 2,
+      "parameters": 3522,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "random",
+      "head_family": "local_flat",
+      "loss": [],
+      "n": 2,
+      "parameters": 3522,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "shuffled_labels",
+      "head_family": "local_flat",
+      "loss": [
+        1.7971856594085693,
+        1.4919480085372925,
+        0.798486590385437,
+        0.4138699769973755
+      ],
+      "n": 2,
+      "parameters": 3522,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "enabled",
+      "head_family": "local_flat",
+      "loss": [
+        1.390377402305603,
+        1.3177907466888428,
+        1.148897409439087,
+        1.050416111946106
+      ],
+      "n": 2,
+      "parameters": 3522,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "zero",
+      "head_family": "ternary_ecoc",
+      "loss": [],
+      "n": 2,
+      "parameters": 3801,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "random",
+      "head_family": "ternary_ecoc",
+      "loss": [],
+      "n": 2,
+      "parameters": 3801,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "shuffled_labels",
+      "head_family": "ternary_ecoc",
+      "loss": [
+        1.3603501319885254,
+        0.1368914395570755,
+        0.02003059908747673,
+        0.0047137923538684845
+      ],
+      "n": 2,
+      "parameters": 3801,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "enabled",
+      "head_family": "ternary_ecoc",
+      "loss": [
+        1.4353289604187012,
+        1.1376373767852783,
+        0.9569082260131836,
+        0.9364546537399292
+      ],
+      "n": 2,
+      "parameters": 3801,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "zero",
+      "head_family": "factorized",
+      "loss": [],
+      "n": 2,
+      "parameters": 3444,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "random",
+      "head_family": "factorized",
+      "loss": [],
+      "n": 2,
+      "parameters": 3444,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "shuffled_labels",
+      "head_family": "factorized",
+      "loss": [
+        1.7956167459487915,
+        0.08541776239871979,
+        0.0,
+        0.0
+      ],
+      "n": 2,
+      "parameters": 3444,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "enabled",
+      "head_family": "factorized",
+      "loss": [
+        1.3922069072723389,
+        1.2754878997802734,
+        1.5212109088897705,
+        2.299435615539551
+      ],
+      "n": 2,
+      "parameters": 3444,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "zero",
+      "head_family": "independent_set",
+      "loss": [],
+      "n": 2,
+      "parameters": 4194,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "random",
+      "head_family": "independent_set",
+      "loss": [],
+      "n": 2,
+      "parameters": 4194,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "shuffled_labels",
+      "head_family": "independent_set",
+      "loss": [
+        1.7160377502441406,
+        0.3887261748313904,
+        0.00027324515394866467,
+        0.0
+      ],
+      "n": 2,
+      "parameters": 4194,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "enabled",
+      "head_family": "independent_set",
+      "loss": [
+        1.407309651374817,
+        1.1019843816757202,
+        0.9355021715164185,
+        0.9181544780731201
+      ],
+      "n": 2,
+      "parameters": 4194,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "zero",
+      "head_family": "recurrent_set",
+      "loss": [],
+      "n": 2,
+      "parameters": 5042,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "random",
+      "head_family": "recurrent_set",
+      "loss": [],
+      "n": 2,
+      "parameters": 5042,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "shuffled_labels",
+      "head_family": "recurrent_set",
+      "loss": [
+        1.803697109222412,
+        1.1399483680725098,
+        0.6091943979263306,
+        0.2752557396888733
+      ],
+      "n": 2,
+      "parameters": 5042,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    },
+    {
+      "action_accuracy": 0.0,
+      "action_and_arguments_accuracy": 0.0,
+      "arm": "enabled",
+      "head_family": "recurrent_set",
+      "loss": [
+        1.387083649635315,
+        1.2284791469573975,
+        1.0628736019134521,
+        0.9764751195907593
+      ],
+      "n": 2,
+      "parameters": 5042,
+      "partial_forced": 0,
+      "predictions": [
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f8b8a83ae4f1c0a77188d6bf",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        },
+        {
+          "correct_action": false,
+          "correct_action_and_arguments": false,
+          "model_forwards": 0,
+          "route": "partial_witnessed",
+          "row_id": "row_f5f2aeb51f6571b5dc6a8509",
+          "selected_action_row": null,
+          "selected_argument_rows": []
+        }
+      ],
+      "seed": 11,
+      "singleton_forwards": 0
+    }
+  ],
+  "run": {
+    "backend": "typed_operator_feature_encoder",
+    "checkpoint": null,
+    "controlled_partial": true,
+    "device": "cpu",
+    "head_families": [
+      "local_flat",
+      "ternary_ecoc",
+      "factorized",
+      "independent_set",
+      "recurrent_set"
+    ],
+    "held_out_record_id": "held_out_form_01",
+    "label": "DSH3-29 cost-aware ECOC coverage",
+    "learning_rate": 0.03,
+    "max_combinations_per_operator": 512,
+    "ship_claim": false,
+    "steps": 4,
+    "timestamp": "2026-07-26T15:35:43.761988+00:00",
+    "train_record_id": "train_text_only_01"
+  },
+  "schema": "dsh3_28_typed_operator_policy_report/v1",
+  "train_evidence": {
+    "corpus": {
+      "collapsed_record_count": 1,
+      "collapsed_records_path": "local-scratch://train/operator_collapsed_records.jsonl",
+      "content_fingerprint": "fab37f00b3576fc0226b166c7a7f711b10828f7e4397a9239fbe5eef1e9648b6",
+      "record_count": 10,
+      "records_path": "local-scratch://train/operator_records.jsonl",
+      "report_path": "local-scratch://train/operator_coverage.json",
+      "root_count": 1
+    },
+    "corpus_summary": {
+      "application_coverage": {
+        "emitted_illegal_targets": 0,
+        "legal_successes": 22,
+        "rejected_combinations": 835
+      },
+      "collapse": {
+        "hard_negative_count": 1,
+        "nl_available": false,
+        "nl_unavailable_reason": "CERT_CAP1_unavailable",
+        "symbolic_only": true
+      },
+      "config": {
+        "actions_per_state": 2,
+        "max_combinations_per_operator": 512,
+        "max_roots": 2,
+        "sibling_forks": true
+      },
+      "coverage_gap_count": 12,
+      "schema": "symbolic_operator_corpus_report/v1",
+      "strata": {
+        "argument_kinds": {
+          "node,role,template": 6,
+          "node,role,template,index": 3,
+          "none": 1
+        },
+        "kind": {
+          "next_turn": 3,
+          "sibling_fork": 1,
+          "single_turn": 6
+        },
+        "operator_family": {
+          "history.fork": 1,
+          "openui.add_child": 9
+        },
+        "outcome": {
+          "fork": 1,
+          "success": 9
+        },
+        "scope_complexity": {
+          "4": 10
+        },
+        "semantic_family": {
+          "human_curated": 10
+        },
+        "state_size": {
+          "2": 7,
+          "3": 3
+        },
+        "target_view": {
+          "dual": 3,
+          "history_only": 1,
+          "operator_only": 3,
+          "result_ast_only": 3
+        }
+      },
+      "version": "dsh3-28-train",
+      "version_stamp": {
+        "code_commit": "a2727068d184068a9c9b1c9ef52d3d3f4590737e",
+        "code_dirty": true,
+        "components": {
+          "data.flow.operator_policy_corpus": "v5",
+          "evals.cap2_operator": "v2",
+          "harness.experiments.typed_operator_policy": "v10",
+          "model.operator_policy_view": "v3",
+          "model.quantization": "v7"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-26T15:35:10.880637+00:00"
+      }
+    },
+    "row_reports": [
+      {
+        "accepted_rows": 2,
+        "hard_negative_counts": {
+          "conflict": 1
+        },
+        "positive_only_rows": 1,
+        "rejected_rows": 0,
+        "rejection_counts": {},
+        "schema": "operator_policy_corpus_quality_report/v1",
+        "total_steps": 2
+      }
+    ]
+  },
+  "version_stamp": {
+    "code_commit": "a2727068d184068a9c9b1c9ef52d3d3f4590737e",
+    "code_dirty": true,
+    "components": {
+      "data.flow.operator_policy_corpus": "v5",
+      "evals.cap2_operator": "v2",
+      "harness.experiments.typed_operator_policy": "v10",
+      "model.operator_policy_view": "v3",
+      "model.quantization": "v7"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T15:35:10.880637+00:00"
+  }
+}

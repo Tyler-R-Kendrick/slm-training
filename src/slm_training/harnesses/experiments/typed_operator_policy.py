@@ -29,12 +29,16 @@ from slm_training.models.local_action_head import (
     StateContext,
     TernaryECOCHead,
 )
+from slm_training.models.semantic_cost import CostMatrix
 from slm_training.models.operator_policy_objective import (
+    ControlledPartialFixtureV1,
     OperatorPolicyObjectiveV1,
     OperatorPolicyRouteV1,
     OperatorPolicyTargetV1,
     TargetUtilityLabel,
     route_operator_policy_inference,
+    build_controlled_partial_fixture,
+    false_hard_eliminations,
 )
 from slm_training.models.operator_policy_view import (
     OperatorPolicyInputV1,
@@ -85,6 +89,92 @@ def _semantic_action_identity(view: OperatorPolicyInputV1, row: int) -> str:
     # Hex preserves an exact, dot-free semantic key for LocalFlatHead's
     # ParameterDict. It is derived only from fields the policy may observe.
     return "typed_" + json.dumps(payload, sort_keys=True, separators=(",", ":")).encode().hex()
+
+
+def evaluator_ecoc_cost_matrix(
+    view: OperatorPolicyInputV1,
+    *,
+    canonical_ast_costs: dict[int, tuple[int, int, int, int]],
+) -> CostMatrix:
+    """Build evaluator-only ECOC confusion costs from compiler-visible facts.
+
+    ``canonical_ast_costs`` is deliberately separate from ``view``: it is
+    evaluation evidence, never model input.  Target distance and gold labels
+    are not accepted by this API.
+    """
+    if set(canonical_ast_costs) != set(range(len(view.action_rows))):
+        raise ValueError("canonical AST costs must cover exactly the action rows")
+    for value in canonical_ast_costs.values():
+        if len(value) != 4 or any(not isinstance(item, int) or item < 0 for item in value):
+            raise ValueError("canonical AST costs must be four non-negative integers")
+    costs: CostMatrix = {}
+    for left in view.action_rows:
+        for right in view.action_rows:
+            if left.row == right.row:
+                continue
+            effect_distance = len(set(left.effect_signature) ^ set(right.effect_signature))
+            ast_distance = sum(
+                abs(a - b)
+                for a, b in zip(canonical_ast_costs[left.row], canonical_ast_costs[right.row])
+            )
+            costs[
+                (_semantic_action_identity(view, left.row), _semantic_action_identity(view, right.row))
+            ] = float(
+                1
+                + abs(left.cost - right.cost)
+                + int(left.locality != right.locality)
+                + effect_distance
+                + ast_distance
+            )
+    return costs
+
+
+def controlled_partial_coverage_schedule(
+    example: "TypedOperatorPolicyExampleV1",
+    *,
+    retained_percentages: tuple[int, ...] = (100, 75, 50, 25),
+) -> tuple[ControlledPartialFixtureV1, ...]:
+    """Make deterministic evaluator-only shadows for the SLM-404 matrix."""
+    if example.view.coverage is not LegalSetCoverage.COMPLETE:
+        raise ValueError("controlled coverage requires a COMPLETE shadow row")
+    if any(not 0 <= percentage <= 100 for percentage in retained_percentages):
+        raise ValueError("coverage percentages must be between zero and 100")
+    order = tuple(
+        str(action.row)
+        for action in sorted(
+            example.view.action_rows,
+            key=lambda action: _semantic_action_identity(example.view, action.row),
+        )
+    )
+    return tuple(
+        build_controlled_partial_fixture(
+            example.objective,
+            truncation_order=order,
+            budget=(len(order) * percentage) // 100,
+        )
+        for percentage in retained_percentages
+    )
+
+
+def controlled_partial_coverage_report(
+    example: "TypedOperatorPolicyExampleV1",
+) -> list[dict[str, int | str | bool]]:
+    """Report public-only coverage slices; no learned partial-path scoring."""
+    report = []
+    for fixture in controlled_partial_coverage_schedule(example):
+        route = route_operator_policy_inference(fixture.public)
+        report.append(
+            {
+                "budget": fixture.budget,
+                "public_candidates": len(fixture.public.targets),
+                "shadow_candidates": len(fixture.shadow_complete.targets),
+                "route": route.value,
+                "model_forwards": 0,
+                "shadow_hidden": fixture.model_input() == fixture.public.model_input(),
+                "false_hard_eliminations": false_hard_eliminations(fixture),
+            }
+        )
+    return report
 
 
 @dataclass(frozen=True)
@@ -236,6 +326,7 @@ class TypedOperatorPolicyScorer(nn.Module):
         *,
         dim: int = 16,
         head_family: TypedOperatorPolicyHeadFamily = "local_flat",
+        ecoc_costs: CostMatrix | None = None,
     ) -> None:
         super().__init__()
         if head_family not in TYPED_OPERATOR_POLICY_HEAD_FAMILIES:
@@ -256,7 +347,9 @@ class TypedOperatorPolicyScorer(nn.Module):
         if head_family == "local_flat":
             self.local_flat = LocalFlatHead(dim, unseen_action_policy="unk")
         elif head_family == "ternary_ecoc":
-            self.ecoc = TernaryECOCHead(dim, registry=ActionCodeRegistry())
+            self.ecoc = TernaryECOCHead(
+                dim, registry=ActionCodeRegistry(), costs=ecoc_costs
+            )
         elif head_family == "factorized":
             self.factor_projections = nn.ModuleList(nn.Linear(dim, 1) for _ in range(3))
         elif head_family == "independent_set":
@@ -277,6 +370,7 @@ class TypedOperatorPolicyScorer(nn.Module):
         *,
         dim: int = 16,
         head_family: TypedOperatorPolicyHeadFamily = "local_flat",
+        ecoc_costs: CostMatrix | None = None,
     ) -> "TypedOperatorPolicyScorer":
         if not examples:
             raise ValueError("typed operator policy requires examples")
@@ -284,6 +378,7 @@ class TypedOperatorPolicyScorer(nn.Module):
             OperatorFeatureVocabularyV1.from_inputs([example.view for example in examples]),
             dim=dim,
             head_family=head_family,
+            ecoc_costs=ecoc_costs,
         )
         if scorer.local_flat is not None:
             scorer.local_flat.materialize(
@@ -474,6 +569,9 @@ __all__ = [
     "TypedOperatorPolicyDecisionV1",
     "TypedOperatorPolicyExampleV1",
     "TypedOperatorPolicyScorer",
+    "controlled_partial_coverage_report",
+    "controlled_partial_coverage_schedule",
+    "evaluator_ecoc_cost_matrix",
     "decide_typed_operator_policy",
     "train_typed_operator_policy",
     "typed_operator_policy_loss",

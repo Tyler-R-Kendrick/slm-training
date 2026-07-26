@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -26,7 +27,9 @@ from slm_training.harnesses.experiments.typed_operator_policy import (
     TypedOperatorPolicyEvidenceV1,
     TypedOperatorPolicyExampleV1,
     TypedOperatorPolicyScorer,
+    controlled_partial_coverage_report,
     decide_typed_operator_policy,
+    evaluator_ecoc_cost_matrix,
     train_typed_operator_policy,
     typed_operator_policy_loss,
 )
@@ -138,6 +141,47 @@ def test_partial_policy_defers_without_force_or_hard_prune() -> None:
     assert decision.selected_action_row is None
     assert decision.selected_argument_rows == ()
     assert decision.model_forwards == 0
+
+
+def test_controlled_coverage_never_exposes_the_shadow_or_forces_a_partial_row() -> None:
+    example = _example(coverage=LegalSetCoverage.COMPLETE, action_count=4)
+
+    slices = controlled_partial_coverage_report(example)
+
+    assert [item["budget"] for item in slices] == [4, 3, 2, 1]
+    assert all(item["shadow_hidden"] for item in slices)
+    assert all(item["model_forwards"] == 0 for item in slices)
+    assert all(item["false_hard_eliminations"] == 0 for item in slices)
+
+
+def test_ecoc_costs_are_evaluator_only_compiler_visible_and_order_invariant() -> None:
+    example = _example(coverage=LegalSetCoverage.COMPLETE, action_count=2)
+    costs = evaluator_ecoc_cost_matrix(
+        example.view,
+        canonical_ast_costs={0: (1, 2, 0, 0), 1: (3, 1, 0, 0)},
+    )
+    reversed_view = OperatorPolicyInputV1(
+        reference_rows=example.view.reference_rows,
+        action_rows=tuple(
+            replace(action, row=index)
+            for index, action in enumerate(reversed(example.view.action_rows))
+        ),
+        ordinary_action_count=example.view.ordinary_action_count,
+        coverage=example.view.coverage,
+    )
+
+    assert set(costs.values()) == {4.0}
+    with pytest.raises(ValueError, match="cover exactly"):
+        evaluator_ecoc_cost_matrix(example.view, canonical_ast_costs={0: (0, 0, 0, 0)})
+    assert costs == evaluator_ecoc_cost_matrix(
+        reversed_view,
+        canonical_ast_costs={0: (3, 1, 0, 0), 1: (1, 2, 0, 0)},
+    )
+    scorer = TypedOperatorPolicyScorer.from_examples(
+        (example,), dim=8, head_family="ternary_ecoc", ecoc_costs=costs
+    )
+    assert scorer.ecoc is not None
+    assert scorer.ecoc.costs == costs
 
 
 @pytest.mark.parametrize("head_family", TYPED_OPERATOR_POLICY_HEAD_FAMILIES)
