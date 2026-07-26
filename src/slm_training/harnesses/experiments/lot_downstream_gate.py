@@ -91,6 +91,21 @@ DOWNSTREAM_ISSUES: dict[str, DownstreamIssueSpec] = {
             "routing."
         ),
     ),
+    "SLM-254": DownstreamIssueSpec(
+        linear_issue="SLM-254",
+        alias="LOT3-01",
+        title="Establish latent-factor availability, necessity, and specificity with causal interventions",
+        gate_contract_id="causal-latent-use-gate-v1",
+        slug="lot3-01-causal-latent-use",
+        activation_requirement=(
+            "SLM-251 provides a qualified faithful latent checkpoint "
+            "preserving strict outcomes versus the continued explicit "
+            "control; SLM-252 selects the routing/timing/grounding contract "
+            "(or explicitly authorizes a bounded causal study); SLM-253 "
+            "selects the readout contract and target factors; and a "
+            "gold/oracle trace substitution ceiling is nonzero."
+        ),
+    ),
 }
 
 

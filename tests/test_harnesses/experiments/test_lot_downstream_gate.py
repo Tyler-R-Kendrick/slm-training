@@ -108,3 +108,16 @@ def test_slm253_real_contracts_are_not_authorized() -> None:
 
     assert contract.verdict == NOT_AUTHORIZED
     assert contract.contract_id == "structured-latent-readout-gate-v1"
+
+
+def test_slm254_real_contracts_are_not_authorized() -> None:
+    """LOT3-01's own text: if the gates fail, close with
+    causal_study_not_authorized rather than manufacturing interpretability
+    evidence. With the LOT1/LOT2 chain unmet there is no faithful latent
+    checkpoint to intervene on.
+    """
+    fidelity, trace = _real_contracts()
+    contract = evaluate_downstream_gate(DOWNSTREAM_ISSUES["SLM-254"], fidelity, trace)
+
+    assert contract.verdict == NOT_AUTHORIZED
+    assert contract.contract_id == "causal-latent-use-gate-v1"
