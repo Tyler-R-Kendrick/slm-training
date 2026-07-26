@@ -473,8 +473,13 @@ class LarkFileBackend:
         if self._structural_token_cache is None:
             # The grammar file is static at runtime and this is consulted per
             # decoded token when the Lark backend is active.
+            #
+            # Only quoted literals are surface tokens. Scanning for capitalised
+            # words instead swept up rule and terminal names (AST, BOOL, NAME,
+            # NUMBER, STRING) and character-class fragments — `[A-Za-z0-9_]`
+            # yielded a bare "Za" — none of which can appear in a program.
             text = self._path.read_text(encoding="utf-8")
-            names = set(re.findall(r"\b([A-Z][A-Za-z0-9]+)\b", text))
+            names = set(re.findall(r'"((?:[^"\\]|\\.)+)"', text))
             names.update({"root", "(", ")", "[", "]", ",", "=", '"', "true", "false"})
             names.update(self._structural_extras)
             names.update(self._order().keys())

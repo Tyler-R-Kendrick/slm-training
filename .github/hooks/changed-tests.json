@@ -1,4 +1,35 @@
 {
   "version": 1,
-  "hooks": {}
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "python3 scripts/validate_page_dsl.py --changed",
+        "cwd": ".",
+        "timeout": 60
+      },
+      {
+        "type": "command",
+        "command": "python3 -m scripts.verify_version_stamps --post-tool-use",
+        "cwd": ".",
+        "timeout": 60
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "python3 scripts/validate_page_dsl.py --changed",
+        "powershell": "python scripts/validate_page_dsl.py --changed",
+        "cwd": ".",
+        "timeoutSec": 60
+      },
+      {
+        "type": "command",
+        "bash": "python3 -m scripts.verify_version_stamps --post-tool-use",
+        "powershell": "python -m scripts.verify_version_stamps --post-tool-use",
+        "cwd": ".",
+        "timeoutSec": 60
+      }
+    ]
+  }
 }

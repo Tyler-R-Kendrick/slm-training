@@ -400,6 +400,33 @@ Open goals with named successors, at a glance:
 | I3 | — (machinery new) | certify the committed n-gram table by campaign, then default-on for serving |
 | I4 | — (machinery new) | certify checkpoint-aligned prefills by campaign, then default-on for serving |
 
+### I7 — Every agent surface carries the law
+
+The repo configures several coding harnesses, each reading a different
+instruction file. An invariant stated only in `AGENTS.md` reaches only the
+agents that happen to read it, so every surface must carry it:
+[`../../AGENTS.md`](../../AGENTS.md), [`../../CLAUDE.md`](../../CLAUDE.md),
+[`../../GEMINI.md`](../../GEMINI.md),
+[`../../.github/copilot-instructions.md`](../../.github/copilot-instructions.md),
+[`../../.cursor/rules/decode-invariants.mdc`](../../.cursor/rules/decode-invariants.mdc),
+[`../../.grok/workflows/autotrain.rhai`](../../.grok/workflows/autotrain.rhai),
+and the skills that run experiments (`autotrain`, `honest-ship-eval`,
+`improve-openui-harnesses`, `running-experiment-matrices`).
+
+`python -m scripts.verify_agent_surfaces` owns the obligation × surface matrix
+and is authoritative — `verify_decode_invariants` delegates to it for the
+`decode.invariants` obligation rather than keeping a second copy. It certifies
+the *other* repository laws (run cap, iron law, honest gates, data-quality
+loop, model card, version stamps, dashboard parity, preregistered campaigns) on
+the same surfaces; each of those had drifted off at least one surface before it
+existed. It also certifies hook parity, so the post-edit checks cannot stay one
+harness's privilege. Background:
+[`agent-harness-parity-audit.md`](agent-harness-parity-audit.md).
+
+Surfaces cite the `I*` ids used here. Renumbering them locally makes
+"invariant 11" mean different things in different files, which defeats the
+point of a canonical statement.
+
 ### I15 — Everything is documented
 
 These invariants live canonically in this file. They are linked from
