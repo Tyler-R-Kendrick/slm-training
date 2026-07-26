@@ -244,7 +244,6 @@ class TypedOperatorPolicyScorer(nn.Module):
         self.encoder = OperatorFeatureEncoder(vocabulary, dim=dim, arm=FeatureArm.TYPED)
         self.argument_head = CandidateScoringHead(dim)
         self.context_projection = nn.Linear(dim * 2, dim)
-        self.action_head: nn.Linear | None = None
         self.local_flat: LocalFlatHead | None = None
         self.ecoc: TernaryECOCHead | None = None
         self.factor_projections: nn.ModuleList | None = None
@@ -265,9 +264,11 @@ class TypedOperatorPolicyScorer(nn.Module):
             self.independent_key = nn.Linear(dim, dim, bias=False)
             self.independent_value = nn.Linear(dim, dim, bias=False)
             self.independent_score = nn.Linear(dim * 2, 1)
-        else:
+        elif head_family == "recurrent_set":
             self.recurrent = nn.GRU(dim, dim, batch_first=True)
             self.recurrent_score = nn.Linear(dim, 1)
+        else:  # pragma: no cover - membership validation above is exhaustive
+            raise ValueError(f"unhandled typed policy head family {head_family!r}")
 
     @classmethod
     def from_examples(
@@ -322,7 +323,7 @@ class TypedOperatorPolicyScorer(nn.Module):
                 identities,
             )
             assert output.trits is not None
-            entry = self.ecoc._get_entry(identities)
+            entry = self.ecoc.entry_for(identities)
             log_probs = F.log_softmax(output.trits.squeeze(0), dim=-1)
             return torch.stack(
                 [
@@ -331,16 +332,29 @@ class TypedOperatorPolicyScorer(nn.Module):
                 ]
             )
         if self.factor_projections is not None:
-            return sum(projection(action_embeddings).squeeze(-1) for projection in self.factor_projections)
+            factors = [
+                projection(action_embeddings).squeeze(-1)
+                for projection in self.factor_projections
+            ]
+            return factors[0] * factors[1] * factors[2]
         if self.independent_query is not None:
             assert self.independent_key is not None
             assert self.independent_value is not None
             assert self.independent_score is not None
             query = self.independent_query(action_embeddings)
             key = self.independent_key(action_embeddings)
-            affinity = query @ key.T / math.sqrt(action_embeddings.shape[-1])
-            affinity.fill_diagonal_(float("-inf"))
-            neighbors = F.softmax(affinity, dim=-1) @ self.independent_value(action_embeddings)
+            value = self.independent_value(action_embeddings)
+            if action_embeddings.shape[0] == 1:
+                neighbors = torch.zeros_like(value)
+            else:
+                affinity = query @ key.T / math.sqrt(action_embeddings.shape[-1])
+                affinity = affinity.masked_fill(
+                    torch.eye(
+                        affinity.shape[0], dtype=torch.bool, device=affinity.device
+                    ),
+                    float("-inf"),
+                )
+                neighbors = F.softmax(affinity, dim=-1) @ value
             return self.independent_score(torch.cat((action_embeddings, neighbors), dim=-1)).squeeze(-1)
         assert self.recurrent is not None
         assert self.recurrent_score is not None

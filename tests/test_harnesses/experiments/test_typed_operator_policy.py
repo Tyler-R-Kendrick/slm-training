@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import torch
 
 from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.operators import (
@@ -152,9 +153,12 @@ def test_each_typed_head_preserves_complete_and_partial_authority(head_family: s
     decision = decide_typed_operator_policy(scorer, ambiguous)
     singleton_decision = decide_typed_operator_policy(scorer, singleton)
     partial_decision = decide_typed_operator_policy(scorer, partial)
+    singleton_loss = typed_operator_policy_loss(scorer, singleton)
 
     assert loss.requires_grad
+    assert torch.isfinite(singleton_loss)
     assert decision.selected_action_row in {0, 1}
+    assert decision.model_forwards == 1
     assert decision.selected_argument_rows == (("value", 0),)
     assert singleton_decision.model_forwards == 0
     assert singleton_decision.selected_action_row == 0

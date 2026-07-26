@@ -6909,7 +6909,7 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
@@ -6918,6 +6918,11 @@
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "Preserve every typed-head matrix cell in AgentV evidence and validate selected head families."
+        },
         {
           "version": "v7",
           "date": "2026-07-26",
@@ -7008,13 +7013,18 @@
       ]
     },
     "model.quantization": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "Expose ECOC entries for legal-set scoring and make singleton independent-set loss finite."
+        },
         {
           "version": "v6",
           "date": "2026-07-25",

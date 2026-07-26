@@ -373,9 +373,12 @@ def main(argv: list[str] | None = None) -> int:
             "--head-families must name one or more of "
             + ", ".join(TYPED_OPERATOR_POLICY_HEAD_FAMILIES)
         )
+    if len(set(head_families)) != len(head_families):
+        parser.error("--head-families must not repeat a family")
     stamp = build_version_stamp(
         "harness.experiments.typed_operator_policy",
         "data.flow.operator_policy_corpus",
+        "model.quantization",
         "model.operator_policy_view",
     )
     train, train_evidence = _collect_rows(
@@ -415,7 +418,6 @@ def main(argv: list[str] | None = None) -> int:
     complete_train_rows = sum(
         row.view.coverage.value == "complete" for row in train
     )
-    torch.manual_seed(97)
     controls = {}
     for head_family in head_families:
         torch.manual_seed(97)
@@ -461,7 +463,10 @@ def main(argv: list[str] | None = None) -> int:
             if not beneficial_heads
             else {
                 "verdict": "measured",
-                "reason": "bounded local five-head control matrix completed; this is not a ship decision",
+                "reason": (
+                    f"bounded local {len(head_families)}-head control matrix completed; "
+                    "this is not a ship decision"
+                ),
             }
         )
     )
@@ -478,7 +483,8 @@ def main(argv: list[str] | None = None) -> int:
                     item.get("skipped") or item["partial_forced"] == 0 for item in matrix
                 ),
                 "result": {
-                    item["arm"]: item.get("partial_forced") for item in matrix
+                    f"{item['head_family']}/{item['arm']}": item.get("partial_forced")
+                    for item in matrix
                 },
             },
             {
@@ -488,7 +494,8 @@ def main(argv: list[str] | None = None) -> int:
                     item.get("skipped") or item["singleton_forwards"] == 0 for item in matrix
                 ),
                 "result": {
-                    item["arm"]: item.get("singleton_forwards") for item in matrix
+                    f"{item['head_family']}/{item['arm']}": item.get("singleton_forwards")
+                    for item in matrix
                 },
             },
             {
@@ -503,7 +510,7 @@ def main(argv: list[str] | None = None) -> int:
                         for control in controls.values()
                         )
                     )
-                    and (decision["verdict"] == "reject" or bool(beneficial_heads))
+                    and (bool(beneficial_heads) == (decision["verdict"] == "measured"))
                 ),
                 "result": {
                     "complete_train_rows": complete_train_rows,
