@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_local_current_surface_not_ship", "result": {"beneficial_heads": [], "complete_train_rows": 2, "decision": {"reason": "missing replay-verified matched negative strata: train:different_result, dev:different_result", "verdict": "reject"}}}

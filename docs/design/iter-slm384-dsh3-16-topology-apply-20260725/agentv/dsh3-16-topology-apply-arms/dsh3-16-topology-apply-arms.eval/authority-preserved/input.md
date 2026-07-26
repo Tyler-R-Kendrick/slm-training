@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_fixture_arm_comparison_wiring_not_ship", "result": {"compiler_expansions": {"HIERARCHICAL_HEAD": 7290, "RECOMPUTE_ONLY": 7125, "TOPOLOGY_APPLY": 7125}, "singleton_bypasses": {"HIERARCHICAL_HEAD": 2, "RECOMPUTE_ONLY": 2, "TOPOLOGY_APPLY": 2}}}

@@ -27,12 +27,13 @@ import statistics
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Sequence
 
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.harnesses.experiments.slm299_edit_reachability import (
     DEFAULT_SEED_SOURCE,
     EXPERIMENT_ID,
+    ExtraAction,
     ReachabilityCase,
     Verdict,
     analyze_reachability,
@@ -87,7 +88,12 @@ def load_corpora() -> dict[str, list[dict[str, Any]]]:
 
 
 def analyze_record(
-    record: dict[str, Any], *, max_edits: int, node_budget: int, mode: str = "extended"
+    record: dict[str, Any],
+    *,
+    max_edits: int,
+    node_budget: int,
+    mode: str = "extended",
+    extra_actions: Sequence[ExtraAction] = (),
 ) -> ReachabilityCase:
     target = str(record.get("openui") or "")
     placeholders = record.get("placeholders") or extract_placeholders(target)
@@ -98,6 +104,7 @@ def analyze_record(
         max_edits=max_edits,
         node_budget=node_budget,
         mode=mode,
+        extra_actions=extra_actions,
     )
 
 
@@ -187,12 +194,23 @@ def build_x22_evidence_annotations(
 
 
 def _summarize_records(
-    records: list[dict[str, Any]], *, max_edits: int, node_budget: int, mode: str
+    records: list[dict[str, Any]],
+    *,
+    max_edits: int,
+    node_budget: int,
+    mode: str,
+    extra_actions_for: Callable[[dict[str, Any]], Sequence[ExtraAction]] | None = None,
 ) -> dict[str, Any]:
     cases = [
         (
             str(record.get("id", f"case_{index}")),
-            analyze_record(record, max_edits=max_edits, node_budget=node_budget, mode=mode),
+            analyze_record(
+                record,
+                max_edits=max_edits,
+                node_budget=node_budget,
+                mode=mode,
+                extra_actions=extra_actions_for(record) if extra_actions_for else (),
+            ),
         )
         for index, record in enumerate(records)
     ]
@@ -243,7 +261,12 @@ def build_report(
     limit: int | None = None,
     mode: str = "extended",
     compare: bool = False,
+    extra_actions_for: Callable[[dict[str, Any]], Sequence[ExtraAction]] | None = None,
 ) -> dict[str, Any]:
+    """``extra_actions_for`` is an optional what-if hook (VAR1-01): a callable
+    from a record to hypothetical :class:`ExtraAction` instances to thread
+    into that record's analysis. ``None`` (the default) reproduces prior
+    behavior exactly -- no caller that omits it observes any change."""
     suites: dict[str, Any] = {}
     suites_v1: dict[str, Any] = {}
     comparisons: dict[str, Any] = {}
@@ -260,7 +283,11 @@ def build_report(
         if limit is not None:
             records = records[:limit]
         suites[suite] = _summarize_records(
-            records, max_edits=max_edits, node_budget=node_budget, mode=mode
+            records,
+            max_edits=max_edits,
+            node_budget=node_budget,
+            mode=mode,
+            extra_actions_for=extra_actions_for,
         )
         if compare:
             suites_v1[suite] = _summarize_records(
