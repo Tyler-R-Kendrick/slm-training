@@ -1,0 +1,31 @@
+{
+  "run_id": "autotrain_wf_smoke_20260726_iter564",
+  "honesty_mode": "fixture_or_scratch",
+  "ship_claim": false,
+  "recipe": {
+    "device": "cpu",
+    "model": "twotower",
+    "steps": 8,
+    "batch_size": 4,
+    "context_backend": "scratch",
+    "train_dir": "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2",
+    "record_count": 524
+  },
+  "result": {
+    "stopped_on": "steps",
+    "last_loss": 36.73322296142578,
+    "elapsed_wall_seconds": 3.238578602000075,
+    "seen_prompt_tokens": 5825,
+    "seen_target_tokens": 1349
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "266b58e36e7f2c20f80ee653fa6bdc8ae49a63c5",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v25",
+      "harness.experiment_feature_flags": "v3"
+    },
+    "stamped_at": "2026-07-26T17:43:32.969200+00:00"
+  }
+}

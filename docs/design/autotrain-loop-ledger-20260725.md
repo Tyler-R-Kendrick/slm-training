@@ -2,9 +2,9 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **561** (latest `autotrain_wf_smoke_20260726_iter561`).
+Total iterations: **566** (latest `autotrain_wf_smoke_20260726_iter566`).
 
-Iterations 552-561 are real measured `scripts.train_model` runs (twotower,
+Iterations 552-566 are real measured `scripts.train_model` runs (twotower,
 CPU, `DEFAULT_TRAIN_DATA_DIR`, 8 steps, `--no-full-state-checkpoint`), each
 with a JSON+markdown pair under `docs/design/` carrying the writer-emitted
 `version_stamp` — closing the Iron Law JSON-companion gap left by earlier
@@ -16,11 +16,6 @@ gap fix). No ship claim; `fixture_or_scratch` wiring only.
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter532` | True | 8 | steps | 23.04449462890625 | 2.8 |
-| `autotrain_wf_smoke_20260725_iter533` | True | 8 | steps | 35.9559211730957 | 2.98 |
-| `autotrain_wf_smoke_20260725_iter534` | True | 8 | steps | 29.153064727783203 | 2.4 |
-| `autotrain_wf_smoke_20260725_iter535` | True | 8 | steps | 37.61457824707031 | 2.42 |
-| `autotrain_wf_smoke_20260725_iter536` | True | 8 | steps | 35.899044036865234 | 2.58 |
 | `autotrain_wf_smoke_20260725_iter537` | True | 8 | steps | 31.397918701171875 | 2.24 |
 | `autotrain_wf_smoke_20260725_iter538` | True | 8 | steps | 34.47773361206055 | 2.28 |
 | `autotrain_wf_smoke_20260725_iter539` | True | 8 | steps | 27.201704025268555 | 2.08 |
@@ -46,3 +41,8 @@ gap fix). No ship claim; `fixture_or_scratch` wiring only.
 | `autotrain_wf_smoke_20260726_iter559` | True | 8 | steps | 32.689674377441406 | 3.6 |
 | `autotrain_wf_smoke_20260726_iter560` | True | 8 | steps | 33.653297424316406 | 3.26 |
 | `autotrain_wf_smoke_20260726_iter561` | True | 8 | steps | 46.510379791259766 | 3.51 |
+| `autotrain_wf_smoke_20260726_iter562` | True | 8 | steps | 37.68049621582031 | 3.74 |
+| `autotrain_wf_smoke_20260726_iter563` | True | 8 | steps | 37.43041229248047 | 3.37 |
+| `autotrain_wf_smoke_20260726_iter564` | True | 8 | steps | 36.73322296142578 | 3.24 |
+| `autotrain_wf_smoke_20260726_iter565` | True | 8 | steps | 40.11307144165039 | 3.55 |
+| `autotrain_wf_smoke_20260726_iter566` | True | 8 | steps | 41.959171295166016 | 3.56 |
