@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_fixture_arm_comparison_wiring_not_ship", "result": {"terminal_digests": {"dsh3-16-contract": "46a89e0aa539b49effb6ff62e2201268326631550e6e85b784af4deced2c27d0", "dsh3-16-expand": "3e6e9ef434df2d2ad7f14684423413eab1d1766f881c763bec7c8b9752f30fcf", "dsh3-16-move": "13021795c8835f61c5db56f537bb8123340846c82c8e0dc39cb3860e4441ca10", "dsh3-16-singleton": "0aea5c70f43633f1b4630fb0308e3febd0b1734073e434ccad8c84bcb3dfd798"}}}

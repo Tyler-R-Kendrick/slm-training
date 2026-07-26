@@ -112,6 +112,34 @@ DCA_ISSUES: dict[str, DcaIssueSpec] = {
             "mask policy. Pack capabilities block only individual arms."
         ),
     ),
+    "SLM-274": DcaIssueSpec(
+        linear_issue="SLM-274",
+        alias="DCA2-01",
+        title="Implement and test a faithful pretrained AR to block-diffusion conversion against the matched AR legal-action incumbent",
+        gate_contract_id="block-conversion-activation-v1",
+        slug="dca2-01-block-conversion",
+        activation_requirement=(
+            "SLM-262 durable accelerator/cost path; SLM-268 selected "
+            "verified data regime or qualified large-scale null; SLM-269 "
+            "target policy; SLM-270 objective set; SLM-271 masking policy; "
+            "SLM-273 selected curriculum or no-transfer result. Otherwise "
+            "BlockConversionActivationV1 is not_activated."
+        ),
+    ),
+    "SLM-275": DcaIssueSpec(
+        linear_issue="SLM-275",
+        alias="DCA2-02",
+        title="Gate and run diffusion-native coupled-GRPO with static-analysis rewards and training-only AST hints",
+        gate_contract_id="diffusion-rl-activation-v1",
+        slug="dca2-02-diffusion-rl",
+        activation_requirement=(
+            "SLM-260 scorer oracle clean; SLM-272 offline program "
+            "preference disposition; SLM-274 selected diffusion SFT parent "
+            "and rollout implementation; plus a nonzero semantic baseline "
+            "with usable within-group reward variance. Otherwise close "
+            "reward_variance_insufficient without training."
+        ),
+    ),
 }
 
 

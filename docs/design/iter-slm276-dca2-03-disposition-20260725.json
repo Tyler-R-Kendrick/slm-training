@@ -1,0 +1,128 @@
+{
+ "bundle_fingerprint": "4adb8f07b423959eb2674cd0184f7b96a71d13c606bb4e4d6f5ff955af284a50",
+ "bundle_id": "constrained-diffusion-causal-disposition-v1",
+ "date": "2026-07-25",
+ "evidence_gaps": [],
+ "finalist_eligibility": {
+  "autoregressive_legal_action": "ineligible_no_qualified_baseline_campaign",
+  "current_twotower_incumbent": "ineligible_no_vsd0_clean_scorer_or_qualified_baseline",
+  "diffusion_rl": "ineligible_inconclusive_SLM-275",
+  "faithful_block_diffusion": "ineligible_not_activated_SLM-274",
+  "program_dpo_ipo": "ineligible_inconclusive_SLM-272",
+  "x22_valid_state_search": "ineligible_no_qualified_baseline_campaign"
+ },
+ "hypothesis_ledger": [
+  {
+   "causal_interpretation": "untested: SLM-269 prerequisite evidence is 'blocked'; the campaign never launched, so no causal claim of either sign is made",
+   "disposition": "blocked",
+   "evidence_strength": "fixture_or_wiring",
+   "hypothesis": "DCA-H1",
+   "issue": "SLM-269",
+   "question": "canonical-only vs certified equivalent-surface targets"
+  },
+  {
+   "causal_interpretation": "untested: SLM-270 prerequisite evidence is 'blocked'; the campaign never launched, so no causal claim of either sign is made",
+   "disposition": "blocked",
+   "evidence_strength": "fixture_or_wiring",
+   "hypothesis": "DCA-H2",
+   "issue": "SLM-270",
+   "question": "sparse positive subset of TwoTower auxiliaries"
+  },
+  {
+   "causal_interpretation": "untested: SLM-271 prerequisite evidence is 'blocked'; the campaign never launched, so no causal claim of either sign is made",
+   "disposition": "blocked",
+   "evidence_strength": "fixture_or_wiring",
+   "hypothesis": "DCA-H3",
+   "issue": "SLM-271",
+   "question": "difficulty-aware mask curriculum improves tail semantics"
+  },
+  {
+   "causal_interpretation": "untested: SLM-272 prerequisite evidence is 'blocked'; the campaign never launched, so no causal claim of either sign is made",
+   "disposition": "blocked",
+   "evidence_strength": "fixture_or_wiring",
+   "hypothesis": "DCA-H4",
+   "issue": "SLM-272",
+   "question": "program-level verifier-ranked preference improves delayed semantics"
+  },
+  {
+   "causal_interpretation": "untested: SLM-273 prerequisite evidence is 'blocked'; the campaign never launched, so no causal claim of either sign is made",
+   "disposition": "blocked",
+   "evidence_strength": "fixture_or_wiring",
+   "hypothesis": "DCA-H5",
+   "issue": "SLM-273",
+   "question": "cross-pack structured-program transfer into OpenUI"
+  },
+  {
+   "causal_interpretation": "untested: SLM-274 prerequisite evidence is 'blocked'; the campaign never launched, so no causal claim of either sign is made",
+   "disposition": "blocked",
+   "evidence_strength": "fixture_or_wiring",
+   "hypothesis": "DCA-H6",
+   "issue": "SLM-274",
+   "question": "faithful AR to block-diffusion conversion Pareto-wins"
+  },
+  {
+   "causal_interpretation": "untested: SLM-275 prerequisite evidence is 'blocked'; the campaign never launched, so no causal claim of either sign is made",
+   "disposition": "blocked",
+   "evidence_strength": "fixture_or_wiring",
+   "hypothesis": "DCA-H7",
+   "issue": "SLM-275",
+   "question": "coupled-mask diffusion GRPO with static rewards"
+  }
+ ],
+ "initiative": "constrained-diffusion-evidence-to-deployment",
+ "linear_issue": "SLM-276",
+ "outcome": "no_model_ship_ready_measurement_or_data_blocker",
+ "prerequisite_dispositions": {
+  "SLM-268": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm268-verified-data-scaling-activation-20260725.json",
+   "verdict": "blocked"
+  },
+  "SLM-269": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm269-dca0-01-activation-20260725.json",
+   "verdict": "blocked"
+  },
+  "SLM-270": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm270-dca0-02-activation-20260725.json",
+   "verdict": "blocked"
+  },
+  "SLM-271": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm271-dca0-03-activation-20260725.json",
+   "verdict": "blocked"
+  },
+  "SLM-272": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm272-dca1-01-activation-20260725.json",
+   "verdict": "blocked"
+  },
+  "SLM-273": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm273-dca1-02-activation-20260725.json",
+   "verdict": "blocked"
+  },
+  "SLM-274": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm274-dca2-01-activation-20260725.json",
+   "verdict": "blocked"
+  },
+  "SLM-275": {
+   "evidence_strength": "fixture_or_wiring",
+   "path": "docs/design/iter-slm275-dca2-02-activation-20260725.json",
+   "verdict": "blocked"
+  }
+ },
+ "promotion_action": "none_incumbent_retained",
+ "schema_version": "causal_disposition_bundle/v1",
+ "version_stamp": {
+  "code_commit": "67c196135b5199d1a6191e29cbe25179b4ccb8db",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments": "v121"
+  },
+  "stamp_schema": "version_stamp/v1",
+  "stamped_at": "2026-07-25T21:54:16.270305+00:00"
+ }
+}
