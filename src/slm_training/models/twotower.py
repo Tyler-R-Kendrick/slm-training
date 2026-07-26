@@ -213,8 +213,17 @@ def format_context_text(
     slot_contract: list[str] | None = None,
     output_kind: str | None = None,
     output_category: str | None = None,
+    history_ops_text: str | None = None,
 ) -> str:
-    """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md."""
+    """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md.
+
+    ``history_ops_text`` (SLM-428 / VAR2-01): literal reserved ``OPS_VOCAB``
+    tokens for the conversation's turn history — see
+    `dsl.operators.ops_vocab_conditioning.format_history_ops_text`. Omitted by
+    every existing caller today, so passing ``None`` reproduces prior output
+    exactly; callers only pass a value when
+    `ModelBuildConfig.encoder_ops_conditioning` is enabled.
+    """
     prompt = (prompt or "").strip()
     parts = [prompt] if prompt else []
     if output_kind is not None:
@@ -231,6 +240,8 @@ def format_context_text(
     if slot_contract:
         slots = ", ".join(slot_contract)
         parts.append(f"---SLOT_CONTRACT---\n{slots[: min(800, budget)]}")
+    if history_ops_text and history_ops_text.strip():
+        parts.append(f"---HISTORY_OPS---\n{history_ops_text.strip()}")
     if design_md and design_md.strip():
         dm = design_md.strip()
         if len(dm) > budget:
@@ -425,6 +436,9 @@ class TwoTowerConfig:
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
+    # SLM-428 (VAR2-01): default-off first consumer of the shared OPS_VOCAB
+    # kernel (decode invariant I13) -- see ModelBuildConfig.encoder_ops_conditioning.
+    encoder_ops_conditioning: bool = False
     semantic_role_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
@@ -4585,6 +4599,7 @@ class TwoTowerModel(nn.Module):
         schema: str | None = None,
         output_kind: str | None = None,
         output_category: str | None = None,
+        history_ops_text: str | None = None,
     ) -> str:
         if schema is None and getattr(self.config, "schema_in_context", False):
             from slm_training.harnesses.quality import compact_schema_snippet
@@ -4609,6 +4624,14 @@ class TwoTowerModel(nn.Module):
             if getattr(self.config, "slot_contract_in_context", False)
             else None
         )
+        # SLM-428 / VAR2-01: the lever gates the *effect*, not just the call
+        # site — a caller passing history_ops_text while the lever is off
+        # must reproduce prior (no-history) output exactly.
+        ops_text = (
+            history_ops_text
+            if history_ops_text and getattr(self.config, "encoder_ops_conditioning", False)
+            else None
+        )
         return format_context_text(
             prompt,
             dm,
@@ -4618,6 +4641,7 @@ class TwoTowerModel(nn.Module):
             slot_contract=contract,
             output_kind=output_kind,
             output_category=output_category,
+            history_ops_text=ops_text,
         )
 
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
