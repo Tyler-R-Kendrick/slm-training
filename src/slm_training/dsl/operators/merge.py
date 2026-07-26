@@ -22,12 +22,19 @@ from slm_training.dsl.operators.contracts import (
     _require_digest,
 )
 from slm_training.dsl.operators.conversation import ConversationStateNodeV1
+from slm_training.dsl.operators.references import ReferenceTableV1
 from slm_training.dsl.operators.registry import OperatorLibraryV1, OperatorStateV1
 from slm_training.dsl.pack import DslPack
 
 
 BranchAuthorityResolver = Callable[
     [ConversationStateNodeV1], tuple[DslPack, OperatorLibraryV1]
+]
+
+#: The DSL-specific context owns descriptor derivation.  Merge owns only the
+#: fresh branch identity and refuses a table that does not bind it exactly.
+MergeReferenceTableBuilder = Callable[
+    [DslPack, OperatorStateV1, str, int], ReferenceTableV1
 ]
 
 
@@ -165,14 +172,59 @@ class BranchMergeArtifactV1:
 
 
 @dataclass(frozen=True)
+class BranchMergeContinuationV1:
+    """A continuation-capable result for a freshly merged branch.
+
+    ``BranchMergeArtifactV1`` deliberately remains terminal evidence: old
+    artifacts never implied that their branch-local references could be used
+    after a merge.  This separate record makes the new capability explicit
+    and binds a completely rebuilt node/table to the exact v1 merge.
+    """
+
+    merge_id: str
+    allocation_seed: int
+    merged_node: ConversationStateNodeV1
+    reference_table_fingerprint: str
+    schema: str = "branch_merge_continuation/v1"
+
+    def __post_init__(self) -> None:
+        _require_digest(self.merge_id, "merge_id")
+        if self.allocation_seed < 0:
+            raise ValueError("allocation seed must be non-negative")
+        if self.merged_node.parent_state_id is not None:
+            raise ValueError("merged continuation node must be a fresh trace root")
+        _require_digest(
+            self.reference_table_fingerprint, "reference_table_fingerprint"
+        )
+        if (
+            self.merged_node.reference_table.fingerprint
+            != self.reference_table_fingerprint
+        ):
+            raise ValueError("continuation fingerprint does not bind fresh table")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": self.schema,
+            "merge_id": self.merge_id,
+            "allocation_seed": self.allocation_seed,
+            "merged_node": self.merged_node.to_dict(),
+            "reference_table_fingerprint": self.reference_table_fingerprint,
+        }
+
+
+@dataclass(frozen=True)
 class BranchMergeDecisionV1:
     merge: BranchMergeArtifactV1 | None = None
     conflict: BranchMergeConflictV1 | None = None
+    continuation: BranchMergeContinuationV1 | None = None
     schema: str = "branch_merge_decision/v1"
 
     def __post_init__(self) -> None:
         if (self.merge is None) == (self.conflict is None):
             raise ValueError("exactly one merge or conflict is required")
+        if self.continuation is not None:
+            if self.merge is None or self.continuation.merge_id != self.merge.merge_id:
+                raise ValueError("continuation must bind its successful merge")
 
     @property
     def succeeded(self) -> bool:
@@ -189,10 +241,24 @@ class BranchMergeDecisionV1:
             "conflict": (
                 self.conflict.to_dict() if self.conflict is not None else None
             ),
+            "continuation": (
+                self.continuation.to_dict()
+                if self.continuation is not None
+                else None
+            ),
         }
         if include_decision_id:
             value["decision_id"] = self.decision_id
         return value
+
+
+def merged_continuation_node(
+    decision: BranchMergeDecisionV1,
+) -> ConversationStateNodeV1:
+    """Return the fresh merge root or reject a terminal v1 merge artifact."""
+    if decision.continuation is None:
+        raise ValueError("merge.continuation_unsupported_legacy")
+    return decision.continuation.merged_node
 
 
 def _declaration(
@@ -572,6 +638,7 @@ def merge_conversation_branches(
     left: BranchEditV1,
     right: BranchEditV1,
     authority_resolver: BranchAuthorityResolver,
+    reference_table_builder: MergeReferenceTableBuilder | None = None,
 ) -> BranchMergeDecisionV1:
     """Merge exactly two verified one-step branch edits or return a typed conflict."""
     if (
@@ -674,15 +741,53 @@ def merge_conversation_branches(
             "application_ids": application_ids,
         }
     )
-    return BranchMergeDecisionV1(
-        merge=BranchMergeArtifactV1(
-            pack_id=pack.pack_id,
-            base_state_id=base.state_id,
-            branch_state_ids=branch_ids,
-            application_ids=application_ids,
-            merged_branch_digest=merged_branch_digest,
-            merged_state=merged_state,
+    merge = BranchMergeArtifactV1(
+        pack_id=pack.pack_id,
+        base_state_id=base.state_id,
+        branch_state_ids=branch_ids,
+        application_ids=application_ids,
+        merged_branch_digest=merged_branch_digest,
+        merged_state=merged_state,
+    )
+    if reference_table_builder is None:
+        return BranchMergeDecisionV1(merge=merge)
+    allocation_seed = int(
+        _fingerprint(
+            {
+                "schema": "branch_merge_reference_seed/v1",
+                "merge_id": merge.merge_id,
+            }
+        )[:16],
+        16,
+    )
+    try:
+        merged_table = reference_table_builder(
+            pack, merged_state, merged_branch_digest, allocation_seed
         )
+        if (
+            merged_table.state_digest != merged_state.state_digest
+            or merged_table.branch_digest != merged_branch_digest
+            or merged_table.request_id != base.reference_table.request_id
+        ):
+            raise ValueError("reference_table.identity_mismatch")
+        continuation = BranchMergeContinuationV1(
+            merge_id=merge.merge_id,
+            allocation_seed=allocation_seed,
+            merged_node=ConversationStateNodeV1(
+                parent_state_id=None,
+                branch_digest=merged_branch_digest,
+                state=merged_state,
+                reference_table=merged_table,
+            ),
+            reference_table_fingerprint=merged_table.fingerprint,
+        )
+    except Exception:  # noqa: BLE001 - context rebuild must fail closed
+        return _conflict(
+            MergeConflictKind.REFERENCE_REBUILD_FAILED, base, left, right
+        )
+    return BranchMergeDecisionV1(
+        merge=merge,
+        continuation=continuation,
     )
 
 
@@ -693,6 +798,7 @@ def replay_branch_merge(
     left: BranchEditV1,
     right: BranchEditV1,
     authority_resolver: BranchAuthorityResolver,
+    reference_table_builder: MergeReferenceTableBuilder | None = None,
     recorded: BranchMergeDecisionV1,
 ) -> BranchMergeDecisionV1:
     """Recompute the complete decision and require exact provenance identity."""
@@ -702,6 +808,7 @@ def replay_branch_merge(
         left=left,
         right=right,
         authority_resolver=authority_resolver,
+        reference_table_builder=reference_table_builder,
     )
     if replayed.decision_id != recorded.decision_id:
         raise ValueError("branch merge replay differs from recorded decision")
@@ -712,9 +819,12 @@ __all__ = [
     "BranchAuthorityResolver",
     "BranchEditV1",
     "BranchMergeArtifactV1",
+    "BranchMergeContinuationV1",
     "BranchMergeConflictV1",
     "BranchMergeDecisionV1",
     "MergeConflictKind",
+    "MergeReferenceTableBuilder",
     "merge_conversation_branches",
+    "merged_continuation_node",
     "replay_branch_merge",
 ]

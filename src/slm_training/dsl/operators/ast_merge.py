@@ -36,6 +36,7 @@ class MergeConflictKind(str, Enum):
     SCOPE_BINDER = "scope_binder"
     STALE_REF = "stale_ref"
     UNSUPPORTED_EFFECT = "unsupported_effect"
+    REFERENCE_REBUILD_FAILED = "reference_rebuild_failed"
 
 
 class StructuralMergeConflict(ValueError):

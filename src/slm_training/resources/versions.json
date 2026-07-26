@@ -358,6 +358,11 @@
         {
           "version": "v15",
           "date": "2026-07-25",
+          "note": "no-bump: re-export the SLM-395 branch merge continuation types and accessor from operators/__init__.py; their owning behavioral component is dsl.operators.merge v3"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-25",
           "note": "SLM-394: bind explicit consumed/produced NodeRef flow into ActionEffectV1 so exact merge conflict classification can distinguish removal from a transfer without operator-name heuristics"
         },
         {
@@ -560,15 +565,22 @@
       ]
     },
     "dsl.operators.merge": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/merge.py",
         "tests/test_dsl/test_operator_merge.py",
         "scripts/audit_merge_conflicts.py",
-        "tests/test_scripts/test_audit_merge_conflicts.py"
+        "tests/test_scripts/test_audit_merge_conflicts.py",
+        "scripts/audit_post_merge_continuation.py",
+        "tests/test_scripts/test_audit_post_merge_continuation.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "SLM-395: keep branch_merge/v1 terminal-only while binding an opt-in branch_merge_continuation/v1 to a deterministic fresh merged ConversationStateNodeV1/reference-table rebuild; reject rebuild identity failures, replay the exact table fingerprint, and record a canonical local OpenUI continuation audit"
+        },
         {
           "version": "v2",
           "date": "2026-07-25",
@@ -850,6 +862,11 @@
         "docs/design/dsh5-05-transaction-executor.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: ast_merge.py adds the merge-only REFERENCE_REBUILD_FAILED refusal; transaction executor does not emit or interpret that enum member"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
