@@ -6909,7 +6909,7 @@
       ]
     },
     "harness.experiments.typed_operator_policy": {
-      "version": "v3",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
@@ -6918,6 +6918,16 @@
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-403: require explicit reportable source-record slices when a bounded complete-coverage local matrix needs a non-lexicographic root"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "SLM-403: make the exact local legal-set enumeration cap explicit for bounded COMPLETE-row matrix runs"
+        },
         {
           "version": "v3",
           "date": "2026-07-26",

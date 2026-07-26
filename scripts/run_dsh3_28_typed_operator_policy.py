@@ -74,6 +74,21 @@ def _rewrite_agentv_paths(output_dir: Path) -> None:
         path.write_text(content, encoding="utf-8")
 
 
+def _select_source_records(source: Path, record_id: str | None) -> list[Any]:
+    """Select one deterministic source-order root for a bounded local slice."""
+    source_records = load_jsonl(source)
+    if record_id is None:
+        return source_records
+    matches = [record for record in source_records if record.id == record_id]
+    if not matches:
+        raise ValueError(f"source does not contain record {record_id!r}")
+    # The admitted fixture snapshot may repeat the same record ID. Select the
+    # first source-order instance deterministically and pass only that instance
+    # to the canonical builder; it must never inflate a local matrix denominator
+    # by treating duplicated IDs as independent roots.
+    return [matches[0]]
+
+
 def _collect_rows(
     *,
     source: Path,
@@ -81,6 +96,8 @@ def _collect_rows(
     output_dir: Path,
     stamp: dict[str, Any],
     max_roots: int,
+    max_combinations_per_operator: int,
+    record_id: str | None = None,
 ) -> tuple[list[TypedOperatorPolicyExampleV1], dict[str, Any]]:
     rows = []
     reports = []
@@ -91,20 +108,20 @@ def _collect_rows(
             collapse=collapse,
             authority_resolver=authority_resolver,
             split=split,
-            max_combinations_per_operator=8,
+            max_combinations_per_operator=max_combinations_per_operator,
         )
         rows.extend(built)
         reports.append(report.to_dict())
 
     corpus = build_symbolic_operator_corpus(
-        records=load_jsonl(source),
+        records=_select_source_records(source, record_id),
         output_dir=output_dir,
         version=f"dsh3-28-{split}",
         version_stamp=stamp,
         config=OperatorCorpusConfig(
             max_roots=max_roots,
             actions_per_state=2,
-            max_combinations_per_operator=8,
+            max_combinations_per_operator=max_combinations_per_operator,
             sibling_forks=True,
         ),
         on_collapsed_trace=collect,
@@ -303,12 +320,28 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
         help="ignored local corpus artifacts; durable report and AgentV stay in --output-dir",
     )
+    parser.add_argument(
+        "--train-record-id",
+        help="optional one-record training slice; its ID is persisted in the report",
+    )
+    parser.add_argument(
+        "--held-out-record-id",
+        help="optional one-record held-out slice; its ID is persisted in the report",
+    )
     parser.add_argument("--steps", type=int, default=12)
     parser.add_argument("--learning-rate", type=float, default=0.03)
+    parser.add_argument(
+        "--max-combinations",
+        type=int,
+        default=512,
+        help="per-operator exact enumeration cap; remains explicit in durable evidence",
+    )
     args = parser.parse_args(argv)
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     corpus_work_dir = args.corpus_work_dir.resolve()
+    if args.max_combinations <= 0:
+        parser.error("--max-combinations must be positive")
     stamp = build_version_stamp(
         "harness.experiments.typed_operator_policy",
         "data.flow.operator_policy_corpus",
@@ -320,6 +353,8 @@ def main(argv: list[str] | None = None) -> int:
         output_dir=corpus_work_dir / "train",
         stamp=stamp,
         max_roots=2,
+        max_combinations_per_operator=args.max_combinations,
+        record_id=args.train_record_id,
     )
     held_out, held_out_evidence = _collect_rows(
         source=HELD_OUT_SOURCE,
@@ -327,6 +362,8 @@ def main(argv: list[str] | None = None) -> int:
         output_dir=corpus_work_dir / "held_out",
         stamp=stamp,
         max_roots=1,
+        max_combinations_per_operator=args.max_combinations,
+        record_id=args.held_out_record_id,
     )
     matrix = [
         _run_arm(
@@ -418,6 +455,9 @@ def main(argv: list[str] | None = None) -> int:
             "backend": "typed_operator_feature_encoder",
             "steps": args.steps,
             "learning_rate": args.learning_rate,
+            "max_combinations_per_operator": args.max_combinations,
+            "train_record_id": args.train_record_id,
+            "held_out_record_id": args.held_out_record_id,
             "checkpoint": None,
             "ship_claim": False,
         },
