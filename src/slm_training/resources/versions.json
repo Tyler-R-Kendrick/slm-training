@@ -6949,6 +6949,11 @@
         {
           "version": "v1",
           "date": "2026-07-26",
+          "note": "no-bump: SLM-406 unit tests stub the required AgentV publisher so Python-only CI does not depend on a Node runtime"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
           "note": "SLM-406: leak-sealed per-record temporal DecodeStats feature rows and shadow-only preflight"
         }
       ]
