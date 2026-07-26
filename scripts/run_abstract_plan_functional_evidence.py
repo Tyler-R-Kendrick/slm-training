@@ -256,7 +256,9 @@ def _local_eval_config(*, root: Path, suite: str):
 
 def _path_overrides(path: str) -> dict[str, Any]:
     if path == "raw":
-        return {"grammar_constrained": False, "grammar_ltr_repair": False}
+        # The decoder is fail-closed: raw logits are retained as shadow
+        # telemetry, never emitted as an unconstrained OpenUI program.
+        return {"grammar_constrained": True, "grammar_ltr_repair": False, "raw_shadow": True}
     if path == "constrained":
         return {"grammar_constrained": True, "grammar_ltr_repair": False}
     if path == "repaired":

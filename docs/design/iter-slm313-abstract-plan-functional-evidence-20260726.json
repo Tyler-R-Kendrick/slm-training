@@ -33,7 +33,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/slm313-abstract-plan-functional-evidence.eval.jsonl",
     "summary": {
-      "durationMs": 144,
+      "durationMs": 78,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -41,9 +41,9 @@
       "total": 1
     }
   },
-  "campaign_manifest_sha256": "59d39aec502f879ce8d87192e3cf4be49396666040cd52873bf6901e8ea912c0",
+  "campaign_manifest_sha256": "c06ce7dcc725726206b6f6f788bf83f86e055fb2a8f05d4cae513664f76fa28f",
   "claim_class": "diagnostic",
-  "generated_at": "2026-07-26T05:06:03.881060+00:00",
+  "generated_at": "2026-07-26T06:16:44.706421+00:00",
   "protocol": {
     "arms": [
       "no_plan",
@@ -297,78 +297,29 @@
   },
   "recipe": {
     "backend": "not_run",
-    "checkpoint": null,
+    "checkpoint": "outputs/runs/slm313_local_plan_1k_v1/checkpoints/last.pt",
     "device": "not_run",
     "human_rating_gate": "not_required",
-    "locked_test_used_for_selection": false
+    "locked_test_used_for_selection": false,
+    "shard_count": 226,
+    "shard_index": 0
   },
-  "execution_attempts": [
-    {
-      "run_id": "slm313_local_plan_v1",
-      "kind": "local_cpu_train",
-      "train_snapshot": "slm230_symbol_only_v1",
-      "outcome": "rejected_before_optimizer_step",
-      "reason": "persisted template markers must use opaque :slot_<ordinal> identities",
-      "checkpoint_written": false,
-      "numeric_evidence_valid": false
-    },
-    {
-      "run_id": "slm313_local_plan_v1",
-      "kind": "local_cpu_train",
-      "train_snapshot": "e1281_text_form_input_required_direct_natural_v1",
-      "recipe": {
-        "device": "cpu",
-        "target_token_budget": 5000,
-        "abstract_plan_mode": "sampled",
-        "abstract_plan_connector_arm": "learned",
-        "abstract_plan_loss_weight": 0.5,
-        "abstract_plan_train_conditioning": true,
-        "checkpoint_sync": false
-      },
-      "outcome": "interrupted_at_run_cap",
-      "steps": 18,
-      "seen_target_tokens": 2016,
-      "checkpoint_written": false,
-      "numeric_evidence_valid": false
-    },
-    {
-      "run_id": "slm313_local_plan_1k_v1",
-      "kind": "local_cpu_train",
-      "train_snapshot": "e1281_text_form_input_required_direct_natural_v1",
-      "recipe": {
-        "device": "cpu",
-        "steps": 9,
-        "target_token_budget": 1000,
-        "seen_target_tokens": 1006,
-        "elapsed_wall_seconds": 18.473637685994618,
-        "abstract_plan_mode": "sampled",
-        "abstract_plan_connector_arm": "learned",
-        "abstract_plan_loss_weight": 0.5,
-        "abstract_plan_train_conditioning": true,
-        "checkpoint_sync": false
-      },
-      "outcome": "completed_for_locked_interventions_only",
-      "checkpoint": "outputs/runs/slm313_local_plan_1k_v1/checkpoints/last.pt",
-      "checkpoint_sha256": "15bfaf30328d149cecc57e393bd190f498450c37a785002e543ab98872033ac6",
-      "numeric_evidence_valid": false,
-      "promotion_eligible": false
-    }
-  ],
   "result": {
     "meaningful_parse": "not_measured",
+    "numeric_evidence_valid": false,
     "promotion_eligible": false,
-    "reason": "No trained learned-plan checkpoint was supplied; AP-023's side-channel head and AP-024's zero-gate connector are not evidence of learned plan function.",
-    "verdict": "unavailable"
+    "reason": "Local shard did not complete: ValueError: grammar_constrained=False is unsafe for OpenUI generation; use constrained generation and shadow logits for diagnostics",
+    "verdict": "invalid_local_run"
   },
   "schema": "slm313_abstract_plan_functional_evidence/v1",
   "version_stamp": {
-    "code_commit": "35e53d3cce2f54ccfa71c3bd7ab8d68f36eb0e90",
-    "code_dirty": true,
+    "code_commit": "20c6e372f71ea6010e7f9f0cae7e8fdd2bda7346",
+    "code_dirty": false,
     "components": {
       "harness.experiments": "v115",
-      "harness.experiments.slm313_abstract_plan_functional_evidence": "v1"
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v3"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-26T05:06:03.881037+00:00"
+    "stamped_at": "2026-07-26T06:16:44.381371+00:00"
   }
 }
