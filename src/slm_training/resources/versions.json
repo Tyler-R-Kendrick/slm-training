@@ -7099,10 +7099,14 @@
       ]
     },
     "model.twotower": {
-      "version": "v248",
+      "version": "v251",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
+        "src/slm_training/models/abstract_plan_head.py",
+        "tests/test_models/test_abstract_plan_head.py",
+        "tests/test_harnesses/model_build/test_twotower.py",
+        "docs/design/abstract-plan-head-v1.md",
         "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
@@ -7134,6 +7138,21 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v251",
+          "date": "2026-07-25",
+          "note": "SLM-315 CI repair: restore training-time canonical opaque-marker and role-safe output validation, and complete the existing default-off LTR-tail configuration path from ModelBuildConfig through TwoTower loss weighting."
+        },
+        {
+          "version": "v250",
+          "date": "2026-07-25",
+          "note": "SLM-315 (AP-023) review follow-up: validate TwoTowerConfig.abstract_plan_mode against the AbstractPlanMode enum in __post_init__ (a typo previously took the 'enabled' branch silently, undermining the disabled-by-default bit-exact guarantee); validate AbstractPlanHead.forward's caller-supplied target_plan_ids shape/bounds and reject a generator whose device does not match the context tensor's device, instead of a deep, confusing torch RuntimeError. No default-path behavior change."
+        },
+        {
+          "version": "v249",
+          "date": "2026-07-25",
+          "note": "SLM-315 (AP-023): add a default-off AbstractPlanHead (new src/slm_training/models/abstract_plan_head.py) over pooled context-tower states, exposed only via the new TwoTowerModel.abstract_plan_trace(...) side channel; training_loss()/forward() are unmodified and abstract_plan_mode='disabled' (the default) constructs no head, leaving compatibility_fingerprint/RNG stream/optimizer groups bit-exact with the prior baseline (tests/test_harnesses/model_build/test_twotower.py::test_abstract_plan_head_is_bit_exact_with_baseline_when_disabled)."
+        },
         {
           "version": "v248",
           "date": "2026-07-25",
