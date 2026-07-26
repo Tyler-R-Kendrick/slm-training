@@ -2,7 +2,7 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **251** (latest `autotrain_wf_smoke_20260725_iter251`).
+Total iterations: **252** (latest `autotrain_wf_smoke_20260725_iter252`).
 
 **iter251 blocker + fix:** a fresh container rebuild of the `wf_smoke_v1`
 fixture (ephemeral `outputs/`) tripped the canonical-marker gate again
@@ -22,7 +22,6 @@ whose fixtures baked in the leaky named-marker behavior
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter222` | True | 8 | steps | 35.218605041503906 | 66.21 |
 | `autotrain_wf_smoke_20260725_iter223` | True | 8 | steps | 31.524505615234375 | 69.02 |
 | `autotrain_wf_smoke_20260725_iter224` | True | 8 | steps | 31.552364349365234 | 68.99 |
 | `autotrain_wf_smoke_20260725_iter225` | True | 8 | steps | 29.563432693481445 | 65.07 |
@@ -52,3 +51,4 @@ whose fixtures baked in the leaky named-marker behavior
 | `autotrain_wf_smoke_20260725_iter249` | True | 8 | steps | 26.19162368774414 | 68.13 |
 | `autotrain_wf_smoke_20260725_iter250` | True | 8 | steps | 27.758634567260742 | 82.96 |
 | `autotrain_wf_smoke_20260725_iter251` | True | 8 | steps | 38.951087951660156 | 2.37 |
+| `autotrain_wf_smoke_20260725_iter252` | True | 8 | steps | 38.951087951660156 | 6.10 |
