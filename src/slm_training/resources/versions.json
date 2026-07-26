@@ -5308,7 +5308,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -5325,6 +5325,11 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-26",
+          "note": "SLM-406: persist only a per-record prefix-time DecodeStats projection in eval details; terminal outcomes remain evaluator labels"
+        },
         {
           "version": "v60",
           "date": "2026-07-25",
@@ -6927,6 +6932,29 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "SLM-397 (DSH3-22): freeze the sanitized OperatorPolicyInputV1 model boundary over ReferenceTableV1/OperatorLegalSetV1, with recursive forbidden-field validation and row-local joins only"
+        }
+      ]
+    },
+    "harness.experiments.operator_failure_prediction": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_failure_prediction.py",
+        "scripts/run_dsh3_31_operator_failure_prediction.py",
+        "tests/test_harnesses/experiments/test_operator_failure_prediction.py",
+        "tests/test_scripts/test_run_dsh3_31_operator_failure_prediction.py",
+        "docs/design/dsh3-31-operator-failure-prediction.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-406 unit tests stub the required AgentV publisher so Python-only CI does not depend on a Node runtime"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-406: leak-sealed per-record temporal DecodeStats feature rows and shadow-only preflight"
         }
       ]
     },

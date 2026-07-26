@@ -1,0 +1,71 @@
+{
+  "schema": "operator_failure_prediction_report/v1",
+  "issue": "SLM-406",
+  "timestamp": "2026-07-26T16:19:18.180365+00:00",
+  "shadow_only": true,
+  "decision": {
+    "verdict": "unavailable",
+    "reason": "local evaluation evidence was unavailable before generation"
+  },
+  "sources": [],
+  "preflight_reasons": [
+    "The local e283_signature_support_synth_v1 train corpus violated the current symbol-only/v2 contract before generation.",
+    "The local playground_demo checkpoint declared output contract v0 and was rejected before generation by symbol-only/v2.",
+    "A transient local pytest checkpoint discovered during the audit was absent when the evaluator opened it; no replay or model output occurred."
+  ],
+  "feature_rows": [],
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "authority": "AgentEvals assertions",
+    "sdk": "@agentv/core",
+    "criteria": {
+      "pass": false,
+      "passed": 0,
+      "failed": 1,
+      "total": 1,
+      "failures": [
+        "temporal-row-preflight:domain_criterion"
+      ],
+      "results": [
+        {
+          "id": "temporal-row-preflight:domain_criterion",
+          "pass": false,
+          "actual": false,
+          "criterion_id": "temporal-row-preflight:domain_criterion",
+          "expected": true,
+          "operator": "eq"
+        }
+      ]
+    },
+    "runner": {
+      "name": "AgentV",
+      "sdk": "@agentv/core",
+      "execution_errors": 0
+    },
+    "spec": "agentv-dir://agentv/dsh3-31-operator-failure-prediction.eval.jsonl",
+    "summary": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "executionErrors": 0,
+      "durationMs": 71,
+      "meanScore": 0
+    },
+    "artifacts": {
+      "runDir": "agentv-dir://agentv/dsh3-31-operator-failure-prediction",
+      "benchmarkPath": "agentv-dir://agentv/dsh3-31-operator-failure-prediction/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh3-31-operator-failure-prediction/index.jsonl",
+      "timingPath": "agentv-dir://agentv/dsh3-31-operator-failure-prediction/timing.json"
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dd1783f9238963aceeec7c1c384e99f1b9fae06c",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v61",
+      "harness.experiments.operator_failure_prediction": "v1"
+    },
+    "stamped_at": "2026-07-26T16:19:17.732899+00:00"
+  }
+}
