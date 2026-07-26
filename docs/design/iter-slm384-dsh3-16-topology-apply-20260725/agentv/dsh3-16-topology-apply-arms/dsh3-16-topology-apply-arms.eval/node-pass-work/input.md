@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_fixture_arm_comparison_wiring_not_ship", "result": {"deferred_applies": 0, "direct_applies": 20, "node_passes": {"HIERARCHICAL_HEAD": 46, "RECOMPUTE_ONLY": 46, "TOPOLOGY_APPLY": 40}}}

@@ -792,6 +792,21 @@
         }
       ]
     },
+    "dsl.operators.topology_apply": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/topology_apply.py",
+        "tests/test_dsl/test_topology_apply.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-384 (DSH3-16) wiring-only, default-off integration mapping exact compiler-verified ActionEffectV1 transitions to topology expand/contract/move/rewrite edits over typed topology nodes; exact legal-set membership only, singleton/DEFER authority untouched, stale request/branch/state identity fails closed"
+        }
+      ]
+    },
     "dsl.operators.transactions": {
       "version": "v3",
       "kind": "harness",
@@ -3842,6 +3857,22 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "SLM-383 (DSH3-15) follow-up to E803: capacity-matched token-baseline vs. weight-zero (frozen no-op) vs. enabled hierarchical-operator-action-head causal experiment over a typed-candidate-group-size fixture corpus, with causal choice-change and compiler-membership evidence"
+        }
+      ]
+    },
+    "harness.experiments.topology_apply_arms": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/topology_apply_arms.py",
+        "scripts/run_topology_apply_arms.py",
+        "tests/test_harnesses/experiments/test_topology_apply_arms.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-384 (DSH3-16) fixture-scale arm comparison: recompute-only vs hierarchical-head(off)+ordinary-lowering vs topology-apply at matched quality (identical action sequences, legal terminal set, per-step typed trees); execution-sparsity disposition with no systems/wall-clock claim"
         }
       ]
     },
