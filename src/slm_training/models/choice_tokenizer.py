@@ -1073,7 +1073,11 @@ class ChoiceDecodeState:
                     None,
                 )
                 if missing is not None:
-                    return tok.token_to_id[f"{NAME_PREFIX}{missing}"]
+                    missing_id = tok.token_to_id.get(f"{NAME_PREFIX}{missing}")
+                    if missing_id is not None:
+                        return missing_id
+                    # Required name not in vocab → close if legal, else first
+                    # expression candidate (caller treats empty domain as dead end).
                 return tok.token_to_id[str(frame.close)]
             if (
                 frame.kind == "object"
@@ -1198,13 +1202,21 @@ class ChoiceDecodeState:
                 if frame.additional_properties:
                     candidates = set(tok.candidate_partition("object_key"))
                 else:
+                    # Skip schema property names absent from the live vocab
+                    # (fail-closed: missing name → not a candidate, not KeyError).
                     candidates = {
-                        tok.token_to_id[f"{NAME_PREFIX}{name}"]
+                        token_id
                         for name in frame.property_names
                         if name not in frame.seen_properties
+                        for token_id in (
+                            tok.token_to_id.get(f"{NAME_PREFIX}{name}"),
+                        )
+                        if token_id is not None
                     }
                 if set(frame.required_properties).issubset(frame.seen_properties):
-                    candidates.add(tok.token_to_id[str(frame.close)])
+                    close_id = tok.token_to_id.get(str(frame.close))
+                    if close_id is not None:
+                        candidates.add(close_id)
                 return candidates
             candidates = _expression_candidates()
             if frame.kind in {"variadic", "component"}:

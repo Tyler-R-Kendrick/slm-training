@@ -1,0 +1,21 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9fdf179ae85473adfa832ad23487c9722dff9c44",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.typed_operator_policy": "v3",
+      "data.flow.operator_policy_corpus": "v4",
+      "model.operator_policy_view": "v3"
+    },
+    "stamped_at": "2026-07-26T11:56:07.812370+00:00"
+  }
+}

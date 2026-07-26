@@ -1,2 +1,22 @@
+# Project-local Codex configuration.
+#
+# Hooks (.codex/hooks.json) block raw `mv` of tracked paths and run the
+# dashboard-parity and version-stamp checks after edits — the same set Claude
+# Code and Copilot CLI get. Parity is certified by
+# `python -m scripts.verify_agent_surfaces`.
 [features]
 hooks = true
+
+# Serena MCP (semantic code navigation). Prefer its symbol tools over raw grep
+# when navigating src/ and scripts/. Older Codex builds only read MCP servers
+# from ~/.codex/config.toml — copy .codex/serena.config.toml.example there (or
+# run `serena setup codex`) if this project-local block is ignored.
+[mcp_servers.serena]
+startup_timeout_sec = 15
+command = "serena"
+args = [
+  "start-mcp-server",
+  "--project-from-cwd",
+  "--context=codex",
+  "--open-web-dashboard=false",
+]

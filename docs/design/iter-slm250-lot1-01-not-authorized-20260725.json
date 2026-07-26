@@ -1,0 +1,37 @@
+{
+  "contract_hash": "2fad1057fe77352daebf2b8b792d599cf62494ca023169da0570bab9e133d3f7",
+  "contract_id": "lotus-openui-model-contract-v1",
+  "gate_1_fidelity_authorization": {
+    "actual_verdict": "needs_target_trace_contract",
+    "gate_name": "fidelity_contract_authorization",
+    "met": false,
+    "rationale": "Differentiation from every existing repo mechanism (masked recursive denoiser, SemanticPlanV1 predictors/consumers, causal FTPO adapters, explicit compiler traces, valid-state tree-edit/lattice search) is clean and survives line-by-line comparison -- see non_duplication_map, all rows no_duplication. The blocker is narrower: LOTUS's explicit-to-latent curriculum (mechanism row 5) and its causal_latent_use claim class both presuppose a step-decomposable 'explicit trace' analogous to GSM8K CoT steps that this repo does not yet define for OpenUI program synthesis. Defining that target-trace contract honestly -- without assuming math-payload equivalence to GSM8K, and without silently reusing causal_trace.py's visible-token decode capture or SemanticPlanV1's plan IR as if either already were that trace -- is out of scope for this docs/spec-only issue (no corpus generation beyond bounded target-contract probes). Authorizing bounded implementation now would force either an undefined curriculum or a quietly borrowed non-LOTUS trace source; neither is honest. This is not a 'differentiation is weak' close and not a semantic-floor block -- it is a scoped prerequisite.",
+    "required_verdict": "authorize_bounded_implementation",
+    "source_contract_hash": "801ce267b64f52b88e6e80fa091084c5f1a6628de60658d2d161db82f5117af2",
+    "source_contract_id": "lotus-openui-fidelity-contract-v1",
+    "source_linear_issue": "SLM-248"
+  },
+  "gate_2_trace_oracle_ceiling": {
+    "actual_verdict": "inconclusive",
+    "gate_name": "trace_oracle_ceiling",
+    "met": false,
+    "rationale": "The trace contract, typed step schema, deterministic extractor, and lossless visible serialization are implemented and tested against the repository's existing SemanticPlanV1/production_codec owners (no new compiler/parser/evaluator). A bounded n=16 fixture probe (not a production corpus) confirms every probe record decomposes into all six declared stages with zero truncation, giving a provisional K=6/c=479-chars budget. The oracle ceiling experiment itself -- the only evidence that could support an oracle_ceiling_positive, no_downstream_ceiling, or explicit_trace_equivalent_to_existing_plan verdict -- is specified as a matched multi-arm, multi-seed plan but deliberately not run: the LOT0-01 authorization scopes this issue to a fixture-scale plan only, with GPU training and corpus generation explicitly blocked. Declaring any positive or negative ceiling verdict without running that plan would be exactly the 'no claim that explicit trace benefit implies latent benefit' failure this issue's acceptance criteria forbid. leakage_or_ambiguity_blocked and target_support_insufficient are also not honest: no leakage was found and the bounded probe supports the stage set within its declared scope. inconclusive -- pending the oracle-ceiling campaign -- is the only accurate verdict.",
+    "required_verdict": "oracle_ceiling_positive",
+    "source_contract_hash": "6cdd695bf5b32036519f1ee2e787a44e4afbb045fc059f75a92a2d069f0ee7c5",
+    "source_contract_id": "compiler-reasoning-trace-v1",
+    "source_linear_issue": "SLM-249"
+  },
+  "linear_issue": "SLM-250",
+  "schema_version": "lotus_openui_model_contract/v1",
+  "verdict": "not_authorized",
+  "verdict_rationale": "Hard activation gate(s) unmet: fidelity_contract_authorization, trace_oracle_ceiling. Gate 1 (SLM-248 fidelity authorization) reports verdict 'needs_target_trace_contract' (requires 'authorize_bounded_implementation'). Gate 2 (SLM-249 trace oracle ceiling) reports verdict 'inconclusive' (requires 'oracle_ceiling_positive'). Closing not_authorized in plan-only mode; no K x c model or training code is added by this disposition.",
+  "version_stamp": {
+    "code_commit": "79810740906c5eeae601b0379fa083f4c48f0d68",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v111"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T15:39:13.771319+00:00"
+  }
+}
