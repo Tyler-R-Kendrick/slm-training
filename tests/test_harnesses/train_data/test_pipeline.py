@@ -110,7 +110,9 @@ def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> N
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
     assert "Components: Card x1, Stack x1, TextContent x2" in rows["t1"].prompt
-    assert "Placeholders: :hero.title, :hero.body" in rows["t1"].prompt
+    # Persisted markers are opaque :slot_<ordinal> identities (never a
+    # synthesizer's named spelling), so the slot-contract prompt line is too.
+    assert "Placeholders: :slot_0, :slot_1" in rows["t1"].prompt
     assert result["stats"]["prompt_component_contract"] is True
     assert result["stats"]["prompt_slot_contract"] is True
     assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
@@ -161,8 +163,12 @@ def test_semantic_role_contract_uses_only_visible_slots_and_types(
         )
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    assert "Semantic roles: hero(body -> TextContent, title -> TextContent)" in rows["t1"].prompt
-    assert "Semantic roles: cta(label -> Button)" in rows["t2"].prompt
+    # Persisted markers are opaque :slot_<ordinal> identities, so role names
+    # can no longer be recovered from a placeholder's dotted namespace
+    # (":hero.title" -> "hero"/"title"); the contract falls back to a
+    # generic role per visible slot instead of a named one.
+    assert "Semantic roles: slot_0(value); slot_1(value)" in rows["t1"].prompt
+    assert "Semantic roles: slot_0(value)" in rows["t2"].prompt
     assert " x" not in rows["t2"].prompt
     assert result["stats"]["prompt_semantic_role_contract"] is True
 

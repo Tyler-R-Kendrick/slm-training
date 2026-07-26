@@ -172,8 +172,12 @@ def test_pipeline_manifest_source_families(tmp_path: Path) -> None:
         output_root=tmp_path / "out",
         version="vfam",
         synthesizer="quality",
+        namespace_augment=True,
     )
-    assert not hasattr(config, "namespace_augment")
+    # `namespace_augment` is a real, intentional TrainDataConfig field
+    # (pipeline.py); assert it's preserved rather than merely constructible.
+    assert config.namespace_augment is True
+    assert config.synthesizer == "quality"
 
 
 @pytestmark_bridge

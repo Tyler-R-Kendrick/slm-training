@@ -97,8 +97,16 @@ def validate_staged_record(
     record: ExampleRecord,
     plan: SynthesisPlanV1,
 ) -> dict[str, Any]:
-    """Run plan-authoritative policy, pack, integrity, and tokenizer checks."""
+    """Run plan-authoritative policy, pack, integrity, and tokenizer checks.
 
+    Validates against the opaque-marker form the record will be persisted in
+    (GenerationRequest/SymbolTable/tokenizer all reject named markers) without
+    mutating the caller's record — decontamination and dedup upstream still
+    need the original, more distinctive named-marker text.
+    """
+    from slm_training.data.contract import canonicalize_example_template_markers
+
+    record = canonicalize_example_template_markers(record)
     symbols = tuple(
         RuntimeSymbol.from_dict(item)
         for item in (record.meta.get("runtime_symbols") or ())
