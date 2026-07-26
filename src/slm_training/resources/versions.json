@@ -357,6 +357,11 @@
       "history": [
         {
           "version": "v15",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-415 (DSH5-07) re-exports BranchApplicationSequenceV1/BranchSequenceMergeArtifactV1/BranchSequenceMergeConflictV1/BranchSequenceMergeDecisionV1/merge_branch_application_sequences/replay_branch_sequence_merge/sequence_from_branch_edits/sequence_merged_continuation_node from operators/__init__.py (new dsl.operators.sequence_merge component); no change to contracts.py itself"
+        },
+        {
+          "version": "v15",
           "date": "2026-07-25",
           "note": "no-bump: re-export the SLM-395 branch merge continuation types and accessor from operators/__init__.py; their owning behavioral component is dsl.operators.merge v3"
         },
@@ -595,6 +600,22 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial bounded three-way branch merge with fork-ref lineage, pack revalidation, deterministic replay, and typed conflict artifacts"
+        }
+      ]
+    },
+    "dsl.operators.sequence_merge": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/sequence_merge.py",
+        "tests/test_dsl/test_operator_sequence_merge.py",
+        "docs/design/dsh5-07-branch-sequence-merge.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-415 (DSH5-07): extend conservative branch merge from one verified step per branch to N-step BranchApplicationSequenceV1 histories; collapses each branch's whole sequence into one base-relative composite ActionEffectV1/lineage map (content-addressed by reference descriptor fingerprint, distinguishing a genuinely stale/forged ref from legitimate intra-branch-only content) and reuses merge.classify_merge_effects/ast_merge.merge_ast_value/merge.BranchMergeContinuationV1 unchanged; no commuting override at the composite level (strictly more conservative than the one-step bound)"
         }
       ]
     },
