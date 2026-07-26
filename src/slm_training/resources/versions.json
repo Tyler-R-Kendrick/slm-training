@@ -4596,6 +4596,11 @@
         {
           "version": "v1",
           "date": "2026-07-26",
+          "note": "no-bump: replace the SLM-313 scratch checkpoint roster row with its measured rejected result; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
           "note": "no-bump: SLM-313's scratch checkpoint roster and README summary are unrelated to the SLM-228 spectral disposition."
         },
         {
@@ -9016,6 +9021,11 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-26",
+          "note": "no-bump: record the measured SLM-313 local matrix result and scratch checkpoint disposition; harness behavior is unchanged."
+        },
         {
           "version": "v11",
           "date": "2026-07-26",

@@ -9,12 +9,12 @@
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "2ae600bb1762d46fe628354065d692e5479b320c",
+    "code_commit": "6c85fda1de3089c3f9e31910f7e0e3e7ec975f14",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v115",
-      "harness.experiments.slm313_abstract_plan_functional_evidence": "v6"
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v11"
     },
-    "stamped_at": "2026-07-26T06:34:28.310234+00:00"
+    "stamped_at": "2026-07-26T08:47:01.990473+00:00"
   }
 }
