@@ -1912,7 +1912,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v123",
+      "version": "v124",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -1921,6 +1921,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v124",
+          "date": "2026-07-25",
+          "note": "add SLM-258 LOT4-02 LotusOpenUIDispositionV1 fail-closed publisher (lotus_openui_disposition.py): aggregates the real upstream gate artifacts; inconclusive_missing_evidence, no adoption, production defaults unchanged"
+        },
         {
           "version": "v123",
           "date": "2026-07-25",
@@ -2005,6 +2010,11 @@
           "version": "v109",
           "date": "2026-07-25",
           "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
+        },
+        {
+          "version": "v117",
+          "date": "2026-07-25",
+          "note": "add SLM-258 LOT4-02 LotusOpenUIDispositionV1 fail-closed publisher (lotus_openui_disposition.py): aggregates the real upstream gate artifacts; inconclusive_missing_evidence, no adoption, production defaults unchanged"
         },
         {
           "version": "v116",
@@ -9846,7 +9856,7 @@
       ]
     },
     "harness.experiments.lot_downstream_gate": {
-      "version": "v6",
+      "version": "v7",
       "kind": "gate",
       "paths": [
         "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json",
@@ -9868,9 +9878,9 @@
       ],
       "history": [
         {
-          "version": "v6",
-          "date": "2026-07-25",
-          "note": "add SLM-257 LOT4-01 registry entry + not_authorized iter docs (lotus-openui-compute-frontier-v1)"
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "re-sequenced against concurrent main registration (union of paths/history during queue merge)"
         },
         {
           "version": "v6",
@@ -9901,6 +9911,25 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; generic LOT2+ downstream gate closes SLM-252 LOT2-01 not_authorized against the real upstream contracts"
+        }
+      ]
+    },
+    "harness.experiments.lotus_openui_disposition": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lotus_openui_disposition.py",
+        "scripts/publish_lotus_openui_disposition.py",
+        "tests/test_harnesses/experiments/test_lotus_openui_disposition.py",
+        "tests/test_scripts/test_publish_lotus_openui_disposition.py",
+        "docs/design/iter-slm258-lot4-02-disposition-20260725.json",
+        "docs/design/iter-slm258-lot4-02-disposition-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-258 LOT4-02 disposition publisher aggregates upstream gates fail-closed"
         }
       ]
     }
