@@ -14,7 +14,8 @@ hard-negative mining: this module only re-projects evidence
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+from dataclasses import dataclass, replace
 from typing import Any
 
 from slm_training.dsl.operators.collapse import (
@@ -25,7 +26,11 @@ from slm_training.dsl.operators.conversation import (
     ConversationTraceV1,
     OperatorAuthorityResolver,
 )
-from slm_training.dsl.operators.contracts import _fingerprint, _require_digest, _require_identifier
+from slm_training.dsl.operators.contracts import (
+    _fingerprint,
+    _require_digest,
+    _require_identifier,
+)
 from slm_training.dsl.operators.legal_set import enumerate_operator_legal_set
 from slm_training.models.operator_policy_view import (
     build_operator_policy_input,
@@ -36,9 +41,11 @@ __all__ = [
     "OperatorPolicyCorpusQualityReportV1",
     "OperatorPolicyHardNegativeV1",
     "OperatorPolicyRowV1",
+    "OperatorTerminationRowV1",
     "RowRejectionKind",
     "build_operator_policy_corpus",
     "build_operator_policy_rows",
+    "build_operator_termination_rows",
 ]
 
 
@@ -71,9 +78,16 @@ class OperatorPolicyHardNegativeV1:
             if not self.conflict_code or self.observed_final_state_digest is not None:
                 raise ValueError("conflict hard negative evidence is incomplete")
         else:
-            if self.observed_final_state_digest is None or self.conflict_code is not None:
-                raise ValueError("different-result hard negative evidence is incomplete")
-            _require_digest(self.observed_final_state_digest, "observed_final_state_digest")
+            if (
+                self.observed_final_state_digest is None
+                or self.conflict_code is not None
+            ):
+                raise ValueError(
+                    "different-result hard negative evidence is incomplete"
+                )
+            _require_digest(
+                self.observed_final_state_digest, "observed_final_state_digest"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -143,19 +157,32 @@ class OperatorPolicyRowV1:
         accepted_action = action_rows[self.accepted_action_row]
         if accepted_action["operator_id"] != self.accepted_operator_id:
             raise ValueError("accepted_action_row does not name accepted_operator_id")
-        slots_by_id = {slot["slot_id"]: slot for slot in accepted_action["argument_slots"]}
+        slots_by_id = {
+            slot["slot_id"]: slot for slot in accepted_action["argument_slots"]
+        }
         n_refs = len(self.policy_input.get("reference_rows", []))
         for slot_id, row in self.accepted_argument_rows:
             slot = slots_by_id.get(slot_id)
             if slot is None:
-                raise ValueError(f"accepted argument names an unknown slot: {slot_id!r}")
+                raise ValueError(
+                    f"accepted argument names an unknown slot: {slot_id!r}"
+                )
             if row not in slot["candidate_rows"]:
-                raise ValueError("accepted argument row is not a live candidate for its slot")
+                raise ValueError(
+                    "accepted argument row is not a live candidate for its slot"
+                )
             if not 0 <= row < n_refs:
-                raise ValueError("accepted argument row is outside policy_input.reference_rows")
-        if self.hard_negative is not None and self.hard_negative.alternate_action_row is not None:
+                raise ValueError(
+                    "accepted argument row is outside policy_input.reference_rows"
+                )
+        if (
+            self.hard_negative is not None
+            and self.hard_negative.alternate_action_row is not None
+        ):
             if not 0 <= self.hard_negative.alternate_action_row < len(action_rows):
-                raise ValueError("hard negative alternate_action_row is outside action_rows")
+                raise ValueError(
+                    "hard negative alternate_action_row is outside action_rows"
+                )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -174,7 +201,9 @@ class OperatorPolicyRowV1:
             "policy_input": self.policy_input,
             "accepted_operator_id": self.accepted_operator_id,
             "accepted_action_row": self.accepted_action_row,
-            "accepted_argument_rows": [list(item) for item in self.accepted_argument_rows],
+            "accepted_argument_rows": [
+                list(item) for item in self.accepted_argument_rows
+            ],
             "accepted_application_id": self.accepted_application_id,
             "hard_negative": (
                 self.hard_negative.to_dict() if self.hard_negative is not None else None
@@ -183,11 +212,49 @@ class OperatorPolicyRowV1:
         }
 
 
-def _accepted_action_row(legal_set, operator_id: str, application_id: str) -> int | None:
+@dataclass(frozen=True)
+class OperatorTerminationRowV1:
+    """Replayable terminal/nonterminal control-plane label over a fresh view."""
+
+    row_id: str
+    state_digest: str
+    legal_set_fingerprint: str
+    policy_input: dict[str, Any]
+    policy_input_digest: str
+    stop: bool
+    remaining_distance: int
+    proof_ids: tuple[str, ...]
+    split: str
+    schema: str = "operator_termination_row/v1"
+
+    def __post_init__(self) -> None:
+        _require_digest(self.state_digest, "state_digest")
+        _require_digest(self.legal_set_fingerprint, "legal_set_fingerprint")
+        _require_digest(self.policy_input_digest, "policy_input_digest")
+        if self.remaining_distance < 0:
+            raise ValueError("remaining_distance must be non-negative")
+        if self.split not in {"train", "dev"}:
+            raise ValueError("unsupported split")
+        if self.policy_input_digest != _fingerprint(self.policy_input):
+            raise ValueError("policy_input_digest does not match policy_input")
+        validate_no_forbidden_fields(self.policy_input)
+        if self.stop and self.policy_input.get("coverage") != "complete":
+            raise ValueError("PARTIAL coverage cannot masquerade as STOP")
+
+    def model_input(self) -> dict[str, Any]:
+        """The sanitized live view only; distance/proofs are training diagnostics."""
+        return self.policy_input
+
+
+def _accepted_action_row(
+    legal_set, operator_id: str, application_id: str
+) -> int | None:
     for row, entry in enumerate(legal_set.entries):
         if entry.operator_id != operator_id:
             continue
-        if any(action.application_id == application_id for action in entry.legal_actions):
+        if any(
+            action.application_id == application_id for action in entry.legal_actions
+        ):
             return row
         return None
     return None
@@ -218,7 +285,8 @@ def build_operator_policy_rows(
     if collapse.turn_ids != tuple(turn.turn_id for turn in trace.turns):
         raise ValueError("collapse turn lineage differs from the source trace")
     negatives_by_left_step = {
-        negative.swapped_step_indices[0]: negative for negative in collapse.hard_negatives
+        negative.swapped_step_indices[0]: negative
+        for negative in collapse.hard_negatives
     }
     rows: list[OperatorPolicyRowV1] = []
     rejected: list[dict[str, Any]] = []
@@ -322,6 +390,63 @@ def build_operator_policy_rows(
     return tuple(rows), tuple(rejected)
 
 
+def build_operator_termination_rows(
+    *,
+    trace: ConversationTraceV1,
+    authority_resolver: OperatorAuthorityResolver,
+    split: str = "train",
+) -> tuple[OperatorTerminationRowV1, ...]:
+    """Re-enumerate every trace state and label only its replay endpoint STOP.
+
+    The endpoint may retain legal actions; STOP is a control-plane target, not
+    evidence that the compiler's action domain is empty.
+    """
+    states = [trace.node(turn.input_state_id) for turn in trace.turns]
+    states.append(trace.current)
+    rows: list[OperatorTerminationRowV1] = []
+    for index, node in enumerate(states):
+        pack, library = authority_resolver(node)
+        source_digest = hashlib.sha256(node.state.source.encode("utf-8")).hexdigest()
+        provenance = replace(
+            trace.root_provenance,
+            source_artifact_digest=source_digest,
+            request_id=node.reference_table.request_id,
+        )
+        legal_set = enumerate_operator_legal_set(
+            pack=pack,
+            library=library,
+            state=node.state,
+            reference_table=node.reference_table,
+            provenance=provenance,
+        )
+        policy_input = build_operator_policy_input(
+            node.reference_table, legal_set, library
+        ).to_dict()
+        stop = node.state_id == trace.current_state_id
+        if stop and legal_set.coverage is not legal_set.coverage.COMPLETE:
+            raise ValueError("terminal state has partial legal-set coverage")
+        identity = {
+            "schema": "operator_termination_row_identity/v1",
+            "state": node.state.state_digest,
+        }
+        rows.append(
+            OperatorTerminationRowV1(
+                row_id=f"term_{_fingerprint(identity)[:24]}",
+                state_digest=node.state.state_digest,
+                legal_set_fingerprint=legal_set.fingerprint,
+                policy_input=policy_input,
+                policy_input_digest=_fingerprint(policy_input),
+                stop=stop,
+                remaining_distance=len(states) - index - 1,
+                proof_ids=tuple(
+                    action.application_id for action in legal_set.operator_actions
+                ),
+                split=split,
+            )
+        )
+    return tuple(rows)
+
+
 @dataclass(frozen=True)
 class OperatorPolicyCorpusQualityReportV1:
     """Aggregate denominators over one or more collapses' rows. Wiring
@@ -356,7 +481,10 @@ def build_operator_policy_corpus(
 ) -> tuple[tuple[OperatorPolicyRowV1, ...], OperatorPolicyCorpusQualityReportV1]:
     """``build_operator_policy_rows`` plus its aggregate quality report."""
     rows, rejected = build_operator_policy_rows(
-        trace=trace, collapse=collapse, authority_resolver=authority_resolver, split=split
+        trace=trace,
+        collapse=collapse,
+        authority_resolver=authority_resolver,
+        split=split,
     )
     rejection_counts: dict[str, int] = {}
     for entry in rejected:

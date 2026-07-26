@@ -186,7 +186,7 @@
       ]
     },
     "data.flow.operator_policy_corpus": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/flow/operator_policy_corpus.py",
@@ -194,6 +194,11 @@
         "docs/design/dsh3-24-operator-policy-corpus.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-401 (DSH3-26): add replayed terminal/nonterminal control-plane rows over freshly re-enumerated sanitized policy views; distance and proof IDs remain training-only"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -6873,6 +6878,22 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "SLM-400 (DSH3-25): coverage-aware operator-policy labels, safe known-supported and PU denominators, explicit DEFER attribution, controlled partial projections, and fail-closed routing"
+        }
+      ]
+    },
+    "model.operator_termination": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/operator_termination.py",
+        "tests/test_models/test_operator_termination.py",
+        "docs/design/dsh3-26-operator-termination.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-401 (DSH3-26): default-off STOP control-plane targets, safe factored/joint loss comparison, and calibration-first termination reporting"
         }
       ]
     },
