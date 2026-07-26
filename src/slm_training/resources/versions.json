@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): regression test proves the new ModelBuildConfig.encoder_ops_conditioning lever is default-off and, correctly, absent from CONSTRAINT_WEAKENING_LEVERS (it changes encoder conditioning, never decode legality). Also closes a pre-existing gap found while adding that test: binder_slot_ownership_decode_weight, binder_slot_presence_decode_weight, and binder_reference_presence_decode_weight had ModelBuildConfig fields but no _COMPILER_PATH_DECODE_LEVERS / TRAINED_DECODE_REQUIREMENTS entry (unlike their binder_arity/binder_topology/binder_component_plan siblings) -- added, mirroring the sibling pattern exactly."
+        },
         {
           "version": "v23",
           "date": "2026-07-25",
@@ -389,13 +394,18 @@
       ]
     },
     "dsl.operators.contracts": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/",
         "tests/test_dsl/test_operator_contracts.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-428 (VAR2-01) adds src/slm_training/dsl/operators/ops_vocab_conditioning.py under this directory's wildcard path; tracked separately by the new harness.experiments.var2_01_ops_vocab_first_consumer component. No change to contracts.py itself."
+        },
         {
           "version": "v15",
           "date": "2026-07-26",
@@ -707,7 +717,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -715,6 +725,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): add OperatorLibraryV1.lookup_by_fingerprint, the public counterpart of replay()'s internal fingerprint resolution, for dsl.operators.ops_vocab_conditioning."
+        },
         {
           "version": "v4",
           "date": "2026-07-26",
@@ -5355,6 +5370,25 @@
         }
       ]
     },
+    "harness.experiments.var2_01_ops_vocab_first_consumer": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/ops_vocab_conditioning.py",
+        "tests/test_dsl/test_operator_ops_vocab_conditioning.py",
+        "scripts/run_var2_01_ops_vocab_first_consumer.py",
+        "tests/test_scripts/test_run_var2_01_ops_vocab_first_consumer.py",
+        "docs/design/var2-01-ops-vocab-first-consumer-20260726.json",
+        "docs/design/var2-01-ops-vocab-first-consumer-20260726.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): first encoder-side consumer of the shared OPS_VOCAB kernel (I13). dsl.operators.ops_vocab_conditioning resolves a persisted conversation trace's turns onto reserved OPS_VOCAB op ids and renders them as literal reserved tokens; the harness script builds a small real operator corpus, publishes the four-table adequacy audit (unrepresentable_intents, unused_ops, family_confusions, arity_mismatches) as claim class measurement, and runs a matched off/on wiring-reachability probe (claim class wiring, hypothetical=true) through a preregistered ExperimentCampaignV1. No production behavior changes: ModelBuildConfig.encoder_ops_conditioning defaults False."
+        }
+      ]
+    },
     "harness.experiments.slm301_prompt_observability": {
       "version": "v1",
       "kind": "harness",
@@ -7469,7 +7503,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v255",
+      "version": "v256",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7511,6 +7545,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v256",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): format_context_text and _format_one_context gain an optional history_ops_text parameter (omitted by every existing caller -- exact prior output when absent); ModelBuildConfig.encoder_ops_conditioning / TwoTowerConfig.encoder_ops_conditioning is a new default-off lever gating the effect at the model layer, wired through _twotower_config_from_build. First real consumer of the shared OPS_VOCAB kernel (I13)."
+        },
         {
           "version": "v255",
           "date": "2026-07-26",

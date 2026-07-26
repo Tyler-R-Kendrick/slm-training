@@ -124,6 +124,62 @@ def test_context_exposes_compact_output_contract() -> None:
     assert "---OUTPUT_CONTRACT---\nlexical:boolean" in context
 
 
+def test_history_ops_text_omitted_reproduces_prior_output_exactly() -> None:
+    # SLM-428 (VAR2-01): every existing caller omits history_ops_text, so the
+    # new parameter must be a strict no-op when absent -- the regression
+    # guard for the encoder_ops_conditioning lever staying default-off.
+    prompt = "Return a boolean"
+    before = format_context_text(prompt, output_kind="lexical", output_category="boolean")
+    after = format_context_text(
+        prompt, output_kind="lexical", output_category="boolean", history_ops_text=None
+    )
+    assert before == after
+    assert "---HISTORY_OPS---" not in after
+
+
+def test_history_ops_text_renders_its_own_section() -> None:
+    context = format_context_text(
+        "Return a boolean",
+        history_ops_text="<|op:conversation.undo|> <|op:openui.set_property|>",
+    )
+    assert (
+        "---HISTORY_OPS---\n<|op:conversation.undo|> <|op:openui.set_property|>"
+        in context
+    )
+
+
+def test_encoder_ops_conditioning_lever_gates_the_effect_at_the_model_layer() -> None:
+    # _format_one_context must ignore a supplied history_ops_text unless the
+    # lever is explicitly enabled -- the lever gates the effect, not just
+    # whether a caller happens to pass a value.
+    tokenizer = OpenUITokenizer.build([HERO])
+    off_config = TwoTowerConfig(
+        context_backend="scratch",
+        d_model=8,
+        n_heads=2,
+        context_layers=1,
+        encoder_ops_conditioning=False,
+    )
+    off_model = TwoTowerModel(tokenizer, off_config)
+    off = off_model._format_one_context(
+        "Return a boolean", None, history_ops_text="<|op:conversation.undo|>"
+    )
+    assert "---HISTORY_OPS---" not in off
+
+    on_config = TwoTowerConfig(
+        context_backend="scratch",
+        d_model=8,
+        n_heads=2,
+        context_layers=1,
+        encoder_ops_conditioning=True,
+    )
+    on_model = TwoTowerModel(tokenizer, on_config)
+    on = on_model._format_one_context(
+        "Return a boolean", None, history_ops_text="<|op:conversation.undo|>"
+    )
+    assert "---HISTORY_OPS---\n<|op:conversation.undo|>" in on
+
+
 def test_design_md_dropout_is_deterministic_and_cache_safe() -> None:
     design_md = "# Design\nUse a card."
     records = [

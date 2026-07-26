@@ -386,6 +386,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         design_md_budget=config.design_md_budget,
         schema_in_context=getattr(config, "schema_in_context", False),
         slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
+        encoder_ops_conditioning=getattr(config, "encoder_ops_conditioning", False),
         semantic_role_contract_in_context=getattr(
             config, "semantic_role_contract_in_context", False
         ),
