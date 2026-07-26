@@ -106,6 +106,21 @@ DOWNSTREAM_ISSUES: dict[str, DownstreamIssueSpec] = {
             "gold/oracle trace substitution ceiling is nonzero."
         ),
     ),
+    "SLM-255": DownstreamIssueSpec(
+        linear_issue="SLM-255",
+        alias="LOT3-02",
+        title="Learn and intervene on alternative-valid compiler-trace neighborhoods without single-reference collapse",
+        gate_contract_id="alternative-valid-latent-gate-v1",
+        slug="lot3-02-alternative-valid-latents",
+        activation_requirement=(
+            "SLM-249 provides accepted targets and deterministic trace "
+            "canonicalization; SLM-253 provides the selected "
+            "token/structured/set-valued readout contract; and SLM-254 "
+            "establishes at least one valid causal factor/intervention "
+            "encoding or explicitly authorizes a bounded neighborhood "
+            "diagnostic."
+        ),
+    ),
 }
 
 

@@ -1912,7 +1912,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v120",
+      "version": "v121",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -1921,6 +1921,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v121",
+          "date": "2026-07-25",
+          "note": "register SLM-255 LOT3-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain"
+        },
         {
           "version": "v120",
           "date": "2026-07-25",
@@ -1990,6 +1995,11 @@
           "version": "v109",
           "date": "2026-07-25",
           "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant"
+        },
+        {
+          "version": "v114",
+          "date": "2026-07-25",
+          "note": "register SLM-255 LOT3-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain"
         },
         {
           "version": "v113",
@@ -9816,7 +9826,7 @@
       ]
     },
     "harness.experiments.lot_downstream_gate": {
-      "version": "v3",
+      "version": "v4",
       "kind": "gate",
       "paths": [
         "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json",
@@ -9825,6 +9835,8 @@
         "docs/design/iter-slm253-lot2-02-not-authorized-20260725.md",
         "docs/design/iter-slm254-lot3-01-not-authorized-20260725.json",
         "docs/design/iter-slm254-lot3-01-not-authorized-20260725.md",
+        "docs/design/iter-slm255-lot3-02-not-authorized-20260725.json",
+        "docs/design/iter-slm255-lot3-02-not-authorized-20260725.md",
         "scripts/evaluate_lot_downstream_gate.py",
         "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
         "tests/test_harnesses/experiments/test_lot_downstream_gate.py",
@@ -9832,9 +9844,14 @@
       ],
       "history": [
         {
-          "version": "v3",
+          "version": "v4",
           "date": "2026-07-25",
-          "note": "add SLM-254 LOT3-01 registry entry + not_authorized iter docs (causal-latent-use-gate-v1)"
+          "note": "add SLM-255 LOT3-02 registry entry + not_authorized iter docs (alternative-valid-latent-gate-v1)"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "add SLM-255 LOT3-02 registry entry + not_authorized iter docs (alternative-valid-latent-gate-v1)"
         },
         {
           "version": "v3",
