@@ -6866,7 +6866,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -6879,6 +6879,16 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-26",
+          "note": "no-bump: reorder _normalize_record's final return path to canonicalize markers before stamp_record so the verification report describes the persisted canonical bytes instead of pre-canonical named markers; the persisted record content and content_fingerprint are unchanged (stamp_record does not mutate prompt/openui/placeholders)"
+        },
+        {
+          "version": "v22",
+          "date": "2026-07-26",
+          "note": "_normalize_record canonicalizes persisted template markers to opaque :slot_<ordinal> identities (matching the test_data mirror) before returning, unblocking SFT from_records() which unconditionally rejects named markers"
+        },
         {
           "version": "v21",
           "date": "2026-07-26",
