@@ -110,10 +110,21 @@ whose legal-set coverage supplies COMPLETE ambiguous rows, with per-decision
 causal-change denominators and full-generation/serialized baselines. No
 checkpoint is created by this step.
 
-The legacy CAP2 v1 generator currently detects drift after later
-selector/effect-contract evolution. That is an in-repository compatibility
-problem to resolve with a current-surface evaluation while keeping the v1
-evidence immutable; it is not a claim that the historical gate passed.
+The immutable DSH3-13 `cap2_operator_v1` manifest still records its original
+`5ee0…268e` corpus and `16f2…1d4d` suite hashes. Later turn-serialization and
+node-flow effect changes alter action identities (including two selected
+dual-card actions), so v1 cannot honestly be relabeled as current. The new
+`cap2_operator_v2` manifest binds those same held-out source IDs to the live
+`a922…97cf` corpus and `e80f…4491` suite hashes while retaining the v1 file
+unchanged.
+
+[`dsh3-28-cap2-operator-v2-20260726/report.json`](dsh3-28-cap2-operator-v2-20260726/report.json)
+records its local CPU, zero-step fixture replay: all 20 cases replay through
+the current compiler, the oracle clears the contract, all three degenerate
+controls fail, and AgentV passes 6/6. This is a current-surface fixture
+contract only—not a learned-policy result or ship claim—and it creates no
+checkpoint. The matched five-head learned CAP2 matrix remains the outstanding
+SLM-403 work.
 
 ## Regression coverage
 

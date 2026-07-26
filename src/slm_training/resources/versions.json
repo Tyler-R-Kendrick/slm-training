@@ -1011,16 +1011,22 @@
       ]
     },
     "evals.cap2_operator": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/cap2_operator.py",
         "src/slm_training/resources/evals/cap2_operator_v1.json",
+        "src/slm_training/resources/evals/cap2_operator_v2.json",
         "scripts/run_cap2_operator_eval_fixture.py",
         "tests/test_evals/test_cap2_operator.py",
         "tests/test_scripts/test_run_cap2_operator_eval_fixture.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "current-contract CAP2 v2 fixture preserves the immutable v1 manifest while binding replay to post-DSH5 action-effect identities"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -6924,6 +6930,11 @@
         "docs/design/dsh3-28-typed-operator-policy.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "no-bump: record CAP2 v2 fixture reconciliation without changing the typed-policy harness behavior."
+        },
         {
           "version": "v8",
           "date": "2026-07-26",
