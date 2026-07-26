@@ -10,6 +10,7 @@ import torch
 
 from slm_training.dsl.abstract_plan import (
     AbstractPlanV1,
+    RoleSpanV1,
     resize_embedding_preserving_rows,
     verify_embedding_resize_preserved_old_rows,
 )
@@ -105,6 +106,141 @@ def test_assert_no_collisions_fails_closed_on_overlap() -> None:
         plan.assert_no_collisions({"<ABS_0>", "unrelated"})
     with pytest.raises(ValueError, match="collide"):
         plan.assert_no_collisions({ABSTRACT_PLAN_BEGIN})
+
+
+# --- RoleSpanV1 / role_spans (AP-025 / SLM-318) -----------------------------
+
+
+def test_role_span_valid_defaults() -> None:
+    span = RoleSpanV1(role="intent", start=0, length=4)
+    assert span.end == 4
+    assert span.max_length is None
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"role": "Bad Role", "start": 0, "length": 1},
+        {"role": "intent", "start": -1, "length": 1},
+        {"role": "intent", "start": 0, "length": 0},
+        {"role": "intent", "start": 0, "length": 2, "max_length": 0},
+        {"role": "intent", "start": 0, "length": 2, "max_length": 3},
+    ],
+)
+def test_role_span_rejects_invalid_configurations(kwargs: dict) -> None:
+    with pytest.raises(ValueError):
+        RoleSpanV1(**kwargs)
+
+
+def test_role_span_to_dict_from_dict_round_trip() -> None:
+    span = RoleSpanV1(role="topology", start=4, length=3, max_length=2)
+    restored = RoleSpanV1.from_dict(span.to_dict())
+    assert restored == span
+
+
+def _role_factorized_plan() -> AbstractPlanV1:
+    return AbstractPlanV1(
+        slot_count=8,
+        max_slot_count=8,
+        role_spans=(
+            RoleSpanV1(role="intent", start=0, length=3),
+            RoleSpanV1(role="topology", start=3, length=5, max_length=2),
+        ),
+    )
+
+
+def test_role_factorized_plan_is_interpretable_and_reports_roles() -> None:
+    plan = _role_factorized_plan()
+    assert plan.is_role_factorized
+    assert plan.is_interpretable
+    assert plan.role_names == ("intent", "topology")
+    assert plan.role_for_slot(0) == "intent"
+    assert plan.role_for_slot(2) == "intent"
+    assert plan.role_for_slot(3) == "topology"
+    assert plan.role_for_slot(7) == "topology"
+
+
+def test_role_slot_indices_and_token_ids_and_mask() -> None:
+    plan = _role_factorized_plan()
+    assert plan.role_slot_indices("intent") == (0, 1, 2)
+    assert plan.role_slot_indices("topology") == (3, 4, 5, 6, 7)
+    assert plan.role_slot_token_ids("intent") == plan.slot_token_ids[:3]
+    mask = plan.role_slot_mask("intent")
+    assert mask == (True, True, True, False, False, False, False, False)
+
+
+def test_role_span_lookup_rejects_unknown_role() -> None:
+    plan = _role_factorized_plan()
+    with pytest.raises(KeyError):
+        plan.role_span("unknown")
+    with pytest.raises(KeyError):
+        plan.role_slot_indices("unknown")
+
+
+def test_homogeneous_plan_has_no_roles() -> None:
+    plan = AbstractPlanV1()
+    assert not plan.is_role_factorized
+    assert plan.role_names == ()
+    assert plan.role_for_slot(0) is None
+
+
+def test_role_spans_reject_overlap_and_out_of_order() -> None:
+    with pytest.raises(ValueError, match="overlap"):
+        AbstractPlanV1(
+            slot_count=8,
+            max_slot_count=8,
+            role_spans=(
+                RoleSpanV1(role="intent", start=0, length=4),
+                RoleSpanV1(role="topology", start=3, length=4),
+            ),
+        )
+
+
+def test_role_spans_reject_duplicate_role_name() -> None:
+    with pytest.raises(ValueError, match="duplicate"):
+        AbstractPlanV1(
+            slot_count=8,
+            max_slot_count=8,
+            role_spans=(
+                RoleSpanV1(role="intent", start=0, length=2),
+                RoleSpanV1(role="intent", start=2, length=2),
+            ),
+        )
+
+
+def test_role_spans_reject_range_exceeding_slot_count() -> None:
+    with pytest.raises(ValueError, match="exceeds slot_count"):
+        AbstractPlanV1(
+            slot_count=4,
+            max_slot_count=4,
+            role_spans=(RoleSpanV1(role="intent", start=0, length=5),),
+        )
+
+
+def test_role_spans_and_role_metadata_are_mutually_exclusive() -> None:
+    with pytest.raises(ValueError, match="alternate role"):
+        AbstractPlanV1(
+            slot_count=4,
+            max_slot_count=4,
+            role_metadata=(None, None, None, None),
+            role_spans=(RoleSpanV1(role="intent", start=0, length=4),),
+        )
+
+
+def test_role_factorized_plan_to_dict_from_dict_round_trip() -> None:
+    plan = _role_factorized_plan()
+    restored = AbstractPlanV1.from_dict(plan.to_dict())
+    assert restored == plan
+    assert restored.compatibility_fingerprint == plan.compatibility_fingerprint
+
+
+def test_role_spans_do_not_change_token_ids_or_collide() -> None:
+    """Spans only label existing slot indices -- no new reserved token text,
+    so collision-freedom and the codebook_version pin are both unaffected."""
+    homogeneous = AbstractPlanV1(slot_count=8, max_slot_count=8)
+    factorized = _role_factorized_plan()
+    assert homogeneous.token_ids == factorized.token_ids
+    factorized.assert_no_collisions({"unrelated"})
 
 
 # --- Embedding resize ---------------------------------------------------
