@@ -7271,7 +7271,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v254",
+      "version": "v255",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7313,6 +7313,11 @@
         "src/slm_training/resources/decode/speculative_ngram_v1.json"
       ],
       "history": [
+        {
+          "version": "v255",
+          "date": "2026-07-26",
+          "note": "choice_tokenizer object-key candidates: skip schema property names absent from live vocab (use token_to_id.get) so constrained decode fails closed with empty/partial domain instead of KeyError on n:<name> (hit on smoke eval with n:required)."
+        },
         {
           "version": "v254",
           "date": "2026-07-26",
