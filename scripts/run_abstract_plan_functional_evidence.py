@@ -246,7 +246,7 @@ def _local_eval_config(*, root: Path, suite: str):
         context_backend="scratch",
         local_files_only=True,
         optimizer_name="adamw",
-        # Keep the five-second watchdog per decode, not per multi-record
+        # Keep the ten-second watchdog per decode, not per multi-record
         # evaluator chunk; a slow neighboring row must not invalidate a
         # completed row's bounded local evidence.
         batch_size=1,
@@ -257,7 +257,7 @@ def _local_eval_config(*, root: Path, suite: str):
         abstract_plan_connector_arm="learned",
         abstract_plan_loss_weight=0.5,
         abstract_plan_train_conditioning=True,
-        decode_timeout_seconds=5.0,
+        decode_timeout_seconds=10.0,
         run_class="scratch_matrix",
     )
 

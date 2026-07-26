@@ -78,4 +78,6 @@ def test_singleton_bypass_retains_no_plan_and_plan_metadata() -> None:
 
 
 def test_local_runner_times_out_each_decode_not_a_multi_record_chunk() -> None:
-    assert _local_eval_config(root=Path("outputs/fixture"), suite="fixture").batch_size == 1
+    config = _local_eval_config(root=Path("outputs/fixture"), suite="fixture")
+    assert config.batch_size == 1
+    assert config.decode_timeout_seconds == 10.0

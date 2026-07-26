@@ -9004,7 +9004,7 @@
       ]
     },
     "harness.experiments.slm313_abstract_plan_functional_evidence": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/abstract_plan_functional_evidence.py",
@@ -9016,6 +9016,11 @@
         "docs/design/iter-slm313-abstract-plan-functional-evidence-agentv-20260726/"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-26",
+          "note": "SLM-313 retains a bounded ten-second per-record decode watchdog after a valid local shard exposed a five-second false timeout; the outer 170-second run cap is unchanged."
+        },
         {
           "version": "v10",
           "date": "2026-07-26",
