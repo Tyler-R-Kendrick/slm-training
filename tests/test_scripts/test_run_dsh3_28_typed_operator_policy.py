@@ -69,3 +69,18 @@ def test_controlled_partial_flag_is_accepted_before_matrix_execution(tmp_path) -
                 "local_flat,local_flat",
             ]
         )
+
+
+def test_negative_ablation_flag_is_accepted_before_matrix_execution(tmp_path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "--output-dir",
+                str(tmp_path / "evidence"),
+                "--corpus-work-dir",
+                str(tmp_path / "corpus"),
+                "--freeze-negative-ablation",
+                "--head-families",
+                "local_flat,local_flat",
+            ]
+        )

@@ -12,6 +12,7 @@ from slm_training.data.flow.operator_policy_corpus import (
     build_operator_policy_corpus,
     build_operator_policy_rows,
     build_operator_termination_rows,
+    freeze_collapse_negative_ablation,
     materialize_operator_policy_selection,
 )
 from slm_training.dsl.operators import (
@@ -202,6 +203,51 @@ def test_conflict_hard_negative_is_reprojected_onto_step_zero() -> None:
     assert rows[0].hard_negative.conflict_code is not None
     assert rows[0].hard_negative.observed_final_state_digest is None
     assert rows[1].hard_negative is None
+
+
+def test_freeze_collapse_negative_ablation_requires_both_replay_outcomes_per_split() -> None:
+    _pack, _library, conflict_trace, conflict_collapse, conflict_resolver = _conflict_fixture()
+    _pack, _library, result_trace, result_collapse, result_resolver = _different_result_fixture()
+    conflict_rows, _ = build_operator_policy_rows(
+        trace=conflict_trace, collapse=conflict_collapse, authority_resolver=conflict_resolver
+    )
+    result_rows, _ = build_operator_policy_rows(
+        trace=result_trace, collapse=result_collapse, authority_resolver=result_resolver
+    )
+
+    stopped = freeze_collapse_negative_ablation((*conflict_rows, *result_rows))
+    ready = freeze_collapse_negative_ablation(
+        (
+            *conflict_rows,
+            *result_rows,
+            *(
+                replace(row, split="dev", collapse_id=_sha("dev:" + row.collapse_id))
+                for row in conflict_rows
+            ),
+            *(
+                replace(row, split="dev", collapse_id=_sha("dev:" + row.collapse_id))
+                for row in result_rows
+            ),
+        )
+    )
+
+    assert not stopped.ready
+    assert stopped.stop_reason == "missing replay-verified matched negative strata: dev:conflict, dev:different_result"
+    assert ready.ready
+    assert ready.stop_reason is None
+    assert [example.outcome for example in ready.examples].count(HardNegativeOutcome.CONFLICT) == 2
+    assert [example.outcome for example in ready.examples].count(HardNegativeOutcome.DIFFERENT_RESULT) == 2
+    assert "hard_negative" not in result_rows[0].policy_input
+
+
+def test_freeze_collapse_negative_ablation_rejects_cross_split_source_trace() -> None:
+    _pack, _library, trace, collapse, authority_resolver = _conflict_fixture()
+    rows, _ = build_operator_policy_rows(
+        trace=trace, collapse=collapse, authority_resolver=authority_resolver
+    )
+
+    with pytest.raises(ValueError, match="source trace appears"):
+        freeze_collapse_negative_ablation((rows[0], replace(rows[0], split="dev")))
 
 
 def test_rows_carry_only_allowlisted_policy_input_fields() -> None:
