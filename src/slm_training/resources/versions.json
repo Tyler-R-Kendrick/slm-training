@@ -7304,6 +7304,23 @@
         }
       ]
     },
+    "harness.experiments.operator_router": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_router.py",
+        "scripts/run_dsh5_09_adaptive_router_preflight.py",
+        "tests/test_harnesses/experiments/test_operator_router.py",
+        "docs/design/dsh5-09-adaptive-router-20260726-local/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-417: fail-closed execution-mode router contract with leak-sealed pre-routing features, compiler availability filtering, deterministic fallback, diagnostic-only all-arm oracle labels, and bounded local admission disposition"
+        }
+      ]
+    },
     "harness.experiments.operator_transaction_policy": {
       "version": "v1",
       "kind": "harness",

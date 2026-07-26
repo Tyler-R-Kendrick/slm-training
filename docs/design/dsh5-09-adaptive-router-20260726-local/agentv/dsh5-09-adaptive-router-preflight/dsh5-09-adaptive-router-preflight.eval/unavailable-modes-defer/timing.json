@@ -1,0 +1,19 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f134e514385fbce0a634be00eb3ffdc5bd653ad0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.operator_router": "v1"
+    },
+    "stamped_at": "2026-07-26T23:27:03.984289+00:00"
+  }
+}
