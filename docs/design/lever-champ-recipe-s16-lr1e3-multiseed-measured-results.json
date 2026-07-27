@@ -1,0 +1,80 @@
+{
+  "recipe": "s16_lr1e-3_asap_t30",
+  "rows": [
+    {
+      "seed": 42,
+      "last_loss": 14.213562965393066,
+      "steps": 16,
+      "stopped_on": "steps",
+      "parse_rate": 0.3333333333333333,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.30233333333333334,
+      "empty_prediction_count": 2,
+      "latency_ms_p50": 30002.73,
+      "run_id": "exp_lever_champ_s16_lr1e3_seed42"
+    },
+    {
+      "seed": 47,
+      "last_loss": 14.628984451293945,
+      "steps": 16,
+      "stopped_on": "steps",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 2257.29,
+      "run_id": "exp_lever_champ_s16_lr1e3_seed47"
+    },
+    {
+      "seed": 48,
+      "last_loss": 8.76088809967041,
+      "steps": 16,
+      "stopped_on": "steps",
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.5296666666666666,
+      "empty_prediction_count": 1,
+      "latency_ms_p50": 25346.33,
+      "run_id": "exp_lever_champ_s16_lr1e3_seed48"
+    },
+    {
+      "seed": 51,
+      "last_loss": 11.27532958984375,
+      "steps": 16,
+      "stopped_on": "steps",
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "latency_ms_p50": 30002.13,
+      "run_id": "exp_lever_champ_s16_lr1e3_seed51"
+    },
+    {
+      "seed": 52,
+      "last_loss": 9.31934928894043,
+      "steps": 16,
+      "stopped_on": "steps",
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "latency_ms_p50": 30007.64,
+      "run_id": "exp_lever_champ_s16_lr1e3_seed52"
+    }
+  ],
+  "success": 1,
+  "best": {
+    "seed": 47,
+    "last_loss": 14.628984451293945,
+    "steps": 16,
+    "stopped_on": "steps",
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.3333333333333333,
+    "reward_score": 0.7653333333333334,
+    "empty_prediction_count": 0,
+    "latency_ms_p50": 2257.29,
+    "run_id": "exp_lever_champ_s16_lr1e3_seed47"
+  },
+  "not_ship": true,
+  "captured_at": "2026-07-27T15:14:50.730998+00:00"
+}
