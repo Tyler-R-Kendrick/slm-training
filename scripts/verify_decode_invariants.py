@@ -16,6 +16,8 @@ side effect. It certifies six things:
 6. The reserved operator-token channel has not drifted from default-off
    without a documented decision, and the shared encoder/decoder ops
    vocabulary matches its committed fingerprint (I13).
+7. Every registered model variant's contract (VAR0-01) matches its live
+   sources, and no variant falsely claims pack-derived component inventory.
 
 Run: ``python -m scripts.verify_decode_invariants``
 """
@@ -113,8 +115,8 @@ def _module(relative: str) -> ast.Module:
     return ast.parse(_read(relative), filename=relative)
 
 
-def _weakening_levers() -> dict[str, Any]:
-    """Read the registry statically so the check needs no torch import."""
+def _lever_registry(registry_name: str) -> dict[str, Any]:
+    """Read a lever registry statically so the check needs no torch import."""
     tree = _module("src/slm_training/levers.py")
     for node in tree.body:
         if not isinstance(node, ast.AnnAssign) and not isinstance(node, ast.Assign):
@@ -123,15 +125,38 @@ def _weakening_levers() -> dict[str, Any]:
             [node.target] if isinstance(node, ast.AnnAssign) else list(node.targets)
         )
         names = {t.id for t in targets if isinstance(t, ast.Name)}
-        if "CONSTRAINT_WEAKENING_LEVERS" not in names or node.value is None:
+        if registry_name not in names or node.value is None:
             continue
         registry = ast.literal_eval(node.value)
         if not registry:
-            raise DecodeInvariantError("CONSTRAINT_WEAKENING_LEVERS is empty")
+            raise DecodeInvariantError(f"{registry_name} is empty")
         return registry
-    raise DecodeInvariantError(
-        "levers.py no longer defines CONSTRAINT_WEAKENING_LEVERS"
-    )
+    raise DecodeInvariantError(f"levers.py no longer defines {registry_name}")
+
+
+def _weakening_levers() -> dict[str, Any]:
+    return _lever_registry("CONSTRAINT_WEAKENING_LEVERS")
+
+
+def _capacity_levers() -> dict[str, Any]:
+    """Invariant VI: every capacity knob stays declared with its baseline.
+
+    Deleting or emptying this registry would make model growth invisible to
+    size-matching and to EG_params, which is exactly how a scaled-up model
+    gets credited with a capability win.
+    """
+    registry = _lever_registry("CAPACITY_SCALING_LEVERS")
+    missing = [
+        name
+        for name, spec in sorted(registry.items())
+        if "baseline_value" not in spec or not spec.get("axis")
+    ]
+    if missing:
+        raise DecodeInvariantError(
+            "CAPACITY_SCALING_LEVERS entries missing baseline_value/axis: "
+            + ", ".join(missing)
+        )
+    return registry
 
 
 def _dataclass_defaults(relative: str, class_name: str) -> dict[str, Any]:
@@ -354,11 +379,50 @@ def check_ops_vocab() -> dict[str, Any]:
     return {"fingerprint": live["fingerprint"], "count": live["count"]}
 
 
+def check_variant_contracts() -> dict[str, Any]:
+    """VAR0-01: every registered model variant matches its live sources.
+
+    This one check imports, like ``check_ops_vocab``, because the point is
+    comparing a committed registry against values derived from each
+    variant's live sources (module-level action constants, the live operator
+    registry, the pack registry) — a pure text check could not tell an
+    honest classification from a stale or false one. Building
+    ``slm_training.dsl.variants`` itself stays torch-free, so this adds no
+    heavy dependency to the static CI job.
+    """
+    try:
+        from slm_training.dsl.variants import fingerprint, load_registry, manifest
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(f"variant registry is unimportable: {exc}") from exc
+
+    try:
+        committed = load_registry()
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(
+            f"committed variant registry is unreadable: {exc}"
+        ) from exc
+    live = manifest()
+    if committed.get("fingerprint") != fingerprint():
+        raise DecodeInvariantError(
+            "variant registry drifted from its committed contracts; a variant "
+            "was added, removed, or reclassified. Rebuild with "
+            "`python -c 'from slm_training.dsl.variants import write_registry;"
+            " write_registry()'` and bump `dsl.variants` in versions.json "
+            f"(see {CANONICAL_DOC})"
+        )
+    if committed != live:
+        raise DecodeInvariantError("committed variant registry is stale")
+    if not live["count"]:
+        raise DecodeInvariantError("variant registry is empty")
+    return {"fingerprint": live["fingerprint"], "count": live["count"]}
+
+
 def certify() -> dict[str, Any]:
     levers = _weakening_levers()
     return {
         "canonical_doc": CANONICAL_DOC,
         "weakening_levers": sorted(levers),
+        "capacity_levers": sorted(_capacity_levers()),
         "canonical_defaults": check_canonical_defaults(levers),
         "strict_policies": check_strict_policies(levers),
         "serving_fail_closed": check_serving_fails_closed(),
@@ -367,6 +431,7 @@ def certify() -> dict[str, Any]:
         "linking_docs": check_docs_link_canonical(),
         "reserved_ops": check_reserved_ops_default_off(),
         "ops_vocab": check_ops_vocab(),
+        "variant_contracts": check_variant_contracts(),
     }
 
 

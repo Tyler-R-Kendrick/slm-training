@@ -44,6 +44,63 @@ ABSTRACT_PLAN_SOURCES = frozenset({"reserved_codebook"})
 
 
 @dataclass(frozen=True)
+class RoleSpanV1:
+    """One named, contiguous, non-overlapping codebook range (AP-025 / SLM-318).
+
+    Partitions a slice of an :class:`AbstractPlanV1`'s ``slot_count`` codebook
+    into a role family (e.g. ``intent``, ``inventory``, ``cardinality``,
+    ``topology``, ``bindings``, ``style`` -- the families ``semantic_plan_factors``
+    already uses for the richer ``SemanticPlanV1``). This only labels which
+    codebook indices belong to which role; it reserves no new vocabulary token
+    and changes no token id, so it never touches ``codebook_version``.
+    """
+
+    role: str
+    start: int
+    length: int
+    # Optional per-role budget on how many *occupied* rounds of this role may
+    # remain non-truncated; must be <= length when set. None means "no cap
+    # beyond length itself".
+    max_length: int | None = None
+
+    def __post_init__(self) -> None:
+        if not _ROLE_RE.fullmatch(self.role):
+            raise ValueError(f"invalid RoleSpanV1 role: {self.role!r}")
+        if self.start < 0:
+            raise ValueError("RoleSpanV1.start must be >= 0")
+        if self.length < 1:
+            raise ValueError("RoleSpanV1.length must be >= 1")
+        if self.max_length is not None and not 1 <= self.max_length <= self.length:
+            raise ValueError(
+                "RoleSpanV1.max_length must be within [1, length] when set, "
+                f"got {self.max_length} for length {self.length}"
+            )
+
+    @property
+    def end(self) -> int:
+        """Exclusive end of this role's codebook range."""
+        return self.start + self.length
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "role": self.role,
+            "start": self.start,
+            "length": self.length,
+            "max_length": self.max_length,
+        }
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> "RoleSpanV1":
+        max_length = value.get("max_length")
+        return cls(
+            role=str(value["role"]),
+            start=int(value["start"]),
+            length=int(value["length"]),
+            max_length=int(max_length) if max_length is not None else None,
+        )
+
+
+@dataclass(frozen=True)
 class AbstractPlanV1:
     """Versioned, collision-free discrete latent-plan codebook contract."""
 
@@ -58,6 +115,12 @@ class AbstractPlanV1:
     # Per-slot optional role label. Empty by default: the base variant is
     # intentionally non-interpretable. Must be empty or exactly slot_count long.
     role_metadata: tuple[str | None, ...] = ()
+    # Ordered, non-overlapping named codebook ranges (AP-025 / SLM-318): an
+    # alternate, span-based role representation. Empty by default -- the base
+    # variant is homogeneous. Mutually exclusive with role_metadata (pick one
+    # role representation per plan) so a slot never carries two conflicting
+    # role identities.
+    role_spans: tuple[RoleSpanV1, ...] = ()
     source: str = "reserved_codebook"
     provenance: str = "ap2_causal_pilot_warm_up"
 
@@ -110,6 +173,30 @@ class AbstractPlanV1:
         for role in self.role_metadata:
             if role is not None and not _ROLE_RE.fullmatch(role):
                 raise ValueError(f"invalid role_metadata entry: {role!r}")
+        if self.role_spans:
+            if self.role_metadata:
+                raise ValueError(
+                    "role_spans and role_metadata are alternate role "
+                    "representations; set at most one"
+                )
+            seen_roles: set[str] = set()
+            prev_end = 0
+            for span in self.role_spans:
+                if span.start < prev_end:
+                    raise ValueError(
+                        "role_spans must be ordered by ascending start with no "
+                        f"overlap: role {span.role!r} starts at {span.start}, "
+                        f"before the previous span's end {prev_end}"
+                    )
+                if span.role in seen_roles:
+                    raise ValueError(f"duplicate RoleSpanV1 role: {span.role!r}")
+                if span.end > self.slot_count:
+                    raise ValueError(
+                        f"role_spans role {span.role!r} range [{span.start}, "
+                        f"{span.end}) exceeds slot_count {self.slot_count}"
+                    )
+                seen_roles.add(span.role)
+                prev_end = span.end
         if self.source not in ABSTRACT_PLAN_SOURCES:
             raise ValueError(f"unknown AbstractPlanV1 source: {self.source!r}")
         if not self.provenance:
@@ -118,7 +205,45 @@ class AbstractPlanV1:
     @property
     def is_interpretable(self) -> bool:
         """False in the base variant: no slot carries an assigned role."""
-        return any(role is not None for role in self.role_metadata)
+        return any(role is not None for role in self.role_metadata) or bool(
+            self.role_spans
+        )
+
+    @property
+    def is_role_factorized(self) -> bool:
+        """True iff this plan uses the span-based (not per-slot) role representation."""
+        return bool(self.role_spans)
+
+    @property
+    def role_names(self) -> tuple[str, ...]:
+        return tuple(span.role for span in self.role_spans)
+
+    def role_span(self, role: str) -> RoleSpanV1:
+        for span in self.role_spans:
+            if span.role == role:
+                return span
+        raise KeyError(f"unknown role: {role!r}")
+
+    def role_for_slot(self, slot_index: int) -> str | None:
+        """The role owning ``slot_index``, or None if unassigned/homogeneous."""
+        for span in self.role_spans:
+            if span.start <= slot_index < span.end:
+                return span.role
+        return None
+
+    def role_slot_indices(self, role: str) -> tuple[int, ...]:
+        span = self.role_span(role)
+        return tuple(range(span.start, span.end))
+
+    def role_slot_token_ids(self, role: str) -> tuple[int, ...]:
+        """Absolute reserved vocabulary ids of ``role``'s codebook range."""
+        all_ids = self.slot_token_ids
+        return tuple(all_ids[i] for i in self.role_slot_indices(role))
+
+    def role_slot_mask(self, role: str) -> tuple[bool, ...]:
+        """Boolean mask over ``range(slot_count)``, True where the slot is ``role``'s."""
+        span = self.role_span(role)
+        return tuple(span.start <= i < span.end for i in range(self.slot_count))
 
     @property
     def slot_tokens(self) -> tuple[str, ...]:
@@ -158,6 +283,7 @@ class AbstractPlanV1:
             "begin_token": self.begin_token,
             "end_token": self.end_token,
             "role_metadata": list(self.role_metadata),
+            "role_spans": [span.to_dict() for span in self.role_spans],
             "source": self.source,
             "provenance": self.provenance,
         }
@@ -178,6 +304,9 @@ class AbstractPlanV1:
             begin_token=str(value.get("begin_token", ABSTRACT_PLAN_BEGIN)),
             end_token=str(value.get("end_token", ABSTRACT_PLAN_END)),
             role_metadata=tuple(value.get("role_metadata") or ()),
+            role_spans=tuple(
+                RoleSpanV1.from_dict(span) for span in value.get("role_spans") or ()
+            ),
             source=str(value.get("source", "reserved_codebook")),
             provenance=str(
                 value.get("provenance", "ap2_causal_pilot_warm_up")
@@ -274,6 +403,7 @@ def verify_embedding_resize_preserved_old_rows(
 __all__ = [
     "ABSTRACT_PLAN_SOURCES",
     "AbstractPlanV1",
+    "RoleSpanV1",
     "resize_embedding_preserving_rows",
     "verify_embedding_resize_preserved_old_rows",
 ]

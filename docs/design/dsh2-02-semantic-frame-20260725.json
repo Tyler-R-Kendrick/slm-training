@@ -1,0 +1,71 @@
+{
+  "schema_version": "semantic_frame_derivation/v1",
+  "issue": "SLM-363",
+  "date": "2026-07-25",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "implementation": "SemanticFrameV1 / derive_semantic_frame",
+  "schema_authority": "DslPack.prop_order + backend.component_names/content_props",
+  "slm_343_status": "backlog design-doc-only; not imported; own minimal schema derived from merged DslPack slots",
+  "cap1_schema_fingerprint": "d0ebf90e5a49bcd4c17d85ffad9fd4621f7a585948ec1575dc9462a3f24257a0",
+  "cap1_schema_summary": {
+    "dsl": "openui",
+    "component_count": 54,
+    "content_prop_count": 10,
+    "default_closed_domains": ["grammar.bool_literal", "grammar.binop_operators", "grammar.unaryop_operators"]
+  },
+  "controls": {
+    "every_required_forbidden_fact_has_provenance": "passed",
+    "renamed_reordered_equivalent_sources_yield_equivalent_frames": "passed",
+    "distinct_layouts_not_equivalent": "passed",
+    "closed_bool_value_declares_required_and_forbidden_alternative": "passed",
+    "query_and_mutation_refs_yield_relations_and_effects": "passed",
+    "state_ref_yields_reads_state_relation": "passed",
+    "unknown_component_fails_closed": "passed",
+    "excess_positional_args_args_overflow_fails_closed": "passed",
+    "value_outside_declared_closed_domain_fails_closed": "passed",
+    "unrecognized_builtin_effect_call_fails_closed": "passed",
+    "schema_default_downgrades_fact_to_optional": "passed",
+    "frame_conflicts_flags_hand_introduced_contradiction": "passed",
+    "constraint_satisfied_by_same_candidate_violated_by_divergent_one": "passed",
+    "constraint_check_rejects_schema_fingerprint_mismatch": "passed",
+    "one_fact_counterfactual_proves_exactly_one_changed_fact": "passed",
+    "counterfactual_refuses_without_closed_domain_fact": "passed"
+  },
+  "commands": [
+    "python -m pytest -q tests/test_dsl/test_semantic_frame.py",
+    "python -m pytest -q tests/test_dsl/test_semantic_frame.py tests/test_dsl/test_grammar_capabilities.py tests/test_dsl/test_pack.py tests/test_dsl/test_operator_registry.py",
+    "python -m ruff check src/slm_training/dsl/semantic_frame.py tests/test_dsl/test_semantic_frame.py",
+    "python -m ruff format --check src/slm_training/dsl/semantic_frame.py tests/test_dsl/test_semantic_frame.py",
+    "python -m compileall -q src/slm_training/dsl/semantic_frame.py tests/test_dsl/test_semantic_frame.py",
+    "python -m scripts.repo_policy",
+    "python -m scripts.verify_version_stamps --check",
+    "git diff --check"
+  ],
+  "results": {
+    "focused_pytest_new_module": "17 passed",
+    "neighboring_dsl_pytest": "44 passed, 9 pre-existing failures (Node bridge deps not installed in this sandbox; identical with this change stashed out)",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "compileall": "passed",
+    "repo_policy": "ok (tracked + untracked)",
+    "version_stamps": "passed",
+    "diff_check": "passed"
+  },
+  "claim_limits": [
+    "No corpus synthesis, train, model eval, benchmark, checkpoint, AgentEvals publication, capability certificate, or ship claim was produced.",
+    "This is a fixture/contract-level derivation module only.",
+    "OpenUI's @-prefixed builtin-call vocabulary (@Run/@Set/@Count/...) is not in the schema's closed effect dispatch table and fails closed rather than being guessed a role.",
+    "closed_value_domains beyond grammar-intrinsic bool/operator-token sets are a caller-declared policy, not re-derived from the grammar; the shipped from_pack() factory declares none by default.",
+    "9 pre-existing test failures in this sandbox (test_pack.py, test_operator_registry.py) are caused by a missing Node.js bridge install (npm ci not run under src/apps/openui_bridge) and are unrelated to this change; confirmed identical with this change stashed out."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d77dfa08a76e6b7030f039bd1c36fd93fdc0a62b",
+    "code_dirty": true,
+    "components": {
+      "dsl.semantic_frame": "v1"
+    },
+    "stamped_at": "2026-07-25T04:54:23.157116+00:00"
+  }
+}

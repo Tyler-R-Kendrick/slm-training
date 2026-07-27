@@ -78,6 +78,19 @@ Do not add matrix rows without a runnable script path.
 - [ ] Ship/perf pass-fail stated with caveats
 - [ ] No silent gold channels on honest rows
 
+## Parameter efficiency (matrix arms)
+
+- Arms compared to attribute a quality delta must be **size-matched**
+  (`levers.require_size_matched_arms`) or must charge the difference. A delta
+  between arms of different capacity is not evidence about the varied factor.
+- Model geometry (`d_model`, `n_heads`, `context_layers`, `denoiser_layers`,
+  the HF backbone) is a **declared experiment subject**, never a default knob
+  folded into a champion recipe. Capacity ladders are legitimate; a champion
+  that quietly carries a wider geometry is not.
+- Report trainable parameters in every matrix row alongside the quality
+  columns, and prefer the smallest arm within the noise band when picking a
+  champion.
+
 ## Decode invariants (matrix arms)
 
 `AGENTS.md` § Non-negotiable architecture invariants is goal law; canonical

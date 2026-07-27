@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 
+from scripts import verify_agent_surfaces
 from scripts import verify_decode_invariants as verifier
 
 
@@ -25,6 +26,7 @@ def sandbox(tmp_path, monkeypatch):
     (tmp_path / "docs/openwiki").mkdir(parents=True)
     (tmp_path / ".github").mkdir(parents=True)
     (tmp_path / ".cursor/rules").mkdir(parents=True)
+    (tmp_path / ".grok/workflows").mkdir(parents=True)
     for skill in (
         "autotrain",
         "honest-ship-eval",
@@ -45,6 +47,11 @@ def sandbox(tmp_path, monkeypatch):
         ' "invariant": "I6", "effect": "legality", "note": ""},\n'
         '    "grammar_fastpath": {"safe_value": True, "invariant": "I2",'
         ' "effect": "bypass", "note": ""},\n'
+        "}\n"
+        "CAPACITY_SCALING_LEVERS = {\n"
+        '    "d_model": {"baseline_value": 128, "axis": "width", "note": ""},\n'
+        '    "denoiser_layers": {"baseline_value": 4, "axis": "depth",'
+        ' "note": ""},\n'
         "}\n",
     )
     config_body = (
@@ -107,6 +114,10 @@ def sandbox(tmp_path, monkeypatch):
         ".cursor/rules/decode-invariants.mdc",
         "alwaysApply: true\ndocs/design/decode-invariants.md\n",
     )
+    write(
+        ".grok/workflows/autotrain.rhai",
+        "// docs/design/decode-invariants.md\n",
+    )
     for skill in (
         "autotrain",
         "honest-ship-eval",
@@ -121,6 +132,11 @@ def sandbox(tmp_path, monkeypatch):
         write(relative, "see decode-invariants.md\n")
 
     monkeypatch.setattr(verifier, "ROOT", tmp_path)
+    # check_agent_surfaces() imports scripts.verify_agent_surfaces directly, which
+    # reads paths off its own module-level ROOT rather than verifier.ROOT — patch
+    # it too so the orphaned-surface tests exercise the sandboxed tree instead of
+    # silently falling through to the real repository's surfaces.
+    monkeypatch.setattr(verify_agent_surfaces, "ROOT", tmp_path)
     return tmp_path, write
 
 

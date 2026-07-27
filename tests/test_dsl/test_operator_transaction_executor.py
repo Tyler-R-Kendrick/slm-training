@@ -334,6 +334,7 @@ def _all_topological_orders(
     requires for this test-only oracle) — never used outside this test
     module.
     """
+    assert len(ids) <= 6, "tiny-domain oracle only: factorial blowup guard"
     orders = []
     for perm in itertools.permutations(ids):
         position = {node: index for index, node in enumerate(perm)}
@@ -524,6 +525,12 @@ def test_bulk_plus_primitive_mixed_transaction_commits() -> None:
         ),
         provenance=provenance,
     )
+    selector_argument = next(
+        argument
+        for argument in bulk_prepared.semantic_arguments
+        if argument.slot_id == "selector"
+    )
+    assert selector_argument.ref_kind is RefKind.SELECTOR
     primitive_prepared = prepare_operator_action(
         pack=pack_with_library,
         library=library,
