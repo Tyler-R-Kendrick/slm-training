@@ -1,0 +1,43 @@
+{
+  "seed_robustness": {
+    "seed42": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.7222222222222222,
+      "latency_ms_p50": 8994.71,
+      "last_loss": 12.026487350463867,
+      "steps": 36,
+      "stopped_on": "steps",
+      "seed": 42
+    },
+    "seed43": {
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "placeholder_fidelity": 0.0,
+      "latency_ms_p50": 30001.61,
+      "last_loss": 5.497641086578369,
+      "steps": 34,
+      "stopped_on": "wall_time_budget",
+      "seed": 43
+    },
+    "seed44": {
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.463,
+      "decode_timeout_count": 1,
+      "empty_prediction_count": 1,
+      "placeholder_fidelity": 0.19444444444444442,
+      "latency_ms_p50": 13988.58,
+      "last_loss": 7.11176872253418,
+      "steps": 36,
+      "stopped_on": "steps",
+      "seed": 44
+    }
+  }
+}

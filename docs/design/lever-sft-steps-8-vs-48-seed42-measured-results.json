@@ -1,0 +1,87 @@
+{
+  "experiment_id": "lever_sft_steps_8_vs_48_seed42",
+  "hypothesis": "Increasing SFT steps 8\u219248 (fixed seed=42, same data/backend) reduces empty_prediction/decode_timeout and raises parse_rate on smoke n=3.",
+  "lever": "SFT.steps",
+  "baseline_arm": "s8",
+  "treatment_arm": "s48",
+  "seed": 42,
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "train_dir": "outputs/data/train/wf_smoke_v2",
+  "test_dir": "outputs/data/eval/wf_smoke_v2",
+  "model": "twotower",
+  "context_backend": "scratch",
+  "device": "cpu",
+  "output_tokenizer": "choice",
+  "baseline": {
+    "run_id": "exp_lever_sft_steps_baseline_s8_seed42",
+    "train": {
+      "stopped_on": "steps",
+      "steps": 8,
+      "last_loss": 29.696563720703125,
+      "elapsed_wall_seconds": 34.319464739994146,
+      "seed": null,
+      "device": "cpu",
+      "model": "twotower",
+      "context_backend": "outputs/data/train/wf_smoke_v2"
+    },
+    "metrics": {
+      "parse_rate": 0.0,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.0,
+      "latency_ms_p50": 12007.16,
+      "n": 3
+    },
+    "grammar_constrained": true,
+    "run_class": "scratch_matrix",
+    "diagnostic_subset": true,
+    "eval_limit": 3
+  },
+  "treatment": {
+    "run_id": "exp_lever_sft_steps_treatment_s48_seed42",
+    "train": {
+      "stopped_on": "wall_time_budget",
+      "steps": 36,
+      "last_loss": 12.026487350463867,
+      "elapsed_wall_seconds": 157.1974079500069,
+      "seed": null,
+      "device": "cpu",
+      "model": "twotower",
+      "context_backend": "outputs/data/train/wf_smoke_v2"
+    },
+    "metrics": {
+      "parse_rate": 0.3333333333333333,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.30233333333333334,
+      "decode_timeout_count": 2,
+      "empty_prediction_count": 2,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.02,
+      "latency_ms_p50": 12000.44,
+      "n": 3
+    },
+    "grammar_constrained": true,
+    "run_class": "scratch_matrix",
+    "diagnostic_subset": true,
+    "eval_limit": 3
+  },
+  "deltas_treatment_minus_baseline": {
+    "parse_rate": 0.3333333333333333,
+    "exact_match": 0.0,
+    "meaningful_program_rate": 0.0,
+    "reward_score": 0.30233333333333334,
+    "decode_timeout_count": -1,
+    "empty_prediction_count": -1,
+    "placeholder_fidelity": 0.3333333333333333,
+    "structural_similarity": 0.02,
+    "latency_ms_p50": -6.719999999999345,
+    "n": 0
+  },
+  "captured_at": "2026-07-27T13:30:49.381287+00:00"
+}
