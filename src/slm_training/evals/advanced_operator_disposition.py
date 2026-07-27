@@ -552,7 +552,7 @@ def build_advanced_operator_disposition(
             component_id="dsl.operators.replay_preference",
             version_stamp=component_version_stamps["SLM-418"],
             suite="tests/test_dsl/test_replay_preference.py",
-            result="5 of 7 named patterns (edit-then-undo, undo-then-redo, partial-rollback, checkout-another-state, fork-then-choose-one-branch) extract and replay-verify; partial slice",
+            result="6 of 7 named patterns (edit-then-undo, undo-then-redo, partial-rollback, checkout-another-state, fork-then-choose-one-branch, merge-success) extract and replay-verify; partial slice",
         ),
         _fixture_evidence(
             evidence_id="SLM-419.dsh5-11",
@@ -780,7 +780,7 @@ def build_advanced_operator_disposition(
 
     dv, dr = dims(
         (S, "The delivered slice (edit-then-undo, undo-then-redo) extracts rows whose chosen/rejected actions are verified legal-set members and whose chosen_output_state matches independent replay."),
-        (R, "5 of 7 named patterns are not attempted; no SFT/preference training, no four-baseline comparison, no held-out benefit measurement exists."),
+        (R, "1 of 7 named patterns (pronoun/focus follow-ups) is not attempted; merge conflict is honestly scoped out as a non-row legality constraint rather than a row. No SFT/preference training, no four-baseline comparison, no held-out benefit measurement exists."),
         (R, "No CAP0/CAP1/CAP2 retention or calibration measurement exists yet for rows sourced from this module."),
         (R, "No turn-depth or context-view ablation exists; OperatorEventMemoryReportV1 is row counts only."),
     )

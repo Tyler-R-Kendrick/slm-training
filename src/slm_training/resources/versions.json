@@ -648,6 +648,11 @@
       "history": [
         {
           "version": "v16",
+          "date": "2026-07-27",
+          "note": "no-bump: SLM-418 (DSH5-10) fourth slice re-exports extract_merge_preference_row from operators/__init__.py (dsl.operators.replay_preference bumped to v5); no change to contracts.py itself"
+        },
+        {
+          "version": "v16",
           "date": "2026-07-26",
           "note": "no-bump: pre-merge review fixup -- resolve_turn_op_ids now translates an unrecognized operator_fingerprint KeyError (CodeRabbit) into OpsVocabConditioningError, so a genuinely unrepresentable turn becomes a real unrepresentable_intents finding instead of crashing the caller; added a regression test."
         },
@@ -1086,13 +1091,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) fourth slice: add extract_merge_preference_row, a standalone extraction path (not a trace-turn scan, since a merge attempt is never a recorded ConversationTraceV1 turn) producing one MERGE_SUCCESS row per successful merge_conversation_branches attempt, grounded at the left branch tip with merge:<sorted-tip-pair> offered alongside checkout/undo in the legal set and replaying to the real BranchMergeContinuationV1 state. Merge conflict is intentionally NOT modeled as a row (no successor state to replay to, no recorded 'chosen instead' action) -- honored by construction, since merge:<pair> is only ever offered as a candidate when merge_conversation_branches has already confirmed success; a conflicting merge is proven to never pollute the ranking denominator via test_merge_conflict_never_yields_a_preference_row. 6 of ~7 verified patterns now covered; only pronoun/focus follow-ups remain, as does all SFT/preference training and held-out measurement"
+        },
         {
           "version": "v4",
           "date": "2026-07-27",
@@ -2540,7 +2550,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v138",
+      "version": "v139",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2552,6 +2562,11 @@
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v139",
+          "date": "2026-07-27",
+          "note": "SLM-434 (LAR0-07): add src/slm_training/harnesses/experiments/slm308_distance_oracle.py (ported from unmerged branch commit ae5448c5; own component harness.experiments.slm308_distance_oracle v1) and run the SLM-431-preregistered powered SLM-317 rerun now that the repair-arm model knobs exist on main."
+        },
         {
           "version": "v138",
           "date": "2026-07-27",
@@ -6662,7 +6677,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -6680,6 +6695,11 @@
         "docs/design/var1-02-set-property-action-20260726.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-27",
+          "note": "SLM-434 (LAR0-07): port the SLM-308/310 repair-arm model knobs from the never-merged branch forks (dbe2fd59/ae5448c5/d8f35563) onto main, default-off: TreeEditDiffusionConfig gains value_label_mode (default 'mutation_count' = byte-identical pre-port labels), pairwise_progress_margin, and stop_slot_accounting (default 'legacy' = byte-identical pre-port decode); 'bounded_distance' adds the SLM-308 oracle value labels + pairwise progress ranking, 'corrected' stops charging expand_per_state for duplicate STOP proposals. Verified byte-identical default behavior against pre-port main; required by the SLM-317 powered rerun's ar_repair_historical / ar_repair_improved arms."
+        },
         {
           "version": "v8",
           "date": "2026-07-26",
@@ -10868,6 +10888,11 @@
         {
           "version": "v2",
           "date": "2026-07-27",
+          "note": "no-bump: correct the hardcoded SLM-418/DSH5-10 evidence string (dsl.operators.replay_preference is now on its own v5, with merge-success bringing coverage to 6 of 7 named patterns; only pronoun/focus follow-ups remain, and merge conflict is honestly scoped as a non-row legality constraint) so a freshly-generated disposition would not understate already-landed replay-preference-row coverage; no change to disposition logic, schema, or the already-published dsh5-12-*-20260727-local snapshot, which stays immutable point-in-time evidence"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-27",
           "note": "no-bump: correct the hardcoded SLM-418/DSH5-10 evidence string (dsl.operators.replay_preference is now on its own v4, with fork-then-choose-one-branch bringing coverage to 5 of 7 named patterns) so a freshly-generated disposition would not understate already-landed replay-preference-row coverage; no change to disposition logic, schema, or the already-published dsh5-12-*-20260727-local snapshot, which stays immutable point-in-time evidence"
         },
         {
@@ -10907,6 +10932,23 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; SLM-317 LAR2-06 do-no-harm AR->repair hybrid: metamorphism-invariant commit rule (hard ladder + calibrated soft score), matched arms incl. historical/improved repair + oracle upper bound, invalid-over-valid visibility, advancement gates and repair_positive|repair_negative|inconclusive disposition"
+        }
+      ]
+    },
+    "harness.experiments.slm308_distance_oracle": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm308_distance_oracle.py",
+        "tests/test_models/test_tree_edit_diffusion_value_modes.py",
+        "docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.json",
+        "docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-434 (LAR0-07): port the SLM-308 bounded distance oracle (EXACT/BOUNDED/UNKNOWN cost-to-go over SLM-299 canonical fingerprints, training-time only, never reachable from decode) from unmerged branch commit ae5448c5 onto main's evolved edit space (SLM-425 N_ACTIONS=12 / SLM-426 pack-owned actions); dependencies (_canonical_key/_check_invariants/_enumerate_children/_normalize_inventory) verified signature-compatible with main's slm299_edit_reachability."
         }
       ]
     }
