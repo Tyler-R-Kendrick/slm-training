@@ -12,7 +12,11 @@ import onnxruntime as ort
 
 from slm_training.dsl.parser import validate
 from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
-from slm_training.models.grammar import force_emit_token_id, structural_token_ids
+from slm_training.models.grammar import (
+    force_emit_token_id,
+    require_constrained_generation,
+    structural_token_ids,
+)
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
@@ -40,6 +44,7 @@ class OnnxTwoTowerModel:
         self.tokenizer = tokenizer
         self.config = config
         self.gen_len = gen_len
+        self._last_generation_evidence: list[dict[str, object]] = []
 
     @classmethod
     def from_checkpoint(
@@ -67,6 +72,17 @@ class OnnxTwoTowerModel:
             "design_md_budget": 1800,
         }
         defaults.update(raw_config)
+        defaults.update(
+            {
+                "grammar_constrained": True,
+                "grammar_ltr_primary": True,
+                "grammar_finalize_validate": True,
+                "grammar_fastpath": True,
+                "grammar_sample_decode": False,
+                "grammar_uniform_at_unforced": False,
+                "allow_unconstrained_fallback": False,
+            }
+        )
         stem = checkpoint.with_suffix("")
         context_path = stem.with_suffix(".context.onnx")
         denoiser_path = stem.with_suffix(".denoiser.onnx")
@@ -156,10 +172,9 @@ class OnnxTwoTowerModel:
         design_md: str | None = None,
     ) -> str:
         del gold
-        use_grammar = (
-            bool(self.config.grammar_constrained)
-            if grammar_constrained is None
-            else grammar_constrained
+        require_constrained_generation(
+            grammar_constrained,
+            configured=bool(self.config.grammar_constrained),
         )
         requested = max_len or self.gen_len
         length = min(
@@ -174,8 +189,29 @@ class OnnxTwoTowerModel:
         ids[0, 0] = self.tokenizer.bos_id
         structural = sorted(structural_token_ids(self.tokenizer))
         bias = float(getattr(self.config, "structural_bias", 0.0) or 0.0)
+        singleton_bypasses = 0
+        forwards = 0
+        fallback_used = False
 
         for position in range(1, length):
+            prefix = ids[0, :position].tolist()
+            forest = build_completion_forest(
+                self.tokenizer,
+                prefix,
+                remaining_tokens=length - position,
+            )
+            if forest.coverage != "complete" or not forest.candidate_ids:
+                fallback_used = True
+                break
+            legal = set(forest.candidate_ids)
+            if len(legal) == 1:
+                choice = next(iter(legal))
+                singleton_bypasses += 1
+                ids[0, position] = choice
+                if choice == self.tokenizer.eos_id:
+                    ids[0, position + 1 :] = self.tokenizer.pad_id
+                    break
+                continue
             logits = self.denoiser_session.run(
                 ["logits"],
                 {
@@ -184,25 +220,22 @@ class OnnxTwoTowerModel:
                     "ctx_pad_mask": ctx_pad_mask,
                 },
             )[0][0, position].copy()
-            if use_grammar and bias and structural:
+            forwards += 1
+            if bias and structural:
                 logits[structural] += bias
-            prefix = ids[0, :position].tolist()
-            if use_grammar:
-                forced = (
-                    force_emit_token_id(self.tokenizer, prefix)
-                    if bool(getattr(self.config, "grammar_fastpath", True))
-                    else None
-                )
-                choice = self._pick_constrained_token(
-                    logits,
-                    prefix,
-                    forced,
-                    length - position,
-                )
-            else:
-                choice = int(logits.argmax())
+            forced = (
+                force_emit_token_id(self.tokenizer, prefix)
+                if bool(getattr(self.config, "grammar_fastpath", True))
+                else None
+            )
+            choice = self._pick_constrained_token(
+                logits,
+                prefix,
+                forced,
+                length - position,
+            )
             if choice is None:
-                ids[0, position:] = self.tokenizer.pad_id
+                fallback_used = True
                 break
             ids[0, position] = choice
             if choice == self.tokenizer.eos_id:
@@ -210,9 +243,23 @@ class OnnxTwoTowerModel:
                 break
 
         text = self.tokenizer.decode(ids[0].tolist()).strip()
-        if use_grammar:
-            # The web harness owns retry and browser fallback. Returning a
-            # canned valid template here would incorrectly label a failed
-            # model decode as a successful real-model attempt.
-            return self._certify(text) or text
-        return text
+        certified = self._certify(text)
+        if certified is None:
+            certified = self._certify("root = Separator()")
+            fallback_used = True
+        if certified is None:  # pragma: no cover - parser contract regression
+            raise RuntimeError("certified OpenUI fallback failed validation")
+        self._last_generation_evidence = [
+            {
+                "grammar_constrained": True,
+                "model_forwards": forwards,
+                "singleton_bypasses": singleton_bypasses,
+                "fallback_used": fallback_used,
+            }
+        ]
+        return certified
+
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        evidence = list(self._last_generation_evidence)
+        self._last_generation_evidence = []
+        return evidence

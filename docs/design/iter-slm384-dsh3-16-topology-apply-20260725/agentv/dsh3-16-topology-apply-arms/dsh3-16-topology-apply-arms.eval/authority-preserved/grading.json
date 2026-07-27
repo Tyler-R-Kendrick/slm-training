@@ -1,0 +1,55 @@
+{
+  "assertions": [
+    {
+      "text": "authority-preserved:domain_criterion",
+      "passed": true,
+      "evidence": "actual=True operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "authority-preserved:domain_criterion",
+      "type": "code-grader",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "authority-preserved:domain_criterion",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "authority-preserved:domain_criterion",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9cbab9063aadfe287e8dc9d4bdeb2d43d3be6482",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.topology_apply": "v1",
+      "dsl.operators.legal_set": "v2",
+      "dsl.operators.hierarchical_head": "v1",
+      "harness.experiments.topology_apply_arms": "v1"
+    },
+    "stamped_at": "2026-07-26T00:58:56.701849+00:00"
+  }
+}

@@ -1,0 +1,12 @@
+{"detail": {"duplicate_of": "program_18690a97a04fbb56", "source_family": "programspec_generated"}, "id": "program_4174303c7f81aac4", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_2fde45fd69879b3d", "engine": "lexical-tfidf", "similarity": 0.9949, "source_family": "programspec_generated"}, "id": "program_6278c5eee7577a11", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_18e46cdf8cb78d42", "engine": "lexical-tfidf", "similarity": 0.995, "source_family": "programspec_generated"}, "id": "program_6fd49053ff92fec8", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_19f8fdcda50be5d3", "engine": "lexical-tfidf", "similarity": 0.985, "source_family": "programspec_generated"}, "id": "program_a332d834d0ece342", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_0ae4b42db62effe0", "engine": "lexical-tfidf", "similarity": 0.9646, "source_family": "programspec_generated"}, "id": "program_b2c7de4087f53947", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_2fde45fd69879b3d", "engine": "lexical-tfidf", "similarity": 0.9949, "source_family": "programspec_generated"}, "id": "program_b2ce4ae2908e4934", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_1f32563faf8dfc09", "source_family": "programspec_generated"}, "id": "program_d674653630cfe7d5", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_18690a97a04fbb56", "engine": "lexical-tfidf", "similarity": 0.9573, "source_family": "programspec_generated"}, "id": "program_df84a92d9fa294b7", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_b2c7de4087f53947", "source_family": "programspec_generated"}, "id": "program_e216ec2bf31ce04b", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_b2c7de4087f53947", "source_family": "programspec_generated"}, "id": "program_e2ab4771badcfa59", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_18e46cdf8cb78d42", "source_family": "programspec_generated"}, "id": "program_ef5f6504cb62554a", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"source_family": "programspec_generated"}, "id": "program_f875132519e4fbfa", "reason": "exact_pair_duplicate", "stage": "dedup"}

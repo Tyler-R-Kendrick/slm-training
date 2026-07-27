@@ -1,0 +1,86 @@
+{
+  "evidence_class": "bounded_probe",
+  "fraction_requiring_all_stages": 1.0,
+  "fraction_truncated": 0.0,
+  "proposed_c_chars": 479,
+  "proposed_k": 6,
+  "sample_ids": [
+    "smoke_hero_01",
+    "smoke_button_01",
+    "smoke_callout_01",
+    "held_out_form_01",
+    "held_out_dual_card_01",
+    "held_out_input_01",
+    "held_out_tabs_01",
+    "held_out_settings_01",
+    "adv_empty_prompt_01",
+    "adv_dual_card_01",
+    "adv_deep_nest_01",
+    "adv_many_buttons_01",
+    "ood_dashboard_01",
+    "ood_gallery_01",
+    "ood_modal_01",
+    "ood_auth_01"
+  ],
+  "sample_size": 16,
+  "schema_version": "compiler_reasoning_trace_coverage_report/v1",
+  "stage_order": [
+    "intent_contract",
+    "component_inventory",
+    "topology_skeleton",
+    "semantic_edges_roles",
+    "binding_scope_references",
+    "serialization_plan"
+  ],
+  "stage_stats": [
+    {
+      "max_chars": 12,
+      "min_chars": 5,
+      "n": 16,
+      "p50_chars": 12.0,
+      "p95_chars": 12.0,
+      "stage": "intent_contract"
+    },
+    {
+      "max_chars": 313,
+      "min_chars": 56,
+      "n": 16,
+      "p50_chars": 118.0,
+      "p95_chars": 313.0,
+      "stage": "component_inventory"
+    },
+    {
+      "max_chars": 235,
+      "min_chars": 27,
+      "n": 16,
+      "p50_chars": 79.0,
+      "p95_chars": 235.0,
+      "stage": "topology_skeleton"
+    },
+    {
+      "max_chars": 479,
+      "min_chars": 68,
+      "n": 16,
+      "p50_chars": 179.0,
+      "p95_chars": 479.0,
+      "stage": "semantic_edges_roles"
+    },
+    {
+      "max_chars": 283,
+      "min_chars": 28,
+      "n": 16,
+      "p50_chars": 176.0,
+      "p95_chars": 266.5,
+      "stage": "binding_scope_references"
+    },
+    {
+      "max_chars": 97,
+      "min_chars": 19,
+      "n": 16,
+      "p50_chars": 41.0,
+      "p95_chars": 85.75,
+      "stage": "serialization_plan"
+    }
+  ],
+  "truncation_policy": "fixed K=6 by stage-set construction (see compiler_reasoning_trace.py module docstring); c is provisional (max per-stage p95 char length over this bounded probe) and any step whose canonical_target would exceed c must set is_truncated=True and a non-null ambiguity_reason rather than silently drop content -- no truncation occurred in this probe (fraction_truncated=0.0 over n=16)"
+}

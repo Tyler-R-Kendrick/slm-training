@@ -1,4 +1,11 @@
-"""Power-law scaling fits L(C) = A·C^(-α) + E (P1c)."""
+"""Power-law scaling fits L(C) = A·C^(-α) + E (P1c).
+
+``params`` is a first-class cost axis alongside time/flops/nfe: a candidate
+that buys loss with capacity spends a real budget, and the goal law
+(AGENTS.md VI) forbids crediting that spend as a capability gain. Cost lookup
+lives in one place (``observation_cost``) so a new axis can never be charged
+by one consumer and silently ignored by another.
+"""
 
 from __future__ import annotations
 
@@ -20,16 +27,28 @@ class ScalingObservation:
     trainable_params: int | None = None
 
 
-CostKey = Literal["flops", "time", "nfe"]
+CostKey = Literal["flops", "time", "nfe", "params"]
 
 
-def _cost(obs: ScalingObservation, cost_key: CostKey) -> float | None:
+def observation_cost(obs: ScalingObservation, cost_key: CostKey) -> float | None:
+    """Return the spend of ``obs`` on ``cost_key``, or None when unmeasured.
+
+    The single cost accessor for every scaling/efficiency consumer. Callers
+    must not re-implement this switch: a duplicated one is how ``params`` came
+    to be recorded on every observation and charged by nobody.
+    """
     if cost_key == "time":
         return float(obs.cost_time_s) if obs.cost_time_s > 0 else None
     if cost_key == "flops":
         return float(obs.cost_flops) if obs.cost_flops and obs.cost_flops > 0 else None
     if cost_key == "nfe":
         return float(obs.cost_nfe) if obs.cost_nfe and obs.cost_nfe > 0 else None
+    if cost_key == "params":
+        return (
+            float(obs.trainable_params)
+            if obs.trainable_params and obs.trainable_params > 0
+            else None
+        )
     return None
 
 
@@ -45,7 +64,7 @@ def fit_power_law(
     """
     points: list[tuple[float, float]] = []
     for obs in observations:
-        c = _cost(obs, cost_key)
+        c = observation_cost(obs, cost_key)
         if c is None or obs.loss is None or not math.isfinite(obs.loss):
             continue
         points.append((c, float(obs.loss)))

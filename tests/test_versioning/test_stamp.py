@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -57,6 +59,24 @@ def test_git_failure_degrades_to_unknown(monkeypatch) -> None:
     stamp = build_version_stamp("gates.ship")
     assert stamp["code_commit"] == UNKNOWN
     assert stamp["code_dirty"] is None
+
+
+def test_git_output_prefers_the_callers_worktree(monkeypatch, tmp_path: Path) -> None:
+    calls: list[Path] = []
+
+    def _check_output(_args, *, text, cwd, stderr):
+        assert text is True
+        assert stderr is subprocess.DEVNULL
+        calls.append(cwd)
+        if cwd == tmp_path:
+            return "worktree-head\n"
+        raise AssertionError("the fallback worktree should not be consulted")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(versioning.subprocess, "check_output", _check_output)
+
+    assert versioning._git_output(["rev-parse", "HEAD"]) == "worktree-head"
+    assert calls == [tmp_path]
 
 
 def test_git_introspection_is_cached(monkeypatch) -> None:

@@ -32,6 +32,9 @@ the *thesis*, the open questions, and the falsification boundary. Seed notes:
   integrity from model quality; freeze power inputs before confirmation.
 - [[preregistered-experiment-campaigns]] — bind execution and promotion to one
   decision-complete pre-outcome manifest; keep deviations exploratory.
+- [[decode-invariants-goal-law]] — constrained decoding, deterministic bypass,
+  symbol tables as ranker *and* scheduler, shared ops vocab, CRDT multi-turn;
+  a rejected approach never closes a goal.
 
 > Add a note with `templates/concept-note.md` and wikilink it here when a thesis
 > becomes active. Do not restate the Linear project — link it and record what the

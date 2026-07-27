@@ -1,5 +1,11 @@
 # SLM-287: bounded local locked-power preflight (2026-07-25)
 
+> **Historical policy artifact.** This preflight retains the emitted
+> `raw`/`constrained`/`repaired` labels that were current when it ran. Mandatory
+> constrained generation supersedes those live arms with
+> `constrained_native` and `constrained_compiler`; the new campaign digest has
+> no measured result yet.
+
 Machine-readable record: [JSON](iter-slm287-locked-power-protocol-local-20260724.json).
 
 The second local CPU preflight used a zero-update TwoTower initialization, one immutable `locked_test` record, five declared seeds, and two scratch configurations. It ran the canonical raw/constrained/repaired evaluator under the repository's 170-second interrupt budget.

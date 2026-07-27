@@ -1,0 +1,99 @@
+{
+  "arms": {
+    "coverage_targeted": [
+      {
+        "accepted": 36,
+        "cells_covered": 58,
+        "cells_total": 64,
+        "duplicate_roots": 8,
+        "exhausted_at": 36,
+        "policy": "coverage_targeted",
+        "programs_to_full_coverage": 19,
+        "proposed": 37,
+        "requested_count": 80,
+        "seed": 705206174,
+        "unique_canonical_roots": 28
+      },
+      {
+        "accepted": 36,
+        "cells_covered": 58,
+        "cells_total": 64,
+        "duplicate_roots": 8,
+        "exhausted_at": 36,
+        "policy": "coverage_targeted",
+        "programs_to_full_coverage": 19,
+        "proposed": 37,
+        "requested_count": 80,
+        "seed": 3027814441,
+        "unique_canonical_roots": 28
+      }
+    ],
+    "uniform": [
+      {
+        "accepted": 36,
+        "cells_covered": 58,
+        "cells_total": 64,
+        "duplicate_roots": 8,
+        "exhausted_at": 36,
+        "policy": "uniform",
+        "programs_to_full_coverage": 34,
+        "proposed": 37,
+        "requested_count": 80,
+        "seed": 705206174,
+        "unique_canonical_roots": 28
+      },
+      {
+        "accepted": 36,
+        "cells_covered": 58,
+        "cells_total": 64,
+        "duplicate_roots": 8,
+        "exhausted_at": 36,
+        "policy": "uniform",
+        "programs_to_full_coverage": 35,
+        "proposed": 37,
+        "requested_count": 80,
+        "seed": 3027814441,
+        "unique_canonical_roots": 28
+      }
+    ]
+  },
+  "claim_class": "wiring",
+  "comparison": {
+    "coverage_targeted_programs_to_full_coverage": 19,
+    "coverage_targeted_reaches_full_coverage_no_slower": true,
+    "uniform_programs_to_full_coverage": 34
+  },
+  "experiment_id": "slm267-programspec-coverage-scaling",
+  "limitations": [
+    "Fixture-scale only: target_count and the candidate grid are far below the 10k/100k/1M rungs VSD-H7a-c require; no claim is made about those hypotheses at this scale.",
+    "The 'coverage_targeted' arm reuses the generator's existing greedy CoverageTracker.score() bias toward uncovered cells; it does not yet consume an external CoverageGapManifestV1 (SLM-265) gap manifest \u2014 that mapping is explicitly future work.",
+    "Canonical-root dedup here is in-memory only; a disk-backed exact index for 100k/1M-scale generation is not implemented.",
+    "No training/model comparison is run and no corpus is published to the DataStore; this measures the generator mechanism only."
+  ],
+  "manifest_hash": "df1aa924dbbfb80c484ca59ffcfa235336ae41dbc931d67af52b6371c515d6f7",
+  "recipe": {
+    "components": [
+      "TextContent",
+      "Button",
+      "Separator"
+    ],
+    "max_depth": 3,
+    "max_width": 3,
+    "seed": 0,
+    "shards": 2,
+    "target_count": 80
+  },
+  "schema": "programspec_coverage_scaling_report/v1",
+  "status": "inconclusive",
+  "timestamp": "2026-07-25T14:37:29.958752Z",
+  "version_stamp": {
+    "code_commit": "fa349f9bc23414bf568cbb53ef5c7200e9b83356",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v108",
+      "harness.experiments.slm267_programspec_coverage_scaling": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T14:37:29.958799+00:00"
+  }
+}

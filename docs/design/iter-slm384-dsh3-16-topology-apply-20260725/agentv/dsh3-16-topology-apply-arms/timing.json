@@ -1,0 +1,22 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9cbab9063aadfe287e8dc9d4bdeb2d43d3be6482",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.topology_apply": "v1",
+      "dsl.operators.legal_set": "v2",
+      "dsl.operators.hierarchical_head": "v1",
+      "harness.experiments.topology_apply_arms": "v1"
+    },
+    "stamped_at": "2026-07-26T00:58:56.701849+00:00"
+  }
+}

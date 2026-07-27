@@ -2,6 +2,15 @@
 
 Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (official `@openuidev/lang-core`), a **TwoTower** masked-diffusion model, plus a **GPU multi-farm MCP**.
 
+> **This is not a natural-language LLM.** It is a **grammar-constrained symbolic
+> diffusion model** that emits templated grammars — scaffolded structure and
+> structural reasoning — with templated content deferred to a real external LLM.
+> Constrained decoding is the product, not a switch: deterministic completion
+> paths bypass inference, a scope-proven singleton is committed with no forward
+> pass, and no lever or experiment may make output less legal. The goal law is
+> [`AGENTS.md` § Non-negotiable architecture invariants](AGENTS.md) and its
+> canonical expansion [decode-invariants.md](docs/design/decode-invariants.md).
+
 ## What's included
 
 1. **Training-data harness** — build/validate versioned train corpora
@@ -24,7 +33,7 @@ future campaign evidence. The loop improves by evidence, never by rewriting its 
 code, frozen cases, or gates. RL remains locked until a model passes the frozen
 production readiness contract.
 
-See [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/grammar-topology-diffusion.md](docs/design/grammar-topology-diffusion.md) (dynamic production-tree diffusion), [docs/design/verified-scope-solver.md](docs/design/verified-scope-solver.md) (VSS0 verified scope-solver contract — prefix legality vs verified support), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/semantic-planning-valid-state-disposition.md](docs/design/semantic-planning-valid-state-disposition.md) (SPV4-02 final disposition), [docs/design/recurrent-semantic-computation-looped-latent-disposition.md](docs/design/recurrent-semantic-computation-looped-latent-disposition.md) (RSC4 blocked; not ship), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X15 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/dsl-pack-contract.md](docs/design/dsl-pack-contract.md) (F1 DSL-pack contract; OpenUI first pack), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/binding-aware-meaningful-v2.md](docs/design/binding-aware-meaningful-v2.md) (versioned binding-aware metric and gaming audit), [docs/design/judge-independence-audit.md](docs/design/judge-independence-audit.md) (EFS0-04 cross-family/human audit contract), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+See [docs/design/decode-invariants.md](docs/design/decode-invariants.md) (goal law — constrained decoding, deterministic bypass, symbol-table speculation and scheduling, shared ops vocab, CRDT multi-turn), [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/grammar-topology-diffusion.md](docs/design/grammar-topology-diffusion.md) (dynamic production-tree diffusion), [docs/design/verified-scope-solver.md](docs/design/verified-scope-solver.md) (VSS0 verified scope-solver contract — prefix legality vs verified support), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/semantic-planning-valid-state-disposition.md](docs/design/semantic-planning-valid-state-disposition.md) (SPV4-02 final disposition), [docs/design/recurrent-semantic-computation-looped-latent-disposition.md](docs/design/recurrent-semantic-computation-looped-latent-disposition.md) (RSC4 blocked; not ship), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X15 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/dsl-pack-contract.md](docs/design/dsl-pack-contract.md) (F1 DSL-pack contract; OpenUI first pack), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/binding-aware-meaningful-v2.md](docs/design/binding-aware-meaningful-v2.md) (versioned binding-aware metric and gaming audit), [docs/design/judge-independence-audit.md](docs/design/judge-independence-audit.md) (EFS0-04 cross-family/human audit contract), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
 Final spectral program policy:
 [null-calibrated spectral learning disposition](docs/design/null-calibrated-spectral-learning-disposition.md)
@@ -51,6 +60,10 @@ checkpoint, roster, training default, champion, or promotion status changes.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| SLM-313 AbstractPlan local checkpoint | `slm313_local_plan_1k_v2/last.pt` | `outputs/runs/…` (local, no-sync) | 9-step / 1,006-token CPU scratch plan-head + learned connector; complete locked 6,102-row matrix gives zero meaningful-v2/binder-F1 effect vs destructive controls—rejected, not reusable, promoted, or ship ([evidence](docs/design/abstract-plan-functional-evidence.md)) |
+| SLM-322 AP-027 Pareto screening checkpoint | `slm322_ap027_scratch_v1/last.pt` | `outputs/runs/…` (local, no-sync) | 8-step connector-free CPU scratch checkpoint, trained only to load the current symbol_only/v2 output contract; 1-seed screening decode at refinement rounds 1-2, rounds 4/8 and connector-dependent arms pending—wiring only, not promoted or ship ([evidence](docs/design/discrete-plan-pareto.md)) |
+| E1211 seed-7 topology-dose control | `e1211_v273_e937_batch4_seed7_lr1e4_binder_topology_quarter/last.pt` | `outputs/runs/…` (local, no-sync) | 395 × 4 CPU scratch draws; strict held `n=5` exactly matches E1182/E1200 (parse/meaning .4, strict .2, fidelity .28, structure .2852, recall .3333, reward .3388, 3 timeouts)—neutral/rejected, not promoted or ship ([results](docs/design/iter-e1211-e1214-seed7-topology-slot-component-20260725.md)) |
+| SLM-298 local factorial diagnostics | 20 local `d32/d64` scratch checkpoints | `outputs/runs/slm298_local_factorial*/cells/` (local, no-sync) | 520 strict rows; locked `n=1`; all completed constrained cells syntax 1.0 but strict meaningful/binder F1 0.0; four d32 seed-2 cells cap-censored — rejected, not promoted or ship ([results](docs/design/iter-slm298-capacity-context-curriculum-20260725.md)) |
 | SLM-287 five-seed locked baseline | `slm287-trained-local-v13-20260725` (10 cells) | `outputs/runs/…` (local, no-sync) | CPU float32 Choice TwoTower; 97-record strict train snapshot, 5k-token budget, five seeds × scratch design off/on, 226-record locked holdout and AgentV per shard. Meaning-v2/binder F1 stay 0; absolute-probability MDE 2.0 pp. Diagnostic only, not promoted or ship |
 | SLM-230 bounded recurrence diagnostic | `slm230_bounded_recursive_r4_r2/last.pt` | `outputs/runs/…` (local) | R=4 scratch checkpoint: SLM-230 is `stagnant`; SLM-231 is `expansive_unstable`; SLM-232 finds z0 rank 2.1054 but rank 0 after context/position removal and vacuous bounded ablations (`unstable`). Rejected, not ship |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1/last.pt` | `outputs/runs/…` (local) | Removes impossible class-41 tail prediction, but weight 0/1 smoke quality remains identical and strict-v2 0.0 — fix retained, checkpoint rejected |
@@ -365,9 +378,23 @@ pytest -m training
 ```
 
 Enable the tracked pre-commit hook once per clone with
-`git config core.hooksPath .githooks`. Claude Code, Codex, and Copilot CLI
-hooks run the same changed-file checker automatically and reject raw `mv` for
-tracked paths. See [`docs/repository-organization.md`](docs/repository-organization.md).
+`git config core.hooksPath .githooks` (a Claude Code `SessionStart` hook arms it
+when it is unset). That hook is what runs the changed-file checker.
+
+Agent hooks are narrower and are certified identical across harnesses by
+`python -m scripts.verify_agent_surfaces`:
+
+| Harness | Config | Blocks raw `mv` | Post-edit parity + version-stamp checks |
+| --- | --- | :-: | :-: |
+| Claude Code | [`.claude/settings.json`](.claude/settings.json) | yes | yes |
+| Codex | [`.codex/hooks.json`](.codex/hooks.json) | yes | yes |
+| Copilot CLI | [`.github/hooks/`](.github/hooks/) | yes | yes |
+| Cursor, Gemini CLI | — (no hook mechanism configured) | no | no |
+
+Agents on a harness without hooks run `python -m scripts.repo_policy` and
+`.githooks/check-changed` themselves. CI remains authoritative either way. See
+[`docs/repository-organization.md`](docs/repository-organization.md) and
+[`docs/design/agent-harness-parity-audit.md`](docs/design/agent-harness-parity-audit.md).
 
 ## OpenUI Lang
 
@@ -504,7 +531,7 @@ MCP (Cursor): [`.cursor/mcp.json`](.cursor/mcp.json) launches `@playwright/mcp`.
 
 - **Context tower**: scratch TokenEncoder **or** frozen HF model (`--context-backend hf`, default `HuggingFaceTB/SmolLM2-135M`)
 - **Denoiser tower**: MaskGIT-style masked token prediction with cross-attention to context ([Chang et al. 2022](https://arxiv.org/abs/2202.04200); adapted)
-- **Grammar decode**: DFA force-emit + MaskGIT hole-admit + LTR certify so constrained samples stay valid OpenUI ([research lineage](docs/design/research-lineage.md); `--no-grammar` to disable)
+- **Grammar decode**: DFA force-emit + MaskGIT hole-admit + LTR certify so constrained samples stay valid OpenUI ([research lineage](docs/design/research-lineage.md)). Constrained decoding is the product, not a switch — see [decode invariants](docs/design/decode-invariants.md); `--unconstrained-control` (formerly `--no-grammar`) is a diagnostic control arm whose output is never certified or shipped
 - **Output tokenizer**: dual-mode — default **compositional** `OpenUITokenizer`, or V5 **lexer / DSL-native** `DSLNativeTokenizer` (`output_tokenizer=lexer`; see [dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md))
 - **Eval**: syntax `parse_rate`, separate `meaningful_program_rate`, placeholder fidelity, and canonical tree match — no hidden gold channel at generate time
 

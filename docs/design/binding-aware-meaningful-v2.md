@@ -59,6 +59,27 @@ additively. Grammar halving and ship gates continue to use v1. The v2 policy
 entry has no threshold; a follow-on calibration must select and version a
 threshold instead of copying the v1 bar.
 
+## Interpreting compact alternatives
+
+Grammar validity, prompt-contract validity, and resemblance to the single gold
+program are different claims:
+
+- `placeholder_fidelity` measures coverage of authoritative slots. It is not a
+  whole-program similarity score.
+- `structural_similarity` and `component_type_recall` are explicitly
+  gold-reference-relative. A smaller but prompt-equivalent implementation can
+  score below 1.0 on either metric.
+- v1 also embeds a 0.50 gold component-type recall floor, so a v2-valid compact
+  alternative can theoretically fail the active v1 meaningful gate.
+- v2 uses the prompt-visible component and slot contract and preserves minimal,
+  alpha-renamed, and canonical-order variants in its gaming corpus. It remains
+  diagnostic until the blinded EFS0-04 calibration supplies independent labels.
+
+Reference-relative metrics remain useful density and regression diagnostics,
+but they are not proof that an otherwise strict-valid program is semantically
+wrong. Dashboard labels call this distinction out; ship thresholds remain
+unchanged until calibration.
+
 ## Deterministic gaming suite
 
 The committed

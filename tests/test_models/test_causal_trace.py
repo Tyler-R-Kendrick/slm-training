@@ -5,7 +5,7 @@ capture→emit→persist path without torch, a real tokenizer, or the grammar:
 
 * constraint shadows fire only when the raw winner is illegal and the selection legal;
 * shadow evidence is non-trainable and refused by semantic admission;
-* forced (single-legal) steps are deductions, not decisions;
+* forced (single-legal) steps bypass inference and are not trace decisions;
 * bounded selection policies retain the right subset without changing the emission;
 * integer prefix ids — never decoded text — are the state authority;
 * traces round-trip through the shared TraceStore and fail closed on identity mismatch.
@@ -20,6 +20,7 @@ import pytest
 from slm_training.harnesses.distill.trace_store import TraceStore
 from slm_training.harnesses.preference.decision_events_v2 import admit_semantic_corpus
 from slm_training.models.causal_trace import (
+    CausalLatentUseFalsificationSpecV1,
     CausalTraceIdentity,
     CausalTraceWriter,
     GeneratedOutcome,
@@ -27,6 +28,7 @@ from slm_training.models.causal_trace import (
     TracePolicy,
     TraceSelection,
     capture_raw_steps,
+    describe_causal_latent_use_falsification_test,
     emit_causal_decision,
     fold_policy_identity,
     legal_set_reference,
@@ -102,21 +104,20 @@ def test_decode_emits_full_generation_and_stop_reason() -> None:
     assert result.generated_token_ids == (3, 4, 2, 0)
     assert result.stop_reason == "eos"
     assert result.constraint_shadow_count == 1
-    assert len(result.observations) == 4
+    assert len(result.observations) == 2
 
 
 def test_constraint_shadow_only_when_raw_illegal_and_selection_legal() -> None:
     obs = _capture().observations
-    shadow, forced_step, ordinary, eos_step = obs
+    shadow, ordinary = obs
     assert shadow.constraint_shadow is True
     assert shadow.raw_argmax_id == 5 and shadow.selected_token_id == 3
     assert shadow.forced is False
     # The ordinary step's raw winner is legal, so no shadow is recorded.
     assert ordinary.constraint_shadow is False
     assert ordinary.raw_argmax_id == 2 == ordinary.selected_token_id
-    # Forced (single-legal) steps are deductions, never shadows.
-    assert forced_step.forced is True and forced_step.constraint_shadow is False
-    assert eos_step.selected_token_id == 0
+    # Forced steps bypass the model and therefore have no raw-logit observation.
+    assert all(not step.forced for step in obs)
 
 
 def test_uniform_at_unforced_keeps_forced_tokens_and_is_seeded() -> None:
@@ -127,16 +128,17 @@ def test_uniform_at_unforced_keeps_forced_tokens_and_is_seeded() -> None:
         TraceDecodeMode.UNIFORM_AT_UNFORCED, seed=0, max_new_tokens=2
     )
     assert first.generated_token_ids == second.generated_token_ids
-    assert first.observations[1].forced is True
-    assert first.observations[1].selected_token_id == 4
+    assert first.generated_token_ids[1] == 4
+    assert len(first.observations) == 1
     assert all(obs.decode_mode == "uniform_at_unforced" for obs in first.observations)
 
 
-def test_raw_control_and_legal_mass_use_the_same_logit_row() -> None:
+def test_raw_mode_is_a_shadow_only_control_and_never_emits_illegal_argmax() -> None:
     result = _capture_with_mode(TraceDecodeMode.RAW, max_new_tokens=1)
     obs = result.observations[0]
-    assert obs.selected_token_id == obs.raw_argmax_id == 5
-    assert obs.constraint_shadow is False
+    assert obs.raw_argmax_id == 5
+    assert obs.selected_token_id == 3
+    assert obs.constraint_shadow is True
     assert 0.0 < obs.legal_probability_mass < 1.0
 
 
@@ -155,9 +157,8 @@ def test_decode_audit_summary_reports_trace_facts_without_quality_claims() -> No
 
 def test_decision_index_counts_only_non_forced_steps() -> None:
     obs = _capture().observations
-    # shadow(non-forced)=0, forced keeps 1, ordinary(non-forced)=1, eos forced keeps 2.
-    assert [o.decision_index for o in obs] == [0, 1, 1, 2]
-    assert [o.generated_ordinal for o in obs] == [0, 1, 2, 3]
+    assert [o.decision_index for o in obs] == [0, 1]
+    assert [o.generated_ordinal for o in obs] == [0, 2]
 
 
 def test_eos_selected_only_after_the_prefix_validates() -> None:
@@ -190,7 +191,7 @@ def test_shadow_view_is_non_trainable_and_refused_by_admission() -> None:
 
 
 def test_ordinary_step_emits_replayable_state_without_invented_outcomes() -> None:
-    ordinary = _capture().observations[2]
+    ordinary = _capture().observations[1]
     state, outcomes, view = emit_causal_decision(ordinary, _identity())
     assert state.decision_kind == "causal_decision"
     assert outcomes == () and view is None
@@ -206,7 +207,7 @@ def test_adapter_identity_is_part_of_state_identity() -> None:
 @pytest.mark.parametrize(
     "policy,expected_ordinals",
     [
-        (TracePolicy(selection=TraceSelection.EVERY), [0, 1, 2, 3]),
+        (TracePolicy(selection=TraceSelection.EVERY), [0, 2]),
         (TracePolicy(selection=TraceSelection.CONSTRAINT_SHADOW_ONLY), [0]),
         (TracePolicy(selection=TraceSelection.MARGIN_THRESHOLD, margin_threshold=0.3), [0]),
         (TracePolicy(selection=TraceSelection.SAMPLED_POSITIONS, sampled_positions=(2,)), [2]),
@@ -240,9 +241,9 @@ def test_trace_round_trips_through_shared_store(tmp_path) -> None:
     writer = CausalTraceWriter(store, identity)
     writer.record_all(_capture())
 
-    assert len(store) == 4
+    assert len(store) == 2
     rows = list(store.iter_kind("causal_decision"))
-    assert len(rows) == 4
+    assert len(rows) == 2
     assert all(row["run_id"] == "ldi1-fixture" for row in rows)
 
     states = load_causal_decision_states(
@@ -250,11 +251,11 @@ def test_trace_round_trips_through_shared_store(tmp_path) -> None:
         expected_checkpoint_sha=identity.policy_checkpoint_sha,
         expected_tokenizer_sha=identity.tokenizer_sha,
     )
-    assert [s.architecture for s in states] == ["causal"] * 4
+    assert [s.architecture for s in states] == ["causal"] * 2
     assert states[0].context_ids == ()
 
     manifest = writer.manifest()
-    assert manifest["state_count"] == 4
+    assert manifest["state_count"] == 2
     assert manifest["constraint_shadow_count"] == 1
     assert manifest["duplicate_set_reuse"] == (
         manifest["state_count"] - manifest["unique_legal_sets"]
@@ -263,7 +264,7 @@ def test_trace_round_trips_through_shared_store(tmp_path) -> None:
 
     manifest_path = tmp_path / "causal_manifest.json"
     writer.write_manifest(manifest_path)
-    assert json.loads(manifest_path.read_text())["state_count"] == 4
+    assert json.loads(manifest_path.read_text())["state_count"] == 2
 
 
 def test_load_fails_closed_on_identity_mismatch(tmp_path) -> None:
@@ -298,3 +299,31 @@ def test_generated_outcome_returns_pre_judge_candidate() -> None:
     assert candidate["token_id"] == 3
     assert candidate["finalization_changed"] is False
     assert "verified" not in candidate and "metrics" not in candidate
+
+
+def test_causal_latent_use_falsification_spec_is_defined_not_run() -> None:
+    """LOT0-02 (SLM-249): the spec is a pure dataclass -- no model, no execution."""
+    spec = describe_causal_latent_use_falsification_test()
+    assert isinstance(spec, CausalLatentUseFalsificationSpecV1)
+    assert spec.linear_issue == "SLM-249"
+    for field_name in (
+        "hypothesis",
+        "intervention",
+        "falsifier",
+        "reused_mechanism",
+        "blocked_reason",
+    ):
+        value = getattr(spec, field_name)
+        assert isinstance(value, str) and value.strip()
+    # It must name the concrete replay primitive it will reuse once LOT1 exists,
+    # not invent a second counterfactual mechanism.
+    assert "replay_causal_action" in spec.reused_mechanism
+    assert "capture_raw_steps" in spec.reused_mechanism
+    # It must be honest that it cannot run yet.
+    assert "SLM-250" in spec.blocked_reason or "LOT1" in spec.blocked_reason
+
+
+def test_causal_latent_use_falsification_spec_calls_are_deterministic() -> None:
+    assert describe_causal_latent_use_falsification_test() == (
+        describe_causal_latent_use_falsification_test()
+    )

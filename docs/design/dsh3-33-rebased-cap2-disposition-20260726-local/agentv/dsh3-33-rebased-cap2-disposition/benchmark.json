@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/dsh3-33-rebased-cap2-disposition.eval.jsonl",
+    "timestamp": "2026-07-26T17:03:58.397Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "complete-claim-ledger",
+      "dsh5-remains-closed",
+      "negative-and-unavailable-retained"
+    ],
+    "experiment": "dsh3-33-rebased-cap2-disposition"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "complete-claim-ledger:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "negative-and-unavailable-retained:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "dsh5-remains-closed:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5c49ccbc5d7d9293d0582dcbaf4d13d342ceb00d",
+    "code_dirty": true,
+    "components": {
+      "evals.cap2_operator_policy_disposition": "v1"
+    },
+    "stamped_at": "2026-07-26T17:03:57.998240+00:00"
+  }
+}

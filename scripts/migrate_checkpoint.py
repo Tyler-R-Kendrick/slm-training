@@ -7,6 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
+from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
+
 import torch
 
 from slm_training.models.checkpoint_migrate import (
@@ -26,7 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-records",
         type=Path,
-        default=Path("outputs/data/train/v1/records.jsonl"),
+        default=DEFAULT_TRAIN_DATA_DIR / "records.jsonl",
         help="Train records used to rebuild compositional vocabulary.",
     )
     parser.add_argument(
