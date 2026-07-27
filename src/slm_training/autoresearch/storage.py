@@ -203,6 +203,7 @@ class CampaignStore:
         result: CampaignResultV1,
         *,
         artifact_root: Path,
+        locked_manifest_path: Path | None = None,
     ) -> tuple[str, ...]:
         """Validate a result against the authoritative lock and event history."""
         lock = self.load_experiment_campaign(result.experiment_id)
@@ -211,6 +212,7 @@ class CampaignStore:
                 lock.manifest,
                 result,
                 artifact_root=artifact_root,
+                locked_manifest_path=locked_manifest_path,
             )
         )
         events = self.verify_event_chain()

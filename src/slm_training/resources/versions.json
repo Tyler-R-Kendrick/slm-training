@@ -307,7 +307,7 @@
       ]
     },
     "data.locked_eval_manifest": {
-      "version": "v3",
+      "version": "v4",
       "kind": "data_builder",
       "paths": [
         "scripts/build_locked_promotion_manifest.py",
@@ -316,6 +316,11 @@
         "tests/test_data/test_locked_eval_manifest.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-27",
+          "note": "SLM-306 add canonical_manifest_path/load_locked_manifest_payload/verify_locked_manifest_digest -- independently recompute the manifest_sha256 from real committed manifest bytes (rows+metadata) instead of trusting the self-declared digest field, failing closed on a tampered or unsupported-schema file (merge resolution of PR #866 onto main; SLM-298 v3 note retained below)"
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
@@ -1256,6 +1261,25 @@
         }
       ]
     },
+    "dsl.solver.partial_state": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/solver/partial_state.py",
+        "src/slm_training/dsl/solver/openui_partial_state.py",
+        "tests/test_dsl/test_partial_state.py",
+        "tests/test_dsl/test_openui_partial_state.py",
+        "docs/design/dsh1-07-partial-state-classification-20260725.md",
+        "docs/design/dsh1-07-partial-state-classification-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-359 (DSH1-07): initial registration; PartialStateClassV1 (COMPLETE/FRAGMENT/PREFIX/INVALID) classifier plus the OpenUI live-fragment-parser/CompletionForest adapter. No decode-path integration, experiment, or checkpoint change."
+        }
+      ]
+    },
     "dsl.symbolic_surface": {
       "version": "v4",
       "kind": "harness",
@@ -2091,7 +2115,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2104,6 +2128,11 @@
         "tests/test_autoresearch/test_harness.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-27",
+          "note": "SLM-306 validate_result_claim / CampaignStore.validate_campaign_result gain an optional locked_manifest_path; when given, the declared locked_eval_manifest_sha256 is independently re-derived from real manifest bytes on disk (locked_eval_manifest.verify_locked_manifest_digest) instead of only self-consistency between manifest and result. Default None preserves prior behavior for callers without a manifest file (merge resolution of PR #866 onto main)"
+        },
         {
           "version": "v5",
           "date": "2026-07-24",
@@ -2427,7 +2456,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v135",
+      "version": "v136",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2436,6 +2465,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v136",
+          "date": "2026-07-27",
+          "note": "SLM-306 thread locked_manifest_path (optional, default None) through load_campaign_governance/evaluate_promotion/register_promoted_checkpoint so promotion entrypoints can opt into on-disk locked-manifest digest verification instead of only trusting the self-reported locked_eval_manifest_sha256 string (merge resolution of PR #866 onto main)"
+        },
         {
           "version": "v135",
           "date": "2026-07-27",
@@ -7997,7 +8031,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -8007,9 +8041,16 @@
         "src/slm_training/data/mixture.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
-        "src/slm_training/resources/frontier/"
+        "src/slm_training/resources/frontier/",
+        "docs/design/dsh1-08-harness-qa-completion-20260725.md",
+        "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-25",
+          "note": "SLM-360 (DSH1-08): add capped/diagnostic-marked IDENTITY rows, verified COMPLETE_SUFFIX accepted-completion sets scored via the existing accepted_outputs membership path, atomic-form reuse coverage checking, and anti-identity hard negatives; peer_suffixes must round-trip byte-exact (not merely parse) so an unresolved-reference silently-pruned peer is never accepted"
+        },
         {
           "version": "v22",
           "date": "2026-07-26",
@@ -9033,7 +9074,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v258",
+      "version": "v259",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9076,6 +9117,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v259",
+          "date": "2026-07-25",
+          "note": "SLM-359: expose literal_frame_is_open and unresolved_binder_reference_pieces as public wrappers over existing private compiler_draft helpers for the DSH1-07 partial-state classifier; no change to any existing candidate/coverage/decision behavior"
+        },
         {
           "version": "v258",
           "date": "2026-07-26",

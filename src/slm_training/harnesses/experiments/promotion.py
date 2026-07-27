@@ -47,6 +47,7 @@ def load_campaign_governance(
     result_path: Path,
     store_root: Path,
     artifact_root: Path,
+    locked_manifest_path: Path | None = None,
 ) -> tuple[
     ExperimentCampaignV1,
     CampaignResultV1,
@@ -61,7 +62,9 @@ def load_campaign_governance(
         result_path.read_text(encoding="utf-8")
     )
     store = CampaignStore(manifest.campaign_id, store_root)
-    failures = store.validate_campaign_result(result, artifact_root=artifact_root)
+    failures = store.validate_campaign_result(
+        result, artifact_root=artifact_root, locked_manifest_path=locked_manifest_path
+    )
     if failures:
         raise ValueError(
             f"campaign governance validation failed: {', '.join(failures)}"
@@ -141,6 +144,7 @@ def evaluate_promotion(
     campaign_result: CampaignResultV1 | dict[str, Any] | None = None,
     campaign_store: CampaignStore | None = None,
     artifact_root: Path | None = None,
+    locked_manifest_path: Path | None = None,
 ) -> dict[str, Any]:
     """Return ``{promotable, checks, failures}`` mirroring ship-gates shape."""
     result = _evaluate_promotion(
@@ -172,6 +176,7 @@ def evaluate_promotion(
             manifest,
             governed_result,
             artifact_root=artifact_root,
+            locked_manifest_path=locked_manifest_path,
         )
         if campaign_store is None or artifact_root is None:
             governance_failures = (*governance_failures, "campaign_store_missing")
@@ -181,6 +186,7 @@ def evaluate_promotion(
                 *campaign_store.validate_campaign_result(
                     governed_result,
                     artifact_root=artifact_root,
+                    locked_manifest_path=locked_manifest_path,
                 ),
             )
         if governed_result.claim_class not in {"promotion_candidate", "ship_gate"}:
@@ -217,6 +223,7 @@ def register_promoted_checkpoint(
     campaign_result: CampaignResultV1 | dict[str, Any] | None = None,
     campaign_store: CampaignStore | None = None,
     artifact_root: Path | None = None,
+    locked_manifest_path: Path | None = None,
 ) -> Path:
     """Copy/link the mid-trained anchor to ``promoted.pt`` (P1d)."""
     import shutil
@@ -251,6 +258,7 @@ def register_promoted_checkpoint(
         and not campaign_store.validate_campaign_result(
             governed_result,
             artifact_root=artifact_root,
+            locked_manifest_path=locked_manifest_path,
         )
         and governance.get("manifest_sha256") == campaign_manifest_sha256(manifest)
     )

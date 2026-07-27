@@ -1,0 +1,74 @@
+{
+  "schema_version": "dsh1-07-partial-state-classification/v1",
+  "issue": "SLM-359",
+  "project": "DSH1 — CAP0 Grammar-Complete Symbolic Synthesis",
+  "milestone": "M3 — Symbolic QA views and legal partials",
+  "recorded_at": "2026-07-25",
+  "kind": "wiring / unit-tested contract",
+  "claim": "No decode-path integration, training run, eval, benchmark, checkpoint, or ship claim. This records a Torch-free classification contract plus the OpenUI adapter that reuses the existing live fragment parser (validate_output) and CompletionForest, and the tests that pin the DSH1-07 acceptance criteria.",
+  "added": {
+    "core": "src/slm_training/dsl/solver/partial_state.py",
+    "openui_adapter": "src/slm_training/dsl/solver/openui_partial_state.py",
+    "compiler_draft_public_wrappers": [
+      "literal_frame_is_open",
+      "unresolved_binder_reference_pieces"
+    ],
+    "tests": [
+      "tests/test_dsl/test_partial_state.py",
+      "tests/test_dsl/test_openui_partial_state.py"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "criterion": "Every admitted PREFIX replays to at least one verified terminal",
+      "evidence": "test_every_prefix_of_a_gold_program_is_prefix_until_eos",
+      "status": "satisfied_for_forest_reachability",
+      "note": "Certifies a real CompletionForest continuation exists (grammar/schema-admissible), not yet the stronger EnumerativeSupportOracle exhaustive verified-terminal certificate; see Reopen conditions in the paired markdown."
+    },
+    {
+      "criterion": "Every FRAGMENT parses under its declared start rule",
+      "evidence": "test_named_fragment_classifies_under_its_declared_start_rule",
+      "status": "satisfied"
+    },
+    {
+      "criterion": "UNKNOWN/partial coverage never authorizes destructive pruning",
+      "evidence": "classify_partial_state performs no pruning/ranking/removal; partial coverage yields PREFIX, never a stronger guarantee",
+      "status": "satisfied"
+    },
+    {
+      "criterion": "No cut splits a lexical token or marker",
+      "evidence": "test_open_literal_frame_refuses_classification; test_cut_inside_lexical_boundary_is_refused",
+      "status": "satisfied_for_literal_frames",
+      "note": "Opaque-region splice boundaries beyond framed literals are not yet checked; see Reopen conditions."
+    }
+  ],
+  "test_runs": [
+    {
+      "command": "ruff check src/slm_training/dsl/solver/partial_state.py src/slm_training/dsl/solver/openui_partial_state.py src/slm_training/dsl/solver/__init__.py src/slm_training/dsl/grammar/fastpath/compiler_draft.py tests/test_dsl/test_partial_state.py tests/test_dsl/test_openui_partial_state.py",
+      "result": "all checks passed"
+    },
+    {
+      "command": "pytest tests/test_dsl/test_partial_state.py tests/test_dsl/test_openui_partial_state.py tests/test_dsl/test_solver_decode.py tests/test_dsl/test_solver_state.py tests/test_dsl/test_solver_support.py tests/test_dsl/test_solver_closure.py tests/test_dsl/test_solver_replay.py tests/test_dsl/test_solver_controller.py tests/test_dsl/test_capsule_solver.py tests/test_dsl/test_topology_solver.py -q",
+      "result": "147 passed"
+    },
+    {
+      "command": "pytest tests/test_dsl/test_grammar_fastpath.py -q",
+      "result": "2 failed, rest passed (partial run, sandbox CPU-bound single-threaded torch made a full run too slow to complete in-session)",
+      "note": "test_lexer_literal_bytes_are_not_grammar_admitted and test_structural_preference_does_not_override_confident_binder fail with the identical KeyError/assert-mismatch on a clean git-stash checkout of this same worktree with none of this change's diffs applied -- a pre-existing local-environment gap (unrelated to compiler_draft.py/solver additions), not a regression introduced here. Confirmed by reproducing both failures independently before and after `git stash`/`git stash pop` around this change."
+    },
+    {
+      "command": "pytest tests/test_dsl/test_grammar_fastpath.py --deselect test_lexer_literal_bytes_are_not_grammar_admitted --deselect test_structural_preference_does_not_override_confident_binder -q",
+      "result": "15/37 observed so far all passed, zero new failures; the sandbox's single-threaded CPU torch execution made completing the remaining tests too slow for the session run cap, so this partial result -- combined with the purely additive nature of the compiler_draft.py diff (two new top-level public functions and two __all__ entries; no existing function body touched) and the full solver/topology/capsule suite passing -- is the evidence recorded here rather than a completed full-file run",
+      "status": "incomplete_no_new_failures_observed"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "34c70de1dc67a62517e54e45cacd326f6ca5a32b",
+    "code_dirty": true,
+    "components": {
+      "dsl.solver.partial_state": "v1",
+      "model.twotower": "v237"
+    }
+  }
+}
