@@ -111,16 +111,17 @@ alone). Latest claimed: `autotrain_wf_smoke_20260725_iter947`.
 | `autotrain_wf_smoke_20260725_iter1006` | True | 8 | steps | 29.267866134643555 | 50.03 |
 | `autotrain_wf_smoke_20260725_iter1007` | True | 8 | steps | 28.571407318115234 | 44.12 |
 
-## Verified re-anchor (2026-07-26, post-fix)
+## Verified re-anchor (2026-07-26 onward, post-fix)
 
-The row below is the only entry in this file backed by a fresh, real,
-independently-run command against `main` HEAD `ae4b446` exactly as merged
-(no local patch), training against the actual, already-published
+The rows below are the only entries in this file backed by fresh, real,
+independently-run commands against `main` exactly as merged (no local
+patch), training against the actual, already-published
 `src/slm_training/resources/data/train/wf_smoke_v2/`. Checked (not committed
-— `outputs/` is gitignored) at
-`outputs/runs/wf_smoke_v2_verify_ae4b446/`. See
-[measured-results](autotrain-wf-smoke-20260726-verify1-measured-results.md).
+— `outputs/` is gitignored) under `outputs/runs/<run_id>/`. This table is the
+loop's real continuation going forward — the numbered `iter1`-`iter1007`
+sequence above stays flagged unverifiable and is not being extended further.
 
-| run_id | ok | steps | stopped_on | last_loss | wall_s |
-| --- | --- | --- | --- | --- | --- |
-| `wf_smoke_v2_verify_ae4b446` | True | 8 | steps | 32.610084533691406 | 13.61 |
+| run_id | ok | steps | stopped_on | last_loss | wall_s | code_commit | measured-results |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `wf_smoke_v2_verify_ae4b446` | True | 8 | steps | 32.610084533691406 | 13.61 | `ae4b446` | [link](autotrain-wf-smoke-20260726-verify1-measured-results.md) |
+| `wf_smoke_v2_verify2_abfe291` | True | 8 | steps | 32.610084533691406 | 2.23 | `abfe2910` | [link](autotrain-wf-smoke-20260727-verify2-measured-results.md) |
