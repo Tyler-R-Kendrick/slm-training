@@ -1,0 +1,134 @@
+{
+  "finding": "compiler_tree_decode_deadline_swallow",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "Diagnose why the exposure12 quality-champion hero decode grazes/blows decode_timeout_seconds=30 under the harness.model_build.eval v63 hard wall (lever-hard-decode-timeout-wall-measured-results.md), per that doc's own 'improve model so hero finishes inside budget' next step.",
+  "reproduction": {
+    "train_data_build": "python -m scripts.build_train_data --source fixture --profile strict --max-records-per-parent 12 --version lever_exposure12_v1 --output-root outputs/data/train",
+    "train_data_check": {
+      "record_count": 107,
+      "abstraction_ladder_records": 5,
+      "matches_prior_doc": "lever-exposure-cap12-abstraction-ladder-measured-results.md (n=107, abstraction_ladder=5)"
+    },
+    "train_command": "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --context-backend scratch --steps 16 --batch-size 2 --lr 1e-3 --structural-bias 1.5 --seed 47 --run-id exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47 --no-sync-checkpoints --device cpu",
+    "train_wall_s": 10.1,
+    "eval_command_template": "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset {0,1,2}",
+    "isolation": "each smoke record run alone (--eval-limit 1 --eval-offset N) so the existing per-chunk DecodeStats aggregate (metrics.decode_stats) is exactly that one record's stats; no new instrumentation was added, all fields already existed in src/slm_training/models/decode_stats.py"
+  },
+  "per_record_decode_stats": [
+    {
+      "record_id": "smoke_hero_01",
+      "eval_offset": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 0, "fallback_output": 1, "harness_error": 0},
+      "latency_ms_p50": 30006.78,
+      "total_ms_sum": 30006.543,
+      "compiler_ms_sum": 29209.748,
+      "compiler_ms_share_pct": 97.3,
+      "backbone_ms_sum": 65.314,
+      "denoiser_ms_sum": 0.0,
+      "trie_ms_sum": 68.384,
+      "forwards_count_sum": 3.0,
+      "tokens_emitted_sum": 7.0,
+      "compiler_candidates_sum": 41.0,
+      "compiler_prefill_batches_sum": 3.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0,
+      "compiler_fallbacks_sum": 1.0,
+      "dead_end_trace": {
+        "phase": "compiler_tree",
+        "reason": "empty_completion_forest",
+        "position": 8,
+        "prefix_text": "root = Card([b1"
+      }
+    },
+    {
+      "record_id": "smoke_button_01",
+      "eval_offset": 1,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 0, "fallback_output": 1, "harness_error": 0},
+      "latency_ms_p50": 30006.67,
+      "total_ms_sum": 30006.47,
+      "compiler_ms_sum": 29378.141,
+      "compiler_ms_share_pct": 97.9,
+      "backbone_ms_sum": 63.985,
+      "denoiser_ms_sum": 0.0,
+      "trie_ms_sum": 67.309,
+      "forwards_count_sum": 4.0,
+      "tokens_emitted_sum": 8.0,
+      "compiler_candidates_sum": 40.0,
+      "compiler_prefill_batches_sum": 4.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0,
+      "compiler_fallbacks_sum": 1.0,
+      "dead_end_trace": {
+        "phase": "compiler_tree",
+        "reason": "empty_completion_forest",
+        "position": 9,
+        "prefix_text": "root = Card([b1,"
+      }
+    },
+    {
+      "record_id": "smoke_callout_01",
+      "eval_offset": 2,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 0, "fallback_output": 1, "harness_error": 0},
+      "latency_ms_p50": 30010.43,
+      "total_ms_sum": 30010.186,
+      "compiler_ms_sum": 29186.439,
+      "compiler_ms_share_pct": 97.3,
+      "backbone_ms_sum": 69.0,
+      "denoiser_ms_sum": 0.0,
+      "trie_ms_sum": 72.407,
+      "forwards_count_sum": 4.0,
+      "tokens_emitted_sum": 8.0,
+      "compiler_candidates_sum": 43.0,
+      "compiler_prefill_batches_sum": 4.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0,
+      "compiler_fallbacks_sum": 1.0,
+      "dead_end_trace": {
+        "phase": "compiler_tree",
+        "reason": "empty_completion_forest",
+        "position": 9,
+        "prefix_text": "root = Card([b1,"
+      }
+    }
+  ],
+  "root_cause_chain": [
+    {
+      "step": 1,
+      "claim": "evaluate_model's DEFAULT evaluation_policy is STRICT_COMPILER_TREE_POLICY, which forces compiler_decode_mode='tree' regardless of the checkpoint's own trained config.",
+      "evidence": "src/slm_training/levers.py:87-108 (DEFAULT_EVALUATION_POLICY = STRICT_COMPILER_TREE_POLICY_ID; STRICT_COMPILER_TREE_POLICY sets compiler_decode_mode='tree'); checkpoint last.meta.json config.compiler_decode_mode == 'off' yet the eval run's decode_stats show compiler_ms/compiler_candidates/compiler_prefill_batches populated and dead_end_trace.phase == 'compiler_tree', proving the tree path executed despite the checkpoint's own stored config."
+    },
+    {
+      "step": 2,
+      "claim": "The compiler-tree per-position decode loop has zero check_decode_deadline() calls, unlike its sibling loops.",
+      "evidence": "src/slm_training/models/twotower.py: while len(prefix) < length loop inside _compiler_ltr_decode_one (def at line 10254, loop at line 10329) and _compiler_ltr_decode_batch (line 10710-11316) contain no check_decode_deadline() call (grep confirmed zero hits in both ranges), vs. _constrained_ltr_repair (line 4900-4908) and the MaskGIT loop (line 13265-13268) which do call it (added in PR #1167 / harness.model_build.eval v63 / model.twotower v261)."
+    },
+    {
+      "step": 3,
+      "claim": "build_completion_forest wraps its one real unit of work in a bare `except Exception`, which will silently swallow a deadline TimeoutError and return an empty forest (a fake grammar dead-end) instead of propagating the timeout.",
+      "evidence": "src/slm_training/dsl/grammar/fastpath/compiler_draft.py:2306-2314 -- try: domain = ... GrammarCapabilityAdapterV1(get_pack()).completion_domain(request) ... except Exception:  # noqa: BLE001 - constrained callers fail closed below -> return CompletionForest((), 'none'). completion_domain ultimately calls the Node DSL bridge (lang_core.parse / validate, compiler_draft.py:1143-1151), a call whose duration is not otherwise bounded within this loop."
+    }
+  ],
+  "interpretation": "The hard wall from harness.model_build.eval v63 does still cut this decode path off near the 30s budget (matches the ~30-33s max_latency measured in lever-hard-decode-timeout-wall), but it does so by accident: the deadline TimeoutError (from the eval_runner SIGALRM interval re-fire) most plausibly lands inside completion_domain(), is caught by the bare except at compiler_draft.py:2313, and is recorded as a legitimate constrained_dead_end (empty_completion_forest) rather than a classified timeout. That cascades into the certified/minimal-fallback path (certified_fallbacks=1, compiler_fallbacks=1 in every isolated run this session), producing decode_outcome=fallback_output with stop_reason='completed' -- exactly the pattern seen in 2 of 3 seeded reps in lever-hard-decode-timeout-wall-measured-results.json, while the 1/3 clean runtime_timeout rep is consistent with the interrupt instead landing somewhere that does propagate (e.g. inside the LTR-repair path which does check_decode_deadline).",
+  "scope_correction": "All three isolated smoke records (hero, button, callout), not only the historically-slow hero, converge on the identical ~30.0s / ~97-98% compiler_ms / one dead-end-at-empty_completion_forest pattern in this session's fresh reruns under today's default STRICT_COMPILER_TREE_POLICY. This is n=1 rep per record (not a multi-rep confirm), so it does not by itself prove the hero's historical 160-277s pre-wall excursions share this exact cause, but the mechanism measured here is sufficient on its own to explain wall-grazing regardless of record identity. All three dead-end traces also show the identical decoded prefix ('root = Card([b1' / 'root = Card([b1,'), suggesting the first several LTR tokens are not record-differentiated on this checkpoint -- a separate, likely undertrained-checkpoint effect (steps=16 is a smoke-scale recipe) worth noting but out of scope for this diagnostic.",
+  "why_finding_not_patch": "Matches the decode-timeout-hang-seed44-steps72-finding.md precedent: the affected files are watched by dsl.grammar_capabilities (v3) and model.twotower (v261) in src/slm_training/resources/versions.json, and the fix touches the eval harness's core constrained-decode safety net used by every default evaluate_model invocation. A real fix needs a human decision plus tests (analogous to tests/test_harnesses/model_build/test_decode_deadline.py) before landing, per improve-openui-harnesses.",
+  "proposed_fix_sketch": [
+    "Add `except TimeoutError: raise` before the bare `except Exception:` in src/slm_training/dsl/grammar/fastpath/compiler_draft.py:2313 so a deadline TimeoutError is never masqueraded as an empty completion forest.",
+    "Add check_decode_deadline() calls inside the per-position while loop in _compiler_ltr_decode_one (twotower.py, loop starting ~line 10329) so the compiler-tree path gets the same cooperative deadline coverage the LTR-repair and MaskGIT loops already have.",
+    "After landing, re-run this same isolated per-record diagnostic (or the seeded multi-rep eval from lever-hard-decode-timeout-wall) to check whether decode_outcome shifts to a correctly-classified runtime_timeout (if genuinely out of budget) or to a real on-time completion (if the swallow was masking otherwise-fast decode)."
+  ],
+  "next_steps": [
+    "Fix per proposed_fix_sketch via improve-openui-harnesses (bump dsl.grammar_capabilities and model.twotower in versions.json).",
+    "Separately investigate why each build_completion_forest call costs roughly 7-10s of wall time on average (29.2-29.4s compiler_ms across only 3-4 compiler_prefill_batches per record) -- Node-bridge round-trip cost vs. candidate-set size vs. cache misses were not isolated in this session.",
+    "Re-run the champion multi-rep seeded eval (lever-hard-decode-timeout-wall's exact protocol) after the fix to see whether hero meaningful_program_rate recovers without needing a 160s+ unwalled run."
+  ],
+  "cleanup_note": "The lever_exposure12_v1 train-data build and the scratch checkpoint produced to run this diagnostic are not committed (outputs/ is gitignored; the auto-published copy under src/slm_training/resources/data/train/lever_exposure12_v1 was removed after this session's runs since it was reproduction scaffolding, not new intentionally-curated training data).",
+  "captured_at": "2026-07-27T18:51:20.617309+00:00"
+}
