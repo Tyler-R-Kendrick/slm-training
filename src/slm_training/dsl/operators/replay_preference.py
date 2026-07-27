@@ -1,17 +1,17 @@
 """SLM-418 (DSH5-10): replay-grounded preference rows from undo/redo history.
 
-Builds versioned preference rows over one exact input state from four
+Builds versioned preference rows over one exact input state from five
 verified conversation patterns -- edit-then-undo, undo-then-redo, partial
 rollback (a second or later consecutive undo, chosen over redo/checkout/edit
-alternatives), and checkout-another-state -- where the chosen and rejected
-control-or-operator actions are checked against the exact legal set available
-at that state (``enumerate_operator_legal_set``), never against transcript
-text.
+alternatives), checkout-another-state, and fork-then-choose-one-branch --
+where the chosen and rejected control-or-operator actions are checked
+against the exact legal set available at that state
+(``enumerate_operator_legal_set``), never against transcript text.
 
 This is an honestly partial slice of SLM-418. It does not implement:
-fork-then-choose-one-branch, merge success/conflict, or pronoun/focus
-follow-up patterns; it does not train an SFT/preference variant, measure
-held-out benefit, or produce turn-depth / context-view ablations. See
+merge success/conflict or pronoun/focus follow-up patterns; it does not
+train an SFT/preference variant, measure held-out benefit, or produce
+turn-depth / context-view ablations. See
 ``docs/design/dsh5-10-replay-preference-rows.md`` for the full disposition
 and the remaining scope.
 """
@@ -43,6 +43,7 @@ class ReplayPreferenceRelation(str, Enum):
     UNDO_THEN_REDO = "undo_then_redo"
     PARTIAL_ROLLBACK = "partial_rollback"
     CHECKOUT_ANOTHER_STATE = "checkout_another_state"
+    FORK_THEN_CHOOSE_ONE_BRANCH = "fork_then_choose_one_branch"
 
 
 @dataclass(frozen=True)
@@ -121,8 +122,13 @@ def _available_history_actions(
     distinct legal tool invocations (``checkout_conversation_state`` versus
     ``undo_conversation``/``redo_conversation``) recorded as different turn
     operations, and the choice between them at a shared destination is
-    itself a preference signal the issue asks for. fork/copy availability is
-    out of scope for this slice.
+    itself a preference signal the issue asks for. copy availability is out
+    of scope for this slice; fork itself (the act of opening a new branch)
+    is likewise out of scope as a chosen/rejected candidate here -- only a
+    *subsequent* checkout crossing an already-forked branch boundary is
+    modeled, by ``extract_replay_preference_rows`` classifying that turn as
+    ``FORK_THEN_CHOOSE_ONE_BRANCH`` rather than plain
+    ``CHECKOUT_ANOTHER_STATE`` (see there).
     """
     node = trace.node(state_id)
     actions: list[str] = []
@@ -179,14 +185,16 @@ def extract_replay_preference_rows(
     library: OperatorLibraryV1,
     provenance_for: ProvenanceFactory,
 ) -> OperatorEventMemoryReportV1:
-    """Scan ``trace.turns`` for four replay-grounded preference patterns.
+    """Scan ``trace.turns`` for five replay-grounded preference patterns.
 
     edit-then-undo, undo-then-redo, partial-rollback (a second or later
-    consecutive undo), and checkout-another-state. Each match produces one
-    row whose chosen and rejected actions are both verified members of the
-    exact legal set at the shared input state. A row is only emitted when an
-    unchosen alternative actually exists in that legal set -- undo/redo/
-    checkout is never asserted preferred by default.
+    consecutive undo), checkout-another-state, and fork-then-choose-one-
+    branch (a checkout that crosses a branch boundary a prior ``FORK`` turn
+    opened). Each match produces one row whose chosen and rejected actions
+    are both verified members of the exact legal set at the shared input
+    state. A row is only emitted when an unchosen alternative actually
+    exists in that legal set -- undo/redo/checkout is never asserted
+    preferred by default.
     """
     rows: list[OperatorReplayPreferenceRowV1] = []
     turns = trace.turns
@@ -275,6 +283,12 @@ def extract_replay_preference_rows(
                     )
                 )
 
+    fork_branch_digests = {
+        trace.node(turn.output_state_id).branch_digest
+        for turn in turns
+        if turn.operation is ConversationOperation.FORK
+    }
+
     for turn in turns:
         if turn.operation is not ConversationOperation.CHECKOUT_STATE:
             continue
@@ -287,18 +301,39 @@ def extract_replay_preference_rows(
         )
         chosen = f"checkout:{turn.output_state_id}"
         rejected = _pick_rejected(legal_set, chosen)
-        if chosen in legal_set.all_serialized_actions and rejected is not None:
-            rows.append(
-                OperatorReplayPreferenceRowV1(
-                    input_state_id=turn.input_state_id,
-                    chosen_action=chosen,
-                    rejected_action=rejected,
-                    chosen_output_state_id=turn.output_state_id,
-                    semantic_relation=ReplayPreferenceRelation.CHECKOUT_ANOTHER_STATE,
-                    correction_reason="user_checked_out_alternate_state",
-                    legal_set_fingerprint=legal_set.fingerprint,
-                )
+        if chosen not in legal_set.all_serialized_actions or rejected is None:
+            continue
+
+        # A checkout that lands on -- or leaves from -- a branch a recorded
+        # FORK turn opened is choosing between the two diverged branches,
+        # not merely relocating within one; classify it distinctly from a
+        # same-branch checkout-another-state. Branch digests are opaque
+        # (never display names), so this never leaks the target beyond what
+        # the trace's own recorded FORK turns already establish.
+        input_branch = trace.node(turn.input_state_id).branch_digest
+        output_branch = trace.node(turn.output_state_id).branch_digest
+        crosses_forked_branch = output_branch != input_branch and (
+            input_branch in fork_branch_digests
+            or output_branch in fork_branch_digests
+        )
+        if crosses_forked_branch:
+            relation = ReplayPreferenceRelation.FORK_THEN_CHOOSE_ONE_BRANCH
+            correction_reason = "user_chose_a_different_branch_after_fork"
+        else:
+            relation = ReplayPreferenceRelation.CHECKOUT_ANOTHER_STATE
+            correction_reason = "user_checked_out_alternate_state"
+
+        rows.append(
+            OperatorReplayPreferenceRowV1(
+                input_state_id=turn.input_state_id,
+                chosen_action=chosen,
+                rejected_action=rejected,
+                chosen_output_state_id=turn.output_state_id,
+                semantic_relation=relation,
+                correction_reason=correction_reason,
+                legal_set_fingerprint=legal_set.fingerprint,
             )
+        )
 
     return OperatorEventMemoryReportV1(
         rows=tuple(rows),

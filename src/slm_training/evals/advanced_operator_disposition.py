@@ -552,7 +552,7 @@ def build_advanced_operator_disposition(
             component_id="dsl.operators.replay_preference",
             version_stamp=component_version_stamps["SLM-418"],
             suite="tests/test_dsl/test_replay_preference.py",
-            result="2 of 7 named patterns (edit-then-undo, undo-then-redo) extract and replay-verify; partial slice",
+            result="5 of 7 named patterns (edit-then-undo, undo-then-redo, partial-rollback, checkout-another-state, fork-then-choose-one-branch) extract and replay-verify; partial slice",
         ),
         _fixture_evidence(
             evidence_id="SLM-419.dsh5-11",
