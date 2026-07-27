@@ -1,0 +1,102 @@
+{
+  "schema": "operator_event_memory_report/v1",
+  "report": "OperatorEventMemoryReportV1",
+  "issue": "SLM-418 (DSH5-10)",
+  "date": "2026-07-27",
+  "claim_class": "fixture_scale_disposition",
+  "disposition": "no_held_out_benefit_at_fixture_scale_retain_dag_only",
+  "falsification_rule_invoked": "If replay-grounded history yields no held-out benefit, retain the event DAG for runtime/evaluation only and do not add preference training complexity.",
+  "pattern_coverage": {
+    "extracted_and_tested": 7,
+    "named_total": 7,
+    "relations": [
+      "edit_then_undo",
+      "undo_then_redo",
+      "partial_rollback",
+      "checkout_another_state",
+      "fork_then_choose_one_branch",
+      "merge_success",
+      "pronoun_focus_followup"
+    ],
+    "merge_conflict": "deliberately not modeled as a row: a conflicting merge has no successor state to replay to; honored by construction (merge candidates only enter the legal set after merge_conversation_branches confirms success), proven by test_merge_conflict_never_yields_a_preference_row",
+    "module": "src/slm_training/dsl/operators/replay_preference.py (v7)",
+    "tests": "tests/test_dsl/test_replay_preference.py"
+  },
+  "ablation": {
+    "source": "python -m scripts.run_replay_preference_context_view_ablation (PR #1129, merged 57f5bdbb)",
+    "corpus": {
+      "kind": "bounded deterministic synthetic fixture (never real user telemetry)",
+      "session_count": 8,
+      "train_session_count": 6,
+      "held_out_session_count": 2,
+      "row_count": 40,
+      "split": "group-stable via split_for_group; conversation variants stay in one split"
+    },
+    "grid": {
+      "context_views": 5,
+      "turn_depths": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "cells": 25
+    },
+    "undo_family_rate": 0.9,
+    "held_out_pairwise_accuracy": {
+      "current_state_only_baseline": 1.0,
+      "best_cell": {
+        "view": "state_plus_recent_receipts",
+        "turn_depth": 1,
+        "accuracy": 1.0
+      },
+      "all_25_cells": 1.0,
+      "verdict": "no_benefit_fixture_scale",
+      "explanation": "honest ceiling effect: is_history_control, computable from the decision state alone with zero history, already perfectly separates chosen from rejected on the 4-pair held-out split; history context adds nothing it could add at this scale"
+    },
+    "calibration_proxy_brier": {
+      "current_state_only": 0.00011,
+      "state_plus_recent_receipts_depth_1": 0.00059,
+      "trend": "narrows toward 0.00007 by depth 16; reflects trained weights' own confidence, not accuracy"
+    },
+    "structural_grid_finding": "state_plus_recent_receipts (recency) and state_plus_retrieved_events (ancestry) show genuinely different windows on rollback_chain_8 PARTIAL_ROLLBACK rows (most-recent action_kind 'undo' vs 'operator'); the views are not interchangeable even though the fixture corpus cannot show one out-predicting the other"
+  },
+  "acceptance_criteria_status": {
+    "every_pair_shares_one_exact_input_state_and_replays": "met (per-relation replay tests)",
+    "state_authority_never_depends_on_transcript": "met by construction (LAST_THREE_TEXT_HISTORY strips state ids; join keys only)",
+    "at_least_one_receipt_context_improves_held_out_followups": "NOT met at fixture scale (ceiling 1.0 including baseline)",
+    "negative_and_no_effect_results_remain_in_evidence": "met (this disposition + docs/design/dsh5-10-replay-preference-rows.md sixth slice)"
+  },
+  "non_goals_honored": [
+    "no transcript as event store / artifact authority (ConversationTraceV1 DAG remains sole state authority)",
+    "no free-form model summaries as authority",
+    "no permanent semantic use of state ids (opaque join/evidence keys only)",
+    "no preference training complexity added (no SFT/preference training, no checkpoint, no TypedOperatorPolicyScorer wiring)"
+  ],
+  "adapter_gap": {
+    "doc": "docs/design/dsh5-10-policy-scorer-adapter-gap-20260727.md",
+    "summary": "6 of 7 relations choose history-control actions (undo/redo/checkout/merge tokens) that cannot be expressed as OperatorActionViewV1 rows in TypedOperatorPolicyExampleV1; only pronoun_focus_followup maps as-is. Recommended next design: a separate history-control head (option B), but no evidence yet justifies building it."
+  },
+  "successor_conditions": [
+    "a real (non-synthetic, argument-bound) replay-preference corpus build -- the VAR3-04/05 pattern (docs/design/var3-04-turn-disposition-real-corpus-20260727.md) of pointing the unmodified pipeline at build_symbolic_operator_corpus real admitted documents -- showing held-out benefit over current_state_only / derived_only baselines",
+    "a powered held-out split large enough that is_history_control alone does not ceiling (the fixture's 4-pair held-out split is exhausted by a state-only feature)",
+    "if preference training is ever re-opened, prototype the adapter-gap option B (separate HistoryControlPolicyInputV1 head) first; do not extend the frozen OperatorActionViewV1 schema unilaterally"
+  ],
+  "evidence_docs": [
+    "docs/design/dsh5-10-replay-preference-rows.md (slices v1-v7)",
+    "docs/design/dsh5-10-policy-scorer-adapter-gap-20260727.md"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0fd832146d5c217e7f34298fc0b147cd985d6d98",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm418_dsh5_10_disposition": "v1",
+      "dsl.operators.replay_preference": "v7",
+      "dsl.operators.replay_preference_context_views": "v1",
+      "harness.preference.replay_preference_context_view_variants": "v2"
+    },
+    "stamped_at": "2026-07-27T16:56:33.287630+00:00"
+  }
+}
