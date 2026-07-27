@@ -607,6 +607,62 @@
         }
       ]
     },
+    "dsl.semantic_frame": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/semantic_frame.py",
+        "tests/test_dsl/test_semantic_frame.py",
+        "docs/design/dsh2-02-semantic-frame-20260725.md",
+        "docs/design/dsh2-02-semantic-frame-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "no-bump: two fail-closed negative-control tests now accept either UnsupportedSemanticFactError (Lark backend) or upstream ParseError (official @openuidev bridge validates first); same fail-closed behavior, assertion layer made backend-tolerant"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial deterministic SemanticFrameV1 derivation from canonical AST plus a pack-owned CAP1 schema, with exact fact provenance, frame equivalence/conflict checks, inverse frame-to-constraint checking, and a proven one-fact counterfactual mutator"
+        }
+      ]
+    },
+    "dsl.paraphrase_provenance": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/paraphrase_provenance.py",
+        "tests/test_dsl/test_paraphrase_provenance.py",
+        "docs/design/dsh2-03-paraphrase-provenance-20260725.md",
+        "docs/design/dsh2-03-paraphrase-provenance-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial provider-neutral, content-addressed NL paraphrase request/response provenance contract: schema+frame-only sendable payload, replay cache, quarantine-before-promotion validation, and a deterministic offline fixture provider plus a structurally-wired never-invoked API-shaped stub with secret redaction"
+        }
+      ]
+    },
+    "harness.experiments.slm365_frame_paraphrases": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/train_data/frame_paraphrases.py",
+        "tests/test_harnesses/train_data/test_frame_paraphrases.py",
+        "docs/design/iter-slm365-frame-paraphrases-20260725.md",
+        "docs/design/iter-slm365-frame-paraphrases-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial style-planned (concise/descriptive/imperative/compositional) prompt-only paraphrases from SemanticFrameV1 facts via the DSH2-03 provider contract, with a declared leak detector (DSL production forms, marker surfaces, answer digests, provenance fields), required/forbidden grounding floor with stop-rule style drops, lexical+structural diversity metrics, exact/near/template dedup within and across answer families, and canonical-answer fingerprint linking"
+        }
+      ]
+    },
     "dsl.harness_dsl": {
       "version": "v1",
       "kind": "harness",
