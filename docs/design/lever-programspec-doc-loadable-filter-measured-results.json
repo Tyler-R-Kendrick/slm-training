@@ -1,0 +1,171 @@
+{
+  "lever": "programspec_doc_loadable_filter_train",
+  "hypothesis": "Filtering programspec-document builds to train-loadable records (symbol_only + role_safe) unlocks non-fixture train and can lift meaningful_program vs fixture exposure12 under champion recipe.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "suite": "smoke",
+  "eval_limit": 3,
+  "workaround": {
+    "source_build": "lever_programspec_doc_v1",
+    "filter": "symbol_only_v2 + role_safe + harness_meta",
+    "source_version": "lever_programspec_doc_v1",
+    "source_n": 587,
+    "kept_n": 466,
+    "rejected_n": 121,
+    "reject_reasons": {
+      "placeholder_non_content": 114,
+      "non_canonical_harness": 7
+    },
+    "reject_samples": [
+      {
+        "id": "02f8370cf59a16b9_scope",
+        "error": "placeholder ':slot_0' in non-content property ImageBlock.src",
+        "target_kind": "document"
+      },
+      {
+        "id": "035d35820c5c3e2f_scope",
+        "error": "placeholder ':slot_0' in non-content property LineChart.yLabel",
+        "target_kind": "document"
+      },
+      {
+        "id": "07dc9d9792542ce1_scope",
+        "error": "non-canonical Harness serialization",
+        "target_kind": "document"
+      },
+      {
+        "id": "0a98978e546893e0_scope",
+        "error": "placeholder ':slot_1' in non-content property Image.src",
+        "target_kind": "document"
+      },
+      {
+        "id": "0aa4d133453e45f8_scope",
+        "error": "placeholder ':slot_0' in non-content property HorizontalBarChart.yLabel",
+        "target_kind": "document"
+      },
+      {
+        "id": "0c3ebb1edfcaf99a_scope",
+        "error": "non-canonical Harness serialization",
+        "target_kind": "document"
+      },
+      {
+        "id": "19851e205a8b7ef3_scope",
+        "error": "placeholder ':slot_0' in non-content property ScatterChart.xLabel",
+        "target_kind": "document"
+      },
+      {
+        "id": "2a33012c0f12e7f0_scope",
+        "error": "placeholder ':slot_0' in non-content property AreaChart.yLabel",
+        "target_kind": "document"
+      }
+    ]
+  },
+  "recipe": {
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true
+  },
+  "rows": [
+    {
+      "arm": "wf_smoke_v2",
+      "corpus_n": 103,
+      "run_id": "exp_lever_sb15_s16_lr1e3_bs2_seed47",
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 7.451866626739502,
+      "record_count": 103,
+      "train_dir": "outputs/data/train/wf_smoke_v2",
+      "data_manifest_sha": "146f74173a853dd3a5ea75c02175b3fc6e731e2e6b6b4e5f72977103345998e4",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 1469.53,
+      "latency_ms_p95": 1580.01,
+      "max_latency_ms": 1580.01,
+      "sum_latency_ms": 4309.55,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 2,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 0,
+        "harness_error": 0
+      },
+      "n": 3
+    },
+    {
+      "arm": "lever_exposure12_v1",
+      "corpus_n": 107,
+      "run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47",
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 7.188694000244141,
+      "record_count": 107,
+      "train_dir": "outputs/data/train/lever_exposure12_v1",
+      "data_manifest_sha": "a237ab395401cbdfaa8fc2fdb459c793bddf3f0bee2047fb7bee3561882e848a",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8523333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30011.11,
+      "latency_ms_p95": 277005.45,
+      "max_latency_ms": 277005.45,
+      "sum_latency_ms": 337025.72000000003,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "n": 3
+    },
+    {
+      "arm": "psdoc_loadable_v1",
+      "corpus_n": 466,
+      "run_id": "exp_lever_data_psdoc_loadable_s16_lr1e3_bs2_sb15_seed47",
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 11.690503120422363,
+      "record_count": 466,
+      "train_dir": "outputs/data/train/lever_programspec_doc_loadable_v1",
+      "data_manifest_sha": "d35b4000b0be56fb4200c73cd06db2e72930c1b2f85d0431323e8281221d9eb2",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 22781.1,
+      "latency_ms_p95": 23409.35,
+      "max_latency_ms": 23409.35,
+      "sum_latency_ms": 64629.09,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 2,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 0,
+        "harness_error": 0
+      },
+      "n": 3
+    }
+  ],
+  "decision": "reject",
+  "decision_reason": "loadable programspec-doc does not beat exposure12 (meanful 0.6666666666666666\u21920.3333333333333333, parse 1.0\u21921.0, empty 0\u21920)",
+  "blocked_without_filter": "raw programspec/langcontract fail train load (prior measured-results)",
+  "captured_at": "2026-07-27T17:37:40.051154+00:00"
+}
