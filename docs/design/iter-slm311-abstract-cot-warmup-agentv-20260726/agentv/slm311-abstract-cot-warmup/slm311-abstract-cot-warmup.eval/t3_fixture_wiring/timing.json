@@ -1,0 +1,20 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "50217db8c0792de229cde72152887401cc1cc57b",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v115",
+      "harness.experiments.slm311_abstract_cot_warmup": "v1"
+    },
+    "stamped_at": "2026-07-26T04:39:37.185753+00:00"
+  }
+}

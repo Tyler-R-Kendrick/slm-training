@@ -1,0 +1,117 @@
+{
+  "schema_version": "frame_paraphrases/v1",
+  "issue": "SLM-365",
+  "milestone": "DSH2 M2 - Paraphrase synthesis and ambiguity control",
+  "date": "2026-07-25",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "implementation": "generate_frame_paraphrases / generate_answer_family_paraphrases / FrameLeakDetectorV1 / enforce_grounding_floor / dedupe_paraphrase_rows / FrameParaphraseFixtureProviderV1",
+  "depends_on": "dsl.semantic_frame (SLM-363, SemanticFrameV1/CAP1SchemaV1) + dsl.paraphrase_provenance (SLM-364, provider protocol + validate_raw_response/redact_text)",
+  "style_plan": ["concise", "descriptive", "imperative", "compositional"],
+  "provider": {
+    "id": "slm365-frame-fixture",
+    "model_id": "frame-style-renderer",
+    "model_revision": "v1",
+    "network": "none (fully offline deterministic fixture, no credentials)"
+  },
+  "leak_detector": {
+    "dsl_production_forms": "component names from the canonical answer's production forms (e.g. Stack(, Card(, TextContent() plus their exact-case bare tokens",
+    "marker_surfaces": ":ident / $ident codec forms, including the answer's exact placeholder values",
+    "answer_digests": "sha256(canonical_source) + content_sha(frame projection)",
+    "provenance_fields": "ast_path, schema_field, canonical_source, schema_fingerprint, frame_fingerprint, prompt_digest, response_digest, cache_key, category"
+  },
+  "grounding_floor": "accept only prompts covering every required fact phrase, stating no forbidden fact phrase, and passing the declared leak detector; a style that cannot meet the floor is dropped with a recorded reason (stop rule) rather than published noisy",
+  "dedup": {
+    "exact": "normalized-token text identity (any style pair)",
+    "near_duplicate": "same-style normalized-token Jaccard >= 0.9",
+    "repeated_style_template": "same-style template signature (style + sorted coverage keys)",
+    "scope": "within one frame's set and across answer families (generate_answer_family_paraphrases)",
+    "rejected_rows": "always counted with reasons; never silently dropped"
+  },
+  "linking": "every accepted row links the canonical answer via sha256(canonical_source) fingerprint plus the accepted equivalence-set fingerprints; answer text never appears in prompts",
+  "fixture_results": {
+    "card_frame": {
+      "per_style_counts": {
+        "concise": {"accepted": 1, "rejected": 0},
+        "descriptive": {"accepted": 1, "rejected": 0},
+        "imperative": {"accepted": 1, "rejected": 0},
+        "compositional": {"accepted": 1, "rejected": 0}
+      },
+      "diversity": {
+        "per_style": [
+          {"style": "concise", "token_count": 49, "distinct_token_count": 30, "distinct_token_ratio": 0.6122448979591837},
+          {"style": "descriptive", "token_count": 81, "distinct_token_count": 35, "distinct_token_ratio": 0.43209876543209874},
+          {"style": "imperative", "token_count": 73, "distinct_token_count": 34, "distinct_token_ratio": 0.4657534246575342},
+          {"style": "compositional", "token_count": 52, "distinct_token_count": 32, "distinct_token_ratio": 0.6153846153846154}
+        ],
+        "pairwise_token_jaccard": {
+          "concise|descriptive": 0.857143,
+          "concise|imperative": 0.882353,
+          "concise|compositional": 0.878788,
+          "descriptive|imperative": 0.815789,
+          "descriptive|compositional": 0.810811,
+          "imperative|compositional": 0.783784
+        },
+        "lexical_diversity": 0.161889,
+        "structural_diversity": 1.0
+      }
+    },
+    "answer_family_two_equivalent_frames": {
+      "kept_rows": 4,
+      "rejection_counts": {"exact_duplicate": 4},
+      "canonical_answer_fingerprint": "shared across both frames"
+    }
+  },
+  "controls": {
+    "all_four_styles_generate_from_frame_fixture": "passed",
+    "every_accepted_row_covers_all_required_facts": "passed",
+    "style_missing_a_required_fact_is_rejected_with_reason": "passed",
+    "forbidden_fact_assertion_is_rejected": "passed",
+    "leak_detector_catches_dsl_syntax_marker_answer_id_provenance": "passed",
+    "stop_rule_drops_leaking_style_with_recorded_reason": "passed",
+    "targets_stay_symbol_only_no_answer_surface_in_prompts": "passed",
+    "diversity_metrics_per_frame_and_style": "passed",
+    "dedup_exact_near_duplicate_repeated_template": "passed",
+    "dedup_never_collapses_distinct_styles_of_one_frame": "passed",
+    "cross_family_dedup_links_one_canonical_answer": "passed",
+    "accepted_rows_link_canonical_answer_and_equivalence_fingerprints": "passed",
+    "row_provenance_uses_dsh2_03_contract": "passed",
+    "determinism_via_offline_provider": "passed"
+  },
+  "commands": [
+    "python -m pytest -q tests/test_harnesses/train_data/test_frame_paraphrases.py",
+    "python -m pytest -q tests/test_harnesses/train_data tests/test_dsl",
+    "python -m ruff check src/slm_training/harnesses/train_data/frame_paraphrases.py tests/test_harnesses/train_data/test_frame_paraphrases.py",
+    "python -m ruff format --check src/slm_training/harnesses/train_data/frame_paraphrases.py tests/test_harnesses/train_data/test_frame_paraphrases.py",
+    "python -m scripts.verify_version_stamps --check",
+    "python -m scripts.repo_policy",
+    "git diff --check"
+  ],
+  "results": {
+    "focused_pytest_new_module": "29 passed",
+    "combined_pytest_train_data_and_dsl_suites": "tests/test_harnesses/train_data: 121 passed, 4 failed (all 4 in test_staged_materialization.py, pre-existing foreign failures — they reproduce with the SLM-365 files removed); full tests/test_dsl exceeded the 170s per-command cap, so the DSH2-relevant subset was run: test_canonicalize + test_parser + test_semantic_frame + test_paraphrase_provenance = 57 passed, 2 failed (both in test_semantic_frame.py, pre-existing on this branch — reproduce with SLM-365 files removed; DSH2-02 owner notified via this record)",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed (after ruff format)",
+    "version_stamps_check": "ok (vs HEAD; 2 components touched: new harness.experiments.slm365_frame_paraphrases v1 plus pre-existing foreign edits)",
+    "repo_policy": "FAILED for a foreign cause only: untracked top-level requirements.txt left by another agent in the shared worktree (present before this change; not an SLM-365 file; left in place to avoid destroying another agent's work). No SLM-365 path was flagged.",
+    "diff_check": "passed"
+  },
+  "claim_limits": [
+    "No real LLM API was called: no network access, no credentials, no cost; all generation used the offline deterministic fixture provider.",
+    "Fixture/contract-level evidence only: two small openui fixture frames (Card/TextContent, Callout), not a corpus build.",
+    "Lexical diversity between styles is bounded by design: every style must cover the same required fact phrases verbatim, so token-multiset Jaccard between styles is necessarily high (0.78-0.88 on the card fixture); diversity comes from template connective prose and structure, and is reported honestly rather than inflated by weakening grounding.",
+    "The declared marker detector also matches :ident/$ident-shaped tokens in free natural-language content literals (e.g. a literal '3:4'-style token with a letter after the colon); no such literal exists in the fixtures, and prompts are built from frame facts only, so this is a documented detector characteristic, not an observed failure.",
+    "No corpus synthesis, train, model eval, benchmark, checkpoint, AgentEvals publication, capability certificate, or ship claim was produced."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2d44899ad2b9b14144ac362f93ae91e56166e08f",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm365_frame_paraphrases": "v1",
+      "dsl.paraphrase_provenance": "v1",
+      "dsl.semantic_frame": "v1"
+    },
+    "stamped_at": "2026-07-25T07:06:48.776830+00:00"
+  }
+}

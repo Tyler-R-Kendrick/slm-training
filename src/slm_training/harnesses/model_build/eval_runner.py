@@ -115,6 +115,45 @@ def _annotate_decode_trace_records(
         row = trace.get("row")
         if isinstance(row, int) and 0 <= row < len(records):
             trace["record_id"] = records[row].id
+        elif len(records) == 1:
+            # Single-request paths have no batch row.  Preserve only the stable
+            # evaluation identity; feature projection below still excludes every
+            # final outcome and post-decode field.
+            trace.setdefault("record_id", records[0].id)
+
+
+_TEMPORAL_DECODE_TRACE_FIELDS = (
+    "position",
+    "legal_candidates",
+    "forced",
+    "phase",
+    "decision_source",
+    "choice_changed",
+)
+
+
+def _temporal_decode_evidence(stats: object | None, record_id: str) -> list[dict[str, object]]:
+    """Return the prefix-time, model-available trace projection for one record.
+
+    This is deliberately not a ``DecodeStats.as_dict()`` snapshot: aggregate
+    counters and terminal fields can describe work that happens after a given
+    prefix.  Final parse/semantic/error/timeout/fallback outcomes remain labels
+    in the surrounding eval detail, never features.
+    """
+    if stats is None:
+        return []
+    evidence: list[dict[str, object]] = []
+    for trace in getattr(stats, "constrained_selection_traces", ()):
+        if trace.get("record_id") != record_id:
+            continue
+        item = {
+            key: trace[key]
+            for key in _TEMPORAL_DECODE_TRACE_FIELDS
+            if key in trace
+        }
+        if "position" in item:
+            evidence.append(item)
+    return evidence
 
 
 @lru_cache(maxsize=1024)
@@ -956,18 +995,14 @@ def evaluate(
     def _request_for(record: ExampleRecord) -> GenerationRequest:
         schema = _eval_schema()
         request = GenerationRequest.from_record(record, schema=schema)
-        # Historical evaluation checkpoints use visible placeholder suffixes as
-        # semantic-role features. Declare that compatibility authority explicitly;
-        # opaque production requests still require caller-provided typed symbols.
+        # Template markers are opaque codec surfaces (TEMPLATE_MARKERS_ARE_OPAQUE /
+        # RuntimeSymbol law). Never derive semantic_role from placeholder text.
+        # Typed authority must come from caller-declared metadata elsewhere.
         data = request.to_dict()
         data["runtime_symbols"] = [
             RuntimeSymbol(
                 surface=slot,
                 role="external_entity",
-                semantic_role=(
-                    re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
-                    or "value"
-                ),
             ).to_dict()
             for slot in request.slot_contract
         ]
@@ -1185,6 +1220,9 @@ def evaluate(
                         ).encode("utf-8")
                     ).hexdigest(),
                     "topology_evidence": evidence or None,
+                    "temporal_decode_evidence": _temporal_decode_evidence(
+                        (decode_meta or {}).get("stats"), record.id
+                    ),
                     **_decode_outcome_fields(
                         pred, parse_ok=None, error=None, decode_meta=decode_meta
                     ),
@@ -1338,6 +1376,9 @@ def evaluate(
                 },
                 "serialized": serialized,
                 "topology_evidence": evidence or None,
+                "temporal_decode_evidence": _temporal_decode_evidence(
+                    (decode_meta or {}).get("stats"), record.id
+                ),
                 **_decode_outcome_fields(
                     pred, parse_ok=ok, error=error, decode_meta=decode_meta
                 ),

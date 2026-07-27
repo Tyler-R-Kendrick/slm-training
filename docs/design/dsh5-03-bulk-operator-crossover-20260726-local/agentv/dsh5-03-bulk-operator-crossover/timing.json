@@ -1,0 +1,23 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cce9447e9cc729f5fc21d5392512e6f216f47ce2",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.legal_set": "v3",
+      "model.operator_policy_view": "v4",
+      "model.operator_feature_encoder": "v2",
+      "evals.bulk_operator_matrix": "v1",
+      "harness.experiments.operator_systems_benchmark": "v1"
+    },
+    "stamped_at": "2026-07-26T17:49:56.589362+00:00"
+  }
+}

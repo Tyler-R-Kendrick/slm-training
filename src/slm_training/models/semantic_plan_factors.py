@@ -11,7 +11,8 @@ Six factor families are tensorized into fixed-width vectors:
 * ``inventory`` -- component-family counts over ``role_slots``.
 * ``cardinality`` -- per-role min/max cardinality bounds.
 * ``topology`` -- depth bounds and parent/sibling edge counts.
-* ``binder_reference`` -- symbol/binding counts and placeholder-fallback rate.
+* ``binder_reference`` -- symbol/binding counts, fallback rate, and declared
+  opaque binding-edge ordinals.
 * ``property_role_value`` -- per-role required flag plus mean factor confidence.
 * ``style_layout`` -- derived from ``archetype.id`` (see caveat below).
 
@@ -96,7 +97,10 @@ def factor_dims(config: ProgramFactorTensorizerConfig) -> dict[str, int]:
         "inventory": len(config.component_vocab) + 1,  # +1 unknown/other bucket
         "cardinality": config.max_role_slots * 2,  # (min, max) per slot, padded
         "topology": 4,  # depth_low, depth_high, parent_edges, sibling_groups
-        "binder_reference": 4,  # symbols, bindings, avg_candidates, fallback_frac
+        # Counts plus (role ordinal, target-symbol ordinal) for each retained
+        # declared binding edge. Ordinals are request-local opaque identities,
+        # never raw binder names or surface text.
+        "binder_reference": 4 + config.max_bindings * 2,
         "property_role_value": config.max_role_slots + 1,  # required flags + mean confidence
         "style_layout": len(config.style_vocab) + 1,  # +1 unrecognized-style bucket
     }
@@ -151,7 +155,7 @@ def _topology_tensor(plan: SemanticPlanV1, config: ProgramFactorTensorizerConfig
 
 
 def _binder_reference_tensor(plan: SemanticPlanV1, config: ProgramFactorTensorizerConfig) -> torch.Tensor:
-    vec = torch.zeros(4, dtype=torch.float32)
+    vec = torch.zeros(4 + config.max_bindings * 2, dtype=torch.float32)
     symbol_cap = max(1.0, float(config.max_symbols))
     binding_cap = max(1.0, float(config.max_bindings))
     vec[0] = min(float(len(plan.symbols)), float(config.max_symbols)) / symbol_cap
@@ -161,6 +165,23 @@ def _binder_reference_tensor(plan: SemanticPlanV1, config: ProgramFactorTensoriz
         vec[2] = min(avg_candidates, float(config.max_symbols)) / symbol_cap
         fallback = sum(1 for b in plan.bindings if b.placeholder_fallback) / len(plan.bindings)
         vec[3] = fallback
+    role_ordinals = {
+        slot.role_id: index + 1
+        for index, slot in enumerate(sorted(plan.role_slots, key=lambda slot: slot.role_id))
+    }
+    symbol_ordinals = {
+        symbol.symbol_id: index + 1
+        for index, symbol in enumerate(sorted(plan.symbols, key=lambda symbol: symbol.symbol_id))
+    }
+    for index, binding in enumerate(
+        sorted(plan.bindings, key=lambda binding: binding.role_slot_id)[: config.max_bindings]
+    ):
+        offset = 4 + index * 2
+        vec[offset] = min(float(role_ordinals.get(binding.role_slot_id, 0)), symbol_cap) / symbol_cap
+        # Candidate symbols are declared authority. Their canonical ordinal is
+        # stable under alpha-renaming but still retains a binding swap.
+        candidate = min(binding.candidate_symbols or (), key=symbol_ordinals.get, default=None)
+        vec[offset + 1] = min(float(symbol_ordinals.get(candidate, 0)), symbol_cap) / symbol_cap
     return vec
 
 

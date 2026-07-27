@@ -51,6 +51,10 @@
           {
             "type": "command",
             "command": "serena-hooks activate --client=claude-code"
+          },
+          {
+            "type": "command",
+            "command": "git config core.hooksPath >/dev/null 2>&1 || git config core.hooksPath .githooks"
           }
         ]
       }

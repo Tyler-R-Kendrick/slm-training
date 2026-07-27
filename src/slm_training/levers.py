@@ -178,6 +178,101 @@ def require_constrained_production_config(
     )
 
 
+# Goal invariant VI (docs/design/decode-invariants.md). The product is the
+# smartest output at the smallest model, so capacity is a budget, not a knob to
+# reach for. Every lever below raises trainable parameter count, which raises
+# quality on its own and can therefore counterfeit a capability result. Unlike
+# the weakening levers above these have no forbidden value — growth is legal
+# when it is *declared and charged*. What is forbidden is growing silently:
+# comparing arms that differ here without size-matching them, or crediting the
+# resulting quality without a parameter-efficiency gain (EG_params).
+CAPACITY_SCALING_LEVERS: Final = {
+    "d_model": {
+        "baseline_value": 128,
+        "axis": "width",
+        "note": "residual width; parameters grow ~quadratically",
+    },
+    "n_heads": {
+        "baseline_value": 4,
+        "axis": "width",
+        "note": "attention heads at fixed d_model reshape rather than add, but "
+        "are reported because head count gates width sweeps",
+    },
+    "context_layers": {
+        "baseline_value": 2,
+        "axis": "depth",
+        "note": "context tower depth; parameters grow linearly",
+    },
+    "denoiser_layers": {
+        "baseline_value": 4,
+        "axis": "depth",
+        "note": "denoiser tower depth; parameters grow linearly",
+    },
+    "recursive_transition_layers": {
+        "baseline_value": 0,
+        "axis": "depth",
+        "note": "extra transition capacity inside the shared recursive tower",
+    },
+    "hf_model_name": {
+        "baseline_value": "HuggingFaceTB/SmolLM2-135M",
+        "axis": "backbone",
+        "note": "pretrained backbone; swapping to a larger checkpoint is the "
+        "single largest uncharged capacity jump available",
+    },
+}
+
+
+def capacity_scaling_deviations(config: Any) -> dict[str, dict[str, Any]]:
+    """Return capacity levers this config sets away from their baseline."""
+    deviations: dict[str, dict[str, Any]] = {}
+    for name, spec in CAPACITY_SCALING_LEVERS.items():
+        if not hasattr(config, name):
+            continue
+        value = getattr(config, name)
+        if value is None or value == spec["baseline_value"]:
+            continue
+        deviations[name] = {**spec, "value": value}
+    return deviations
+
+
+def size_matched_violations(left: Any, right: Any) -> dict[str, dict[str, Any]]:
+    """Return capacity levers on which two compared arms differ."""
+    violations: dict[str, dict[str, Any]] = {}
+    for name, spec in CAPACITY_SCALING_LEVERS.items():
+        if not hasattr(left, name) or not hasattr(right, name):
+            continue
+        lhs, rhs = getattr(left, name), getattr(right, name)
+        if lhs == rhs:
+            continue
+        violations[name] = {**spec, "left": lhs, "right": rhs}
+    return violations
+
+
+def require_size_matched_arms(
+    left: Any, right: Any, *, context: str = "comparison"
+) -> None:
+    """Fail before execution when two compared arms differ in capacity.
+
+    Use this wherever a matrix attributes a quality delta to the factor it
+    varies. A quality difference between arms of different size is not
+    evidence about that factor; charge the size difference (EG_params) or
+    match it.
+    """
+    violations = size_matched_violations(left, right)
+    if not violations:
+        return
+    detail = "; ".join(
+        f"{name}={spec['left']!r} vs {spec['right']!r} ({spec['axis']})"
+        for name, spec in sorted(violations.items())
+    )
+    raise ValueError(
+        f"{context} compares arms of different capacity: {detail}; "
+        "see docs/design/decode-invariants.md invariant VI — size-match the "
+        "arms or report EG_params so the growth is charged, never credit a "
+        "quality delta bought with parameters"
+    )
+
+
 def require_capability_lever_profile(config: Any, capability: Capability) -> None:
     """Reject active levers introduced above the requested capability."""
 
@@ -246,6 +341,9 @@ _COMPILER_PATH_DECODE_LEVERS: Final = (
     "binder_component_plan_decode_weight",
     "binder_topology_decode_weight",
     "binder_arity_decode_weight",
+    "binder_slot_ownership_decode_weight",
+    "binder_slot_presence_decode_weight",
+    "binder_reference_presence_decode_weight",
 )
 LEVER_REQUIREMENTS: Final = {
     **{name: (_CHOICE,) for name in _CHOICE_ONLY_DECODE_LEVERS},
@@ -269,6 +367,11 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
     "binder_component_plan_decode_weight": ("binder_component_plan_loss_weight",),
     "binder_topology_decode_weight": ("binder_topology_loss_weight",),
     "binder_arity_decode_weight": ("binder_arity_loss_weight",),
+    "binder_slot_ownership_decode_weight": ("binder_slot_ownership_loss_weight",),
+    "binder_slot_presence_decode_weight": ("binder_slot_presence_loss_weight",),
+    "binder_reference_presence_decode_weight": (
+        "binder_reference_presence_loss_weight",
+    ),
     "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",),
     "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),
 }

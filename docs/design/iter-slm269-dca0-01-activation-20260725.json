@@ -1,0 +1,71 @@
+{
+ "activation_status": "blocked",
+ "activation_verdict": "prerequisite_evidence_unqualified",
+ "claim_class": "diagnostic",
+ "corpus_arms": {
+  "canonical_only": {
+   "available": false,
+   "reason": "activation_blocked"
+  },
+  "equivalent_all_extra_exposure": {
+   "available": false,
+   "reason": "activation_blocked"
+  },
+  "equivalent_all_matched": {
+   "available": false,
+   "reason": "activation_blocked"
+  },
+  "equivalent_random_one": {
+   "available": false,
+   "reason": "activation_blocked"
+  },
+  "shuffled_variant_set": {
+   "available": false,
+   "reason": "activation_blocked"
+  }
+ },
+ "disposition": "inconclusive",
+ "experiment_id": "slm269-dca0-01-target-policy-activation",
+ "gates": [
+  {
+   "issue": "SLM-260",
+   "path": "docs/design/oracle-scoring-replay.md",
+   "qualified": false,
+   "reason": "fixture_only_not_full_scorer",
+   "sha256": "f27d4ad992d35de2319a805c63fa02cd28d425018cbf4d374bc8784c3876fa6b"
+  },
+  {
+   "issue": "SLM-261",
+   "path": "docs/design/training-loss-ledger.md",
+   "qualified": false,
+   "reason": "missing_or_unqualified",
+   "sha256": "missing"
+  },
+  {
+   "issue": "SLM-268",
+   "path": "docs/design/iter-slm268-verified-data-scaling-activation-20260725.json",
+   "qualified": false,
+   "reason": "blocked_no_selected_regime_no_negative_result",
+   "sha256": "2ed36808796d8687e9582140ae20f031252ae1ee2b27e06927e9d38fbacd3c8d"
+  }
+ ],
+ "honesty": "No train, eval, corpus build, checkpoint, or ship claim was made.",
+ "manifest_sha256": "1545e99e029d034c7ffc19141bd48b89c3180e65b2abbbd5c818d8336feeed94",
+ "schema": "dca0_target_policy_activation/v1",
+ "successor_conditions": [
+  "qualified full scorer oracle replay (SLM-260 successor)",
+  "qualified trainer memorization + LossLedgerV1 (SLM-261 successor)",
+  "SLM-268 successor: selected verified-data regime or explicit large-scale negative result",
+  "then file the EquivalentTargetSetV1 contract + applicability audit + matched training matrix"
+ ],
+ "version_stamp": {
+  "code_commit": "4553957a4748239c8e31f831ee00634e78df3648",
+  "code_dirty": true,
+  "components": {
+   "harness.experiments": "v114",
+   "harness.experiments.slm269_dca0_activation": "v1"
+  },
+  "stamp_schema": "version_stamp/v1",
+  "stamped_at": "2026-07-25T17:14:28.942928+00:00"
+ }
+}

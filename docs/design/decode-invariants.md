@@ -364,16 +364,118 @@ The contract is in place: an 11-action tree-edit language
 (`models/tree_edit_diffusion.py`, SLM-305) and `TurnArtifactV1` carrying
 `OperatorApplicationV1` deltas.
 
-**Status: partial — full-AST output is the shipped default.** The reserved
-patch-target arm was experimentally rejected, and the SLM-299/305 reachability
-audit measured `reachable_fraction = 0.0` from the standard seed on all suites
+**Status: partial — full-AST output is the shipped default for the measured
+variant.** The reserved patch-target arm was experimentally rejected. The
+`reachable_fraction = 0.0` finding is scoped to the **`tree_edit_diffusion`**
+variant only (`action_alphabet_id="tree_edit_diffusion.edit_actions"`,
+`action_alphabet_fingerprint` `ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab`
+as of SLM-305's 11-action alphabet —
+`slm_training.dsl.variants.build_variant_contracts()`), measured from the
+standard seed on all suites
 ([`iter-slm305-edit-language-20260724.md`](iter-slm305-edit-language-20260724.md)).
+The **`repl_operators`** and **`twotower_prompt_ast`** variants are
+`NOT_MEASURED` for this invariant (see [I14](#i14--goals-are-non-negotiable-approaches-are-disposable)'s
+scoping rule below). VAR0-02 publishes the full `(variant, suite)` matrix in
+[`var0-02-reachability-matrix-20260726.md`](var0-02-reachability-matrix-20260726.md):
+`repl_operators` is `not_measured_deferred` and `twotower_prompt_ast` is
+`not_applicable` — reachability is a `(variant, suite)` cell, never a
+program-wide scalar.
 
-**Rejected approach, live goal.** Full-AST output is the *bootstrap* mode, not
-the end state. **Successor approach:** attack reachability first —
-reachability-aware seed selection, macro actions, reachability-certified
-training pairs (the SLM-299 analyzer already exists) — before any retrial of
-patch-as-default-target.
+**Rejected approach, live goal.** Full-AST output is the *bootstrap* mode for
+`tree_edit_diffusion`, not the end state. **Successor approach, ordered by
+the measured reason histogram** (`iter-slm305-edit-language-20260724.md`
+recorded exactly two reason codes across every suite: `unsupported_component`
+and `needs_direction_change` — no other reason code was observed):
+
+1. **Property-mutation action class** (maps to `needs_direction_change`,
+   e.g. `train_button_row_01`, `rico_eval_test_0`). VAR1-01's hypothetical
+   probe
+   ([`var1-01-set-property-probe-20260725.md`](var1-01-set-property-probe-20260725.md))
+   confirmed one genuine `PROVEN_REACHABLE` flip via a what-if `set_property`
+   action on a case previously blocked by `needs_direction_change`
+   (`adv_empty_prompt_01`), licensing VAR1-02 to add a real `SET_PROPERTY`
+   action to `TreeEditSpace`.
+2. **Pack-derived component inventory** (maps to `unsupported_component`,
+   e.g. `train_auth_01`, `held_out_form_01`). These cases need a wider
+   component/property inventory sourced from the pack, not a new action
+   class — a distinct successor from (1).
+3. **Seed selection and macro actions** — demoted below (1) and (2). Per
+   `slm299_edit_reachability.py:347-354`, the root's `rest` must match the
+   seed's in every mode because the root is never removed or re-minted, so a
+   different seed changes *which* targets are reachable but cannot
+   substitute for a missing action class on root-owned properties.
+   Reachability-certified training pairs (the SLM-299 analyzer already
+   exists) remain a valid follow-on once (1) and (2) close the action-class
+   and inventory gaps.
+
+---
+
+## V. Parameter-efficiency law
+
+### I16 — The deliverable is the smartest output at the smallest model
+
+Quality rises with capacity on its own. A quality win produced by a larger
+model is therefore not evidence about the change under test — it is evidence
+that parameters were added. Model size is a **budget that is spent and
+charged**, never a free knob.
+
+Capacity levers are registered in `levers.CAPACITY_SCALING_LEVERS` with their
+baseline value and axis (width / depth / backbone), mirroring
+`CONSTRAINT_WEAKENING_LEVERS`. Unlike weakening levers these have no forbidden
+value: growth is legal when it is **declared and charged**. What is forbidden
+is growing *silently*.
+
+### I17 — Growth must pay for itself (EG_params)
+
+`scaling_fit.CostKey` includes `params`, so trainable parameter count is a
+first-class cost alongside time / FLOPs / NFE. `efficiency_gain(...,
+cost_key="params")` yields the size-normalized gain; `EG_params ≤ 1` means the
+candidate reached its loss by spending capacity the baseline curve would have
+spent less of — a scaling purchase, not a capability gain.
+
+A candidate with more trainable parameters than its baseline is promotable
+only with `EG_params` LCB ≥ 1 (`PromotionCriteria.eg_params_lcb_min`, checked
+by `promotion_engine.check_parameter_efficiency`). Holding or shrinking
+capacity always passes — this never penalizes a smaller model. Growth without
+a measured size-normalized gain **fails closed**.
+
+Wall-time parity is not a size budget. A wider model can hold its latency —
+especially on a GPU — and still buy its loss with parameters. Charging only
+`EG_time` (the prior behavior) let exactly that through.
+
+### I18 — Promote the smallest sufficient model
+
+Selecting the lowest loss across a ladder that spans widths promotes the
+widest rung by construction. `promotion_engine.select_smallest_sufficient`
+takes the best achieved loss, admits every candidate within the tolerance
+band, and returns the **smallest** admitted model, so capacity is spent only
+where it buys something outside the noise.
+
+`check_rank_stability` orders ladder points numerically (`_point_order_key`);
+a lexical sort ranked `"d96" > "d64" > "d192"` and silently compared the wrong
+two rungs.
+
+### I19 — Scaling is a diagnostic control arm, never a default lever
+
+Arms compared to attribute a quality delta must be size-matched
+(`levers.require_size_matched_arms`) or must charge the difference. Growing
+the model to green a gate is the size-analogue of weakening a gate, and is
+equally forbidden.
+
+A capacity deviation is legal only when it is the **declared subject** of a
+preregistered experiment (a capacity ladder is a legitimate experiment; a
+champion recipe that quietly carries a wider geometry is not).
+
+Machine enforcement: `_capacity_levers()` in
+`scripts/verify_decode_invariants.py` fails CI if the registry is deleted,
+emptied, or loses its `baseline_value` / `axis` fields.
+
+**Open goals (approach state, not waivers):** `run_quality_matrix.py` splices
+a `capacity` dict (`d_model=192`) into the V3+ champion recipes, and
+`ladder.scratch_ladder_default` sets the token budget ∝ `d_model²`, giving
+wider rungs more data. Both are pre-existing, are now visible rather than
+silent, and must be re-baselined or declared under I19 — neither may be cited
+as reason the invariant does not apply (I14).
 
 ---
 
@@ -387,18 +489,68 @@ dated, documented waiver — in the same measured-results doc, and links it here
 
 Status labels like `rejected`, `unavailable`, `nl_available=False`, and
 `reachable_fraction=0.0` describe **current approach state**. They may never be
-cited as a reason an invariant does not apply.
+cited as a reason an invariant does not apply. A variant-scoped measurement
+may also never be cited as a program-scoped status (VAR0-02): a
+`reachable_fraction` is attributed to one registered variant's action
+alphabet and says nothing about any other variant until that variant is
+separately measured.
 
 Open goals with named successors, at a glance:
 
 | Invariant | Rejected approach | Successor approach |
 | --- | --- | --- |
 | I13 | e803 decoder-target op tokens | `OPS_VOCAB v1` now reserved + shared; next is an encoder-conditioned campaign |
-| I12 | patch-as-default-target (SLM-299/305) | reachability-aware seeds / macro actions / certified pairs |
+| I12 | patch-as-default-target for `tree_edit_diffusion` (SLM-299/305) | property-mutation action class (VAR1-01/02) → pack-derived inventory (VAR0-03) → seeds/macro actions/certified pairs, demoted |
 | I11 | — (never attempted) | CRDT-converging merge, replacing conflict rejection |
 | I10 | — (rung unbuilt) | simplified-NL inventory as the bridge to complex NL |
 | I3 | — (machinery new) | certify the committed n-gram table by campaign, then default-on for serving |
 | I4 | — (machinery new) | certify checkpoint-aligned prefills by campaign, then default-on for serving |
+
+### I14a — Variant-scoped measurements are not program-scoped statuses
+
+SLM-427 (VAR1-03) established this scoping rule after I12's original text
+cited a single variant's `reachable_fraction = 0.0` as if it applied to the
+whole program, and named a successor (seed selection) that did not follow
+from the measured reason codes (`unsupported_component`,
+`needs_direction_change` — both properties of the action alphabet and
+inventory, not of seeds or training pairs).
+
+* A measurement taken against one variant's action alphabet
+  (`VariantContractV1.variant_id` /
+  `action_alphabet_fingerprint`) may be cited only for that variant. Every
+  other registered variant is `NOT_MEASURED` for the same invariant until
+  independently run — it is never assumed to inherit the result.
+* A successor approach listed under an invariant must be traceable to at
+  least one reason code actually present in that measurement's published
+  histogram. A successor that does not map to any observed reason code is
+  not a valid successor, however plausible it sounds.
+
+### I7 — Every agent surface carries the law
+
+The repo configures several coding harnesses, each reading a different
+instruction file. An invariant stated only in `AGENTS.md` reaches only the
+agents that happen to read it, so every surface must carry it:
+[`../../AGENTS.md`](../../AGENTS.md), [`../../CLAUDE.md`](../../CLAUDE.md),
+[`../../GEMINI.md`](../../GEMINI.md),
+[`../../.github/copilot-instructions.md`](../../.github/copilot-instructions.md),
+[`../../.cursor/rules/decode-invariants.mdc`](../../.cursor/rules/decode-invariants.mdc),
+[`../../.grok/workflows/autotrain.rhai`](../../.grok/workflows/autotrain.rhai),
+and the skills that run experiments (`autotrain`, `honest-ship-eval`,
+`improve-openui-harnesses`, `running-experiment-matrices`).
+
+`python -m scripts.verify_agent_surfaces` owns the obligation × surface matrix
+and is authoritative — `verify_decode_invariants` delegates to it for the
+`decode.invariants` obligation rather than keeping a second copy. It certifies
+the *other* repository laws (run cap, iron law, honest gates, data-quality
+loop, model card, version stamps, dashboard parity, preregistered campaigns) on
+the same surfaces; each of those had drifted off at least one surface before it
+existed. It also certifies hook parity, so the post-edit checks cannot stay one
+harness's privilege. Background:
+[`agent-harness-parity-audit.md`](agent-harness-parity-audit.md).
+
+Surfaces cite the `I*` ids used here. Renumbering them locally makes
+"invariant 11" mean different things in different files, which defeats the
+point of a canonical statement.
 
 ### I15 — Everything is documented
 
@@ -429,3 +581,6 @@ So agents do not over-correct:
 - Diagnostic unconstrained control arms in eval harnesses — allowed, clearly
   named, never shipped.
 - Deferring NL surface polish — allowed and encouraged; NL is fluff by design.
+- Growing the model — allowed as a **declared, charged** experiment subject
+  (capacity ladders, equal-byte ladders), never as a default lever, a champion
+  recipe's silent geometry, or a way to clear a gate (I16–I19).

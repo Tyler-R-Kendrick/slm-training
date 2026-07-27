@@ -12,10 +12,12 @@ side effect. It certifies six things:
    uncertified text (I6).
 4. Every registered decode backend has a deterministic-bypass test (I2).
 5. Every agent surface carries the invariants (I7), and every doc that must
-   link the canonical statement does (I8/I15).
+   link the canonical statement does (I15).
 6. The reserved operator-token channel has not drifted from default-off
    without a documented decision, and the shared encoder/decoder ops
    vocabulary matches its committed fingerprint (I13).
+7. Every registered model variant's contract (VAR0-01) matches its live
+   sources, and no variant falsely claims pack-derived component inventory.
 
 Run: ``python -m scripts.verify_decode_invariants``
 """
@@ -78,23 +80,13 @@ BYPASS_TESTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
 )
 
-# I7: every agent surface must carry the invariants, not merely exist.
-AGENT_SURFACES: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("AGENTS.md", ("Non-negotiable architecture invariants", CANONICAL_DOC)),
-    ("CLAUDE.md", ("Non-negotiable architecture invariants", CANONICAL_DOC)),
-    ("GEMINI.md", ("Non-negotiable architecture invariants", CANONICAL_DOC)),
-    (
-        ".github/copilot-instructions.md",
-        ("Non-negotiable architecture invariants", "AGENTS.md"),
-    ),
-    (".cursor/rules/decode-invariants.mdc", ("alwaysApply: true", CANONICAL_DOC)),
-    (".agents/skills/autotrain/SKILL.md", ("decode-invariants.md",)),
-    (".agents/skills/honest-ship-eval/SKILL.md", ("decode-invariants.md",)),
-    (".agents/skills/improve-openui-harnesses/SKILL.md", ("decode-invariants.md",)),
-    (".agents/skills/running-experiment-matrices/SKILL.md", ("decode-invariants.md",)),
-)
+# I7: every agent surface must carry the invariants, not merely exist. The
+# matrix itself lives in scripts.verify_agent_surfaces, which owns the same
+# check for every other repository law; keeping two copies is what let the
+# other laws drift in the first place.
+AGENT_SURFACE_OBLIGATION = "decode.invariants"
 
-# I8/I15: the canonical doc is only canonical if the docs that describe these
+# I15: the canonical doc is only canonical if the docs that describe these
 # subsystems point at it.
 LINKING_DOCS: tuple[str, ...] = (
     "README.md",
@@ -123,8 +115,8 @@ def _module(relative: str) -> ast.Module:
     return ast.parse(_read(relative), filename=relative)
 
 
-def _weakening_levers() -> dict[str, Any]:
-    """Read the registry statically so the check needs no torch import."""
+def _lever_registry(registry_name: str) -> dict[str, Any]:
+    """Read a lever registry statically so the check needs no torch import."""
     tree = _module("src/slm_training/levers.py")
     for node in tree.body:
         if not isinstance(node, ast.AnnAssign) and not isinstance(node, ast.Assign):
@@ -133,15 +125,38 @@ def _weakening_levers() -> dict[str, Any]:
             [node.target] if isinstance(node, ast.AnnAssign) else list(node.targets)
         )
         names = {t.id for t in targets if isinstance(t, ast.Name)}
-        if "CONSTRAINT_WEAKENING_LEVERS" not in names or node.value is None:
+        if registry_name not in names or node.value is None:
             continue
         registry = ast.literal_eval(node.value)
         if not registry:
-            raise DecodeInvariantError("CONSTRAINT_WEAKENING_LEVERS is empty")
+            raise DecodeInvariantError(f"{registry_name} is empty")
         return registry
-    raise DecodeInvariantError(
-        "levers.py no longer defines CONSTRAINT_WEAKENING_LEVERS"
-    )
+    raise DecodeInvariantError(f"levers.py no longer defines {registry_name}")
+
+
+def _weakening_levers() -> dict[str, Any]:
+    return _lever_registry("CONSTRAINT_WEAKENING_LEVERS")
+
+
+def _capacity_levers() -> dict[str, Any]:
+    """Invariant VI: every capacity knob stays declared with its baseline.
+
+    Deleting or emptying this registry would make model growth invisible to
+    size-matching and to EG_params, which is exactly how a scaled-up model
+    gets credited with a capability win.
+    """
+    registry = _lever_registry("CAPACITY_SCALING_LEVERS")
+    missing = [
+        name
+        for name, spec in sorted(registry.items())
+        if "baseline_value" not in spec or not spec.get("axis")
+    ]
+    if missing:
+        raise DecodeInvariantError(
+            "CAPACITY_SCALING_LEVERS entries missing baseline_value/axis: "
+            + ", ".join(missing)
+        )
+    return registry
 
 
 def _dataclass_defaults(relative: str, class_name: str) -> dict[str, Any]:
@@ -265,21 +280,18 @@ def check_bypass_tests() -> list[str]:
 
 def check_agent_surfaces() -> list[str]:
     """I7: every agent surface carries the invariants."""
-    checked: list[str] = []
-    for relative, markers in AGENT_SURFACES:
-        text = _read(relative)
-        for marker in markers:
-            if marker not in text:
-                raise DecodeInvariantError(
-                    f"{relative} does not carry {marker!r}; every agent surface "
-                    f"must enforce the invariants (see {CANONICAL_DOC})"
-                )
-        checked.append(relative)
-    return checked
+    from scripts.verify_agent_surfaces import AgentSurfaceError
+    from scripts.verify_agent_surfaces import check as check_surfaces
+
+    try:
+        checked = check_surfaces(obligation_id=AGENT_SURFACE_OBLIGATION)
+    except AgentSurfaceError as exc:
+        raise DecodeInvariantError(f"{exc} (see {CANONICAL_DOC})") from exc
+    return checked[AGENT_SURFACE_OBLIGATION]
 
 
 def check_docs_link_canonical() -> list[str]:
-    """I8/I15: the canonical doc exists and is reachable from every anchor."""
+    """I15: the canonical doc exists and is reachable from every anchor."""
     doc = _read(CANONICAL_DOC)
     for required in ("I2", "I3", "I4", "I6", "I11", "I12", "I13", "I14"):
         if f"### {required} " not in doc and f"### {required}b " not in doc:
@@ -367,11 +379,50 @@ def check_ops_vocab() -> dict[str, Any]:
     return {"fingerprint": live["fingerprint"], "count": live["count"]}
 
 
+def check_variant_contracts() -> dict[str, Any]:
+    """VAR0-01: every registered model variant matches its live sources.
+
+    This one check imports, like ``check_ops_vocab``, because the point is
+    comparing a committed registry against values derived from each
+    variant's live sources (module-level action constants, the live operator
+    registry, the pack registry) — a pure text check could not tell an
+    honest classification from a stale or false one. Building
+    ``slm_training.dsl.variants`` itself stays torch-free, so this adds no
+    heavy dependency to the static CI job.
+    """
+    try:
+        from slm_training.dsl.variants import fingerprint, load_registry, manifest
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(f"variant registry is unimportable: {exc}") from exc
+
+    try:
+        committed = load_registry()
+    except Exception as exc:  # noqa: BLE001
+        raise DecodeInvariantError(
+            f"committed variant registry is unreadable: {exc}"
+        ) from exc
+    live = manifest()
+    if committed.get("fingerprint") != fingerprint():
+        raise DecodeInvariantError(
+            "variant registry drifted from its committed contracts; a variant "
+            "was added, removed, or reclassified. Rebuild with "
+            "`python -c 'from slm_training.dsl.variants import write_registry;"
+            " write_registry()'` and bump `dsl.variants` in versions.json "
+            f"(see {CANONICAL_DOC})"
+        )
+    if committed != live:
+        raise DecodeInvariantError("committed variant registry is stale")
+    if not live["count"]:
+        raise DecodeInvariantError("variant registry is empty")
+    return {"fingerprint": live["fingerprint"], "count": live["count"]}
+
+
 def certify() -> dict[str, Any]:
     levers = _weakening_levers()
     return {
         "canonical_doc": CANONICAL_DOC,
         "weakening_levers": sorted(levers),
+        "capacity_levers": sorted(_capacity_levers()),
         "canonical_defaults": check_canonical_defaults(levers),
         "strict_policies": check_strict_policies(levers),
         "serving_fail_closed": check_serving_fails_closed(),
@@ -380,6 +431,7 @@ def certify() -> dict[str, Any]:
         "linking_docs": check_docs_link_canonical(),
         "reserved_ops": check_reserved_ops_default_off(),
         "ops_vocab": check_ops_vocab(),
+        "variant_contracts": check_variant_contracts(),
     }
 
 

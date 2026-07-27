@@ -93,15 +93,20 @@ def component_version(component_id: str) -> str:
 
 
 def _git_output(args: list[str]) -> str | None:
-    try:
-        return subprocess.check_output(
-            ["git", *args],
-            text=True,
-            cwd=_REPO_ROOT,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-    except (OSError, subprocess.SubprocessError):
-        return None
+    # Prefer the caller's worktree so isolated experiment runs do not inherit
+    # another checkout's HEAD or dirty state. Packaged/non-repo callers retain
+    # the source-tree fallback below.
+    for cwd in dict.fromkeys((Path.cwd(), _REPO_ROOT)):
+        try:
+            return subprocess.check_output(
+                ["git", *args],
+                text=True,
+                cwd=cwd,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+        except (OSError, subprocess.SubprocessError):
+            continue
+    return None
 
 
 @lru_cache(maxsize=1)
