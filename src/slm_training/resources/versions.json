@@ -9651,7 +9651,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v4",
+      "version": "v5",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -9659,6 +9659,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-427 (VAR1-03): re-disposition I12 to name the tree_edit_diffusion variant and its action_alphabet_fingerprint the reachable_fraction=0.0 was measured on, mark repl_operators/twotower_prompt_ast NOT_MEASURED, and replace the successor list with one traceable to the measured reason histogram (unsupported_component, needs_direction_change). Add I14a: a variant-scoped measurement is never a program-scoped status, and a successor must map to an observed reason code. No invariant weakened."
+        },
         {
           "version": "v4",
           "date": "2026-07-25",

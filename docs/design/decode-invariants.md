@@ -364,16 +364,45 @@ The contract is in place: an 11-action tree-edit language
 (`models/tree_edit_diffusion.py`, SLM-305) and `TurnArtifactV1` carrying
 `OperatorApplicationV1` deltas.
 
-**Status: partial — full-AST output is the shipped default.** The reserved
-patch-target arm was experimentally rejected, and the SLM-299/305 reachability
-audit measured `reachable_fraction = 0.0` from the standard seed on all suites
+**Status: partial — full-AST output is the shipped default for the measured
+variant.** The reserved patch-target arm was experimentally rejected. The
+`reachable_fraction = 0.0` finding is scoped to the **`tree_edit_diffusion`**
+variant only (`action_alphabet_id="tree_edit_diffusion.edit_actions"`,
+`action_alphabet_fingerprint` `ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab`
+as of SLM-305's 11-action alphabet —
+`slm_training.dsl.variants.build_variant_contracts()`), measured from the
+standard seed on all suites
 ([`iter-slm305-edit-language-20260724.md`](iter-slm305-edit-language-20260724.md)).
+The **`repl_operators`** and **`twotower_prompt_ast`** variants are
+`NOT_MEASURED` for this invariant (see [I14](#i14--goals-are-non-negotiable-approaches-are-disposable)'s
+scoping rule below).
 
-**Rejected approach, live goal.** Full-AST output is the *bootstrap* mode, not
-the end state. **Successor approach:** attack reachability first —
-reachability-aware seed selection, macro actions, reachability-certified
-training pairs (the SLM-299 analyzer already exists) — before any retrial of
-patch-as-default-target.
+**Rejected approach, live goal.** Full-AST output is the *bootstrap* mode for
+`tree_edit_diffusion`, not the end state. **Successor approach, ordered by
+the measured reason histogram** (`iter-slm305-edit-language-20260724.md`
+recorded exactly two reason codes across every suite: `unsupported_component`
+and `needs_direction_change` — no other reason code was observed):
+
+1. **Property-mutation action class** (maps to `needs_direction_change`,
+   e.g. `train_button_row_01`, `rico_eval_test_0`). VAR1-01's hypothetical
+   probe
+   ([`var1-01-set-property-probe-20260725.md`](var1-01-set-property-probe-20260725.md))
+   confirmed one genuine `PROVEN_REACHABLE` flip via a what-if `set_property`
+   action on a case previously blocked by `needs_direction_change`
+   (`adv_empty_prompt_01`), licensing VAR1-02 to add a real `SET_PROPERTY`
+   action to `TreeEditSpace`.
+2. **Pack-derived component inventory** (maps to `unsupported_component`,
+   e.g. `train_auth_01`, `held_out_form_01`). These cases need a wider
+   component/property inventory sourced from the pack, not a new action
+   class — a distinct successor from (1).
+3. **Seed selection and macro actions** — demoted below (1) and (2). Per
+   `slm299_edit_reachability.py:347-354`, the root's `rest` must match the
+   seed's in every mode because the root is never removed or re-minted, so a
+   different seed changes *which* targets are reachable but cannot
+   substitute for a missing action class on root-owned properties.
+   Reachability-certified training pairs (the SLM-299 analyzer already
+   exists) remain a valid follow-on once (1) and (2) close the action-class
+   and inventory gaps.
 
 ---
 
@@ -394,11 +423,30 @@ Open goals with named successors, at a glance:
 | Invariant | Rejected approach | Successor approach |
 | --- | --- | --- |
 | I13 | e803 decoder-target op tokens | `OPS_VOCAB v1` now reserved + shared; next is an encoder-conditioned campaign |
-| I12 | patch-as-default-target (SLM-299/305) | reachability-aware seeds / macro actions / certified pairs |
+| I12 | patch-as-default-target for `tree_edit_diffusion` (SLM-299/305) | property-mutation action class (VAR1-01/02) → pack-derived inventory (VAR0-03) → seeds/macro actions/certified pairs, demoted |
 | I11 | — (never attempted) | CRDT-converging merge, replacing conflict rejection |
 | I10 | — (rung unbuilt) | simplified-NL inventory as the bridge to complex NL |
 | I3 | — (machinery new) | certify the committed n-gram table by campaign, then default-on for serving |
 | I4 | — (machinery new) | certify checkpoint-aligned prefills by campaign, then default-on for serving |
+
+### I14a — Variant-scoped measurements are not program-scoped statuses
+
+SLM-427 (VAR1-03) established this scoping rule after I12's original text
+cited a single variant's `reachable_fraction = 0.0` as if it applied to the
+whole program, and named a successor (seed selection) that did not follow
+from the measured reason codes (`unsupported_component`,
+`needs_direction_change` — both properties of the action alphabet and
+inventory, not of seeds or training pairs).
+
+* A measurement taken against one variant's action alphabet
+  (`VariantContractV1.variant_id` /
+  `action_alphabet_fingerprint`) may be cited only for that variant. Every
+  other registered variant is `NOT_MEASURED` for the same invariant until
+  independently run — it is never assumed to inherit the result.
+* A successor approach listed under an invariant must be traceable to at
+  least one reason code actually present in that measurement's published
+  histogram. A successor that does not map to any observed reason code is
+  not a valid successor, however plausible it sounds.
 
 ### I7 — Every agent surface carries the law
 
