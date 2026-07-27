@@ -2,19 +2,12 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **969** (latest `autotrain_wf_smoke_20260725_iter970`).
+Total iterations: **976** (latest `autotrain_wf_smoke_20260725_iter977`).
 
 ## Latest 30
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter941` | True | 8 | steps | 25.280960083007812 | 29.82 |
-| `autotrain_wf_smoke_20260725_iter942` | True | 8 | steps | 31.827129364013672 | 29.68 |
-| `autotrain_wf_smoke_20260725_iter943` | True | 8 | steps | 29.700138092041016 | 25.32 |
-| `autotrain_wf_smoke_20260725_iter944` | True | 8 | steps | 37.094749450683594 | 30.56 |
-| `autotrain_wf_smoke_20260725_iter945` | True | 8 | steps | 26.684608459472656 | 67.18 |
-| `autotrain_wf_smoke_20260725_iter946` | True | 8 | steps | 39.06450653076172 | 72.14 |
-| `autotrain_wf_smoke_20260725_iter947` | True | 8 | steps | 31.86309814453125 | 78.22 |
 | `autotrain_wf_smoke_20260725_iter948` | True | 8 | steps | 34.13966369628906 | 72.85 |
 | `autotrain_wf_smoke_20260725_iter949` | True | 8 | steps | 28.586315155029297 | 54.79 |
 | `autotrain_wf_smoke_20260725_iter950` | True | 8 | steps | 30.32453155517578 | 53.27 |
@@ -38,3 +31,10 @@ Total iterations: **969** (latest `autotrain_wf_smoke_20260725_iter970`).
 | `autotrain_wf_smoke_20260725_iter968` | True | 8 | steps | 39.332366943359375 | 70.27 |
 | `autotrain_wf_smoke_20260725_iter969` | True | 8 | steps | 23.18085479736328 | 48.83 |
 | `autotrain_wf_smoke_20260725_iter970` | True | 8 | steps | 33.08173751831055 | 47.89 |
+| `autotrain_wf_smoke_20260725_iter971` | True | 8 | steps | 28.733802795410156 | 54.56 |
+| `autotrain_wf_smoke_20260725_iter972` | True | 8 | steps | 28.790117263793945 | 47.53 |
+| `autotrain_wf_smoke_20260725_iter973` | True | 8 | steps | 27.014944076538086 | 48.9 |
+| `autotrain_wf_smoke_20260725_iter974` | True | 8 | steps | 31.391937255859375 | 46.84 |
+| `autotrain_wf_smoke_20260725_iter975` | True | 8 | steps | 30.978626251220703 | 45.69 |
+| `autotrain_wf_smoke_20260725_iter976` | True | 8 | steps | 26.08095932006836 | 39.65 |
+| `autotrain_wf_smoke_20260725_iter977` | True | 8 | steps | 34.35076904296875 | 46.3 |
