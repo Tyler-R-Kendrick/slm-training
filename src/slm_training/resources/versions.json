@@ -1938,7 +1938,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/__init__.py",
@@ -1962,9 +1962,19 @@
         "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
-        "docs/design/ap020-on-policy-abstract-self-distillation.md"
+        "docs/design/ap020-on-policy-abstract-self-distillation.md",
+        "src/slm_training/harnesses/distill/operator_verifier_kd_defer.py",
+        "scripts/run_dsh4_03_operator_verifier_kd_defer_fixture.py",
+        "tests/test_harnesses/distill/test_operator_verifier_kd_defer.py",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.md",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.json"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-27",
+          "note": "SLM-388 DSH4-03: accepted-set/verifier-backed operator distillation with DEFER -- matched arms (hard accepted-set, teacher argmax, offline conditional KD, verifier-ranking+KD, +DEFER) over DSH4-01/02's trace/ranking contracts, entropy/reliability-aware forward-KL-JS-vs-reverse-KL-pressure shaping, a disjoint-trained verifier(frequency) anchor, a fail-closed DEFER margin gate, and a held-out CAP2-proxy stop rule (fixture result: no_go_defer)"
+        },
         {
           "version": "v7",
           "date": "2026-07-26",
