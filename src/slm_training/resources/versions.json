@@ -1071,13 +1071,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) third slice: add fork-then-choose-one-branch by classifying a CHECKOUT_STATE turn that crosses a branch boundary a recorded FORK turn opened (either endpoint's branch_digest in the trace's fork-opened set) as FORK_THEN_CHOOSE_ONE_BRANCH rather than plain CHECKOUT_ANOTHER_STATE; same-branch checkouts are unaffected. 5 of ~7 verified patterns now covered; merge success/conflict and pronoun/focus follow-ups remain, as does all SFT/preference training and held-out measurement"
+        },
         {
           "version": "v3",
           "date": "2026-07-27",
@@ -10827,6 +10832,11 @@
         "docs/design/dsh5-12-advanced-operator-disposition-20260727-local/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "no-bump: correct the hardcoded SLM-418/DSH5-10 evidence string (dsl.operators.replay_preference is now on its own v4, with fork-then-choose-one-branch bringing coverage to 5 of 7 named patterns) so a freshly-generated disposition would not understate already-landed replay-preference-row coverage; no change to disposition logic, schema, or the already-published dsh5-12-*-20260727-local snapshot, which stays immutable point-in-time evidence"
+        },
         {
           "version": "v2",
           "date": "2026-07-27",
