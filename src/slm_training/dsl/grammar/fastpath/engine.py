@@ -8,6 +8,7 @@ from pathlib import Path
 
 from lark import Lark, UnexpectedCharacters, UnexpectedToken
 from lark.exceptions import UnexpectedEOF
+from lark.lexer import BasicLexer, LexerThread
 
 from slm_training.dsl.grammar.backends.types import GRAMMARS_DIR
 
@@ -53,6 +54,27 @@ def _load_parser(grammar_path: str) -> Lark:
     )
 
 
+@lru_cache(maxsize=4)
+def _load_lexer(grammar_path: str) -> BasicLexer:
+    """Build (once per grammar path) the ``BasicLexer`` that ``Lark.lex()``
+    would otherwise reconstruct from scratch on every call.
+
+    ``Lark.lex(text)`` calls ``self._build_lexer(dont_ignore)`` whenever the
+    ``Lark`` object has no cached ``self.lexer`` attribute -- true for any
+    grammar built with ``parser="lalr"`` (as ``_load_parser`` does), since
+    that path stores the compiled grammar on ``self.parser`` instead. Each
+    rebuild reruns ``BasicLexer.__init__`` -> terminal sort/validate and,
+    lazily on first ``next_token``, ``_build_scanner`` -> ``_create_unless``,
+    which recompiles every terminal-disambiguation regex. The grammar and its
+    terminal set never change within (or across) a decode session, so one
+    ``BasicLexer`` per grammar path is reused for every ``_lex_tokens`` call
+    instead -- same ``LexerConf`` as ``_load_parser``'s cached ``Lark``
+    object, so the token stream stays byte-identical; only the *rebuild* is
+    removed. See docs/design/decode-compiler-tree-lexer-rebuild-cost-finding.md.
+    """
+    return _load_parser(grammar_path)._build_lexer()
+
+
 class OpenUIIncrementalEngine:
     """
     Incremental OpenUI acceptor via Lark InteractiveParser.
@@ -72,6 +94,7 @@ class OpenUIIncrementalEngine:
         path = Path(grammar_path) if grammar_path else GRAMMARS_DIR / "openui.lark"
         self.grammar_path = path
         self._parser = _load_parser(str(path.resolve()))
+        self._lexer = _load_lexer(str(path.resolve()))
         self._prefix = ""
         self._accepts: frozenset[str] = frozenset()
         self._ip = None
@@ -96,16 +119,26 @@ class OpenUIIncrementalEngine:
         except Exception:
             self._accepts = frozenset()
 
+    def _lex(self, text: str) -> list:
+        """Lex ``text`` against the per-grammar cached ``BasicLexer``.
+
+        Equivalent to ``self._parser.lex(text)`` (same ``LexerConf``, so the
+        token stream is byte-identical) but reuses the lexer/scanner built
+        once by ``_load_lexer`` instead of rebuilding it on every call --
+        see docs/design/decode-compiler-tree-lexer-rebuild-cost-finding.md.
+        """
+        return list(LexerThread.from_text(self._lexer, text).lex(None))
+
     def _lex_tokens(self, prefix: str) -> list | None:
         try:
-            return list(self._parser.lex(prefix))
+            return self._lex(prefix)
         except UnexpectedCharacters:
             trimmed = prefix.rstrip()
             cut = len(trimmed)
             while cut > 0 and trimmed[cut - 1] not in " \n\t=,()[]":
                 cut -= 1
             try:
-                return list(self._parser.lex(trimmed[:cut])) if cut else []
+                return self._lex(trimmed[:cut]) if cut else []
             except Exception:
                 return None
 

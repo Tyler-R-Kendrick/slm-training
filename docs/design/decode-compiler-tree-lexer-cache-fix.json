@@ -1,0 +1,166 @@
+{
+  "finding": "compiler_tree_lexer_cache_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "Apply proposed_fix_sketch item 1 from decode-compiler-tree-lexer-rebuild-cost-finding.json: cache a built Lark Lexer/Scanner per grammar alongside _load_parser's cached Lark object, have _lex_tokens reuse it instead of self._parser.lex(prefix); confirm compiler-side call counts / wall time drop with zero change to n_paths/coverage.",
+  "change": {
+    "file": "src/slm_training/dsl/grammar/fastpath/engine.py",
+    "summary": [
+      "New _load_lexer(grammar_path) @lru_cache(maxsize=4) alongside _load_parser; calls _load_parser(grammar_path)._build_lexer() once per grammar path (the same construction Lark.lex() performs internally, now cached).",
+      "OpenUIIncrementalEngine.__init__ stores self._lexer = _load_lexer(...).",
+      "New _lex(text) helper: LexerThread.from_text(self._lexer, text).lex(None); _lex_tokens (called by every _sync via _full_sync/_incremental_sync) now calls self._lex(...) instead of self._parser.lex(...).",
+      "No change to _full_sync/_incremental_sync/_sync control flow, InteractiveParser feed loop, or grammar/terminal definitions -- only which lexer object performs tokenization."
+    ],
+    "why_safe": "Lark.lex(text) with parser='lalr' always takes the uncached _build_lexer(dont_ignore) branch (self.lexer is never set for that parser mode) -- a fresh BasicLexer from the same LexerConf every call. _load_lexer calls that identical _build_lexer() method once and caches the result; BasicLexer already lazily caches its own Scanner (self._scanner) once built, so reusing the BasicLexer object reuses that existing lazy cache instead of discarding it every call. Verified list(parser.lex(prefix)) == list(LexerThread.from_text(parser.parser.lexer, prefix).lex(None)) directly."
+  },
+  "reproduction": {
+    "method": "same direct build_completion_forest calls as the prior finding, before/after via git stash, each a fresh process (no train_model / evaluate_model / checkpoint involved)",
+    "env_setup": [
+      "python3.12 -m venv .venv-diag",
+      ".venv-diag/bin/pip install --quiet -e .",
+      ".venv-diag/bin/pip install --quiet \"pytest>=8.0,<9\" \"pytest-asyncio>=0.23,<2\" \"ruff>=0.9,<0.16\" \"torch>=2.2,<2.6\" --index-url https://download.pytorch.org/whl/cpu",
+      "cd src/apps/openui_bridge && npm ci --silent"
+    ],
+    "tokenizer": "DSLNativeTokenizer.build()",
+    "prefixes": {
+      "cold_empty_prefix": "[bos] only",
+      "prefix8": "root = Card([b1 (matches PR #1171 dead_end_trace position 8)",
+      "prefix9": "root = Card([b1, (matches PR #1171 dead_end_trace position 9)",
+      "prefix8_repeat": "identical to prefix8, re-run in the same process"
+    },
+    "call_kwargs": {"remaining_tokens": 24, "max_path_tokens": 8, "min_content": 0},
+    "instrumentation": "monkeypatched lark.lexer.BasicLexer._build_scanner with a counting wrapper to record scanner-rebuild count per prefix call",
+    "sandbox_note": "NODE_OPTIONS is unset for reproduction commands only because this sandbox's ambient NODE_OPTIONS=\"--import tsx\" --max-old-space-size=8192 is malformed for a plain node invocation; unrelated to this fix.",
+    "script_not_committed": "before_after.py (session scratchpad, reproduction scaffolding, not a reusable harness tool)"
+  },
+  "measured_before_after": [
+    {
+      "label": "cold_empty_prefix",
+      "before_wall_s": 0.7888,
+      "after_wall_s": 0.4142,
+      "speedup_x": 1.90,
+      "before_n_paths": 2,
+      "after_n_paths": 2,
+      "before_coverage": "complete",
+      "after_coverage": "complete",
+      "before_basiclexer_build_scanner_calls": 1049,
+      "after_basiclexer_build_scanner_calls": 2
+    },
+    {
+      "label": "prefix8",
+      "before_wall_s": 1.2559,
+      "after_wall_s": 0.5965,
+      "speedup_x": 2.11,
+      "before_n_paths": 2,
+      "after_n_paths": 2,
+      "before_coverage": "complete",
+      "after_coverage": "complete",
+      "before_basiclexer_build_scanner_calls": 1558,
+      "after_basiclexer_build_scanner_calls": 0
+    },
+    {
+      "label": "prefix9",
+      "before_wall_s": 17.0073,
+      "after_wall_s": 7.9373,
+      "speedup_x": 2.14,
+      "before_n_paths": 12,
+      "after_n_paths": 12,
+      "before_coverage": "complete",
+      "after_coverage": "complete",
+      "before_basiclexer_build_scanner_calls": 23546,
+      "after_basiclexer_build_scanner_calls": 0,
+      "note": "before_basiclexer_build_scanner_calls (23546) reproduces the prior finding's cProfile lark/lexer.py:592 _build_scanner call count exactly, confirming this before/after run measures the same phenomenon that finding diagnosed."
+    },
+    {
+      "label": "prefix8_repeat",
+      "before_wall_s": 1.0753,
+      "after_wall_s": 0.5371,
+      "speedup_x": 2.00,
+      "before_n_paths": 2,
+      "after_n_paths": 2,
+      "before_coverage": "complete",
+      "after_coverage": "complete",
+      "before_basiclexer_build_scanner_calls": 1558,
+      "after_basiclexer_build_scanner_calls": 0
+    }
+  ],
+  "decode_invariant_check": {
+    "claim": "I6/I3: caching change never becomes a legality change",
+    "result": "every coverage/n_paths pair identical before vs after across all 4 prefixes; after-fix _build_scanner calls drop to 0 for every build_completion_forest call after one-time process warm-up (2 total: one BasicLexer built internally by ParsingFrontend for the LALR parser's own use, one built by the new _load_lexer cache)",
+    "verified": true
+  },
+  "unit_test": {
+    "file": "tests/test_dsl/test_grammar_fastpath_lexer_cache.py",
+    "committed": true,
+    "n_tests": 6,
+    "tests": [
+      "test_load_lexer_is_cached_per_grammar_path",
+      "test_engine_builds_scanner_at_most_once_across_many_syncs",
+      "test_lexer_cache_speeds_up_repeated_lex_calls",
+      "test_lex_tokens_byte_identical_to_uncached_lark_lex",
+      "test_build_completion_forest_unchanged_on_finding_prefixes[root = Card([b1-2]",
+      "test_build_completion_forest_unchanged_on_finding_prefixes[root = Card([b1,-12]"
+    ],
+    "result_after_fix": "6 passed in 9.48s",
+    "result_before_fix_sanity_check": "4/6 fail with AttributeError (new _lex/_load_lexer API does not exist pre-fix); the 2 parametrized build_completion_forest cases pass both before and after (they assert the invariant the fix must preserve, not the fix itself) -- confirms the tests are not vacuous"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_dsl/{test_pack,test_speculative_rank,test_exact_forced_horizon,test_lattice_search,test_solver_state,test_packs,test_solver_decode}.py",
+      "result": "102 passed, 1 skipped, 2 failed",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_speculative_rank.py::test_committed_table_matches_its_builder",
+        "test_speculative_rank.py::test_committed_table_ranks_real_branch_points_confidently"
+      ]
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath.py -k \"lexer or force or completion_forest or engine or pick_constrained\"",
+      "result": "24 passed, 1 failed, 18 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_grammar_fastpath.py::test_completion_forest_admits_null_for_optional_string_after_slots_exhaust"
+      ],
+      "note": "full unfiltered file (43 tests, torch CPU forward passes) exceeded the 3-minute run cap twice and was not used as evidence; ran the engine/lexer/force/completion_forest-relevant subset instead"
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_lexer_smoke,test_dsl_tokenizer}.py",
+      "result": "27 passed, 1 failed, 1 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_lexer_smoke.py::test_surface_identifier_arm_is_prohibited"
+      ]
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_grammar_hf,test_v4_levers,test_a3_coverage_remask,test_template_fill,test_v6_remask}.py",
+      "result": "30 passed, 1 failed, 2 deselected",
+      "failures_not_confirmed_isolated_pre_fix": [
+        {
+          "test": "test_v4_levers.py::test_generate_batch_requests_consumes_harness_slot_contract",
+          "reason_not_confirmed": "isolated pre-fix rerun of this single test did not finish inside 150s and was killed; a killed run is not cited as evidence per the hard-run-cap law",
+          "why_believed_unrelated": "assertion concerns slot-contract prompt-string formatting in harnesses/model_build/plugin.py; this fix's diff touches only OpenUIIncrementalEngine._lex_tokens's lexer object in a different module, with no code path connecting the two"
+        }
+      ]
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "2 changed file(s), 0 component(s) touched -- fastpath/engine.py is not itself a path in any versions.json component (only dsl.grammar_capabilities/pack.py/compiler_draft.py are registered there); no bump required",
+    "repo_policy": "ok (tracked + untracked)",
+    "git_diff_check": "clean"
+  },
+  "interpretation": "Confirms the finding's root-cause chain and closes proposed_fix_sketch item 1. The Lark grammar object was already cached (_load_parser); the lexer/scanner built from it was not. Caching it removes the rebuild (thousands-of-calls-per-query -> 0 after process warm-up) without touching tokenization semantics, since the cached BasicLexer is constructed from the identical LexerConf the uncached path would have used.",
+  "scope_note": "No train/eval run, no checkpoint, no --ship-gates scoreboard -- harness-internal correctness+perf fix with unit-test coverage, not a readiness claim. The ~2-2.1x wall-time win is on build_completion_forest micro-calls in isolation, not re-measured against full per-record compiler_ms telemetry or the exposure12 eval protocol. _incremental_sync still re-lexes the entire current prefix on every call (proposed_fix_sketch item 2, not applied this session) -- only lexer *construction* is cached, not made incremental at the token-stream level.",
+  "next_steps": [
+    "Re-run the PR #1171 isolated per-record eval protocol (or lever-hard-decode-timeout-wall) to see whether compiler_ms drops enough in aggregate for the exposure12 quality-champion hero to finish inside decode_timeout_seconds=30 without the deadline fix from PR #1171.",
+    "Apply proposed_fix_sketch item 2: make _incremental_sync genuinely incremental at the lex layer (only lex newly-appended text) instead of re-lexing the full prefix through the now-cached lexer every call.",
+    "If compiler_ms drops substantially in a full per-record eval, re-check whether PR #1171's deadline-swallow bug (TimeoutError caught by the bare except in compiler_draft.py:2313) is still practically reachable, or was mostly masking this lexer-rebuild cost."
+  ],
+  "cleanup_note": ".venv-diag and src/apps/openui_bridge/node_modules/ created for this session are not committed (both gitignored); before_after.py lives under the session scratchpad, not the repo.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4f070a49fa8b71ce963e200c47326dc58aa3b713",
+    "code_dirty": true,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: src/slm_training/dsl/grammar/fastpath/engine.py is not a registered path of any component in src/slm_training/resources/versions.json, so no bump is required for this change."
+  },
+  "captured_at": "2026-07-27T21:55:59.566231Z"
+}
