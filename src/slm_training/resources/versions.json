@@ -6851,7 +6851,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -6864,6 +6864,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-26",
+          "note": "_normalize_record canonicalizes persisted template markers to opaque :slot_<ordinal> identities (matching the test_data mirror) before returning on all three return paths, unblocking TwoTower/grammar-diffusion from_records() which unconditionally rejects named markers (e.g. :hero.title); this reproduced 100% on --source fixture (train_seeds.jsonl uses named markers) and previously blocked every real SFT smoke run"
+        },
         {
           "version": "v21",
           "date": "2026-07-26",
