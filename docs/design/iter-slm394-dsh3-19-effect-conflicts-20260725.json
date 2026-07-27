@@ -1,0 +1,93 @@
+{
+  "schema": "iter_evidence/v1",
+  "issue": "SLM-394",
+  "alias": "DSH3-19",
+  "date": "2026-07-25",
+  "decision": "Does the substring test for delete/remove operator names misclassify branch conflicts, and can conflict typing be derived entirely from exact effects and declarations?",
+  "hypothesis": "An effect-derived conflict typing will eliminate false DELETE_MODIFY conflicts (and catch missed ones) without changing merge legality.",
+  "outcome": "confirmed",
+  "implementation_status": "landed_on_main_via_pr_965 (commit 5e182534); this iter re-verifies the acceptance criteria at HEAD and refreshes the audit evidence stamp",
+  "run": {
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "none",
+    "matrix_set": "registered_local_topology_pairs",
+    "honesty": "fixture_wiring_only",
+    "ship_claim": false
+  },
+  "before_after": {
+    "classifier_before": "substring test (`\"remove\" in value or \"delete\" in value`) over operator IDs (merge.py _conflict_kind, pinned baseline 5cd5b8b)",
+    "classifier_after": "classify_merge_effects over AstOperatorV1 declarations, ActionEffectV1 exact effects (explicit consumed/produced NodeRef flow), and base-reference lineage; no operator-ID inspection",
+    "regression_cases": [
+      {
+        "case": "misleading delete-like name, non-removal effects",
+        "operators": ["openui.delete_name_only (topology delta only, no consumed_nodes)", "openui.relocate (balanced consumed+produced node flow, move semantics)"],
+        "name_heuristic_label": "delete_modify (FALSE POSITIVE: name matches, no node is removed)",
+        "effect_derived_label": "child_order",
+        "proof": "tests/test_dsl/test_operator_merge.py::test_effect_derived_delete_conflict_ignores_operator_names"
+      },
+      {
+        "case": "removal semantics without delete/remove in the name",
+        "operators": ["openui.rewrite (explicit consumed_nodes, removal)", "openui.rename_again (property delta on the same target)"],
+        "name_heuristic_label": "same_node_incompatible_edit (MISSED delete/modify conflict)",
+        "effect_derived_label": "delete_modify with the exact target fingerprint",
+        "proof": "tests/test_dsl/test_operator_merge.py::test_effect_derived_delete_conflict_ignores_operator_names"
+      },
+      {
+        "case": "unproven removal (topology delta without explicit node flow)",
+        "name_heuristic_label": "delete_modify only if the name matched; otherwise silently classified by category",
+        "effect_derived_label": "unsupported_effect (conservative typed refusal, target fingerprint attached)",
+        "proof": "tests/test_dsl/test_operator_merge.py::test_effect_classifier_uses_lineage_and_refuses_unproven_removal"
+      },
+      {
+        "case": "non-EXACT compiler coverage",
+        "effect_derived_label": "unsupported_effect (fail-closed, no mutation)",
+        "proof": "tests/test_dsl/test_operator_merge.py::test_stale_refs_and_inexact_effects_refuse_without_mutation"
+      }
+    ]
+  },
+  "registered_pair_audit": {
+    "artifact": "docs/design/slm-394-merge-conflict-audit-20260725/report.json",
+    "schema": "MergeConflictAuditV1",
+    "legal_set_coverage": "complete",
+    "exact_actions": 66,
+    "pair_denominator": 2145,
+    "unexplained_disagreements": 0,
+    "labels": {
+      "child_order": {"historical": 152, "effect_derived": 152},
+      "delete_modify": {"historical": 56, "effect_derived": 56},
+      "disjoint": {"historical": 1352, "effect_derived": 1352},
+      "role_cardinality": {"historical": 582, "effect_derived": 582},
+      "same_node_incompatible_edit": {"historical": 3, "effect_derived": 3}
+    },
+    "note": "On the registered OpenUI local/topology corpus both labelings agree; the name heuristic's misclassifications are proven at the metamorphic unit level (misleading names, renamed declarations), which the fixed registered corpus does not contain."
+  },
+  "acceptance_criteria": {
+    "no_production_classifier_on_name_substrings": "pass (grep over src/slm_training/dsl/operators finds no operator-name substring test; the heuristic survives only as the labeled `_historical_label` audit baseline in scripts/audit_merge_conflicts.py)",
+    "merge_replays_through_pack_authority": "pass (merge_conversation_branches replays each edit via library.replay before classification; replay mismatch is a typed UNSUPPORTED_EFFECT refusal)",
+    "incomplete_effects_fail_conservatively": "pass (non-EXACT coverage, empty refs, declaration/effect-signature mismatch, or unproven removal all return UNSUPPORTED_EFFECT)",
+    "zero_unexplained_audit_disagreements": "pass (0/2145)",
+    "stale_ref_priority": "pass (STALE_REF is returned before overlap classification in both merge_conversation_branches and classify_merge_effects)"
+  },
+  "tests": {
+    "command": "pytest -q tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_contracts.py tests/test_scripts/test_audit_merge_conflicts.py",
+    "passed": 25,
+    "neighboring": "pytest -q tests/test_dsl/ -k 'operator or merge or transaction or topology or local': 244 passed"
+  },
+  "caveats": [
+    "Fixture/wiring evidence only; no model, training, or ship claim.",
+    "Registered-corpus audit shows zero old/new disagreements, so the measured production impact on the current OpenUI corpus is nil; the fix removes name-dependent semantics and is proven on adversarial metamorphic fixtures, not on a registered-pair flip.",
+    "Historical DELETE_MODIFY name labels are retained in scripts/audit_merge_conflicts.py solely as a comparison baseline; production merge code never calls it."
+  ],
+  "version_stamp": {
+    "code_commit": "5b49224cb2f5fe7e1a5e5793e4de2868025274cf",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.contracts": "v15",
+      "dsl.operators.merge": "v3",
+      "evals.agentv": "v5"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T01:20:48.955456+00:00"
+  }
+}

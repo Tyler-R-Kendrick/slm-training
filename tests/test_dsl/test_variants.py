@@ -107,15 +107,15 @@ def test_a_false_pack_authority_claim_is_rejected() -> None:
     fixture = VariantContractV1(
         **_fixture_kwargs(
             inventory_source="pack",
-            source_path=module._TREE_EDIT_DIFFUSION_SOURCE,
+            source_path="slm_training/models/blocks.py",
         )
     )
     with pytest.raises(VariantContractError, match="does not import"):
         module._validate_inventory_source(fixture)
 
 
-def test_an_honest_module_constant_claim_is_not_rejected() -> None:
-    """Recording the known violation honestly must not itself fail the gate."""
+def test_module_constant_claim_is_recorded_but_not_certified() -> None:
+    """Legacy contracts can record a violation without falsely claiming pack authority."""
     import slm_training.dsl.variants as module
 
     fixture = VariantContractV1(

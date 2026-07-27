@@ -87,7 +87,7 @@ def test_unsupported_component_is_unreachable_when_pack_owned_tuple_is_narrow(
     component's exact grammar shape being parseable across environments."""
     import slm_training.harnesses.experiments.slm299_edit_reachability as module
 
-    monkeypatch.setattr(module, "CONTAINER_COMPONENTS", ("Stack", "Form"))
+    monkeypatch.setattr(module._shared_space(), "container_components", ("Stack", "Form"))
     case = module.analyze_reachability(SEED, _CARD_TARGET, slot_inventory=[])
     assert case.verdict is Verdict.PROVEN_UNREACHABLE
     assert case.reason_code == "unsupported_component"
@@ -107,7 +107,7 @@ def test_component_widen_flips_a_narrowed_container_components_tuple(
     # a bounded what-if, without touching production code.
     import slm_training.harnesses.experiments.slm299_edit_reachability as module
 
-    monkeypatch.setattr(module, "CONTAINER_COMPONENTS", ("Stack", "Form"))
+    monkeypatch.setattr(module._shared_space(), "container_components", ("Stack", "Form"))
     what_if = module.analyze_reachability(
         SEED, _CARD_TARGET, slot_inventory=[], extra_actions=[component_widen_action(["Card"])]
     )
@@ -128,8 +128,8 @@ def test_component_widen_generate_is_exercised_when_the_live_space_lacks_it(
     narrowed = TreeEditSpace(
         components=("TextContent", "Button", "Image", "TextInput", "Stack", "Form")
     )
+    narrowed.container_components = ("Stack", "Form")
     monkeypatch.setattr(module, "_SHARED_SPACE", narrowed)
-    monkeypatch.setattr(module, "CONTAINER_COMPONENTS", ("Stack", "Form"))
 
     baseline = module.analyze_reachability(SEED, _CARD_TARGET, slot_inventory=[])
     assert baseline.verdict is Verdict.PROVEN_UNREACHABLE

@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_local_admission_disposition_not_router_quality_claim", "result": {"reason": "No locked, group-disjoint matched all-arm outcomes exist; AP-028's fixture proxy cannot admit learned-router training or a quality/work claim.", "required_next_evidence": ["matched per-request outcomes for every fixed and candidate arm", "prefix-time-only features with oracle/outcome fields rejected", "frozen group-disjoint calibration and held-out evaluation"], "verdict": "unavailable"}}

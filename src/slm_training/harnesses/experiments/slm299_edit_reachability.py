@@ -43,11 +43,8 @@ from slm_training.models.tree_edit_diffusion import (
     ACTION_REPLACE,
     ACTION_REPLACE_STATEMENT,
     ACTION_REPLACE_SUBTREE,
-    CONTAINER_COMPONENTS,
-    CONTAINER_RESTS,
-    LEAF_COMPONENTS,
+    ACTION_SET_PROPERTY,
     MAX_SLOTS,
-    V05_TEMPLATES,
     Edit,
     Statement,
     TreeEditSpace,
@@ -143,9 +140,7 @@ class ExtraAction:
     capabilities: frozenset[str] = frozenset()
 
 
-def add_container_action(
-    components: Sequence[str] = CONTAINER_COMPONENTS,
-) -> ExtraAction:
+def add_container_action(components: Sequence[str] | None = None) -> ExtraAction:
     """Synthetic ``ADD_CONTAINER``: append a fresh empty container statement
     and reference it from an existing container. Retired what-if lane: the
     extended (SLM-305) space has the real ``ACTION_ADD_CONTAINER``, so this
@@ -157,11 +152,12 @@ def add_container_action(
     ) -> list[tuple[list[Statement], dict[str, Any]]]:
         del inventory
         space = _shared_space()
+        chosen_components = components or space.container_components
         out: list[tuple[list[Statement], dict[str, Any]]] = []
         for parent in statements:
             if not parent.has_list:
                 continue
-            for comp in components:
+            for comp in chosen_components:
                 working = [
                     Statement(s.name, s.comp, list(s.children), s.rest, s.has_list)
                     for s in statements
@@ -409,13 +405,14 @@ def _check_invariants(
 
     v1 space: REPLACE preserves container-ness, arity, and the container's
     enum/direction arg; ADD creates leaves only and binds only inventory
-    slots; REMOVE deletes leaves only. Extended (SLM-305) space: ADD_CONTAINER
+    slots; REMOVE deletes leaves only. Extended (SLM-425) space: ADD_CONTAINER
     / INSERT_SUBTREE mint containers carrying one of ``CONTAINER_RESTS`` and
     bind only inventory slots, REPLACE_SUBTREE / BIND_PLACEHOLDER rebind
     leaves only to
     inventory slots, and the V0.5 statement actions mint only canonical
-    templates — the invariant reasons fire only when the corresponding REAL
-    action of the analyzed mode is absent.
+    templates. ``ACTION_SET_PROPERTY`` (SLM-425) mutates a declared
+    pack-owned container property, root included; target rests outside that
+    finite domain remain an exact impossibility proof.
     """
     seed_containers = [s for s in seed if s.has_list]
     target_containers = [s for s in target if s.has_list]
@@ -443,10 +440,10 @@ def _check_invariants(
     known = set(space.components)
     if "component_widen" not in capabilities:
         for stmt in target_containers:
-            if stmt.comp not in CONTAINER_COMPONENTS or stmt.comp not in known:
+            if stmt.comp not in space.container_components or stmt.comp not in known:
                 return REASON_UNSUPPORTED_COMPONENT
         for stmt in target_leaves:
-            if stmt.comp not in LEAF_COMPONENTS or stmt.comp not in known:
+            if stmt.comp not in space.leaf_components or stmt.comp not in known:
                 return REASON_UNSUPPORTED_COMPONENT
 
     # ADD / INSERT_SUBTREE / REPLACE_SUBTREE / BIND_PLACEHOLDER bind only
@@ -460,15 +457,25 @@ def _check_invariants(
         if normalized not in inventory:
             return REASON_NEEDS_SLOT_REBIND
 
-    # REPLACE preserves the container's raw enum/direction arg text (rest);
-    # no real action edits it. Containers minted by the container-creating
-    # actions carry exactly one of CONTAINER_RESTS. Every target container
-    # rest must therefore be a seed rest or (with container_add) a candidate
-    # mint rest; without any container-creating action the multisets must
-    # match exactly.
+    # The VAR1-01 synthetic what-if may alter any parser-legal rest. The real
+    # SLM-425 action is deliberately narrower: every target rest must appear
+    # in that target component's declared pack domain.
     if "set_property" in capabilities:
         # A rest-mutation action can produce any target rest on any
         # container, root included -- skip both rest checks below entirely.
+        return None
+
+    if extended:
+        for stmt in target_containers:
+            rest_domains = [
+                space.property_values(stmt.comp, property_index)
+                for property_index, property_name in enumerate(
+                    space.property_names(stmt.comp)
+                )
+                if property_name == "rest"
+            ]
+            if not any(stmt.rest in values for values in rest_domains):
+                return REASON_NEEDS_DIRECTION_CHANGE
         return None
 
     seed_rests = sorted(s.rest for s in seed_containers)
@@ -482,7 +489,7 @@ def _check_invariants(
         if stmt.name == "root" and stmt.rest != seed_root_rest:
             return REASON_NEEDS_DIRECTION_CHANGE
     if "container_add" in capabilities:
-        allowed = set(seed_rests) | set(CONTAINER_RESTS)
+        allowed = set(seed_rests) | set(space.container_rests)
         if any(rest not in allowed for rest in target_rests):
             return REASON_NEEDS_DIRECTION_CHANGE
     elif seed_rests != target_rests:
@@ -502,8 +509,9 @@ def _enumerate_children(
     """All one-edit successors under the REAL action set of ``mode``, applied
     through ``TreeEditSpace.apply`` so preconditions and parser re-validation
     are the deployed ones by construction. ``v1`` enumerates the original
-    REPLACE/ADD/REMOVE set; ``extended`` (SLM-305) adds the container,
-    subtree, V0.5-statement, and placeholder-binding actions. Deterministic:
+    REPLACE/ADD/REMOVE set; ``extended`` (SLM-425) adds the container,
+    subtree, V0.5-statement, placeholder-binding, and property actions.
+    Deterministic:
     same state and mode always yield the same enumeration order.
 
     ``visited`` (canonical-key set) is a pure search-efficiency hook: states
@@ -513,10 +521,10 @@ def _enumerate_children(
     n_comp = len(space.components)
     n_slots = min(len(inventory), MAX_SLOTS)
     leaf_comp_idxs = [
-        i for i, c in enumerate(space.components) if c in LEAF_COMPONENTS
+        i for i, c in enumerate(space.components) if c in space.leaf_components
     ]
     container_comp_idxs = [
-        i for i, c in enumerate(space.components) if c in CONTAINER_COMPONENTS
+        i for i, c in enumerate(space.components) if c in space.container_components
     ]
     pre = None
     if visited is not None:
@@ -568,8 +576,35 @@ def _enumerate_children(
             continue
         # SLM-305 extended real actions.
         if stmt.has_list:
+            for property_index, property_name in enumerate(space.property_names(stmt.comp)):
+                if property_name != "rest":
+                    continue
+                for value_index, value in enumerate(
+                    space.property_values(stmt.comp, property_index)
+                ):
+                    if value == stmt.rest:
+                        continue
+                    edit = Edit(
+                        ACTION_SET_PROPERTY,
+                        stmt_idx,
+                        comp=property_index,
+                        target=value_index,
+                    )
+                    nxt = space.apply(statements, edit, inventory, pre)
+                    if nxt is not None:
+                        children.append(
+                            (
+                                nxt,
+                                {
+                                    "action": "SET_PROPERTY",
+                                    "stmt": stmt_idx,
+                                    "property": property_name,
+                                    "rest": value,
+                                },
+                            )
+                        )
             for comp_idx in container_comp_idxs:
-                for rest_idx in range(len(CONTAINER_RESTS)):
+                for rest_idx in range(len(space.container_rests)):
                     edit = Edit(ACTION_ADD_CONTAINER, stmt_idx, comp_idx,
                                 target=rest_idx)
                     nxt = space.apply(statements, edit, inventory, pre)
@@ -581,14 +616,14 @@ def _enumerate_children(
                                     "action": "ADD_CONTAINER",
                                     "stmt": stmt_idx,
                                     "comp": space.components[comp_idx],
-                                    "rest": CONTAINER_RESTS[rest_idx],
+                                    "rest": space.container_rests[rest_idx],
                                 },
                             )
                         )
             for comp_idx in container_comp_idxs:
                 for slot_idx in range(n_slots):
                     for payload in leaf_comp_idxs:
-                        for rest_idx in range(len(CONTAINER_RESTS)):
+                        for rest_idx in range(len(space.container_rests)):
                             edit = Edit(
                                 ACTION_INSERT_SUBTREE, stmt_idx, comp_idx, slot_idx,
                                 target=rest_idx, payload=payload,
@@ -604,7 +639,7 @@ def _enumerate_children(
                                             "comp": space.components[comp_idx],
                                             "slot": inventory[slot_idx],
                                             "leaf_comp": space.components[payload],
-                                            "rest": CONTAINER_RESTS[rest_idx],
+                                            "rest": space.container_rests[rest_idx],
                                         },
                                     )
                                 )
@@ -653,7 +688,7 @@ def _enumerate_children(
         nxt = space.apply(statements, edit, inventory, pre)
         if nxt is not None:
             children.append((nxt, {"action": "REMOVE", "stmt": stmt_idx}))
-        for payload in range(len(V05_TEMPLATES)):
+        for payload in range(len(space.statement_templates)):
             edit = Edit(ACTION_REPLACE_STATEMENT, stmt_idx, payload=payload)
             nxt = space.apply(statements, edit, inventory, pre)
             if nxt is not None:
@@ -668,7 +703,7 @@ def _enumerate_children(
                     )
                 )
     if mode != "v1":
-        for payload in range(len(V05_TEMPLATES)):
+        for payload in range(len(space.statement_templates)):
             edit = Edit(ACTION_INSERT_STATEMENT, payload=payload)
             nxt = space.apply(statements, edit, inventory, pre)
             if nxt is not None:

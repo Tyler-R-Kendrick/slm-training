@@ -1,6 +1,6 @@
 {
   "count": 3,
-  "fingerprint": "a8797d8d8523c4b6f196e52664effe1af0cf48aa50751022df51187a9dd100f0",
+  "fingerprint": "cd09cb02571e27c1cd6cf952a3240ec9ee835110213c99ad2cbd45ebdb209209",
   "schema": "variant_contract/v1",
   "variants": [
     {
@@ -15,10 +15,12 @@
       "variant_id": "repl_operators"
     },
     {
-      "action_alphabet_fingerprint": "ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab",
+      "action_alphabet_fingerprint": "1de83afe8bc7db333bf0cac040a19fa355c34d28653a508343e45f136a1dac4c",
       "action_alphabet_id": "tree_edit_diffusion.edit_actions",
-      "inventory_source": "module_constant",
-      "kernel_ops": [],
+      "inventory_source": "pack",
+      "kernel_ops": [
+        "openui.set_property"
+      ],
       "pack_id": "openui",
       "schema": "variant_contract/v1",
       "seed_policy_id": "tree_edit_diffusion.minimal_valid_program_seed",

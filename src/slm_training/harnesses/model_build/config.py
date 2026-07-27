@@ -517,6 +517,15 @@ class ModelBuildConfig:
     constraint_debt_routing_fallback_policy: str = "fixed_maskgit"
     constraint_debt_routing_budget_mode: str = "equal_verifier_budget"
     constraint_debt_routing_calibrator_path: Path | None = None
+    # SLM-428 (VAR2-01): default-off encoder-side first consumer of the
+    # shared OPS_VOCAB kernel (decode invariant I13). When enabled, context
+    # formatting conditions on literal reserved op tokens for the turn
+    # history (`dsl.operators.ops_vocab_conditioning`) instead of leaving
+    # history unrepresented. Changes conditioning, never legality — not a
+    # CONSTRAINT_WEAKENING_LEVERS entry. Turning this on for a real training
+    # run needs a preregistered ExperimentCampaignV1 binding `ops_vocab`'s
+    # and the operator corpus's fingerprints, per I13's "tower wiring" note.
+    encoder_ops_conditioning: bool = False
 
     def __post_init__(self) -> None:
         if self.grammar_constrained is False:

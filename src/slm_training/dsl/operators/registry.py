@@ -192,6 +192,22 @@ class OperatorLibraryV1:
         except KeyError as exc:
             raise KeyError(f"unsupported operator {operator_id!r}") from exc
 
+    def lookup_by_fingerprint(self, operator_fingerprint: str) -> AstOperatorV1:
+        """The declaration a recorded ``operator_fingerprint`` names.
+
+        Recorded evidence (``OperatorApplicationV1``, ``PreparedOperatorActionV1``)
+        never carries a bare ``operator_id`` string, only its content-addressed
+        fingerprint (`replay` above resolves the same way) — this is the public
+        counterpart of that lookup for callers outside this module, such as
+        `slm_training.dsl.operators.ops_vocab_conditioning`.
+        """
+        try:
+            return self._by_fingerprint[operator_fingerprint].declaration
+        except KeyError as exc:
+            raise KeyError(
+                f"unsupported operator fingerprint {operator_fingerprint!r}"
+            ) from exc
+
     def dry_run(
         self,
         pack: DslPack,
