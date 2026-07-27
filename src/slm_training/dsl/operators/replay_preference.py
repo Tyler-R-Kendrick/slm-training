@@ -1,16 +1,17 @@
 """SLM-418 (DSH5-10): replay-grounded preference rows from undo/redo history.
 
-Builds versioned preference rows over one exact input state from two
-verified conversation patterns -- edit-then-undo and undo-then-redo -- where
-the chosen and rejected control-or-operator actions are checked against the
-exact legal set available at that state (``enumerate_operator_legal_set``),
-never against transcript text.
+Builds versioned preference rows over one exact input state from four
+verified conversation patterns -- edit-then-undo, undo-then-redo, partial
+rollback (a second or later consecutive undo, chosen over redo/checkout/edit
+alternatives), and checkout-another-state -- where the chosen and rejected
+control-or-operator actions are checked against the exact legal set available
+at that state (``enumerate_operator_legal_set``), never against transcript
+text.
 
-This is an honestly partial first slice of SLM-418. It does not implement:
-partial rollback, checkout-another-state, fork-then-choose-one-branch, merge
-success/conflict, or pronoun/focus follow-up patterns; it does not train an
-SFT/preference variant, measure held-out benefit, or produce turn-depth /
-context-view ablations. See
+This is an honestly partial slice of SLM-418. It does not implement:
+fork-then-choose-one-branch, merge success/conflict, or pronoun/focus
+follow-up patterns; it does not train an SFT/preference variant, measure
+held-out benefit, or produce turn-depth / context-view ablations. See
 ``docs/design/dsh5-10-replay-preference-rows.md`` for the full disposition
 and the remaining scope.
 """
@@ -40,6 +41,8 @@ ProvenanceFactory = Callable[[OperatorStateV1], ApplicationProvenanceV1]
 class ReplayPreferenceRelation(str, Enum):
     EDIT_THEN_UNDO = "edit_then_undo"
     UNDO_THEN_REDO = "undo_then_redo"
+    PARTIAL_ROLLBACK = "partial_rollback"
+    CHECKOUT_ANOTHER_STATE = "checkout_another_state"
 
 
 @dataclass(frozen=True)
@@ -108,9 +111,18 @@ def _available_history_actions(
 ) -> tuple[str, ...]:
     """Control actions available at ``state_id`` from the trace's own DAG.
 
-    Deliberately narrow: only ``undo`` (a parent exists) and ``redo:<child>``
-    (an already-materialized child on the current branch) are modeled here.
-    checkout/fork/copy availability is out of scope for this slice.
+    Models ``undo`` (a parent exists), ``redo:<child>`` (an already-
+    materialized child on the current branch), and ``checkout:<state>`` (any
+    other already-materialized state in the whole trace -- ancestor,
+    sibling, descendant, or cross-branch -- per
+    ``checkout_conversation_state``'s actual authority, which only refuses
+    checkout-to-self). ``checkout:<state>`` is listed even when its target
+    coincides with the ``undo``/``redo:<child>`` destination: they are
+    distinct legal tool invocations (``checkout_conversation_state`` versus
+    ``undo_conversation``/``redo_conversation``) recorded as different turn
+    operations, and the choice between them at a shared destination is
+    itself a preference signal the issue asks for. fork/copy availability is
+    out of scope for this slice.
     """
     node = trace.node(state_id)
     actions: list[str] = []
@@ -122,6 +134,9 @@ def _available_history_actions(
             and other.branch_digest == node.branch_digest
         ):
             actions.append(f"redo:{other.state_id}")
+    for other in trace.state_nodes:
+        if other.state_id != state_id:
+            actions.append(f"checkout:{other.state_id}")
     return tuple(actions)
 
 
@@ -164,12 +179,14 @@ def extract_replay_preference_rows(
     library: OperatorLibraryV1,
     provenance_for: ProvenanceFactory,
 ) -> OperatorEventMemoryReportV1:
-    """Scan ``trace.turns`` for edit-then-undo / undo-then-redo patterns.
+    """Scan ``trace.turns`` for four replay-grounded preference patterns.
 
-    Each match produces one row whose chosen and rejected actions are both
-    verified members of the exact legal set at the shared input state. A
-    row is only emitted when an unchosen alternative actually exists in that
-    legal set -- undo/redo is never asserted preferred by default.
+    edit-then-undo, undo-then-redo, partial-rollback (a second or later
+    consecutive undo), and checkout-another-state. Each match produces one
+    row whose chosen and rejected actions are both verified members of the
+    exact legal set at the shared input state. A row is only emitted when an
+    unchosen alternative actually exists in that legal set -- undo/redo/
+    checkout is never asserted preferred by default.
     """
     rows: list[OperatorReplayPreferenceRowV1] = []
     turns = trace.turns
@@ -230,6 +247,58 @@ def extract_replay_preference_rows(
                         legal_set_fingerprint=legal_set.fingerprint,
                     )
                 )
+
+        if (
+            current.operation is ConversationOperation.UNDO
+            and following.operation is ConversationOperation.UNDO
+            and following.input_state_id == current.output_state_id
+        ):
+            decision_state_id = current.output_state_id
+            legal_set = _legal_set_at(
+                trace,
+                pack=pack,
+                library=library,
+                state_id=decision_state_id,
+                provenance_for=provenance_for,
+            )
+            rejected = _pick_rejected(legal_set, "undo")
+            if "undo" in legal_set.all_serialized_actions and rejected is not None:
+                rows.append(
+                    OperatorReplayPreferenceRowV1(
+                        input_state_id=decision_state_id,
+                        chosen_action="undo",
+                        rejected_action=rejected,
+                        chosen_output_state_id=following.output_state_id,
+                        semantic_relation=ReplayPreferenceRelation.PARTIAL_ROLLBACK,
+                        correction_reason="user_continued_rollback_past_first_undo",
+                        legal_set_fingerprint=legal_set.fingerprint,
+                    )
+                )
+
+    for turn in turns:
+        if turn.operation is not ConversationOperation.CHECKOUT_STATE:
+            continue
+        legal_set = _legal_set_at(
+            trace,
+            pack=pack,
+            library=library,
+            state_id=turn.input_state_id,
+            provenance_for=provenance_for,
+        )
+        chosen = f"checkout:{turn.output_state_id}"
+        rejected = _pick_rejected(legal_set, chosen)
+        if chosen in legal_set.all_serialized_actions and rejected is not None:
+            rows.append(
+                OperatorReplayPreferenceRowV1(
+                    input_state_id=turn.input_state_id,
+                    chosen_action=chosen,
+                    rejected_action=rejected,
+                    chosen_output_state_id=turn.output_state_id,
+                    semantic_relation=ReplayPreferenceRelation.CHECKOUT_ANOTHER_STATE,
+                    correction_reason="user_checked_out_alternate_state",
+                    legal_set_fingerprint=legal_set.fingerprint,
+                )
+            )
 
     return OperatorEventMemoryReportV1(
         rows=tuple(rows),

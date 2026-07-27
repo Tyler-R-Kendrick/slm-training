@@ -1,9 +1,9 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress.
+**Status:** partial slice, in progress (second increment).
 **Claim class:** `wiring`.
-**Honest verdict:** not yet dispositioned -- this PR delivers a scoped subset,
-not the full issue.
+**Honest verdict:** not yet dispositioned -- this PR extends a scoped
+subset, not the full issue.
 
 SLM-418 asks whether exact undo, redo, checkout, and fork outcomes can
 provide useful preference supervision for ambiguous follow-up instructions,
@@ -16,37 +16,62 @@ calibration, and CAP0/CAP1/CAP2 retention.
 ## What this PR delivers
 
 * `src/slm_training/dsl/operators/replay_preference.py`:
-  * `OperatorReplayPreferenceRowV1` -- the versioned preference row the issue
-    asks for: one exact `input_state_id`, `chosen_action`/`rejected_action`,
-    the resulting `chosen_output_state_id`, a typed `semantic_relation`, a
+  * `OperatorReplayPreferenceRowV1` -- unchanged schema: one exact
+    `input_state_id`, `chosen_action`/`rejected_action`, the resulting
+    `chosen_output_state_id`, a typed `semantic_relation`, a
     `correction_reason`, and the `legal_set_fingerprint` the row was checked
     against.
-  * `extract_replay_preference_rows` -- scans a `ConversationTraceV1`'s
-    turns for two of the issue's seven named patterns:
-    **edit-then-undo** and **undo-then-redo**. Each emitted row's chosen and
-    rejected actions are verified members of the exact legal set at the
-    shared input state (`enumerate_operator_legal_set`, including the
-    trace's own available `undo`/`redo:<state>` control actions) -- never
-    inferred from transcript text, and never emitted unless an actual
-    unchosen alternative existed in that legal set (per the issue's
-    adversarial control: undo/redo is not asserted preferred by default).
-  * `OperatorEventMemoryReportV1` -- counts of extracted rows by relation.
-* Regression tests (`tests/test_dsl/test_replay_preference.py`) proving:
-  the acceptance criterion "every valid preference pair shares one exact
-  input state and independently replays" (`chosen_output_state_id` is
-  exactly the state the conversation turn's own replay-verified transition
-  produced); that no row is emitted for an edit-only trace with no history
-  operation; and that both patterns extract exactly the row their trace
-  supports.
+  * `extract_replay_preference_rows` now scans a `ConversationTraceV1`'s
+    turns for **four** of the issue's seven named patterns (two new since
+    the first slice):
+    * **edit-then-undo** and **undo-then-redo** (unchanged from v1/v2).
+    * **partial-rollback** (new): a second, or later, *consecutive* `UNDO`
+      turn -- i.e. the user keeps rolling back past the first undo instead
+      of redoing, checking out elsewhere, or editing at that intermediate
+      state. Distinct from `undo_then_redo` (which requires the *next* turn
+      to be `REDO`) and from `edit_then_undo` (whose preceding turn must be
+      an `AST_EDIT`, so it only ever fires for the *first* undo in a chain).
+    * **checkout-another-state** (new): a `CHECKOUT_STATE` turn. Modeled as
+      its own single-turn decision (no preceding-turn pairing needed, unlike
+      the other three patterns) because choosing to `checkout` -- a distinct
+      legal tool invocation from `undo`/`redo` -- over any other available
+      action at that state is itself the preference signal, even when the
+      checkout destination happens to coincide with what `undo` or `redo`
+      would have reached.
+  * `_available_history_actions` now also enumerates
+    `checkout:<state_id>` for every other state already materialized
+    anywhere in the trace (ancestor, sibling, descendant, or cross-branch),
+    per `checkout_conversation_state`'s actual authority (refuses only
+    checkout-to-self). It is listed **alongside**, not instead of,
+    `undo`/`redo:<child>` even at a shared destination, since those are
+    distinct recorded turn operations and the choice between them is a real
+    preference the issue asks for.
+  * `OperatorEventMemoryReportV1` -- counts of extracted rows by relation
+    (unchanged schema; now counts four relations instead of two).
+* Regression tests (`tests/test_dsl/test_replay_preference.py`), extending
+  the existing edit-then-undo / undo-then-redo coverage with:
+  * `test_partial_rollback_yields_a_row_for_the_second_consecutive_undo`:
+    a two-edit, two-undo trace produces exactly one `edit_then_undo` row
+    (first undo) and one `partial_rollback` row (second undo), each
+    grounded in its own exact input state.
+  * `test_checkout_another_state_yields_a_row_preferring_checkout_over_undo`:
+    an edit followed by `checkout` back to root produces one
+    `checkout_another_state` row whose `chosen_action` is
+    `checkout:<root_state_id>` even though `undo` was also legal and would
+    have reached the same destination.
+  * `test_checkout_row_replays_independently_to_its_recorded_output_state`:
+    the same acceptance criterion as the v1 undo/redo tests, re-derived for
+    checkout -- replaying `checkout_conversation_state` independently from
+    the recorded `input_state_id` lands on exactly `chosen_output_state_id`.
 
 ## Explicitly out of scope for this PR
 
 Per the issue's own scope, not attempted here:
 
-* **Five of seven patterns**: partial rollback, checkout-another-state,
-  fork-then-choose-one-branch, merge success/conflict, and pronoun/focus
-  follow-ups. Merge-conflict detection in particular lives in `merge.py`,
-  not `conversation.py`/`collapse.py`, and needs its own extraction path.
+* **Three of seven patterns**: fork-then-choose-one-branch, merge
+  success/conflict, and pronoun/focus follow-ups. Merge-conflict detection
+  in particular lives in `merge.py`, not `conversation.py`/`collapse.py`,
+  and needs its own extraction path.
 * **SFT/preference training** against the DSH3-selected policy/control
   heads (`TypedOperatorPolicyScorer`,
   `src/slm_training/harnesses/experiments/typed_operator_policy.py:316`) or
@@ -67,10 +92,11 @@ evidence for the row-extraction primitive only.
 Unlike SLM-336 (AP-035) or SLM-419 (DSH5-11), SLM-418's own prerequisites
 (DSH3 policy/control heads, the conversation/collapse/legal-set substrate)
 are already merged and available -- there is no unmet upstream gate here.
-The remaining scope is genuinely large (training + held-out evaluation
-across a five-pattern, five-baseline, multi-metric matrix) and is left for
-follow-on work rather than rushed to a false "Done." The issue should stay
-open against the patterns and training/evaluation work enumerated above.
+The remaining scope is genuinely large (three more patterns, plus training +
+held-out evaluation across a five-baseline, multi-metric matrix) and is left
+for follow-on work rather than rushed to a false "Done." The issue should
+stay open against the patterns and training/evaluation work enumerated
+above.
 
 ## Review fixes (v2)
 
@@ -82,8 +108,25 @@ open against the patterns and training/evaluation work enumerated above.
   (`dsl.operators.replay_preference`), matching the repository's result-artifact
   contract.
 
+## Second slice (v3)
+
+* Added `partial_rollback` and `checkout_another_state` to
+  `ReplayPreferenceRelation` and their extraction logic (see above).
+* `_available_history_actions` widened from `undo`/`redo:<child>` only to
+  also include `checkout:<state>` for every other trace state -- required
+  for `checkout_another_state` rows to verify as legal-set members, and
+  incidentally widens the `rejected_action` candidate pool available to the
+  two pre-existing patterns (no test asserted an exact `rejected_action`
+  value, so this is compatible with v1/v2 behavior).
+* `dsl.operators.replay_preference` bumped v2 -> v3 in
+  `src/slm_training/resources/versions.json`.
+
 ## Reproducibility
 
 ```bash
 pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_conversation.py
 ```
+
+Result (this PR, sandboxed run with `NODE_OPTIONS` cleared -- the ambient
+`--import tsx` flag is rejected by this Node 22 build, unrelated to this
+change): `22 passed`.
