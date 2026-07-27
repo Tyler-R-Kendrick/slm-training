@@ -415,12 +415,16 @@ fixture/model/recipe). Per-iteration notes:
 | 64 | 3.9243931770324707 | 65.47187957763671 | 4.4185902833938595 | 13.13 |
 | 128 | 5.877634525299072 | 65.47187957763671 | 3.269563728570938 | 13.22 |
 
-**Result:** this extends the already-established monotonic loss-decrease trend (56.9@4 -> 32.6@8
--> 15.1@16 -> 8.4@32, from batch #4 above) further out to 64 and 128 steps, and adds a metric
-this ledger hadn't surfaced before: the smoothed `example_token_loss_proxy.last_20_mean` field
-(already present in every run's `train_summary.json`) falls monotonically as steps increase --
-29.6 -> 4.4 -> 3.3 at 8/64/128 -- confirming the model keeps fitting the 101-record fixture past
-32 steps, not plateauing. `last_loss` itself is noisier: it's a single final-minibatch value, not
+**Result:** this adds two more points (64, 128 steps) to the run sequence already established by
+batch #4 above (4/8/16/32 steps, where `last_loss` itself falls monotonically: 56.9@4 -> 32.6@8
+-> 15.1@16 -> 8.4@32) -- but `last_loss` does **not** continue that monotonic trend out to 64/128
+(see below). What *is* monotonic across the three points measured in this section (8, 64, 128
+steps) is a metric this ledger hadn't surfaced before: the smoothed
+`example_token_loss_proxy.last_20_mean` field (already present in every run's
+`train_summary.json`) falls monotonically as steps increase -- 29.6 -> 4.4 -> 3.3 at 8/64/128 --
+confirming the model keeps fitting the 101-record fixture past 32 steps, not plateauing. (Batch
+#4's 4/16/32-step rows didn't record this proxy field, so no claim is made about it there.)
+`last_loss` itself is noisier: it's a single final-minibatch value, not
 a running average, so it actually *rises* from 64 to 128 steps (3.92 -> 5.88) even while the
 smoothed trend keeps improving. **Practical takeaway for future rows in this ledger:** `last_loss`
 alone is not a reliable single-number summary of training progress when comparing across step
