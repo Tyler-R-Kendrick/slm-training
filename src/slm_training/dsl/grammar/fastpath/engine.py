@@ -324,6 +324,34 @@ class OpenUIIncrementalEngine:
     def set_prefix(self, prefix: str) -> bool:
         return self._sync(prefix)
 
+    def _probe_delta_from_anchor(self, chunk: str) -> list | None:
+        """Suffix-only equivalent of ``self._lex_tokens(self._prefix + chunk)``
+        for ``probe_chunk``: re-lex only ``self._prefix[safe_offset:] +
+        chunk`` (``safe_offset`` = ``self._fed_last_token_start``) instead of
+        the whole prefix, using the exact same maximal-munch safety argument
+        as ``_incremental_sync``'s fast path -- see docs/design/
+        decode-compiler-tree-probe-chunk-suffix-lex-fix.md. Returns the
+        not-yet-fed delta tokens on success, or ``None`` when the anchor
+        isn't usable (nothing fed yet, suffix lex failure, or the boundary
+        token's identity changed) so the caller falls back to the
+        pre-existing full-prefix lex. Deliberately does not reconstruct the
+        full fed-token-key list ``probe_chunk`` never needs it after this
+        point, and doing so anyway would reintroduce an O(fed_token_count)
+        cost on every probe. Never mutates ``self`` -- ``probe_chunk`` must
+        stay read-only.
+        """
+        if self._fed_token_count == 0 or self._fed_last_token_start is None:
+            return None
+        safe_offset = self._fed_last_token_start
+        suffix_tokens = self._lex_tokens(self._prefix[safe_offset:] + chunk)
+        if not suffix_tokens:
+            return None
+        suffix_keys = self._token_keys(suffix_tokens)
+        boundary_idx = self._fed_token_count - 1
+        if suffix_keys[0] != self._fed_tokens[boundary_idx]:
+            return None
+        return suffix_tokens[1:]
+
     def probe_chunk(self, chunk: str) -> bool | None:
         """
         Q1: test whether ``prefix + chunk`` remains a legal prefix without
@@ -332,27 +360,33 @@ class OpenUIIncrementalEngine:
         Uses ``InteractiveParser.copy()`` + delta-token feed when the already
         fed lexemes are unchanged. Returns ``None`` when the caller should fall
         back to a throwaway full sync (lexeme identity changed / unsynced).
+
+        Re-lexes only from ``self._fed_last_token_start`` onward via
+        ``_probe_delta_from_anchor`` when an anchor is available, falling
+        back to the original full-prefix lex otherwise -- see docs/design/
+        decode-compiler-tree-probe-chunk-suffix-lex-fix.md.
         """
         if self._ip is None:
             return None
         if not chunk:
             return True
-        new_prefix = self._prefix + chunk
         t0 = time.perf_counter()
-        tokens = self._lex_tokens(new_prefix)
-        if tokens is None:
-            self._sync_ms += (time.perf_counter() - t0) * 1000.0
-            return False
-        keys = self._token_keys(tokens)
-        if (
-            len(tokens) < self._fed_token_count
-            or keys[: self._fed_token_count] != self._fed_tokens
-        ):
-            # NAME/COMPONENT gluing or boundary shrink — caller falls back.
-            self._copy_probe_fallbacks += 1
-            self._sync_ms += (time.perf_counter() - t0) * 1000.0
-            return None
-        delta = tokens[self._fed_token_count :]
+        delta = self._probe_delta_from_anchor(chunk)
+        if delta is None:
+            tokens = self._lex_tokens(self._prefix + chunk)
+            if tokens is None:
+                self._sync_ms += (time.perf_counter() - t0) * 1000.0
+                return False
+            keys = self._token_keys(tokens)
+            if (
+                len(tokens) < self._fed_token_count
+                or keys[: self._fed_token_count] != self._fed_tokens
+            ):
+                # NAME/COMPONENT gluing or boundary shrink — caller falls back.
+                self._copy_probe_fallbacks += 1
+                self._sync_ms += (time.perf_counter() - t0) * 1000.0
+                return None
+            delta = tokens[self._fed_token_count :]
         if not delta:
             # Whitespace / incomplete interior that adds no complete tokens.
             self._copy_probes += 1

@@ -1,0 +1,109 @@
+{
+  "finding": "compiler_tree_probe_chunk_suffix_lex_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "Close PR #1174's explicit scope gap: probe_chunk (engine.py) still fully re-lexed self._prefix + chunk from position 0 on every call. Apply the identical self._fed_last_token_start suffix-anchor strategy PR #1174 used for _incremental_sync, adapted to probe_chunk's read-only contract (must never mutate engine state); prove I3/I6 (probe_chunk's own bool | None return value) byte-identical at every step, not just the final one.",
+  "change": {
+    "file": "src/slm_training/dsl/grammar/fastpath/engine.py",
+    "summary": [
+      "New method _probe_delta_from_anchor(self, chunk) -> list | None: when self._fed_token_count > 0 and self._fed_last_token_start is not None, re-lexes only self._prefix[safe_offset:] + chunk instead of self._prefix + chunk. Compares the re-lexed suffix's first token against self._fed_tokens[boundary_idx]; on a match returns the not-yet-fed delta tokens (suffix_tokens[1:]). Returns None on no-anchor-yet, suffix lex failure, or a changed boundary-token identity -- never guesses, never mutates self.",
+      "Deliberately does NOT reconstruct a full fed-token-key list the way _incremental_sync's anchor path does -- probe_chunk never needs keys after computing delta, so skipping that reconstruction avoids reintroducing an O(fed_token_count) cost per probe.",
+      "probe_chunk now calls _probe_delta_from_anchor(chunk) first; on success uses the delta directly; on None, falls back to the exact pre-existing full-prefix _lex_tokens(self._prefix + chunk) path with identical downstream checks and _copy_probe_fallbacks bookkeeping.",
+      "No change to probe_chunk's external contract (bool | None, side-effect-free), _incremental_sync, _full_sync, _sync, _feed_delta_tokens, or any grammar/terminal definition."
+    ],
+    "why_safe": "Identical maximal-munch argument PR #1174 established for _incremental_sync, reused verbatim (not re-derived): every already-fed token except possibly the last is permanently settled once a token after it was recognized. self._fed_last_token_start still names the one uncertain boundary token; re-lexing self._prefix[safe_offset:] + chunk re-derives it (and anything genuinely new after it) exactly as a full-prefix lex would. The two grammar facts PR #1174 verified directly (Token.start_pos/end_pos independent of propagate_positions; no openui.lark terminal uses lookbehind/\\b) are unchanged and apply identically -- no new verification needed. On any anchor failure, probe_chunk falls back to the exact pre-existing full-prefix path, which independently re-derives ground truth; so whenever the anchor path returns a value, it is provably identical to what the full path would return."
+  },
+  "reproduction": {
+    "method": "self-contained before/after via a monkeypatched _probe_delta_from_anchor that always returns None (forcing full-prefix relex on every probe) -- no git stash needed for the perf/I3-I6 comparison itself; git stash used separately to confirm the new unit tests are not vacuous",
+    "env_setup": [
+      "uv venv .venv --python 3.12",
+      "uv pip install --python .venv/bin/python -e \".[dev]\""
+    ],
+    "long_program": "Same 543-char, 10-line, multi-statement valid OpenUI DSL program (LONG_PROGRAM) as PR #1174's tests, for direct comparability across the two fixes.",
+    "drive_pattern": "Realistic probe-then-commit drive matching compiler_draft.py's actual usage (branch.probe_chunk(piece) then branch.advance(piece) on a truthy/None result): at each of 543 steps, probe the next single character against the currently-synced prefix without committing, record the bool|None result, then commit it via set_prefix before probing the next character.",
+    "call_kwargs": {},
+    "scripts_not_committed": "none -- measurement used inline python -c invocations against the committed test module's own helpers (LONG_PROGRAM, _drive_probe_and_commit, _disabled_anchor, _CharCountingEngine), not a separate scratch script"
+  },
+  "measured_long_growing_prefix_probe_then_commit": {
+    "prefix_len_chars": 543,
+    "before_forced_full_relex": {"chars_lexed": 197473, "wall_s_median_of_5": 0.348786},
+    "after_suffix_anchor": {"chars_lexed": 99554, "wall_s_median_of_5": 0.232904},
+    "chars_lexed_reduction_x": 1.98,
+    "wall_time_speedup_x": 1.50,
+    "probe_result_mismatches_across_543_steps": 0
+  },
+  "why_smaller_than_incremental_sync_fix": [
+    "probe_chunk's per-call chunk in this drive is a single character (the smallest possible unit), narrowing the absolute character-count gap between the anchor and full paths compared to _incremental_sync's PR #1174 drive.",
+    "InteractiveParser.copy() plus the delta feed onto the copy are fixed per-call costs this fix does not touch and _incremental_sync does not pay (it mutates self._ip directly); these dilute the relative wall-time win from reduced lex work."
+  ],
+  "unit_tests": {
+    "file": "tests/test_dsl/test_grammar_fastpath_probe_chunk_suffix_lex.py",
+    "count": 5,
+    "names": [
+      "test_probe_chunk_relexes_fewer_characters_than_full_relex_baseline",
+      "test_probe_chunk_matches_forced_full_relex_at_every_step",
+      "test_probe_chunk_speedup_floor_on_long_growing_prefix",
+      "test_growing_boundary_token_probe_falls_back_and_stays_correct",
+      "test_probe_chunk_anchor_unused_before_anything_fed"
+    ],
+    "non_vacuous_check": "git stash push -- src/slm_training/dsl/grammar/fastpath/engine.py; run; git stash pop -- all 5 fail with AttributeError: 'OpenUIIncrementalEngine' object has no attribute '_probe_delta_from_anchor' against the real pre-fix engine.py"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath_probe_chunk_suffix_lex.py",
+      "result": "5 passed"
+    },
+    {
+      "suite": "tests/test_dsl/{test_grammar_fastpath_incremental_lex,test_grammar_fastpath_lexer_cache}.py",
+      "result": "13 passed, unaffected"
+    },
+    {
+      "suite": "tests/test_dsl/{test_pack,test_packs}.py",
+      "result": "20 passed, 6 failed",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_pack.py::test_openui_oracle_accepts_source_and_fails_closed",
+        "test_pack.py::test_verify_stack_verdicts_unchanged",
+        "test_pack.py::test_end_to_end_fixture_run_through_pack_interface",
+        "test_packs.py::test_pack_contract_invariants[openui]",
+        "test_packs.py::test_openui_pack_placeholder_policy",
+        "test_packs.py::test_pack_fixture_loop_generate_train_eval"
+      ],
+      "note": "All 6 fail identically on unmodified engine.py with ValueError: generated ProgramSpec failed F2 at G2 (a progspec/generate.py verifier-gate issue, unrelated to lexing)."
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath.py -k \"not train_fuse_and_cache_smoke and not cactus_kernel_sketch and not semantic_guards_run_before_singleton_bypass\"",
+      "result": "39 passed, 1 failed, 3 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_grammar_fastpath.py::test_completion_forest_admits_null_for_optional_string_after_slots_exhaust"
+      ],
+      "note": "Same build_completion_forest() signature-drift failure PR #1174 documented (enforce_schema_component_types keyword no longer accepted), unrelated to lexing."
+    }
+  ],
+  "preexisting_hang_confirmed_via_git_stash": {
+    "test": "test_grammar_fastpath.py::test_semantic_guards_run_before_singleton_bypass",
+    "observation": "Times out past 60s in isolation against unmodified (git-stashed) engine.py with zero output past 'collecting ...'; deselected from the regression sweep per the hard-run-cap rule (a timed-out/killed run is never evidence). Not caused by this fix."
+  },
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "2 changed file(s), 0 component(s) touched -- fastpath/engine.py is still not a registered path in any versions.json component; no bump required",
+    "repo_policy": "ok (tracked + untracked)",
+    "git_diff_check": "clean"
+  },
+  "interpretation": "Closes PR #1174's Scope-note gap: probe_chunk no longer fully re-lexes self._prefix + chunk from position 0 on every call on its common path. Correctness proven (I3/I6, 0 mismatches across a 543-step probe-then-commit drive against a forced-full-relex oracle) with a real but smaller measured win (1.98x fewer chars lexed, 1.50x wall time) than the analogous _incremental_sync fix's (2.97x / 2.56x) -- the gap is explained (single-char-per-call drive, fixed InteractiveParser.copy() overhead), not hidden.",
+  "scope_note": "No train/eval run, no checkpoint, no --ship-gates scoreboard -- same tier as the rest of this PR chain. Does not help the growing-boundary-token case (identical limitation to PR #1174, identical reason). Relies on the same no-lookbehind/\\b-terminal fact PR #1174 verified directly, not re-verified here since the grammar didn't change. _incremental_sync/_full_sync/_feed_delta_tokens untouched.",
+  "next_steps": [
+    "Re-measure probe_chunk's real-world benefit inside compiler_draft.py's witness search, where chunks are whole lexer-native token pieces (via _token_piece), not single characters as in this session's synthetic drive -- may shift the anchor-vs-copy()-overhead balance.",
+    "Close the shared growing-boundary-token gap for both probe_chunk and _incremental_sync via the InteractiveParser checkpoint/rollback approach PR #1174's next_steps already scoped -- a larger, riskier change deserving its own finding/fix pair.",
+    "Re-measure against the full per-record compiler_ms telemetry / the exposure12 quality-champion eval protocol now that the lexer-object cache (#1173), _incremental_sync suffix-lex (#1174), and this probe_chunk suffix-lex fix are all in place."
+  ],
+  "cleanup_note": ".venv (gitignored) created for this session is not committed; no scratch diagnostic scripts were written -- measurement used inline python -c invocations against the committed test module's own helpers.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "bb45ab6a1c9332fc2da9144c2285e0fd219df183",
+    "code_dirty": true,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: src/slm_training/dsl/grammar/fastpath/engine.py is not a registered path of any component in src/slm_training/resources/versions.json, so no bump is required for this change."
+  },
+  "captured_at": "2026-07-27T23:49:30Z"
+}
