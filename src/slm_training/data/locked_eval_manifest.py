@@ -203,6 +203,60 @@ class LockedManifest:
         return {"schema": SCHEMA, "manifest_sha256": self.sha256, "metadata": self.metadata, "rows": list(self.rows)}
 
 
+def canonical_manifest_path() -> Path:
+    """Path to this repo's single committed immutable promotion manifest."""
+    return (
+        Path(__file__).resolve().parents[1]
+        / "resources"
+        / "data"
+        / "eval"
+        / "manifests"
+        / "abstract_planning_locked_v1.jsonl"
+    )
+
+
+def load_locked_manifest_payload(path: Path) -> dict[str, Any]:
+    """Load a committed locked manifest, failing closed on any tamper.
+
+    A promotion or ship claim must not be able to point at a hand-edited
+    manifest: this recomputes the digest from ``rows``/``metadata`` exactly as
+    ``LockedManifest.sha256`` does and rejects a file whose self-declared
+    ``manifest_sha256`` does not match its own content.
+    """
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"locked manifest unreadable: {path}") from exc
+    if not isinstance(payload, dict) or payload.get("schema") != SCHEMA:
+        raise ValueError(f"locked manifest has an unsupported schema: {path}")
+    recomputed = _sha(
+        {
+            "schema": payload.get("schema"),
+            "rows": payload.get("rows"),
+            "metadata": payload.get("metadata"),
+        }
+    )
+    if payload.get("manifest_sha256") != recomputed:
+        raise ValueError(
+            f"locked manifest content digest does not match its declared manifest_sha256: {path}"
+        )
+    return payload
+
+
+def verify_locked_manifest_digest(path: Path, expected_sha256: str) -> bool:
+    """Return True only when ``path`` is an untampered manifest matching ``expected_sha256``.
+
+    A campaign's ``locked_eval_manifest_sha256`` is otherwise a free-form
+    hex string that is never checked against real manifest bytes -- this is
+    the independent, content-addressed check that closes that gap.
+    """
+    try:
+        payload = load_locked_manifest_payload(path)
+    except ValueError:
+        return False
+    return payload.get("manifest_sha256") == expected_sha256
+
+
 def build_locked_manifest(
     candidates: Iterable[ExampleRecord],
     *,
