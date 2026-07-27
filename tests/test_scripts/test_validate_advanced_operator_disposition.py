@@ -37,6 +37,14 @@ def test_validator_rejects_unauthorized_default_enable() -> None:
 
 
 def test_validator_rejects_supported_claim_backed_only_by_unrun_dimensions() -> None:
+    """No conditional/unrun issue may be counted as delivered value.
+
+    Enforced by ``AdvancedOperatorClaimV1.__post_init__`` itself (a SUPPORTED
+    headline must equal one of its own dimension verdicts, so it can never
+    have every dimension undelivered -- that state is unconstructable, not
+    merely unchecked); ``validate()`` surfaces the failure via its
+    reconstruction guard rather than a separate check.
+    """
     report = _report()
     claims = report["disposition"]["claims"]
     target = next(item for item in claims if item["claim"] == "crossover_work")
@@ -47,7 +55,7 @@ def test_validator_rejects_supported_claim_backed_only_by_unrun_dimensions() -> 
     claims[index] = tampered
     violations = validate(report)
     assert violations
-    assert any("undelivered" in v or "must equal one of" in v for v in violations)
+    assert any("must equal one of" in v for v in violations)
 
 
 def test_validator_rejects_bad_recommendation() -> None:

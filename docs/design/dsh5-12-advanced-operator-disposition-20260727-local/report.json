@@ -267,13 +267,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "dsl.operators.selectors": "v1"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143878+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176176+00:00"
         }
       },
       {
@@ -306,13 +306,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "dsl.operators.bulk": "v1"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143884+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176182+00:00"
         }
       },
       {
@@ -387,13 +387,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "dsl.operators.transactions": "v3"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143889+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176188+00:00"
         }
       },
       {
@@ -426,13 +426,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "dsl.operators.transaction_executor": "v2"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143893+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176192+00:00"
         }
       },
       {
@@ -465,13 +465,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "harness.experiments.operator_transaction_policy": "v1"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143897+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176203+00:00"
         }
       },
       {
@@ -504,13 +504,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "dsl.operators.sequence_merge": "v1"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143901+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176207+00:00"
         }
       },
       {
@@ -543,13 +543,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "dsl.operators.control_actions": "v3"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143911+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176211+00:00"
         }
       },
       {
@@ -625,13 +625,13 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {
             "dsl.operators.replay_preference": "v2"
           },
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143915+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176214+00:00"
         }
       },
       {
@@ -664,11 +664,11 @@
         },
         "tokenizer_identity": null,
         "version_stamp": {
-          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-          "code_dirty": true,
+          "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+          "code_dirty": false,
           "components": {},
           "stamp_schema": "version_stamp/v1",
-          "stamped_at": "2026-07-27T01:57:11.143918+00:00"
+          "stamped_at": "2026-07-27T02:23:32.176218+00:00"
         }
       },
       {
@@ -765,13 +765,13 @@
     ],
     "schema": "advanced_operator_disposition/v1",
     "version_stamp": {
-      "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-      "code_dirty": true,
+      "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+      "code_dirty": false,
       "components": {
-        "evals.advanced_operator_disposition": "v1"
+        "evals.advanced_operator_disposition": "v2"
       },
       "stamp_schema": "version_stamp/v1",
-      "stamped_at": "2026-07-27T01:57:11.143836+00:00"
+      "stamped_at": "2026-07-27T02:23:32.176129+00:00"
     }
   },
   "schema": "dsh5_12_advanced_operator_disposition_report/v1",
@@ -822,12 +822,12 @@
     }
   },
   "version_stamp": {
-    "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
-    "code_dirty": true,
+    "code_commit": "2a48c9689af147ee44044948cad6d9c6357c2958",
+    "code_dirty": false,
     "components": {
-      "evals.advanced_operator_disposition": "v1"
+      "evals.advanced_operator_disposition": "v2"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-27T01:57:11.143836+00:00"
+    "stamped_at": "2026-07-27T02:23:32.176129+00:00"
   }
 }

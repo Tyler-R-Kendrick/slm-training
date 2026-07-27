@@ -14,8 +14,8 @@ from slm_training.evals.advanced_operator_disposition import (
     AdvancedOperatorDispositionV1,
     AdvancedOperatorVerdict,
     build_advanced_operator_disposition,
+    component_version_stamps,
 )
-from slm_training.harness_core.versioning import build_version_stamp
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,31 +25,13 @@ def _report(path: str) -> dict[str, object]:
     return json.loads((ROOT / path).read_text(encoding="utf-8"))
 
 
-_COMPONENT_BY_ISSUE = {
-    "SLM-409": "dsl.operators.selectors",
-    "SLM-410": "dsl.operators.bulk",
-    "SLM-412": "dsl.operators.transactions",
-    "SLM-413": "dsl.operators.transaction_executor",
-    "SLM-414": "harness.experiments.operator_transaction_policy",
-    "SLM-415": "dsl.operators.sequence_merge",
-    "SLM-416": "dsl.operators.control_actions",
-    "SLM-418": "dsl.operators.replay_preference",
-}
-
-
-def _component_version_stamps() -> dict[str, dict[str, object]]:
-    stamps = {issue: build_version_stamp(component) for issue, component in _COMPONENT_BY_ISSUE.items()}
-    stamps["SLM-419"] = build_version_stamp()
-    return stamps
-
-
 def _build() -> AdvancedOperatorDispositionV1:
     return build_advanced_operator_disposition(
         dsh3_33_report=_report("docs/design/dsh3-33-rebased-cap2-disposition-20260726-local/report.json"),
         dsh5_03_report=_report("docs/design/dsh5-03-bulk-operator-crossover-20260726-local/report.json"),
         dsh5_09_report=_report("docs/design/dsh5-09-adaptive-router-20260726-local/report.json"),
         version_stamp={"stamp_schema": "version_stamp/v1"},
-        component_version_stamps=_component_version_stamps(),
+        component_version_stamps=component_version_stamps(),
     )
 
 

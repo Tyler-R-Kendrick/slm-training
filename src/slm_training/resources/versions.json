@@ -5949,6 +5949,11 @@
         {
           "version": "v1",
           "date": "2026-07-27",
+          "note": "no-bump: review follow-up tightens the SLM-420 (DSH5-12) Negative-boundary row wording in research-lineage.md so it no longer contradicts the adjacent Unrun-boundary row (set-valued selection and event memory are unrun_conditional, not unavailable); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-27",
           "note": "no-bump: add the SLM-420 (DSH5-12) advanced-operator disposition entries to research-lineage.md and MODEL_CARD.md; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -10794,16 +10799,28 @@
       ]
     },
     "evals.advanced_operator_disposition": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/advanced_operator_disposition.py",
         "scripts/publish_dsh5_12_advanced_operator_disposition.py",
         "scripts/validate_advanced_operator_disposition.py",
         "tests/test_evals/test_advanced_operator_disposition.py",
-        "docs/design/dsh5-12-advanced-operator-disposition.md"
+        "tests/test_scripts/test_validate_advanced_operator_disposition.py",
+        "docs/design/dsh5-12-advanced-operator-disposition.md",
+        "docs/design/dsh5-12-advanced-operator-disposition-20260727-local/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "no-bump: regenerated report.json on the clean committed v2 revision (2a48c968, code_dirty=false) to replace the prior dirty-worktree publication (a CodeRabbit finding); content-only refresh, verdicts/recommendation unchanged (`retain_as_compiler_utility`, 11 claims, dsh5_may_start=false), re-validated structurally_valid"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "review follow-up: drop the validator's unreachable-by-construction SUPPORTED/all-undelivered check (AdvancedOperatorClaimV1.__post_init__ already guarantees a SUPPORTED headline can't have every dimension undelivered) and clarify the remaining defense-in-depth checks are reachable only if that invariant is weakened; turn the DSH5-03 report's dead no-op schema check into a real version_stamp presence check; drop the three unused _COMMITS pins (SLM-408/411/417, which are consumed via each report's own code_commit stamp, never this table); centralize the issue->component map and component_version_stamps() (previously duplicated between the publisher script and its test) as public exports COMPONENT_BY_ISSUE/component_version_stamps on the model module; regenerate report.json/summary.md from the clean committed revision (code_dirty=false, replacing the dirty-worktree publication)"
+        },
         {
           "version": "v1",
           "date": "2026-07-27",
