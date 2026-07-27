@@ -7402,7 +7402,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7416,9 +7416,15 @@
         "docs/design/iter-slm293-property-role-saturation-20260725.json",
         "docs/design/iter-slm293-property-role-saturation-20260725.md",
         "src/slm_training/runtime/telemetry/trace.py",
-        "tests/test_runtime_trace.py"
+        "tests/test_runtime_trace.py",
+        "tests/test_harnesses/model_build/test_eval_seed.py"
       ],
       "history": [
+        {
+          "version": "v62",
+          "date": "2026-07-27",
+          "note": "Expose evaluate_model --seed and seed Python/NumPy/Torch at eval start; stamp seed on scoreboard for reproducible constrained re-evals"
+        },
         {
           "version": "v61",
           "date": "2026-07-26",

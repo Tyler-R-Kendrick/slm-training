@@ -1,0 +1,304 @@
+{
+  "lever": "eval_seed_lock",
+  "hypothesis": "evaluate_model --seed + RNG lock makes quality-champ re-evals bit-stable for greedy constrained decode.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "harness_change": {
+    "component": "harness.model_build.eval",
+    "version": "v62",
+    "files": [
+      "scripts/evaluate_model.py",
+      "src/slm_training/harnesses/model_build/eval_runner.py",
+      "tests/test_harnesses/model_build/test_eval_seed.py"
+    ]
+  },
+  "checkpoint": "outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt",
+  "unseeded_reps": [
+    {
+      "eval_id": "exp_lever_decode_rng_rep1_exp12_seed47",
+      "seed": null,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30003.65,
+      "max_latency_ms": 30004.78,
+      "hero_outcome": "fallback_output",
+      "hero_meaningful": false,
+      "hero_latency": 30004.78,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 3,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30004.78,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30002.96,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "latency_ms": 30003.65,
+          "parse_ok": true
+        }
+      ]
+    },
+    {
+      "eval_id": "exp_lever_decode_rng_rep2_exp12_seed47",
+      "seed": null,
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.5296666666666666,
+      "empty_prediction_count": 1,
+      "latency_ms_p50": 30007.76,
+      "max_latency_ms": 30008.48,
+      "hero_outcome": "fallback_output",
+      "hero_meaningful": false,
+      "hero_latency": 30007.76,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 1,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30007.76,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30002.29,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "runtime_timeout",
+          "meaningful": false,
+          "latency_ms": 30008.48,
+          "parse_ok": false
+        }
+      ]
+    },
+    {
+      "eval_id": "exp_lever_decode_rng_rep3_exp12_seed47",
+      "seed": null,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30005.24,
+      "max_latency_ms": 30006.22,
+      "hero_outcome": "fallback_output",
+      "hero_meaningful": false,
+      "hero_latency": 30006.22,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 3,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30006.22,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30003.59,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "latency_ms": 30005.24,
+          "parse_ok": true
+        }
+      ]
+    }
+  ],
+  "seeded_reps": [
+    {
+      "eval_id": "exp_lever_decode_seeded_rep1_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8443333333333333,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30005.7,
+      "max_latency_ms": 163248.21,
+      "hero_outcome": "model_valid",
+      "hero_meaningful": true,
+      "hero_latency": 163248.21,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "model_valid",
+          "meaningful": true,
+          "latency_ms": 163248.21,
+          "parse_ok": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30005.7,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "latency_ms": 30003.33,
+          "parse_ok": true
+        }
+      ]
+    },
+    {
+      "eval_id": "exp_lever_decode_seeded_rep2_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8443333333333333,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30006.59,
+      "max_latency_ms": 171309.39,
+      "hero_outcome": "model_valid",
+      "hero_meaningful": true,
+      "hero_latency": 171309.39,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "model_valid",
+          "meaningful": true,
+          "latency_ms": 171309.39,
+          "parse_ok": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30006.59,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "latency_ms": 30003.03,
+          "parse_ok": true
+        }
+      ]
+    },
+    {
+      "eval_id": "exp_lever_decode_seeded_rep3_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.836,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30007.72,
+      "max_latency_ms": 193361.1,
+      "hero_outcome": "fallback_output",
+      "hero_meaningful": false,
+      "hero_latency": 30007.72,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30007.72,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "latency_ms": 30005.73,
+          "parse_ok": false
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "model_valid",
+          "meaningful": true,
+          "latency_ms": 193361.1,
+          "parse_ok": true
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "unseeded_unique_meaningful": [
+      0.0,
+      0.3333333333333333
+    ],
+    "seeded_unique_meaningful": [
+      0.3333333333333333,
+      0.6666666666666666
+    ],
+    "unseeded_unique_hero": [
+      "fallback_output"
+    ],
+    "seeded_unique_hero": [
+      "fallback_output",
+      "model_valid"
+    ]
+  },
+  "decision": "partial",
+  "decision_reason": "seed lock incomplete: seeded unique meanful=[0.3333333333333333, 0.6666666666666666] hero=['fallback_output', 'model_valid']; residual wall/timeout race likely",
+  "captured_at": "2026-07-27T17:56:37.564246+00:00"
+}

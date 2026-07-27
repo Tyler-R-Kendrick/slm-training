@@ -123,6 +123,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help=(
+            "Deterministic seed for eval-time RNG (Python/NumPy/Torch). "
+            "Default 0. Re-evals with the same seed should match when decode "
+            "is greedy/constrained."
+        ),
+    )
+    parser.add_argument(
         "--output-tokenizer",
         choices=("compositional", "lexer"),
         default=None,
@@ -713,6 +723,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id=args.run_id,
         model_name=args.model,
         device=args.device,
+        seed=int(args.seed),
         output_tokenizer=args.output_tokenizer,
         context_backend=args.context_backend or "hf",
         local_files_only=args.local_files_only,
