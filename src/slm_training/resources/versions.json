@@ -648,6 +648,11 @@
       "history": [
         {
           "version": "v16",
+          "date": "2026-07-27",
+          "note": "no-bump: SLM-418 (DSH5-10) fourth slice re-exports extract_merge_preference_row from operators/__init__.py (dsl.operators.replay_preference bumped to v5); no change to contracts.py itself"
+        },
+        {
+          "version": "v16",
           "date": "2026-07-26",
           "note": "no-bump: pre-merge review fixup -- resolve_turn_op_ids now translates an unrecognized operator_fingerprint KeyError (CodeRabbit) into OpsVocabConditioningError, so a genuinely unrepresentable turn becomes a real unrepresentable_intents finding instead of crashing the caller; added a regression test."
         },
@@ -1086,13 +1091,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) fourth slice: add extract_merge_preference_row, a standalone extraction path (not a trace-turn scan, since a merge attempt is never a recorded ConversationTraceV1 turn) producing one MERGE_SUCCESS row per successful merge_conversation_branches attempt, grounded at the left branch tip with merge:<sorted-tip-pair> offered alongside checkout/undo in the legal set and replaying to the real BranchMergeContinuationV1 state. Merge conflict is intentionally NOT modeled as a row (no successor state to replay to, no recorded 'chosen instead' action) -- honored by construction, since merge:<pair> is only ever offered as a candidate when merge_conversation_branches has already confirmed success; a conflicting merge is proven to never pollute the ranking denominator via test_merge_conflict_never_yields_a_preference_row. 6 of ~7 verified patterns now covered; only pronoun/focus follow-ups remain, as does all SFT/preference training and held-out measurement"
+        },
         {
           "version": "v4",
           "date": "2026-07-27",
@@ -10875,6 +10885,11 @@
         "docs/design/dsh5-12-advanced-operator-disposition-20260727-local/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "no-bump: correct the hardcoded SLM-418/DSH5-10 evidence string (dsl.operators.replay_preference is now on its own v5, with merge-success bringing coverage to 6 of 7 named patterns; only pronoun/focus follow-ups remain, and merge conflict is honestly scoped as a non-row legality constraint) so a freshly-generated disposition would not understate already-landed replay-preference-row coverage; no change to disposition logic, schema, or the already-published dsh5-12-*-20260727-local snapshot, which stays immutable point-in-time evidence"
+        },
         {
           "version": "v2",
           "date": "2026-07-27",

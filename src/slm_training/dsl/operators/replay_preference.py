@@ -1,19 +1,38 @@
 """SLM-418 (DSH5-10): replay-grounded preference rows from undo/redo history.
 
-Builds versioned preference rows over one exact input state from five
+Builds versioned preference rows over one exact input state from six
 verified conversation patterns -- edit-then-undo, undo-then-redo, partial
 rollback (a second or later consecutive undo, chosen over redo/checkout/edit
-alternatives), checkout-another-state, and fork-then-choose-one-branch --
-where the chosen and rejected control-or-operator actions are checked
-against the exact legal set available at that state
+alternatives), checkout-another-state, fork-then-choose-one-branch, and
+merge-success -- where the chosen and rejected control-or-operator actions
+are checked against the exact legal set available at that state
 (``enumerate_operator_legal_set``), never against transcript text.
 
 This is an honestly partial slice of SLM-418. It does not implement:
-merge success/conflict or pronoun/focus follow-up patterns; it does not
-train an SFT/preference variant, measure held-out benefit, or produce
-turn-depth / context-view ablations. See
-``docs/design/dsh5-10-replay-preference-rows.md`` for the full disposition
-and the remaining scope.
+pronoun/focus follow-up patterns; it does not train an SFT/preference
+variant, measure held-out benefit, or produce turn-depth / context-view
+ablations. See ``docs/design/dsh5-10-replay-preference-rows.md`` for the
+full disposition and the remaining scope.
+
+Merge conflict (the other half of the issue's "merge success/conflict"
+pattern) is deliberately *not* modeled as a preference row here: unlike
+undo/redo/checkout/fork, a merge attempt is never a recorded
+``ConversationTraceV1`` turn (``merge_conversation_branches`` in
+``merge.py`` operates directly on a shared base and two independently
+verified ``BranchEditV1`` edges, and a successful merge starts a *fresh*
+continuation trace rather than appending to either input trace). A row
+would require independently replaying to a recorded chosen_output_state_id
+(the issue's own acceptance criterion), and a conflicting merge has no
+successor state to replay to -- fabricating a "what the user did instead"
+row the trace never recorded would violate the issue's own adversarial
+control that chosen/rejected rows must share exact, evidenced context. The
+issue's own instruction to "mark rejected candidates as typed
+illegal/conflict controls outside the ranking denominator" is honored
+instead by construction: ``extract_merge_preference_row`` only ever offers
+``merge:<pair>`` as a legal candidate action when
+``merge_conversation_branches`` has already confirmed it succeeds, so a
+conflicting merge is never mistakenly added to any ranking denominator; see
+``test_merge_conflict_never_yields_a_preference_row``.
 """
 
 from __future__ import annotations
@@ -31,6 +50,11 @@ from slm_training.dsl.operators.legal_set import (
     OperatorLegalSetV1,
     enumerate_operator_legal_set,
 )
+from slm_training.dsl.operators.merge import (
+    BranchAuthorityResolver,
+    BranchEditV1,
+    BranchMergeDecisionV1,
+)
 from slm_training.dsl.operators.registry import OperatorLibraryV1, OperatorStateV1
 from slm_training.dsl.pack import DslPack
 from slm_training.harness_core.versioning import build_version_stamp
@@ -44,6 +68,7 @@ class ReplayPreferenceRelation(str, Enum):
     PARTIAL_ROLLBACK = "partial_rollback"
     CHECKOUT_ANOTHER_STATE = "checkout_another_state"
     FORK_THEN_CHOOSE_ONE_BRANCH = "fork_then_choose_one_branch"
+    MERGE_SUCCESS = "merge_success"
 
 
 @dataclass(frozen=True)
@@ -338,4 +363,77 @@ def extract_replay_preference_rows(
     return OperatorEventMemoryReportV1(
         rows=tuple(rows),
         version_stamp=build_version_stamp("dsl.operators.replay_preference"),
+    )
+
+
+def _merge_candidate_action(left: BranchEditV1, right: BranchEditV1) -> str:
+    """A canonical, order-independent action name for merging two branch tips.
+
+    Sorted so the same pair of tips always serializes identically regardless
+    of which edge is passed as ``left`` versus ``right`` -- matching
+    ``merge_conversation_branches``'s own order-invariant ``decision_id``.
+    """
+    tips = tuple(sorted((left.output_node.state_id, right.output_node.state_id)))
+    return f"merge:{tips[0]}:{tips[1]}"
+
+
+def extract_merge_preference_row(
+    *,
+    left: BranchEditV1,
+    right: BranchEditV1,
+    decision: BranchMergeDecisionV1,
+    authority_resolver: BranchAuthorityResolver,
+    provenance_for: ProvenanceFactory,
+) -> OperatorReplayPreferenceRowV1 | None:
+    """One ``MERGE_SUCCESS`` row for a merge attempt between two fork tips.
+
+    Grounded from ``left``'s exact output state: at that state, the legal
+    set is enumerated with ``merge:<sorted-tip-pair>`` and ``checkout:<right
+    tip>`` (and ``undo``, when a parent exists) offered alongside the
+    ordinary operator actions -- the same
+    ``ordinary_nonoperator_actions`` mechanism ``extract_replay_preference_
+    rows`` uses for ``undo``/``redo``/``checkout``. ``merge:<pair>`` is only
+    ever offered when ``merge_conversation_branches`` has already confirmed
+    ``decision.succeeded`` and produced a fresh continuation node; a
+    conflicting merge returns ``None`` here rather than a row (see the
+    module docstring for why merge conflict is not modeled as a row).
+
+    ``authority_resolver`` is called with ``left.input_node`` -- the same
+    node ``merge_conversation_branches`` itself resolves the left edge's
+    authority from -- since a ``BranchEditV1`` is one verified single-
+    application edge and its input-state authority governs the actions
+    legal at its output tip too.
+
+    Returns ``None`` when the merge conflicted, or when no unchosen legal
+    alternative exists at the decision state (never asserting merge
+    preferred by default, matching every other pattern in this module).
+    """
+    if not decision.succeeded or decision.continuation is None:
+        return None
+    decision_tip = left.output_node
+    other_tip = right.output_node
+    pack, library = authority_resolver(left.input_node)
+    merge_action = _merge_candidate_action(left, right)
+    ordinary_actions = [f"checkout:{other_tip.state_id}", merge_action]
+    if decision_tip.parent_state_id is not None:
+        ordinary_actions.append("undo")
+    legal_set = enumerate_operator_legal_set(
+        pack=pack,
+        library=library,
+        state=decision_tip.state,
+        reference_table=decision_tip.reference_table,
+        provenance=provenance_for(decision_tip.state),
+        ordinary_nonoperator_actions=tuple(ordinary_actions),
+    )
+    rejected = _pick_rejected(legal_set, merge_action)
+    if merge_action not in legal_set.all_serialized_actions or rejected is None:
+        return None
+    return OperatorReplayPreferenceRowV1(
+        input_state_id=decision_tip.state_id,
+        chosen_action=merge_action,
+        rejected_action=rejected,
+        chosen_output_state_id=decision.continuation.merged_node.state_id,
+        semantic_relation=ReplayPreferenceRelation.MERGE_SUCCESS,
+        correction_reason="user_merged_diverged_branches",
+        legal_set_fingerprint=legal_set.fingerprint,
     )

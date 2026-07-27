@@ -163,6 +163,7 @@ from slm_training.dsl.operators.replay_preference import (
     OperatorEventMemoryReportV1,
     OperatorReplayPreferenceRowV1,
     ReplayPreferenceRelation,
+    extract_merge_preference_row,
     extract_replay_preference_rows,
 )
 from slm_training.dsl.operators.topology import (
@@ -437,6 +438,7 @@ __all__ = [
     "derive_turn_disposition",
     "deserialize_operator_action",
     "enumerate_operator_legal_set",
+    "extract_merge_preference_row",
     "extract_replay_preference_rows",
     "fork_conversation",
     "iter_operator_argument_tuples",

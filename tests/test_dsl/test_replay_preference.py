@@ -8,12 +8,16 @@ from slm_training.dsl.operators import (
     OperatorEventMemoryReportV1,
     ReplayPreferenceRelation,
     checkout_conversation_state,
+    extract_merge_preference_row,
     extract_replay_preference_rows,
     fork_conversation,
+    merge_conversation_branches,
     redo_conversation,
     undo_conversation,
 )
 from tests.test_dsl.test_operator_conversation import _append, _fixture, _provenance
+from tests.test_dsl.test_operator_merge import _Fixture as _MergeFixture
+from tests.test_dsl.test_operator_merge import _provenance as _merge_provenance
 
 
 def _sha(value: str) -> str:
@@ -326,3 +330,112 @@ def test_report_carries_a_version_stamp() -> None:
     assert report.version_stamp["stamp_schema"]
     assert report.version_stamp["components"]["dsl.operators.replay_preference"]
     assert report.to_dict()["version_stamp"] == report.version_stamp
+
+
+def test_merge_success_yields_a_row_preferring_merge_over_checkout_or_undo() -> None:
+    """A clean, disjoint-target merge is a legal candidate at the fork tip.
+
+    Two branches fork from a common base and edit disjoint targets (title
+    vs body) -- the merge succeeds, and the row records that the user chose
+    ``merge:<pair>`` over the equally-legal alternative of just checking out
+    to the sibling branch instead.
+    """
+    fixture = _MergeFixture()
+    left = fixture.branch(name="left", target_name="title", replacement=":hero.heading")
+    right = fixture.branch(name="right", target_name="body", replacement=":hero.copy")
+    decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=fixture.rebuild_merged_table,
+    )
+    assert decision.succeeded
+
+    row = extract_merge_preference_row(
+        left=left,
+        right=right,
+        decision=decision,
+        authority_resolver=fixture.resolve,
+        provenance_for=_merge_provenance,
+    )
+
+    assert row is not None
+    assert row.semantic_relation is ReplayPreferenceRelation.MERGE_SUCCESS
+    assert row.input_state_id == left.output_node.state_id
+    assert row.chosen_action.startswith("merge:")
+    assert row.chosen_output_state_id == decision.continuation.merged_node.state_id
+    assert row.rejected_action != row.chosen_action
+    assert row.correction_reason == "user_merged_diverged_branches"
+
+
+def test_merge_success_row_replays_independently_to_the_same_merged_state() -> None:
+    fixture = _MergeFixture()
+    left = fixture.branch(name="left2", target_name="title", replacement=":hero.heading")
+    right = fixture.branch(name="right2", target_name="body", replacement=":hero.copy")
+    decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=fixture.rebuild_merged_table,
+    )
+
+    row = extract_merge_preference_row(
+        left=left,
+        right=right,
+        decision=decision,
+        authority_resolver=fixture.resolve,
+        provenance_for=_merge_provenance,
+    )
+    assert row is not None
+
+    replayed = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=fixture.rebuild_merged_table,
+    )
+    assert replayed.continuation is not None
+    assert replayed.continuation.merged_node.state_id == row.chosen_output_state_id
+
+
+def test_merge_conflict_never_yields_a_preference_row() -> None:
+    """A conflicting merge is excluded from the ranking denominator entirely.
+
+    Both branches edit the same target -- ``merge_conversation_branches``
+    returns a typed ``SAME_NODE_INCOMPATIBLE_EDIT`` conflict, never a
+    merged state. Per the module's honesty rule, this yields no row (there
+    is no successor state to replay to and no recorded "chosen instead"
+    action), rather than a fabricated preference.
+    """
+    fixture = _MergeFixture()
+    left = fixture.branch(
+        name="conflict_left", target_name="title", replacement=":hero.left"
+    )
+    right = fixture.branch(
+        name="conflict_right", target_name="title", replacement=":hero.right"
+    )
+    decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+    )
+    assert not decision.succeeded
+
+    row = extract_merge_preference_row(
+        left=left,
+        right=right,
+        decision=decision,
+        authority_resolver=fixture.resolve,
+        provenance_for=_merge_provenance,
+    )
+
+    assert row is None
+
