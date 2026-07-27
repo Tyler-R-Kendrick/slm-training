@@ -1,0 +1,89 @@
+{
+  "lever": "decode_nondeterminism_pythonhashseed_ruled_out",
+  "hypothesis": "PR #1164 (merged, docs/design/lever-decode-reproducibility-exposure12-seed47-measured-results.md) confirmed decode non-determinism across re-evals of an identical checkpoint+flags and recommended as its next lever: 'find/seed decode RNG (evaluate_model seed if available)'. This run tests the most direct version of that hypothesis: pin PYTHONHASHSEED (Python's per-process string-hash randomization affects set/dict iteration order, which is a common uncontrolled source of run-to-run divergence in tie-breaking code that was not caught by the CLI's own --seed) across repeated evals of the same checkpoint+flags and see whether that alone restores determinism.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "checkpoint": {
+    "run_id": "lever_determinism_seed47",
+    "recipe": "twotower, context-backend=scratch, steps=16, batch-size=2, lr=1e-3, structural-bias=1.5, seed=47, device=cpu, asap-decode",
+    "train_corpus": "lever_exposure12_v1 (n=107, max-records-per-parent=12)",
+    "last_loss": 7.188689231872559,
+    "last_loss_matches_prior_champion": true,
+    "note": "Training itself reproduces bit-for-bit (last_loss=7.189 matches the historical exposure12 seed47 champion); the divergence is eval/decode-only."
+  },
+  "eval_flags": "PYTHONHASHSEED=0 --grammar-constrained --decode-timeout-seconds 30 --grammar-ltr-max-tokens 64 --constraint-debt-routing-mode fixed_asap --suite smoke --run-class scratch_matrix",
+  "rows": [
+    {
+      "run": 1,
+      "pythonhashseed": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.86,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 1,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 1,
+        "harness_error": 0
+      },
+      "total_ms_sum": 124104.953,
+      "checkpoint_sha256": "63ca367b8e45939d60eec065e73a6f0e9efb945e93d34b91a8e3ba02baf6e753"
+    },
+    {
+      "run": 2,
+      "pythonhashseed": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 3,
+        "harness_error": 0
+      },
+      "total_ms_sum": 90012.417,
+      "checkpoint_sha256": "63ca367b8e45939d60eec065e73a6f0e9efb945e93d34b91a8e3ba02baf6e753"
+    },
+    {
+      "run": 3,
+      "pythonhashseed": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8543333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "total_ms_sum": 132719.219,
+      "checkpoint_sha256": "63ca367b8e45939d60eec065e73a6f0e9efb945e93d34b91a8e3ba02baf6e753"
+    }
+  ],
+  "summary": {
+    "parse_rate_identical_across_runs": true,
+    "meaningful_program_rate_identical_across_runs": false,
+    "reward_score_identical_across_runs": false,
+    "decode_outcome_counts_identical_across_runs": false,
+    "total_ms_sum_range": [
+      90012.417,
+      132719.219
+    ],
+    "checkpoint_sha256_identical_across_runs": true
+  },
+  "decision": "hypothesis_refuted",
+  "decision_reason": "Pinning PYTHONHASHSEED=0 across all 3 re-evals of the identical checkpoint+flags did NOT restore determinism: meaningful_program_rate still varies 0.333<->0.667, reward_score varies 0.765-0.860, decode_outcome_counts varies (model_valid count 0/1/1), and total_ms_sum varies 90012-132719ms (a ~47% spread) despite identical checkpoint_sha256, identical --seed, identical PYTHONHASHSEED, and identical CLI flags. This rules out both 'unseeded RNG' and 'hash-randomization-driven iteration order' as the root cause -- the seeded RNG in the grammar-fastpath lattice search (src/slm_training/dsl/grammar/fastpath/lattice_search.py:trajectory_orders) already derives from a fixed string key and was not the source of the divergence tested here.",
+  "revised_root_cause_hypothesis": "The wide total_ms_sum spread (90-133s) on a suite whose per-record decode_timeout_seconds=30 nominally caps each record is consistent with the mechanism already flagged (not fixed) in decode-timeout-hang-seed44-steps72-finding.md: decode_timeout_seconds is enforced via signal.setitimer(ITIMER_REAL, ...) + SIGALRM, a soft real-wall-clock limit that CPython only delivers between bytecode instructions. If the actual generation call for a record is blocked inside a C extension (a torch op, the DFA/trie compiler search) that does not yield back to Python bytecode, the alarm is delayed until that call returns -- so whether a given record finishes as model_valid (full search, potentially minutes) or gets cut to fallback_output (~30s) depends on real CPU-scheduling timing at the moment of the call, not on any seeded/seedable state. This sandbox was independently confirmed to be running concurrent sessions during this window (three other autotrain PRs -- #1162, #1163, #1164 -- landed on main within the same ~10-minute span as this run), so CPU contention from sibling sessions is a plausible (not excluded) contributor to the specific magnitudes seen here, on top of the architectural soft-limit gap.",
+  "captured_at": "2026-07-27T17:52:00+00:00"
+}
