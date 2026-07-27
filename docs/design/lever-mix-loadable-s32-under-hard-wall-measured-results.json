@@ -1,0 +1,40 @@
+{
+  "lever": "mix_loadable_s16_vs_s32_hard_wall",
+  "hypothesis": "More SFT steps on mix loadable corpus lifts meanful under hard wall.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "s16": {
+    "meanful_median": 0.3333333333333333,
+    "meanful_values": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "parse_mean": 1.0,
+    "empty_mean": 0,
+    "max_lat_mean": 30043.183333333334,
+    "wall_ok": true,
+    "reward_mean": 0.7653333333333334
+  },
+  "s32": {
+    "meanful_median": 0.3333333333333333,
+    "meanful_values": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "parse_mean": 1.0,
+    "empty_mean": 0,
+    "max_lat_mean": 30203.876666666667,
+    "wall_ok": true,
+    "reward_mean": 0.7653333333333334
+  },
+  "s32_train": {
+    "steps": 26,
+    "stopped_on": "wall_time_budget",
+    "last_loss": 21.308767318725586
+  },
+  "decision": "reject",
+  "decision_reason": "mix s32 (done=26, wall_time_budget) no quality lift meanful 0.333\u21920.333",
+  "captured_at": "2026-07-27T18:53:16.293912+00:00"
+}
