@@ -67,10 +67,6 @@ from slm_training.dsl.operators.sequence_merge import (
     merge_branch_application_sequences,
     sequence_from_branch_edits,
 )
-from slm_training.flow.termination import (
-    brier_score,
-    expected_calibration_error,
-)
 
 __all__ = [
     "ConversationControlKind",
@@ -715,15 +711,67 @@ def deterministic_control_priority(
     raise AssertionError("unreachable: every legal action has a known kind")  # pragma: no cover
 
 
+def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
+    return max(low, min(high, value))
+
+
+def _brier_score(predicted: Sequence[float], observed: Sequence[int]) -> float:
+    """Mean squared difference between predicted probabilities and binary outcomes.
+
+    Deliberately duplicated from ``flow.termination.brier_score`` rather than
+    imported: that module also imports ``flow.reference.generator``, which
+    depends on ``numpy``, and every module in ``dsl/operators/`` -- this one
+    included -- must stay importable without ``numpy``/``torch`` for the
+    numpy-free ``python-static`` CI lane.
+    """
+    if not predicted or not observed or len(predicted) != len(observed):
+        return 0.0
+    return sum((_clamp(p) - float(o)) ** 2 for p, o in zip(predicted, observed)) / len(predicted)
+
+
+def _expected_calibration_error(
+    predicted: Sequence[float], observed: Sequence[int], n_bins: int = 5
+) -> float:
+    """ECE with uniform probability bins.
+
+    Like :func:`_brier_score`, this is a deliberate duplicate of
+    ``flow.termination.expected_calibration_error`` to keep this module
+    numpy/torch-free; see that function's docstring for the formula.
+    """
+    if not predicted or not observed or len(predicted) != len(observed):
+        return 0.0
+    pairs = list(zip(predicted, observed))
+    if not pairs:
+        return 0.0
+    total = len(pairs)
+    ece = 0.0
+    for bin_index in range(n_bins):
+        low = bin_index / n_bins
+        high = (bin_index + 1) / n_bins
+        in_bin = [
+            (p, o)
+            for p, o in pairs
+            if low <= _clamp(p) < high or (bin_index == n_bins - 1 and _clamp(p) == 1.0)
+        ]
+        if not in_bin:
+            continue
+        avg_pred = sum(p for p, _ in in_bin) / len(in_bin)
+        avg_obs = sum(o for _, o in in_bin) / len(in_bin)
+        ece += abs(avg_pred - avg_obs) * (len(in_bin) / total)
+    return ece
+
+
 @dataclass(frozen=True)
 class ConversationControlPolicyReportV1:
     """Selection metrics for one policy arm; no training loss is reported here.
 
     Mirrors ``models.operator_termination.OperatorTerminationReportV1``'s
-    shape and reuses its calibration helpers -- STOP is scored exactly like
-    an operator-policy STOP decision, kept in a distinct report type because
-    its legal set and candidates are the control-plane's, not the AST
-    operator policy's.
+    shape. STOP is scored exactly like an operator-policy STOP decision,
+    kept in a distinct report type because its legal set and candidates are
+    the control-plane's, not the AST operator policy's. The calibration
+    math (``_brier_score``/``_expected_calibration_error``) is computed
+    locally rather than imported from ``flow.termination`` -- see their
+    docstrings for why.
     """
 
     command_accuracy: float
@@ -745,6 +793,16 @@ class ConversationControlPolicyReportV1:
         premature: Sequence[bool],
         late: Sequence[bool],
     ) -> "ConversationControlPolicyReportV1":
+        if len(predicted_actions) != len(expected_actions):
+            raise ValueError(
+                "predicted_actions and expected_actions must have equal length: "
+                f"{len(predicted_actions)} != {len(expected_actions)}"
+            )
+        if len(stop_probabilities) != len(stop_targets):
+            raise ValueError(
+                "stop_probabilities and stop_targets must have equal length: "
+                f"{len(stop_probabilities)} != {len(stop_targets)}"
+            )
         n = max(1, len(expected_actions))
         command_matches = sum(
             1
@@ -763,8 +821,8 @@ class ConversationControlPolicyReportV1:
         return cls(
             command_accuracy=command_matches / n,
             argument_accuracy=argument_matches / n,
-            stop_brier=brier_score(stop_probabilities, stop_targets),
-            stop_ece=expected_calibration_error(stop_probabilities, stop_targets),
+            stop_brier=_brier_score(stop_probabilities, stop_targets),
+            stop_ece=_expected_calibration_error(stop_probabilities, stop_targets),
             premature_stop_rate=sum(premature) / max(1, len(premature)),
             late_stop_rate=sum(late) / max(1, len(late)),
         )

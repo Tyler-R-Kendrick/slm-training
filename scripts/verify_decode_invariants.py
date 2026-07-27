@@ -115,8 +115,8 @@ def _module(relative: str) -> ast.Module:
     return ast.parse(_read(relative), filename=relative)
 
 
-def _weakening_levers() -> dict[str, Any]:
-    """Read the registry statically so the check needs no torch import."""
+def _lever_registry(registry_name: str) -> dict[str, Any]:
+    """Read a lever registry statically so the check needs no torch import."""
     tree = _module("src/slm_training/levers.py")
     for node in tree.body:
         if not isinstance(node, ast.AnnAssign) and not isinstance(node, ast.Assign):
@@ -125,15 +125,38 @@ def _weakening_levers() -> dict[str, Any]:
             [node.target] if isinstance(node, ast.AnnAssign) else list(node.targets)
         )
         names = {t.id for t in targets if isinstance(t, ast.Name)}
-        if "CONSTRAINT_WEAKENING_LEVERS" not in names or node.value is None:
+        if registry_name not in names or node.value is None:
             continue
         registry = ast.literal_eval(node.value)
         if not registry:
-            raise DecodeInvariantError("CONSTRAINT_WEAKENING_LEVERS is empty")
+            raise DecodeInvariantError(f"{registry_name} is empty")
         return registry
-    raise DecodeInvariantError(
-        "levers.py no longer defines CONSTRAINT_WEAKENING_LEVERS"
-    )
+    raise DecodeInvariantError(f"levers.py no longer defines {registry_name}")
+
+
+def _weakening_levers() -> dict[str, Any]:
+    return _lever_registry("CONSTRAINT_WEAKENING_LEVERS")
+
+
+def _capacity_levers() -> dict[str, Any]:
+    """Invariant VI: every capacity knob stays declared with its baseline.
+
+    Deleting or emptying this registry would make model growth invisible to
+    size-matching and to EG_params, which is exactly how a scaled-up model
+    gets credited with a capability win.
+    """
+    registry = _lever_registry("CAPACITY_SCALING_LEVERS")
+    missing = [
+        name
+        for name, spec in sorted(registry.items())
+        if "baseline_value" not in spec or not spec.get("axis")
+    ]
+    if missing:
+        raise DecodeInvariantError(
+            "CAPACITY_SCALING_LEVERS entries missing baseline_value/axis: "
+            + ", ".join(missing)
+        )
+    return registry
 
 
 def _dataclass_defaults(relative: str, class_name: str) -> dict[str, Any]:
@@ -399,6 +422,7 @@ def certify() -> dict[str, Any]:
     return {
         "canonical_doc": CANONICAL_DOC,
         "weakening_levers": sorted(levers),
+        "capacity_levers": sorted(_capacity_levers()),
         "canonical_defaults": check_canonical_defaults(levers),
         "strict_policies": check_strict_policies(levers),
         "serving_fail_closed": check_serving_fails_closed(),

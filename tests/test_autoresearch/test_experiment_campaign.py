@@ -364,6 +364,67 @@ def test_promotion_candidate_rejects_empty_pairs_and_duplicate_rows(
     assert "incomplete_holm_family" in failures
 
 
+def test_promotion_result_locked_digest_is_verified_against_real_manifest_bytes(
+    tmp_path: Path,
+) -> None:
+    """SLM-306: a declared locked_eval_manifest_sha256 is checked against disk.
+
+    Without ``locked_manifest_path`` the self-reported digest string alone is
+    trusted (unchanged, back-compatible behavior). When a path is supplied,
+    the digest must actually be reproducible from real manifest bytes.
+    """
+    from slm_training.data.locked_eval_manifest import (
+        build_locked_manifest,
+        write_locked_manifest,
+    )
+    from slm_training.dsl.schema import load_jsonl
+
+    candidates = load_jsonl("src/slm_training/resources/test_seeds.jsonl")[:4]
+    locked = build_locked_manifest(
+        candidates, source_records=[], min_locked_records=1, partition_size=1
+    )
+    manifest_path = tmp_path / "locked_manifest.json"
+    digest = write_locked_manifest(manifest_path, locked)
+
+    manifest = _manifest(locked_eval_manifest_sha256=digest)
+    result = _complete_result(manifest, tmp_path, locked_eval_manifest_sha256=digest)
+
+    assert (
+        validate_result_claim(
+            manifest, result, artifact_root=tmp_path, locked_manifest_path=None
+        )
+        == ()
+    )
+    assert (
+        validate_result_claim(
+            manifest,
+            result,
+            artifact_root=tmp_path,
+            locked_manifest_path=manifest_path,
+        )
+        == ()
+    )
+
+    missing_path = tmp_path / "does_not_exist.json"
+    assert validate_result_claim(
+        manifest,
+        result,
+        artifact_root=tmp_path,
+        locked_manifest_path=missing_path,
+    ) == ("locked_eval_manifest_digest_unverified_on_disk",)
+
+    wrong_digest_manifest = _manifest(locked_eval_manifest_sha256="f" * 64)
+    wrong_digest_result = _complete_result(
+        wrong_digest_manifest, tmp_path, locked_eval_manifest_sha256="f" * 64
+    )
+    assert validate_result_claim(
+        wrong_digest_manifest,
+        wrong_digest_result,
+        artifact_root=tmp_path,
+        locked_manifest_path=manifest_path,
+    ) == ("locked_eval_manifest_digest_unverified_on_disk",)
+
+
 def test_ship_gate_claim_requires_ship_gates_to_pass(tmp_path: Path) -> None:
     requirements = list(_manifest_payload()["artifact_requirements"])
     requirements.append({"kind": "ship_gates", "minimum_count": 1})

@@ -107,7 +107,10 @@ class Experiment:
     remask_use_entropy: bool = False
     visible_corrupt_rate: float = 0.0
     trust_gate: bool = False
+    grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"
+    grammar_sample_decode: bool = False
+    grammar_uniform_at_unforced: bool = False
     # V5 levers: lexer-native output representation
     output_tokenizer: str = "compositional"
     use_symbol_table: bool = True
@@ -165,7 +168,12 @@ class Experiment:
     compiler_search_backtrack_limit: int = 8
     compiler_search_local_nogoods: bool = False
     grammar_finalize_validate: bool = False
-    allow_unconstrained_fallback: bool = True
+    # Decode invariant I6 (docs/design/decode-invariants.md): diagnostic-only,
+    # fail-closed by default. ModelBuildConfig.__post_init__ hard-rejects
+    # allow_unconstrained_fallback=True, so this must default False like every
+    # other Experiment row; only a deliberately labeled diagnostic control may
+    # override it per-row.
+    allow_unconstrained_fallback: bool = False
     component_inventory_loss_weight: float = 0.0
     component_inventory_decode_weight: float = 0.0
     component_plan_loss_weight: float = 0.0
@@ -1683,8 +1691,13 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
         visible_corrupt_rate=float(getattr(exp, "visible_corrupt_rate", 0.0) or 0.0),
         suffix_rollback_window=int(getattr(exp, "suffix_rollback_window", 0) or 0),
+        grammar_fastpath=bool(getattr(exp, "grammar_fastpath", True)),
         grammar_fastpath_mode=str(
             getattr(exp, "grammar_fastpath_mode", "hybrid") or "hybrid"
+        ),
+        grammar_sample_decode=bool(getattr(exp, "grammar_sample_decode", False)),
+        grammar_uniform_at_unforced=bool(
+            getattr(exp, "grammar_uniform_at_unforced", False)
         ),
         compiler_decode_mode=str(getattr(exp, "compiler_decode_mode", "off") or "off"),
         compiler_search_mode=str(getattr(exp, "compiler_search_mode", "greedy") or "greedy"),
@@ -1700,7 +1713,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
             getattr(exp, "grammar_finalize_validate", False)
         ),
         allow_unconstrained_fallback=bool(
-            getattr(exp, "allow_unconstrained_fallback", True)
+            getattr(exp, "allow_unconstrained_fallback", False)
         ),
         component_inventory_loss_weight=float(
             getattr(exp, "component_inventory_loss_weight", 0.0) or 0.0

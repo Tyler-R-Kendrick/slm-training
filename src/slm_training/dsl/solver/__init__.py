@@ -35,6 +35,11 @@ from slm_training.dsl.solver.closure import (
     default_query_order,
     exact_closure,
 )
+from slm_training.dsl.solver.partial_state import (
+    PartialKind,
+    PartialStateClassV1,
+    classify_partial_state,
+)
 from slm_training.dsl.solver.support import (
     EnumerativeSupportOracle,
     ExpandStatus,
@@ -108,6 +113,8 @@ __all__ = [
     "HoleId",
     "JsonScalar",
     "Nogood",
+    "PartialKind",
+    "PartialStateClassV1",
     "PerCapsuleResult",
     "ProblemExpander",
     "ReplayResult",
@@ -136,6 +143,7 @@ __all__ = [
     "VerifyStatus",
     "WitnessRef",
     "build_capsule_solve_plan",
+    "classify_partial_state",
     "completion_forest_state",
     "default_hole_selector",
     "default_query_order",

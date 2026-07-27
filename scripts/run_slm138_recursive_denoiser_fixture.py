@@ -51,6 +51,7 @@ from typing import Any, Iterator
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.agentv import publish_agentv_evaluation
+from slm_training.evals.power_protocol import wilson_interval
 from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.models.recursive_control_arms import (
     BUILT_ARM_IDS,
@@ -348,9 +349,7 @@ def _diff_hash() -> str | None:
     return hashlib.sha256(diff.encode("utf-8")).hexdigest()
 
 
-def _build_recurrence_health_model(
-    *, seed: int, recursive_steps: int
-) -> TwoTowerModel:
+def _build_recurrence_health_model(*, seed: int, recursive_steps: int) -> TwoTowerModel:
     """Build the final-depth-only tiny model used by the recurrence audit."""
     return TwoTowerModel.from_records(
         _fixture_records(),
@@ -390,9 +389,7 @@ def _tensor_digest(tensor: Any) -> str:
     return hasher.hexdigest()
 
 
-def _optimizer_contract(
-    model: TwoTowerModel, optimizer: Any
-) -> dict[str, Any]:
+def _optimizer_contract(model: TwoTowerModel, optimizer: Any) -> dict[str, Any]:
     names = {id(param): name for name, param in model.named_parameters()}
     groups = []
     for group in optimizer.param_groups:
@@ -417,12 +414,8 @@ def _recurrence_health_corruption_schedule(
     if optimizer_steps < 1:
         raise ValueError("optimizer_steps must be >= 1")
     if optimizer_steps >= RECURRENCE_HEALTH_SEED_STRIDE:
-        raise ValueError(
-            "optimizer_steps must be below RECURRENCE_HEALTH_SEED_STRIDE"
-        )
-    start = derive_seed(
-        seed * RECURRENCE_HEALTH_SEED_STRIDE, "training_corruption"
-    )
+        raise ValueError("optimizer_steps must be below RECURRENCE_HEALTH_SEED_STRIDE")
+    start = derive_seed(seed * RECURRENCE_HEALTH_SEED_STRIDE, "training_corruption")
     return (
         [start + step for step in range(optimizer_steps)],
         start + optimizer_steps,
@@ -475,9 +468,7 @@ def _capture_recurrence_health(
             diagnostic_targets=capture["targets"],
             diagnostic_mask=capture["predict_mask"],
         )
-        output = original_outputs(
-            noisy_ids, context, pad_id, ctx_pad_mask, **kwargs
-        )
+        output = original_outputs(noisy_ids, context, pad_id, ctx_pad_mask, **kwargs)
         capture["diagnostics"] = output["diagnostics"]
         return output
 
@@ -592,9 +583,7 @@ def _serialize_recurrence_curve(
             for field in fields:
                 value = getattr(record, field)
                 row[field] = None if value is None else float(value[index])
-            row["finite_difference_initial_state_directional_gain"] = float(
-                gain[index]
-            )
+            row["finite_difference_initial_state_directional_gain"] = float(gain[index])
             examples.append(row)
         counts = [row["target_count"] for row in examples]
         ces = [row["cross_entropy"] for row in examples]
@@ -639,9 +628,7 @@ def _run_recurrence_health_pair(
         raise ValueError("optimizer_steps must be >= 1")
     records = _fixture_records()
     models = {
-        arm: _build_recurrence_health_model(
-            seed=seed, recursive_steps=recursive_steps
-        )
+        arm: _build_recurrence_health_model(seed=seed, recursive_steps=recursive_steps)
         for arm in RECURRENCE_HEALTH_ARMS
     }
     optimizers = {
@@ -694,18 +681,14 @@ def _run_recurrence_health_pair(
             for arm in RECURRENCE_HEALTH_ARMS:
                 model = models[arm]
                 optimizer = optimizers[arm]
-                seed_training_corruption(
-                    seed, model, override_seed=corruption_seed
-                )
+                seed_training_corruption(seed, model, override_seed=corruption_seed)
                 optimizer.zero_grad(set_to_none=True)
                 loss = model.training_loss(records)
                 batch_digests[arm].append(
                     {
                         "targets": _tensor_digest(captures[arm]["targets"]),
                         "noisy": _tensor_digest(captures[arm]["noisy"]),
-                        "predict_mask": _tensor_digest(
-                            captures[arm]["predict_mask"]
-                        ),
+                        "predict_mask": _tensor_digest(captures[arm]["predict_mask"]),
                     }
                 )
                 loss.backward()
@@ -753,9 +736,7 @@ def _run_recurrence_health_pair(
                     "post_training_loss": float(eval_loss.detach().cpu()),
                     "anytime_evaluation": {
                         "denoiser_forward_calls": anytime_calls,
-                        "available_depths": list(
-                            range(1, recursive_steps + 1)
-                        ),
+                        "available_depths": list(range(1, recursive_steps + 1)),
                     },
                     "depths": _serialize_recurrence_curve(
                         diagnostic_records,
@@ -774,8 +755,24 @@ def _evaluate_recurrence_preregistration(
     recursive_steps: tuple[int, ...],
     matched_controls: list[dict[str, Any]],
     expected_example_ids: tuple[str, ...],
+    power_rule: dict[str, float] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Apply the exact preregistration to every raw example and depth."""
+    """Apply the exact preregistration to every raw example and depth.
+
+    ``power_rule`` is an additive, default-off SLM-282-follow-up capability
+    (the "powered rerun" LAR3 blocking condition asked for): when supplied as
+    ``{"min_pass_rate": <float in (0, 1)>, "confidence_level": <float, optional>}``
+    the primary-arm per-seed pass rate gets a Wilson score interval
+    (``slm_training.evals.power_protocol.wilson_interval``, the repository's
+    canonical binomial-evidence utility per the gate-reachability-and-power
+    doctrine) and the disposition becomes ``recursive_core_positive`` iff the
+    interval's lower bound clears ``min_pass_rate``, ``recursive_core_negative``
+    iff the upper bound falls below it (the rate is ruled out), or
+    ``inconclusive_underpowered`` when the interval straddles the threshold.
+    ``power_rule=None`` (the default) preserves the exact original SLM-282
+    ``passed_seeds >= 2`` binary rule byte-for-byte -- this keeps every
+    historical artifact and existing test reproducible.
+    """
     adjacent_failures = []
     for curve in curves:
         depths = curve["depths"]
@@ -808,9 +805,7 @@ def _evaluate_recurrence_preregistration(
                 if complete_examples
                 else []
             )
-            for left, right, before, after in zip(
-                depths, depths[1:], ces, ces[1:]
-            ):
+            for left, right, before, after in zip(depths, depths[1:], ces, ces[1:]):
                 if after > before:
                     adjacent_failures.append(
                         {
@@ -825,9 +820,7 @@ def _evaluate_recurrence_preregistration(
                         }
                     )
             condition = (
-                ces[-1] <= ces[-2] <= ces[0]
-                if eligible and complete_examples
-                else None
+                ces[-1] <= ces[-2] <= ces[0] if eligible and complete_examples else None
             )
             example_results.append(
                 {
@@ -840,8 +833,10 @@ def _evaluate_recurrence_preregistration(
                 }
             )
         ratios_finite = all(depth["ratios_finite"] for depth in depths)
-        examples_complete = depths_complete and rosters_complete and all(
-            result["complete"] for result in example_results
+        examples_complete = (
+            depths_complete
+            and rosters_complete
+            and all(result["complete"] for result in example_results)
         )
         condition = examples_complete and all(
             result["pass"] is True for result in example_results
@@ -866,8 +861,7 @@ def _evaluate_recurrence_preregistration(
         for depth in recursive_steps
     }
     observed = {
-        (curve["arm"], curve["seed"], curve["recursive_steps"])
-        for curve in curves
+        (curve["arm"], curve["seed"], curve["recursive_steps"]) for curve in curves
     }
     curves_complete = expected == observed and len(curves) == len(expected)
     structures_complete = all(
@@ -877,13 +871,9 @@ def _evaluate_recurrence_preregistration(
     )
     complete = curves_complete and structures_complete
     telemetry_finite = all(
-        depth["all_finite"]
-        for curve in curves
-        for depth in curve["depths"]
+        depth["all_finite"] for curve in curves for depth in curve["depths"]
     )
-    expected_controls = {
-        (seed, depth) for seed in seeds for depth in recursive_steps
-    }
+    expected_controls = {(seed, depth) for seed in seeds for depth in recursive_steps}
     observed_controls = [
         (control.get("seed"), control.get("recursive_steps"))
         for control in matched_controls
@@ -893,8 +883,7 @@ def _evaluate_recurrence_preregistration(
         and set(observed_controls) == expected_controls
     )
     controls_matched = controls_complete and all(
-        control.get("matched", False)
-        and control.get("batches_matched", False)
+        control.get("matched", False) and control.get("batches_matched", False)
         for control in matched_controls
     )
     eligible_depths = tuple(depth for depth in recursive_steps if depth > 1)
@@ -918,26 +907,54 @@ def _evaluate_recurrence_preregistration(
             }
         )
     passed_seeds = sum(result["pass"] for result in seed_results)
-    if not complete or not telemetry_finite or not controls_matched or not eligible_depths:
-        disposition = "inconclusive_fixture"
-    elif passed_seeds >= 2:
-        disposition = "recursive_core_positive"
-    else:
-        disposition = "recursive_core_negative"
-    return (
-        {
-            "disposition": disposition,
-            "primary_arm": "as_is",
-            "required_seed_passes": 2,
-            "passed_seed_count": passed_seeds,
-            "seed_results": seed_results,
-            "schedule_complete": complete,
-            "telemetry_finite": telemetry_finite,
-            "controls_matched": controls_matched,
-            "residual_delta_can_promote": False,
-        },
-        adjacent_failures,
+    structurally_sound = (
+        complete and telemetry_finite and controls_matched and bool(eligible_depths)
     )
+    power_evidence: dict[str, Any] | None = None
+    if power_rule is None:
+        required_seed_passes: int | None = 2
+        if not structurally_sound:
+            disposition = "inconclusive_fixture"
+        elif passed_seeds >= 2:
+            disposition = "recursive_core_positive"
+        else:
+            disposition = "recursive_core_negative"
+    else:
+        min_pass_rate = float(power_rule["min_pass_rate"])
+        if not 0.0 < min_pass_rate < 1.0:
+            raise ValueError("power_rule['min_pass_rate'] must be in (0, 1)")
+        confidence_level = float(power_rule.get("confidence_level", 0.95))
+        required_seed_passes = None
+        interval = wilson_interval(
+            passed_seeds, len(seeds), confidence_level=confidence_level
+        )
+        power_evidence = {
+            "min_pass_rate": min_pass_rate,
+            "interval": {"method": "wilson_score", **interval},
+        }
+        if not structurally_sound:
+            disposition = "inconclusive_fixture"
+        elif interval["low"] is not None and interval["low"] >= min_pass_rate:
+            disposition = "recursive_core_positive"
+        elif interval["high"] is not None and interval["high"] < min_pass_rate:
+            disposition = "recursive_core_negative"
+        else:
+            disposition = "inconclusive_underpowered"
+    summary: dict[str, Any] = {
+        "disposition": disposition,
+        "primary_arm": "as_is",
+        "required_seed_passes": required_seed_passes,
+        "passed_seed_count": passed_seeds,
+        "seed_count": len(seeds),
+        "seed_results": seed_results,
+        "schedule_complete": complete,
+        "telemetry_finite": telemetry_finite,
+        "controls_matched": controls_matched,
+        "residual_delta_can_promote": False,
+    }
+    if power_evidence is not None:
+        summary["power_rule"] = power_evidence
+    return (summary, adjacent_failures)
 
 
 def _run_recurrence_health(
@@ -947,8 +964,13 @@ def _run_recurrence_health(
     optimizer_steps: int = RECURRENCE_HEALTH_OPTIMIZER_STEPS,
     recursive_steps: tuple[int, ...] = RECURRENCE_HEALTH_DEPTHS,
     allow_dirty: bool = False,
+    seed_count: int = 2,
+    power_rule: dict[str, float] | None = None,
+    issue: str = "SLM-282",
 ) -> dict[str, Any]:
-    seeds = (base_seed, base_seed + 1)
+    if seed_count < 1:
+        raise ValueError("seed_count must be >= 1")
+    seeds = tuple(base_seed + offset for offset in range(seed_count))
     matched_controls = []
     curves = []
     for seed in seeds:
@@ -966,6 +988,7 @@ def _run_recurrence_health(
         recursive_steps=recursive_steps,
         matched_controls=matched_controls,
         expected_example_ids=tuple(record.id for record in _fixture_records()),
+        power_rule=power_rule,
     )
     version_stamp = build_version_stamp(
         "model.twotower", "model.recursive_denoiser", "evals.scoring"
@@ -974,9 +997,9 @@ def _run_recurrence_health(
     report = {
         "schema": RECURRENCE_HEALTH_SCHEMA,
         "matrix_set": "slm282-recurrence-health",
-        "matrix_version": "slm282-v1",
+        "matrix_version": "slm282-v1" if power_rule is None else "slm282-v2-powered",
         "run_id": "slm282_recurrence_health",
-        "issue": "SLM-282",
+        "issue": issue,
         "status": "fixture_only",
         "claim_class": "fixture_diagnostic_not_ship",
         "preregistration": {
@@ -985,7 +1008,8 @@ def _run_recurrence_health(
             "recursive_steps": list(recursive_steps),
             "seeds": list(seeds),
             "condition": "CE(final) <= CE(previous) <= CE(r=1)",
-            "required_seed_passes": 2,
+            "required_seed_passes": 2 if power_rule is None else None,
+            "power_rule": power_rule,
             "residual_delta_is_fixture_only": True,
         },
         "recipe": {
@@ -1033,42 +1057,46 @@ def _run_recurrence_health(
             name="slm282-recurrence-health",
             claim="fixture_recurrence_health_not_ship",
             cases=[
-            {
-                "id": "matched-controls",
-                "criteria": "All recurrence-health arms use matched controls.",
-                "pass": summary["controls_matched"],
-                "failures": [] if summary["controls_matched"] else ["unmatched_controls"],
-                "result": matched_controls,
-                "metadata": {"honesty": "fixture_diagnostic_not_ship"},
-            },
-            {
-                "id": "finite-complete-telemetry",
-                "criteria": "The preregistered grid is complete and finite.",
-                "pass": summary_case,
-                "failures": [] if summary_case else ["incomplete_or_nonfinite"],
-                "result": {
-                    "schedule_complete": summary["schedule_complete"],
-                    "telemetry_finite": summary["telemetry_finite"],
-                },
-                "metadata": {"honesty": "fixture_diagnostic_not_ship"},
-            },
-            *[
                 {
-                    "id": f"as-is-seed-{result['seed']}",
-                    "criteria": (
-                        "The primary as_is arm satisfies the exact recurrence "
-                        "condition at every eligible logical depth."
-                    ),
-                    "pass": result["pass"],
-                    "failures": [] if result["pass"] else ["preregistered_ce_failure"],
-                    "result": result,
-                    "metadata": {
-                        "honesty": "fixture_diagnostic_not_ship",
-                        "seed": result["seed"],
+                    "id": "matched-controls",
+                    "criteria": "All recurrence-health arms use matched controls.",
+                    "pass": summary["controls_matched"],
+                    "failures": []
+                    if summary["controls_matched"]
+                    else ["unmatched_controls"],
+                    "result": matched_controls,
+                    "metadata": {"honesty": "fixture_diagnostic_not_ship"},
+                },
+                {
+                    "id": "finite-complete-telemetry",
+                    "criteria": "The preregistered grid is complete and finite.",
+                    "pass": summary_case,
+                    "failures": [] if summary_case else ["incomplete_or_nonfinite"],
+                    "result": {
+                        "schedule_complete": summary["schedule_complete"],
+                        "telemetry_finite": summary["telemetry_finite"],
                     },
-                }
-                for result in summary["seed_results"]
-            ],
+                    "metadata": {"honesty": "fixture_diagnostic_not_ship"},
+                },
+                *[
+                    {
+                        "id": f"as-is-seed-{result['seed']}",
+                        "criteria": (
+                            "The primary as_is arm satisfies the exact recurrence "
+                            "condition at every eligible logical depth."
+                        ),
+                        "pass": result["pass"],
+                        "failures": []
+                        if result["pass"]
+                        else ["preregistered_ce_failure"],
+                        "result": result,
+                        "metadata": {
+                            "honesty": "fixture_diagnostic_not_ship",
+                            "seed": result["seed"],
+                        },
+                    }
+                    for result in summary["seed_results"]
+                ],
             ],
         ),
         output_dir=output_dir,
@@ -1079,8 +1107,9 @@ def _run_recurrence_health(
 def _render_recurrence_health_markdown(report: dict[str, Any]) -> str:
     summary = report["summary"]
     recipe = report["recipe"]
+    power_rule = summary.get("power_rule")
     lines = [
-        "# SLM-282 recurrence-health fixture audit",
+        f"# {report['issue']} recurrence-health fixture audit",
         "",
         f"Disposition: **{summary['disposition']}**",
         "",
@@ -1091,44 +1120,61 @@ def _render_recurrence_health_markdown(report: dict[str, Any]) -> str:
         "",
         "- Primary arm: `as_is`",
         "- Condition: `CE(final) <= CE(previous) <= CE(r=1)`",
-        f"- Required passing seeds: `{summary['required_seed_passes']}`",
+        f"- Seed count: `{summary['seed_count']}`",
+        f"- Required passing seeds (fixed-count rule): `{summary['required_seed_passes']}`",
         f"- Observed passing seeds: `{summary['passed_seed_count']}`",
-        "",
-        "## Recipe and matching",
-        "",
-        f"- Device/backend: `{recipe['device']}` / `{recipe['backend']}`",
-        f"- Optimizer/steps/LR: `{recipe['optimizer']}` / "
-        f"`{recipe['optimizer_steps']}` / `{recipe['learning_rate']}`",
-        f"- Data/suite n: `{recipe['data']}` / `{recipe['suite_n']}`",
-        f"- Arms/depths/seeds: `{report['preregistration']['arms']}` / "
-        f"`{report['preregistration']['recursive_steps']}` / "
-        f"`{report['preregistration']['seeds']}`",
-        f"- Honesty mode: `{recipe['honesty_mode']}`",
-        f"- Wall cap: `{recipe['max_wall_minutes']}` minutes",
-        f"- Matched controls: **{summary['controls_matched']}** "
-        "(initial state, config, tokenizer, records, optimizer, and actual "
-        "target/noisy/mask digests)",
-        "",
-        "Each trained model contributes all of its `r=1..R` rows from exactly "
-        "one post-training denoiser forward; no separately trained shallower "
-        "model supplies an anytime point.",
-        "",
-        "## Raw per-example curves",
-        "",
-        "| arm | seed | R | depth | example | CE | accuracy | entropy | "
-        "KL next | KL final | y ratio | z ratio | directional gain |",
-        "| --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | "
-        "---: | ---: | ---: | ---: |",
     ]
+    if power_rule is not None:
+        interval = power_rule["interval"]
+        lines.extend(
+            [
+                f"- Power rule: Wilson {interval['confidence_level']:.0%} CI of "
+                "per-seed pass rate must clear "
+                f"`{power_rule['min_pass_rate']}` for `recursive_core_positive`, "
+                "or fall entirely below it for `recursive_core_negative`; "
+                "otherwise `inconclusive_underpowered`.",
+                f"- Observed pass rate: `{interval['estimate']:.4f}` "
+                f"(Wilson {interval['confidence_level']:.0%} CI "
+                f"[`{interval['low']:.4f}`, `{interval['high']:.4f}`], "
+                f"n=`{interval['n']}`)",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Recipe and matching",
+            "",
+            f"- Device/backend: `{recipe['device']}` / `{recipe['backend']}`",
+            f"- Optimizer/steps/LR: `{recipe['optimizer']}` / "
+            f"`{recipe['optimizer_steps']}` / `{recipe['learning_rate']}`",
+            f"- Data/suite n: `{recipe['data']}` / `{recipe['suite_n']}`",
+            f"- Arms/depths/seeds: `{report['preregistration']['arms']}` / "
+            f"`{report['preregistration']['recursive_steps']}` / "
+            f"`{report['preregistration']['seeds']}`",
+            f"- Honesty mode: `{recipe['honesty_mode']}`",
+            f"- Wall cap: `{recipe['max_wall_minutes']}` minutes",
+            f"- Matched controls: **{summary['controls_matched']}** "
+            "(initial state, config, tokenizer, records, optimizer, and actual "
+            "target/noisy/mask digests)",
+            "",
+            "Each trained model contributes all of its `r=1..R` rows from exactly "
+            "one post-training denoiser forward; no separately trained shallower "
+            "model supplies an anytime point.",
+            "",
+            "## Raw per-example curves",
+            "",
+            "| arm | seed | R | depth | example | CE | accuracy | entropy | "
+            "KL next | KL final | y ratio | z ratio | directional gain |",
+            "| --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | "
+            "---: | ---: | ---: | ---: |",
+        ]
+    )
     for curve in report["curves"]:
         for depth in curve["depths"]:
             for example in depth["examples"]:
+
                 def value(key: str) -> str:
-                    return (
-                        "—"
-                        if example[key] is None
-                        else f"{example[key]:.6f}"
-                    )
+                    return "—" if example[key] is None else f"{example[key]:.6f}"
 
                 lines.append(
                     f"| `{curve['arm']}` | {curve['seed']} | "
@@ -1161,8 +1207,7 @@ def _render_recurrence_health_markdown(report: dict[str, Any]) -> str:
             "",
             "## Evidence boundary",
             "",
-            f"- Production default changed: "
-            f"**{report['production_default_changed']}**",
+            f"- Production default changed: **{report['production_default_changed']}**",
             f"- Checkpoint created: **{report['checkpoint_created']}**",
             f"- Ship-gate claim: **{report['ship_gate_claim']}**",
             "",
@@ -1314,13 +1359,9 @@ def _run_fixture(
         "quality_claim": False,
         "historical_all_depth_weights": [0.5, 1.0],
         "raw_depth_losses": [intermediate_raw, final_raw],
-        "old_buggy_unweighted_sum_divided_by_weight_sum": (
-            intermediate_raw + final_raw
-        )
+        "old_buggy_unweighted_sum_divided_by_weight_sum": (intermediate_raw + final_raw)
         / historical_weight_sum,
-        "corrected_historical_weighted_mean": (
-            0.5 * intermediate_raw + final_raw
-        )
+        "corrected_historical_weighted_mean": (0.5 * intermediate_raw + final_raw)
         / historical_weight_sum,
         "canonical_current": {
             "mode": "intermediate_only",
@@ -1346,14 +1387,11 @@ def _run_fixture(
         ckpt = Path(tmp_dir) / "recursive.pt"
         recursive.save(ckpt)
         loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
-        loaded_ok = (
-            loaded.config.denoiser_arch == "shared_recursive"
-            and isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
+        loaded_ok = loaded.config.denoiser_arch == "shared_recursive" and isinstance(
+            loaded.denoiser, SharedRecursiveDenoiserTower
         )
 
-    version_stamp = build_version_stamp(
-        "model.twotower", "model.recursive_denoiser"
-    )
+    version_stamp = build_version_stamp("model.twotower", "model.recursive_denoiser")
     code_dirty = version_stamp.get("code_dirty")
     gate = _clean_tree_gate(code_dirty=code_dirty, allow_dirty=allow_dirty)
     diff_hash = _diff_hash() if code_dirty else None
@@ -1790,7 +1828,7 @@ def _render_markdown(report: dict[str, Any]) -> str:
                 f"{pn['parameter_count_delta_vs_target_arm_b']:+d} |",
                 "",
                 "Neither row is a 'matched' claim on both dimensions at once -- "
-                "`block_evaluation_matched` is the `control_arm_table` \"F\" row "
+                '`block_evaluation_matched` is the `control_arm_table` "F" row '
                 "above; `parameter_nearest` is a separate construction reported "
                 "only here.",
                 "",
@@ -1942,9 +1980,7 @@ def _slm279_correction_report(report: dict[str, Any]) -> dict[str, Any]:
         "ship_gate_claim": False,
         "recipe": report["recipe"],
         "objective_decomposition": report["deep_supervision_metrics"],
-        "arithmetic_correction": report[
-            "depth_supervision_arithmetic_correction"
-        ],
+        "arithmetic_correction": report["depth_supervision_arithmetic_correction"],
         "evidence_gate": report["evidence_gate"],
         "provenance_hashes": report["provenance_hashes"],
         "source_fixture_run_id": report["run_id"],
@@ -2069,7 +2105,46 @@ def main(argv: list[str] | None = None) -> int:
         default=0,
         help="Base seed the RNG namespace contract derives all seeds from.",
     )
+    parser.add_argument(
+        "--seed-count",
+        type=int,
+        default=2,
+        help=(
+            "recurrence-health only: number of consecutive seeds starting at "
+            "--base-seed. The original SLM-282 audit used exactly 2 with a "
+            "fixed passed-seeds>=2 rule; --min-pass-rate is required for any "
+            "other count (a raw pass count is not a meaningful threshold at "
+            "arbitrary n)."
+        ),
+    )
+    parser.add_argument(
+        "--min-pass-rate",
+        type=float,
+        default=None,
+        help=(
+            "recurrence-health only: SLM-321-style powered-rerun mode. "
+            "Enables a Wilson-interval decision rule (see "
+            "slm_training.evals.power_protocol.wilson_interval) instead of "
+            "the fixed 2-seed rule: recursive_core_positive iff the interval "
+            "lower bound clears this rate, recursive_core_negative iff the "
+            "upper bound falls below it, else inconclusive_underpowered."
+        ),
+    )
+    parser.add_argument(
+        "--issue",
+        default="SLM-282",
+        help="recurrence-health only: issue id recorded in the report/title.",
+    )
     args = parser.parse_args(argv)
+    if (
+        args.mode == "recurrence-health"
+        and args.seed_count != 2
+        and args.min_pass_rate is None
+    ):
+        parser.error(
+            "--seed-count != 2 requires --min-pass-rate (a raw pass count is "
+            "not a meaningful threshold at arbitrary n)"
+        )
 
     default_run = (
         f"slm282-recurrence-health-{_today_slug()}"
@@ -2080,14 +2155,20 @@ def main(argv: list[str] | None = None) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if args.mode == "recurrence-health":
+        power_rule = (
+            None
+            if args.min_pass_rate is None
+            else {"min_pass_rate": args.min_pass_rate}
+        )
         report = _run_recurrence_health(
             output_dir=output_dir,
             base_seed=args.base_seed,
             allow_dirty=args.allow_dirty,
+            seed_count=args.seed_count,
+            power_rule=power_rule,
+            issue=args.issue,
         )
-        report_text = json.dumps(
-            report, indent=2, sort_keys=True, default=str
-        ) + "\n"
+        report_text = json.dumps(report, indent=2, sort_keys=True, default=str) + "\n"
         report_path = output_dir / "recurrence_health_report.json"
         report_path.write_text(report_text, encoding="utf-8")
         markdown = _render_recurrence_health_markdown(report)
@@ -2098,6 +2179,8 @@ def main(argv: list[str] | None = None) -> int:
         if gate["comparable"] or args.allow_dirty:
             design_stem = (
                 f"iter-slm282-recurrence-health-{_today_slug()}"
+                if power_rule is None
+                else f"iter-slm282-recurrence-health-powered-rerun-{_today_slug()}"
             )
             design_json = Path("docs/design") / f"{design_stem}.json"
             design_md = Path("docs/design") / f"{design_stem}.md"
@@ -2128,7 +2211,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\nReport JSON: {report_path}")
         return 0
 
-    design_json = Path(f"docs/design/iter-slm138-recursive-denoiser-{_today_slug()}.json")
+    design_json = Path(
+        f"docs/design/iter-slm138-recursive-denoiser-{_today_slug()}.json"
+    )
     design_md = Path(f"docs/design/iter-slm138-recursive-denoiser-{_today_slug()}.md")
 
     write_design_docs = True

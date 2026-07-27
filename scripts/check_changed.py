@@ -201,7 +201,8 @@ def select_tests(paths: list[str]) -> list[str]:
             # bounded Python-test budget on an unrelated full suite.
             continue
         if path.startswith("tests/") and path.endswith(".py"):
-            targets.add(path)
+            if (ROOT / path).is_file():
+                targets.add(path)
             continue
         if path == "src/slm_training/harnesses/model_build/ship_gates.py":
             targets.add("tests/test_harnesses/model_build/test_eval_gates.py")
@@ -230,7 +231,9 @@ def select_tests(paths: list[str]) -> list[str]:
 def select_changed_tests(paths: list[str]) -> list[str]:
     """Prefer explicit regression files for latency-bounded local hooks."""
     changed = {
-        path for path in paths if path.startswith("tests/") and path.endswith(".py")
+        path
+        for path in paths
+        if path.startswith("tests/") and path.endswith(".py") and (ROOT / path).is_file()
     }
     return sorted(changed) if changed else select_tests(paths)
 

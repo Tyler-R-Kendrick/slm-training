@@ -9,6 +9,7 @@ from slm_training.harness_core.scaling_fit import (
     CostKey,
     ScalingObservation,
     invert_loss,
+    observation_cost,
 )
 
 
@@ -18,13 +19,13 @@ def efficiency_gain(
     *,
     cost_key: CostKey = "time",
 ) -> float | None:
-    """EG_x = f_x^{-1}(L_candidate) / C_candidate."""
-    if cost_key == "time":
-        c = candidate.cost_time_s
-    elif cost_key == "flops":
-        c = candidate.cost_flops
-    else:
-        c = float(candidate.cost_nfe) if candidate.cost_nfe is not None else None
+    """EG_x = f_x^{-1}(L_candidate) / C_candidate.
+
+    ``cost_key="params"`` yields the size-normalized gain: EG_params <= 1 means
+    the candidate reached its loss by spending capacity the baseline curve
+    would have spent less of — a scaling purchase, not a capability gain.
+    """
+    c = observation_cost(candidate, cost_key)
     if c is None or c <= 0 or not math.isfinite(candidate.loss):
         return None
     baseline_cost = invert_loss(baseline_fit, candidate.loss)

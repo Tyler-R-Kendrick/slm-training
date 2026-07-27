@@ -159,6 +159,12 @@ from slm_training.dsl.operators.preference import (
     build_operator_preference_group,
     preference_cost,
 )
+from slm_training.dsl.operators.replay_preference import (
+    OperatorEventMemoryReportV1,
+    OperatorReplayPreferenceRowV1,
+    ReplayPreferenceRelation,
+    extract_replay_preference_rows,
+)
 from slm_training.dsl.operators.topology import (
     CONTRACT_SUBTREE,
     DUPLICATE_SUBTREE,
@@ -312,6 +318,7 @@ __all__ = [
     "OperatorAuthorityError",
     "OperatorConflictEdgeV1",
     "OperatorDependencyEdgeV1",
+    "OperatorEventMemoryReportV1",
     "OperatorLibraryV1",
     "OperatorLegalEntryV1",
     "OperatorLegalSetV1",
@@ -324,6 +331,7 @@ __all__ = [
     "OperatorRejectedError",
     "OperatorRejectionV1",
     "OperatorReplayError",
+    "OperatorReplayPreferenceRowV1",
     "OperatorStateV1",
     "OperatorSupportVerdict",
     "OperatorSequenceDiagnosticsV1",
@@ -352,6 +360,7 @@ __all__ = [
     "ReferenceResolutionError",
     "ReferenceTableBuilder",
     "ReferenceTableV1",
+    "ReplayPreferenceRelation",
     "RESERVED_OPERATOR_PREFIX",
     "RESERVED_OPERATOR_SUFFIX",
     "REPARENT_NODE",
@@ -428,6 +437,7 @@ __all__ = [
     "derive_turn_disposition",
     "deserialize_operator_action",
     "enumerate_operator_legal_set",
+    "extract_replay_preference_rows",
     "fork_conversation",
     "iter_operator_argument_tuples",
     "lower_map_set_property_to_primitives",

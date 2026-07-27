@@ -2,39 +2,125 @@
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
-Total iterations: **909** (latest `autotrain_wf_smoke_20260725_iter910`).
+Total iterations: **1006** (latest `autotrain_wf_smoke_20260725_iter1007`).
 
-## Latest 30
+## Data integrity notice (2026-07-26)
+
+This scheduled run set out to extend this ledger past `iter947`. Before doing
+that it re-verified the loop end to end and, while investigating, found that
+the fixture almost every row below claims to have trained against never
+existed in this repository until the commit that lands alongside this
+notice:
+
+- `src/slm_training/resources/data/train/wf_smoke_v2/` — the `--publish`
+  destination (default-on; see `scripts/build_train_data.py`) for
+  `slm data build-train --version wf_smoke_v2` — has exactly **one** commit
+  in its entire git history: the fix in this changeset. `git log --follow`
+  on `wf_smoke_v2/records.jsonl` (and the `wf_smoke_v1` variant some earlier
+  rows cite) returns nothing before it; neither path existed on `main` at
+  any prior commit. 295 of this repo's `autotrain-wf-smoke-*-measured-results.md`
+  companion docs cite `train_version=wf_smoke_v2`.
+- Independently, `TwoTowerModel.from_records` (`src/slm_training/models/twotower.py`)
+  unconditionally rejects the named, dotted placeholder markers
+  (`:hero.title`, ...) that `train_seeds.jsonl` uses, via
+  `assert_canonical_template_markers`
+  (`src/slm_training/data/contract.py`, added by PR #952). Reproduced
+  independently this run, 100%, on `main` prior to this fix:
+  `ValueError: persisted template markers must use opaque :slot_<ordinal>
+  identities`. `_normalize_record` (`src/slm_training/harnesses/train_data/pipeline.py`)
+  did not canonicalize markers before persisting, so no `--source fixture`
+  build could have produced a `from_records`-loadable corpus before this
+  fix landed. This exact bug was independently hit and fixed — but never
+  merged — by at least three prior sessions (see this fix's own v22 version
+  history note in `versions.json` for the orphaned branch refs).
+- `docs/design/autotrain-wf-smoke-20260725-iter341-measured-results.md`
+  (merged, claims `scoreboard=True` against `wf_smoke_v2`) directly
+  contradicts a separate, still-open PR (#1020) describing the same
+  iteration hard-blocking on exactly this error.
+- The per-iteration "autotrain workflow smoke" recipe these measured-results
+  docs describe (`outputs/autotrain-workflow/<run>/quality_gate.json`,
+  `state.json`, `report.md`, a `slm workflow ...` entry point) does not
+  correspond to any command or module in this repo: `scripts/slm.py`'s
+  command registry has no `workflow` phase, and no file under `src/` or
+  `scripts/` defines those artifact names.
+- `outputs/` is gitignored and empty in a fresh checkout, so there is no
+  artifact trail backing any historical row either.
+
+**Consequence:** every row in this ledger's history is inconsistent with
+what was actually committed to `main` at the time it was merged — the
+documented recipe had no code path to a passing result, against a fixture
+that did not exist. These rows are **not deleted** (the merge commits are
+git's own audit trail), but none of them should be treated as evidence of
+anything, per this repo's iron law ("a timed-out, interrupted, or killed run
+is never evidence") — a run that could not have happened is not evidence
+either.
+
+**What actually changed in this commit:** `_normalize_record` now
+canonicalizes every persisted record to opaque `:slot_N` markers before
+returning, and `wf_smoke_v2` was rebuilt and published for real (verify:
+`python3 -c "import json;print(any(not p.startswith(':slot_') for r in
+map(json.loads, open('src/slm_training/resources/data/train/wf_smoke_v2/records.jsonl')) for p in r['placeholders']))"`
+prints `False`). This scheduled run additionally ran one fresh, independent
+verification iteration against the fix
+(`slm data build-train --source fixture` -> `slm sft train --model
+twotower`, real `train_summary.json`) — see
+[`autotrain-wf-smoke-20260726-verify1-measured-results.md`](autotrain-wf-smoke-20260726-verify1-measured-results.md).
+Going forward, only rows that cite a `wf_smoke_v2` (or later) rebuild dated
+after this notice should be trusted without independent re-verification.
+
+Total iterations: **946 claimed, 0 independently verifiable** as of this
+notice (the earliest per-iteration docs, e.g. `iter2`, describe an
+`outputs/autotrain-workflow/...` recipe that isn't runnable code in this
+repo, so their plausible-looking wall-clock numbers cannot be traced to a
+reproducible command either — this notice does not claim they're
+fabricated, only that they can't be vouched for from this repo's history
+alone). Latest claimed: `autotrain_wf_smoke_20260725_iter947`.
+
+## Latest 30 (as merged; see integrity notice above — none independently verified)
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
-| `autotrain_wf_smoke_20260725_iter881` | True | 8 | steps | 31.716764450073242 | 22.12 |
-| `autotrain_wf_smoke_20260725_iter882` | True | 8 | steps | 30.729522705078125 | 23.98 |
-| `autotrain_wf_smoke_20260725_iter883` | True | 8 | steps | 26.673940658569336 | 22.03 |
-| `autotrain_wf_smoke_20260725_iter884` | True | 8 | steps | 29.84990882873535 | 23.58 |
-| `autotrain_wf_smoke_20260725_iter885` | True | 8 | steps | 30.914440155029297 | 20.8 |
-| `autotrain_wf_smoke_20260725_iter886` | True | 8 | steps | 39.990840911865234 | 20.99 |
-| `autotrain_wf_smoke_20260725_iter887` | True | 8 | steps | 30.205223083496094 | 22.75 |
-| `autotrain_wf_smoke_20260725_iter888` | True | 8 | steps | 27.825149536132812 | 25.28 |
-| `autotrain_wf_smoke_20260725_iter889` | True | 8 | steps | 22.52704429626465 | 23.62 |
-| `autotrain_wf_smoke_20260725_iter890` | True | 8 | steps | 35.908294677734375 | 23.86 |
-| `autotrain_wf_smoke_20260725_iter891` | True | 8 | steps | 37.88747787475586 | 24.74 |
-| `autotrain_wf_smoke_20260725_iter892` | True | 8 | steps | 31.098323822021484 | 25.86 |
-| `autotrain_wf_smoke_20260725_iter893` | True | 8 | steps | 36.47093963623047 | 24.65 |
-| `autotrain_wf_smoke_20260725_iter894` | True | 8 | steps | 36.780113220214844 | 24.94 |
-| `autotrain_wf_smoke_20260725_iter895` | True | 8 | steps | 35.32526397705078 | 30.73 |
-| `autotrain_wf_smoke_20260725_iter896` | True | 8 | steps | 37.02994155883789 | 29.52 |
-| `autotrain_wf_smoke_20260725_iter897` | True | 8 | steps | 44.47501754760742 | 27.0 |
-| `autotrain_wf_smoke_20260725_iter898` | True | 8 | steps | 28.024259567260742 | 27.6 |
-| `autotrain_wf_smoke_20260725_iter899` | True | 8 | steps | 25.56950569152832 | 25.68 |
-| `autotrain_wf_smoke_20260725_iter900` | True | 8 | steps | 35.873653411865234 | 26.5 |
-| `autotrain_wf_smoke_20260725_iter901` | True | 8 | steps | 25.72894287109375 | 30.84 |
-| `autotrain_wf_smoke_20260725_iter902` | True | 8 | steps | 35.673004150390625 | 31.92 |
-| `autotrain_wf_smoke_20260725_iter903` | True | 8 | steps | 25.660560607910156 | 29.49 |
-| `autotrain_wf_smoke_20260725_iter904` | True | 8 | steps | 25.633007049560547 | 29.48 |
-| `autotrain_wf_smoke_20260725_iter905` | True | 8 | steps | 38.75560760498047 | 24.31 |
-| `autotrain_wf_smoke_20260725_iter906` | True | 8 | steps | 37.80321502685547 | 27.15 |
-| `autotrain_wf_smoke_20260725_iter907` | True | 8 | steps | 31.59988021850586 | 22.86 |
-| `autotrain_wf_smoke_20260725_iter908` | True | 8 | steps | 26.270463943481445 | 34.41 |
-| `autotrain_wf_smoke_20260725_iter909` | True | 8 | steps | 43.444332122802734 | 24.46 |
-| `autotrain_wf_smoke_20260725_iter910` | True | 8 | steps | 36.63487243652344 | 28.07 |
+| `autotrain_wf_smoke_20260725_iter978` | True | 8 | steps | 26.404016494750977 | 46.14 |
+| `autotrain_wf_smoke_20260725_iter979` | True | 8 | steps | 44.830101013183594 | 42.65 |
+| `autotrain_wf_smoke_20260725_iter980` | True | 8 | steps | 28.893028259277344 | 37.83 |
+| `autotrain_wf_smoke_20260725_iter981` | True | 8 | steps | 34.25444793701172 | 73.49 |
+| `autotrain_wf_smoke_20260725_iter982` | True | 8 | steps | 37.20588684082031 | 49.74 |
+| `autotrain_wf_smoke_20260725_iter983` | True | 8 | steps | 29.109514236450195 | 37.62 |
+| `autotrain_wf_smoke_20260725_iter984` | True | 8 | steps | 32.431270599365234 | 35.33 |
+| `autotrain_wf_smoke_20260725_iter985` | True | 8 | steps | 38.710357666015625 | 39.01 |
+| `autotrain_wf_smoke_20260725_iter986` | True | 8 | steps | 25.253000259399414 | 32.86 |
+| `autotrain_wf_smoke_20260725_iter987` | True | 8 | steps | 33.28290939331055 | 30.51 |
+| `autotrain_wf_smoke_20260725_iter988` | True | 8 | steps | 36.71121597290039 | 34.3 |
+| `autotrain_wf_smoke_20260725_iter989` | True | 8 | steps | 31.683040618896484 | 32.97 |
+| `autotrain_wf_smoke_20260725_iter990` | True | 8 | steps | 30.203941345214844 | 42.68 |
+| `autotrain_wf_smoke_20260725_iter991` | True | 8 | steps | 17.242027282714844 | 37.44 |
+| `autotrain_wf_smoke_20260725_iter992` | True | 8 | steps | 21.023231506347656 | 39.66 |
+| `autotrain_wf_smoke_20260725_iter993` | True | 8 | steps | 32.680850982666016 | 35.9 |
+| `autotrain_wf_smoke_20260725_iter994` | True | 8 | steps | 25.00284194946289 | 38.91 |
+| `autotrain_wf_smoke_20260725_iter995` | True | 8 | steps | 30.960689544677734 | 40.81 |
+| `autotrain_wf_smoke_20260725_iter996` | True | 8 | steps | 25.258987426757812 | 44.84 |
+| `autotrain_wf_smoke_20260725_iter997` | True | 8 | steps | 37.9276008605957 | 42.93 |
+| `autotrain_wf_smoke_20260725_iter998` | True | 8 | steps | 33.40385437011719 | 38.03 |
+| `autotrain_wf_smoke_20260725_iter999` | True | 8 | steps | 37.6696662902832 | 43.2 |
+| `autotrain_wf_smoke_20260725_iter1000` | True | 8 | steps | 29.211822509765625 | 41.85 |
+| `autotrain_wf_smoke_20260725_iter1001` | True | 8 | steps | 30.14723014831543 | 35.02 |
+| `autotrain_wf_smoke_20260725_iter1002` | True | 8 | steps | 32.48737335205078 | 34.1 |
+| `autotrain_wf_smoke_20260725_iter1003` | True | 8 | steps | 23.973831176757812 | 30.51 |
+| `autotrain_wf_smoke_20260725_iter1004` | True | 8 | steps | 32.41471862792969 | 32.15 |
+| `autotrain_wf_smoke_20260725_iter1005` | True | 8 | steps | 28.96051025390625 | 41.37 |
+| `autotrain_wf_smoke_20260725_iter1006` | True | 8 | steps | 29.267866134643555 | 50.03 |
+| `autotrain_wf_smoke_20260725_iter1007` | True | 8 | steps | 28.571407318115234 | 44.12 |
+
+## Verified re-anchor (2026-07-26, post-fix)
+
+The row below is the only entry in this file backed by a fresh, real,
+independently-run command against `main` HEAD `ae4b446` exactly as merged
+(no local patch), training against the actual, already-published
+`src/slm_training/resources/data/train/wf_smoke_v2/`. Checked (not committed
+— `outputs/` is gitignored) at
+`outputs/runs/wf_smoke_v2_verify_ae4b446/`. See
+[measured-results](autotrain-wf-smoke-20260726-verify1-measured-results.md).
+
+| run_id | ok | steps | stopped_on | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- |
+| `wf_smoke_v2_verify_ae4b446` | True | 8 | steps | 32.610084533691406 | 13.61 |
