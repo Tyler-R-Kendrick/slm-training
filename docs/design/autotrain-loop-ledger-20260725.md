@@ -308,3 +308,31 @@ fixture entirely and pick up one of the repo's actually-open threads (the
 DSH5-10 SFT/preference-training and four-baseline comparison scope, or the
 next queued `AP-007+` campaign arm) — the smoke-loop's role as a harness
 liveness check is now well covered by the batches in this file.
+
+## Seed-rescue check: steps 30/36 → 72 (2026-07-27, scheduled autotrain-loop session)
+
+Acted on PR #1135's evidence-backed next step ("target seed brittleness:
+longer train wall ... not more smoke iters"): reran the six seeds from that
+campaign (42-47) at `--steps 72` (2x the champion) with the same
+ASAP+decode_timeout=30 recipe, against `main` HEAD `b799c19` (PR #1135,
+already merged). Full recipe, scoreboard, and an important eval-fixture
+confound caveat: [lever-seed-rescue-steps72-measured-results.md](lever-seed-rescue-steps72-measured-results.md).
+
+**Result:** all three seeds that hard-failed at steps=30 (43, 45, 46:
+`parse_rate=0`, `empty=3/3`) flip to `parse_rate=1.0`, `empty=0` at
+steps=72. Seed 44's eval was killed twice at the `MAX_RUN_MINUTES=3` wall
+(zero stdout either time) and is excluded — **not evidence**, per this
+file's own iron law, not backfilled. n=5 evidenced seeds, all successful.
+Still `fixture_or_scratch`; see the linked doc for the fixture-build
+confound that limits cross-PR magnitude comparisons.
+
+Environment: fresh `.venv-autotrain` (Python 3.12, `pip install -e
+".[dev,torch]"`) plus `npm ci` for the AgentV publish step — neither was
+pre-installed in this session's checkout.
+
+**Next steps:** diagnose the seed=44 eval hang (may be a real tail-latency
+failure mode, not just an unlucky wrapper timeout); commit a reusable
+version-controlled eval fixture for this smoke line so future sessions stop
+confounding "different recipe" with "different eval build"; otherwise move
+on to the DSH5-10 / `AP-007+` threads per the original note — this smoke
+line's role as a harness liveness + lever check is now well covered.
