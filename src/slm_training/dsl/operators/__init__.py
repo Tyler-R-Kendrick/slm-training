@@ -90,6 +90,14 @@ from slm_training.dsl.operators.control_actions import (
     deterministic_control_priority,
     enumerate_conversation_control_legal_set,
 )
+from slm_training.dsl.operators.turn_disposition import (
+    ScoreProvider,
+    TurnDispositionKind,
+    TurnDispositionV1,
+    append_answer_turn,
+    append_clarify_turn,
+    derive_turn_disposition,
+)
 from slm_training.dsl.operators.registry import (
     OperatorApplyResultV1,
     OperatorAuthorityError,
@@ -358,6 +366,7 @@ __all__ = [
     "ReservedOperatorDisposition",
     "ReservedOperatorTargetMode",
     "ReservedOperatorTokenConfigV1",
+    "ScoreProvider",
     "SelectorBuildResultV1",
     "SelectorBuildVerdict",
     "SelectorContextV1",
@@ -378,6 +387,8 @@ __all__ = [
     "TemplateRef",
     "TransactionReplayer",
     "TurnArtifactV1",
+    "TurnDispositionKind",
+    "TurnDispositionV1",
     "UNSET_PROPERTY",
     "UNWRAP_NODE",
     "ValueRef",
@@ -385,6 +396,8 @@ __all__ = [
     "branch_fingerprint",
     "branch_local_disambiguator",
     "ast_diff_paths",
+    "append_answer_turn",
+    "append_clarify_turn",
     "append_operator_transaction_turn",
     "append_operator_turn",
     "apply_reserved_operator_target",
@@ -412,6 +425,7 @@ __all__ = [
     "clone_reference_table_for_branch",
     "create_conversation_trace",
     "derive_read_write_set",
+    "derive_turn_disposition",
     "deserialize_operator_action",
     "enumerate_operator_legal_set",
     "fork_conversation",

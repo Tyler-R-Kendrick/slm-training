@@ -1,0 +1,45 @@
+{
+  "arms": {
+    "disposition_off": {
+      "abstention_count": 0,
+      "abstention_rate": 0.0,
+      "case_count": 200,
+      "composite_penalized_error_rate": 0.41625,
+      "schema": "cap2_disposition_score/v1",
+      "wrong_emit_penalty_ratio": 3.0,
+      "wrong_op_count": 111,
+      "wrong_op_rate": 0.555
+    },
+    "disposition_on": {
+      "abstention_count": 57,
+      "abstention_rate": 0.285,
+      "case_count": 200,
+      "composite_penalized_error_rate": 0.11249999999999999,
+      "schema": "cap2_disposition_score/v1",
+      "wrong_emit_penalty_ratio": 3.0,
+      "wrong_op_count": 11,
+      "wrong_op_rate": 0.055
+    }
+  },
+  "case_count": 200,
+  "claim_class": "capability",
+  "clarify_margin_threshold": 0.5,
+  "clarify_top_k": 3,
+  "honesty": "fixture_or_scratch",
+  "schema": "var3_02_turn_disposition_fixture/v1",
+  "seed": 430,
+  "version_stamp": {
+    "code_commit": "f9c4ad1fecdcf151c24fcb24456af7fd8a8da2b6",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v24",
+      "dsl.operators.conversation": "v5",
+      "dsl.operators.turn_disposition": "v1",
+      "evals.cap2_operator": "v3",
+      "model.turn_disposition_head": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-27T00:05:32.918920+00:00"
+  },
+  "wrong_emit_penalty_ratio": 3.0
+}

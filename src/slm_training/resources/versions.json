@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-26",
+          "note": "SLM-430 (VAR3-02): register TURN_DISPOSITION_CLARIFY_MARGIN_THRESHOLD (0.5, conservative/more-clarify default), TURN_DISPOSITION_CLARIFY_TOP_K (3), and TURN_DISPOSITION_WRONG_EMIT_PENALTY_RATIO (3.0) for the REPL variant's turn-disposition head"
+        },
         {
           "version": "v23",
           "date": "2026-07-25",
@@ -399,6 +404,11 @@
         {
           "version": "v15",
           "date": "2026-07-26",
+          "note": "no-bump: SLM-430 (VAR3-02) re-exports ScoreProvider/TurnDispositionKind/TurnDispositionV1/append_answer_turn/append_clarify_turn/derive_turn_disposition from operators/__init__.py (new dsl.operators.turn_disposition component); no change to contracts.py itself"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-26",
           "note": "no-bump: SLM-416 (DSH5-08) re-exports ConversationControlDecision/ConversationControlEntryV1/ConversationControlKind/ConversationControlLegalSetV1/ConversationControlPolicyReportV1/ConversationControlResultV1/ControlSupportVerdict/LegalControlActionV1/MergeCandidateV1/apply_conversation_control_action/deterministic_control_priority/enumerate_conversation_control_legal_set from operators/__init__.py (new dsl.operators.control_actions component); no change to contracts.py itself"
         },
         {
@@ -514,13 +524,18 @@
       ]
     },
     "dsl.operators.conversation": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/conversation.py",
         "tests/test_dsl/test_operator_conversation.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "VAR3-02 (SLM-430): add optional disposition/disposition_candidates fields to TurnArtifactV1 (descriptive only, never consulted by replay) and thread disposition through append_operator_turn/append_operator_transaction_turn/copy_conversation_state so a clarify or answer turn is part of conversation history and round-trips through replay_conversation_trace exactly"
+        },
         {
           "version": "v4",
           "date": "2026-07-25",
@@ -633,6 +648,37 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "SLM-416 (DSH5-08): define ConversationControlActionV1 as a candidate space disjoint from AstOperatorV1 (STOP/CONTINUE, UNDO, REDO, CHECKOUT, FORK, MERGE_BRANCHES); enumerate legal control actions from the ConversationTraceV1 branch graph alone (plus caller-proposed MergeCandidateV1 triples resolved through the existing merge.py/sequence_merge.py functions), execute every legal action through the existing conversation/merge functions with no new mutation logic, and add a deterministic-priority baseline arm plus ConversationControlPolicyReportV1 reusing flow.termination's brier_score/expected_calibration_error"
+        }
+      ]
+    },
+    "dsl.operators.turn_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/turn_disposition.py",
+        "tests/test_dsl/test_turn_disposition.py",
+        "docs/design/var3-02-turn-disposition-20260726.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-430 (VAR3-02): TurnDispositionKind (out_of_scope/clarify/answer/emit) and derive_turn_disposition in strict I1 precedence order -- out_of_scope derived from an empty accepted legal set alone (score_provider never consulted), a corpus-derived is_state_query flag for answer, COMPLETE-coverage singleton bypass for emit, and a registered margin threshold (levers.TURN_DISPOSITION_CLARIFY_MARGIN_THRESHOLD) for clarify vs. scored emit; append_clarify_turn/append_answer_turn record both as self-referential COPY_STATE turns"
+        }
+      ]
+    },
+    "model.turn_disposition_head": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/turn_disposition_head.py",
+        "tests/test_models/test_turn_disposition_head.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-430 (VAR3-02): three-way (answer/clarify/emit -- out_of_scope structurally excluded) disposition classifier loss and TurnDispositionReportV1, mirroring models/operator_termination.py's shape and reusing flow.termination's brier_score/expected_calibration_error"
         }
       ]
     },
@@ -1098,17 +1144,24 @@
       ]
     },
     "evals.cap2_operator": {
-      "version": "v2",
+      "version": "v3",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/cap2_operator.py",
         "src/slm_training/resources/evals/cap2_operator_v1.json",
         "src/slm_training/resources/evals/cap2_operator_v2.json",
         "scripts/run_cap2_operator_eval_fixture.py",
+        "scripts/run_var3_02_turn_disposition_fixture.py",
         "tests/test_evals/test_cap2_operator.py",
+        "tests/test_evals/test_cap2_operator_turn_disposition.py",
         "tests/test_scripts/test_run_cap2_operator_eval_fixture.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-430 (VAR3-02): add score_disposition_predictions reporting wrong_op_rate and abstention_rate separately plus a composite_penalized_error_rate weighted by the registered levers.TURN_DISPOSITION_WRONG_EMIT_PENALTY_RATIO (a wrong emit costs 3x one clarify abstention); no change to the existing frozen-suite scoring path"
+        },
         {
           "version": "v2",
           "date": "2026-07-26",
