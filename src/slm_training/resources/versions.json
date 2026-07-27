@@ -1076,13 +1076,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) fifth slice: add pronoun_focus_followup, the last of the issue's seven named patterns, as a new branch inside extract_replay_preference_rows's existing turn-pair scan (a second consecutive AST_EDIT turn). Focus is never a transcript pronoun or semantic descriptor -- it is _touched_refs, the exact OperatorRef values the immediately preceding AST_EDIT turn's own verified OperatorApplicationV1.arguments bound. The pair is classified pronoun_focus_followup only when that focus set is non-empty, the following edit's own bound arguments intersect it, and the exact legal set at the shared decision state contains a sibling -- another legal action for the same operator whose bound refs do not overlap the focus set, i.e. a genuinely available equally-legal switch the user did not take. Switching to a different, legal, explicit reference (no focus overlap) is honestly left unrowed rather than asserted a correction. Coverage now 7 of 7 named extraction patterns; only the issue's SFT/preference training, four-baseline comparison, held-out benefit measurement, and turn-depth/context-view ablations remain"
+        },
         {
           "version": "v5",
           "date": "2026-07-27",
@@ -10842,6 +10847,11 @@
         "docs/design/dsh5-12-advanced-operator-disposition-20260727-local/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "no-bump: correct the hardcoded SLM-418/DSH5-10 evidence string again (dsl.operators.replay_preference is now on its own v6, with pronoun-focus-followup completing coverage to 7 of 7 named patterns; only the issue's SFT/preference training, four-baseline comparison, held-out benefit measurement, and turn-depth/context-view ablations remain) so a freshly-generated disposition would not understate already-landed replay-preference-row coverage; no change to disposition logic, schema, or the already-published dsh5-12-*-20260727-local snapshot, which stays immutable point-in-time evidence"
+        },
         {
           "version": "v2",
           "date": "2026-07-27",

@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (fourth increment).
+**Status:** partial slice, in progress (fifth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -13,11 +13,13 @@ SFT/preference training against four context-view baselines, and (4)
 held-out measurement of action/operator/argument/reference/branch accuracy,
 calibration, and CAP0/CAP1/CAP2 retention.
 
-This slice adds the sixth pattern, **merge-success**, plus an explicit,
-tested disposition for **merge-conflict** (the pattern's other named half):
-conflict is honestly *not* modeled as a preference row (see "Fourth slice
-(v5)" below for why). Only **pronoun/focus follow-ups** remain fully
-unattempted after this PR.
+This slice adds the seventh and final named pattern, **pronoun-focus-
+followup** (see "Fifth slice (v6)" below), bringing extraction coverage to
+7 of 7. All seven named patterns from the issue's own list now extract and
+replay-verify. What remains is the issue's separate, still fully unattempted
+training/measurement scope: SFT/preference training against the
+DSH3-selected policy/control heads, the four-baseline comparison, held-out
+benefit measurement, and turn-depth/context-view ablations.
 
 ## What this PR delivers
 
@@ -99,12 +101,6 @@ unattempted after this PR.
 
 Per the issue's own scope, not attempted here:
 
-* **Pronoun/focus follow-ups** -- the one remaining named pattern. No
-  representation for ambiguous natural-language reference resolution (e.g.
-  "it"/"that one") exists anywhere in `ConversationTraceV1`,
-  `ReferenceTableV1`, or the legal-set machinery this module builds on; this
-  is new machinery, not an extraction path over an existing primitive, and
-  is left for follow-on work.
 * **Merge conflict as a preference row.** Deliberately not attempted --
   see "Fourth slice (v5)" for the honesty argument. This is a considered
   scope decision, not an oversight: modeling it would require inventing a
@@ -129,11 +125,10 @@ evidence for the row-extraction primitive only.
 Unlike SLM-336 (AP-035) or SLM-419 (DSH5-11), SLM-418's own prerequisites
 (DSH3 policy/control heads, the conversation/collapse/legal-set substrate)
 are already merged and available -- there is no unmet upstream gate here.
-The remaining scope is genuinely large (a new pronoun/focus representation,
-plus training + held-out evaluation across a five-baseline, multi-metric
-matrix) and is left for follow-on work rather than rushed to a false "Done."
-The issue should stay open against the pattern and training/evaluation work
-enumerated above.
+The remaining scope is genuinely large (training + held-out evaluation
+across a five-baseline, multi-metric matrix) and is left for follow-on work
+rather than rushed to a false "Done." The issue should stay open against the
+training/evaluation work enumerated above.
 
 ## Review fixes (v2)
 
@@ -245,12 +240,58 @@ enumerated above.
   snapshot is untouched, staying immutable point-in-time evidence from
   before this slice landed.
 
+## Fifth slice (v6)
+
+* Added `pronoun_focus_followup` to `ReplayPreferenceRelation` -- the last
+  of the issue's seven named patterns. Unlike merge-success, this **is**
+  another branch inside `extract_replay_preference_rows`'s existing
+  turn-pair scan loop: a second consecutive `AST_EDIT` turn.
+* **Focus**, the module's only concept for it, is never a transcript
+  pronoun or a semantic descriptor: it is `_touched_refs`, the exact
+  `OperatorRef` values the *immediately preceding* `AST_EDIT` turn's own
+  verified `OperatorApplicationV1.arguments` bound. A pair of consecutive
+  edits is classified `PRONOUN_FOCUS_FOLLOWUP` only when (1) that focus set
+  is non-empty (a zero-argument operator, like the base fixture every other
+  pattern in this module uses, never establishes one), (2) the following
+  edit's own bound arguments intersect it (the user kept operating on a ref
+  they had just touched), and (3) the exact legal set at the shared decision
+  state (`enumerate_operator_legal_set`, matched to the following turn's
+  recorded application by `operator_fingerprint` and bound `arguments`)
+  contains a **sibling**: another legal action for the *same operator* whose
+  own bound refs do **not** overlap the focus set -- a genuinely available,
+  equally legal "switch to something else" the user did not take. Without a
+  real sibling candidate, no row is emitted, matching every other pattern's
+  convention that undo/redo/checkout/continued-focus is never asserted
+  preferred by default.
+* This directly answers the issue's own "ambiguous sibling" and "pronoun
+  focus" matrix rows: the pattern only ever fires when a second, disjoint
+  legal target genuinely existed at that state, and the row records that
+  the user's implicit "it" continuation was chosen over it.
+* Deliberately does **not** attempt: switching to an explicit, different,
+  legal reference (the issue's "exact named reference" matrix case) is
+  honestly left unrowed rather than asserted a correction -- there is no
+  "user was wrong" signal to record when they simply named something else.
+  Multi-argument operators, transaction-commit turns, and any true
+  natural-language pronoun/reference-resolution machinery over
+  `ReferenceTableV1` remain out of scope; this slice is DAG-argument-set
+  overlap only, exactly as adversarial control requires ("text history
+  cannot reconstruct a different state than the DAG").
+* `dsl.operators.replay_preference` bumped v5 -> v6 in
+  `src/slm_training/resources/versions.json`.
+* Corrected the hardcoded SLM-418 evidence string in
+  `src/slm_training/evals/advanced_operator_disposition.py` (previously "6
+  of 7"; now "7 of 7", with the remaining-gap claim narrowed from "1 of 7
+  (pronoun/focus)" to the issue's training/measurement scope only) via a
+  `no-bump:` history note on `evals.advanced_operator_disposition` -- no
+  disposition logic or schema changed, and the already-published
+  `docs/design/dsh5-12-advanced-operator-disposition-20260727-local/`
+  snapshot is untouched, staying immutable point-in-time evidence from
+  before this slice landed.
+
 ## Reproducibility
 
 ```bash
 NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
 ```
 
-Result (this PR, sandboxed run with `NODE_OPTIONS` cleared -- the ambient
-`--import tsx` flag is rejected by this Node 22 build, unrelated to this
-change): `57 passed`.
+Result (this PR, real run in a fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gates the pack authority requires; the ambient `--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build both for `npm ci` and for `pytest`, unrelated to this change): `61 passed`. Also verified: `ruff check` clean on every changed file; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-v82ph9` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean.
