@@ -1,0 +1,111 @@
+{
+  "lever": "max_records_per_parent_exposure",
+  "hypothesis": "Raising max_records_per_parent 6\u219212 admits abstraction_ladder (yield 0\u21921) and lifts meaningful_program on smoke under champion recipe.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "suite": "smoke",
+  "eval_limit": 3,
+  "recipe": {
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true,
+    "asap_decode": true
+  },
+  "build_comparison": {
+    "cap6": {
+      "version": "lever_fixture_v1",
+      "abstraction_ladder": {
+        "admitted": 0,
+        "rejected": 5,
+        "by_stage": {
+          "exposure": 5
+        },
+        "by_reason": {
+          "max_records_per_parent": 5
+        },
+        "candidates": 5,
+        "yield": 0.0
+      },
+      "n": 101
+    },
+    "cap12": {
+      "version": "lever_exposure12_v1",
+      "abstraction_ladder": {
+        "admitted": 5,
+        "rejected": 0,
+        "by_stage": {},
+        "by_reason": {},
+        "candidates": 5,
+        "yield": 1.0
+      },
+      "n": 107
+    }
+  },
+  "rows": [
+    {
+      "arm": "wf_smoke_v2_default",
+      "max_records_per_parent": null,
+      "run_id": "exp_lever_sb15_s16_lr1e3_bs2_seed47",
+      "last_loss": 7.451866626739502,
+      "steps": 16,
+      "stopped_on": "steps",
+      "train_dir": "outputs/data/train/wf_smoke_v2",
+      "record_count": 103,
+      "data_manifest_sha": "146f74173a853dd3a5ea75c02175b3fc6e731e2e6b6b4e5f72977103345998e4",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 1469.53
+    },
+    {
+      "arm": "lever_fixture_v1_cap6",
+      "max_records_per_parent": 6,
+      "run_id": "exp_lever_data_fixturev1_s16_lr1e3_bs2_sb15_seed47",
+      "last_loss": 12.850366592407227,
+      "steps": 16,
+      "stopped_on": "steps",
+      "train_dir": "outputs/data/train/lever_fixture_v1",
+      "record_count": 101,
+      "data_manifest_sha": "fb320850f701ffe76170d2f26e570f1103d7815c7ea2186da846c6d185f21d10",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.48100000000000004,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30016.3
+    },
+    {
+      "arm": "lever_exposure12_v1_cap12",
+      "max_records_per_parent": 12,
+      "run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47",
+      "last_loss": 7.188694000244141,
+      "steps": 16,
+      "stopped_on": "steps",
+      "train_dir": "outputs/data/train/lever_exposure12_v1",
+      "record_count": 107,
+      "data_manifest_sha": "a237ab395401cbdfaa8fc2fdb459c793bddf3f0bee2047fb7bee3561882e848a",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8523333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30011.11
+    }
+  ],
+  "decision": "accept",
+  "decision_reason": "exposure12 (ladder admitted) lifted meaningful without parse regression vs wf_smoke_v2",
+  "captured_at": "2026-07-27T16:28:06.513589+00:00"
+}
