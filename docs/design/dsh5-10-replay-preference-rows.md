@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (seventh increment).
+**Status:** partial slice, in progress (eighth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -17,16 +17,19 @@ The fifth slice added the seventh and final named pattern, bringing
 extraction coverage to 7 of 7 (see "Fifth slice (v6)" below). The sixth
 slice added the first (and, until then, entirely missing) converter from an
 extracted row to the `PreferencePair` shape `scripts/train_preference.py`
-actually consumes, but still did not run any training. This slice runs the
-first real (`fixture_or_scratch`) end-to-end pass: a scratch SFT checkpoint,
-a demo replay-preference pairs corpus, and one bounded
-`scripts/train_preference.py train` call against it -- see "Seventh slice"
-below. This is still not the issue's actual training/measurement claim:
-what remains is a *real* pairs corpus (no captured conversation-trace data
-exists anywhere in this repo -- see below), training against the
-DSH3-selected policy/control heads specifically (not the generic TwoTower
-pair format used here), the four-baseline comparison, held-out benefit
-measurement, and turn-depth/context-view ablations.
+actually consumes. The seventh slice ran the first real
+(`fixture_or_scratch`) end-to-end pass: a scratch SFT checkpoint, a demo
+replay-preference pairs corpus covering 3 of the 7 named patterns, and one
+bounded `scripts/train_preference.py train` call against it. This slice
+extends the demo corpus to a fourth pattern, `merge_success` -- the one
+pattern the seventh slice's trace-scan corpus could not reach -- and reruns
+the same training chain against the now-richer 3-pair corpus; see "Eighth
+slice" below. This is still not the issue's actual training/measurement
+claim: what remains is a *real* pairs corpus (no captured
+conversation-trace data exists anywhere in this repo -- see below),
+training against the DSH3-selected policy/control heads specifically (not
+the generic TwoTower pair format used here), the four-baseline comparison,
+held-out benefit measurement, and turn-depth/context-view ablations.
 
 ## What this PR delivers
 
@@ -421,6 +424,52 @@ training/evaluation work enumerated above.
   `src/slm_training/resources/versions.json` (adds the new script + test to
   its watched paths).
 
+## Eighth slice
+
+* Adds `build_demo_merge_scenario` to `scripts/build_replay_preference_pairs.py`:
+  a second scratch fixture -- two branches forked from a shared base editing
+  disjoint node refs (title vs body) -- mirroring the exact disjoint-target
+  shape `tests/test_dsl/test_operator_merge.py` already verifies merges
+  cleanly, replayably, and order-invariantly. This reaches `merge_success`,
+  the one named pattern the seventh slice's single-trace corpus structurally
+  cannot: `extract_merge_preference_row` never operates on a shared
+  `ConversationTraceV1` (see the sixth slice's `merge_node_resolver`), so it
+  needs its own two-branch construction rather than another turn in the
+  same trace.
+* `main()` now combines both sources into one report and one `pairs.jsonl`:
+  4 rows total (3 from the trace-scan corpus + 1 `merge_success`), 3 render.
+  `undo_then_redo` is still the only drop, for the same structural reason
+  the seventh slice documented (never a bug to fix on this fixture family).
+* Reran the full training chain against the now-richer corpus:
+  ```bash
+  python -m scripts.train_model --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+    --model twotower --context-backend scratch --steps 8 \
+    --run-id replay_pref_sft_ckpt2 --no-sync-checkpoints --device cpu --seed 0
+  python -m scripts.build_replay_preference_pairs \
+    --out outputs/data/preference/replay_demo_pairs_v2.jsonl
+  python -m scripts.train_preference train \
+    --checkpoint outputs/runs/replay_pref_sft_ckpt2/checkpoints/last.pt \
+    --pairs outputs/data/preference/replay_demo_pairs_v2.jsonl \
+    --out-dir outputs/runs/replay_pref_dpo2 --steps 9 --device cpu
+  ```
+  SFT step: `last_loss=32.610084533691406` again -- the same deterministic
+  artifact every prior `wf_smoke_v2`/seed-0/8-step row in the smoke-loop
+  ledger reproduces. Preference step, now over 3 pairs instead of 2:
+  `{"steps": 9, "last_loss": 0.5314897894859314, "mean_loss":
+  0.7201318964362144, "n_pairs": 3, "reference_free": true}`
+  (`outputs/runs/replay_pref_dpo2/preference_summary.json`, not committed).
+  Both commands again well under `MAX_RUN_MINUTES=3`.
+* **Still not a training or held-out-benefit claim** -- `n_pairs=3` on a
+  scratch fixture is a larger, more structurally diverse smoke corpus (now
+  covering 4 of the 7 named patterns instead of 3), not evidence the signal
+  helps the model or generalizes. The three remaining un-exercised-in-a-script
+  patterns (`partial_rollback`, `fork_then_choose_one_branch`, and
+  `pronoun_focus_followup`) are left for a future slice rather than piling
+  more scratch fixtures onto this one; see the doc's still-open
+  training/measurement scope above.
+* `harness.preference.replay_pairs` bumped `v2` -> `v3` in
+  `src/slm_training/resources/versions.json`.
+
 ## Reproducibility
 
 ```bash
@@ -431,4 +480,6 @@ Result (fifth-slice PR, real run in a fresh `.venv` -- Python 3.12, `pip install
 
 Result (sixth-slice PR #1124, real run in a fresh `.venv-dsh510` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `env -u NODE_OPTIONS npm ci` in `src/apps/openui_bridge` -- the ambient `NODE_OPTIONS="--import tsx" --max-old-space-size=8192` is rejected outright by Node for both `npm ci` and `pytest` in this environment, so it has to be unset, not just locally overridden, unlike the fifth slice's note above): `69 passed` against `main` HEAD `5f94b92` (includes the fifth slice, already merged). Also verified: `ruff check` clean on both new files; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. No training run in this slice; `outputs/` untouched.
 
-Result (this PR, seventh slice, real run in a fresh `.venv-dsh510`, same environment recipe as the sixth slice above, stacked on top of PR #1124 which was still unmerged when this slice started): `71 passed` (69 from the sixth slice + 2 new). Also verified: `ruff check` clean on both new files; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`. Plus the real training run described above (SFT checkpoint + demo pairs + preference-training pass, both commands well under `MAX_RUN_MINUTES=3`); its `outputs/runs/replay_pref_sft_ckpt/` and `outputs/runs/replay_pref_dpo/` are not committed (`outputs/` is gitignored) per this repo's checked-not-committed convention for scratch run artifacts.
+Result (seventh-slice PR #1125, real run in a fresh `.venv-dsh510`, same environment recipe as the sixth slice above, stacked on top of PR #1124 which was still unmerged when this slice started): `71 passed` (69 from the sixth slice + 2 new). Also verified: `ruff check` clean on both new files; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`. Plus the real training run described above (SFT checkpoint + demo pairs + preference-training pass, both commands well under `MAX_RUN_MINUTES=3`); its `outputs/runs/replay_pref_sft_ckpt/` and `outputs/runs/replay_pref_dpo/` are not committed (`outputs/` is gitignored) per this repo's checked-not-committed convention for scratch run artifacts.
+
+Result (this PR, eighth slice, real run in a fresh `.venv-dsh510`, same environment recipe as above, stacked on top of PR #1125 which was still unmerged when this slice started): `72 passed` (71 from the seventh slice + 1 new). Also verified: `ruff check` clean; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. Plus the reran training chain described above; `outputs/runs/replay_pref_sft_ckpt2/` and `outputs/runs/replay_pref_dpo2/` are not committed (`outputs/` is gitignored).

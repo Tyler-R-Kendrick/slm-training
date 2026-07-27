@@ -7942,7 +7942,7 @@
       ]
     },
     "harness.preference.replay_pairs": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_pairs.py",
@@ -7951,6 +7951,11 @@
         "tests/test_scripts/test_build_replay_preference_pairs.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) eighth slice: adds build_demo_merge_scenario, a second scratch fixture (two branches with disjoint-target edits, mirroring tests/test_dsl/test_operator_merge.py's own verified-mergeable shape) covering merge_success -- the one named pattern the original build_demo_trace could not reach, since extract_merge_preference_row never operates on a shared ConversationTraceV1. main() now combines both sources: 4 rows (3 from the trace + 1 merge), 3 render (still only undo_then_redo drops, for the structural reason documented in the seventh slice), 1 combined pairs.jsonl. No change to the sixth slice's renderer itself"
+        },
         {
           "version": "v2",
           "date": "2026-07-27",
