@@ -1,0 +1,53 @@
+{
+  "lever": "structural_bias_on_exposure12",
+  "hypothesis": "Re-tune structural_bias on exposure12 quality champ to recover latency without losing meaningful 0.67.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "rows": [
+    {
+      "structural_bias": 1.25,
+      "run_id": "exp_lever_exp12_sb125_s16_lr1e3_bs2_seed47",
+      "last_loss": 7.188694000244141,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30007.61
+    },
+    {
+      "structural_bias": 1.5,
+      "run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47",
+      "last_loss": 7.188694000244141,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8523333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30011.11
+    },
+    {
+      "structural_bias": 2.0,
+      "run_id": "exp_lever_exp12_sb20_s16_lr1e3_bs2_seed47",
+      "last_loss": 7.188694000244141,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30009.77
+    }
+  ],
+  "decision": "reject",
+  "decision_reason": "no structural_bias on exposure12 beats sb=1.5 latency without quality loss; sb=1.25 meanful=0.3333333333333333; sb=2.0 meanful=0.3333333333333333",
+  "captured_at": "2026-07-27T16:45:27.311454+00:00",
+  "recipe": {
+    "train_dir": "lever_exposure12_v1",
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "seed": 47,
+    "asap": true,
+    "t30": true
+  }
+}
