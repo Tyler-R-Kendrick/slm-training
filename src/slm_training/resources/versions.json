@@ -636,7 +636,7 @@
       ]
     },
     "dsl.operators.control_actions": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/control_actions.py",
@@ -644,6 +644,11 @@
         "docs/design/dsh5-08-conversation-control-actions.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "fix python-static CI failure -- importing flow.termination.brier_score/expected_calibration_error transitively pulled in numpy via flow.reference.generator, violating the numpy-free dsl/operators/ invariant; replaced with local _brier_score/_expected_calibration_error duplicating the same formulas (regression test: test_control_actions_module_does_not_import_flow_termination), reverted the CI workaround that had installed numpy into the python-static lane instead of fixing the root cause, and made ConversationControlPolicyReportV1.from_predictions raise ValueError on mismatched predicted/expected-actions or stop_probabilities/stop_targets lengths instead of silently truncating via zip"
+        },
         {
           "version": "v2",
           "date": "2026-07-26",

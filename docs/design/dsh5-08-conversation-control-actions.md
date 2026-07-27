@@ -154,18 +154,21 @@ future learned arm does.
 `ConversationControlPolicyReportV1` mirrors
 `models.operator_termination.OperatorTerminationReportV1`'s shape exactly
 (command/argument accuracy in place of that report's action-only accuracy,
-plus `stop_brier`/`stop_ece`/`premature_stop_rate`/`late_stop_rate`) and
-**reuses** `flow.termination.brier_score`/`expected_calibration_error`
-rather than reimplementing calibration math — the same helpers
-`operator_termination.py` already uses. This keeps the whole
-`control_actions.py` module torch-free (no dependency on
-`models/operator_termination.py`'s torch-based loss functions), consistent
-with `dsl/operators/`'s existing torch-free convention.
+plus `stop_brier`/`stop_ece`/`premature_stop_rate`/`late_stop_rate`). Its
+calibration math (`_brier_score`/`_expected_calibration_error`) duplicates
+`flow.termination.brier_score`/`expected_calibration_error`'s formulas
+locally rather than importing them: that module also imports
+`flow.reference.generator`, which depends on `numpy`, and every
+`dsl/operators/` module — including this one — must stay importable
+without `numpy`/`torch` for the numpy-free `python-static` CI lane.
+`test_control_actions_module_does_not_import_flow_termination` guards the
+regression. This keeps the whole `control_actions.py` module numpy/torch-free,
+consistent with `dsl/operators/`'s existing convention.
 
 ## Coverage and what's excluded
 
 **Covered, proven by `tests/test_dsl/test_conversation_control_actions.py`
-(10 tests):**
+(12 tests):**
 
 * Root-trace legal set: only `STOP`/`FORK` legal; `UNDO`/`REDO`/`CHECKOUT`
   each report their typed rejection reason; `MERGE_BRANCHES` reports
@@ -186,8 +189,10 @@ with `dsl/operators/`'s existing torch-free convention.
   `MERGE_BRANCHES` without a candidate).
 * `deterministic_control_priority`'s forced/abstain bypass and fixed
   ordering, at two different trace positions.
-* `ConversationControlPolicyReportV1.from_predictions` reuses the
-  calibration helpers correctly against a small synthetic prediction set.
+* `ConversationControlPolicyReportV1.from_predictions` computes calibration
+  correctly against a small synthetic prediction set, rejects mismatched
+  input lengths instead of silently truncating via `zip`, and the module
+  never re-acquires the numpy-pulling `flow.termination` import.
 
 **Deliberately excluded (not a stop-rule trigger):**
 
