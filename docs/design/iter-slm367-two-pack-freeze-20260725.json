@@ -1,0 +1,94 @@
+{
+  "schema_version": "cap1_two_pack_freeze/v1",
+  "issue": "SLM-367",
+  "milestone": "DSH2 M2 - Paraphrase synthesis and ambiguity control",
+  "date": "2026-07-25",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "implementation": "dsl/mini_pack.py (build_mini_pack/completeness_report/require_complete_for_generic_claim) / harnesses/train_data/cap1_two_pack_freeze.py (build_cap1_two_pack_suite/verify_suite_integrity/freeze_suite/score_schema_sensitivity/adjudicate_suite/evaluate_gates)",
+  "depends_on": [
+    "SLM-363",
+    "SLM-364",
+    "SLM-365",
+    "SLM-366"
+  ],
+  "packs": {
+    "openui": {
+      "kind": "production pack",
+      "families": 2
+    },
+    "mini-flow": {
+      "kind": "test-only generic pack (no OpenUI import; static import audit in tests)",
+      "families": 2,
+      "completeness": "require_complete_for_generic_claim (fail-closed, DSH1-01-style)"
+    }
+  },
+  "strata": [
+    "original",
+    "schema_empty",
+    "schema_contradictory",
+    "schema_reordered",
+    "schema_irrelevant",
+    "marker_permutation",
+    "paraphrase",
+    "counterfactual",
+    "ambiguity",
+    "cap0_retention"
+  ],
+  "controls": {
+    "disjoint_root_families": true,
+    "immutable_rows": "sha256 per row + tamper-evident manifest + suite cards with generation/adjudication provenance",
+    "freeze": "create-once cap1_two_pack_suite.json (FileExistsError on divergent rewrite)",
+    "ambiguity": "no SLM-344 accepted-set evidence in-repo; accepted sets are local fixture evidence, exclusions are recorded with reasons",
+    "stop_rule": "incomplete second pack cannot support a generic claim (PackIncompleteError)"
+  },
+  "fixture_results": {
+    "rows": 41,
+    "suite_sha256": "64af4c8193f8d9dbb69e87bda83fb44b77ffd1d5af66f46d8f968a2f69851a4f",
+    "integrity": {
+      "ok": true,
+      "checked_rows": 41
+    },
+    "schema_sensitivity": {
+      "relevant_sensitivity": 1.0,
+      "invariant_rate": 1.0,
+      "passed": true
+    },
+    "canonical_accuracy": 0.8,
+    "facts_accuracy": 1.0,
+    "prompt_invariance_rate": 1.0,
+    "determinacy": {
+      "determinate_rows": 36,
+      "single_target_rows": 36,
+      "accepted_set_rows": 4,
+      "excluded_rows": 1,
+      "exclusion_reasons": [
+        "prompt underdetermines the component choice beyond fixture evidence; no SLM-344 accepted-set license \u2014 excluded from scoring"
+      ],
+      "calibrated": true
+    },
+    "cap0_retention": {
+      "rows": 4,
+      "rows_per_pack": {
+        "openui": 2,
+        "mini-flow": 2
+      },
+      "retained": 4,
+      "accuracy": 1.0
+    },
+    "gates": {
+      "passed": true,
+      "failures": []
+    }
+  },
+  "tests": "tests/test_dsl/test_mini_pack.py (12) + tests/test_harnesses/train_data/test_cap1_two_pack_freeze.py (23): completeness conformance + fail-closed incomplete pack (stop rule), no-OpenUI import audit, disjoint root families, all strata, relevant-vs-irrelevant perturbation behavior incl. tolerance, ambiguity accepted-set-or-excluded recording, immutable integrity + tamper fail-closed, create-once freeze, CAP0 retention mandatory, determinacy calibration, determinism",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "275eb6ca01ca392ddc32f9c4776def7ee2e0ad9a",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm367_two_pack_freeze": "v1"
+    },
+    "stamped_at": "2026-07-25T09:14:25.642598+00:00"
+  }
+}
