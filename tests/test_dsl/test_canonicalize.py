@@ -56,13 +56,13 @@ def test_alpha_invariance_when_placeholders_alias_binder_names() -> None:
         'title = TextContent(":form.title")\n'
         'submit = Button(":form.submit")\n'
         'actions = Buttons([submit])\n'
-        'form = Form("contact", actions, [])'
+        'form = Form("$0", actions, [])'
     )
     renamed = (
         'root = Stack([b1, b4], "column")\n'
         'b1 = TextContent(":form.title")\n'
         'b2 = Button(":form.submit")\n'
         'b3 = Buttons([b2])\n'
-        'b4 = Form("contact", b3, [])'
+        'b4 = Form("$0", b3, [])'
     )
     assert canonicalize(src) == canonicalize(renamed)

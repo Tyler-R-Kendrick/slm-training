@@ -172,6 +172,7 @@ class GeneratorConfig:
     render_states: tuple[str, ...] = ("empty", "loading", "success", "error")
     content_classes: tuple[str, ...] = ("plain", "escaped", "dsl_like")
     selected_triples: tuple[tuple[str, str, str], ...] = ()
+    selected_groups: tuple[tuple[str, ...], ...] = ()
     split: str = "train"
     # DSL-pack seams (F1): default None resolves to the pinned OpenUI
     # library schema / prop-order file, byte-identical to the old behavior.
@@ -185,6 +186,8 @@ class GeneratorConfig:
             raise ValueError(
                 "viewports, render_states, and content_classes must be non-empty"
             )
+        if any(not group or len(group) > self.max_width for group in self.selected_groups):
+            raise ValueError("selected_groups must be non-empty and fit max_width")
 
 
 @dataclass(frozen=True)
@@ -431,13 +434,12 @@ class ProgramGenerator:
         if not self.components:
             raise ValueError("components must be non-empty")
         self.triples = config.selected_triples or self._default_triples()
-        for triple in self.triples:
+        for triple in (*self.triples, *config.selected_groups):
             if (
-                len(triple) != 3
-                or self.config.max_width < 3
+                len(triple) > self.config.max_width
                 or not set(triple) <= set(self.components)
             ):
-                raise ValueError(f"invalid selected triple: {triple}")
+                raise ValueError(f"invalid selected group: {triple}")
         targets, unsupported = self._target_grid()
         self.tracker = CoverageTracker(targets, unsupported)
         self._candidates = self._build_candidates()
@@ -613,6 +615,7 @@ class ProgramGenerator:
         if self.config.max_width >= 2:
             groups.extend(combinations(self.components, 2))
         groups.extend(self.triples)
+        groups.extend(self.config.selected_groups)
         for index, group in enumerate(groups):
             candidates.append(self._candidate(group, index))
         offset = len(candidates)
@@ -749,7 +752,30 @@ class ProgramGenerator:
         return source, cells
 
     def generate_one(self) -> ProgramSpec:
-        candidate = self._choose()
+        return self._materialize(self._choose())
+
+    def generate_uniform(self, rng: random.Random | None = None) -> ProgramSpec:
+        """Materialize the next unused candidate uniformly at random.
+
+        Unlike ``generate_one``, which always calls the greedy coverage-maximizing
+        ``_choose()``, every unused candidate in the fixed grid is equally likely.
+        This is the uniform-valid control arm referenced by VSD2-02: "uniform"
+        must state whether it is uniform over productions, value classes,
+        ProgramSpec templates, or accepted roots — here it is uniform over the
+        generator's own bounded candidate grid.
+        """
+        available = [
+            candidate
+            for candidate in self._candidates
+            if candidate.key() not in self._used
+        ]
+        if not available:
+            raise ValueError("candidate grid exhausted")
+        candidate = (rng or self._rng).choice(available)
+        self._used.add(candidate.key())
+        return self._materialize(candidate)
+
+    def _materialize(self, candidate: _Candidate) -> ProgramSpec:
         openui, cells = self._build_program(candidate)
         identity = json.dumps(
             [

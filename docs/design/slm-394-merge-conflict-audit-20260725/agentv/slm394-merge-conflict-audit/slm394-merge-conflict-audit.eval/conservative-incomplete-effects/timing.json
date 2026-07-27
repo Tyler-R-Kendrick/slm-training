@@ -1,0 +1,21 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5b49224cb2f5fe7e1a5e5793e4de2868025274cf",
+    "code_dirty": false,
+    "components": {
+      "dsl.operators.contracts": "v15",
+      "dsl.operators.merge": "v3",
+      "evals.agentv": "v5"
+    },
+    "stamped_at": "2026-07-26T01:19:57.365380+00:00"
+  }
+}

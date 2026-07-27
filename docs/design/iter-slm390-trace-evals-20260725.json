@@ -1,0 +1,48 @@
+{
+  "acceptance": {
+    "deterministic_replay": "environment pins + exact-match verifier replay identically; fail-closed manifest verify",
+    "evidence_explicit": "redaction report, reviewer id + checklist, verifier validation, dedup/leakage/shortcut checks all recorded",
+    "frozen_root_families_immutable_disjoint": "create-once freeze; family must not duplicate training families nor hash into the train split",
+    "no_automatic_transition": "ingest always yields QUARANTINED; review/freeze/confirmation/promotion are explicit calls",
+    "promotion_non_mutating": "promotion writes a new derivation activity + dataset version; frozen manifest bytes unchanged"
+  },
+  "claim_class": "wiring",
+  "created_at": "2026-07-25T11:53:26Z",
+  "experiment_id": "slm390-trace-evals",
+  "issue": "SLM-390 (DSH4-05)",
+  "lifecycle": [
+    "QUARANTINED",
+    "REVIEWED",
+    "FROZEN",
+    "CONFIRMATION_USED",
+    "PROMOTED_TO_TRAINING"
+  ],
+  "recipe": {
+    "backend": "fixture",
+    "device": "cpu",
+    "honesty_mode": "fixture wiring; no model trained, no GPU",
+    "matrix_set": "slm390_trace_evals",
+    "steps": 0,
+    "suite_n": 0
+  },
+  "results": {
+    "ship_gates": "not applicable (fixture harness; no eval scoreboard)",
+    "tests": "tests/test_harnesses/experiments/test_slm390_trace_evals.py"
+  },
+  "status": "fixture",
+  "stop_rules": [
+    "deidentification_failed",
+    "environment_not_reproducible",
+    "not_independently_verifiable"
+  ],
+  "version_stamp": {
+    "code_commit": "b79ff43a0f20b55efbbcd7340906d0205372a75c",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v103",
+      "harness.experiments.slm390_trace_evals": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T11:53:26.286617+00:00"
+  }
+}

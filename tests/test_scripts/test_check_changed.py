@@ -19,6 +19,18 @@ def test_select_tests_is_scoped_and_conservative() -> None:
     assert select_tests(["package-lock.json"]) == []
 
 
+def test_select_tests_skips_a_deleted_test_file() -> None:
+    """A pure test-file deletion must not select a nonexistent pytest target."""
+    deleted = "tests/test_dsl/test_a_file_that_was_deleted_and_never_existed.py"
+    assert select_tests([deleted]) == []
+    assert select_changed_tests([deleted]) == []
+    # Alongside its now-deleted source module, the source's own suite mapping
+    # still resolves -- the deleted test path is dropped, not substituted.
+    assert select_tests(
+        ["src/slm_training/harnesses/distill/some_removed_module.py", deleted]
+    ) == ["tests/test_harnesses/distill"]
+
+
 def test_select_tests_deduplicates_nested_targets() -> None:
     assert select_tests(
         ["src/slm_training/dsl/parser.py", "tests/test_dsl/test_parser.py"]

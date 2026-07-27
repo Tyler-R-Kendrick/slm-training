@@ -21,6 +21,7 @@ from slm_training.data.contract import (
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate, train
 from slm_training.harnesses.model_build.factory import (
     _resolve_freeze_context,
+    _twotower_config_from_build,
     apply_runtime_overrides,
 )
 from slm_training.harnesses.model_build.train_loop import (
@@ -32,6 +33,8 @@ from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 from slm_training.models.twotower import (
     TwoTowerConfig,
     TwoTowerModel,
+    _remap_vocab_weight,
+    _resize_position_weight,
     _truncate_with_eos,
     format_context_text,
 )
@@ -41,8 +44,8 @@ pytestmark_bridge = pytest.mark.skipif(
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+HERO = 'root = Stack([b1], "column")\nb1 = Card([b2, b3])\nb2 = TextContent(":slot_0")\nb3 = TextContent(":slot_1")'
+CTA = 'root = Stack([b1])\nb1 = Button(":slot_0")'
 
 
 def test_tokenize_preserves_placeholders_and_whitespace() -> None:
@@ -73,6 +76,30 @@ def test_tokenizer_save_load(tmp_path: Path) -> None:
     assert loaded.encode(HERO) == tok.encode(HERO)
 
 
+def test_warm_start_vocab_remap_preserves_new_token_rows() -> None:
+    source = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    target = torch.tensor([[9.0, 9.0], [8.0, 8.0], [7.0, 7.0]])
+
+    remapped = _remap_vocab_weight(
+        source,
+        {"shared": 0, "old_only": 1},
+        target,
+        {"new_only": 0, "shared": 1, "newer": 2},
+    )
+
+    assert remapped.tolist() == [[9.0, 9.0], [1.0, 2.0], [7.0, 7.0]]
+
+
+def test_warm_start_position_resize_copies_shared_prefix() -> None:
+    source = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    target = torch.tensor([[9.0, 9.0], [8.0, 8.0]])
+
+    assert _resize_position_weight(source, target).tolist() == [
+        [1.0, 2.0],
+        [3.0, 4.0],
+    ]
+
+
 def test_hf_context_can_be_explicitly_unfrozen() -> None:
     assert _resolve_freeze_context("hf", False) is False
     assert _resolve_freeze_context("hf", True) is True
@@ -95,6 +122,62 @@ def test_context_exposes_compact_output_contract() -> None:
         output_category="boolean",
     )
     assert "---OUTPUT_CONTRACT---\nlexical:boolean" in context
+
+
+def test_history_ops_text_omitted_reproduces_prior_output_exactly() -> None:
+    # SLM-428 (VAR2-01): every existing caller omits history_ops_text, so the
+    # new parameter must be a strict no-op when absent -- the regression
+    # guard for the encoder_ops_conditioning lever staying default-off.
+    prompt = "Return a boolean"
+    before = format_context_text(prompt, output_kind="lexical", output_category="boolean")
+    after = format_context_text(
+        prompt, output_kind="lexical", output_category="boolean", history_ops_text=None
+    )
+    assert before == after
+    assert "---HISTORY_OPS---" not in after
+
+
+def test_history_ops_text_renders_its_own_section() -> None:
+    context = format_context_text(
+        "Return a boolean",
+        history_ops_text="<|op:conversation.undo|> <|op:openui.set_property|>",
+    )
+    assert (
+        "---HISTORY_OPS---\n<|op:conversation.undo|> <|op:openui.set_property|>"
+        in context
+    )
+
+
+def test_encoder_ops_conditioning_lever_gates_the_effect_at_the_model_layer() -> None:
+    # _format_one_context must ignore a supplied history_ops_text unless the
+    # lever is explicitly enabled -- the lever gates the effect, not just
+    # whether a caller happens to pass a value.
+    tokenizer = OpenUITokenizer.build([HERO])
+    off_config = TwoTowerConfig(
+        context_backend="scratch",
+        d_model=8,
+        n_heads=2,
+        context_layers=1,
+        encoder_ops_conditioning=False,
+    )
+    off_model = TwoTowerModel(tokenizer, off_config)
+    off = off_model._format_one_context(
+        "Return a boolean", None, history_ops_text="<|op:conversation.undo|>"
+    )
+    assert "---HISTORY_OPS---" not in off
+
+    on_config = TwoTowerConfig(
+        context_backend="scratch",
+        d_model=8,
+        n_heads=2,
+        context_layers=1,
+        encoder_ops_conditioning=True,
+    )
+    on_model = TwoTowerModel(tokenizer, on_config)
+    on = on_model._format_one_context(
+        "Return a boolean", None, history_ops_text="<|op:conversation.undo|>"
+    )
+    assert "---HISTORY_OPS---\n<|op:conversation.undo|>" in on
 
 
 def test_design_md_dropout_is_deterministic_and_cache_safe() -> None:
@@ -163,6 +246,36 @@ def test_ltr_suffix_always_masks_first_content_token() -> None:
     assert int(noisy[0, 1]) == model.tokenizer.mask_id
 
 
+def test_ltr_tail_mask_selects_only_final_real_suffix_tokens() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            ltr_tail_tokens=2,
+        ),
+        device="cpu",
+    )
+    target = torch.tensor([[model.tokenizer.bos_id, 7, 8, 9, model.tokenizer.pad_id]])
+    suffix = torch.tensor([[False, True, True, True, False]])
+    assert model._ltr_tail_mask(target, suffix).tolist() == [[False, False, True, True, False]]
+
+
+def test_model_build_config_threads_ltr_tail_controls() -> None:
+    config = _twotower_config_from_build(
+        ModelBuildConfig(
+            train_dir=Path("fixtures"),
+            context_backend="scratch",
+            ltr_tail_loss_weight=1.25,
+            ltr_tail_tokens=2,
+        )
+    )
+    assert (config.ltr_tail_loss_weight, config.ltr_tail_tokens) == (1.25, 2)
+
+
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(
@@ -228,7 +341,7 @@ def test_checkpoint_rejects_missing_enabled_root_head(
         TwoTowerModel.from_checkpoint(path, device="cpu")
 
 
-def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
+def test_checkpoint_rejects_pre_opaque_marker_contract(tmp_path: Path) -> None:
     model = TwoTowerModel.from_records(
         [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
         config=TwoTowerConfig(
@@ -238,10 +351,41 @@ def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
     path = tmp_path / "legacy.pt"
     model.save(path)
     payload = torch.load(path, map_location="cpu", weights_only=True)
-    payload["output_contract_version"] = 1
+    payload["output_contract_version"] = 3
     torch.save(payload, path)
     with pytest.raises(ValueError, match="retrain from symbol-only targets"):
         TwoTowerModel.from_checkpoint(path, device="cpu")
+
+
+def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="valid", prompt="Hero", openui=HERO, split="train")],
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="named",
+                    prompt="Hero",
+                    openui='root = TextContent(":hero.title")',
+                    placeholders=[":hero.title"],
+                )
+            ]
+        )
+    with pytest.raises(ValueError, match="non-content property Input.name"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="wrong-role",
+                    prompt="Input",
+                    openui='root = Input(":slot_0")',
+                    placeholders=[":slot_0"],
+                )
+            ]
+        )
 
 
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
@@ -250,7 +394,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             id="a",
             prompt="Hero",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
             split="train",
         )
     ]
@@ -317,10 +461,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.slot_component_decode_weight == 0.25
     assert loaded.config.slot_component_prompt_context is False
     assert loaded.config.slot_component_lexeme_prior_weight == 1.0
-    hero_priors = dict(loaded.config.slot_component_lexeme_priors)["hero"]
-    component_index = loaded._component_name_index()
-    assert hero_priors[component_index["TextContent"]] > 0.0
-    assert hero_priors[component_index["Card"]] < 0.0
+    assert loaded.config.slot_component_lexeme_priors == ()
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4
@@ -381,7 +522,7 @@ def test_slot_pair_interaction_never_encodes_empty_next_slot() -> None:
             id="pair",
             prompt="Hero",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
             split="train",
         )
     ]
@@ -429,6 +570,7 @@ def test_optional_heads_do_not_shift_training_rng() -> None:
     assert torch.equal(baseline, state_after(binder_arity_loss_weight=1.0))
     assert torch.equal(baseline, state_after(binder_topology_loss_weight=1.0))
     assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
+    assert torch.equal(baseline, state_after(abstract_plan_mode="sampled"))
 
 
 def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:
@@ -509,6 +651,347 @@ def test_auxiliary_loss_does_not_change_base_gradients() -> None:
     auxiliary_loss.backward()
     assert arity.binder_arity_head is not None
     assert arity.binder_arity_head.weight.grad is not None
+
+
+def test_abstract_plan_mode_disabled_by_default_and_head_none() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(123)
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+        ),
+    )
+    assert model.config.abstract_plan_mode == "disabled"
+    assert model.abstract_plan_head is None
+    assert model.abstract_plan is None
+    assert model.abstract_plan_trace(["Hero"]) is None
+    assert not any(
+        name.startswith("abstract_plan_head.") for name, _ in model.named_parameters()
+    )
+
+
+def test_abstract_plan_head_is_bit_exact_with_baseline_when_disabled() -> None:
+    """Feature-off model is bit-exact with the current baseline (SLM-315 acceptance)."""
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    explicit_off = model(abstract_plan_mode="disabled")
+    baseline_state = dict(baseline.named_parameters())
+    for name, parameter in explicit_off.named_parameters():
+        assert torch.equal(parameter, baseline_state[name]), name
+    torch.manual_seed(456)
+    baseline_loss = baseline.training_loss(records)
+    torch.manual_seed(456)
+    explicit_off_loss = explicit_off.training_loss(records)
+    torch.testing.assert_close(baseline_loss, explicit_off_loss)
+
+
+def test_abstract_plan_head_never_participates_in_training_loss_graph() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    enabled = model(abstract_plan_mode="sampled")
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    torch.manual_seed(456)
+    enabled.training_loss(records).backward()
+
+    assert enabled.abstract_plan_head is not None
+    assert enabled.abstract_plan_head.proj.weight.grad is None
+
+    enabled_grads = dict(enabled.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if parameter.grad is None:
+            assert enabled_grads[name].grad is None, name
+        else:
+            assert torch.equal(parameter.grad, enabled_grads[name].grad), name
+
+
+@pytest.mark.parametrize(
+    "mode", ["teacher_forced", "sampled", "oracle", "random", "shuffled"]
+)
+def test_abstract_plan_trace_emits_valid_plan_for_every_enabled_mode(
+    mode: str,
+) -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(123)
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            abstract_plan_mode=mode,
+        ),
+    )
+    assert model.abstract_plan is not None
+    target_plan_ids = torch.randint(
+        0, model.abstract_plan.slot_count, (1, model.abstract_plan.rounds)
+    )
+
+    trace = model.abstract_plan_trace(["Hero"], target_plan_ids=target_plan_ids)
+
+    assert trace is not None
+    assert trace.mode == mode
+    assert trace.plan_tokens.shape == (1, model.abstract_plan.rounds)
+    assert bool(
+        (
+            (trace.plan_tokens >= 0) & (trace.plan_tokens < model.abstract_plan.slot_count)
+        ).all()
+    )
+
+
+def _plan_connector_model(**kwargs) -> TwoTowerModel:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(123)
+    return TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            **kwargs,
+        ),
+    )
+
+
+def test_abstract_plan_connector_disabled_by_default_and_none() -> None:
+    model = _plan_connector_model()
+    assert model.config.abstract_plan_connector_arm == "disabled"
+    assert model.abstract_plan_connector is None
+    assert model.denoiser._plan_connector is None
+    assert not any(
+        name.startswith("denoiser._plan_connector.")
+        for name, _ in model.named_parameters()
+    )
+
+
+def test_abstract_plan_connector_requires_abstract_plan_mode_enabled() -> None:
+    with pytest.raises(ValueError):
+        TwoTowerConfig(abstract_plan_connector_arm="learned")
+
+
+def test_abstract_plan_connector_rejects_unknown_arm() -> None:
+    with pytest.raises(ValueError):
+        TwoTowerConfig(
+            abstract_plan_mode="sampled", abstract_plan_connector_arm="not_a_real_arm"
+        )
+
+
+def test_abstract_plan_connector_is_bit_exact_with_baseline_when_disabled() -> None:
+    """Off mode remains bit-exact (SLM-316 acceptance)."""
+    baseline = _plan_connector_model()
+    explicit_off = _plan_connector_model(abstract_plan_connector_arm="disabled")
+    baseline_state = dict(baseline.named_parameters())
+    for name, parameter in explicit_off.named_parameters():
+        assert torch.equal(parameter, baseline_state[name]), name
+
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    torch.manual_seed(456)
+    baseline_loss = baseline.training_loss(records)
+    torch.manual_seed(456)
+    explicit_off_loss = explicit_off.training_loss(records)
+    torch.testing.assert_close(baseline_loss, explicit_off_loss)
+
+
+def test_abstract_plan_connector_never_participates_in_training_loss_graph() -> None:
+    """training_loss/forward never call the connector -- it is generation-time only."""
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    baseline = _plan_connector_model()
+    enabled = _plan_connector_model(
+        abstract_plan_mode="sampled", abstract_plan_connector_arm="learned"
+    )
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    torch.manual_seed(456)
+    enabled.training_loss(records).backward()
+
+    assert enabled.abstract_plan_connector is not None
+    assert enabled.abstract_plan_connector.proj.weight.grad is None
+    assert enabled.abstract_plan_connector.plan_embed.weight.grad is None
+
+    enabled_grads = dict(enabled.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if parameter.grad is None:
+            assert enabled_grads[name].grad is None, name
+        else:
+            assert torch.equal(parameter.grad, enabled_grads[name].grad), name
+
+
+def test_abstract_plan_training_conditions_the_reconstruction_loss() -> None:
+    """SLM-313: the opt-in path trains both opaque plan and connector."""
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    model = _plan_connector_model(
+        abstract_plan_mode="teacher_forced",
+        abstract_plan_connector_arm="learned",
+        abstract_plan_loss_weight=1.0,
+        abstract_plan_train_conditioning=True,
+    )
+    model.training_loss(records).backward()
+
+    assert model.abstract_plan_head is not None
+    assert model.abstract_plan_connector is not None
+    assert model.abstract_plan_head.proj.weight.grad is not None
+    assert model.abstract_plan_connector.gate.grad is not None
+    assert model.denoiser._plan_vector is None
+    assert model.last_training_metrics["abstract_plan_loss"] > 0.0
+    assert model.last_training_metrics["abstract_plan_train_conditioning"] is True
+
+
+def test_model_build_config_preserves_abstract_plan_training_options() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        abstract_plan_mode="teacher_forced",
+        abstract_plan_connector_arm="learned",
+        abstract_plan_loss_weight=0.5,
+        abstract_plan_train_conditioning=True,
+    )
+    resolved = _twotower_config_from_build(config)
+    assert resolved.abstract_plan_mode == "teacher_forced"
+    assert resolved.abstract_plan_connector_arm == "learned"
+    assert resolved.abstract_plan_loss_weight == 0.5
+    assert resolved.abstract_plan_train_conditioning is True
+
+
+def test_abstract_plan_connector_is_constructed_and_wired_into_denoiser() -> None:
+    model = _plan_connector_model(
+        abstract_plan_mode="sampled", abstract_plan_connector_arm="oracle"
+    )
+    assert model.abstract_plan_connector is not None
+    assert model.denoiser._plan_connector is model.abstract_plan_connector
+    assert model.denoiser._plan_connector_arm == "oracle"
+    assert any(
+        name.startswith("denoiser._plan_connector.")
+        for name, _ in model.named_parameters()
+    )
+
+
+def test_abstract_plan_connector_rejects_shared_recursive_denoiser_arch() -> None:
+    with pytest.raises(ValueError):
+        TwoTowerConfig(
+            abstract_plan_mode="sampled",
+            abstract_plan_connector_arm="learned",
+            denoiser_arch="shared_recursive",
+        )
+
+
+def test_abstract_plan_connector_rejects_hf_denoiser_backend() -> None:
+    """HFDenoiserTower is not a DenoiserTower subclass and has no
+    set_plan_connector/plan-bias hook (SLM-316 review follow-up)."""
+    with pytest.raises(ValueError):
+        TwoTowerConfig(
+            abstract_plan_mode="sampled",
+            abstract_plan_connector_arm="learned",
+            denoiser_backend="hf",
+        )
+
+
+def test_abstract_plan_connector_allows_stacked_matched_state_denoiser_arch() -> None:
+    """StackedMatchedStateDenoiserTower subclasses DenoiserTower without
+    overriding project(), so it inherits the plan-connector hook correctly
+    and must not be rejected the way shared_recursive/hf are."""
+    model = _plan_connector_model(
+        abstract_plan_mode="sampled",
+        abstract_plan_connector_arm="learned",
+        denoiser_arch="stacked_matched_state",
+    )
+    assert model.abstract_plan_connector is not None
+    assert model.denoiser._plan_connector is model.abstract_plan_connector
+
+
+def test_generate_with_plan_connector_raises_when_disabled() -> None:
+    model = _plan_connector_model()
+    with pytest.raises(ValueError):
+        model.generate_with_plan_connector("Hero")
+
+
+def test_binder_component_plan_does_not_change_base_gradients() -> None:
+    records = [
+        ExampleRecord(
+            id="binder-plan",
+            prompt="Card with title and body",
+            openui=(
+                "root = Card([title, body])\n"
+                'title = TextContent(":slot_0")\n'
+                'body = TextContent(":slot_1")'
+            ),
+            placeholders=[":slot_0", ":slot_1"],
+            split="train",
+            source="fixture",
+        )
+    ]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    planned = model(binder_component_plan_loss_weight=1.0)
+    rng_state = baseline._rng.getstate()
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    baseline._rng.setstate(rng_state)
+    planned._rng.setstate(rng_state)
+    torch.manual_seed(456)
+    planned.training_loss(records).backward()
+
+    planned_parameters = dict(planned.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        other = planned_parameters[name]
+        if parameter.grad is None or other.grad is None:
+            assert parameter.grad is other.grad
+        else:
+            assert torch.equal(parameter.grad, other.grad), name
+    assert planned.binder_component_plan_head is not None
+    assert planned.binder_component_plan_head.weight.grad is not None
+    assert planned.binder_component_plan_head.weight.grad.abs().sum() > 0
 
 
 def test_surface_syntax_repair_preserves_string_literals() -> None:
@@ -625,8 +1108,8 @@ def test_fragment_records_reach_twotower_training_loss() -> None:
         ExampleRecord(
             id="button",
             prompt="Return a Button expression",
-            openui='Button(":cta")',
-            placeholders=[":cta"],
+            openui='Button(":slot_0")',
+            placeholders=[":slot_0"],
             target_kind="expression",
         ),
     ]
@@ -691,8 +1174,8 @@ def test_opt_in_binding_runs_only_after_legacy_generation(
     monkeypatch.setattr(model, "_denoiser_forward", forbidden_forward)
     value = 'Welcome "back"\\\nToday ☃'
     result = model.generate_batch_bound_requests(
-        [GenerationRequest(prompt="Hero", slot_contract=(":hero.title",))],
-        [(CallerContentBinding("hero.title", value),)],
+        [GenerationRequest(prompt="Hero", slot_contract=(":slot_0",))],
+        [(CallerContentBinding("slot_0", value),)],
     )[0]
 
     assert calls == 1
@@ -745,7 +1228,7 @@ def test_opt_in_choice_generation_returns_exact_verified_stream(
         return [template]
 
     monkeypatch.setattr(model, "generate_batch_requests", fake_generate)
-    request = GenerationRequest(prompt="Hero", slot_contract=(":hero.title",))
+    request = GenerationRequest(prompt="Hero", slot_contract=(":slot_0",))
     first = model.generate_batch_choice_requests([request])[0]
     second = model.generate_batch_choice_requests([request])[0]
 
@@ -754,7 +1237,7 @@ def test_opt_in_choice_generation_returns_exact_verified_stream(
     assert first.status == "verified"
     assert first.verification == "pack_verified"
     assert first.opaque_slot_contract == (":slot_0",)
-    assert first.slot_projection == ((":hero.title", ":slot_0"),)
+    assert first.slot_projection == ((":slot_0", ":slot_0"),)
     assert first.choice_ids == tuple(ids)
     assert first.choice_tokens == tuple(tokens)
     assert first.canonical_source == template
@@ -819,9 +1302,9 @@ def test_choice_generation_rejects_incompatible_or_unprovable_paths(
     choice.config.best_of_n = 1
     undeclared = GenerationRequest(
         prompt="Hero",
-        slot_contract=(":hero.title",),
+        slot_contract=(":slot_0",),
         runtime_symbols=(
-            RuntimeSymbol(surface=":other.title", role="external_entity"),
+            RuntimeSymbol(surface=":slot_1", role="external_entity"),
         ),
     )
     with pytest.raises(ValueError, match="must appear in slot_contract"):
@@ -862,6 +1345,24 @@ def test_opaque_projection_keeps_marker_names_out_of_scoring() -> None:
     )[0]
     assert "slot_0" not in context
     model._opaque_slot_projection_active = False
+
+
+def test_model_rejects_named_markers_before_context_vocab_build() -> None:
+    semantic = ExampleRecord(
+        id="semantic",
+        prompt="Use :hero.title",
+        openui='root = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+    )
+    config = TwoTowerConfig(
+        d_model=32,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        context_backend="scratch",
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        TwoTowerModel.from_records([semantic], config=config)
 
 
 def test_opaque_projection_state_is_scoped_across_calls_and_failures(

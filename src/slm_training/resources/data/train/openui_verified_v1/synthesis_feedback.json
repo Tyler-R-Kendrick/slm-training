@@ -1,0 +1,6 @@
+{
+  "schema": "synthesis_feedback/v1",
+  "recommendations": [],
+  "experiment_candidates": [],
+  "note": "certification did not synthesize records; this sidecar records the admission outcome"
+}

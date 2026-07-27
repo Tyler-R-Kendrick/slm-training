@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E844-E849",
+  "date_utc": "2026-07-22",
+  "run_class": "scratch_matrix",
+  "run_id": "e849-repeated-typed-collections-smoke-n3-r1",
+  "local_compute": true,
+  "description": "Strict current-source rebuild, canonical repeated typed-collection producer repair, local training, and smoke evaluation",
+  "data": {
+    "e844": {
+      "records": 606,
+      "candidates": 1703,
+      "repeated_tabitem_rows": 6,
+      "repeated_formcontrol_rows": 0,
+      "repeated_switchitem_rows": 0
+    },
+    "e845": {
+      "path": "src/slm_training/resources/data/train/e845_repeated_typed_collections_v1",
+      "records": 613,
+      "candidates": 1713,
+      "rejected": 1108,
+      "repeated_tabitem_rows": 6,
+      "repeated_formcontrol_rows": 2,
+      "repeated_switchitem_rows": 4,
+      "source_errors": 0,
+      "content_fingerprint": "caa7f50b6167726238135a3e09b0f4a3fbf462661ca6bef558a2f79b068c4ece"
+    }
+  },
+  "failed_attempt": {
+    "run_id": "e847-repeated-typed-collections-scratch600-r1",
+    "checkpoint_created": false,
+    "evidence_eligible": false,
+    "reason": "old local CLI default attempted an HF tokenizer lookup before training"
+  },
+  "train": {
+    "run_id": "e848-repeated-typed-collections-scratch600-r1",
+    "device": "cpu",
+    "steps": 600,
+    "record_count": 613,
+    "elapsed_wall_seconds": 69.8827825949993,
+    "max_wall_minutes": 1.5833333333333333,
+    "last_loss": 2.97475266456604,
+    "context_backend": "scratch",
+    "checkpoint": "outputs/runs/e848-repeated-typed-collections-scratch600-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "036d6487c6d3b1c07b4515417495fa6a5e7673755c3fbaca4d900f841f35bed9",
+    "checkpoint_sync": false,
+    "checkpoint_sync_reason": "explicit local scratch diagnostic"
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.6666666666666666,
+      "placeholder_fidelity": 0.6666666666666666,
+      "placeholder_validity": 0.4,
+      "structural_similarity": 0.53,
+      "component_type_recall": 0.5,
+      "reward_score": 0.6326666666666666,
+      "latency_ms_p50": 2574.76,
+      "latency_ms_p95": 12000.87,
+      "decode_timeout_count": 1,
+      "fallback_count": 0,
+      "constrained_fallback_rate": 0.0
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "smoke regressed and full policy suites were not run"
+  },
+  "decision": {
+    "retain": "canonical repeated typed-collection producer fixtures and local-first context default",
+    "reject": "E848 checkpoint and promotion of the broad E845 mixture",
+    "next": "build an E826-plus-two-fixture surgical corpus under unchanged strict gates"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "178675ec2ae83bb913dd0835e7525851f2da3402",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v23",
+      "harness.train_data": "v15",
+      "harness.model_build.train": "v21",
+      "harness.model_build.eval": "v49",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v234"
+    }
+  }
+}

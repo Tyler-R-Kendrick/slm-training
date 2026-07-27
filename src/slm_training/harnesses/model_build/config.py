@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.levers import MAX_HARNESS_WALL_MINUTES
 from slm_training.models.twotower_numeric_gates import (
     NumericValidationError,
     validate_model_build_config,
@@ -35,8 +35,9 @@ class ModelBuildConfig:
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
-    # Cumulative deadline; canonical run policy lives in slm_training.levers.
-    max_wall_minutes: float | None = float(MAX_RUN_MINUTES)
+    # Cumulative harness deadline (reserves interrupt+finalize headroom from
+    # MAX_RUN_MINUTES). Canonical run policy lives in slm_training.levers.
+    max_wall_minutes: float | None = float(MAX_HARNESS_WALL_MINUTES)
     batch_size: int = 4
     lr: float = 3e-4
     # SLM-222: optimizer family. adamw (default, byte-identical) or muon_hybrid.
@@ -98,14 +99,19 @@ class ModelBuildConfig:
     grammar_dsl: str = "openui"
     grammar_top_k: int = 16
     structural_bias: float = 1.25
-    grammar_ltr_repair: bool = False
+    grammar_ltr_repair: bool = True
     # Length-safe for compositional tokenizer (fixture gold up to ~160 tokens).
     grammar_ltr_max_tokens: int = 256
     grammar_ltr_stages: tuple[int, ...] | None = None
-    grammar_ltr_primary: bool = False
-    grammar_finalize_validate: bool = False
+    grammar_ltr_primary: bool = True
+    grammar_finalize_validate: bool = True
     ltr_loss_weight: float = 0.5
     fidelity_loss_weight: float = 0.5
+    # SLM-292: explicit immutable contrast corpus; disabled unless weight > 0.
+    semantic_contrast_dir: Path | None = None
+    semantic_contrast_loss_weight: float = 0.0
+    semantic_contrast_margin: float = 1.0
+    semantic_contrast_fraction: float = 0.0
     # None = preserve checkpoint on load; factory defaults new models to True.
     design_md_in_context: bool | None = None
     # Deterministic record-level train-time omission; evaluation is unaffected.
@@ -120,6 +126,13 @@ class ModelBuildConfig:
     slot_contract_in_context: bool = False
     semantic_role_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    # Default-off compiler completion / uniqueness levers (eval CLI flags).
+    required_slot_array_completion: bool = False
+    required_slot_root_completion: bool | None = None
+    request_aware_slot_reservation: bool = False
+    slot_alias_unique_decode: bool = False
+    binder_topology_unique_decode: bool = False
+    compiler_schema_component_types: bool = False
     template_fill_decode: bool = False
     contract_template_fastpath: bool = False
     retrieval_k: int = 0
@@ -168,6 +181,8 @@ class ModelBuildConfig:
     initialization_weight_retention: float = 0.0
     # Write full training state (optimizer/RNG/sampler) alongside last.pt.
     full_state_checkpoint: bool = True
+    # Write resumable full state every N optimizer steps (0 = terminal only).
+    checkpoint_every_steps: int = 0
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).
     eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).
@@ -192,6 +207,8 @@ class ModelBuildConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    compiler_prefill_max_states: int = 0
+    compiler_prefill_token_budget: int = 0
     compiler_decode_mode: str = "off"  # off | forced | restricted | tree
     compiler_search_mode: str = "greedy"  # greedy | lattice | ptrm | gram
     compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always
@@ -300,6 +317,9 @@ class ModelBuildConfig:
     diffusion_overallocate: int = 8
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
+    # Extra weight on final real LTR tokens (default-off; CLI: --ltr-tail-*).
+    ltr_tail_loss_weight: float = 0.0
+    ltr_tail_tokens: int = 32
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
@@ -356,6 +376,13 @@ class ModelBuildConfig:
     binder_topology_decode_weight: float | None = None
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float | None = None
+    # Default-off binder opaque-slot auxiliaries (CLI: --binder-*-ownership/presence-*).
+    binder_slot_ownership_loss_weight: float = 0.0
+    binder_slot_ownership_decode_weight: float | None = None
+    binder_slot_presence_loss_weight: float = 0.0
+    binder_slot_presence_decode_weight: float | None = None
+    binder_reference_presence_loss_weight: float = 0.0
+    binder_reference_presence_decode_weight: float | None = None
     root_reference_arity_loss_weight: float = 0.0
     root_reference_arity_decode_weight: float | None = None
     root_reference_identity_loss_weight: float = 0.0
@@ -388,6 +415,10 @@ class ModelBuildConfig:
     connector_rank: int = 32
     connector_n_queries: int = 4
     connector_freeze_encoder: bool = True
+    abstract_plan_mode: str = "disabled"
+    abstract_plan_connector_arm: str = "disabled"
+    abstract_plan_loss_weight: float = 0.0
+    abstract_plan_train_conditioning: bool = False
     # current | connector_only | connector_plus_action_residuals | small_model
     train_scope: str = "current"
     # SLM-168 (SDE2-01): explicit contract-index pointer head (default-off).
@@ -424,7 +455,8 @@ class ModelBuildConfig:
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
-    allow_unconstrained_fallback: bool = True
+    # Decode invariant I6 (docs/design/decode-invariants.md): diagnostic-only.
+    allow_unconstrained_fallback: bool = False
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix
@@ -438,6 +470,13 @@ class ModelBuildConfig:
     speculative_successor: bool = False  # E74 successor-state cache
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # I3/I4 (docs/design/decode-invariants.md): deterministic ranking over the
+    # forward-calculated symbol table, and symbol-table prefill scheduling.
+    speculative_rank: str = "off"  # off | ngram
+    speculative_rank_table: str | None = None
+    speculative_rank_margin: float = 0.0
+    prefill_schedule: str = "off"  # off | checkpoint
+    prefill_schedule_max_lookahead: int = 0
     # Hugging Face Bucket for durable checkpoints (full HF-context trains).
     # None → default hf://buckets/TKendrick/OpenUI when sync is enabled.
     # Empty string → disable auto bucket selection.
@@ -478,8 +517,30 @@ class ModelBuildConfig:
     constraint_debt_routing_fallback_policy: str = "fixed_maskgit"
     constraint_debt_routing_budget_mode: str = "equal_verifier_budget"
     constraint_debt_routing_calibrator_path: Path | None = None
+    # SLM-428 (VAR2-01): default-off encoder-side first consumer of the
+    # shared OPS_VOCAB kernel (decode invariant I13). When enabled, context
+    # formatting conditions on literal reserved op tokens for the turn
+    # history (`dsl.operators.ops_vocab_conditioning`) instead of leaving
+    # history unrepresented. Changes conditioning, never legality — not a
+    # CONSTRAINT_WEAKENING_LEVERS entry. Turning this on for a real training
+    # run needs a preregistered ExperimentCampaignV1 binding `ops_vocab`'s
+    # and the operator corpus's fingerprints, per I13's "tower wiring" note.
+    encoder_ops_conditioning: bool = False
 
     def __post_init__(self) -> None:
+        if self.grammar_constrained is False:
+            raise ValueError(
+                "grammar_constrained=False is unsafe for OpenUI generation"
+            )
+        if self.allow_unconstrained_fallback:
+            raise ValueError(
+                "allow_unconstrained_fallback=True is unsafe for OpenUI generation"
+            )
+        if self.grammar_sample_decode or self.grammar_uniform_at_unforced:
+            raise ValueError(
+                "stochastic grammar selection is unsafe for deterministic "
+                "OpenUI generation"
+            )
         from slm_training.harnesses.model_build.eval_policy import (
             apply_evaluation_policy,
         )

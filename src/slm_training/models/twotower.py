@@ -24,12 +24,15 @@ from slm_training.dsl.language_contract import (
     assert_symbol_only_output,
     require_current_output_contract,
 )
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
     ChoiceGenerationResult,
     RuntimeSymbol,
+    assert_canonical_template_markers,
+    assert_no_template_semantic_labels,
     choice_generation_fingerprint,
 )
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -57,6 +60,7 @@ from slm_training.models.decode_stats import (
     get_active_stats,
     timed_ms,
 )
+from slm_training.runtime.decode_schedule import plan_prefill, record_plan
 from slm_training.models.grammar import (
     apply_structural_bias,
     exact_forced_token_id,
@@ -64,6 +68,7 @@ from slm_training.models.grammar import (
     force_emit_token_id,
     make_grammar_state,
     pick_constrained_token,
+    require_constrained_generation,
     stream_check,
 )
 from slm_training.models.parallel_decode import (
@@ -106,12 +111,26 @@ from slm_training.dsl.action_shortlist import (
     retrieve_then_rerank,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
+from slm_training.dsl.abstract_plan import AbstractPlanV1
+from slm_training.models.abstract_plan_connector import (
+    AbstractPlanConnector,
+    PlanConnectorArm,
+    PlanConnectorTrace,
+    resolve_plan_vector,
+)
+from slm_training.models.abstract_plan_head import (
+    AbstractPlanHead,
+    AbstractPlanMode,
+    AbstractPlanTrace,
+)
 from slm_training.models.tokenizer import (
     OpenUITokenizer,
     load_tokenizer_sidecar,
     tokenize_text,
 )
 
+_ABSTRACT_PLAN_MODES: tuple[str, ...] = tuple(mode.value for mode in AbstractPlanMode)
+_PLAN_CONNECTOR_ARMS: tuple[str, ...] = tuple(arm.value for arm in PlanConnectorArm)
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
     "twotower_opaque_projection_models",
     default=frozenset(),
@@ -194,8 +213,17 @@ def format_context_text(
     slot_contract: list[str] | None = None,
     output_kind: str | None = None,
     output_category: str | None = None,
+    history_ops_text: str | None = None,
 ) -> str:
-    """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md."""
+    """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md.
+
+    ``history_ops_text`` (SLM-428 / VAR2-01): literal reserved ``OPS_VOCAB``
+    tokens for the conversation's turn history — see
+    `dsl.operators.ops_vocab_conditioning.format_history_ops_text`. Omitted by
+    every existing caller today, so passing ``None`` reproduces prior output
+    exactly; callers only pass a value when
+    `ModelBuildConfig.encoder_ops_conditioning` is enabled.
+    """
     prompt = (prompt or "").strip()
     parts = [prompt] if prompt else []
     if output_kind is not None:
@@ -212,6 +240,8 @@ def format_context_text(
     if slot_contract:
         slots = ", ".join(slot_contract)
         parts.append(f"---SLOT_CONTRACT---\n{slots[: min(800, budget)]}")
+    if history_ops_text and history_ops_text.strip():
+        parts.append(f"---HISTORY_OPS---\n{history_ops_text.strip()}")
     if design_md and design_md.strip():
         dm = design_md.strip()
         if len(dm) > budget:
@@ -323,6 +353,9 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    # Extra weight on the final real LTR tokens (default-off).
+    ltr_tail_loss_weight: float = 0.0
+    ltr_tail_tokens: int = 32
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
@@ -394,12 +427,18 @@ class TwoTowerConfig:
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
+    # SLM-292: paired hard-valid sequence margin. Zero keeps legacy training exact.
+    semantic_contrast_loss_weight: float = 0.0
+    semantic_contrast_margin: float = 1.0
     design_md_in_context: bool = True
     # Static by (seed, record key) so context caching remains sound.
     design_md_dropout: float = 0.0
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
+    # SLM-428 (VAR2-01): default-off first consumer of the shared OPS_VOCAB
+    # kernel (decode invariant I13) -- see ModelBuildConfig.encoder_ops_conditioning.
+    encoder_ops_conditioning: bool = False
     semantic_role_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
@@ -444,6 +483,9 @@ class TwoTowerConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    # Zero selects a device-aware bound for speculative compiler prefills.
+    compiler_prefill_max_states: int = 0
+    compiler_prefill_token_budget: int = 0
     # Compiler-drafted decode: off | forced | restricted | tree.
     # Decode-only; ``off`` preserves existing checkpoint behavior.
     compiler_decode_mode: str = "off"
@@ -565,6 +607,25 @@ class TwoTowerConfig:
     # sparse grammar-action scorer.  ``none`` is identity; other values select a
     # standalone connector variant for future wiring.
     semantic_connector: str = "none"  # none | linear | low_rank | cross_attention
+    # AP-023 (SLM-315): default-off discrete abstract-plan head over pooled
+    # context-tower states. ``disabled`` builds no head at all, so
+    # compatibility_fingerprint/RNG stream/optimizer groups stay bit-exact
+    # with the pre-existing baseline. This only ever populates
+    # ``TwoTowerModel.abstract_plan_trace(...)``, a side channel that
+    # ``training_loss``/``forward`` never call on their own.
+    abstract_plan_mode: str = "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
+    # AP-022 (SLM-313): default-off auxiliary supervision and conditioning for
+    # the discrete plan.  The structural target is derived only from training
+    # labels; held-out decoding always uses the predicted plan.
+    abstract_plan_loss_weight: float = 0.0
+    abstract_plan_train_conditioning: bool = False
+    # AP-024 (SLM-316): default-off gated-additive conditioning of MaskGIT/
+    # tree denoising on the discrete abstract plan (see
+    # ``models/abstract_plan_connector.py``). ``disabled`` builds no
+    # connector at all -- bit-exact with the pre-AP-024 baseline. Requires
+    # ``abstract_plan_mode != "disabled"``, since every arm conditions on
+    # that head's trace (see ``AbstractPlanConnector``/``PlanConnectorArm``).
+    abstract_plan_connector_arm: str = "disabled"  # disabled | learned | oracle | detached | empty | random | shuffled
     connector_hidden_dim: int = 256
     connector_rank: int = 32
     connector_n_queries: int = 4
@@ -612,7 +673,8 @@ class TwoTowerConfig:
     # P7: playground/generate attempt budget + finalize-only-on-last.
     generate_max_attempts: int = 3
     grammar_finalize_on_last_attempt_only: bool = False
-    allow_unconstrained_fallback: bool = True
+    # Decode invariant I6 (docs/design/decode-invariants.md): fail closed.
+    allow_unconstrained_fallback: bool = False
     # --- V7 speculative denoising (docs/design/speculative-denoising.md) ---
     # E70 LESS-lite: require argmax persistence before committing (0=off);
     # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
@@ -632,6 +694,19 @@ class TwoTowerConfig:
     speculative_successor: bool = False
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # --- I3 deterministic speculative ranking (docs/design/decode-invariants.md) ---
+    # Ranking over the forward-calculated symbol table. "off" keeps the neural
+    # ranker; "ngram" consults a committed back-off table first. Legality is
+    # never affected — only which proven-legal candidate is chosen, and only
+    # when the margin clears `speculative_rank_margin` (0.0 = never commit).
+    speculative_rank: str = "off"
+    speculative_rank_table: str | None = None
+    speculative_rank_margin: float = 0.0
+    # --- I4 symbol-table prefill scheduling (docs/design/decode-invariants.md) ---
+    # Plans the next forward from the symbol table: minimal rows, prefill
+    # boundaries at grammar checkpoints. "off" preserves the legacy budget.
+    prefill_schedule: str = "off"
+    prefill_schedule_max_lookahead: int = 0
 
     def __post_init__(self) -> None:
         # SLM-242: generic fail-closed numeric/schedule gate.
@@ -661,6 +736,64 @@ class TwoTowerConfig:
                 raise ValueError(
                     f"{field_name}={value!r} is not one of {supported!r}"
                 )
+        # AP-023 (SLM-315): reject typo'd/unknown modes early so an invalid
+        # value can never silently take the "enabled" branch in __init__ and
+        # break the disabled-by-default bit-exact guarantee.
+        if self.abstract_plan_mode not in _ABSTRACT_PLAN_MODES:
+            raise ValueError(
+                f"abstract_plan_mode={self.abstract_plan_mode!r} is not one of "
+                f"{_ABSTRACT_PLAN_MODES!r}"
+            )
+        # AP-024 (SLM-316): same fail-closed convention as abstract_plan_mode above.
+        if self.abstract_plan_connector_arm not in _PLAN_CONNECTOR_ARMS:
+            raise ValueError(
+                f"abstract_plan_connector_arm={self.abstract_plan_connector_arm!r} "
+                f"is not one of {_PLAN_CONNECTOR_ARMS!r}"
+            )
+        if (
+            self.abstract_plan_connector_arm != "disabled"
+            and self.abstract_plan_mode == "disabled"
+        ):
+            raise ValueError(
+                "abstract_plan_connector_arm requires abstract_plan_mode != "
+                "'disabled' (the connector conditions on the plan head's trace)"
+            )
+        if self.abstract_plan_train_conditioning and (
+            self.abstract_plan_mode == "disabled"
+            or self.abstract_plan_connector_arm == "disabled"
+            or self.abstract_plan_loss_weight <= 0.0
+        ):
+            raise ValueError(
+                "abstract_plan_train_conditioning requires an enabled abstract "
+                "plan head, connector, and positive abstract_plan_loss_weight"
+            )
+        if (
+            self.abstract_plan_connector_arm != "disabled"
+            and self.denoiser_arch in SHARED_RECURSIVE_ARCH_Z_STATE_MODES
+        ):
+            # SharedRecursiveDenoiserTower duck-types DenoiserTower's public
+            # contract but does not (yet) implement set_plan_connector/
+            # project's plan-bias hook; wiring the tree/recursive denoiser is
+            # deferred rather than silently no-op'd or left to crash.
+            raise ValueError(
+                "abstract_plan_connector_arm is not yet supported with "
+                f"denoiser_arch={self.denoiser_arch!r} (shared-recursive "
+                "tree denoising); use the default 'stacked' denoiser_arch"
+            )
+        if self.abstract_plan_connector_arm != "disabled" and str(
+            self.denoiser_backend
+        ).lower() in {"hf", "huggingface", "transformers"}:
+            # HFDenoiserTower is a standalone nn.Module (not a DenoiserTower
+            # subclass): it has its own project() with no plan-bias hook and
+            # no set_plan_connector at all. StackedMatchedStateDenoiserTower
+            # is deliberately not rejected here -- it subclasses DenoiserTower
+            # without overriding project(), so it inherits the hook correctly.
+            raise ValueError(
+                "abstract_plan_connector_arm is not yet supported with "
+                f"denoiser_backend={self.denoiser_backend!r} (HFDenoiserTower "
+                "has no plan-connector hook); use the default 'scratch' "
+                "denoiser_backend"
+            )
         if self.denoiser_arch not in SHARED_RECURSIVE_ARCH_Z_STATE_MODES and any(
             value != default for value, _, default in repair_modes.values()
         ):
@@ -790,6 +923,33 @@ def _load_checkpoint_state(
             "checkpoint state mismatch: "
             f"missing={bad_missing!r} unexpected={bad_unexpected!r}"
         )
+
+
+def _remap_vocab_weight(
+    source_weight: torch.Tensor,
+    source_token_to_id: dict[str, int],
+    target_weight: torch.Tensor,
+    target_token_to_id: dict[str, int],
+) -> torch.Tensor:
+    """Copy shared token rows while retaining initialized rows for new tokens."""
+    remapped = target_weight.detach().clone()
+    for token, target_id in target_token_to_id.items():
+        source_id = source_token_to_id.get(token)
+        if source_id is not None:
+            remapped[target_id] = source_weight[source_id]
+    return remapped
+
+
+def _resize_position_weight(
+    source_weight: torch.Tensor, target_weight: torch.Tensor
+) -> torch.Tensor:
+    """Copy the shared learned position prefix across context-length changes."""
+    if source_weight.ndim != 2 or source_weight.shape[1:] != target_weight.shape[1:]:
+        return source_weight
+    resized = target_weight.detach().clone()
+    shared = min(source_weight.shape[0], target_weight.shape[0])
+    resized[:shared] = source_weight[:shared]
+    return resized
 
 
 def _check_output_head_tie_migration(
@@ -1611,6 +1771,56 @@ class TwoTowerModel(nn.Module):
             if root_reference_identity_enabled and _is_choice_output(self.config)
             else None
         )
+        # AP-023 (SLM-315): default-off discrete abstract-plan head over
+        # pooled context-tower states. ``disabled`` constructs nothing (zero
+        # params, RNG/optimizer/fingerprint untouched); see
+        # ``abstract_plan_trace`` for the only caller of this head.
+        abstract_plan_mode = str(
+            getattr(self.config, "abstract_plan_mode", "disabled") or "disabled"
+        )
+        self.abstract_plan: AbstractPlanV1 | None = (
+            AbstractPlanV1() if abstract_plan_mode != "disabled" else None
+        )
+        self.abstract_plan_head: AbstractPlanHead | None = (
+            isolated_aux_init(
+                lambda: AbstractPlanHead(self.config.d_model, self.abstract_plan),
+                116,
+            )
+            if abstract_plan_mode != "disabled"
+            else None
+        )
+        # AP-024 (SLM-316): default-off gated-additive plan-conditioning
+        # connector. ``disabled`` constructs nothing (zero params, RNG/
+        # optimizer/fingerprint untouched, denoiser.project byte-identical);
+        # __post_init__ already rejects this being enabled while
+        # abstract_plan_mode is disabled.
+        abstract_plan_connector_arm = str(
+            getattr(self.config, "abstract_plan_connector_arm", "disabled")
+            or "disabled"
+        )
+        _abstract_plan_connector: AbstractPlanConnector | None = (
+            isolated_aux_init(
+                lambda: AbstractPlanConnector(
+                    self.config.d_model,
+                    self.abstract_plan.slot_count,
+                    tokenizer.vocab_size,
+                ),
+                117,
+            )
+            if abstract_plan_connector_arm != "disabled"
+            else None
+        )
+        # Registered only once, as `denoiser._plan_connector` -- not also as a
+        # direct TwoTowerModel submodule attribute, which would register the
+        # same parameters under two module paths. named_parameters() dedups
+        # by identity and (silently) keeps whichever path it visits first, so
+        # a second registration wouldn't raise -- it would just make
+        # `optimizer_parameter_groups`'s prefix match nothing.
+        # `abstract_plan_connector` (the property below) reads it back out.
+        if _abstract_plan_connector is not None:
+            self.denoiser.set_plan_connector(
+                _abstract_plan_connector, arm=abstract_plan_connector_arm
+            )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -1647,6 +1857,7 @@ class TwoTowerModel(nn.Module):
         self._component_token_ids_cache: tuple[int, ...] | None = None
         self._binder_token_ids_cache: tuple[int, ...] | None = None
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
+        self._abstract_plan_target_cache: dict[str, tuple[int, ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_role_properties: list[dict[str, tuple[str, ...]]] | None = None
@@ -1665,7 +1876,24 @@ class TwoTowerModel(nn.Module):
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
         self._current_runtime_table: object | None = None
+        self._runtime_symbol_tables: list[object] = []
         self.to(device)
+
+    def _runtime_symbols_for_row(self, row: int = 0) -> tuple[object, ...]:
+        table = (
+            self._runtime_symbol_tables[row]
+            if 0 <= row < len(self._runtime_symbol_tables)
+            else self._current_runtime_table
+        )
+        return tuple(getattr(table, "runtime_symbols", ()) or ())
+
+    def _record_exact_bypass(self, token_id: int) -> None:
+        stats = get_active_stats()
+        if stats is None or not hasattr(self.tokenizer, "kind_of"):
+            return
+        kind = getattr(self.tokenizer.kind_of(int(token_id)), "value", "")
+        if kind in {"component", "sym", "bind", "state", "builtin"}:
+            stats.semantic_singleton_bypasses += 1
 
     def _effective_structural_bias(self) -> float:
         if getattr(self.config, "grammar_trust_model", False):
@@ -1774,6 +2002,7 @@ class TwoTowerModel(nn.Module):
         self._target_ids_cache.clear()
         self._compiler_decision_cache.clear()
         self._context_token_count_cache.clear()
+        self._abstract_plan_target_cache.clear()
         if is_hf_context(self.context) and hasattr(
             self.context, "clear_backbone_cache"
         ):
@@ -1807,6 +2036,10 @@ class TwoTowerModel(nn.Module):
             "root_reference_identity_head.",
             "trust_gate.",
             "survival_head.",
+            "abstract_plan_head.",
+            # Registered under the denoiser (see the property of the same
+            # name), not as a direct top-level submodule -- see __init__.
+            "denoiser._plan_connector.",
         )
         grouped: dict[str, list[nn.Parameter]] = {"base": []}
         seen: set[int] = set()
@@ -2130,6 +2363,146 @@ class TwoTowerModel(nn.Module):
                     device=self.device_name,
                 )
 
+    def abstract_plan_trace(
+        self,
+        prompts: list[str],
+        *,
+        target_plan_ids: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+        cache_keys: list[str] | None = None,
+    ) -> AbstractPlanTrace | None:
+        """Predict a plan trace from pooled context-tower states (AP-023 / SLM-315).
+
+        Returns ``None`` when ``abstract_plan_mode == "disabled"`` (the
+        default). A pure side channel: neither ``training_loss`` nor
+        ``forward`` ever calls this, so no plan signal reaches the decoder
+        unless a caller invokes it explicitly.
+        """
+        if self.abstract_plan_head is None:
+            return None
+        ctx, ctx_pad = self._encode_context(prompts, cache_keys=cache_keys)
+        return self.abstract_plan_head(
+            ctx,
+            ctx_pad,
+            mode=self.config.abstract_plan_mode,
+            target_plan_ids=target_plan_ids,
+            generator=generator,
+        )
+
+    def _abstract_plan_targets(self, batch: list[ExampleRecord]) -> torch.Tensor:
+        """Return opaque structural supervision for the optional plan head.
+
+        Targets are extracted from training labels only.  They encode four
+        bounded program facts (node count, leaf count, maximum depth, and
+        placeholder bindings), not component spellings or caller identifiers.
+        The slots remain opaque at inference; this is supervision for a
+        compact latent code, not a runtime semantic authority.
+        """
+        if self.abstract_plan is None:
+            raise ValueError("abstract plan targets require an enabled plan")
+        from slm_training.dsl.parser import parse
+
+        rows: list[tuple[int, ...]] = []
+        for record in batch:
+            cached = self._abstract_plan_target_cache.get(record.openui)
+            if cached is None:
+                root = parse(record.openui).root
+                node_count = 0
+                leaf_count = 0
+                max_depth = 0
+                binding_count = 0
+
+                def walk(node: object, depth: int) -> None:
+                    nonlocal node_count, leaf_count, max_depth, binding_count
+                    if not isinstance(node, dict):
+                        return
+                    node_count += 1
+                    max_depth = max(max_depth, depth)
+                    props = node.get("props")
+                    children = props.get("children") if isinstance(props, dict) else None
+                    if not isinstance(children, list) or not children:
+                        leaf_count += 1
+                    if isinstance(props, dict):
+                        binding_count += sum(
+                            isinstance(value, str) and value.startswith(":")
+                            for key, value in props.items()
+                            if key != "children"
+                        )
+                    if isinstance(children, list):
+                        for child in children:
+                            walk(child, depth + 1)
+
+                walk(root, 1)
+                facts = (node_count, leaf_count, max_depth, binding_count)
+                cached = tuple(
+                    min(self.abstract_plan.slot_count - 1, value) for value in facts
+                )
+                self._abstract_plan_target_cache[record.openui] = cached
+            rows.append(cached)
+        base = torch.tensor(rows, dtype=torch.long, device=self.device_name)
+        rounds = self.abstract_plan.rounds
+        if base.size(1) < rounds:
+            repeats = (rounds + base.size(1) - 1) // base.size(1)
+            base = base.repeat(1, repeats)
+        return base[:, :rounds]
+
+    @property
+    def abstract_plan_connector(self) -> AbstractPlanConnector | None:
+        """The AP-024 connector, or ``None`` when disabled.
+
+        Reads through to ``denoiser._plan_connector`` -- its single point of
+        registration -- rather than being a second submodule attribute of its
+        own (see the comment at construction time in ``__init__``).
+        """
+        return self.denoiser._plan_connector
+
+    def generate_with_plan_connector(
+        self,
+        prompt: str,
+        *,
+        gold: ExampleRecord | None = None,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+        design_md: str | None = None,
+        target_plan_ids: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+    ) -> tuple[str, list[PlanConnectorTrace]]:
+        """Generate one sample with the AP-024 plan connector active (SLM-316).
+
+        Delegates to the existing, unmodified :meth:`generate` for the actual
+        decode -- every connector arm shares the exact same call, scheduling,
+        and (when ``generator`` is supplied for arm-specific randomness)
+        prompt/seed; only the plan vector fed to the denoiser differs by arm.
+        Off by default: raises unless ``abstract_plan_connector_arm`` is
+        non-disabled. The plan vector is cleared from the denoiser (even on
+        an exception) so this call never leaks conditioning into unrelated
+        ``generate`` calls.
+        """
+        if self.abstract_plan_connector is None:
+            raise ValueError(
+                "abstract plan connector is default-off: set "
+                "TwoTowerConfig.abstract_plan_connector_arm to a non-disabled arm"
+            )
+        trace = self.abstract_plan_trace(
+            [prompt], target_plan_ids=target_plan_ids, generator=generator
+        )
+        assert trace is not None  # abstract_plan_head is required to be enabled too
+        vector = self.abstract_plan_connector.plan_vector_from_trace(trace)
+        arm = PlanConnectorArm(self.config.abstract_plan_connector_arm)
+        resolved = resolve_plan_vector(vector, arm=arm, generator=generator)
+        self.denoiser.set_plan_vector(resolved)
+        try:
+            text = self.generate(
+                prompt,
+                gold=gold,
+                max_len=max_len,
+                grammar_constrained=grammar_constrained,
+                design_md=design_md,
+            )
+        finally:
+            self.denoiser.set_plan_vector(None)
+        return text, self.denoiser.pop_plan_connector_traces()
+
     def apply_dynamic_quant(self) -> bool:
         """P5: dynamically quantize Linear layers to int8 (CPU). Returns True on success."""
         if str(self.device_name) != "cpu":
@@ -2405,6 +2778,17 @@ class TwoTowerModel(nn.Module):
                     noisy[i, j] = self.tokenizer.mask_id
         return noisy, predict_mask, ltr_suffix
 
+    def _ltr_tail_mask(
+        self, target_ids: torch.Tensor, ltr_suffix: torch.Tensor
+    ) -> torch.Tensor:
+        """Select the final configured number of real LTR-suffix tokens."""
+        count = int(self.config.ltr_tail_tokens or 0)
+        if count <= 0:
+            return torch.zeros_like(ltr_suffix)
+        real_suffix = ltr_suffix & target_ids.ne(self.tokenizer.pad_id)
+        from_end = real_suffix.flip(1).cumsum(dim=1).flip(1)
+        return real_suffix & from_end.le(count)
+
     def _placeholder_ids(self) -> set[int]:
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
@@ -2656,7 +3040,10 @@ class TwoTowerModel(nn.Module):
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         _require_symbol_only_tokenizer(self.tokenizer)
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -2723,6 +3110,36 @@ class TwoTowerModel(nn.Module):
 
         from slm_training.runtime.telemetry import timed
 
+        abstract_trace: AbstractPlanTrace | None = None
+        abstract_targets: torch.Tensor | None = None
+        train_plan_conditioning = bool(
+            getattr(self.config, "abstract_plan_train_conditioning", False)
+        )
+        abstract_plan_w = float(
+            getattr(self.config, "abstract_plan_loss_weight", 0.0) or 0.0
+        )
+        if abstract_plan_w > 0.0:
+            if self.abstract_plan_head is None or self.abstract_plan is None:
+                raise ValueError(
+                    "abstract_plan_loss_weight requires abstract_plan_mode != 'disabled'"
+                )
+            abstract_targets = self._abstract_plan_targets(batch)
+            abstract_trace = self.abstract_plan_head(
+                ctx,
+                ctx_pad,
+                mode="teacher_forced",
+                target_plan_ids=abstract_targets,
+            )
+            if train_plan_conditioning:
+                connector = self.abstract_plan_connector
+                if connector is None:
+                    raise ValueError(
+                        "abstract_plan_train_conditioning requires a plan connector"
+                    )
+                vector = connector.plan_vector_from_trace(abstract_trace)
+                arm = PlanConnectorArm(self.config.abstract_plan_connector_arm)
+                self.denoiser.set_plan_vector(resolve_plan_vector(vector, arm=arm))
+
         depth_logits: list[torch.Tensor] | None = None
         with timed("denoiser_forward"):
             self._set_runtime_symbol_features(
@@ -2753,6 +3170,8 @@ class TwoTowerModel(nn.Module):
                 # bias it. (Same defect class as PR #275's loss-suite fix —
                 # cleared here at the source.)
                 self.denoiser.set_runtime_symbol_features(None)
+                if train_plan_conditioning:
+                    self.denoiser.set_plan_vector(None)
 
         # SLM-237/SLM-238 (RSC-A01/RSC-A02): validate/normalize before any loss
         # term is computed from depth_logits. This runs unconditionally (not
@@ -2805,12 +3224,38 @@ class TwoTowerModel(nn.Module):
                     content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
                     prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
                     weights = weights + (prefix_w * prefix.reshape(-1).float())
+                tail_w = float(
+                    getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0
+                )
+                if tail_w > 0.0:
+                    tail = self._ltr_tail_mask(target_ids, ltr_suffix)
+                    weights = weights + (tail_w * tail.reshape(-1).float())
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
                 row_flat = mdlm_row_w.unsqueeze(1).expand(-1, seq).reshape(-1)
                 weights = weights * row_flat
             mask_flat = predict_mask.reshape(-1)
+            contrast_weight = float(
+                getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0
+            )
+            if contrast_weight > 0.0:
+                from slm_training.models.semantic_contrast_loss import (
+                    semantic_contrast_metadata,
+                )
+
+                # Negative sides are score-only: their token CE would train the
+                # very corruption that the pairwise objective must reject.
+                token_rows = torch.as_tensor(
+                    [
+                        semantic_contrast_metadata(record) is None
+                        or semantic_contrast_metadata(record)["role"] != "negative"
+                        for record in batch
+                    ],
+                    device=target_ids.device,
+                    dtype=torch.bool,
+                )
+                mask_flat = mask_flat & token_rows.repeat_interleave(target_ids.size(1))
             mask_loss = (ce * weights)[mask_flat].mean()
             # Diagnostic only: preserve per-record masked token loss without
             # changing the scalar objective or its gradient reduction.
@@ -2928,6 +3373,28 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics["recursive_final_depth_aux_contribution"] = 0.0
             self.last_training_metrics["combined_training_loss"] = 0.0
 
+        if abstract_trace is not None and abstract_targets is not None:
+            assert abstract_trace.logits is not None
+            plan_loss = F.cross_entropy(
+                abstract_trace.logits.reshape(-1, abstract_trace.logits.size(-1)),
+                abstract_targets.reshape(-1),
+            )
+            mask_loss = mask_loss + abstract_plan_w * plan_loss
+            self.last_training_metrics.update(
+                {
+                    "abstract_plan_loss": float(plan_loss.detach().cpu()),
+                    "abstract_plan_accuracy": float(
+                        abstract_trace.logits.argmax(dim=-1)
+                        .eq(abstract_targets)
+                        .float()
+                        .mean()
+                        .detach()
+                        .cpu()
+                    ),
+                    "abstract_plan_train_conditioning": train_plan_conditioning,
+                }
+            )
+
         # SLM-238 (RSC-A02): the required RecursiveObjectiveContractV2 schema,
         # built from (never a second source of truth alongside) the flat
         # scalar fields above -- its __post_init__ re-verifies both sum
@@ -2937,6 +3404,67 @@ class TwoTowerModel(nn.Module):
                 self.last_training_metrics
             ).as_dict()
         )
+
+        contrast_weight = float(
+            getattr(self.config, "semantic_contrast_loss_weight", 0.0) or 0.0
+        )
+        if contrast_weight > 0.0:
+            from slm_training.models.semantic_contrast_loss import (
+                pairwise_margin_loss,
+                semantic_contrast_metadata,
+            )
+
+            if not predict_mask.any():
+                raise ValueError("semantic contrast objective has no scored tokens")
+            sequence_ce = F.cross_entropy(
+                logits.reshape(-1, logits.size(-1)), target_ids.reshape(-1), reduction="none"
+            ).reshape(target_ids.shape)
+            sequence_nll = (sequence_ce * predict_mask).sum(dim=1) / predict_mask.sum(
+                dim=1
+            ).clamp_min(1)
+            pairs: dict[str, dict[str, int]] = {}
+            families: dict[str, int] = {}
+            for index, record in enumerate(batch):
+                meta = semantic_contrast_metadata(record)
+                if meta is None:
+                    continue
+                pair = pairs.setdefault(meta["pair_id"], {})
+                if meta["role"] in pair:
+                    raise ValueError("semantic contrast batch duplicates a pair side")
+                pair[meta["role"]] = index
+                families[meta["family"]] = families.get(meta["family"], 0) + 1
+            complete = [pair for pair in pairs.values() if set(pair) == {"positive", "negative"}]
+            if len(complete) != len(pairs) or not complete:
+                raise ValueError("semantic contrast batch must contain complete positive/negative pairs")
+            positive_scores = -torch.stack([sequence_nll[pair["positive"]] for pair in complete])
+            negative_scores = -torch.stack([sequence_nll[pair["negative"]] for pair in complete])
+            objective = pairwise_margin_loss(
+                positive_scores,
+                negative_scores,
+                margin=float(getattr(self.config, "semantic_contrast_margin", 1.0)),
+            )
+            mask_loss = mask_loss + contrast_weight * objective.loss
+            self.last_training_metrics.update(
+                {
+                    "semantic_contrast_loss": float(objective.loss.detach().cpu()),
+                    "semantic_contrast_loss_weight": contrast_weight,
+                    "semantic_contrast_margin": float(getattr(self.config, "semantic_contrast_margin", 1.0)),
+                    "semantic_contrast_pairs": len(complete),
+                    "semantic_contrast_family_sides": dict(sorted(families.items())),
+                    "semantic_contrast_positive_nll": float((-positive_scores).mean().detach().cpu()),
+                    "semantic_contrast_negative_nll": float((-negative_scores).mean().detach().cpu()),
+                    "semantic_contrast_score_distance": float(objective.score_distance.detach().cpu()),
+                    "semantic_contrast_violation_rate": float(objective.violation_rate.detach().cpu()),
+                }
+            )
+        else:
+            self.last_training_metrics.update(
+                {
+                    "semantic_contrast_loss": 0.0,
+                    "semantic_contrast_loss_weight": 0.0,
+                    "semantic_contrast_pairs": 0,
+                }
+            )
 
         length_w = float(
             getattr(self.config, "diffusion_length_loss_weight", 0.0) or 0.0
@@ -3881,7 +4409,9 @@ class TwoTowerModel(nn.Module):
                 token_id: index for index, token_id in enumerate(component_ids)
             }
             plan_logits = self.binder_component_plan_head(
-                self._pool_context(ctx, ctx_pad)
+                # Preserve the primary objective's gradients while this
+                # auxiliary planner learns its own legal-decision signal.
+                self._pool_context(ctx, ctx_pad).detach()
             ).view(len(batch), len(binder_ids), len(component_ids))
             plan_losses: list[torch.Tensor] = []
             plan_hits: list[torch.Tensor] = []
@@ -4069,6 +4599,7 @@ class TwoTowerModel(nn.Module):
         schema: str | None = None,
         output_kind: str | None = None,
         output_category: str | None = None,
+        history_ops_text: str | None = None,
     ) -> str:
         if schema is None and getattr(self.config, "schema_in_context", False):
             from slm_training.harnesses.quality import compact_schema_snippet
@@ -4093,6 +4624,14 @@ class TwoTowerModel(nn.Module):
             if getattr(self.config, "slot_contract_in_context", False)
             else None
         )
+        # SLM-428 / VAR2-01: the lever gates the *effect*, not just the call
+        # site — a caller passing history_ops_text while the lever is off
+        # must reproduce prior (no-history) output exactly.
+        ops_text = (
+            history_ops_text
+            if history_ops_text and getattr(self.config, "encoder_ops_conditioning", False)
+            else None
+        )
         return format_context_text(
             prompt,
             dm,
@@ -4102,6 +4641,7 @@ class TwoTowerModel(nn.Module):
             slot_contract=contract,
             output_kind=output_kind,
             output_category=output_category,
+            history_ops_text=ops_text,
         )
 
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
@@ -4128,10 +4668,14 @@ class TwoTowerModel(nn.Module):
         """Return serialized OpenUI if parseable and non-trivial; else None."""
         try:
             from slm_training.dsl.parser import validate
+        except TimeoutError:
+            raise
         except Exception:  # noqa: BLE001
             return None
         try:
             program = validate(text)
+        except TimeoutError:
+            raise
         except Exception:  # noqa: BLE001
             return None
         ser = (program.serialized or text).strip()
@@ -4193,6 +4737,7 @@ class TwoTowerModel(nn.Module):
         *,
         attempts: int | None = None,
         slot_contract: list[str] | None = None,
+        require_valid: bool = False,
     ) -> str:
         """
         Repair toward a valid OpenUI string when grammar-constrained.
@@ -4236,7 +4781,7 @@ class TwoTowerModel(nn.Module):
             ser = self._canonical_valid_openui(last)
             if ser is not None:
                 return ser
-        if self.config.grammar_finalize_validate:
+        if self.config.grammar_finalize_validate or require_valid:
             fallback = self._minimal_valid_openui(slot_contract)
             if fallback is not None:
                 active = get_active_stats()
@@ -4377,6 +4922,7 @@ class TwoTowerModel(nn.Module):
                 forced_token_id=forced,
                 slot_contract=contract,
                 state=st,
+                runtime_symbols=self._runtime_symbols_for_row(),
             )
             logits: torch.Tensor | None = None
             row: torch.Tensor | None = None
@@ -4385,6 +4931,7 @@ class TwoTowerModel(nn.Module):
             decision_source = "dfa_singleton" if exact is not None else "model_ranked"
             if exact is not None:
                 choice = exact
+                self._record_exact_bypass(exact)
                 if stats is not None:
                     stats.forced_row_tokens_without_forward += 1
                     stats.all_forced_steps_without_forward += 1
@@ -4412,6 +4959,7 @@ class TwoTowerModel(nn.Module):
                     forced_token_id=forced,
                     slot_contract=contract,
                     state=st,
+                    runtime_symbols=self._runtime_symbols_for_row(),
                     **pick_kw,
                 )
             # Commit-boundary invariant: a bare root binding must continue with
@@ -4443,8 +4991,11 @@ class TwoTowerModel(nn.Module):
                             top_k=self.config.grammar_top_k,
                             slot_contract=contract,
                             state=st,
+                            runtime_symbols=self._runtime_symbols_for_row(),
                             **pick_kw,
                         )
+                    except TimeoutError:
+                        raise
                     except Exception:  # noqa: BLE001
                         choice = None
             if choice is None:
@@ -4552,6 +5103,7 @@ class TwoTowerModel(nn.Module):
                         top_k=self.config.grammar_top_k,
                         slot_contract=contract,
                         state=st,
+                        runtime_symbols=self._runtime_symbols_for_row(),
                         **pick_kw,
                     )
                     if nxt is None:
@@ -4751,6 +5303,98 @@ class TwoTowerModel(nn.Module):
             ),
         )
         return self._action_shortlist_vectors
+
+    def _grammar_checkpoints(
+        self,
+        ids: torch.Tensor,
+        t: int,
+        canvas: int,
+        need_model: list[int],
+        states: Any,
+    ) -> dict[int, int] | None:
+        """Prove where branching stops after ``t``, without a forward (I4).
+
+        For every row still needing the model, ask how many lexemes the grammar
+        forces after *each* of its legal candidates. The minimum across rows and
+        candidates is determined no matter what the model picks, so the forward
+        only needs to read up to it. Returns ``None`` (no claim) when the lever
+        is off or any probe budget is exceeded — the planner then falls back to
+        device-window sizing.
+        """
+        if str(getattr(self.config, "prefill_schedule", "off") or "off") == "off":
+            return None
+        if not need_model or states is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            build_completion_forest,
+        )
+        from slm_training.runtime.decode_schedule import common_forced_run
+
+        tok = self.tokenizer
+        rows = need_model[:4]  # probe budget: the batch, not the whole canvas
+        shortest: int | None = None
+        for bi in rows:
+            st = states[bi] if bi < len(states) else None
+            if st is None:
+                return None
+            prefix = ids[bi, :t].tolist()
+            try:
+                forest = build_completion_forest(
+                    tok, prefix, state=st, remaining_tokens=canvas - t
+                )
+            except Exception:  # noqa: BLE001 - an unprovable probe claims nothing
+                return None
+            if forest.coverage != "complete":
+                return None
+            run = common_forced_run(
+                prefix,
+                [path.token_ids for path in forest.paths if path.token_ids],
+                lambda working: force_emit_token_id(tok, working, state=None),
+            )
+            shortest = run if shortest is None else min(shortest, run)
+            if not shortest:
+                return None
+        if not shortest:
+            return None
+        return {t + 1: int(shortest)}
+
+    def _schedule_backend(self) -> str:
+        """Cached accelerator id used by the I4 prefill planner."""
+        cached = getattr(self, "_schedule_backend_cache", None)
+        if cached is None:
+            from slm_training.runtime.decode_schedule import schedule_backend
+
+            cached = schedule_backend(str(getattr(self.config, "device", "") or "") or None)
+            self._schedule_backend_cache = cached
+        return cached
+
+    def _speculative_ranker(self) -> Any | None:
+        """Return the configured deterministic path ranker, or ``None``.
+
+        I3: this is a *ranking* lever over the forward-calculated symbol table.
+        A configured-but-unloadable table raises rather than silently decoding
+        without it — a run must be able to name the table that ranked it.
+        """
+        cached = getattr(self, "_speculative_ranker_cache", ...)
+        if cached is not ...:
+            return cached
+        mode = str(getattr(self.config, "speculative_rank", "off") or "off").lower()
+        ranker = None
+        if mode not in {"off", ""}:
+            if mode != "ngram":
+                raise ValueError(
+                    f"unsupported speculative_rank {mode!r}; expected 'off' or 'ngram'"
+                )
+            from slm_training.dsl.grammar.fastpath.speculative_rank import load_ranker
+
+            # An unset table resolves to the committed default artifact, so the
+            # lever is reachable without a build step.
+            ranker = load_ranker(
+                getattr(self.config, "speculative_rank_table", None),
+                margin=float(getattr(self.config, "speculative_rank_margin", 0.0) or 0.0),
+            )
+        self._speculative_ranker_cache = ranker
+        return ranker
 
     def _maybe_apply_action_shortlist(
         self,
@@ -8841,6 +9485,8 @@ class TwoTowerModel(nn.Module):
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
         if len(paths) == 1 and coverage == "complete":
+            if paths[0].token_ids:
+                self._record_exact_bypass(int(paths[0].token_ids[0]))
             return tuple(paths[0].token_ids)
         stats = get_active_stats()
         recorder = getattr(self, "trace_recorder", None)
@@ -8850,6 +9496,32 @@ class TwoTowerModel(nn.Module):
         # SLM-176: optionally retrieve-then-rerank the legal action set.  When
         # disabled this is a no-op and leaves ``paths`` unchanged.
         paths, _shortlist_trace = self._maybe_apply_action_shortlist(paths, prefix)
+
+        # I3: rank the already-legal domain deterministically before spending a
+        # forward. Membership is untouched; only the choice among proven-legal
+        # candidates is made here, and only when the corpus scorer clears its
+        # configured margin. Anything less falls through to the model below.
+        speculative = self._speculative_ranker()
+        if speculative is not None and len(paths) > 1:
+            choice = speculative.choose(prefix, paths)
+            if choice is not None:
+                if stats is not None:
+                    stats.speculative_rank_evaluations += 1
+                if choice.confident:
+                    selected = paths[choice.best_index]
+                    if stats is not None:
+                        stats.speculative_rank_commits += 1
+                        stats.speculative_rank_tokens += len(selected.token_ids)
+                    if recorder is not None:
+                        recorder.event(
+                            "speculative_rank_commit",
+                            position=len(prefix),
+                            margin=round(float(choice.margin), 6),
+                            candidates=len(paths),
+                        )
+                    return tuple(selected.token_ids)
+                if stats is not None:
+                    stats.speculative_rank_declined += 1
 
         def uniform_legal_index() -> int:
             """Seeded, stateless control choice for an otherwise legal decision."""
@@ -8972,7 +9644,13 @@ class TwoTowerModel(nn.Module):
             scores = raw_logits[list(candidates)]
             inventory_bias = self._component_inventory_bias(ctx, ctx_pad, candidates)
             if inventory_bias is not None:
+                before_inventory = int(scores.argmax().item())
                 scores = scores + inventory_bias
+                if stats is not None:
+                    stats.component_inventory_applications += 1
+                    stats.component_inventory_choice_changes += int(
+                        int(scores.argmax().item()) != before_inventory
+                    )
             plan_bias = self._component_plan_bias(
                 ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
             )
@@ -9120,36 +9798,68 @@ class TwoTowerModel(nn.Module):
                 for token_id in path.token_ids:
                     children.setdefault(parent, set()).add(int(token_id))
                     parent = (*parent, int(token_id))
-            parents = [parent for parent in children if len(parent) < length]
-            canvases = torch.cat(
-                [self._compiler_canvas(list(parent), length) for parent in parents],
-                dim=0,
-            )
-            k = len(parents)
-            hidden = self._denoiser_hidden(
-                canvases,
-                ctx.expand(k, -1, -1),
-                ctx_pad.expand(k, -1) if ctx_pad is not None else ctx_pad,
-            )
             edge_scores: dict[tuple[tuple[int, ...], int], float] = {}
+            for parent, child_ids in children.items():
+                if len(child_ids) == 1:
+                    edge_scores[(parent, next(iter(child_ids)))] = 0.0
+            parents = [
+                parent
+                for parent, child_ids in children.items()
+                if len(parent) < length and len(child_ids) > 1
+            ]
+            device_type = str(self.device_name).split(":", 1)[0].lower()
+            auto_states = 4 if device_type == "cpu" else 32
+            max_states = int(
+                getattr(self.config, "compiler_prefill_max_states", 0) or auto_states
+            )
+            token_budget = int(
+                getattr(self.config, "compiler_prefill_token_budget", 0)
+                or max_states * length
+            )
+            batch_states = max(1, min(max_states, token_budget // max(1, length)))
+            hidden_rows: dict[tuple[int, ...], torch.Tensor] = {}
+            for start in range(0, len(parents), batch_states):
+                chunk = parents[start : start + batch_states]
+                canvases = torch.cat(
+                    [
+                        self._compiler_canvas(list(parent), length)
+                        for parent in chunk
+                    ],
+                    dim=0,
+                )
+                k = len(chunk)
+                hidden = self._denoiser_hidden(
+                    canvases,
+                    ctx.expand(k, -1, -1),
+                    ctx_pad.expand(k, -1) if ctx_pad is not None else ctx_pad,
+                )
+                for row, parent in enumerate(chunk):
+                    hidden_rows[parent] = hidden[row]
+                if stats is not None:
+                    stats.compiler_prefill_batches += 1
+                    stats.compiler_prefill_states += k
+                    stats.compiler_prefill_tokens += k * length
             first_edge_kinds = {
                 int(path.token_ids[0]): str(path.kind)
                 for path in paths
                 if path.token_ids
             }
-            for row, parent in enumerate(parents):
+            for parent in parents:
                 candidate_ids = tuple(sorted(children[parent]))
-                if len(candidate_ids) == 1:
-                    edge_scores[(parent, candidate_ids[0])] = 0.0
-                    continue
                 scores = self._project_candidates(
-                    hidden[row, len(parent)], candidate_ids
+                    hidden_rows[parent][len(parent)], candidate_ids
                 )
                 inventory_bias = self._component_inventory_bias(
                     ctx, ctx_pad, candidate_ids
                 )
                 if inventory_bias is not None:
+                    before_inventory = int(scores.argmax().item())
                     scores = scores + inventory_bias
+                    if stats is not None:
+                        stats.component_inventory_applications += 1
+                        stats.component_inventory_choice_changes += int(
+                            int(scores.argmax().item()) != before_inventory
+                        )
                 if parent == tuple(prefix):
                     plan_bias = self._component_plan_bias(
                         ctx,
@@ -9294,7 +10004,10 @@ class TwoTowerModel(nn.Module):
                 for i, token_id in enumerate(candidate_ids):
                     edge_scores[(parent, token_id)] = float(log_probs[i].item())
             if stats is not None:
-                stats.trie_nodes += len(parents)
+                # Keep trie topology telemetry stable: forced single-child
+                # nodes still exist even though only ambiguous parents consume
+                # speculative prefill states.
+                stats.trie_nodes += len(children)
 
         path_scores: list[float] = []
         for path in paths:
@@ -9377,14 +10090,12 @@ class TwoTowerModel(nn.Module):
             for path in paths
         ]
         if recorder is not None:
-            parent_rows = {parent: row for row, parent in enumerate(parents)}
             commits: list[dict[str, object]] = []
             parent = tuple(prefix)
             for token_id in paths[chosen].token_ids:
                 allowed = tuple(sorted(children.get(parent, ())))
                 if len(allowed) > 1:
-                    row = parent_rows[parent]
-                    raw_scores = self.denoiser.project(hidden[row, len(parent)])
+                    raw_scores = self.denoiser.project(hidden_rows[parent][len(parent)])
                     raw_id = int(raw_scores.argmax().item())
                     log_probs = F.log_softmax(raw_scores.float(), dim=-1)
                     commit: dict[str, object] = {
@@ -9624,6 +10335,7 @@ class TwoTowerModel(nn.Module):
                     ),
                     min_content=self._effective_min_content(slot_contract),
                     remaining_tokens=length - len(prefix),
+                    runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                 )
             if getattr(self.config, "verified_solver_decode", False):
                 # VSS1-03: certified exact closure prunes the forest to the live
@@ -9712,61 +10424,10 @@ class TwoTowerModel(nn.Module):
                             stats.compiler_lattice_termination_reason = (
                                 "no_live_decision"
                             )
-                if mode == "forced" and forest.paths:
-                    canvas = self._compiler_canvas(prefix, length)
-                    logits = self._denoiser_forward(canvas, ctx, ctx_pad)
-                    choice = pick_constrained_token(
-                        logits[0, len(prefix)].clone(),
-                        self.tokenizer,
-                        prefix,
-                        top_k=self.config.grammar_top_k,
-                        slot_contract=slot_contract,
-                        state=state,
-                        **self._pick_kwargs(),
-                    )
-                    token_id = int(
-                        choice if choice is not None else self.tokenizer.eos_id
-                    )
-                    prefix.append(token_id)
-                    state.advance_token(self.tokenizer, token_id)
-                    if stats is not None:
-                        stats.tokens_emitted += 1
-                    if token_id == self.tokenizer.eos_id:
-                        break
-                    continue
                 if stats is not None:
                     stats.compiler_fallbacks += 1
-                # Tree/restricted modes must never append an unconstrained
-                # suffix after the symbolic forest reaches a dead end. The
-                # prefix is grammar-admitted; return it as-is and let the
-                # evaluator report incompleteness instead of manufacturing
-                # illegal structure with MaskGIT.
-                if mode in {"tree", "restricted"}:
-                    break
-                if stats is not None:
-                    stats.seeded_fallbacks += 1
-                before_forwards = int(self.speculative_stats.denoiser_forwards)
-                text = self._generate_maskgit_one(
-                    ctx,
-                    ctx_pad,
-                    length,
-                    use_grammar=False,
-                    slot_contract=slot_contract,
-                    seed_ids=prefix,
-                )
-                encoded = self._encode_openui(
-                    text, placeholders=list(slot_contract or [])
-                )[:length]
-                fallback_forwards = max(
-                    0,
-                    int(self.speculative_stats.denoiser_forwards) - before_forwards,
-                )
-                if stats is not None:
-                    stats.forwards_count += fallback_forwards
-                    stats.full_projections += fallback_forwards
-                    stats.canvas_tokens += fallback_forwards * int(length)
-                    stats.tokens_emitted += max(0, len(encoded) - 1)
-                prefix = [int(x) for x in encoded]
+                # Exact authority is empty. Stop and let the mandatory
+                # certification layer emit a tagged deterministic fallback.
                 break
 
             if mode == "forced" and len(forest.paths) > 1:
@@ -9782,6 +10443,7 @@ class TwoTowerModel(nn.Module):
                     top_k=self.config.grammar_top_k,
                     slot_contract=slot_contract,
                     state=state,
+                    runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                     **self._pick_kwargs(),
                 )
                 selected = (
@@ -10173,7 +10835,13 @@ class TwoTowerModel(nn.Module):
                         candidate_ids,
                     )
                     if inventory_bias is not None:
+                        before_inventory = int(scores.argmax().item())
                         scores = scores + inventory_bias
+                        if stats is not None:
+                            stats.component_inventory_applications += 1
+                            stats.component_inventory_choice_changes += int(
+                                int(scores.argmax().item()) != before_inventory
+                            )
                     candidate_kinds = tuple(
                         (
                             "component_root"
@@ -10731,20 +11399,44 @@ class TwoTowerModel(nn.Module):
                         )
                         if forced is not None:
                             forced_map[bi] = forced
-                            exact = exact_forced_token_id(
-                                tok,
-                                ids[bi, :t].tolist(),
-                                forced_token_id=forced,
-                                slot_contract=contract,
-                                state=st,
-                            )
-                            if exact is not None:
-                                exact_map[bi] = exact
+                        exact = exact_forced_token_id(
+                            tok,
+                            ids[bi, :t].tolist(),
+                            forced_token_id=forced,
+                            slot_contract=contract,
+                            state=st,
+                            runtime_symbols=self._runtime_symbols_for_row(bi),
+                        )
+                        if exact is not None:
+                            exact_map[bi] = exact
                 need_model = [bi for bi in active_idx.tolist() if bi not in exact_map]
+                # I4: let the symbol table shape the forward. With the lever
+                # off this returns the legacy row set and canvas budget, so the
+                # planner is observational until a campaign turns it on.
+                plan = plan_prefill(
+                    position=t,
+                    canvas=canvas,
+                    active_rows=active_idx.tolist(),
+                    committed_rows=tuple(exact_map),
+                    mode=str(getattr(self.config, "prefill_schedule", "off") or "off"),
+                    legacy_lookahead=lookahead,
+                    max_lookahead=int(
+                        getattr(self.config, "prefill_schedule_max_lookahead", 0) or 0
+                    ),
+                    backend=self._schedule_backend(),
+                    forced_run_lengths=self._grammar_checkpoints(
+                        ids, t, canvas, need_model, states
+                    ),
+                )
+                record_plan(stats, plan)
+                step_lookahead = lookahead
+                if plan.reason != "legacy_budget" and plan.needs_forward:
+                    step_lookahead = max(1, plan.prefill_end - t)
                 forwarded_rows = set(need_model)
                 pred = ids[:, t].clone()
                 for bi, choice in exact_map.items():
                     pred[bi] = choice
+                    self._record_exact_bypass(choice)
                     st = states[bi] if states is not None else None
                     if st is not None:
                         st.advance_token(tok, int(choice))
@@ -10761,8 +11453,8 @@ class TwoTowerModel(nn.Module):
                 if need_model:
                     need_t = torch.tensor(need_model, device=device, dtype=torch.long)
                     # P4: truncate canvas to prefix + lookahead for the forward.
-                    if lookahead > 0:
-                        end = min(canvas, t + lookahead)
+                    if step_lookahead > 0:
+                        end = min(canvas, t + step_lookahead)
                         fwd_ids = ids.index_select(0, need_t)[:, :end]
                         sub_ctx = ctx.index_select(0, need_t)
                         sub_pad = ctx_pad.index_select(0, need_t)
@@ -10839,6 +11531,7 @@ class TwoTowerModel(nn.Module):
                             forced_token_id=forced_map.get(bi),
                             slot_contract=contract,
                             state=st,
+                            runtime_symbols=self._runtime_symbols_for_row(bi),
                             **pick_kw,
                         )
                         if choice is None:
@@ -10893,6 +11586,7 @@ class TwoTowerModel(nn.Module):
                                 top_k=self.config.grammar_top_k,
                                 slot_contract=contract,
                                 state=st,
+                                runtime_symbols=self._runtime_symbols_for_row(bi),
                                 **pick_kw,
                             )
                             if choice is None:
@@ -11008,9 +11702,11 @@ class TwoTowerModel(nn.Module):
                                 forced_token_id=forced,
                                 slot_contract=contract,
                                 state=st,
+                                runtime_symbols=self._runtime_symbols_for_row(bi),
                             )
                             if exact is not None:
                                 choice = exact
+                                self._record_exact_bypass(exact)
                                 if stats is not None:
                                     stats.forced_row_tokens_without_forward += 1
                                     stats.all_forced_steps_without_forward += 1
@@ -11034,6 +11730,7 @@ class TwoTowerModel(nn.Module):
                                     forced_token_id=forced,
                                     slot_contract=contract,
                                     state=st,
+                                    runtime_symbols=self._runtime_symbols_for_row(bi),
                                     **pick_kw,
                                 )
                             if choice is None:
@@ -11244,6 +11941,16 @@ class TwoTowerModel(nn.Module):
         self.eval()
         if not prompts:
             return []
+        require_constrained_generation(
+            grammar_constrained,
+            configured=bool(self.config.grammar_constrained),
+        )
+        if bool(self.config.grammar_sample_decode) or bool(
+            self.config.grammar_uniform_at_unforced
+        ):
+            raise ValueError(
+                "stochastic grammar selection is disabled for deterministic generation"
+            )
         n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
         if n_samples > 1:
             pools: list[list[str]] = [[] for _ in prompts]
@@ -11288,6 +11995,16 @@ class TwoTowerModel(nn.Module):
         _opaque_slot_projection: bool = False,
     ) -> list[str]:
         """Generate while scoping opaque codec identity to this call only."""
+        require_constrained_generation(
+            grammar_constrained,
+            configured=bool(self.config.grammar_constrained),
+        )
+        if bool(self.config.grammar_sample_decode) or bool(
+            self.config.grammar_uniform_at_unforced
+        ):
+            raise ValueError(
+                "stochastic grammar selection is disabled for deterministic generation"
+            )
         _require_symbol_only_tokenizer(self.tokenizer)
         active = set(_OPAQUE_PROJECTION_MODELS.get())
         if _opaque_slot_projection:
@@ -12083,6 +12800,7 @@ class TwoTowerModel(nn.Module):
                 feature_tables.append(table)
         except Exception:  # noqa: BLE001
             feature_tables = []
+        self._runtime_symbol_tables = feature_tables
         if choice_constrained:
             contracts = [
                 self._slot_contracts[i]
@@ -12095,10 +12813,21 @@ class TwoTowerModel(nn.Module):
             self._last_generation_evidence = self._choice_generation_evidence(
                 ids, contracts
             )
-            return [
+            decoded = [
                 self._decode_openui(ids[i], placeholders=contracts[i])
                 for i in range(len(prompts))
             ]
+            certified: list[str] = []
+            for index, text in enumerate(decoded):
+                canonical = self._canonical_valid_openui(text)
+                fallback_used = canonical is None
+                if canonical is None:
+                    canonical = self._minimal_valid_openui(contracts[index])
+                if canonical is None:
+                    raise RuntimeError("choice decoder fallback failed validation")
+                self._last_generation_evidence[index]["fallback_used"] = fallback_used
+                certified.append(canonical)
+            return certified
         if bool(getattr(self.config, "contract_template_fastpath", False)):
             fast: list[str] = []
             for contract in self._slot_contracts or []:
@@ -12190,6 +12919,7 @@ class TwoTowerModel(nn.Module):
                         length,
                         attempts=ensure_attempts,
                         slot_contract=contract,
+                        require_valid=True,
                     )
                 )
             return certified
@@ -12565,8 +13295,10 @@ class TwoTowerModel(nn.Module):
                     forced_token_id=forced,
                     slot_contract=contract,
                     state=state,
+                    runtime_symbols=self._runtime_symbols_for_row(),
                 )
                 if exact is not None:
+                    self._record_exact_bypass(exact)
                     trial = ids[0].tolist()
                     trial[position] = int(exact)
                     admitted = True
@@ -12775,6 +13507,7 @@ class TwoTowerModel(nn.Module):
                         remaining_tokens=(
                             length - t if int(unknown[b].sum().item()) == 1 else None
                         ),
+                        runtime_symbols=self._runtime_symbols_for_row(b),
                         **self._pick_kwargs(),
                     )
                     return choice  # None → leave masked for LTR repair
@@ -13195,27 +13928,6 @@ class TwoTowerModel(nn.Module):
             canonical = self._canonical_valid_openui(repaired)
             if canonical is not None:
                 return canonical
-            # Grammar filtering can occasionally strand a well-trained MaskGIT
-            # decode on a partial prefix. Retry once without token filtering,
-            # then accept it only after deterministic syntax repair + validation.
-            if rec is not None:
-                rec.event("retry_unconstrained")
-            active_stats = get_active_stats()
-            if active_stats is not None:
-                active_stats.unconstrained_retries += 1
-            if not bool(getattr(self.config, "allow_unconstrained_fallback", True)):
-                return text
-            unconstrained = self._generate_maskgit_one(
-                ctx,
-                ctx_pad,
-                length,
-                use_grammar=False,
-                slot_contract=slot_contract,
-            )
-            repaired = self._repair_surface_syntax(unconstrained)
-            canonical = self._canonical_valid_openui(repaired)
-            if canonical is not None:
-                return canonical
             return self._ensure_valid_openui(
                 text,
                 ctx,
@@ -13225,6 +13937,7 @@ class TwoTowerModel(nn.Module):
                     1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
                 ),
                 slot_contract=slot_contract,
+                require_valid=True,
             )
         return text
 
@@ -13469,6 +14182,14 @@ class TwoTowerModel(nn.Module):
             load_tokenizer_sidecar(ctx_tok_path) if ctx_tok_path.exists() else tokenizer
         )
         raw_cfg = dict(payload.get("config") or {})
+        from slm_training.harnesses.model_build.eval_policy import (
+            MANDATORY_GENERATION_POLICY,
+        )
+
+        declared_generation_policy = {
+            key: raw_cfg.get(key) for key in MANDATORY_GENERATION_POLICY
+        }
+        raw_cfg.update(MANDATORY_GENERATION_POLICY)
         if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
             raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
         for key in ("diffusion_policies", "diffusion_length_buckets"):
@@ -13503,6 +14224,7 @@ class TwoTowerModel(nn.Module):
         if "gen_len" in payload:
             model.gen_len = int(payload["gen_len"])
         model.output_contract_version = int(payload.get("output_contract_version", 0))
+        model._declared_generation_policy = declared_generation_policy
         return model
 
     @classmethod
@@ -13514,7 +14236,10 @@ class TwoTowerModel(nn.Module):
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
         for record in records:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "

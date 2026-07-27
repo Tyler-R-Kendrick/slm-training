@@ -32,6 +32,17 @@ _BIAS_CACHE: dict[tuple[int, int, float, str, str], object] = {}
 _ACTIVE_DSL: str | None = None
 
 
+def require_constrained_generation(
+    requested: bool | None, *, configured: bool = True
+) -> None:
+    """Reject generation settings that could permit invalid grammar."""
+    if requested is False or (requested is None and not configured):
+        raise ValueError(
+            "grammar_constrained=False is unsafe for OpenUI generation; "
+            "use constrained generation and shadow logits for diagnostics"
+        )
+
+
 def _token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     """Decode one token into the partial source consumed by the grammar."""
     from slm_training.dsl.grammar.fastpath.token_map import token_surface_piece
@@ -338,42 +349,46 @@ def exact_forced_token_id(
     slot_contract: list[str] | None = None,
     state: GrammarDecodeState | None = None,
     remaining_tokens: int | None = None,
+    runtime_symbols: tuple[object, ...] = (),
 ) -> int | None:
-    """Return a force-emit id only when it is the sole legal tokenizer token.
+    """Return an id only when exact authorities prove one legal continuation.
 
-    ``force_emit_token_id`` proves the next significant structural lexeme, but
-    compositional tokenizers may still legally emit insignificant whitespace.
-    This stricter helper enumerates the tokenizer vocabulary and fails closed
-    unless the same incremental DFA admits exactly one policy-legal token.
+    DSL-native tokenizers use the active pack's complete completion domain, so
+    scope-aware semantic singletons bypass inference just like structural
+    singletons. Other tokenizers retain the stricter DFA/vocabulary proof.
+
+    A *horizon-limited* completion domain is not a contradiction. When the
+    compiler cannot enumerate a terminal witness inside the remaining budget
+    (``coverage != "complete"``) it has proven nothing either way, so the DFA
+    proof below is consulted instead of discarding a decision the grammar has
+    already made (decode invariant I2, ``docs/design/decode-invariants.md``). A
+    *complete* domain that names more than one candidate genuinely contradicts
+    a singleton and still refuses.
+
+    The whitespace veto at the end of the DFA proof does not apply to the
+    DSL-native codec. That veto exists because a compositional tokenizer can
+    legally emit insignificant whitespace that competes with the forced lexeme
+    for the picker's argmax. The native completion domain already excludes
+    insignificant whitespace from its candidate set, so applying the veto only
+    in the horizon-limited fallback would make short-horizon repair disagree
+    with the very same position under a complete domain. Whitespace is not a
+    symbol under the symbol-only output contract, and emitting the forced
+    lexeme in its place cannot make a program illegal.
     """
     if state is None or state.engine is None:
         return None
     prefix_text = state.sync_ids(tokenizer, prefix_ids)
     engine = state.engine
-    if not bool(getattr(engine, "terminals_are_exact", lambda: False)()):
-        return None
+    from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
     forced = (
         int(forced_token_id)
         if forced_token_id is not None
         else force_emit_token_id(tokenizer, prefix_ids, state=state)
     )
-    if forced is None:
-        return None
-
-    try:
-        from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
-
-        dfa_allowed = allowed_id_set(tokenizer, engine.next_terminals())
-    except Exception:  # noqa: BLE001 - incomplete proof must fail closed
-        return None
-    if dfa_allowed != {forced}:
-        return None
-
-    compiler_candidates: set[int] | None = None
-    try:
-        from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
-
-        if is_dsl_native_tokenizer(tokenizer):
+    native = is_dsl_native_tokenizer(tokenizer)
+    if native:
+        try:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
                 build_completion_forest,
             )
@@ -388,13 +403,32 @@ def exact_forced_token_id(
                     if remaining_tokens is not None
                     else getattr(state, "remaining_tokens", None)
                 ),
+                runtime_symbols=runtime_symbols,
             )
-            if forest.coverage != "complete":
-                return None
-            compiler_candidates = set(forest.candidate_ids)
-            if compiler_candidates != {forced}:
-                return None
+            candidates = set(forest.candidate_ids)
+            if forest.coverage == "complete":
+                # A complete domain is authoritative in both directions: one
+                # candidate proves the singleton, more than one refutes it.
+                if len(candidates) != 1:
+                    return None
+                return next(iter(candidates))
+            # Horizon-limited: fall through to the DFA proof below.
+        except Exception:  # noqa: BLE001 - incomplete proof must fail closed
+            return None
+
+    if not bool(getattr(engine, "terminals_are_exact", lambda: False)()):
+        return None
+
+    if forced is None:
+        return None
+
+    try:
+        from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+
+        dfa_allowed = allowed_id_set(tokenizer, engine.next_terminals())
     except Exception:  # noqa: BLE001 - incomplete proof must fail closed
+        return None
+    if dfa_allowed != {forced}:
         return None
 
     if not dfa_admits_token(
@@ -406,6 +440,11 @@ def exact_forced_token_id(
         state=state,
     ):
         return None
+
+    if native:
+        # Insignificant whitespace is not a candidate in the native completion
+        # domain, so it does not get a veto here either. See the docstring.
+        return forced
 
     # The picker honors a structural force ahead of every non-whitespace
     # candidate. Its one deliberate exception is a legal whitespace argmax,
@@ -427,8 +466,6 @@ def exact_forced_token_id(
             re.fullmatch(r"(?:[A-Za-z_]\w*|b\d+)", current_line)
             or (current_line == "root" and "=" not in prefix_text)
         ):
-            continue
-        if compiler_candidates is not None and token_id not in compiler_candidates:
             continue
         if dfa_admits_token(
             tokenizer,
@@ -902,8 +939,20 @@ def pick_constrained_token(
                     remaining_tokens=domain_budget,
                     runtime_symbols=runtime_symbols,
                 )
+                if (
+                    forest.coverage != "complete"
+                    and not runtime_symbols
+                    and _incomplete_quoted_string(prefix_text)
+                ):
+                    forest = build_completion_forest(
+                        tokenizer,
+                        prefix_ids,
+                        state=state,
+                        slot_contract=slot_contract,
+                        remaining_tokens=None,
+                    )
                 if forest.coverage != "complete":
-                    return domain_budget is None
+                    return False
                 compiler_candidates = set(forest.candidate_ids)
             return int(tid) in compiler_candidates
         except Exception:  # noqa: BLE001 - strict domain authority fails closed
@@ -1275,6 +1324,9 @@ def filter_ids_by_stream(
     text = tokenizer.decode(token_ids)
     try:
         status = stream_check(text)
+    except TimeoutError:
+        # A harness deadline is a decode failure, never a clean stream probe.
+        raise
     except Exception:  # noqa: BLE001
         return []
     if not status.hard_error:

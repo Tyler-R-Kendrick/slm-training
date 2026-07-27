@@ -1,0 +1,232 @@
+{
+  "causal_latent_use_falsification_test_ref": "src/slm_training/models/causal_trace.py:CausalLatentUseFalsificationSpecV1",
+  "claim_classes": [
+    "wiring",
+    "faithful_mechanism_fixture",
+    "bounded_probe",
+    "oracle_ceiling_plan",
+    "causal_latent_use"
+  ],
+  "comparator_hashes": [
+    {
+      "path": "src/slm_training/data/progspec/compiler_reasoning_trace.py",
+      "sha256": "bb21e1960e2eb395273da800684c52258e9d3d358132e7b0d78d8ec351f3dd2a"
+    },
+    {
+      "path": "src/slm_training/data/semantic_plan/compiler_reasoning_trace_extract.py",
+      "sha256": "79ad2ca3ac1816a38ff10869f427e34ff49532ca48e988cb87e257c9ad1e531c"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/compiler_reasoning_trace_coverage.py",
+      "sha256": "db50e79c4988aaadb4ed015d17246218b0fb5a587621661e93df6b4ef079e201"
+    },
+    {
+      "path": "src/slm_training/models/causal_trace.py",
+      "sha256": "2dd874d46d01dc5e1decf31173c3f6607458a355adbbbf3f640872636082aa97"
+    },
+    {
+      "path": "src/slm_training/models/causal_lm_openui.py",
+      "sha256": "f58bf6c3d92eb8c1c6824661cfbe54f81e551a88a0eab83017360dfbf032529c"
+    },
+    {
+      "path": "src/slm_training/data/progspec/semantic_plan.py",
+      "sha256": "f9865b0c81a314348b9be80db37c00854794aaf6331e6c1768f0317b9e8c8b07"
+    },
+    {
+      "path": "src/slm_training/data/semantic_plan/extract.py",
+      "sha256": "b6e89180be56688d8da3986156f04439596c3224afd5e9239ca842cd5e3fa9a0"
+    },
+    {
+      "path": "src/slm_training/data/semantic_plan/canonicalize.py",
+      "sha256": "0f6f914f92ee975448b6b7f1fd17e52f3ba853d8afe3974a6e0ffdd8490a7581"
+    },
+    {
+      "path": "src/slm_training/dsl/production_codec.py",
+      "sha256": "7e5b4ea3cfcf16a8649291dfcb5a96c80e382251256f50da18d213774f049fce"
+    },
+    {
+      "path": "src/slm_training/dsl/canonicalize.py",
+      "sha256": "1171b6bfd007cd03f62cac68812b7d038e2fc40eeb39bc7b4d1aa4b49425b387"
+    },
+    {
+      "path": "src/slm_training/data/leakage.py",
+      "sha256": "1c177432717b1d05c0948e3c91579e9cba738c98950630182adc85e24f4a623c"
+    },
+    {
+      "path": "docs/design/lotus-openui-fidelity-contract-v1.json",
+      "sha256": "8af480e364634700595446bb1be3aaa6dd9458a9f36c26d20fd6802b714f4881"
+    },
+    {
+      "path": "docs/design/compiler-reasoning-trace-coverage/coverage_report.json",
+      "sha256": "6b26312389156d4f7f4f03a3c8c57fdae0ee9f12e9dee2e42d2e3b1c34e9f09b"
+    }
+  ],
+  "contract_hash": "6cdd695bf5b32036519f1ee2e787a44e4afbb045fc059f75a92a2d069f0ee7c5",
+  "contract_id": "compiler-reasoning-trace-v1",
+  "created_at": "2026-07-25",
+  "extractor_ref": "src/slm_training/data/semantic_plan/compiler_reasoning_trace_extract.py:extract_compiler_reasoning_trace",
+  "gate": {
+    "accepted_stage_set_order": [
+      "intent_contract",
+      "component_inventory",
+      "topology_skeleton",
+      "semantic_edges_roles",
+      "binding_scope_references",
+      "serialization_plan"
+    ],
+    "allowed_lot1_implementation": [
+      "none: the K x c latent-workspace model implementation (SLM-250 / LOT1-01) remains gated on a positive oracle-ceiling result, which requires running the plan defined here -- not authorized by this issue."
+    ],
+    "blocked_claims": [
+      "no claim that CompilerReasoningTraceV1 improves (or fails to improve) downstream semantic quality",
+      "no claim that K=6/c=479 is a corpus-derived production budget",
+      "no causal_latent_use claim (no latent workspace exists to test)",
+      "no GPU training or corpus-generation claim"
+    ],
+    "contract_hash": "6cdd695bf5b32036519f1ee2e787a44e4afbb045fc059f75a92a2d069f0ee7c5",
+    "contract_hash_method": "sha256(json.dumps(<contract object without the top-level 'contract_hash' and 'gate' keys>, sort_keys=True, separators=(',', ':'))).hexdigest()",
+    "gate_id": "compiler-reasoning-trace-gate-v1",
+    "k_c_recommendation": {
+      "c_chars": 479,
+      "evidence_class": "bounded_probe",
+      "k": 6,
+      "note": "Provisional only; not data-derived from a production corpus. See docs/design/compiler-reasoning-trace-coverage/coverage_report.md.",
+      "sample_size": 16
+    },
+    "linear_issue": "SLM-249",
+    "schema_version": "compiler_reasoning_trace_gate/v1",
+    "verdict": "inconclusive",
+    "verdict_rationale": "The trace contract, typed step schema, deterministic extractor, and lossless visible serialization are implemented and tested against the repository's existing SemanticPlanV1/production_codec owners (no new compiler/parser/evaluator). A bounded n=16 fixture probe (not a production corpus) confirms every probe record decomposes into all six declared stages with zero truncation, giving a provisional K=6/c=479-chars budget. The oracle ceiling experiment itself -- the only evidence that could support an oracle_ceiling_positive, no_downstream_ceiling, or explicit_trace_equivalent_to_existing_plan verdict -- is specified as a matched multi-arm, multi-seed plan but deliberately not run: the LOT0-01 authorization scopes this issue to a fixture-scale plan only, with GPU training and corpus generation explicitly blocked. Declaring any positive or negative ceiling verdict without running that plan would be exactly the 'no claim that explicit trace benefit implies latent benefit' failure this issue's acceptance criteria forbid. leakage_or_ambiguity_blocked and target_support_insufficient are also not honest: no leakage was found and the bounded probe supports the stage set within its declared scope. inconclusive -- pending the oracle-ceiling campaign -- is the only accurate verdict."
+  },
+  "k_c_budget_analysis_ref": "docs/design/compiler-reasoning-trace-coverage/coverage_report.md",
+  "linear_issue": "SLM-249",
+  "oracle_ceiling_experiment_plan": {
+    "arms": [
+      {
+        "arm_id": "causal_baseline",
+        "description": "prompt -> final program, no trace exposure"
+      },
+      {
+        "arm_id": "explicit_gold_trace",
+        "description": "prompt + visible CompilerReasoningTraceV1 (serialize_visible_trace output) -> final program"
+      },
+      {
+        "arm_id": "shuffled_wrong_trace",
+        "description": "prompt + make_shuffled_control(trace) -> final program"
+      },
+      {
+        "arm_id": "partial_trace_by_stage",
+        "description": "prompt + make_partial_trace(trace, stage_count) for stage_count in 1..K -> final program, sweeping the curriculum boundary"
+      },
+      {
+        "arm_id": "accepted_alternative_trace",
+        "description": "prompt + a trace whose steps use a non-canonical member of accepted_targets (requires accepted-alternative generation, not yet implemented -- this arm is specified, not built)"
+      },
+      {
+        "arm_id": "equivalent_length_nuisance_control",
+        "description": "prompt + a token-length-matched non-semantic filler span in place of the trace, isolating a pure extra-token-exposure confound"
+      },
+      {
+        "arm_id": "existing_plan_baseline",
+        "description": "prompt + SemanticPlanV1 JSON (the strongest existing explicit-plan baseline already in this repo) -> final program, to rule out 'the trace only helps because any structured plan helps'"
+      }
+    ],
+    "matching_rules": [
+      "same parent checkpoint or from-scratch policy across all arms in a run",
+      "same program targets, optimizer/schedule, data order, checkpoint-selection rule",
+      "extra trace-token exposure reported separately from program-token exposure",
+      "continued baseline receives matched additional tokens/updates (never an update-count-unmatched comparison)",
+      "minimum three paired seeds before any ceiling claim"
+    ],
+    "measurements": [
+      "strict binding-aware meaning-v2 and AgentV under allowed scope",
+      "root/inventory/topology/edge/binding step-level accuracy",
+      "accepted semantic equivalence (accepted_set_equal)",
+      "final-program NLL and exact/canonical match",
+      "trace-step accuracy/coverage",
+      "sequence-length / cost impact",
+      "stage ablation and shuffled/wrong-control harm"
+    ],
+    "reason_not_run": "Out of scope per the LOT0-01 authorization's allowed_lot1_work: 'Specify the K/c/R sweep grid, the unlooped extra-update control, and the replace/no-injection ablation as a preregistered fixture-scale experiment plan (no training).' Running any arm requires GPU training and a corpus beyond the bounded 16-record probe, both explicitly blocked for this issue.",
+    "status": "planned_not_run",
+    "sweep_grid": {
+      "K": [
+        6
+      ],
+      "R": "not applicable until LOT1 defines the loop driver; this issue only specifies that R relates to trace length via the stage_count of make_partial_trace, not an independent free parameter",
+      "c_chars_provisional": [
+        479
+      ]
+    }
+  },
+  "parent_authorization_reference": {
+    "doc": "docs/design/lotus-openui-fidelity-contract-v1.md",
+    "kind": "linear_issue",
+    "linear_issue": "SLM-248",
+    "note": "This contract is the LOT0-02 deliverable that verdict's allowed_lot1_work names: the target-trace contract, a fixture-scale oracle-ceiling experiment plan, the causal_latent_use falsification-test definition, and bounded target-contract probes.",
+    "verdict": "needs_target_trace_contract"
+  },
+  "required_differentiators": [
+    "trace targets derive only from ProgramSpec.ast/canonical_openui, never from an evaluator or model output",
+    "accepted alternatives are first-class (accepted_targets), never demoted to negatives",
+    "unordered fields carry explicit set_valued_fields markers and are compared permutation-invariantly (accepted_set_equal)",
+    "K is fixed by repository-evidence stage-set construction, not inherited from LOTUS's K=6 by analogy",
+    "truncation is explicit (is_truncated + ambiguity_reason), never a silent drop"
+  ],
+  "reuse_boundaries": [
+    "extraction reuses OpenUISemanticPlanExtractor and production_codec's statement_binding_order; no new compiler, parser, or validity definition",
+    "SemanticPlanV1 is read, never exposed as a serving artifact under this trace",
+    "no held-out/eval gold trace enters free-running inputs (extraction only consumes already-canonicalized ProgramSpec/AST content)"
+  ],
+  "schema_version": "compiler_reasoning_trace_contract/v1",
+  "stage_set": [
+    {
+      "concept": "target kind/category, root intent/archetype, required output contract",
+      "reused_source": "SemanticPlanV1.archetype (slm_training/data/progspec/semantic_plan.py)",
+      "step_kind": "intent_contract"
+    },
+    {
+      "concept": "unordered required component families and optional/ambiguous status",
+      "reused_source": "SemanticPlanV1.role_slots",
+      "step_kind": "component_inventory"
+    },
+    {
+      "concept": "canonical/accepted tree skeleton without surface lexemes",
+      "reused_source": "SemanticPlanV1.topology.parent_relation_candidates (anonymized)",
+      "step_kind": "topology_skeleton"
+    },
+    {
+      "concept": "component ownership, list occupancy, required semantic roles",
+      "reused_source": "SemanticPlanV1.topology.parent_relation_candidates + sibling_order_groups",
+      "step_kind": "semantic_edges_roles"
+    },
+    {
+      "concept": "binder owners, arities, pointer/reference identities, scope obligations",
+      "reused_source": "SemanticPlanV1.symbols / SemanticPlanV1.bindings",
+      "step_kind": "binding_scope_references"
+    },
+    {
+      "concept": "canonical ordering/realization commitments needed to produce a legal program",
+      "reused_source": "production_codec.statement_binding_order (canonical topological statement order)",
+      "step_kind": "serialization_plan"
+    }
+  ],
+  "trace_schema_ref": "src/slm_training/data/progspec/compiler_reasoning_trace.py:CompilerReasoningTraceV1",
+  "typed_step_schema_ref": "src/slm_training/data/progspec/compiler_reasoning_trace.py:TraceStepV1",
+  "version_stamp": {
+    "code_commit": "86212e9ab2338bb9cf5ab135e85e3d3d4e7d21b5",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm249_compiler_reasoning_trace": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T12:38:52.531109+00:00"
+  },
+  "visible_trace_representation": {
+    "format": "typed delimiters (<trace_v1>/<step:KIND>...</step>) + canonical compact JSON payload per step",
+    "lossless": true,
+    "parser_ref": "compiler_reasoning_trace.py:parse_visible_trace",
+    "separate_from_final_program": true,
+    "serializer_ref": "compiler_reasoning_trace.py:serialize_visible_trace"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "semantic_contrast_results/v1",
+  "issue": "SLM-290",
+  "dataset_id": "openui_hard_valid_v1",
+  "artifact": "src/slm_training/resources/data/eval/openui_hard_valid_v1",
+  "recipe": {
+    "host": "local CPU + local Chromium",
+    "seed": 0,
+    "source_count": 210,
+    "wide_source_grid": true,
+    "strict_delta": true,
+    "runtime": "29 bounded local Chromium shards; source-hash checked finalization",
+    "human_audit": "not required; G12 skip"
+  },
+  "results": {
+    "pairs": 1206,
+    "record_sides": 2412,
+    "rejected": 617,
+    "runtime_shards": 29,
+    "structural_regeneration": {
+      "byte_identical": true,
+      "pairs_sha256": "23701984b768a1093780697a90a44720adcbb734941c0d4c06a8723b06782db8",
+      "records_sha256": "a0d60ffbe0df7f8bb11d7cf29d451be071c95f42af8b803112d6129ab533b82a"
+    },
+    "mutation_classes": [
+      "binding_swap_symbol",
+      "binding_swap_symbol_reverse",
+      "content_invert_role",
+      "content_swap_family",
+      "contract_archetype_mismatch"
+    ],
+    "positive_meaningful_rate": 1.0,
+    "negative_meaningful_rate": 0.0,
+    "runtime_required": true,
+    "ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d77dfa08a76e6b7030f039bd1c36fd93fdc0a62b",
+    "code_dirty": true,
+    "components": {
+      "data.semantic_contrast": "v2",
+      "evals.meaningful_program": "2.13.0"
+    },
+    "stamped_at": "2026-07-25T05:15:51.730197+00:00"
+  }
+}

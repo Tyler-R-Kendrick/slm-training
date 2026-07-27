@@ -7,6 +7,7 @@ import pytest
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
     CHANGED_TEST_WORKERS,
+    CONSTRAINT_WEAKENING_LEVERS,
     HF_JOB_TIMEOUT,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
@@ -106,6 +107,26 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     assert catalog["root_reference_identity_decode_weight"][
         "supported_configurations"
     ] == [{"model_name": "twotower", "output_tokenizer": "choice"}]
+
+
+def test_encoder_ops_conditioning_is_default_off_and_non_weakening() -> None:
+    # SLM-428 (VAR2-01): the new OPS_VOCAB-conditioning lever changes what
+    # the encoder conditions on, never decode legality -- so, unlike
+    # grammar_constrained/allow_unconstrained_fallback/grammar_fastpath, it
+    # must NOT be a CONSTRAINT_WEAKENING_LEVERS entry. Absence from that
+    # registry (checked directly, not just "no exception raised") is the
+    # repository's own proof of non-weakening (levers.py catalog tagging).
+    default = next(
+        item.default
+        for item in fields(ModelBuildConfig)
+        if item.name == "encoder_ops_conditioning"
+    )
+    assert default is False
+    assert "encoder_ops_conditioning" not in CONSTRAINT_WEAKENING_LEVERS
+    entry = lever_catalog()["encoder_ops_conditioning"]
+    assert entry["default"] is False
+    assert "weakens_constraint" not in entry
+    assert "diagnostic_only" not in entry
 
 
 def test_every_decode_weight_has_a_capability_requirement() -> None:

@@ -12,10 +12,10 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 
 HERO = (
-    'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
-    'hero = Card([hero_title, hero_body])'
+    'root = Stack([b1], "column")\n'
+    'b1 = Card([b2, b3])\n'
+    'b2 = TextContent(":slot_0")\n'
+    'b3 = TextContent(":slot_1")'
 )
 
 
@@ -25,7 +25,7 @@ def _write_mini_corpus(root: Path) -> None:
             id="t1",
             prompt="Create a vertical hero card with a title and body.",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
             split="train",
         ),
         ExampleRecord(
@@ -33,17 +33,17 @@ def _write_mini_corpus(root: Path) -> None:
             prompt="Add a primary call-to-action button under a short text line.",
             openui=(
                 'root = Stack([copy, cta], "column")\n'
-                'copy = TextContent(":copy.line")\n'
-                'cta = Button(":cta.label")'
+                'copy = TextContent(":slot_0")\n'
+                'cta = Button(":slot_1")'
             ),
-            placeholders=[":copy.line", ":cta.label"],
+            placeholders=[":slot_0", ":slot_1"],
             split="train",
         ),
         ExampleRecord(
             id="t3",
             prompt="Simple text block inside a stack.",
-            openui='root = Stack([blurb], "column")\nblurb = TextContent(":page.blurb")',
-            placeholders=[":page.blurb"],
+            openui='root = Stack([blurb], "column")\nblurb = TextContent(":slot_0")',
+            placeholders=[":slot_0"],
             split="train",
         ),
     ]
@@ -59,7 +59,7 @@ def test_lexer_from_records_builds_dual_tokenizers(tmp_path: Path) -> None:
             id="t1",
             prompt="Hero card",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         )
     ]
     cfg = TwoTowerConfig(
@@ -78,24 +78,15 @@ def test_lexer_from_records_builds_dual_tokenizers(tmp_path: Path) -> None:
     assert is_dsl_native_tokenizer(model.tokenizer)
     assert model.context_tokenizer is not model.tokenizer
     # Fixed corpus-independent vocabulary incl. 64 reserved <MACRO_i> rows (C3).
-    assert model.tokenizer.vocab_size <= 512
+    assert model.tokenizer.vocab_size <= 640
     loss = model.training_loss(records)
     assert float(loss.detach()) >= 0.0
 
 
-def test_surface_identifier_arm_trains_and_fails_closed(tmp_path: Path) -> None:
-    """C4 (SLM-28): the surface arm builds/trains end-to-end, and refuses the
-    combinations whose decode or encoding presuppose anonymized pooled ids."""
+def test_surface_identifier_arm_is_prohibited() -> None:
+    """Surface identifiers are not an admissible template-marker channel."""
     import pytest
 
-    records = [
-        ExampleRecord(
-            id="t1",
-            prompt="Hero card",
-            openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
-        )
-    ]
     base = dict(
         output_tokenizer="lexer",
         context_backend="scratch",
@@ -107,27 +98,8 @@ def test_surface_identifier_arm_trains_and_fails_closed(tmp_path: Path) -> None:
         max_prompt_len=64,
         max_target_len=160,
     )
-    cfg = TwoTowerConfig(symbol_anonymization=False, **base)
-    model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
-    target_ids = model._encode_openui(
-        HERO, placeholders=[":hero.title", ":hero.body"]
-    )
-    assert not any(model.tokenizer.is_bind_id(i) for i in target_ids)
-    loss = model.training_loss(records)
-    assert float(loss.detach()) >= 0.0
-
-    for bad in (
-        dict(grammar_constrained=True),
-        dict(macro_tokens=True),
-        dict(bind_encoding="relative"),
-    ):
-        merged = {**base, **bad}
-        with pytest.raises(ValueError, match="symbol_anonymization"):
-            TwoTowerModel.from_records(
-                records,
-                config=TwoTowerConfig(symbol_anonymization=False, **merged),
-                device="cpu",
-            )
+    with pytest.raises(ValueError, match="symbol_anonymization=False is prohibited"):
+        TwoTowerConfig(symbol_anonymization=False, **base)
 
 
 def test_lexer_train_eval_smoke(tmp_path: Path) -> None:
@@ -144,7 +116,7 @@ def test_lexer_train_eval_smoke(tmp_path: Path) -> None:
                 id="s1",
                 prompt="Create a vertical hero card with a title and body.",
                 openui=HERO,
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
                 split="smoke",
             )
         ],

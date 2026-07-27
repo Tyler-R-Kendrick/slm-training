@@ -110,7 +110,9 @@ def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> N
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
     assert "Components: Card x1, Stack x1, TextContent x2" in rows["t1"].prompt
-    assert "Placeholders: :hero.title, :hero.body" in rows["t1"].prompt
+    # Persisted markers are opaque ordinals (:slot_N), never the seed's named
+    # spelling (:hero.title) -- the opaque-vocabulary invariant covers prompts too.
+    assert "Placeholders: :slot_0, :slot_1" in rows["t1"].prompt
     assert result["stats"]["prompt_component_contract"] is True
     assert result["stats"]["prompt_slot_contract"] is True
     assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
@@ -161,8 +163,11 @@ def test_semantic_role_contract_uses_only_visible_slots_and_types(
         )
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    assert "Semantic roles: hero(body -> TextContent, title -> TextContent)" in rows["t1"].prompt
-    assert "Semantic roles: cta(label -> Button)" in rows["t2"].prompt
+    # Persisted markers are opaque ordinals, so the namespace-derived grouping
+    # (":hero.title" -> role "hero") is no longer recoverable from the marker
+    # spelling itself -- the role text degrades to a flat per-slot listing.
+    assert "Semantic roles: slot_0(value); slot_1(value)" in rows["t1"].prompt
+    assert "Semantic roles: slot_0(value)" in rows["t2"].prompt
     assert " x" not in rows["t2"].prompt
     assert result["stats"]["prompt_semantic_role_contract"] is True
 
@@ -339,10 +344,22 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
             output_root=tmp_path / "train_data",
             version="vrico",
             synthesizer="none",
-            rico_limit=10,
+            # Full fixture: with canonical `:slot_N` markers (opaque-vocabulary
+            # invariant), many RICO screens collapse into duplicate structural
+            # templates and are correctly deduped/decontaminated away, so a
+            # small rico_limit slice is not guaranteed to leave any survivors.
+            rico_limit=80,
         )
     )
-    assert result["stats"]["record_count"] >= 5
+    # Deterministic on this fixture: 80 seeds -> 4 survivors after verifier
+    # rejection, fuzzy dedup, and n-gram decontamination account for the rest.
+    # Assert both the survivor floor and the full accounting so this can't
+    # silently regress to near-total data loss.
+    assert result["stats"]["record_count"] >= 4
+    assert (
+        result["stats"]["record_count"] + result["stats"]["rejected_total"]
+        == result["stats"]["seed_count"]
+    )
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
 

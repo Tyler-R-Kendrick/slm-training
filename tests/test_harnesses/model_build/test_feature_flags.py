@@ -2,11 +2,25 @@ from pathlib import Path
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.feature_flags import (
+    _coerce,
     catalog,
     load_snapshot,
     resolve,
     save_snapshot,
 )
+
+
+def test_coerce_null_values_preserve_none_sentinel() -> None:
+    """Provider/checkpoint nulls must not crash int()/float() coercion.
+
+    None is an intentional optional sentinel (preserve checkpoint value), not a
+    request to fill the lever default.
+    """
+    assert _coerce(None, 8) is None
+    assert _coerce(None, 0.25) is None
+    assert _coerce(None, None) is None
+    assert _coerce(3, 8) == 3
+    assert _coerce(True, False) is True
 
 
 def test_all_behavior_config_fields_have_generated_openfeature_flags() -> None:

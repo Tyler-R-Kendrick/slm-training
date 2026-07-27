@@ -253,9 +253,9 @@ def test_literal_materialization_capability_probe_rejects_real_content() -> None
 def test_verified_template_binding_envelope_is_safe_and_deterministic() -> None:
     request = GenerationRequest(
         prompt="hero",
-        slot_contract=(":hero.title",),
+        slot_contract=(":slot_0",),
     )
-    bindings = (CallerContentBinding("hero.title", 'Welcome "back"\\\nToday ☃'),)
+    bindings = (CallerContentBinding("slot_0", 'Welcome "back"\\\nToday ☃'),)
     pack = get_pack("openui")
     first = resolve_verified_template_bindings(BOUND_HERO, request, bindings, pack=pack)
     second = resolve_verified_template_bindings(BOUND_HERO, request, bindings, pack=pack)
@@ -282,8 +282,8 @@ def test_verified_template_binding_transports_content_without_source_injection(
 ) -> None:
     result = resolve_verified_template_bindings(
         BOUND_HERO,
-        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
-        (CallerContentBinding("hero.title", value),),
+        GenerationRequest(prompt="hero", slot_contract=(":slot_0",)),
+        (CallerContentBinding("slot_0", value),),
         pack=get_pack("openui"),
     )
     assert result.status == "resolved"
@@ -295,11 +295,11 @@ def test_verified_template_binding_transports_content_without_source_injection(
     ("bindings", "message"),
     [
         ((), "missing required"),
-        ((CallerContentBinding("other.title", "x"),), "unknown binding"),
+        ((CallerContentBinding("slot_9", "x"),), "unknown binding"),
         (
             (
-                CallerContentBinding("hero.title", "a"),
-                CallerContentBinding("hero.title", "b"),
+                CallerContentBinding("slot_0", "a"),
+                CallerContentBinding("slot_0", "b"),
             ),
             "duplicate binding",
         ),
@@ -310,7 +310,7 @@ def test_verified_template_binding_validation_fails_closed(
 ) -> None:
     result = resolve_verified_template_bindings(
         BOUND_HERO,
-        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
+        GenerationRequest(prompt="hero", slot_contract=(":slot_0",)),
         bindings,
         pack=get_pack("openui"),
     )
@@ -326,8 +326,8 @@ def test_verified_template_binding_requires_explicit_oracle_success() -> None:
     )
     result = resolve_verified_template_bindings(
         BOUND_HERO,
-        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
-        (CallerContentBinding("hero.title", "value"),),
+        GenerationRequest(prompt="hero", slot_contract=(":slot_0",)),
+        (CallerContentBinding("slot_0", "value"),),
         pack=pack,
     )
     assert result.status == "error"
@@ -337,19 +337,19 @@ def test_verified_template_binding_requires_explicit_oracle_success() -> None:
 
 def test_verified_template_binding_rejects_alias_and_invalid_template() -> None:
     with pytest.raises(ValueError, match="unprefixed"):
-        CallerContentBinding(":hero.title", "x")
+        CallerContentBinding(":slot_0", "x")
     result = resolve_verified_template_bindings(
         "root = Broken(",
-        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
-        (CallerContentBinding("hero.title", "x"),),
+        GenerationRequest(prompt="hero", slot_contract=(":slot_0",)),
+        (CallerContentBinding("slot_0", "x"),),
         pack=get_pack("openui"),
     )
     assert result.status == "error"
     assert result.template_verification == "canonicalization_failed"
     external_name_result = resolve_verified_template_bindings(
         HERO,
-        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
-        (CallerContentBinding("hero.title", "x"),),
+        GenerationRequest(prompt="hero", slot_contract=(":slot_0",)),
+        (CallerContentBinding("slot_0", "x"),),
         pack=get_pack("openui"),
     )
     assert external_name_result.status == "error"
@@ -364,8 +364,8 @@ def test_verified_template_repeated_binding_covers_every_occurrence() -> None:
     )
     result = resolve_verified_template_bindings(
         repeated.replace(":hero.title", ":slot_0"),
-        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
-        (CallerContentBinding("hero.title", "same value"),),
+        GenerationRequest(prompt="hero", slot_contract=(":slot_0",)),
+        (CallerContentBinding("slot_0", "same value"),),
         pack=get_pack("openui"),
     )
     assert result.status == "resolved"

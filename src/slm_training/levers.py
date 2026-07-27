@@ -15,24 +15,91 @@ from typing import Any, Final
 
 from slm_training.harnesses.staged import Capability
 
-
 # The CI changed-test fan-out includes dependency setup; three minutes is the
 # repository-wide hard ceiling and lets that completed test suite report cleanly.
 MAX_RUN_MINUTES: Final = 3
 KILL_GRACE_SECONDS: Final = 10
 MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
+# Harnesses must finalize checkpoints and metadata before the command-level
+# interrupt fires.
+HARNESS_FINALIZATION_RESERVE_SECONDS: Final = 15
+MAX_HARNESS_WALL_SECONDS: Final = (
+    INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS
+)
+MAX_HARNESS_WALL_MINUTES: Final = MAX_HARNESS_WALL_SECONDS / 60
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 CHANGED_TEST_WORKERS: Final = 4
+# Superfiltering easy-tail fraction for build-time difficulty curation
+# (records below this NLL percentile are down-weighted / droppable).
+DIFFICULTY_EASY_TAIL_FRACTION: Final = 0.2
 VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "docs/design/*.json",
     "docs/MODEL_CARD.md",
     "src/slm_training/resources/checkpoints/playground_demo/**",
 )
+VERCEL_FUNCTION_EXCLUDE_FILES: Final = (
+    "{.venv,.vercel,node_modules,outputs,tests,src/apps}/**",
+    "docs/design/{*-agentv-*/**,iter-slm200-*.json}",
+    "**/governance/records.jsonl",
+    "src/slm_training/{flow/{samplers,targets}.py,harnesses/experiments/**,models/legal_edit_flow.py}",
+)
 
 # Capability profiles are deliberately expressed as deviations from the
 # model-build defaults. A default-off lever is harmless; activating it requires
 # the listed certificate stage.
+
+# Active, source-controlled corpora. Historical snapshots remain immutable
+# evidence but fail the canonical marker guard and are never CLI defaults.
+DEFAULT_TRAIN_DATA_DIR: Final = Path(
+    "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2"
+)
+DEFAULT_EVAL_DATA_DIR: Final = Path(
+    "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2"
+)
+DEFAULT_CONTEXT_BACKEND: Final = "scratch"
+
+# Template markers are codec identities, never semantic supervision.  Keep this
+# policy beside every other user-facing lever so there is one discoverable
+# source of truth for training and decode configuration.
+TEMPLATE_MARKERS_ARE_OPAQUE: Final = True
+DEFAULT_OUTPUT_TOKENIZER: Final = "lexer"
+DEFAULT_DECODE_TIMEOUT_SECONDS: Final = 12.0
+CHECKPOINT_DECLARED_POLICY: Final = "checkpoint_declared"
+STRICT_COMPILER_TREE_POLICY_ID: Final = "strict_compiler_tree"
+# Every evaluation enforces the symbol-only completion boundary independently
+# of checkpoint provenance. The compiler-tree bundle is the canonical default.
+DEFAULT_EVALUATION_POLICY: Final = STRICT_COMPILER_TREE_POLICY_ID
+STRICT_EVALUATION_POLICY: Final = {
+    "grammar_constrained": True,
+    "grammar_ltr_primary": True,
+    "grammar_finalize_validate": True,
+    "slot_contract_constrained_decode": True,
+    "honest_slot_contract": True,
+    "allow_unconstrained_fallback": False,
+}
+STRICT_COMPILER_TREE_POLICY: Final = {
+    **STRICT_EVALUATION_POLICY,
+    "output_tokenizer": DEFAULT_OUTPUT_TOKENIZER,
+    "compiler_decode_mode": "tree",
+    # Structural AST-plan scoring is part of the policy, not a caller-owned
+    # pair of optional flags. This consumes no marker names or free-form text.
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+}
+PROHIBITED_TEMPLATE_SEMANTIC_LEVERS: Final = {
+    "namespace_augment": "renames opaque markers into user-defined namespaces",
+    "prompt_semantic_role_contract": "adds user-defined marker labels to training prompts",
+    "semantic_role_contract_in_context": "exposes user-defined marker labels",
+    "semantic_role_decode_weight": "scores user-defined marker labels",
+    "semantic_role_schema_candidates": "maps user-defined marker labels to schema",
+    "schema_role_slot_decode_weight": "maps user-defined marker labels to schema",
+    "slot_coverage_close_decode_weight": "uses marker-label-derived schema reachability",
+    "semantic_plan_repeated_slot_margin_decode_weight": (
+        "groups markers by user-defined namespace labels"
+    ),
+}
+
 CAPABILITY_LEVER_MINIMUMS: Final = {
     # CAP1 introduces authored schema / natural-language conditioning.
     "design_md_in_context": (False, Capability.CAP1_SEMANTICS),
@@ -45,6 +112,165 @@ CAPABILITY_LEVER_MINIMUMS: Final = {
     "action_shortlist_mode": ("off", Capability.CAP2_TRANSFORM),
     "train_scope": ("current", Capability.CAP2_TRANSFORM),
 }
+
+
+# Decode invariants I1/I2/I6 (docs/design/decode-invariants.md). Ranking is a
+# lever; legality is not. Every lever below can only ever make output *less*
+# constrained or spend a forward where a deterministic proof existed, so each
+# one is registered with its fail-closed value and the invariant it protects.
+# A production / serving / ship-gated configuration must hold every safe value;
+# diagnostic control arms may deviate and their output is never certified.
+CONSTRAINT_WEAKENING_LEVERS: Final = {
+    "grammar_constrained": {
+        "safe_value": True,
+        "invariant": "I6",
+        "effect": "legality",
+        "note": "unconstrained decode may emit invalid grammar",
+    },
+    "allow_unconstrained_fallback": {
+        "safe_value": False,
+        "invariant": "I6",
+        "effect": "legality",
+        "note": "retries a failed constrained decode with token filtering off",
+    },
+    "grammar_fastpath": {
+        "safe_value": True,
+        "invariant": "I2",
+        "effect": "bypass",
+        "note": "disables DFA force-emit, so proven singletons cost a forward",
+    },
+}
+
+
+def constraint_weakening_violations(config: Any) -> dict[str, dict[str, Any]]:
+    """Return registered weakening levers this config sets to an unsafe value."""
+    violations: dict[str, dict[str, Any]] = {}
+    for name, spec in CONSTRAINT_WEAKENING_LEVERS.items():
+        if not hasattr(config, name):
+            continue
+        value = getattr(config, name)
+        if value is None or bool(value) == bool(spec["safe_value"]):
+            continue
+        violations[name] = {**spec, "value": value}
+    return violations
+
+
+def require_constrained_production_config(
+    config: Any, *, context: str = "config"
+) -> None:
+    """Fail before execution when a production path weakens constrained decode.
+
+    Diagnostic control arms must not call this; they are the one place a
+    weakening lever is legitimate, and their output is never certified.
+    """
+    violations = constraint_weakening_violations(config)
+    if not violations:
+        return
+    detail = "; ".join(
+        f"{name}={spec['value']!r} (safe {spec['safe_value']!r}, "
+        f"weakens {spec['invariant']})"
+        for name, spec in sorted(violations.items())
+    )
+    raise ValueError(
+        f"{context} weakens constrained decoding: {detail}; "
+        "see docs/design/decode-invariants.md — production and ship-gated "
+        "configurations must hold every safe value"
+    )
+
+
+# Goal invariant VI (docs/design/decode-invariants.md). The product is the
+# smartest output at the smallest model, so capacity is a budget, not a knob to
+# reach for. Every lever below raises trainable parameter count, which raises
+# quality on its own and can therefore counterfeit a capability result. Unlike
+# the weakening levers above these have no forbidden value — growth is legal
+# when it is *declared and charged*. What is forbidden is growing silently:
+# comparing arms that differ here without size-matching them, or crediting the
+# resulting quality without a parameter-efficiency gain (EG_params).
+CAPACITY_SCALING_LEVERS: Final = {
+    "d_model": {
+        "baseline_value": 128,
+        "axis": "width",
+        "note": "residual width; parameters grow ~quadratically",
+    },
+    "n_heads": {
+        "baseline_value": 4,
+        "axis": "width",
+        "note": "attention heads at fixed d_model reshape rather than add, but "
+        "are reported because head count gates width sweeps",
+    },
+    "context_layers": {
+        "baseline_value": 2,
+        "axis": "depth",
+        "note": "context tower depth; parameters grow linearly",
+    },
+    "denoiser_layers": {
+        "baseline_value": 4,
+        "axis": "depth",
+        "note": "denoiser tower depth; parameters grow linearly",
+    },
+    "recursive_transition_layers": {
+        "baseline_value": 0,
+        "axis": "depth",
+        "note": "extra transition capacity inside the shared recursive tower",
+    },
+    "hf_model_name": {
+        "baseline_value": "HuggingFaceTB/SmolLM2-135M",
+        "axis": "backbone",
+        "note": "pretrained backbone; swapping to a larger checkpoint is the "
+        "single largest uncharged capacity jump available",
+    },
+}
+
+
+def capacity_scaling_deviations(config: Any) -> dict[str, dict[str, Any]]:
+    """Return capacity levers this config sets away from their baseline."""
+    deviations: dict[str, dict[str, Any]] = {}
+    for name, spec in CAPACITY_SCALING_LEVERS.items():
+        if not hasattr(config, name):
+            continue
+        value = getattr(config, name)
+        if value is None or value == spec["baseline_value"]:
+            continue
+        deviations[name] = {**spec, "value": value}
+    return deviations
+
+
+def size_matched_violations(left: Any, right: Any) -> dict[str, dict[str, Any]]:
+    """Return capacity levers on which two compared arms differ."""
+    violations: dict[str, dict[str, Any]] = {}
+    for name, spec in CAPACITY_SCALING_LEVERS.items():
+        if not hasattr(left, name) or not hasattr(right, name):
+            continue
+        lhs, rhs = getattr(left, name), getattr(right, name)
+        if lhs == rhs:
+            continue
+        violations[name] = {**spec, "left": lhs, "right": rhs}
+    return violations
+
+
+def require_size_matched_arms(
+    left: Any, right: Any, *, context: str = "comparison"
+) -> None:
+    """Fail before execution when two compared arms differ in capacity.
+
+    Use this wherever a matrix attributes a quality delta to the factor it
+    varies. A quality difference between arms of different size is not
+    evidence about that factor; charge the size difference (EG_params) or
+    match it.
+    """
+    violations = size_matched_violations(left, right)
+    if not violations:
+        return
+    detail = "; ".join(
+        f"{name}={spec['left']!r} vs {spec['right']!r} ({spec['axis']})"
+        for name, spec in sorted(violations.items())
+    )
+    raise ValueError(
+        f"{context} compares arms of different capacity: {detail}; "
+        "see docs/design/decode-invariants.md invariant VI — size-match the "
+        "arms or report EG_params so the growth is charged, never credit a "
+        "quality delta bought with parameters"
+    )
 
 
 def require_capability_lever_profile(config: Any, capability: Capability) -> None:
@@ -115,6 +341,9 @@ _COMPILER_PATH_DECODE_LEVERS: Final = (
     "binder_component_plan_decode_weight",
     "binder_topology_decode_weight",
     "binder_arity_decode_weight",
+    "binder_slot_ownership_decode_weight",
+    "binder_slot_presence_decode_weight",
+    "binder_reference_presence_decode_weight",
 )
 LEVER_REQUIREMENTS: Final = {
     **{name: (_CHOICE,) for name in _CHOICE_ONLY_DECODE_LEVERS},
@@ -138,6 +367,11 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
     "binder_component_plan_decode_weight": ("binder_component_plan_loss_weight",),
     "binder_topology_decode_weight": ("binder_topology_loss_weight",),
     "binder_arity_decode_weight": ("binder_arity_loss_weight",),
+    "binder_slot_ownership_decode_weight": ("binder_slot_ownership_loss_weight",),
+    "binder_slot_presence_decode_weight": ("binder_slot_presence_loss_weight",),
+    "binder_reference_presence_decode_weight": (
+        "binder_reference_presence_loss_weight",
+    ),
     "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",),
     "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),
 }
@@ -358,6 +592,17 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
                 _requirement_json(requirement)
                 for requirement in LEVER_COMPANION_REQUIREMENTS[item.name]
             ]
+        if item.name in CONSTRAINT_WEAKENING_LEVERS:
+            spec = CONSTRAINT_WEAKENING_LEVERS[item.name]
+            catalog[item.name].update(
+                {
+                    "weakens_constraint": True,
+                    "constraint_safe_value": _json_value(spec["safe_value"]),
+                    "constraint_invariant": spec["invariant"],
+                    "constraint_effect": spec["effect"],
+                    "diagnostic_only": True,
+                }
+            )
         if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]
@@ -388,6 +633,33 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
         "type": "tuple[str, ...]",
         "source": "slm_training.levers.VERCEL_FUNCTION_INCLUDE_FILES",
     }
+    
+    catalog["template_markers_are_opaque"] = {
+        "category": "data",
+        "default": TEMPLATE_MARKERS_ARE_OPAQUE,
+        "type": "bool",
+        "source": "slm_training.levers.TEMPLATE_MARKERS_ARE_OPAQUE",
+    }
+    catalog["default_train_data_dir"] = {
+        "category": "data",
+        "default": str(DEFAULT_TRAIN_DATA_DIR),
+        "type": "Path",
+        "source": "slm_training.levers.DEFAULT_TRAIN_DATA_DIR",
+    }
+    catalog["default_eval_data_dir"] = {
+        "category": "data",
+        "default": str(DEFAULT_EVAL_DATA_DIR),
+        "type": "Path",
+        "source": "slm_training.levers.DEFAULT_EVAL_DATA_DIR",
+    }
+    catalog["default_context_backend"] = {
+        "category": "model",
+        "default": DEFAULT_CONTEXT_BACKEND,
+        "type": "str",
+        "choices": ["scratch", "hf"],
+        "source": "slm_training.levers.DEFAULT_CONTEXT_BACKEND",
+    }
+
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 
     catalog["evaluation_policy"].update(

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E842",
+  "date_utc": "2026-07-22",
+  "run_class": "data_build",
+  "run_id": "e842-harness-owned-slot-contract-r1",
+  "local_compute": true,
+  "description": "Move all template-marker conversion and validation authority to the request and test-data harnesses",
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "source": "fixture plus local RICO",
+    "train_manifest": "src/slm_training/resources/data/train/e826_target_slots_only_v4/manifest.json",
+    "output": "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1",
+    "sanitize_mode": "enforce",
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "suites": {
+    "test_data_build": {
+      "n": 23,
+      "smoke": 3,
+      "held_out": 5,
+      "adversarial": 4,
+      "ood": 4,
+      "rico_held": 7,
+      "normalization_errors": 0,
+      "sanitize_fallbacks": 0,
+      "leakage_rejected": 33,
+      "canonical_loader_pass": 23,
+      "named_target_marker_rows": 0,
+      "parse_rate": 1.0,
+      "placeholder_fidelity": 1.0
+    },
+    "targeted_tests": {
+      "n": 59,
+      "passed": 59,
+      "failed": 0
+    }
+  },
+  "ownership": {
+    "builder": "canonicalize source markers before persistence",
+    "request_harness": "reject noncontiguous or named slot contracts",
+    "model": "consume only structured opaque slot contracts",
+    "fixture_policy": "normalization failures are fatal"
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "data and request-harness correction; no model evaluation"
+  },
+  "decision": {
+    "promote": "e842_harness_owned_slots_v1 as the canonical eval corpus",
+    "reject": "model-side marker normalization, prompt-word marker inference, and silently skipped invalid fixtures",
+    "next": "run a matched local smoke evaluation against E842 before any further training"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6e307c08",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v22",
+      "data.test_build": "v9",
+      "harness.experiments": "v61",
+      "model.twotower": "v233"
+    }
+  }
+}

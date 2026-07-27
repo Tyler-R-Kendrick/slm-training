@@ -1,0 +1,1122 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/dsh3-15-hierarchical-operator-head-baseline/benchmark.json",
+      "indexPath": "output-dir://agentv/dsh3-15-hierarchical-operator-head-baseline/index.jsonl",
+      "runDir": "output-dir://agentv/dsh3-15-hierarchical-operator-head-baseline",
+      "timingPath": "output-dir://agentv/dsh3-15-hierarchical-operator-head-baseline/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 6,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "matched-architecture:domain_criterion",
+          "expected": true,
+          "id": "matched-architecture:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "compiler-membership:domain_criterion",
+          "expected": true,
+          "id": "compiler-membership:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "causal-choice-audit:domain_criterion",
+          "expected": true,
+          "id": "causal-choice-audit:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "capacity-control:domain_criterion",
+          "expected": true,
+          "id": "capacity-control:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "honest-stop-rule:domain_criterion",
+          "expected": true,
+          "id": "honest-stop-rule:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "retention-boundary:domain_criterion",
+          "expected": true,
+          "id": "retention-boundary:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 6
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/dsh3-15-hierarchical-operator-head-baseline.eval.jsonl",
+    "summary": {
+      "durationMs": 244,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 6,
+      "total": 6
+    }
+  },
+  "result": {
+    "acceptance": {
+      "cap0_retention": {
+        "available": true,
+        "pass": true,
+        "reason": "default_off_path_is_unchanged"
+      },
+      "cap1_retention": {
+        "available": false,
+        "dependency_issue": "SLM-379",
+        "pass": null,
+        "reason": "CERT_CAP1_unavailable"
+      },
+      "causal_change_rate_at_least_0_05_vs_weight_zero": true,
+      "correct_changes_exceed_wrong_changes_vs_weight_zero": false,
+      "enabled_beats_weight_zero_capacity_control": true,
+      "enabled_causally_improves_beyond_token_baseline": false,
+      "zero_false_legal_admissions": true
+    },
+    "accepted": false,
+    "arms": {
+      "ENABLED": [
+        {
+          "arm": "ENABLED",
+          "false_legal_admissions": 0,
+          "final_loss": 0.0012426901375874877,
+          "held_out_n": 12,
+          "initial_loss": 22.02571678161621,
+          "learning_rate": 0.05,
+          "operator_accuracy": 1.0,
+          "parameter_count": 641,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            }
+          ],
+          "seed": 11,
+          "steps": 24,
+          "trainable_parameter_count": 641
+        },
+        {
+          "arm": "ENABLED",
+          "false_legal_admissions": 0,
+          "final_loss": 0.0017433371394872665,
+          "held_out_n": 12,
+          "initial_loss": 24.479629516601562,
+          "learning_rate": 0.05,
+          "operator_accuracy": 1.0,
+          "parameter_count": 641,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            }
+          ],
+          "seed": 29,
+          "steps": 24,
+          "trainable_parameter_count": 641
+        },
+        {
+          "arm": "ENABLED",
+          "false_legal_admissions": 0,
+          "final_loss": 0.0007962960517033935,
+          "held_out_n": 12,
+          "initial_loss": 20.53507423400879,
+          "learning_rate": 0.05,
+          "operator_accuracy": 1.0,
+          "parameter_count": 641,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            }
+          ],
+          "seed": 47,
+          "steps": 24,
+          "trainable_parameter_count": 641
+        }
+      ],
+      "TOKEN_BASELINE": [
+        {
+          "arm": "TOKEN_BASELINE",
+          "false_legal_admissions": 0,
+          "final_loss": 7.748573989374563e-05,
+          "held_out_n": 12,
+          "initial_loss": 20.26287078857422,
+          "learning_rate": 0.05,
+          "operator_accuracy": 1.0,
+          "parameter_count": 33857,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            }
+          ],
+          "seed": 11,
+          "steps": 24,
+          "trainable_parameter_count": 33857
+        },
+        {
+          "arm": "TOKEN_BASELINE",
+          "false_legal_admissions": 0,
+          "final_loss": 2.5033932615770027e-05,
+          "held_out_n": 12,
+          "initial_loss": 20.588579177856445,
+          "learning_rate": 0.05,
+          "operator_accuracy": 1.0,
+          "parameter_count": 33857,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            }
+          ],
+          "seed": 29,
+          "steps": 24,
+          "trainable_parameter_count": 33857
+        },
+        {
+          "arm": "TOKEN_BASELINE",
+          "false_legal_admissions": 0,
+          "final_loss": 0.0001674863597145304,
+          "held_out_n": 12,
+          "initial_loss": 21.119476318359375,
+          "learning_rate": 0.05,
+          "operator_accuracy": 1.0,
+          "parameter_count": 33857,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            },
+            {
+              "correct": true,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_set_value"
+            }
+          ],
+          "seed": 47,
+          "steps": 24,
+          "trainable_parameter_count": 33857
+        }
+      ],
+      "WEIGHT_ZERO": [
+        {
+          "arm": "WEIGHT_ZERO",
+          "false_legal_admissions": 0,
+          "final_loss": null,
+          "held_out_n": 12,
+          "initial_loss": null,
+          "learning_rate": 0.0,
+          "operator_accuracy": 0.5,
+          "parameter_count": 641,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            }
+          ],
+          "seed": 11,
+          "steps": 0,
+          "trainable_parameter_count": 0
+        },
+        {
+          "arm": "WEIGHT_ZERO",
+          "false_legal_admissions": 0,
+          "final_loss": null,
+          "held_out_n": 12,
+          "initial_loss": null,
+          "learning_rate": 0.0,
+          "operator_accuracy": 0.5,
+          "parameter_count": 641,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            }
+          ],
+          "seed": 29,
+          "steps": 0,
+          "trainable_parameter_count": 0
+        },
+        {
+          "arm": "WEIGHT_ZERO",
+          "false_legal_admissions": 0,
+          "final_loss": null,
+          "held_out_n": 12,
+          "initial_loss": null,
+          "learning_rate": 0.0,
+          "operator_accuracy": 0.5,
+          "parameter_count": 641,
+          "predictions": [
+            {
+              "correct": true,
+              "decision_id": "e340e25c7cf0db2273ac4785fe47e07b062e565f99f3332ba351bdc9331537bd",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "486aa67062a40c9639f6d29e05ecd563a3add9820f42796dd6a197375c6c3500",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5c3c67647216987f12c96b09ef06aa4296bb762b3006bf257af6f1b7a05dc835",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5f69a51231196b4af0831f5f877d1f243266272a872a33dce94123432ddfa33c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "7cd2fb157fc966c08b3a86a874ff0feec2aa426d22241f77ee7ca6100e20e41c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "b853e17033b9c50526e650c2517887a62c0f3e5dbfb0668e0534142b4fe7f139",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "6b1669b3ffbb27d6e6f805046a9852618003e7ba31eb4d31e9df0cd6eb9ee43c",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "0e51dc8ad7e0dc0d7b8f845c51020c6af60e5732dfb346f1f747e899aabf68d1",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "7e06a9f85e9eb57595aed77303b5c0ac70493548611fc9795081884419c97684",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": true,
+              "decision_id": "9f2a6dba499053370b30639ee3ea1e78ba5a84a5160c64bd928bd9af13f9f008",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_bind_role",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "5d44fa5c8b794055dd2d6bf49ec6deecf383e66761c8d83351e106d831465f25",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            },
+            {
+              "correct": false,
+              "decision_id": "938d5e3b13624bfa232d105647af3dc926a2cd619ba7bcf7baa59b79cc2c6633",
+              "false_legal_admission": false,
+              "gold_operator_id": "openui.fixture_set_value",
+              "selected_operator_id": "openui.fixture_bind_role"
+            }
+          ],
+          "seed": 47,
+          "steps": 0,
+          "trainable_parameter_count": 0
+        }
+      ]
+    },
+    "causal_changes_vs_token_baseline": {
+      "ENABLED": [
+        {
+          "change_rate": 0.0,
+          "changed": 0,
+          "correct_changes": 0,
+          "eligible": 12,
+          "wrong_changes": 0
+        },
+        {
+          "change_rate": 0.0,
+          "changed": 0,
+          "correct_changes": 0,
+          "eligible": 12,
+          "wrong_changes": 0
+        },
+        {
+          "change_rate": 0.0,
+          "changed": 0,
+          "correct_changes": 0,
+          "eligible": 12,
+          "wrong_changes": 0
+        }
+      ],
+      "WEIGHT_ZERO": [
+        {
+          "change_rate": 0.5,
+          "changed": 6,
+          "correct_changes": 0,
+          "eligible": 12,
+          "wrong_changes": 6
+        },
+        {
+          "change_rate": 0.5,
+          "changed": 6,
+          "correct_changes": 0,
+          "eligible": 12,
+          "wrong_changes": 6
+        },
+        {
+          "change_rate": 0.5,
+          "changed": 6,
+          "correct_changes": 0,
+          "eligible": 12,
+          "wrong_changes": 6
+        }
+      ]
+    },
+    "d_model": 16,
+    "held_out_decision_n": 12,
+    "hidden_dim": 16,
+    "issue": "SLM-383",
+    "learning_rate": 0.05,
+    "mean_operator_accuracy": {
+      "ENABLED": 1.0,
+      "TOKEN_BASELINE": 1.0,
+      "WEIGHT_ZERO": 0.5
+    },
+    "predecessor_experiment_id": "E803",
+    "schema": "hierarchical_operator_head_baseline/v1",
+    "scope_note": "Stage-1 (operator-kind) decision only; stage-2 (typed-argument) selection has no distinguishing typed-feature signal under the current hash-scalar candidate features (SLM-398 follow-up) and is out of scope for this run.",
+    "seeds": [
+      11,
+      29,
+      47
+    ],
+    "shapes": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "steps_per_arm": 24,
+    "train_decision_n": 30,
+    "verdict": "reject"
+  },
+  "run": {
+    "backend": "dynamic_pointer_scorer+hashed_token_scorer",
+    "checkpoint": null,
+    "device": "cpu",
+    "elapsed_seconds": 37.9745267589999,
+    "issue": "SLM-383",
+    "max_wall_minutes": 3,
+    "peak_memory_bytes": 316616704,
+    "predecessor_experiment_id": "E803",
+    "ship_claim": false
+  },
+  "schema": "hierarchical_operator_head_baseline_report/v1",
+  "version_stamp": {
+    "code_commit": "64d508d0b28d2a695f2b49cd3362865c671dfeb7",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.hierarchical_head": "v1",
+      "dsl.operators.legal_set": "v2",
+      "harness.experiments.hierarchical_operator_head_baseline": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T13:47:29.879705+00:00"
+  }
+}

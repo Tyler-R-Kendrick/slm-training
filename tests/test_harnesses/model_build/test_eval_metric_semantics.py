@@ -22,7 +22,7 @@ from slm_training.harnesses.model_build.eval_runner import (
     evaluate,
 )
 
-_GOLD = 'root = Stack([cta])\ncta = Button(":cta")'
+_GOLD = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 def _record(**overrides: object) -> ExampleRecord:
@@ -30,7 +30,7 @@ def _record(**overrides: object) -> ExampleRecord:
         "id": "r1",
         "prompt": "CTA",
         "openui": _GOLD,
-        "placeholders": [":cta"],
+        "placeholders": [":slot_0"],
         **overrides,
     }
     return ExampleRecord.from_dict(data)
@@ -50,6 +50,33 @@ def test_decode_trace_annotation_preserves_eval_record_identity() -> None:
     assert [
         trace["record_id"] for trace in stats.constrained_selection_traces
     ] == ["held-a", "held-b"]
+
+
+def test_temporal_decode_evidence_is_per_record_and_excludes_terminal_fields() -> None:
+    from slm_training.models.decode_stats import DecodeStats
+
+    stats = DecodeStats()
+    stats.constrained_selection_traces.append(
+        {
+            "position": 3,
+            "legal_candidates": 2,
+            "forced": False,
+            "phase": "ltr_repair",
+            "parse_ok": True,
+            "decode_outcome": "model_valid",
+            "record_id": "held-a",
+        }
+    )
+
+    assert eval_runner._temporal_decode_evidence(stats, "held-a") == [
+        {
+            "position": 3,
+            "legal_candidates": 2,
+            "forced": False,
+            "phase": "ltr_repair",
+        }
+    ]
+    assert eval_runner._temporal_decode_evidence(stats, "held-b") == []
 
 
 def test_empty_set_metrics_are_undefined_not_perfect() -> None:

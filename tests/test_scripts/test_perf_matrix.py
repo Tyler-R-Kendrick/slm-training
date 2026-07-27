@@ -19,8 +19,10 @@ def test_valid_p0_applies_quality_floor() -> None:
     assert result["speedup_vs_p0"] == 2.0
 
 
-def test_c5_c8_are_registered_without_running() -> None:
+def test_c5_c10_are_registered_without_running() -> None:
     rows = {row.eid: row for row in experiments()}
-    assert set(rows) >= {"C5", "C6", "C7", "C8"}
+    assert set(rows) >= {"C5", "C6", "C7", "C8", "C9", "C10"}
     assert rows["C6"].grammar_active_symbol_bitsets is True
     assert rows["C8"].grammar_completion_bounds is True
+    assert rows["C9"].compiler_prefill_max_states == 1
+    assert rows["C10"].compiler_prefill_max_states == 0

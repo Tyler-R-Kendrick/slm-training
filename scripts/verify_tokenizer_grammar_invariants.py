@@ -68,10 +68,49 @@ def _assert_layout_baseline(tokenizers: Iterable[tuple[str, object]]) -> None:
             },
         }
         if expected != actual:
+            drift = sorted(k for k in actual if expected is None or expected.get(k) != actual[k])
             raise AssertionError(
-                f"{name} tokenizer layout changed; bump its tokenizer version and "
-                "update the checked-in layout registry with a migration note"
+                f"{name} tokenizer layout changed ({', '.join(drift)}); this is a "
+                "deliberate vocabulary change or it is a bug. Only bump the "
+                "tokenizer version and the checked-in layout registry when the "
+                "change was intended — the registry records what checkpoints "
+                "were trained against, so writing an accidental layout into it "
+                "makes existing checkpoints silently incompatible."
             )
+
+
+def _assert_default_vocabulary_is_backend_independent() -> None:
+    """The OpenUI vocabulary must not depend on which backend is live.
+
+    ``models.dsl_tokenizer`` treats ``dsl.openui_tokens.STRUCTURAL_TOKENS`` as
+    authoritative for the default DSL precisely so that an unavailable Node
+    bridge cannot change ``vocab_size``. Assert both halves of that contract:
+    the tokenizer really does use the constant, and the live library still
+    agrees with it (so a genuine upstream change is caught here rather than
+    silently widening a checkpoint-bound vocabulary).
+    """
+    from slm_training.dsl.grammar.backends import get_backend
+    from slm_training.dsl.openui_tokens import STRUCTURAL_TOKENS as CANONICAL
+    from slm_training.models import dsl_tokenizer
+
+    if dsl_tokenizer.STRUCTURAL_TOKENS != CANONICAL:
+        raise AssertionError(
+            "dsl_tokenizer.STRUCTURAL_TOKENS no longer matches the canonical "
+            "dsl.openui_tokens constant; the default-DSL vocabulary must not be "
+            "derived from a live backend"
+        )
+    langcore = get_backend("openui-langcore")
+    if not langcore.available():
+        raise AssertionError(
+            "OpenUI lang-core bridge unavailable, so library agreement cannot be "
+            "certified; run `npm --prefix src/apps/openui_bridge ci`"
+        )
+    if langcore.structural_tokens() != CANONICAL:
+        raise AssertionError(
+            "the live OpenUI library no longer agrees with "
+            "dsl.openui_tokens.STRUCTURAL_TOKENS; reconcile the constant and "
+            "migrate the tokenizer layout registry deliberately"
+        )
 
 
 def _assert_namespace_registry() -> None:
@@ -129,6 +168,7 @@ def certify() -> dict[str, int]:
     native = DSLNativeTokenizer.build()
     choice = ChoiceTokenizer.build()
     _assert_namespace_registry()
+    _assert_default_vocabulary_is_backend_independent()
     _assert_layout_baseline((("dsl_native", native), ("choice_codec", choice)))
 
     native_round_trips = 0

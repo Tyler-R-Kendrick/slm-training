@@ -9,6 +9,11 @@ from pathlib import Path
 
 from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build import ModelBuildConfig, train
+from slm_training.levers import (
+    DEFAULT_CONTEXT_BACKEND,
+    DEFAULT_OUTPUT_TOKENIZER,
+    DEFAULT_TRAIN_DATA_DIR,
+)
 
 
 def _probability(value: str) -> float:
@@ -46,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/data/train/v1"),
+        default=DEFAULT_TRAIN_DATA_DIR,
     )
     parser.add_argument(
         "--requested-capability",
@@ -153,6 +158,12 @@ def main(argv: list[str] | None = None) -> int:
         "--no-full-state-checkpoint",
         action="store_true",
         help="Skip writing last_full_state.pt (serving last.pt still written).",
+    )
+    parser.add_argument(
+        "--checkpoint-every-steps",
+        type=int,
+        default=0,
+        help="Write resumable full state every N optimizer steps (0 = terminal only).",
     )
     parser.add_argument(
         "--mixture-manifest",
@@ -265,8 +276,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--output-tokenizer",
-        choices=("compositional", "lexer", "choice"),
-        default="compositional",
+        choices=("lexer", "choice"),
+        default=DEFAULT_OUTPUT_TOKENIZER,
     )
     parser.add_argument(
         "--bind-encoding",
@@ -483,8 +494,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--context-backend",
         choices=("scratch", "hf"),
-        default="hf",
-        help="Context tower backend (default: hf; use scratch for offline CI).",
+        default=DEFAULT_CONTEXT_BACKEND,
+        help="Context tower backend (default: scratch; select hf explicitly).",
     )
     parser.add_argument(
         "--hf-model",
@@ -512,9 +523,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Load HF weights only from local cache.",
     )
     parser.add_argument(
+        "--unconstrained-control",
         "--no-grammar",
+        dest="unconstrained_control",
         action="store_true",
-        help="Disable streaming/grammar-constrained decode at generate time.",
+        help=(
+            "DIAGNOSTIC CONTROL ONLY: disable grammar-constrained decode at "
+            "generate time. Decode invariant I6 "
+            "(docs/design/decode-invariants.md) forbids this arm in serving or "
+            "ship-gated configurations; its output is never certified. "
+            "`--no-grammar` is the deprecated spelling."
+        ),
     )
     parser.add_argument(
         "--grammar-dsl",
@@ -537,6 +556,18 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Extra weight for the first three LTR positions (root/early structure).",
+    )
+    parser.add_argument(
+        "--ltr-tail-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra weight for final real LTR tokens (late declarations/closures).",
+    )
+    parser.add_argument(
+        "--ltr-tail-tokens",
+        type=int,
+        default=32,
+        help="Number of final real LTR tokens eligible for tail weighting.",
     )
     parser.add_argument(
         "--compiler-alignment-loss-weight",
@@ -583,6 +614,29 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Bias compiler-legal components by role and remaining planned count.",
+    )
+    parser.add_argument(
+        "--abstract-plan-mode",
+        choices=("disabled", "teacher_forced", "sampled", "oracle", "random", "shuffled"),
+        default="disabled",
+        help="Default-off discrete plan head mode.",
+    )
+    parser.add_argument(
+        "--abstract-plan-connector-arm",
+        choices=("disabled", "learned", "oracle", "detached", "empty", "random", "shuffled"),
+        default="disabled",
+        help="Default-off plan-conditioning connector arm.",
+    )
+    parser.add_argument(
+        "--abstract-plan-loss-weight",
+        type=float,
+        default=0.0,
+        help="Auxiliary structural plan supervision weight.",
+    )
+    parser.add_argument(
+        "--abstract-plan-train-conditioning",
+        action="store_true",
+        help="Condition reconstruction loss on teacher-forced plan targets during training.",
     )
     parser.add_argument(
         "--slot-component-loss-weight",
@@ -824,6 +878,42 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal binder references by active declaration topology.",
     )
     parser.add_argument(
+        "--binder-slot-ownership-loss-weight",
+        type=float,
+        default=0.0,
+        help="BCE weight for each binder's opaque request-slot ownership set.",
+    )
+    parser.add_argument(
+        "--binder-slot-ownership-decode-weight",
+        type=float,
+        default=0.0,
+        help="Down-rank repeated binders predicted to own request slots.",
+    )
+    parser.add_argument(
+        "--binder-slot-presence-loss-weight",
+        type=float,
+        default=0.0,
+        help="BCE weight for whether each binder carries any opaque request slot.",
+    )
+    parser.add_argument(
+        "--binder-slot-presence-decode-weight",
+        type=float,
+        default=0.0,
+        help="Down-rank repeated binders predicted to carry any request slot.",
+    )
+    parser.add_argument(
+        "--binder-reference-presence-loss-weight",
+        type=float,
+        default=0.0,
+        help="BCE weight for a repeated reference's opaque slot presence from its prefix.",
+    )
+    parser.add_argument(
+        "--binder-reference-presence-decode-weight",
+        type=float,
+        default=0.0,
+        help="Down-rank repeated binders using only their decoder prefix.",
+    )
+    parser.add_argument(
         "--binder-arity-loss-weight",
         type=float,
         default=0.0,
@@ -942,6 +1032,25 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.5,
         help="Extra CE weight on gold placeholder tokens during training.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-dir",
+        type=Path,
+        help="Explicit immutable directory (or pairs.jsonl) of hard-valid train-split pairs.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-loss-weight",
+        type=float,
+        default=0.0,
+        help="Default-off pairwise semantic-contrast margin objective weight.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-margin", type=float, default=1.0,
+        help="Required positive-over-negative sequence-score margin.",
+    )
+    parser.add_argument(
+        "--semantic-contrast-fraction", type=float, default=0.0,
+        help="Fraction of each canonical batch occupied by complete contrast pairs.",
     )
     parser.add_argument(
         "--schema-in-context",
@@ -1349,7 +1458,7 @@ def main(argv: list[str] | None = None) -> int:
         hf_model_revision=args.hf_revision,
         freeze_context=freeze,
         local_files_only=args.local_files_only,
-        grammar_constrained=not args.no_grammar,
+        grammar_constrained=not args.unconstrained_control,
         grammar_dsl=args.grammar_dsl,
         grammar_top_k=args.grammar_top_k,
         structural_bias=args.structural_bias,
@@ -1358,6 +1467,8 @@ def main(argv: list[str] | None = None) -> int:
         emit_record_nll=bool(args.emit_record_nll),
         ltr_loss_weight=args.ltr_loss_weight,
         ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+        ltr_tail_loss_weight=args.ltr_tail_loss_weight,
+        ltr_tail_tokens=args.ltr_tail_tokens,
         compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
         compiler_alignment_margin=args.compiler_alignment_margin,
         compiler_alignment_stratified=args.compiler_alignment_stratified,
@@ -1368,6 +1479,10 @@ def main(argv: list[str] | None = None) -> int:
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_loss_weight=args.component_plan_loss_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
+        abstract_plan_mode=args.abstract_plan_mode,
+        abstract_plan_connector_arm=args.abstract_plan_connector_arm,
+        abstract_plan_loss_weight=args.abstract_plan_loss_weight,
+        abstract_plan_train_conditioning=args.abstract_plan_train_conditioning,
         slot_component_loss_weight=args.slot_component_loss_weight,
         slot_component_focal_gamma=args.slot_component_focal_gamma,
         slot_component_class_balance_power=(args.slot_component_class_balance_power),
@@ -1422,6 +1537,16 @@ def main(argv: list[str] | None = None) -> int:
         binder_component_plan_decode_weight=(args.binder_component_plan_decode_weight),
         binder_topology_loss_weight=args.binder_topology_loss_weight,
         binder_topology_decode_weight=args.binder_topology_decode_weight,
+        binder_slot_ownership_loss_weight=args.binder_slot_ownership_loss_weight,
+        binder_slot_ownership_decode_weight=args.binder_slot_ownership_decode_weight,
+        binder_slot_presence_loss_weight=args.binder_slot_presence_loss_weight,
+        binder_slot_presence_decode_weight=args.binder_slot_presence_decode_weight,
+        binder_reference_presence_loss_weight=(
+            args.binder_reference_presence_loss_weight
+        ),
+        binder_reference_presence_decode_weight=(
+            args.binder_reference_presence_decode_weight
+        ),
         binder_arity_loss_weight=args.binder_arity_loss_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
@@ -1440,6 +1565,10 @@ def main(argv: list[str] | None = None) -> int:
             args.required_slot_margin_decode_weight
         ),
         fidelity_loss_weight=args.fidelity_loss_weight,
+        semantic_contrast_dir=args.semantic_contrast_dir,
+        semantic_contrast_loss_weight=args.semantic_contrast_loss_weight,
+        semantic_contrast_margin=args.semantic_contrast_margin,
+        semantic_contrast_fraction=args.semantic_contrast_fraction,
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
         compiler_decode_mode=args.compiler_decode_mode,
@@ -1496,6 +1625,7 @@ def main(argv: list[str] | None = None) -> int:
         replay_fraction=args.replay_fraction,
         initialization_weight_retention=args.initialization_weight_retention,
         full_state_checkpoint=not bool(args.no_full_state_checkpoint),
+        checkpoint_every_steps=args.checkpoint_every_steps,
         mixture_manifest=args.mixture_manifest,
         mixture_min_quality_score=args.mixture_min_quality_score,
         mixture_sampling_policy=args.mixture_sampling_policy,
