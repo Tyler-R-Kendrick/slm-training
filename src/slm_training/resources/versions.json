@@ -4698,6 +4698,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-27",
+          "note": "no-bump: append the SLM-420 (DSH5-12) advanced-operator disposition terminal entry to the shared quality matrix without changing the SLM-197 scorer or matrix behavior"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-25",
           "note": "no-bump: append the E76-E88 wired-but-undocumented V7 arms note and the allow_unconstrained_fallback fail-closed fix pointer to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
@@ -5153,6 +5158,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "no-bump: add the SLM-420 (DSH5-12) advanced-operator disposition entries to research-lineage.md and MODEL_CARD.md; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
@@ -10548,6 +10558,24 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-276 DCA2-03 disposition bundle publisher aggregates prerequisite gates fail-closed"
+        }
+      ]
+    },
+    "evals.advanced_operator_disposition": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/advanced_operator_disposition.py",
+        "scripts/publish_dsh5_12_advanced_operator_disposition.py",
+        "scripts/validate_advanced_operator_disposition.py",
+        "tests/test_evals/test_advanced_operator_disposition.py",
+        "docs/design/dsh5-12-advanced-operator-disposition.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-420 (DSH5-12): claim-separated advanced-operator disposition binding eleven independent verdicts (selector correctness, bulk atomicity, crossover work, transaction contracts/execution, set-valued selection, sequence merge, control-plane execution/learning, adaptive routing, event memory, parameterized templates, systems efficiency), each split across runtime-correctness/learned-benefit/partial-coverage-safety/systems-efficiency dimensions, plus the DSH3-33/SLM-408 inherited empty learned-policy inventory and CAP0/CAP1/CAP2 retention"
         }
       ]
     }

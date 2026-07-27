@@ -1,0 +1,833 @@
+{
+  "disposition": {
+    "advanced_path_enabled_by_default": false,
+    "claims": [
+      {
+        "claim": "selector_correctness",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "Selector predicate classes are compiler-declared, not learned; no learned selector-choice component exists to evaluate.",
+          "partial_coverage_safety": "Budget-truncated scans return UNKNOWN and can never be forced into a committed singleton (mirrors DSH3-06).",
+          "runtime_correctness": "Exact finite membership, freshness, cross-branch/state, and fanout-bound checks fail closed by construction and by test.",
+          "systems_efficiency": "No serving-work comparison isolating selector construction cost exists."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unrun_conditional",
+          "partial_coverage_safety": "supported",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-409.dsh5-01"
+        ],
+        "reason": "DSH5-01/SLM-409's SelectorRefV1 contracts prove exact, permutation-invariant, fail-closed selector membership and freshness at the compiler-contract level. This is a runtime-correctness claim only; no learned-benefit or efficiency claim follows.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "supported"
+      },
+      {
+        "claim": "bulk_atomicity",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "No learned bulk-target-selection policy exists at this layer; selection is deterministic and caller-supplied.",
+          "partial_coverage_safety": "Empty selectors and already-satisfied targets reject rather than silently no-op or partially commit.",
+          "runtime_correctness": "Atomicity falls out of the unmodified OperatorLibraryV1._execute contract; rejection leaves state byte-identical.",
+          "systems_efficiency": "Fanout/serving-cost comparison is DSH5-03's claim, not measured here."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unrun_conditional",
+          "partial_coverage_safety": "supported",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-410.dsh5-02"
+        ],
+        "reason": "DSH5-02/SLM-410's openui.map_set_property commits all-or-nothing over exact selector membership, with bulk/primitive-lowering equivalence and replay/permutation invariance proven by tests/test_dsl/test_bulk_operators.py. Runtime-correctness claim only.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "supported"
+      },
+      {
+        "claim": "crossover_work",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "DSH3-28's compatible typed-policy candidate is already rejected; no bulk-policy learned candidate exists.",
+          "partial_coverage_safety": "No PARTIAL-coverage crossover stratum has been measured.",
+          "runtime_correctness": "Fanout 1/2/4/8 legal-set/apply/replay/lowering checks are real but wiring evidence only.",
+          "systems_efficiency": "No matched five-arm (primitive_policy, oracle_primitive_sequence, bulk_policy, bulk_disabled, full_generation) serving comparison exists."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unavailable",
+          "partial_coverage_safety": "unrun_conditional",
+          "runtime_correctness": "fixture_only",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-411.dsh5-03"
+        ],
+        "reason": "DSH5-03/SLM-411's own disposition is explicit: 'the report is unavailable, not a crossover result.' No fixture result substitutes for held-out meaningful parse or full serving-work measurement; the learned bulk-policy claim remains unadjudicated, not rejected and not supported.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "unavailable"
+      },
+      {
+        "claim": "transaction_contracts_execution",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "Neither DSH5-04 nor DSH5-05 wires a learned component; that is DSH5-06's separate claim.",
+          "partial_coverage_safety": "Unknown/partial footprints, fanout-exceeded, and dependency cycles fail closed; never a silent partial commit.",
+          "runtime_correctness": "One-base preparation, exact read/write footprints, and atomic N-way composition/commit/replay are proven for disjoint and declared-commuting subsets, with a structural safety net for disagreeing declared-commuting pairs.",
+          "systems_efficiency": "No serving-work comparison for transaction commit exists."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unrun_conditional",
+          "partial_coverage_safety": "supported",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-412.dsh5-04",
+          "SLM-413.dsh5-05"
+        ],
+        "reason": "DSH5-04/SLM-412 (contracts) and DSH5-05/SLM-413 (execution) together prove atomic transaction composition, commit, and replay for the subset SLM-412 already proves preparable. Producer/consumer chaining across a newly-produced entity within one transaction remains explicitly unsupported. Runtime-correctness claim only.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "supported"
+      },
+      {
+        "claim": "set_valued_selection",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "The N=2 hand-built fixture cannot support the issue's own 5%-causal-change / held-out-benefit criterion; DSH5-06 explicitly leaves it UNRUN, not asserted positive or negative.",
+          "partial_coverage_safety": "PARTIAL coverage returns DEFER with zero model forwards; never force-emits a complete set.",
+          "runtime_correctness": "Bounded-K decode always re-verifies each ranked candidate with the real executor before commit; a deliberately corrupted conflict belief never commits a real conflict (test_shuffled_conflict_belief_never_commits_a_real_conflict).",
+          "systems_efficiency": "Model-call counts are reported only for the 2-example fixture; not a powered systems comparison."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unrun_conditional",
+          "partial_coverage_safety": "supported",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unrun_conditional"
+        },
+        "evidence_ids": [
+          "SLM-414.dsh5-06"
+        ],
+        "reason": "DSH5-06/SLM-414 delivers the safety-invariant wiring precondition for learned set-valued transaction selection, stress-tested adversarially, but the decision-relevant question -- does a learned score add held-out benefit over sequential/bulk policies -- has no corpus or baseline to answer. The runtime-safety result must not be read as satisfying the separate, unrun learned-benefit question.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "unrun_conditional"
+      },
+      {
+        "claim": "sequence_merge",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "No learned component; this is a pure compiler-contract extension of the one-step merge bound.",
+          "partial_coverage_safety": "Inexact (APPROXIMATE) coverage anywhere in either chain refuses the whole merge as UNSUPPORTED_EFFECT; a genuinely stale ref later in a sequence refuses without mutation.",
+          "runtime_correctness": "N-step conservative merge over verified branch histories is proven for AST_EDIT-only chains: buried conflicts, DELETE_MODIFY closure, stale/forged refs, and fresh-reference continuation all hold.",
+          "systems_efficiency": "No serving-work measurement for sequence merge exists."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unrun_conditional",
+          "partial_coverage_safety": "supported",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-415.dsh5-07"
+        ],
+        "reason": "DSH5-07/SLM-415 extends the one-step conservative branch merge to N steps for the scope it actually implements (no TRANSACTION_COMMIT or mid-sequence FORK/COPY_STATE turns), preserving exact effect/read-write precision. Runtime-correctness claim only.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "supported"
+      },
+      {
+        "claim": "control_plane_execution_learning",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "No learned control-policy head was trained; DSH5-08 explicitly defers training pending a first demonstrated held-out benefit -- this is the 'learning' half of the claim name, and it is unrun, not merely unreported.",
+          "partial_coverage_safety": "Every control kind's legality is exactly enumerable in bounded time; MERGE_BRANCHES's one legitimate UNKNOWN (no authority_resolver) is proven distinct from a false UNSUPPORTED.",
+          "runtime_correctness": "The compiler-owned control-action legal set, typed dispatch, and deterministic baseline (singleton bypass + fixed priority) are proven correct and replay-exact by 12 tests in test_conversation_control_actions.py.",
+          "systems_efficiency": "No serving-work measurement for control dispatch exists."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unrun_conditional",
+          "partial_coverage_safety": "supported",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-416.dsh5-08"
+        ],
+        "reason": "'Execution' and 'learning' are separated deliberately: the compiler-owned legal set, execution, and deterministic baseline (DSH5-08/SLM-416) are supported at the runtime-correctness axis; no learned control policy exists or was trained, so the 'learning' half remains unrun_conditional (see dimension_verdicts.learned_semantic_benefit). The headline verdict names only the supported execution half.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "supported"
+      },
+      {
+        "claim": "adaptive_routing",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "No locked, group-disjoint, matched all-arm outcome corpus exists to train or evaluate a router; router regret is unmeasured.",
+          "partial_coverage_safety": "Unavailable modes correctly DEFER rather than silently degrading to an approximate proxy.",
+          "runtime_correctness": "The router admission preflight's own contract (unavailable modes correctly DEFER; no fixture is promoted to a quality/work claim) passes 2/2 AgentEvals criteria with zero execution errors.",
+          "systems_efficiency": "No serving comparison exists."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unavailable",
+          "partial_coverage_safety": "supported",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-417.dsh5-09"
+        ],
+        "reason": "DSH5-09/SLM-417 is a real, executed preflight -- not an unattempted dimension -- and its own conclusion is 'unavailable': no matched group-disjoint corpus exists, so adaptive routing cannot be trained or evaluated at all yet. The preflight contract's own correctness (DEFER-on-unavailable) is separately supported and must not be read as router benefit.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "unavailable"
+      },
+      {
+        "claim": "event_memory",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "5 of 7 named patterns are not attempted; no SFT/preference training, no four-baseline comparison, no held-out benefit measurement exists.",
+          "partial_coverage_safety": "No CAP0/CAP1/CAP2 retention or calibration measurement exists yet for rows sourced from this module.",
+          "runtime_correctness": "The delivered slice (edit-then-undo, undo-then-redo) extracts rows whose chosen/rejected actions are verified legal-set members and whose chosen_output_state matches independent replay.",
+          "systems_efficiency": "No turn-depth or context-view ablation exists; OperatorEventMemoryReportV1 is row counts only."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unrun_conditional",
+          "partial_coverage_safety": "unrun_conditional",
+          "runtime_correctness": "supported",
+          "systems_efficiency": "unrun_conditional"
+        },
+        "evidence_ids": [
+          "SLM-418.dsh5-10"
+        ],
+        "reason": "DSH5-10/SLM-418's own doc states plainly: 'not yet dispositioned -- this PR delivers a scoped subset, not the full issue,' and that the issue 'should stay open.' The delivered row-extraction wiring is real and replay-verified, but the issue's held-out benefit question remains unrun_conditional.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "unrun_conditional"
+      },
+      {
+        "claim": "parameterized_templates",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "No matched BASE/FLAT/CLOSED/PARAM semantic comparison exists.",
+          "partial_coverage_safety": "No leakage-audited train-only manifest exists, so partial-coverage behavior cannot be assessed.",
+          "runtime_correctness": "No ParameterizedTemplateActionV1, parameter-slot lowering, or matched action matrix exists to evaluate.",
+          "systems_efficiency": "No matched serving/model arm exists."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unavailable",
+          "partial_coverage_safety": "unavailable",
+          "runtime_correctness": "unavailable",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-419.dsh5-11"
+        ],
+        "reason": "DSH5-11/SLM-419's repository-wide tracked-path audit for TSA-013, TSA-014, ParameterizedTemplateAction, and template_manifest returned no matches. This is a real, completed audit with a confirmed-absent prerequisite, not an unattempted dimension: 'a fixture or fixed-span compression result is not evidence for typed open-leaf template actions and cannot supply the missing gate.' Absence of TSA artifacts is recorded as UNAVAILABLE, never as an assumed benefit or failure.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "unavailable"
+      },
+      {
+        "claim": "systems_efficiency",
+        "dimension_reasons": {
+          "learned_semantic_benefit": "Serving efficiency is a distinct axis from semantic benefit by construction; no semantic-gain result substitutes for it.",
+          "partial_coverage_safety": "No PARTIAL-coverage systems stratum has been measured for any abstraction.",
+          "runtime_correctness": "No systems harness reached completion for any DSH5 abstraction (bulk, transaction, control, or router).",
+          "systems_efficiency": "DSH5-03's own systems contract is 'unavailable, not a crossover result,' consistent with the inherited DSH3-33/SLM-407 'no compatible five-arm measured serving comparison' finding."
+        },
+        "dimension_verdicts": {
+          "learned_semantic_benefit": "unavailable",
+          "partial_coverage_safety": "unavailable",
+          "runtime_correctness": "unavailable",
+          "systems_efficiency": "unavailable"
+        },
+        "evidence_ids": [
+          "SLM-411.dsh5-03",
+          "SLM-408.dsh3-33"
+        ],
+        "reason": "No DSH5 abstraction has a compatible matched multi-arm serving-work comparison. A semantic gain (none measured) cannot establish efficiency and a latency gain (none measured) cannot establish semantics; both remain unavailable independently.",
+        "schema": "advanced_operator_claim/v1",
+        "verdict": "unavailable"
+      }
+    ],
+    "evidence": [
+      {
+        "artifact_path": "docs/design/dsh5-01-selector-refs.md",
+        "checkpoint_identity": null,
+        "code_commit": "64d508d0b28d2a695f2b49cd3362865c671dfeb7",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "dsl.operators.selectors",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-409.dsh5-01",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-01",
+        "linear_id": "SLM-409",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "exact finite selector membership, freshness, fanout bound, and permutation invariance proven"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_dsl/test_operator_selectors.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.selectors": "v1"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143878+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-02-bulk-set-property.md",
+        "checkpoint_identity": null,
+        "code_commit": "228d2c5d78ad8d8273c5015445aa14a4c1b0014d",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "dsl.operators.bulk",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-410.dsh5-02",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-02",
+        "linear_id": "SLM-410",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "atomic bulk set-property proven structurally and by rejection-atomicity/replay/lowering tests"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_dsl/test_bulk_operators.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.bulk": "v1"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143884+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-03-bulk-operator-crossover-20260726-local/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "cce9447e9cc729f5fc21d5392512e6f216f47ce2",
+        "data_identity": {
+          "report_schema": "dsh5_03_bulk_operator_crossover_preflight/v1"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-411.dsh5-03",
+        "hardware_identity": {
+          "backend": "local_exact_bulk_fixture",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-03",
+        "linear_id": "SLM-411",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "reason": "no matched five-arm serving rows exist",
+          "verdict": "unavailable"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": "dsh5_03_bulk_operator_crossover_preflight/v1",
+        "suite_identity": {
+          "n": 0,
+          "suite": "dsh5-03 bulk-operator-crossover preflight"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "cce9447e9cc729f5fc21d5392512e6f216f47ce2",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.legal_set": "v3",
+            "evals.bulk_operator_matrix": "v1",
+            "harness.experiments.operator_systems_benchmark": "v1",
+            "model.operator_feature_encoder": "v2",
+            "model.operator_policy_view": "v4"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T17:49:56.589362+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-04-operator-transactions.md",
+        "checkpoint_identity": null,
+        "code_commit": "3e6d1d3636966c17b60a5f4c1adffbfa2750df87",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "dsl.operators.transactions",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-412.dsh5-04",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-04",
+        "linear_id": "SLM-412",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "one-base multi-action dependency/conflict contracts proven; no execution path"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_dsl/test_operator_transactions.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.transactions": "v3"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143889+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-05-transaction-executor.md",
+        "checkpoint_identity": null,
+        "code_commit": "99e07f2efe75a692f55908771cbf1f2a4b67cf80",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "dsl.operators.transaction_executor",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-413.dsh5-05",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-05",
+        "linear_id": "SLM-413",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "atomic N-way composition/commit/replay proven for disjoint and declared-commuting subsets"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_dsl/test_operator_transaction_executor.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.transaction_executor": "v2"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143893+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-06-operator-transaction-policy.md",
+        "checkpoint_identity": null,
+        "code_commit": "7e1fc586b53dfb3e2fc6386a2aa46c79d9baf771",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "harness.experiments.operator_transaction_policy",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-414.dsh5-06",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-06",
+        "linear_id": "SLM-414",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "bounded-K decode safety invariant held under adversarial corrupted-belief control; N=2 fixture only"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_harnesses/experiments/test_operator_transaction_policy.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "harness.experiments.operator_transaction_policy": "v1"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143897+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-07-branch-sequence-merge.md",
+        "checkpoint_identity": null,
+        "code_commit": "2cd177c41bf76119b4b2a01d4047bf7b9f7d9a2c",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "dsl.operators.sequence_merge",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-415.dsh5-07",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-07",
+        "linear_id": "SLM-415",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "N-step conservative merge proven for AST_EDIT-only chains, excluding TRANSACTION_COMMIT/mid-sequence FORK"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_dsl/test_operator_sequence_merge.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.sequence_merge": "v1"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143901+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-08-conversation-control-actions.md",
+        "checkpoint_identity": null,
+        "code_commit": "b40b705b4fdb11713be233333e1a1cad3fd813c1",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "dsl.operators.control_actions",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-416.dsh5-08",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-08",
+        "linear_id": "SLM-416",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "compiler-owned control legal set, dispatch, and deterministic baseline proven; no learned policy trained"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_dsl/test_conversation_control_actions.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.control_actions": "v3"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143911+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-09-adaptive-router-20260726-local/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "f134e514385fbce0a634be00eb3ffdc5bd653ad0",
+        "data_identity": {
+          "report_schema": "dsh5_09_adaptive_router_preflight/v1"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-417.dsh5-09",
+        "hardware_identity": {
+          "backend": "local_contract_preflight",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-09",
+        "linear_id": "SLM-417",
+        "objective_identity": "meaningful_parse",
+        "registry_identity": null,
+        "result_identity": {
+          "reason": "No locked, group-disjoint matched all-arm outcomes exist; AP-028's fixture proxy cannot admit learned-router training or a quality/work claim.",
+          "required_next_evidence": [
+            "matched per-request outcomes for every fixed and candidate arm",
+            "prefix-time-only features with oracle/outcome fields rejected",
+            "frozen group-disjoint calibration and held-out evaluation"
+          ],
+          "verdict": "unavailable"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": "dsh5_09_adaptive_router_preflight/v1",
+        "suite_identity": {
+          "n": 0,
+          "suite": "dsh5-09 adaptive-router admission preflight"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "f134e514385fbce0a634be00eb3ffdc5bd653ad0",
+          "code_dirty": true,
+          "components": {
+            "harness.experiments.operator_router": "v1"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T23:27:03.984289+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-10-replay-preference-rows.md",
+        "checkpoint_identity": null,
+        "code_commit": "78d598be52018648c92d858cccdb1b4051a981ec",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "dsl.operators.replay_preference",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-418.dsh5-10",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-10",
+        "linear_id": "SLM-418",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "2 of 7 named patterns (edit-then-undo, undo-then-redo) extract and replay-verify; partial slice"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "tests/test_dsl/test_replay_preference.py"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {
+            "dsl.operators.replay_preference": "v2"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143915+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh5-11-parameterized-template-disposition.md",
+        "checkpoint_identity": null,
+        "code_commit": "8d04210375647bb69674b85db582df45eb7082aa",
+        "data_identity": {
+          "backend": "real_dsl_pack",
+          "component": "data.macro_induction",
+          "kind": "openui_pack_fixture"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-419.dsh5-11",
+        "hardware_identity": {
+          "backend": "pytest",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH5-11",
+        "linear_id": "SLM-419",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "verdict": "no TSA/parameterized-template artifact exists anywhere in the tracked repository"
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": null,
+        "suite_identity": {
+          "kind": "unit_fixture",
+          "suite": "repository-wide tracked-path audit (TSA-013/TSA-014/template_manifest)"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+          "code_dirty": true,
+          "components": {},
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-27T01:57:11.143918+00:00"
+        }
+      },
+      {
+        "artifact_path": "docs/design/dsh3-33-rebased-cap2-disposition-20260726-local/report.json",
+        "checkpoint_identity": null,
+        "code_commit": "5c49ccbc5d7d9293d0582dcbaf4d13d342ceb00d",
+        "data_identity": {
+          "report_schema": "dsh3_33_rebased_cap2_disposition_report/v1"
+        },
+        "decode_policy": "compiler-owned legal set with singleton bypass and PARTIAL defer",
+        "evidence_id": "SLM-408.dsh3-33",
+        "hardware_identity": {
+          "backend": "unknown",
+          "device": "cpu"
+        },
+        "issue_alias": "DSH3-33",
+        "linear_id": "SLM-408",
+        "objective_identity": null,
+        "registry_identity": null,
+        "result_identity": {
+          "dsh5": {
+            "allowed_actions": [],
+            "allowed_heads": [],
+            "allowed_objectives": [],
+            "may_start": false,
+            "reason": "No typed action form improved held-out CAP2 semantics; DSH5 remains closed."
+          }
+        },
+        "schema": "advanced_operator_evidence/v1",
+        "schema_identity": "dsh3_33_rebased_cap2_disposition_report/v1",
+        "suite_identity": {
+          "n": 0,
+          "suite": "dsh3-33 rebased CAP2 operator-policy disposition"
+        },
+        "tokenizer_identity": null,
+        "version_stamp": {
+          "code_commit": "5c49ccbc5d7d9293d0582dcbaf4d13d342ceb00d",
+          "code_dirty": true,
+          "components": {
+            "evals.cap2_operator_policy_disposition": "v1"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-07-26T17:03:57.998240+00:00"
+        }
+      }
+    ],
+    "historical_disposition": "docs/design/dsh3-33-rebased-cap2-disposition-20260726-local/report.json (historical, immutable)",
+    "inherited_policy": {
+      "allowed_actions": [],
+      "allowed_heads": [],
+      "allowed_objectives": [],
+      "dsh5_may_start": false,
+      "reason": "No typed action form improved held-out CAP2 semantics; DSH5 remains closed.",
+      "schema": "advanced_operator_inherited_policy_inventory/v1",
+      "source_artifact_path": "docs/design/dsh3-33-rebased-cap2-disposition-20260726-local/report.json",
+      "source_disposition": "SLM-408 (DSH3-33)"
+    },
+    "recommendation": "retain_as_compiler_utility",
+    "recommendation_reason": "Selector correctness, bulk atomicity, transaction contracts/execution, sequence merge, and control-plane execution are proven runtime-correctness compiler utilities and should be retained as such. Crossover work, adaptive routing, parameterized templates, and systems efficiency are UNAVAILABLE (their measurement prerequisites do not exist); set-valued selection and event memory are UNRUN_CONDITIONAL wiring preconditions whose held-out-benefit question remains open and may continue as default-off research, but none is promoted, shipped, or enabled by default from this disposition alone.",
+    "retention": [
+      {
+        "capability": "CAP0",
+        "evidence_ids": [
+          "SLM-408.dsh3-33"
+        ],
+        "reason": "No learned CAP2/DSH5 candidate reached a retention evaluation; inherited unchanged from SLM-408 (DSH3-33).",
+        "schema": "advanced_operator_retention_claim/v1",
+        "verdict": "unrun_conditional"
+      },
+      {
+        "capability": "CAP1",
+        "evidence_ids": [
+          "SLM-408.dsh3-33"
+        ],
+        "reason": "No CAP1-compatible learned candidate or retention artifact exists; inherited unchanged from SLM-408 (DSH3-33).",
+        "schema": "advanced_operator_retention_claim/v1",
+        "verdict": "unavailable"
+      },
+      {
+        "capability": "CAP2",
+        "evidence_ids": [
+          "SLM-408.dsh3-33",
+          "SLM-409.dsh5-01",
+          "SLM-410.dsh5-02",
+          "SLM-412.dsh5-04",
+          "SLM-413.dsh5-05",
+          "SLM-415.dsh5-07",
+          "SLM-416.dsh5-08"
+        ],
+        "reason": "CERT_CAP2 remains not-issued per SLM-408 (DSH3-33). DSH5's supported claims -- selector correctness, bulk atomicity, transaction contracts/execution, sequence merge, and control-plane execution -- are compiler-owned runtime utilities, never a learned CAP2 capability, so the certificate posture is retained unchanged, not advanced.",
+        "schema": "advanced_operator_retention_claim/v1",
+        "verdict": "supported"
+      }
+    ],
+    "schema": "advanced_operator_disposition/v1",
+    "version_stamp": {
+      "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+      "code_dirty": true,
+      "components": {
+        "evals.advanced_operator_disposition": "v1"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-07-27T01:57:11.143836+00:00"
+    }
+  },
+  "schema": "dsh5_12_advanced_operator_disposition_report/v1",
+  "self_check": {
+    "cases": [
+      {
+        "criteria": "Every one of the eleven required advanced-operator claims has one typed disposition.",
+        "id": "complete-claim-ledger",
+        "pass": true
+      },
+      {
+        "criteria": "Every claim states an explicit verdict for all four independent dimensions.",
+        "id": "every-claim-addresses-every-dimension",
+        "pass": true
+      },
+      {
+        "criteria": "Unrun/unavailable crossover, routing, template, and systems verdicts remain non-promotional.",
+        "id": "negative-and-unavailable-retained",
+        "pass": true
+      },
+      {
+        "criteria": "control_plane_execution_learning separates a supported execution axis from an unrun learning axis.",
+        "id": "control-plane-execution-not-conflated-with-learning",
+        "pass": true
+      },
+      {
+        "criteria": "This disposition never flips an advanced-operator path on by default.",
+        "id": "no-advanced-path-enabled-by-default",
+        "pass": true
+      },
+      {
+        "criteria": "The DSH3-33/SLM-408 allowed learned head/objective/action inventory is inherited, not re-derived, and is empty.",
+        "id": "inherited-policy-inventory-empty",
+        "pass": true
+      },
+      {
+        "criteria": "CAP2 certificate posture is recorded as retained unchanged, never advanced.",
+        "id": "cap2-retained-not-advanced",
+        "pass": true
+      }
+    ],
+    "note": "AgentV/AgentEvals (@agentv/core) publication was intentionally skipped: not installed in this environment and installing it was judged not worth the disk/dependency risk for this issue. This block re-checks the same pass/fail facts in pure Python; the disposition's own dataclasses already enforce these invariants structurally via __post_init__, and scripts/validate_advanced_operator_disposition.py re-validates the published artifact.",
+    "runner": "pure_python_self_check",
+    "summary": {
+      "pass": true,
+      "passed": 7,
+      "total": 7
+    }
+  },
+  "version_stamp": {
+    "code_commit": "eb385bbd753e505843fb64326540e3019602e396",
+    "code_dirty": true,
+    "components": {
+      "evals.advanced_operator_disposition": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-27T01:57:11.143836+00:00"
+  }
+}
