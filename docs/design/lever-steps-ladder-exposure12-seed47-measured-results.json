@@ -1,0 +1,89 @@
+{
+  "lever": "SFT.steps_on_exposure12",
+  "hypothesis": "More SFT steps (16\u219232\u219248) on exposure12 seed47 lift meaningful_program toward 1.0 at fixed decode.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "rows": [
+    {
+      "steps_requested": 16,
+      "run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47",
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 7.188694000244141,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8523333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30011.11,
+      "max_latency_ms": 277005.45,
+      "sum_latency_ms": 337025.72000000003,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      }
+    },
+    {
+      "steps_requested": 32,
+      "run_id": "exp_lever_exp12_s32_lr1e3_bs2_sb15_seed47",
+      "steps": 32,
+      "stopped_on": "steps",
+      "last_loss": 4.899424076080322,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8403333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30009.34,
+      "max_latency_ms": 173370.06,
+      "sum_latency_ms": 233386.61,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      }
+    },
+    {
+      "steps_requested": 48,
+      "run_id": "exp_lever_exp12_s48_lr1e3_bs2_sb15_seed47",
+      "steps": 43,
+      "stopped_on": "wall_time_budget",
+      "last_loss": 6.0198211669921875,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8543333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30018.42,
+      "max_latency_ms": 150769.62,
+      "sum_latency_ms": 210793.57,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 1,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      }
+    }
+  ],
+  "decision": "reject",
+  "decision_reason": "more steps on exposure12 do not lift meaningful above s16 quality champ",
+  "captured_at": "2026-07-27T17:33:06.258810+00:00",
+  "recipe": {
+    "train_dir": "lever_exposure12_v1",
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "asap": true,
+    "t30": true
+  }
+}
