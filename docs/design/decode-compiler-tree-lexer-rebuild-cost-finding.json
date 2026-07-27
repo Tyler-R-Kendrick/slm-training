@@ -1,0 +1,152 @@
+{
+  "finding": "compiler_tree_completion_forest_lexer_rebuild_cost",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "PR #1171 next-steps item 2: investigate why each build_completion_forest call costs roughly 7-10s of wall time on average -- Node-bridge round-trip cost vs. candidate-set size vs. cache misses were not isolated in that session.",
+  "reproduction": {
+    "method": "direct instrumented calls to build_completion_forest (compiler_draft.py) plus cProfile of a warm-cache call; no train_model / evaluate_model / checkpoint involved",
+    "env_setup": [
+      "python3.12 -m venv .venv-diag",
+      ".venv-diag/bin/pip install --quiet -e .",
+      "cd src/apps/openui_bridge && npm ci --silent"
+    ],
+    "tokenizer": "DSLNativeTokenizer.build()",
+    "prefixes": {
+      "cold_empty_prefix": "[bos]",
+      "prefix8": "root = Card([b1 (7 tokens after bos, matches PR #1171 dead_end_trace position 8)",
+      "prefix9": "root = Card([b1, (8 tokens after bos, matches PR #1171 dead_end_trace position 9)",
+      "prefix8_repeat": "identical to prefix8, re-run after all caches were already warm"
+    },
+    "call_kwargs": {"remaining_tokens": 24, "max_path_tokens": 8, "min_content": 0},
+    "instrumentation": [
+      "monkeypatched slm_training.dsl.lang_core._invoke to count and time every Node-bridge round trip and record the persistent REPL subprocess pid before/after",
+      "read compiler_draft._generated_ast_is_complete.cache_info() before/after each call for lru_cache hit/miss deltas",
+      "cProfile.Profile() around a second (already-warm) build_completion_forest call at prefix9, sorted by cumulative and by tottime"
+    ],
+    "scripts_not_committed": [
+      "diag_build_completion_forest.py",
+      "diag_profile_build_completion_forest.py"
+    ]
+  },
+  "measured_direct_calls": [
+    {
+      "label": "cold_empty_prefix",
+      "prefix_len": 1,
+      "wall_s": 0.681,
+      "coverage": "complete",
+      "n_paths": 2,
+      "bridge_calls_n": 10,
+      "bridge_calls_wall_s_sum": 0.0199,
+      "bridge_calls_wall_s_max": 0.0044,
+      "generated_ast_is_complete_cache_hits_delta": 0,
+      "generated_ast_is_complete_cache_misses_delta": 10,
+      "repl_pid_stable": true
+    },
+    {
+      "label": "prefix8",
+      "prefix_len": 7,
+      "wall_s": 0.9561,
+      "coverage": "complete",
+      "n_paths": 2,
+      "bridge_calls_n": 23,
+      "bridge_calls_wall_s_sum": 0.0374,
+      "bridge_calls_wall_s_max": 0.0035,
+      "generated_ast_is_complete_cache_hits_delta": 0,
+      "generated_ast_is_complete_cache_misses_delta": 23,
+      "repl_pid_stable": true
+    },
+    {
+      "label": "prefix9",
+      "prefix_len": 8,
+      "wall_s": 13.0615,
+      "coverage": "complete",
+      "n_paths": 12,
+      "bridge_calls_n": 156,
+      "bridge_calls_wall_s_sum": 0.1973,
+      "bridge_calls_wall_s_max": 0.0035,
+      "generated_ast_is_complete_cache_hits_delta": 15,
+      "generated_ast_is_complete_cache_misses_delta": 156,
+      "repl_pid_stable": true
+    },
+    {
+      "label": "prefix8_repeat",
+      "prefix_len": 7,
+      "wall_s": 0.8406,
+      "coverage": "complete",
+      "n_paths": 2,
+      "bridge_calls_n": 0,
+      "bridge_calls_wall_s_sum": 0.0,
+      "bridge_calls_wall_s_max": 0.0,
+      "generated_ast_is_complete_cache_hits_delta": 23,
+      "generated_ast_is_complete_cache_misses_delta": 0,
+      "repl_pid_stable": true,
+      "note": "fully-cached repeat of prefix8: zero Node-bridge round trips, zero cache misses, wall time still ~0.84s -- ~same as the original prefix8 call. This is the row that rules out the Node bridge / AST cache as the cost driver."
+    }
+  ],
+  "cprofile_warm_cache_call": {
+    "prefix": "prefix9",
+    "total_function_calls": 95622363,
+    "primitive_calls": 95066449,
+    "profiled_wall_s": 41.246,
+    "unprofiled_equivalent_s_approx": 13.06,
+    "call_chain_top_cumulative": [
+      {"fn": "compiler_draft.py:2246 build_completion_forest", "ncalls": 1, "cumtime_s": 41.267},
+      {"fn": "grammar_capabilities.py:300 completion_domain", "ncalls": 1, "cumtime_s": 41.266},
+      {"fn": "pack.py:273 _openui_completion_domain", "ncalls": 1, "cumtime_s": 41.266},
+      {"fn": "compiler_draft.py:1480 _build_openui_completion_forest", "ncalls": 171, "cumtime_s": 41.249},
+      {"fn": "pack.py:392 _tail_from", "ncalls": 14, "cumtime_s": 41.173},
+      {"fn": "pack.py:402 _tail", "ncalls": 4419, "cumtime_s": 41.172},
+      {"fn": "engine.py:177 OpenUIIncrementalEngine._sync", "ncalls": 16082, "cumtime_s": 28.124},
+      {"fn": "engine.py:99 _lex_tokens", "ncalls": 23546, "cumtime_s": 27.104},
+      {"fn": "lark/lexer.py:536 lex", "ncalls": 446332, "cumtime_s": 20.193},
+      {"fn": "lark/lexer.py:614 next_token", "ncalls": 446332, "cumtime_s": 19.905},
+      {"fn": "lark/lexer.py:592 _build_scanner", "ncalls": 23546, "cumtime_s": 16.521},
+      {"fn": "lark/lexer.py:334 _create_unless", "ncalls": 23546, "tottime_s": 2.940, "cumtime_s": 14.685},
+      {"fn": "re/__init__.py:280 _compile", "ncalls": 6417481, "tottime_s": 2.582, "cumtime_s": 3.760},
+      {"fn": "re/__init__.py:164 match", "ncalls": 5509764, "tottime_s": 2.331, "cumtime_s": 7.140}
+    ]
+  },
+  "root_cause_chain": [
+    {
+      "step": 1,
+      "claim": "OpenUIIncrementalEngine._lex_tokens (engine.py:99-110) calls self._parser.lex(prefix) -- Lark's standalone .lex() convenience API -- with the FULL current prefix string, on every _full_sync (engine.py:124) and every _incremental_sync (engine.py:149) call, i.e. on every _sync (engine.py:177) call.",
+      "evidence": "cProfile: engine.py:99 _lex_tokens called 23546 times for one build_completion_forest invocation, 27.1s cumulative; every call routes into lark/lexer.py's lex/next_token/scanner/_build_scanner chain."
+    },
+    {
+      "step": 2,
+      "claim": "The Lark grammar object itself IS cached (_load_parser, engine.py:43-53, @lru_cache(maxsize=4)), but nothing caches or reuses a built Lexer/Scanner across .lex() calls -- each call reconstructs the terminal-disambiguation scanner from scratch via _build_lexer -> _build_scanner -> _create_unless, which recompiles regex patterns every time.",
+      "evidence": "lark/lexer.py:592 _build_scanner called 23546 times (1:1 with _lex_tokens calls); lark/lexer.py:334 _create_unless called 23546 times, 14.685s cumulative, driving 6.4M calls to re._compile and 5.5M calls to re.match."
+    },
+    {
+      "step": 3,
+      "claim": "The recursive lookahead-then-verify witness search in pack.py's _tail_from/_tail (bounded nodes_left=16 per I3) calls _build_openui_completion_forest up to 171 times for a SINGLE top-level build_completion_forest call at this prefix, multiplying the per-call lexer-rebuild cost into seconds of wall time.",
+      "evidence": "cProfile: pack.py:402 _tail called 4419 times (recursive), compiler_draft.py:1480 _build_openui_completion_forest called 171 times, for one top-level build_completion_forest(prefix9) call."
+    },
+    {
+      "step": 4,
+      "claim": "The Node bridge (lang_core.parse, the out-of-process Node subprocess used by _generated_ast_is_complete) and its lru_cache are NOT the bottleneck: a fully-cached repeat call with zero bridge round trips and zero cache misses (prefix8_repeat) still costs ~0.84s, essentially the same as the original call that made 23 real bridge round trips totaling only 0.037s.",
+      "evidence": "measured_direct_calls[3] (prefix8_repeat) vs measured_direct_calls[1] (prefix8): wall_s 0.8406 vs 0.9561, bridge_calls_wall_s_sum 0.0 vs 0.0374."
+    }
+  ],
+  "interpretation": "PR #1171 correctly identified compiler_ms (not denoiser_ms/forwards_count) as the wall-clock sink and that it scales with compiler_prefill_batches; that stands. This diagnostic resolves the specific open question about compiler_ms's internal breakdown: it is neither Node-bridge round-trip cost nor _generated_ast_is_complete cache misses (both are cheap and well-amortized), but the OpenUIIncrementalEngine's uncached, full-prefix Lark lexer/scanner rebuild inside _lex_tokens, multiplied by the recursive _tail_from/_tail candidate-witness search's call count. The growth from prefix8 to prefix9 is worse than linear in the underlying call count (6.8x more _generated_ast_is_complete calls, 13.7x more wall time), consistent with the recursive _tail fan-out multiplying a fixed uncached per-node lexer-rebuild cost rather than a flat per-candidate cost.",
+  "scope_note": "Single-process micro-benchmark, n=1 rep per prefix, 4 prefixes -- not a multi-rep confirm and does not prove this is the ONLY compiler_ms contributor on every record. But the near-zero marginal cost of prefix8_repeat is sufficient on its own to rule out the Node bridge and AST cache as primary drivers, and the cProfile breakdown directly attributes the remaining cost.",
+  "why_finding_not_patch": "Same precedent as decode-compiler-tree-deadline-swallow-finding.md and decode-timeout-hang-seed44-steps72-finding.md: engine.py backs dsl.grammar_capabilities (watched in src/slm_training/resources/versions.json via pack.py / compiler_draft.py) and is exercised by every default constrained-decode path's speculative/lookahead witness search (I3). A real fix needs a benchmark-backed unit test and should land via improve-openui-harnesses, not be patched blind here.",
+  "proposed_fix_sketch": [
+    "Cache a built Lexer/Scanner per grammar path alongside _load_parser's cached Lark object (engine.py:43-53); have _lex_tokens (engine.py:99) reuse it instead of calling self._parser.lex(prefix), which rebuilds the scanner every call.",
+    "Make _incremental_sync (engine.py:149) genuinely incremental at the lex layer too -- it already tracks _fed_token_count and only feeds new tokens to the InteractiveParser, but it still re-lexes the entire prefix from scratch (_lex_tokens(prefix) on the full string, engine.py:152) before slicing to the new tokens.",
+    "Re-run this diagnostic's prefix9 case after the fix and confirm _lex_tokens/_build_scanner call counts and compiler_ms both drop without changing n_paths/coverage (caching change only, never a legality change per I6/I3).",
+    "Re-run the PR #1171 isolated per-record eval protocol to see whether compiler_ms drops enough for the exposure12 hero to finish inside decode_timeout_seconds=30."
+  ],
+  "next_steps": [
+    "Fix per proposed_fix_sketch via improve-openui-harnesses.",
+    "Re-run PR #1171's per-record isolated eval diagnostic after the fix to see whether decode_outcome shifts away from fallback_output / empty_completion_forest.",
+    "If compiler_ms drops substantially, re-check whether PR #1171's separate deadline-swallow bug (TimeoutError caught by the bare except in compiler_draft.py:2313) is still reachable in practice, or whether it was mostly masking this lexer-rebuild cost."
+  ],
+  "cleanup_note": ".venv-diag and src/apps/openui_bridge/node_modules/ created for this diagnostic are not committed (both gitignored); the two diagnostic scripts live under the session scratchpad, not the repo.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "note": "Docs-only change; no file watched by src/slm_training/resources/versions.json was edited (engine.py, pack.py, compiler_draft.py were read and profiled but not modified). python -m scripts.verify_version_stamps --check run against this change reports 0 components touched."
+  },
+  "captured_at": "2026-07-27T20:35:52.529695+00:00"
+}
