@@ -63,6 +63,7 @@ PREFERRED_COMPONENTS = frozenset(
         "CardHeader",
         "Separator",
         "Slider",
+        "SwitchGroup",
         "CheckBoxItem",
         "RadioItem",
         "SwitchItem",

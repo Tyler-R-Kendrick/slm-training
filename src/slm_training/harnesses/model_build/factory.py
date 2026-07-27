@@ -192,6 +192,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "connector_rank",
         "connector_n_queries",
         "connector_freeze_encoder",
+        "abstract_plan_mode",
+        "abstract_plan_connector_arm",
+        "abstract_plan_loss_weight",
+        "abstract_plan_train_conditioning",
         "train_scope",
         "pointer_mode",
         "pointer_candidate_source",
@@ -382,6 +386,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         design_md_budget=config.design_md_budget,
         schema_in_context=getattr(config, "schema_in_context", False),
         slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
+        encoder_ops_conditioning=getattr(config, "encoder_ops_conditioning", False),
         semantic_role_contract_in_context=getattr(
             config, "semantic_role_contract_in_context", False
         ),
@@ -493,6 +498,10 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ltr_prefix_loss_weight=float(
             getattr(config, "ltr_prefix_loss_weight", 0.0) or 0.0
         ),
+        ltr_tail_loss_weight=float(
+            getattr(config, "ltr_tail_loss_weight", 0.0) or 0.0
+        ),
+        ltr_tail_tokens=int(getattr(config, "ltr_tail_tokens", 32) or 0),
         compiler_alignment_loss_weight=float(
             getattr(config, "compiler_alignment_loss_weight", 0.0) or 0.0
         ),
@@ -724,6 +733,19 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         connector_n_queries=int(getattr(config, "connector_n_queries", 4) or 4),
         connector_freeze_encoder=bool(
             getattr(config, "connector_freeze_encoder", True)
+        ),
+        abstract_plan_mode=str(
+            getattr(config, "abstract_plan_mode", "disabled") or "disabled"
+        ),
+        abstract_plan_connector_arm=str(
+            getattr(config, "abstract_plan_connector_arm", "disabled")
+            or "disabled"
+        ),
+        abstract_plan_loss_weight=float(
+            getattr(config, "abstract_plan_loss_weight", 0.0) or 0.0
+        ),
+        abstract_plan_train_conditioning=bool(
+            getattr(config, "abstract_plan_train_conditioning", False)
         ),
         train_scope=str(getattr(config, "train_scope", "current") or "current"),
         pointer_mode=str(

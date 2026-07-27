@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "version": "e1282_text_form_input_required_direct_natural_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T07:09:05.896946+00:00",
+  "counts": {
+    "seeds": 100,
+    "candidates": 100,
+    "collected": 100,
+    "admitted": 9,
+    "rejected_total": 91,
+    "source_errors": 0,
+    "by_stage": {
+      "dedup": 91
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Silver": 9
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 9
+    },
+    "mean_quality_score": 1.0,
+    "min_quality_score": 1.0
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 29,
+      "fuzzy_minhash": 33,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 29,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 9,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "140d5b7f6de2ed71|c633b44abd429ec297447107cdb825c345622ef5bf964914dae47a2b196dee02|1568ab2933226f7d",
+        "count": 1,
+        "sample_ids": [
+          "program_24f375a0428f4023"
+        ]
+      },
+      {
+        "cluster": "33cc3768d3116712|9277f41e50386b0338ebe7d6c8d45fa90613ad7400a9704cefa0d3eda5b950fd|48cc0bd2d18e72d5",
+        "count": 1,
+        "sample_ids": [
+          "program_1373c3b05a3c828f"
+        ]
+      },
+      {
+        "cluster": "3b0b446b4efb3230|2f056304ff615955756ca84accc81213f71c5c481a6244d6e6845b8df723d21d|48cc0bd2d18e72d5",
+        "count": 1,
+        "sample_ids": [
+          "program_0169947253f83699"
+        ]
+      },
+      {
+        "cluster": "3e2a8038630c1001|8ad70f210535ae2a088b1967b67769596202d14352eb5b54d22c4331fd5866e8|76ccbfc14e65180a",
+        "count": 1,
+        "sample_ids": [
+          "program_1e720308f05e5c8c"
+        ]
+      },
+      {
+        "cluster": "55aeb5ae773d7cd6|ba93092d8183052de593894250760adb1b7123eebe6302cc86e782f377e43990|1568ab2933226f7d",
+        "count": 1,
+        "sample_ids": [
+          "program_05a0815e483f484a"
+        ]
+      },
+      {
+        "cluster": "63b778f1c4987018|6fdf9f602d1bc3a76a8ff9fa2dd68f73757ab6b36539969cc0ebdbcc6a7214fb|48cc0bd2d18e72d5",
+        "count": 1,
+        "sample_ids": [
+          "program_0aaeb2816e8ae59c"
+        ]
+      },
+      {
+        "cluster": "68a92234e6415e28|0766333049737f5fca7a6503c4860e81e21389c41a7c1a0e50a8c20a32ab1018|3a4c74a33c0ca61f",
+        "count": 1,
+        "sample_ids": [
+          "program_1bcc82543126d33f"
+        ]
+      },
+      {
+        "cluster": "d4b689ff3aa71fd1|958ec856d2226ace3f0f80eff1efdc1af3fb9cae6c9259a88dcfda6753f592a2|1568ab2933226f7d",
+        "count": 1,
+        "sample_ids": [
+          "program_032314d2db454a9b"
+        ]
+      },
+      {
+        "cluster": "d4b689ff3aa71fd1|978970bff91a7856210325144546520534c0605ff556f75cba9c61132517518e|76ccbfc14e65180a",
+        "count": 1,
+        "sample_ids": [
+          "program_7433930eaf3e98bf"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e938_role_safe_all_targets_v2/adversarial",
+      "e938_role_safe_all_targets_v2/held_out",
+      "e938_role_safe_all_targets_v2/ood",
+      "e938_role_safe_all_targets_v2/rico_held",
+      "e938_role_safe_all_targets_v2/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 100,
+    "changed": 100,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 325,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 100,
+      "flatten_opportunities": 100
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 4,
+      "misses": 112
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "programspec_generated",
+      "record_count": 9,
+      "root_parent_count": 9,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 9
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.09,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v29"
+    },
+    "stamped_at": "2026-07-24T07:09:05.916684+00:00"
+  }
+}

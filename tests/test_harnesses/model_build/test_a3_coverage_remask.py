@@ -65,8 +65,8 @@ def test_model_coverage_deficit_scores_filler_over_content() -> None:
             ExampleRecord(
                 id="a",
                 prompt="Hero",
-                openui='root = Stack([t])\nt = TextContent(":hero.title")',
-                placeholders=[":hero.title"],
+                openui='root = Stack([t])\nt = TextContent(":slot_0")',
+                placeholders=[":slot_0"],
             )
         ],
         config=TwoTowerConfig(

@@ -18,7 +18,7 @@ from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.runtime.cactus import export_checkpoint_bundle
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
+HERO = 'root = Stack([b3], "column")\nb1 = TextContent(":slot_0")\nb2 = TextContent(":slot_1")\nb3 = Card([b1, b2])'
 
 
 def _tiny_model(tmp_path: Path, *, tie_output_embedding: bool = True) -> TwoTowerModel:

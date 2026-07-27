@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/dsh3-28-typed-operator-policy.eval.jsonl",
+    "timestamp": "2026-07-26T15:55:09.533Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "causal-controls-or-stop-rule",
+      "controlled-partial-defer",
+      "legal-row-selection",
+      "negative-ablation-preflight",
+      "singleton-bypass"
+    ],
+    "experiment": "dsh3-28-typed-operator-policy"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 0.8,
+        "stddev": 0.4
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "legal-row-selection:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "singleton-bypass:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "causal-controls-or-stop-rule:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "controlled-partial-defer:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "negative-ablation-preflight:domain_criterion:code-grader": {
+      "mean": 0,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "36530cca7fb9e9d1af9f220bbff9c52896e035c9",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.typed_operator_policy": "v11",
+      "data.flow.operator_policy_corpus": "v6",
+      "model.quantization": "v7",
+      "model.operator_policy_view": "v3",
+      "evals.cap2_operator": "v2"
+    },
+    "stamped_at": "2026-07-26T15:54:36.972086+00:00"
+  }
+}

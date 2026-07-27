@@ -1,0 +1,12 @@
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 14, "root_parent_count": 14, "source_family": "corruption_repair", "task_counts": {"repair": 14}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 21, "root_parent_count": 14, "source_family": "edit_trajectory", "task_counts": {"edit": 3, "generation": 4, "patch": 14}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 6, "root_parent_count": 3, "source_family": "programspec_generated", "task_counts": {"generation": 6}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 21, "root_parent_count": 14, "source_family": "scope_canonical_document", "task_counts": {"edit": 21}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 8, "root_parent_count": 8, "source_family": "scope_canonical_expression", "task_counts": {"edit": 8}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 9, "root_parent_count": 9, "source_family": "scope_canonical_lexical", "task_counts": {"edit": 9}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 8, "root_parent_count": 8, "source_family": "scope_canonical_statement", "task_counts": {"edit": 8}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 12, "root_parent_count": 10, "source_family": "scope_identity_lexical", "task_counts": {"identity": 12}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 5, "root_parent_count": 5, "source_family": "scope_identity_statement", "task_counts": {"identity": 5}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 9, "root_parent_count": 9, "source_family": "scope_repair_expression", "task_counts": {"repair": 9}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 4, "root_parent_count": 4, "source_family": "scope_repair_lexical", "task_counts": {"repair": 4}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 11, "root_parent_count": 10, "source_family": "scope_repair_statement", "task_counts": {"repair": 11}}

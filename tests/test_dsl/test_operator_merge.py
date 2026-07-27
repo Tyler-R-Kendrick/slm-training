@@ -15,16 +15,25 @@ from slm_training.dsl.operators import (
     EffectDeltaKind,
     EffectDeltaV1,
     MergeConflictKind,
+    NodeRef,
     OperatorLibraryV1,
     OperatorMutationV1,
     OperatorStateV1,
     RefKind,
     ReferenceDescriptorV1,
+    ReferenceResolutionError,
     RegisteredOperatorV1,
+    RoleRef,
     branch_fingerprint,
+    append_operator_turn,
     build_reference_table,
+    classify_merge_effects,
     clone_reference_table_for_branch,
+    create_conversation_trace,
+    enumerate_operator_legal_set,
     merge_conversation_branches,
+    merged_continuation_node,
+    replay_conversation_trace,
     replay_branch_merge,
 )
 from slm_training.dsl.operators.contracts import _fingerprint
@@ -55,6 +64,8 @@ def _effect(
     target,
     category: str,
     coverage: CompilerCoverage,
+    consumed_nodes: tuple[NodeRef, ...] = (),
+    produced_nodes: tuple[NodeRef, ...] = (),
 ) -> ActionEffectV1:
     delta = EffectDeltaV1(
         kind=EffectDeltaKind(category),
@@ -65,6 +76,8 @@ def _effect(
     values = {f"{category}_deltas": (delta,)}
     return ActionEffectV1(
         **values,
+        consumed_nodes=consumed_nodes,
+        produced_nodes=produced_nodes,
         compiler_coverage=coverage,
     )
 
@@ -78,7 +91,7 @@ class _Fixture:
         )
         descriptors = tuple(
             ReferenceDescriptorV1(
-                ref_kind=RefKind.VALUE,
+                ref_kind=RefKind.NODE,
                 semantic_fingerprint=_sha(name),
                 value_type=f"openui.{name}",
             )
@@ -110,6 +123,8 @@ class _Fixture:
         operator_id: str | None = None,
         commutes_with: tuple[str, ...] = (),
         stale_effect_ref: bool = False,
+        consumed_node: bool = False,
+        produced_node: bool = False,
     ) -> BranchEditV1:
         branch = branch_fingerprint(
             self.state.state_digest, _sha(f"merge-{name}")
@@ -158,6 +173,8 @@ class _Fixture:
                     target=target,
                     category=category,
                     coverage=coverage,
+                    consumed_nodes=(target,) if consumed_node else (),
+                    produced_nodes=(target,) if produced_node else (),
                 ),
             )
 
@@ -191,6 +208,31 @@ class _Fixture:
 
     def resolve(self, node):
         return self.authorities[node.state_id]
+
+    def rebuild_merged_table(
+        self,
+        _pack: object,
+        state: OperatorStateV1,
+        branch_digest: str,
+        seed: int,
+    ):
+        """Fixture-only compiler facts, derived anew from the canonical source."""
+        descriptors = tuple(
+            ReferenceDescriptorV1(
+                ref_kind=RefKind.NODE,
+                semantic_fingerprint=_sha(f"canonical:{marker}"),
+                value_type=f"openui.{marker.removeprefix(':hero.')}",
+            )
+            for marker in (":hero.heading", ":hero.copy")
+            if marker in state.source
+        )
+        return build_reference_table(
+            request_id="merge-request",
+            state_digest=state.state_digest,
+            branch_digest=branch_digest,
+            descriptors=descriptors,
+            seed=seed,
+        )
 
 
 def test_disjoint_merge_is_valid_replayable_and_order_invariant() -> None:
@@ -237,6 +279,188 @@ def test_disjoint_merge_is_valid_replayable_and_order_invariant() -> None:
     ).decision_id == decision.decision_id
 
 
+def test_merge_continuation_rebuilds_fresh_table_and_replays_followup_trace() -> None:
+    fixture = _Fixture()
+    left = fixture.branch(
+        name="continuation_left", target_name="title", replacement=":hero.heading"
+    )
+    right = fixture.branch(
+        name="continuation_right", target_name="body", replacement=":hero.copy"
+    )
+    decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=fixture.rebuild_merged_table,
+    )
+
+    assert decision.succeeded
+    assert decision.continuation is not None
+    node = merged_continuation_node(decision)
+    assert node.state == decision.merge.merged_state  # type: ignore[union-attr]
+    assert node.reference_table.branch_digest == (
+        decision.merge.merged_branch_digest  # type: ignore[union-attr]
+    )
+    assert {
+        entry.descriptor.semantic_fingerprint for entry in node.reference_table.entries
+    } == {_sha("canonical::hero.heading"), _sha("canonical::hero.copy")}
+    alternate = fixture.rebuild_merged_table(
+        fixture.pack,
+        node.state,
+        node.branch_digest,
+        decision.continuation.allocation_seed + 1,
+    )
+    assert {
+        entry.descriptor.semantic_fingerprint for entry in alternate.entries
+    } == {
+        entry.descriptor.semantic_fingerprint
+        for entry in node.reference_table.entries
+    }
+    assert alternate.fingerprint != node.reference_table.fingerprint
+
+    old_ref = left.input_node.reference_table.entries[0].ref
+    with pytest.raises(ReferenceResolutionError, match="ref.stale_state"):
+        left.input_node.reference_table.resolve(
+            old_ref,
+            state_digest=node.state.state_digest,
+            branch_digest=left.input_node.branch_digest,
+            expected_kind=RefKind.NODE,
+        )
+    with pytest.raises(ReferenceResolutionError, match="ref.cross_branch"):
+        left.input_node.reference_table.resolve(
+            old_ref,
+            state_digest=left.input_node.state.state_digest,
+            branch_digest=node.branch_digest,
+            expected_kind=RefKind.NODE,
+        )
+
+    target = next(
+        entry.ref
+        for entry in node.reference_table.entries
+        if entry.descriptor.value_type == "openui.heading"
+    )
+    declaration = AstOperatorV1(
+        operator_id="openui.advance_after_merge",
+        version="v1",
+        domain="openui.ast",
+        codomain="openui.ast",
+        argument_slots=(),
+        preconditions=(),
+        effect_signature=(EffectDeltaKind.PROPERTY,),
+        locality="node",
+        cost=1.0,
+    )
+
+    def execute(state, _arguments):
+        return OperatorMutationV1(
+            source=state.source.replace(":hero.heading", ":hero.final"),
+            effect=_effect(
+                target=target,
+                category="property",
+                coverage=CompilerCoverage.EXACT,
+            ),
+        )
+
+    library = OperatorLibraryV1((RegisteredOperatorV1(declaration, execute),))
+    pack = replace(fixture.pack, operator_library=library)
+    provenance = _provenance(node.state)
+    legal = enumerate_operator_legal_set(
+        pack=pack,
+        library=library,
+        state=node.state,
+        reference_table=node.reference_table,
+        provenance=provenance,
+    )
+    action = legal.entries[0].legal_actions[0]
+    applied = library.apply(
+        pack, node.state, action.operator_id, action.arguments, provenance
+    )
+    assert applied.succeeded and applied.state is not None
+    output_table = fixture.rebuild_merged_table(
+        pack, applied.state, node.branch_digest, decision.continuation.allocation_seed
+    )
+    trace = create_conversation_trace(
+        pack=pack,
+        root_state=node.state,
+        root_reference_table=node.reference_table,
+        provenance=provenance,
+    )
+    trace = append_operator_turn(
+        trace,
+        pack=pack,
+        library=library,
+        application=applied.application,
+        output_reference_table=output_table,
+    )
+    assert (
+        replay_conversation_trace(pack=pack, library=library, trace=trace).state
+        == applied.state
+    )
+    assert replay_branch_merge(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=fixture.rebuild_merged_table,
+        recorded=decision,
+    ).decision_id == decision.decision_id
+    assert merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=right,
+        right=left,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=fixture.rebuild_merged_table,
+    ).decision_id == decision.decision_id
+
+
+def test_legacy_merge_artifact_is_terminal_without_a_fresh_table() -> None:
+    fixture = _Fixture()
+    left = fixture.branch(
+        name="legacy_left", target_name="title", replacement=":hero.heading"
+    )
+    right = fixture.branch(
+        name="legacy_right", target_name="body", replacement=":hero.copy"
+    )
+    legacy = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+    )
+    assert legacy.succeeded and legacy.continuation is None
+    with pytest.raises(ValueError, match="merge.continuation_unsupported_legacy"):
+        merged_continuation_node(legacy)
+
+
+def test_merge_refuses_a_rebuilt_table_that_is_not_bound_to_merged_branch() -> None:
+    fixture = _Fixture()
+    left = fixture.branch(
+        name="invalid_table_left", target_name="title", replacement=":hero.heading"
+    )
+    right = fixture.branch(
+        name="invalid_table_right", target_name="body", replacement=":hero.copy"
+    )
+
+    def invalid_builder(pack, state, _branch, seed):
+        return fixture.rebuild_merged_table(pack, state, fixture.root_branch, seed)
+
+    decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=invalid_builder,
+    )
+    assert decision.conflict is not None
+    assert decision.conflict.kind is MergeConflictKind.REFERENCE_REBUILD_FAILED
+
+
 def test_mutually_declared_commuting_equal_overlap_can_merge() -> None:
     fixture = _Fixture()
     left = fixture.branch(
@@ -270,7 +494,7 @@ def test_mutually_declared_commuting_equal_overlap_can_merge() -> None:
         ("cardinality", "openui.change", MergeConflictKind.ROLE_CARDINALITY),
         ("topology", "openui.change", MergeConflictKind.CHILD_ORDER),
         ("scope", "openui.change", MergeConflictKind.SCOPE_BINDER),
-        ("topology", "openui.remove_node", MergeConflictKind.DELETE_MODIFY),
+        ("topology", "openui.remove_node", MergeConflictKind.CHILD_ORDER),
     ),
 )
 def test_overlapping_effects_return_specific_typed_conflicts(
@@ -306,6 +530,109 @@ def test_overlapping_effects_return_specific_typed_conflicts(
     assert len(decision.conflict.target_fingerprints) == 1
 
 
+def test_effect_derived_delete_conflict_ignores_operator_names() -> None:
+    fixture = _Fixture()
+    misleading = fixture.branch(
+        name="misleading_delete_name",
+        target_name="title",
+        replacement=":hero.left",
+        category="topology",
+        operator_id="openui.delete_name_only",
+    )
+    renamed_delete = fixture.branch(
+        name="renamed_semantics",
+        target_name="body",
+        replacement=":hero.copy",
+        category="topology",
+        operator_id="openui.rewrite",
+        consumed_node=True,
+    )
+    same_target_edit = fixture.branch(
+        name="same_target_edit",
+        target_name="body",
+        replacement=":hero.right",
+        category="property",
+        operator_id="openui.rename_again",
+    )
+    move_like = fixture.branch(
+        name="move_like",
+        target_name="title",
+        replacement=":hero.move",
+        category="topology",
+        operator_id="openui.relocate",
+        consumed_node=True,
+        produced_node=True,
+    )
+    misleading_decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=misleading,
+        right=move_like,
+        authority_resolver=fixture.resolve,
+    )
+    assert misleading_decision.conflict is not None
+    assert misleading_decision.conflict.kind is MergeConflictKind.CHILD_ORDER
+
+    delete_decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=renamed_delete,
+        right=same_target_edit,
+        authority_resolver=fixture.resolve,
+    )
+    assert delete_decision.conflict is not None
+    assert delete_decision.conflict.kind is MergeConflictKind.DELETE_MODIFY
+
+
+def test_effect_classifier_uses_lineage_and_refuses_unproven_removal() -> None:
+    node = NodeRef("merge-request", "node")
+    role = RoleRef("merge-request", "role")
+    declaration = AstOperatorV1(
+        operator_id="openui.renamed",
+        version="v1",
+        domain="openui.ast",
+        codomain="openui.ast",
+        argument_slots=(),
+        preconditions=(),
+        effect_signature=(EffectDeltaKind.TOPOLOGY, EffectDeltaKind.PROPERTY),
+        locality="node",
+        cost=1.0,
+    )
+    delete = ActionEffectV1(
+        consumed_nodes=(node,),
+        topology_deltas=(
+            EffectDeltaV1(EffectDeltaKind.TOPOLOGY, node, "present", "removed"),
+        ),
+    )
+    ambiguous = ActionEffectV1(
+        topology_deltas=(
+            EffectDeltaV1(EffectDeltaKind.TOPOLOGY, node, "before", "after"),
+        ),
+    )
+    mutate_child = ActionEffectV1(
+        property_deltas=(
+            EffectDeltaV1(EffectDeltaKind.PROPERTY, role, "before", "after"),
+        ),
+    )
+    lineage = {node: ("a" * 64,), role: ("b" * 64, "a" * 64)}
+    assert classify_merge_effects(
+        left_declaration=declaration,
+        right_declaration=declaration,
+        left_effect=delete,
+        right_effect=mutate_child,
+        left_lineage=lineage,
+        right_lineage=lineage,
+    ) == (MergeConflictKind.DELETE_MODIFY, ("a" * 64,))
+    assert classify_merge_effects(
+        left_declaration=declaration,
+        right_declaration=declaration,
+        left_effect=ambiguous,
+        right_effect=mutate_child,
+        left_lineage=lineage,
+        right_lineage=lineage,
+    ) == (MergeConflictKind.UNSUPPORTED_EFFECT, ("a" * 64,))
+
+
 def test_stale_refs_and_inexact_effects_refuse_without_mutation() -> None:
     stale_fixture = _Fixture()
     stale = stale_fixture.branch(
@@ -315,7 +642,7 @@ def test_stale_refs_and_inexact_effects_refuse_without_mutation() -> None:
         stale_effect_ref=True,
     )
     fresh = stale_fixture.branch(
-        name="fresh", target_name="body", replacement=":hero.right"
+        name="fresh", target_name="title", replacement=":hero.right"
     )
     stale_decision = merge_conversation_branches(
         pack=stale_fixture.pack,

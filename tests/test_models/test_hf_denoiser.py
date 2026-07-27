@@ -12,12 +12,12 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 TINY_LLAMA = "hf-internal-testing/tiny-random-LlamaForCausalLM"
 
 HERO = (
-    'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
-    "hero = Card([hero_title, hero_body])"
+    'root = Stack([b3], "column")\n'
+    'b1 = TextContent(":slot_0")\n'
+    'b2 = TextContent(":slot_1")\n'
+    "b3 = Card([b1, b2])"
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([b1])\nb1 = Button(":slot_0")'
 
 
 def _require_tiny_llama() -> None:

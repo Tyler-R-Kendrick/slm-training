@@ -10,6 +10,10 @@ from slm_training.dsl.grammar.fastpath import (
     engine_for_dsl,
     force_next_token_id,
 )
+from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    bound_binder_reference_positions,
+    repeated_bound_binder_reference_positions,
+)
 from slm_training.models.grammar import (
     exact_forced_token_id,
     force_emit_token_id,
@@ -19,7 +23,7 @@ from slm_training.models.grammar import (
 from slm_training.models.tokenizer import OpenUITokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
-SAMPLE = 'root = Card(":t.x")\n'
+SAMPLE = 'root = Card([TextContent(":slot_0")])\n'
 
 
 def _tok() -> OpenUITokenizer:
@@ -71,19 +75,22 @@ def test_exact_force_requires_full_token_singleton() -> None:
         == native.token_to_id["("]
     )
 
-    # The compositional tokenizer can still emit insignificant whitespace, so
-    # its significant-lexeme force is not an exact tokenizer-token decision.
-    compositional = _tok()
-    prefix = compositional.encode("root", add_special=False)
-    state = make_grammar_state()
-    forced = force_emit_token_id(compositional, prefix, state=state)
-    assert (
-        exact_forced_token_id(
-            compositional, prefix, forced_token_id=forced, state=state
-        )
-        is None
-    )
 
+def test_repeated_bound_binder_reference_positions_are_prefix_aligned() -> None:
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ids = tok.encode(
+        'root = Card([title, title])\ntitle = TextContent(":slot_0")\n',
+        add_special=False,
+    )
+    title = tok.bind_id(1)
+    assert bound_binder_reference_positions(tok, ids) == (
+        (ids.index(title), title),
+        (ids.index(title, ids.index(title) + 1), title),
+    )
+    positions = repeated_bound_binder_reference_positions(tok, ids)
+    assert positions == ((ids.index(title, ids.index(title) + 1), title),)
 
 def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
     from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
@@ -296,7 +303,7 @@ def test_lexer_newline_is_probed_as_surface_newline() -> None:
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
     tok = DSLNativeTokenizer.build()
-    prefix = tok.encode("root = Stack([])", add_special=False)
+    prefix = tok.encode("root = Stack([b1])", add_special=False)
     logits = torch.full((tok.vocab_size,), -20.0)
     logits[tok.token_to_id["NL"]] = 50.0
     choice = pick_constrained_token(logits, tok, prefix, top_k=8)
@@ -360,7 +367,7 @@ def test_admit_fill_accepts_partial_with_holes() -> None:
     tok = _tok()
     eng = OpenUIIncrementalEngine()
     ids = tok.encode(SAMPLE, add_special=True)
-    # Mask the quoted placeholder span (tokenizer v2 splits ":t.x" into pieces).
+    # Mask the quoted opaque-placeholder span.
     # Left span `root = Card(` must remain a valid incomplete prefix.
     quote_id = tok.token_to_id['"']
     first = ids.index(quote_id)
@@ -481,6 +488,29 @@ def test_completion_forest_rejects_empty_typed_component_array() -> None:
     assert "Stack" not in candidates
 
 
+def test_completion_forest_admits_null_for_optional_string_after_slots_exhaust() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([b1, Slider("$0", "continuous", -1, 1), '
+        'SwitchGroup("$3", [SwitchItem(":slot_1", ":slot_0", "$0"), '
+        'SwitchItem(":slot_2", ',
+        placeholders=[":slot_0", ":slot_1", ":slot_2"],
+        add_special=True,
+    )[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":slot_0", ":slot_1", ":slot_2"],
+        enforce_schema_component_types=True,
+    )
+
+    assert tokenizer.token_to_id["null"] in forest.candidate_ids
+
+
 def test_completion_forest_restricts_typed_array_binder_references() -> None:
     from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -501,6 +531,26 @@ def test_completion_forest_restricts_typed_array_binder_references() -> None:
     candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
     assert "<BIND_1>" in candidates
     assert "<BIND_2>" not in candidates
+
+
+def test_completion_forest_keeps_untyped_forward_reference_in_typed_array() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode("root = Tabs([", add_special=True)[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":slot_0", ":slot_1"],
+    )
+
+    candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
+    assert "TabItem" in candidates
+    assert candidates.intersection(
+        tokenizer.id_to_token[token_id] for token_id in tokenizer.kind_ids("bind")
+    )
 
 
 def test_completion_forest_rejects_cyclic_binder_reference() -> None:

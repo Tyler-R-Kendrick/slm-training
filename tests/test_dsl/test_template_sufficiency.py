@@ -48,7 +48,7 @@ def test_extract_value_classes_finds_number_literals() -> None:
         _record(
             "r1",
             'root = Stack([volume], "column")\n'
-            'volume = Slider("volume", "continuous", 0, 100, 1, [40], ":foo.label")',
+            'volume = Slider("$0", "continuous", 0, 100, 1, [40], ":foo.label")',
         ),
     ]
     inventory = extract_value_classes(records)

@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_fixture_arm_comparison_wiring_not_ship", "result": {"disposition": "execution_sparsity_supported", "elapsed_seconds": {"HIERARCHICAL_HEAD": 23.02030753501458, "RECOMPUTE_ONLY": 26.013033213996096, "TOPOLOGY_APPLY": 26.43409739798517}}}

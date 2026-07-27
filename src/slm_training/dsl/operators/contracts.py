@@ -315,6 +315,8 @@ class ActionEffectV1:
     produced_roles: tuple[RoleRef, ...] = ()
     consumed_binders: tuple[SymbolRef, ...] = ()
     produced_binders: tuple[SymbolRef, ...] = ()
+    consumed_nodes: tuple[NodeRef, ...] = ()
+    produced_nodes: tuple[NodeRef, ...] = ()
     scope_deltas: tuple[EffectDeltaV1, ...] = ()
     cardinality_deltas: tuple[EffectDeltaV1, ...] = ()
     property_deltas: tuple[EffectDeltaV1, ...] = ()
@@ -350,6 +352,8 @@ class ActionEffectV1:
             *self.produced_roles,
             *self.consumed_binders,
             *self.produced_binders,
+            *self.consumed_nodes,
+            *self.produced_nodes,
             *(delta.target for delta in self.scope_deltas),
             *(delta.target for delta in self.cardinality_deltas),
             *(delta.target for delta in self.property_deltas),
@@ -370,6 +374,8 @@ class ActionEffectV1:
             "produced_roles": refs(self.produced_roles),
             "consumed_binders": refs(self.consumed_binders),
             "produced_binders": refs(self.produced_binders),
+            "consumed_nodes": refs(self.consumed_nodes),
+            "produced_nodes": refs(self.produced_nodes),
             "scope_deltas": deltas(self.scope_deltas),
             "cardinality_deltas": deltas(self.cardinality_deltas),
             "property_deltas": deltas(self.property_deltas),

@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "local_codec_only_geometry_diagnostic_not_ship", "result": {"ap030_factor_proxy_is_not_substituted": true, "promotion_eligible": false, "reason": "no_verified_latent_to_program_decoder", "status": "unavailable_fail_closed"}}

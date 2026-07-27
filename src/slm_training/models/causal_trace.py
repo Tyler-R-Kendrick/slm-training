@@ -683,3 +683,63 @@ class CausalTracedGeneration:
     text: str
     result: CaptureResult
     valid: bool
+
+
+@dataclass(frozen=True)
+class CausalLatentUseFalsificationSpecV1:
+    """A *defined-but-not-run* falsification test for a future K x c looped-latent
+    workspace's causal use (LOT0-02 / SLM-249).
+
+    Per the LOT0-01 authorization (``docs/design/lotus-openui-fidelity-contract-v1.md``,
+    ``allowed_lot1_work``): "Extend causal_trace.py's existing replay_causal_action /
+    counterfactual capture only insofar as needed to define (not run) a
+    causal_latent_use falsification test for the K x c workspace." This dataclass is
+    that definition. It has no model dependency and executes nothing; LOT1
+    (``SLM-250``, not implemented) must exist before this spec is runnable, because
+    there is no K x c latent workspace to intervene on yet.
+
+    The evidence nuance this spec exists to prevent (see the LOT0-01 contract's
+    ``evidence_nuances``): LM-head projection of a latent state onto a target token
+    ("decodability") is not itself evidence of *causal* use. A `causal_latent_use`
+    claim requires an active intervention that changes downstream output, not a
+    passive readout.
+    """
+
+    spec_id: str = "causal_latent_use_falsification_v1"
+    linear_issue: str = "SLM-249"
+    hypothesis: str = (
+        "The K x c latent workspace state at loop iteration R causally determines "
+        "the final generated OpenUI program (not merely correlates with / is "
+        "decodable from the target trace)."
+    )
+    intervention: str = (
+        "Force the latent workspace to a null/mean/shuffled-control value (analogous "
+        "to how replay_causal_action forces a specific action id onto a stored "
+        "context_ids prefix) at a fixed loop iteration, holding the prompt-prefix "
+        "cache and every other input identical, then continue generation through the "
+        "existing constrained-decode path."
+    )
+    falsifier: str = (
+        "If forcing the latent workspace to the null/shuffled control leaves the "
+        "downstream strict-semantic outcome statistically indistinguishable from the "
+        "unperturbed run (paired, matched seeds), causal use is falsified for that "
+        "checkpoint/config -- decodability alone must not be substituted as evidence."
+    )
+    reused_mechanism: str = (
+        "slm_training.models.causal_lm_openui.CausalLMOpenUIPlugin.replay_causal_action "
+        "(forced-action counterfactual replay on a stored integer prefix) is the "
+        "intended replay primitive once LOT1 exposes a latent-workspace analogue of "
+        "state.context_ids/legal_action_ids; capture_raw_steps in this module remains "
+        "the torch-free deterministic core."
+    )
+    blocked_reason: str = (
+        "No K x c latent workspace exists in the repository (LOT1/SLM-250 is gated "
+        "behind a reviewed target-trace contract and an unchanged re-check of the "
+        "LOT0-01 authorization verdict). This spec defines the test; it cannot run "
+        "until that model code lands."
+    )
+
+
+def describe_causal_latent_use_falsification_test() -> CausalLatentUseFalsificationSpecV1:
+    """Return the (unexecuted) falsification-test definition. Never runs a model."""
+    return CausalLatentUseFalsificationSpecV1()

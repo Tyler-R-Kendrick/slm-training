@@ -152,20 +152,31 @@ def build_cap2_disposition(
     *,
     cap2_report: Mapping[str, Any],
     token_report: Mapping[str, Any],
+    hierarchical_head_report: Mapping[str, Any],
     version_stamp: Mapping[str, Any],
 ) -> Cap2CapabilityDispositionV1:
     if cap2_report.get("schema") != "cap2_operator_fixture_report/v1":
         raise ValueError("unsupported frozen CAP2 report")
     if token_report.get("schema") != "reserved_operator_baseline_report/v1":
         raise ValueError("unsupported token-baseline report")
+    if hierarchical_head_report.get("schema") != "hierarchical_operator_head_baseline_report/v1":
+        raise ValueError("unsupported hierarchical-head report")
     cap2_suite = cap2_report["suite"]
     token_result = token_report["result"]
+    hierarchical_head_result = hierarchical_head_report["result"]
     if cap2_report["policy_scores"]["oracle"]["gate_pass"] is not True:
         raise ValueError("frozen CAP2 oracle contract did not pass")
     if token_result["verdict"] != "reject" or token_result["accepted"] is not False:
         raise ValueError("token evidence does not support CERT_CAP2 rejection")
     if token_result["acceptance"]["zero_false_legal_admissions"] is not True:
         raise ValueError("token evidence has a legal-admission regression")
+    if (
+        hierarchical_head_result["verdict"] != "reject"
+        or hierarchical_head_result["accepted"] is not False
+    ):
+        raise ValueError("hierarchical-head evidence does not support its rejection")
+    if hierarchical_head_result["acceptance"]["zero_false_legal_admissions"] is not True:
+        raise ValueError("hierarchical-head evidence has a legal-admission regression")
 
     frozen_evidence = CapabilityEvidenceV1(
         evidence_id="SLM-381.cap2_operator_v1",
@@ -239,6 +250,41 @@ def build_cap2_disposition(
             "agentv": token_report["agentv"]["summary"],
         },
     )
+    hierarchical_head_evidence = CapabilityEvidenceV1(
+        evidence_id="SLM-383.hierarchical_operator_head_baseline",
+        evidence_class="bounded_matched_negative",
+        code_identity=hierarchical_head_report["version_stamp"]["code_commit"],
+        data_identity={
+            "shapes": hierarchical_head_result["shapes"],
+            "train_decision_n": hierarchical_head_result["train_decision_n"],
+            "held_out_decision_n": hierarchical_head_result["held_out_decision_n"],
+        },
+        checkpoint_identity=None,
+        suite_identity={
+            "suite": "typed candidate-group-size fixture decisions",
+            "held_out_n": hierarchical_head_result["held_out_decision_n"],
+        },
+        config_identity={
+            "seeds": hierarchical_head_result["seeds"],
+            "steps_per_arm": hierarchical_head_result["steps_per_arm"],
+            "learning_rate": hierarchical_head_result["learning_rate"],
+            "parameter_count": hierarchical_head_result["arms"]["ENABLED"][0][
+                "parameter_count"
+            ],
+        },
+        hardware_identity={
+            "device": hierarchical_head_report["run"]["device"],
+            "backend": hierarchical_head_report["run"]["backend"],
+            "exact_hardware": None,
+            "efficiency_claim": False,
+        },
+        result_identity={
+            "verdict": hierarchical_head_result["verdict"],
+            "acceptance": hierarchical_head_result["acceptance"],
+            "mean_operator_accuracy": hierarchical_head_result["mean_operator_accuracy"],
+            "agentv": hierarchical_head_report["agentv"]["summary"],
+        },
+    )
     capabilities = (
         CapabilityDispositionV1(
             Cap2Capability.SYMBOLIC_TRANSFORM,
@@ -259,8 +305,16 @@ def build_cap2_disposition(
         ),
         CapabilityDispositionV1(
             Cap2Capability.HIERARCHICAL_HEAD,
-            Cap2CapabilityVerdict.UNRUN_CONDITIONAL,
-            "SLM-383 stayed closed because its token-baseline prerequisite failed.",
+            Cap2CapabilityVerdict.REJECTED,
+            (
+                "The follow-up causal-attribution experiment ran (AGENTS.md IV.11's "
+                "encoder-side gap): the enabled head strictly beats its own frozen "
+                "weight-zero capacity control, so it is trainable and not a dead "
+                "architecture, but it ties exactly with the matched-capacity token "
+                "baseline and does not causally improve beyond it, so DSH3-15's "
+                "acceptance bar is unmet."
+            ),
+            (hierarchical_head_evidence.evidence_id,),
         ),
         CapabilityDispositionV1(
             Cap2Capability.TOPOLOGY_APPLICATION,
@@ -281,7 +335,7 @@ def build_cap2_disposition(
         ),
     )
     return Cap2CapabilityDispositionV1(
-        evidence=(frozen_evidence, token_evidence),
+        evidence=(frozen_evidence, token_evidence, hierarchical_head_evidence),
         capabilities=capabilities,
         cert_cap2_issued=False,
         cert_cap2_reason=(

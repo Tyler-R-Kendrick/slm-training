@@ -1,0 +1,1522 @@
+{
+  "version": "e845_repeated_typed_collections_v1",
+  "profile": "strict",
+  "source": "all",
+  "derive_from": null,
+  "seed_path": "src/slm_training/resources/train_seeds.jsonl",
+  "rico_path": "src/slm_training/resources/rico/semantic_train.jsonl",
+  "rico_hf_split": null,
+  "seed_count": 923,
+  "collected_count": 1660,
+  "verifier_rejected": 153,
+  "verifier_rejected_samples": [
+    {
+      "id": "003a5156b949ec6a_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0349cf75f495644b_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "07dc9d9792542ce1_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0a6ba8ca8a0afe12_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0c7aa8da21209d71_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "13bdd4c55cf9efc9_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "15dd6a2c3be0ae11_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "1a96c1e74f885853_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "2058e15c360aea91_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "25858608d6088f3c_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "30856ad21c41b81b_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "3167f6e7ccb21329_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "3deee89d0b433958_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "402378b9a0d7673d_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "4b45a3f81f5c224e_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "4ca44ea243254cb5_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "535ed114fd0f8306_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "593ffcdfbbdbb34b_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "639bdb99d59abffe_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "66777812d5145184_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    }
+  ],
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 59,
+  "quality_rejected_samples": [
+    {
+      "id": "08ad0c04794f6f30_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 24,
+      "output_symbols": 7,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "0aba826c18de01e2_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 2,
+      "component_diversity": 1,
+      "openui_chars": 40,
+      "output_symbols": 11,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "0b395464c00170b6_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 25,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "10afa5a5e583fb46_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 0,
+      "n_placeholders": 1,
+      "component_diversity": 0,
+      "openui_chars": 9,
+      "output_symbols": 1,
+      "target_kind": "lexical",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "10da867a2895ea95_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 0,
+      "n_placeholders": 1,
+      "component_diversity": 0,
+      "openui_chars": 9,
+      "output_symbols": 1,
+      "target_kind": "lexical",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "18966f8690c74a64_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 3,
+      "component_diversity": 1,
+      "openui_chars": 55,
+      "output_symbols": 10,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "1b5dd2e439a9f4f3_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 20,
+      "output_symbols": 7,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "1da0a5cf0d031d1e_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 23,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "32197ce711a84715_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 31,
+      "output_symbols": 8,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "336e9d40247b49ff_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 28,
+      "output_symbols": 9,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "387c73a1a3a12318_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 25,
+      "output_symbols": 7,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "3986058b497d7263_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 0,
+      "n_placeholders": 1,
+      "component_diversity": 0,
+      "openui_chars": 9,
+      "output_symbols": 1,
+      "target_kind": "lexical",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "3c28f8613175fdce_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 2,
+      "component_diversity": 1,
+      "openui_chars": 44,
+      "output_symbols": 8,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "472016aec1bc16a2_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 2,
+      "component_diversity": 1,
+      "openui_chars": 30,
+      "output_symbols": 6,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "491b2b4dd31751e9_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 2,
+      "component_diversity": 1,
+      "openui_chars": 44,
+      "output_symbols": 11,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "4ccff149f606a6d4_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 47,
+      "output_symbols": 10,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "4e9177bd1c374635_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 0,
+      "n_placeholders": 1,
+      "component_diversity": 0,
+      "openui_chars": 9,
+      "output_symbols": 1,
+      "target_kind": "lexical",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "55731de458aa0fa1_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 29,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "587bbf8ee5e3b339_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 39,
+      "output_symbols": 9,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "65ffbcdc32f80db9_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 31,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    }
+  ],
+  "record_count": 613,
+  "error_count": 53,
+  "errors": [
+    {
+      "id": "02cbc87e98d242c0_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "0af0f344d7e50794_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "0b94e9569054bb21_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "0c624ad7159d2726_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "15d9d1a91db92491_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "17f0f43814e2a93b_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "253bbe250a1197e5_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "357e1939dcb7942e_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "37c23ccb8eb5daab_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "3fd5adf8e64e9686_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "459429e059e76a18_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "4659a92f2c3260dc_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "4b4454cb77c78e8e_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "4cac4ac6dfe2aff9_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "5295a3ac12f1b3b2_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "536c3a904da02388_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "5f8d50af0123bcf9_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "62f26dde4c8138e5_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "6c49d6924a8539f3_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "6ce2c95d0c7c785b_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "6e132b1b87dfa709_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "72e4008f8e6c23a1_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "7ad96e1d236ee96f_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "7d00d6a7faed8975_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "80c12c52af7e5711_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "853337fde636ac6e_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "86af54e56dcb1777_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "8d75f7b331915cfc_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "9e36d46d04425a10_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "a0878c009097cd8d_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "af8c653765ace718_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "af9ad608e0d10d93_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "b740cf0850df2d76_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "b7e9ae3cf0b373aa_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "ba77028f0997d305_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "bdff446e4ad7b9e2_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "be4c8ccff069aacd_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "c199dd492a102f1b_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "c354839614441104_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "c424c1ee19b4f926_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "c7321edba80e1489_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "c81453fbe2d1cd60_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "c9bfe26cdca19237_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "cd4877f971dee801_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "d2acdac27737629c_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "d588fe500e91402f_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "da8e6b9a312cc75a_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "e3e910420ed77892_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "e44b49d11781f05d_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "f4184cc5244623e0_scope",
+      "error": "missing root binding"
+    }
+  ],
+  "rejected_total": 1108,
+  "rejected_path": "outputs/data/train/e845_repeated_typed_collections_v1/rejected.jsonl",
+  "quality_report_path": "outputs/data/train/e845_repeated_typed_collections_v1/quality_report.json",
+  "synthesis_feedback_path": "outputs/data/train/e845_repeated_typed_collections_v1/synthesis_feedback.json",
+  "synthesis_recommendations": 25,
+  "synthesizer": "quality",
+  "documentize_expressions": false,
+  "target_kinds": null,
+  "min_quality_score": 0.55,
+  "min_verification_tier": "Bronze",
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "prompt_slot_contract": false,
+  "prompt_component_contract": false,
+  "prompt_component_contract_mode": "counts",
+  "prompt_semantic_role_contract": false,
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 1660,
+    "changed": 1221,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 1117,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 42,
+      "flatten_opportunities": 138
+    },
+    "literals_templatized": 600,
+    "records_templatized": 438,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 733,
+      "misses": 360
+    }
+  },
+  "structure_reserved_rejected": 5,
+  "structure_reserved_rejected_samples": [
+    {
+      "id": "train_text_only_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_design_contrastive",
+      "source": "fixture+design_md_contrastive",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_syn_0",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_syn_1",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_syn_2",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    }
+  ],
+  "max_records_per_parent": 6,
+  "parent_cap_dropped": 0,
+  "parent_cap_dropped_samples": [],
+  "fuzzy_dedup": true,
+  "fuzzy_dropped": 90,
+  "fuzzy_dropped_samples": [
+    {
+      "id": "5207993d5b14d86e_scope",
+      "duplicate_of": "00804100aa5efafe_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "dd062832602b45cf_scope",
+      "duplicate_of": "57e070bb08d7edfd_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "b386b938cad978a4_scope",
+      "duplicate_of": "02c60d2aa32751b4_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "2ef3fbf4da059feb_scope",
+      "duplicate_of": "2387bf4049e6968e_scope",
+      "source_family": "scope_identity_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "354f6282508aca43_scope",
+      "duplicate_of": "05d0a0a0fa383dfc_scope",
+      "source_family": "scope_identity_lexical",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "97be691b178a2d16_scope",
+      "duplicate_of": "2387bf4049e6968e_scope",
+      "source_family": "scope_identity_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "e045d59fcd9a9717_scope",
+      "duplicate_of": "05d0a0a0fa383dfc_scope",
+      "source_family": "scope_identity_lexical",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "6e7e0f3e0a0a78c2_scope",
+      "duplicate_of": "0c74660423eff08b_scope",
+      "source_family": "scope_identity_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "71906850551c4f80_scope",
+      "duplicate_of": "05fd6dc2f4244674_scope",
+      "source_family": "scope_canonical_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "900cbf36adff2333_scope",
+      "duplicate_of": "0fea9a5390dbc286_scope",
+      "source_family": "scope_identity_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "cf9211fe229912e7_scope",
+      "duplicate_of": "66f4e772a245b1bf_scope",
+      "source_family": "scope_canonical_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "d540ba7600246646_scope",
+      "duplicate_of": "44f5557643b6ab23_scope",
+      "source_family": "scope_canonical_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "dd9e273bc54142ee_scope",
+      "duplicate_of": "31fe2b0dea4626b3_scope",
+      "source_family": "scope_canonical_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "8e071eb22c1de9ce_scope",
+      "duplicate_of": "07b6f2a845113008_scope",
+      "source_family": "scope_canonical_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "d9de2466bd5d1645_scope",
+      "duplicate_of": "a6da9b6d47f76f7b_scope",
+      "source_family": "scope_canonical_expression",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "3725a09e501be674_scope",
+      "duplicate_of": "0848b3e845094d0f_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "5081504c55dab41f_scope",
+      "duplicate_of": "086da72f8564559b_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "5f247ee123fc267d_scope",
+      "duplicate_of": "119f26a8127cd493_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "a30c3d7c7ac8810f_scope",
+      "duplicate_of": "8f99d2efd9a1a153_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "d726f8ea0527babd_scope",
+      "duplicate_of": "997edc2a709a6664_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    }
+  ],
+  "semantic_cluster_cap": 8,
+  "semantic_dropped": 0,
+  "semantic_dropped_samples": [],
+  "semantic_dedup": true,
+  "semantic_dedup_engine": "lexical-tfidf",
+  "semantic_cosine_dropped": 136,
+  "semantic_cosine_dropped_samples": [
+    {
+      "id": "rico_train_102",
+      "duplicate_of": "rico_train_100",
+      "similarity": 0.9606,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_107",
+      "duplicate_of": "rico_train_100",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_152",
+      "duplicate_of": "rico_train_100",
+      "similarity": 0.9647,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_64",
+      "duplicate_of": "rico_train_100",
+      "similarity": 0.9617,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_102_design_contrastive",
+      "duplicate_of": "rico_train_0_design_contrastive",
+      "similarity": 0.9631,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_104_design_contrastive",
+      "duplicate_of": "rico_train_103_design_contrastive",
+      "similarity": 0.9708,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_152_design_contrastive",
+      "duplicate_of": "rico_train_0_design_contrastive",
+      "similarity": 0.9596,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_204_design_contrastive",
+      "duplicate_of": "rico_train_103_design_contrastive",
+      "similarity": 0.9715,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_29_design_contrastive",
+      "duplicate_of": "rico_train_103_design_contrastive",
+      "similarity": 0.9594,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_46_design_contrastive",
+      "duplicate_of": "rico_train_115_design_contrastive",
+      "similarity": 0.9644,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_100_syn_0",
+      "duplicate_of": "rico_train_100",
+      "similarity": 0.9573,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_102_syn_0",
+      "duplicate_of": "rico_train_0_syn_0",
+      "similarity": 0.9563,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_104_syn_0",
+      "duplicate_of": "rico_train_103_syn_0",
+      "similarity": 0.9654,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_104_syn_1",
+      "duplicate_of": "rico_train_103_syn_1",
+      "similarity": 0.9649,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_104_syn_2",
+      "duplicate_of": "rico_train_103_syn_2",
+      "similarity": 0.9678,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_107_syn_0",
+      "duplicate_of": "rico_train_100",
+      "similarity": 0.9573,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_152_syn_0",
+      "duplicate_of": "rico_train_0_syn_0",
+      "similarity": 0.9529,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_64_syn_0",
+      "duplicate_of": "rico_train_33_syn_0",
+      "similarity": 0.9649,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "rico_train_85_syn_0",
+      "duplicate_of": "rico_train_85",
+      "similarity": 0.9562,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "train_form_three_controls_01_syn_0",
+      "duplicate_of": "train_form_three_controls_01",
+      "similarity": 0.9586,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    }
+  ],
+  "ngram_decontam": true,
+  "decontam_flagged": 35,
+  "decontam_flagged_samples": [
+    {
+      "id": "rico_train_10",
+      "reason": "ngram_overlap",
+      "overlap": 0.5067,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_104",
+      "reason": "ngram_overlap",
+      "overlap": 0.5,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_115",
+      "reason": "ngram_overlap",
+      "overlap": 0.6471,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_115_aug_dir",
+      "reason": "ngram_overlap",
+      "overlap": 0.5,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_115_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.6111,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_115_syn_1",
+      "reason": "ngram_overlap",
+      "overlap": 0.6197,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_115_syn_2",
+      "reason": "ngram_overlap",
+      "overlap": 0.5867,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_169",
+      "reason": "ngram_overlap",
+      "overlap": 1.0,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_169_aug_cta",
+      "reason": "ngram_overlap",
+      "overlap": 0.5238,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_169_aug_dir",
+      "reason": "ngram_overlap",
+      "overlap": 0.5405,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_169_design_contrastive",
+      "reason": "ngram_overlap",
+      "overlap": 0.6,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_169_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.8857,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_169_syn_1",
+      "reason": "ngram_overlap",
+      "overlap": 0.9118,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_169_syn_2",
+      "reason": "ngram_overlap",
+      "overlap": 0.8158,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_199",
+      "reason": "ngram_overlap",
+      "overlap": 0.6,
+      "suite": "e763_symbol_only_eval_r2_20260722/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_199_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.5385,
+      "suite": "e763_symbol_only_eval_r2_20260722/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_199_syn_1",
+      "reason": "ngram_overlap",
+      "overlap": 0.5526,
+      "suite": "e763_symbol_only_eval_r2_20260722/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_199_syn_2",
+      "reason": "ngram_overlap",
+      "overlap": 0.5,
+      "suite": "e763_symbol_only_eval_r2_20260722/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_204",
+      "reason": "ngram_overlap",
+      "overlap": 0.5938,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_204_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.5588,
+      "suite": "e813_opaque_slot_ids_v4/rico_held",
+      "ngram_size": 8
+    }
+  ],
+  "dedup_against": [],
+  "cross_corpus_dropped": 0,
+  "cross_corpus_dropped_samples": [],
+  "difficulty_from": null,
+  "difficulty_scored": 0,
+  "producer_inputs": {
+    "programspec_path": "outputs/data/programspec/programs.jsonl",
+    "programspec_count": 16,
+    "programspec_seed": 0,
+    "language_contract": true,
+    "documentize_expressions": false,
+    "target_kinds": null,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": true,
+    "repairs_per_program": 1,
+    "edit_derivatives": true,
+    "scope_derivatives": false,
+    "design_md_contrastive": true,
+    "scope_corpus": true,
+    "scope_kinds": [
+      "document",
+      "statement",
+      "expression",
+      "lexical"
+    ],
+    "scope_identity_per_scope": 3,
+    "scope_canonical_pairs_per_scope": 3,
+    "scoped_repairs_per_scope": 2,
+    "typed_lexical_per_program": 4
+  },
+  "preference_pairs": 189,
+  "preference_pairs_path": "outputs/data/train/e845_repeated_typed_collections_v1/preference_pairs.jsonl",
+  "mixture": {
+    "manifest": {
+      "mixture_id": "e845_repeated_typed_collections_v1-base",
+      "weights": {
+        "abstraction_ladder": 0.046875,
+        "awwwards_real": 0.03125,
+        "corruption_repair": 0.046875,
+        "diffusion_corruption": 0.015625,
+        "edit_trajectory": 0.046875,
+        "frontier_described": 0.0078125,
+        "frontier_product": 0.0078125,
+        "frontier_semantic": 0.0078125,
+        "frontier_simplified": 0.0078125,
+        "frontier_user": 0.0078125,
+        "gold_correction": 0.01171875,
+        "human_curated": 0.0625,
+        "human_feedback": 0.046875,
+        "language_contract": 0.0625,
+        "layout_augment": 0.01953125,
+        "lexical_typed_map": 0.015625,
+        "namespace_augment": 0.01171875,
+        "programspec_generated": 0.09375,
+        "prompt_paraphrase": 0.0234375,
+        "renderer_visual": 0.0390625,
+        "rico_real": 0.09375,
+        "scope_canonical_document": 0.0234375,
+        "scope_canonical_expression": 0.0234375,
+        "scope_canonical_lexical": 0.0234375,
+        "scope_canonical_statement": 0.0234375,
+        "scope_contract": 0.015625,
+        "scope_identity_document": 0.015625,
+        "scope_identity_expression": 0.015625,
+        "scope_identity_lexical": 0.015625,
+        "scope_identity_statement": 0.015625,
+        "scope_repair_expression": 0.015625,
+        "scope_repair_lexical": 0.015625,
+        "scope_repair_statement": 0.015625,
+        "self_distilled_repair": 0.015625,
+        "self_distilled_success": 0.015625,
+        "stress_adversarial": 0.01953125,
+        "web_distilled": 0.0234375
+      },
+      "task_weights": {
+        "generation": 0.16666666666666666,
+        "identity_echo": 0.16666666666666666,
+        "noop_adversarial": 0.16666666666666666,
+        "patch_edit": 0.16666666666666666,
+        "repair_completion_inpaint": 0.16666666666666666,
+        "state_behavior": 0.16666666666666666
+      },
+      "notes": "P12 deterministic build; P11-owned weights.",
+      "version": 2
+    },
+    "hash": "476e77a3c2ec6a631a1feb8fa75cce953a1e06abeae2240ebd2436c7dd20f026",
+    "diagnostics": {
+      "records": 613,
+      "family_counts": {
+        "abstraction_ladder": 5,
+        "corruption_repair": 14,
+        "edit_trajectory": 26,
+        "frontier_described": 3,
+        "human_curated": 41,
+        "language_contract": 63,
+        "layout_augment": 99,
+        "programspec_generated": 27,
+        "prompt_paraphrase": 114,
+        "renderer_visual": 1,
+        "rico_real": 19,
+        "scope_canonical_document": 22,
+        "scope_canonical_expression": 22,
+        "scope_canonical_lexical": 5,
+        "scope_canonical_statement": 22,
+        "scope_identity_expression": 29,
+        "scope_identity_lexical": 13,
+        "scope_identity_statement": 21,
+        "scope_repair_expression": 27,
+        "scope_repair_lexical": 6,
+        "scope_repair_statement": 32,
+        "web_distilled": 2
+      },
+      "task_counts": {
+        "edit": 85,
+        "generation": 373,
+        "identity": 63,
+        "patch": 13,
+        "repair": 79
+      },
+      "task_group_counts": {
+        "generation": 373,
+        "identity_echo": 63,
+        "patch_edit": 98,
+        "repair_completion_inpaint": 79
+      },
+      "unclassified_tasks": 0,
+      "unique_program_families": 80,
+      "unique_structural_families": 263,
+      "observed_component_counts": {
+        "Accordion": 18,
+        "AccordionItem": 19,
+        "AreaChart": 15,
+        "BarChart": 1,
+        "Button": 132,
+        "Buttons": 17,
+        "Callout": 26,
+        "Card": 174,
+        "CardHeader": 22,
+        "Carousel": 17,
+        "CheckBoxGroup": 17,
+        "CheckBoxItem": 15,
+        "CodeBlock": 19,
+        "Col": 19,
+        "DatePicker": 15,
+        "Form": 16,
+        "FormControl": 19,
+        "HorizontalBarChart": 1,
+        "Image": 18,
+        "ImageBlock": 34,
+        "ImageGallery": 15,
+        "Input": 43,
+        "Label": 16,
+        "LineChart": 15,
+        "MarkDownRenderer": 16,
+        "Modal": 23,
+        "PieChart": 14,
+        "Point": 8,
+        "RadarChart": 4,
+        "RadialChart": 2,
+        "RadioGroup": 19,
+        "RadioItem": 19,
+        "ScatterChart": 15,
+        "ScatterSeries": 20,
+        "Select": 18,
+        "SelectItem": 16,
+        "Separator": 30,
+        "Series": 19,
+        "SingleStackedBarChart": 11,
+        "Slice": 1,
+        "Slider": 8,
+        "Stack": 574,
+        "Steps": 18,
+        "StepsItem": 19,
+        "SwitchGroup": 20,
+        "SwitchItem": 38,
+        "TabItem": 29,
+        "Table": 14,
+        "Tabs": 23,
+        "Tag": 16,
+        "TagBlock": 14,
+        "TextArea": 17,
+        "TextCallout": 16,
+        "TextContent": 471
+      },
+      "configured_but_absent_families": [
+        "awwwards_real",
+        "diffusion_corruption",
+        "frontier_product",
+        "frontier_semantic",
+        "frontier_simplified",
+        "frontier_user",
+        "gold_correction",
+        "human_feedback",
+        "lexical_typed_map",
+        "namespace_augment",
+        "scope_contract",
+        "scope_identity_document",
+        "self_distilled_repair",
+        "self_distilled_success",
+        "stress_adversarial"
+      ],
+      "present_but_unweighted_families": []
+    }
+  },
+  "mean_quality_score": 0.985,
+  "placeholder_vocab_size": 12,
+  "with_design_md": 375,
+  "component_histogram": {
+    "Accordion": 18,
+    "AccordionItem": 19,
+    "AreaChart": 15,
+    "BarChart": 1,
+    "Button": 132,
+    "Buttons": 17,
+    "Callout": 26,
+    "Card": 174,
+    "CardHeader": 22,
+    "Carousel": 17,
+    "CheckBoxGroup": 17,
+    "CheckBoxItem": 15,
+    "CodeBlock": 19,
+    "Col": 19,
+    "DatePicker": 15,
+    "Form": 16,
+    "FormControl": 19,
+    "HorizontalBarChart": 1,
+    "Image": 18,
+    "ImageBlock": 34,
+    "ImageGallery": 15,
+    "Input": 43,
+    "Label": 16,
+    "LineChart": 15,
+    "MarkDownRenderer": 16,
+    "Modal": 23,
+    "PieChart": 14,
+    "Point": 8,
+    "RadarChart": 4,
+    "RadialChart": 2,
+    "RadioGroup": 19,
+    "RadioItem": 19,
+    "ScatterChart": 15,
+    "ScatterSeries": 20,
+    "Select": 18,
+    "SelectItem": 16,
+    "Separator": 30,
+    "Series": 19,
+    "SingleStackedBarChart": 11,
+    "Slice": 1,
+    "Slider": 8,
+    "Stack": 574,
+    "Steps": 18,
+    "StepsItem": 19,
+    "SwitchGroup": 20,
+    "SwitchItem": 38,
+    "TabItem": 29,
+    "Table": 14,
+    "Tabs": 23,
+    "Tag": 16,
+    "TagBlock": 14,
+    "TextArea": 17,
+    "TextCallout": 16,
+    "TextContent": 471
+  },
+  "built_at": "2026-07-22T18:32:51.877990+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "178675ec2ae83bb913dd0835e7525851f2da3402",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v15"
+    },
+    "stamped_at": "2026-07-22T18:32:51.897428+00:00"
+  }
+}

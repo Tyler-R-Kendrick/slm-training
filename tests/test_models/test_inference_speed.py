@@ -15,7 +15,7 @@ from slm_training.models.tokenizer import OpenUITokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.dsl.schema import ExampleRecord
 
-SAMPLE = 'root = Card(":t.x")\n'
+SAMPLE = 'root = TextContent(":slot_0")\n'
 
 
 def _tok() -> OpenUITokenizer:
@@ -310,7 +310,7 @@ def test_multitoken_and_lookahead_flags_smoke() -> None:
             design_md="# Design\n",
             split="train",
             source="fixture",
-            placeholders=[":t.x"],
+            placeholders=[":slot_0"],
         )
     ]
     cfg = TwoTowerConfig(
@@ -357,7 +357,7 @@ def test_probe_chunk_agrees_with_throwaway_full_sync() -> None:
         ("root=", "Card"),
         ("root = Card", "("),
         ('root = Card("', ":"),
-        ('root = Card(":t.x"', ")"),
+        ('root = Card(":slot_0"', ")"),
         ("root = Stack([hero]", ","),
         ("root = Stack([hero]", "]"),
     ]
@@ -553,7 +553,7 @@ def test_r4_repair_uses_multitoken_fewer_forwards() -> None:
             design_md="# Design\n",
             split="train",
             source="fixture",
-            placeholders=[":t.x"],
+            placeholders=[":slot_0"],
         )
     ]
     cfg = TwoTowerConfig(

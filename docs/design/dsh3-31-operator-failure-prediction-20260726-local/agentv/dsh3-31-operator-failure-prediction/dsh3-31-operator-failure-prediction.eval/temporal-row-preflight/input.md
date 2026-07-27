@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "shadow_only_temporal_failure_preflight_not_ship", "result": {"preflight_reasons": ["The local e283_signature_support_synth_v1 train corpus violated the current symbol-only/v2 contract before generation.", "The local playground_demo checkpoint declared output contract v0 and was rejected before generation by symbol-only/v2.", "A transient local pytest checkpoint discovered during the audit was absent when the evaluator opened it; no replay or model output occurred."], "rows": 0, "sources": []}}
