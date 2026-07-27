@@ -311,6 +311,21 @@
         }
       ]
     },
+    "data.flow.turn_disposition_corpus": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/flow/turn_disposition_corpus.py",
+        "tests/test_data/flow/test_turn_disposition_corpus.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "initial registration; SLM-433 (VAR3-03): real, freshly-enumerated (never copied/synthetic-score-injected) trace-leakage-safe corpus for TurnDispositionHead -- out_of_scope/answer/forced-singleton labels derived directly from OperatorLegalSetV1, clarify-margin examples from real declared AstOperatorV1.cost gaps between two live candidates"
+        }
+      ]
+    },
     "data.locked_eval_manifest": {
       "version": "v4",
       "kind": "data_builder",
@@ -7010,6 +7025,24 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial quarantined runtime trace-to-eval candidate pipeline (DSH4-05): TraceEvalCandidateV1 with QUARANTINED -> REVIEWED -> FROZEN -> CONFIRMATION_USED lifecycle plus a separate PROMOTED_TO_TRAINING transition; ingest redacts/de-identifies (paths, hosts, secret-shaped strings, known canaries; fail-closed outside redactable fields), normalizes compiler/tool state, clusters fingerprinted recurring failure signatures, and proposes capability/task/environment/verifier artifacts; review requires explicit reviewer id + full human/domain checklist incl. separate agent/verifier trajectory review; freeze requires environment pinning with deterministic replay, held positive/negative verifier validation, train/eval root-family dedup + split-policy disjointness, and exposed-answer/shortcut checks, then writes an immutable sha256-rowed tamper-evident manifest (create-once, fail-closed verify); one-touch confirmation ledger; promotion creates a new derivation activity + dataset version under a new train-split family without mutating the frozen eval; stop rules keep unsafe traces quarantined (deidentification_failed, environment_not_reproducible, not_independently_verifiable); no automatic transitions"
+        }
+      ]
+    },
+    "harness.experiments.slm433_turn_disposition_corpus": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm433_turn_disposition_corpus.py",
+        "scripts/run_slm433_turn_disposition_corpus.py",
+        "tests/test_harnesses/experiments/test_slm433_turn_disposition_corpus.py",
+        "docs/design/var3-03-turn-disposition-corpus-training-20260727.json",
+        "docs/design/var3-03-turn-disposition-corpus-training-20260727.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "initial registration; SLM-433 (VAR3-03): trains a TurnDispositionHead-shaped classifier (turn_disposition_losses reused, not reimplemented) on the real, trace-leakage-safe data.flow.turn_disposition_corpus and compares disposition_off / derived_only / disposition_trained on the identical held-out split via evals.cap2_operator.score_disposition_predictions"
         }
       ]
     },

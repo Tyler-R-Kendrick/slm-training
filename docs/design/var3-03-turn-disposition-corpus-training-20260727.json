@@ -1,0 +1,106 @@
+{
+  "experiment": "slm433-turn-disposition-corpus",
+  "issue": "SLM-433",
+  "preregistered": {
+    "hypothesis": "A TurnDispositionHead trained on real, corpus-derived clarify-margin examples reduces composite_penalized_error_rate on a held-out split relative to derived_only (free rules, clarify never fires).",
+    "stop_rule": "If disposition_trained shows no held-out improvement over derived_only, that is a legitimate negative result; do not add further trained-head complexity to this surface.",
+    "leakage_safety": "split is trace-level; all four rows of one trace share one split"
+  },
+  "arms": [
+    "disposition_off",
+    "derived_only",
+    "disposition_trained"
+  ],
+  "corpus_config": {
+    "n_per_tier": 40,
+    "train_fraction": 0.7,
+    "corpus_seed": 433,
+    "tier_margins": [
+      0.0,
+      0.2,
+      0.4,
+      0.6,
+      1.0
+    ],
+    "tier_gold_cheap_probability": [
+      0.5,
+      0.6,
+      0.75,
+      0.85,
+      0.95
+    ]
+  },
+  "quality_report": {
+    "schema": "turn_disposition_corpus_quality_report/v1",
+    "total_traces": 200,
+    "total_rows": 800,
+    "rows_by_kind": {
+      "answer": 200,
+      "forced_emit": 200,
+      "out_of_scope": 200,
+      "scored": 200
+    },
+    "rows_by_split": {
+      "heldout": 240,
+      "train": 560
+    },
+    "rows_by_tier": {
+      "0": 160,
+      "1": 160,
+      "2": 160,
+      "3": 160,
+      "4": 160
+    },
+    "out_of_scope_never_from_nonempty_set": true
+  },
+  "leakage_safe_split": true,
+  "train_scored_count": 140,
+  "heldout_scored_count": 60,
+  "final_train_loss": 0.6752055883407593,
+  "arm_scores": {
+    "disposition_off": {
+      "schema": "cap2_disposition_score/v1",
+      "case_count": 240,
+      "wrong_op_count": 134,
+      "abstention_count": 0,
+      "wrong_op_rate": 0.5583333333333333,
+      "abstention_rate": 0.0,
+      "wrong_emit_penalty_ratio": 3.0,
+      "composite_penalized_error_rate": 0.41875
+    },
+    "derived_only": {
+      "schema": "cap2_disposition_score/v1",
+      "case_count": 240,
+      "wrong_op_count": 14,
+      "abstention_count": 0,
+      "wrong_op_rate": 0.058333333333333334,
+      "abstention_rate": 0.0,
+      "wrong_emit_penalty_ratio": 3.0,
+      "composite_penalized_error_rate": 0.04375
+    },
+    "disposition_trained": {
+      "schema": "cap2_disposition_score/v1",
+      "case_count": 240,
+      "wrong_op_count": 8,
+      "abstention_count": 12,
+      "wrong_op_rate": 0.03333333333333333,
+      "abstention_rate": 0.05,
+      "wrong_emit_penalty_ratio": 3.0,
+      "composite_penalized_error_rate": 0.037500000000000006
+    }
+  },
+  "disposition": "trained_head_improves_on_derived_only",
+  "honesty": "fixture_or_scratch, capability class -- not a ship claim. The corpus is a real, freshly-enumerated symbolic fixture (5 real declared-cost tiers x n_per_tier traces), not natural-language data; the classifier is a tiny 3-feature MLP. Held-out split is trace-level leakage-safe. No promotion, ship-gate, or production-readiness claim is made regardless of outcome.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cefd7cb32cf1faecd322536db19f10342ee99c1b",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm433_turn_disposition_corpus": "v1",
+      "model.turn_disposition_head": "v1",
+      "dsl.operators.turn_disposition": "v1",
+      "data.flow.turn_disposition_corpus": "v1"
+    },
+    "stamped_at": "2026-07-27T04:18:42.144844+00:00"
+  }
+}
