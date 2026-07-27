@@ -1,0 +1,1 @@
+{"detail": {"duplicate_of": "rico_train_0_aug_dir", "engine": "lexical-tfidf", "similarity": 0.9502, "source_family": "layout_augment", "synth": "layout_augment"}, "id": "rico_train_100_aug_dir", "reason": "semantic_cosine", "stage": "dedup"}

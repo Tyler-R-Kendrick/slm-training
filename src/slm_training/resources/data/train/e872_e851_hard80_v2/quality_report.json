@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "version": "e872_e851_hard80_v2",
+  "profile": "strict",
+  "built_at": "2026-07-22T20:25:00.961244+00:00",
+  "counts": {
+    "seeds": 351,
+    "candidates": 351,
+    "collected": 351,
+    "admitted": 281,
+    "rejected_total": 70,
+    "source_errors": 0,
+    "by_stage": {
+      "selection": 70
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Bronze": 149,
+      "Silver": 132
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 281
+    },
+    "mean_quality_score": 0.9867,
+    "min_quality_score": 0.85
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 0,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 281,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "01fff579d8a6e72a|ace9f21c39afd975cc5fa26ef084843b2498e9b2113401e8043911e5e1e3056e|bbc2bda95125d0aa",
+        "count": 1,
+        "sample_ids": [
+          "program_6bf891b163fb6489_patch_9bfb48c515fb"
+        ]
+      },
+      {
+        "cluster": "03a5169629d2ec69|6b15d3e9977407b4ba1f952cb5c0b4abdefa9895ff47e2d00cc190485abd7d16|e784780827dd1199",
+        "count": 1,
+        "sample_ids": [
+          "train_header_01_patch_3c60ef230e58"
+        ]
+      },
+      {
+        "cluster": "0476b3305f714df2|963a8f570af1e80849b93d3696b21a751362a37b59e53bc0e04d885cfd4de3f7|04330b099d4ac7be",
+        "count": 1,
+        "sample_ids": [
+          "program_16ad8c370e983178_edit_2f7567f96634"
+        ]
+      },
+      {
+        "cluster": "065a654da245647a|5fcd56d92586c6abed82a3fd7b14945e5270a7293e8e7c1abde322fc51d7fa68|bf54bcbd11205e93",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_TextCallout"
+        ]
+      },
+      {
+        "cluster": "0697cb62dca4ff7f|6c7251181175a1b20156ea0844b2ad317ee9d7162ea3aa6ed30acfcbf8452b9c|1e3e6180c6540ba4",
+        "count": 1,
+        "sample_ids": [
+          "rico_train_102_patch_d54439084df6"
+        ]
+      },
+      {
+        "cluster": "06c6ad800523138f|b75c532800d22a81f6277493ed2bb753dfec4ea00c3c394d17f016df7dbcd99d|ba86c5e00ef8075c",
+        "count": 1,
+        "sample_ids": [
+          "train_form_control_01_generation_791ad9ff197b"
+        ]
+      },
+      {
+        "cluster": "0760a3bc979e3215|6b15d3e9977407b4ba1f952cb5c0b4abdefa9895ff47e2d00cc190485abd7d16|e784780827dd1199",
+        "count": 1,
+        "sample_ids": [
+          "rico_train_120_repair_f7441370ae6d"
+        ]
+      },
+      {
+        "cluster": "0877ab4fa573e9a5|3e18ffd90e95deec36eaaa1268e0e2bd950b9afd635b4fe8f43cb793c9481374|13dd80d5a11a1d69",
+        "count": 1,
+        "sample_ids": [
+          "rico_train_104_aug_dir"
+        ]
+      },
+      {
+        "cluster": "09ac65bd90c949cb|04d176fcd476e330f2a54592ffc56d99729fe59a867f5ba8190dc2ebcee752ae|6bb8c4e4b767932f",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_RadialChart"
+        ]
+      },
+      {
+        "cluster": "0bda434ba91fbe7d|627826e0cd74e12d2b0cc32154dd6ed67193c71be3bbacbe6e1d3cb7fc4c9e84|417dc8c59f84a25f",
+        "count": 1,
+        "sample_ids": [
+          "program_16e57c86e8ca54d6_patch_3b471fe300a5"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e813_opaque_slot_ids_v4/adversarial",
+      "e813_opaque_slot_ids_v4/held_out",
+      "e813_opaque_slot_ids_v4/ood",
+      "e813_opaque_slot_ids_v4/rico_held",
+      "e813_opaque_slot_ids_v4/smoke",
+      "e819_opaque_slot_ids_v4/adversarial",
+      "e819_opaque_slot_ids_v4/held_out",
+      "e819_opaque_slot_ids_v4/ood",
+      "e819_opaque_slot_ids_v4/rico_held",
+      "e819_opaque_slot_ids_v4/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 351,
+    "changed": 31,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 0,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 16
+    },
+    "literals_templatized": 35,
+    "records_templatized": 30,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 120,
+      "misses": 186
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 14,
+      "root_parent_count": 14,
+      "mean_quality_score": 0.996429,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 14
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 112,
+      "root_parent_count": 51,
+      "mean_quality_score": 0.983929,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 33,
+        "generation": 35,
+        "patch": 44
+      }
+    },
+    {
+      "source_family": "frontier_described",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 1
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 12,
+      "root_parent_count": 12,
+      "mean_quality_score": 0.9875,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 12
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 62,
+      "root_parent_count": 62,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 62
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 58,
+      "root_parent_count": 37,
+      "mean_quality_score": 0.97931,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 58
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 12,
+      "root_parent_count": 12,
+      "mean_quality_score": 0.954167,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 12
+      }
+    },
+    {
+      "source_family": "prompt_paraphrase",
+      "record_count": 5,
+      "root_parent_count": 4,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 5
+      }
+    },
+    {
+      "source_family": "rico_real",
+      "record_count": 5,
+      "root_parent_count": 5,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 5
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "892c93bfb6d2df28a10647efefbe172d6c61ed41",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v22"
+    },
+    "stamped_at": "2026-07-22T20:25:01.020373+00:00"
+  }
+}

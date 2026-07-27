@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1014-E1019",
+  "date": "2026-07-22",
+  "decision": "reject_checkpoint_retain_tabs_signal_and_binder_component_hypothesis",
+  "runs": {
+    "E1014": {
+      "status": "completed_diagnostic",
+      "snapshot": "e937_role_safe_all_targets_v2",
+      "total_surfaces": 582,
+      "form_surface_occurrences": 17,
+      "tabs_surface_occurrences": 24,
+      "unique_form_surfaces_replayed": 7,
+      "unique_tabs_surfaces_replayed": 10,
+      "component_bound_decisions": 59,
+      "component_candidates_per_decision": 32,
+      "first_attempt": {
+        "status": "invalid_timeout",
+        "scope": "all 582 surfaces",
+        "timeout_seconds": 110
+      },
+      "focused_attempt": {
+        "status": "completed",
+        "scope": "17 unique Form/Tabs surfaces",
+        "elapsed_wall_seconds": 19.5
+      },
+      "finding": "binder topology and arity do not supervise component_bound labels"
+    },
+    "E1015": {
+      "status": "invalid_not_evaluated",
+      "run_id": "e1015-role-safe-binder-component100-r1",
+      "steps_requested": 100,
+      "steps_completed": 59,
+      "stopped_on": "wall_time_budget",
+      "elapsed_wall_seconds": 96.653123848002,
+      "reason": "partial runs are not evidence and cannot be resumed or used as parents"
+    },
+    "E1016": {
+      "status": "completed_rejected",
+      "run_id": "e1016-role-safe-binder-component80-r1",
+      "train_data": "e937_role_safe_all_targets_v2",
+      "steps": 80,
+      "batch_size": 2,
+      "elapsed_wall_seconds": 58.57840962800037,
+      "last_loss": 13.277437210083008,
+      "binder_component_plan_loss_first": 3.4401917457580566,
+      "binder_component_plan_loss_last": 2.7965590953826904,
+      "binder_component_plan_accuracy_first": 0.0,
+      "binder_component_plan_accuracy_last": 0.1428571492433548,
+      "binder_component_plan_rows_last": 7,
+      "component_candidates_per_decision": 32,
+      "checkpoint_sha256": "4f7fb4a9e542587428f4bd7b57872bfca11682e7d7b3ebe1c40ee64bf5f345bf",
+      "checkpoint_sync": "disabled_scratch",
+      "initialized_from": null
+    },
+    "E1017": {
+      "status": "completed_noncomparable_diagnostic",
+      "suite": "smoke",
+      "reason": "compiler_schema_component_types was false instead of the retained v266 policy",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 0.6666666666666666,
+      "strict_v2": 0.3333333333333333,
+      "fidelity": 0.6388888888888888,
+      "structural_similarity": 0.5753,
+      "component_recall": 0.4166666666666667,
+      "reward": 0.8326666666666668,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "agentv": "0/1"
+    },
+    "E1018": {
+      "status": "completed_rejected",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 0.6666666666666666,
+      "meaning_v1": 0.6666666666666666,
+      "strict_v2": 0.3333333333333333,
+      "fidelity": 0.5555555555555555,
+      "structural_similarity": 0.4461333333333333,
+      "component_recall": 0.3333333333333333,
+      "reward": 0.5913333333333334,
+      "decode_timeouts": 1,
+      "fallback_count": 0,
+      "agentv": "0/1"
+    },
+    "E1019": {
+      "status": "completed_rejected",
+      "suite": "held_out",
+      "n": 5,
+      "parse": 0.8,
+      "meaning_v1": 0.4,
+      "strict_v2": 0.4,
+      "fidelity": 0.5,
+      "structural_similarity": 0.22896,
+      "component_recall": 0.42857142857142855,
+      "reward": 0.6572,
+      "decode_timeouts": 1,
+      "fallback_count": 3,
+      "binder_component_plan_applications": 3,
+      "binder_component_plan_choice_changes": 1,
+      "agentv": "0/1",
+      "tabs_case": {
+        "parse": 1.0,
+        "fidelity": 1.0,
+        "component_recall": 1.0,
+        "structural_similarity": 0.62,
+        "reward": 0.985
+      },
+      "form_case": {
+        "prediction": "root = TextContent(\":slot_0\")",
+        "fidelity": 0.16666666666666666,
+        "component_recall": 0.14285714285714285,
+        "structural_similarity": 0.1148
+      }
+    }
+  },
+  "disposition": {
+    "checkpoint_promoted": false,
+    "checkpoint_parentable": false,
+    "checkpoint_synced": false,
+    "retained_finding": "binder-indexed component supervision can recover the Tabs typed topology but is too sparse and undercalibrated globally",
+    "next_hypothesis": "make compiler component-bound supervision efficient enough for full-corpus training, then train the shared objective without semantic text or duplicate fixtures"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "fe05db608483af311e1ffbdd8e02dea7122e0ede",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v39",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v56",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v266"
+    }
+  }
+}

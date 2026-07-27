@@ -1,0 +1,48 @@
+{
+  "contract_hash": "f358dcc954a6a96c6e494acbabc8635b79184ca15b9d80f3f59ff7d3e7416ace",
+  "contract_id": "lot1-02-launch-gate-v1",
+  "gate_1_transfer_authorization": {
+    "actual_verdict": "needs_target_trace_contract",
+    "gate_name": "fidelity_contract_authorization",
+    "met": false,
+    "rationale": "Differentiation from every existing repo mechanism (masked recursive denoiser, SemanticPlanV1 predictors/consumers, causal FTPO adapters, explicit compiler traces, valid-state tree-edit/lattice search) is clean and survives line-by-line comparison -- see non_duplication_map, all rows no_duplication. The blocker is narrower: LOTUS's explicit-to-latent curriculum (mechanism row 5) and its causal_latent_use claim class both presuppose a step-decomposable 'explicit trace' analogous to GSM8K CoT steps that this repo does not yet define for OpenUI program synthesis. Defining that target-trace contract honestly -- without assuming math-payload equivalence to GSM8K, and without silently reusing causal_trace.py's visible-token decode capture or SemanticPlanV1's plan IR as if either already were that trace -- is out of scope for this docs/spec-only issue (no corpus generation beyond bounded target-contract probes). Authorizing bounded implementation now would force either an undefined curriculum or a quietly borrowed non-LOTUS trace source; neither is honest. This is not a 'differentiation is weak' close and not a semantic-floor block -- it is a scoped prerequisite.",
+    "required_verdict": "authorize_bounded_implementation",
+    "source_contract_hash": "801ce267b64f52b88e6e80fa091084c5f1a6628de60658d2d161db82f5117af2",
+    "source_contract_id": "lotus-openui-fidelity-contract-v1",
+    "source_linear_issue": "SLM-248"
+  },
+  "gate_2_trace_oracle_ceiling": {
+    "actual_verdict": "inconclusive",
+    "gate_name": "trace_oracle_ceiling",
+    "met": false,
+    "rationale": "The trace contract, typed step schema, deterministic extractor, and lossless visible serialization are implemented and tested against the repository's existing SemanticPlanV1/production_codec owners (no new compiler/parser/evaluator). A bounded n=16 fixture probe (not a production corpus) confirms every probe record decomposes into all six declared stages with zero truncation, giving a provisional K=6/c=479-chars budget. The oracle ceiling experiment itself -- the only evidence that could support an oracle_ceiling_positive, no_downstream_ceiling, or explicit_trace_equivalent_to_existing_plan verdict -- is specified as a matched multi-arm, multi-seed plan but deliberately not run: the LOT0-01 authorization scopes this issue to a fixture-scale plan only, with GPU training and corpus generation explicitly blocked. Declaring any positive or negative ceiling verdict without running that plan would be exactly the 'no claim that explicit trace benefit implies latent benefit' failure this issue's acceptance criteria forbid. leakage_or_ambiguity_blocked and target_support_insufficient are also not honest: no leakage was found and the bounded probe supports the stage set within its declared scope. inconclusive -- pending the oracle-ceiling campaign -- is the only accurate verdict.",
+    "required_verdict": "oracle_ceiling_positive",
+    "source_contract_hash": "6cdd695bf5b32036519f1ee2e787a44e4afbb045fc059f75a92a2d069f0ee7c5",
+    "source_contract_id": "compiler-reasoning-trace-v1",
+    "source_linear_issue": "SLM-249"
+  },
+  "gate_3_explicit_kc_stage_authorization": {
+    "actual_verdict": "none: the K x c latent-workspace model implementation (SLM-250 / LOT1-01) remains gated on a positive oracle-ceiling result, which requires running the plan defined here -- not authorized by this issue.",
+    "gate_name": "explicit_kc_stage_authorization",
+    "met": false,
+    "rationale": "SLM-249's own allowed_lot1_implementation field authorizes no LOT1 implementation; the oracle ceiling is inconclusive and K/c is a bounded probe recommendation only, not a data-derived production budget.",
+    "required_verdict": "explicit allowed_lot1_implementation entry with K/c/stage targets",
+    "source_contract_hash": "6cdd695bf5b32036519f1ee2e787a44e4afbb045fc059f75a92a2d069f0ee7c5",
+    "source_contract_id": "compiler-reasoning-trace-v1",
+    "source_linear_issue": "SLM-249"
+  },
+  "linear_issue": "SLM-251",
+  "lot1_01_disposition": "not_authorized",
+  "schema_version": "lot1_02_launch_gate/v1",
+  "verdict": "not_authorized",
+  "verdict_rationale": "LOT1-02 launch prerequisite(s) unmet: transfer_authorization (SLM-248), trace_oracle_ceiling (SLM-249), explicit_kc_stage_authorization (SLM-249 allowed_lot1_implementation). LOT1-01's disposition is 'not_authorized', so no faithful K x c model path or curriculum hooks exist to train; SLM-249's oracle ceiling is not positive and authorizes no LOT1 implementation. There is no treatment arm to run and no matched continued-explicit control to attribute against. Closing not_authorized in plan-only mode; no training, curriculum, or model code is added by this disposition.",
+  "version_stamp": {
+    "code_commit": "941730cbbe0ac6a956b87085b54ff874089e54e1",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v110"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T15:59:29.204608+00:00"
+  }
+}

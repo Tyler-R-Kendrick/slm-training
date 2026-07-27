@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E841",
+  "date_utc": "2026-07-22",
+  "run_class": "telemetry",
+  "run_id": "e841-canonical-corpus-defaults-r1",
+  "local_compute": true,
+  "description": "Tracked-corpus marker eligibility audit and centralized active-corpus defaults",
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "audited_scope": "tracked resource records.jsonl files",
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "suites": {
+    "corpus_audit": {
+      "n": 11029,
+      "record_files": 47,
+      "canonical_marker_rows": 1345,
+      "noncanonical_marker_rows": 9684,
+      "canonical_marker_rate": 0.121951219512,
+      "parse_rate": 1.0,
+      "placeholder_fidelity": 0.121951219512,
+      "active_train_rows": 350,
+      "active_eval_rows": 23
+    }
+  },
+  "active_defaults": {
+    "train": "src/slm_training/resources/data/train/e826_target_slots_only_v4",
+    "eval": "src/slm_training/resources/data/eval/e827_target_slots_only_v4",
+    "eval_suites": {
+      "smoke": 3,
+      "held_out": 5,
+      "adversarial": 4,
+      "ood": 4,
+      "rico_held": 7
+    },
+    "load_guard": "assert_canonical_template_markers"
+  },
+  "historical_provenance": {
+    "retained": true,
+    "eligible_for_training": false,
+    "reason": "named markers fail closed at the shared record loader"
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "corpus eligibility telemetry; no model evaluation"
+  },
+  "decision": {
+    "retain": "immutable historical evidence plus strict loader rejection",
+    "promote": "E826 train and E827 eval as the only centralized CLI defaults",
+    "reject": "outputs/data/v1, remediated, or any named-marker corpus as an implicit default",
+    "next": "repair repeated typed-collection synthesis in a new canonical snapshot"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d15b5a54",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v21",
+      "data.test_build": "v8",
+      "harness.model_build.eval": "v49",
+      "matrix.grammar": "v2",
+      "matrix.perf": "v2",
+      "matrix.quality": "v6",
+      "model.twotower": "v232"
+    }
+  }
+}

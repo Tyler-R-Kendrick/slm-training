@@ -1,0 +1,17 @@
+// DSH2-07 (SLM-367): mini-flow — a generic test-only DSL for the two-pack
+// CAP1 freeze. Deliberately NOT OpenUI: a tiny task-flow language with one
+// closed value domain (mode), a content prop (step, placeholder-bearing), an
+// open integer prop (retry), and let-bindings. Used to prove the CAP1 harness
+// exercises generic grammar/schema grounding rather than OpenUI memorization.
+start: stmt+
+stmt: let_stmt | task_stmt
+let_stmt: "let" NAME "=" literal
+task_stmt: "task" NAME "{" prop_stmt* "}"
+prop_stmt: "step" ESCAPED_STRING | "mode" MODE | "retry" INT
+literal: ESCAPED_STRING | INT
+MODE: "fast" | "safe"
+NAME: /[a-z][a-z0-9_]*/
+%import common.ESCAPED_STRING
+%import common.INT
+%import common.WS
+%ignore WS

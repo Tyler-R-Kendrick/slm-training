@@ -278,6 +278,30 @@ python -m scripts.run_perf_matrix --only C5,C6,C7,C8 --list
 No C5-C8 latency or quality result exists. Reported speedups in CFGzip,
 XGrammar-2, WGrammar, TruncProof, or related papers are external evidence only.
 
+## C9-C10 bounded compiler prefills (2026-07-24, measured negative)
+
+Same-checkpoint CPU diagnostic on
+`slm230_bounded_recursive_r4_r2/checkpoints/last.pt`, one smoke row, no warmup,
+and an eight-token canvas. The run was capped by the repository run policy and
+wrote [the version-stamped result](perf-matrix-results.json) plus AgentEvals and
+AgentV artifacts.
+
+| ID | prefill policy | mean ms | neural forwards | prefill batches / states / tokens | exact semantic bypasses | raw syntax | meaningful parse | fidelity |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| C0 | non-compiler constrained control | 20,574.96 | 1 | 0 / 0 / 0 | 1 | 1.0 | 0.0 | 0.0 |
+| C9 | serial, max one ambiguous state | 20,600.54 | 2 | 2 / 2 / 16 | 1 | 1.0 | 0.0 | 0.0 |
+| C10 | device-aware auto bound | 20,851.49 | 2 | 2 / 2 / 16 | 1 | 1.0 | 0.0 | 0.0 |
+
+This is negative, non-promotable evidence. All outputs were syntactically valid,
+but the intentionally tiny canvas omitted the requested placeholder, so the C0
+quality anchor was invalid and all three AgentV criteria failed. C10 was 0.99×
+as fast as C9 in this single draw, and both saw only one ambiguous state per
+forecast and therefore issued the same two one-state batches. The result does
+not demonstrate batching utilization or a quality-preserving speedup. Keep the
+device-aware bound implemented and instrumented; require a larger, valid
+same-run quality anchor with forests containing multiple ambiguous future
+states before promotion.
+
 ## E289 exact choice-state cache (2026-07-17)
 
 The production choice decoder now caches exact legal sets by immutable symbolic

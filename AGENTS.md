@@ -1,7 +1,13 @@
 # Agent instructions (all coding agents)
 
 Applies to **every** coding agent (Cursor, Claude Code, Codex, Gemini, Copilot /
-GHCP, others). Prefer this file over tool-specific defaults on process conflicts.
+GHCP, Grok, others). Prefer this file over tool-specific defaults on process
+conflicts.
+
+Every harness enforces the **same** laws. `python -m scripts.verify_agent_surfaces`
+owns the obligation × surface matrix and fails CI when one surface drops a law;
+current coverage and known differences are in
+[`docs/design/agent-harness-parity-audit.md`](docs/design/agent-harness-parity-audit.md).
 
 @RTK.md
 
@@ -26,6 +32,158 @@ Experiment-first OpenUI layout SLMs:
 7. **Standard evals** — every evaluation run emits AgentEvals JSONL and is
    executed/published with the pinned AgentV SDK; domain metrics and honest ship
    gates remain authoritative (`docs/design/agentv-evaluation.md`).
+
+## Non-negotiable architecture invariants (goal law)
+
+This repo is **not training a natural-language LLM.** It trains a
+**grammar-constrained symbolic diffusion model** that outputs templated
+grammars (scaffolded structure + structural reasoning). Templated /
+natural-language content is deferred to a real external LLM (symbol-only output
+contract, `dsl/language_contract.py`, `OUTPUT_CONTRACT_VERSION=2`). Everything
+below is a **goal invariant**: it constrains every model, harness, lever,
+experiment, doc, and agent action here — past, present, and future. Canonical
+expansion with file pointers, current status, and open goals:
+[`docs/design/decode-invariants.md`](docs/design/decode-invariants.md).
+
+Ids below are the canonical `I*` ids from
+[`docs/design/decode-invariants.md`](docs/design/decode-invariants.md). Cite
+them, never a file-local number — every agent surface uses the same ids so
+"I13" means one thing everywhere.
+
+### I. Constrained decoding is the product (never removable)
+
+- **I6 — Never output invalid grammar.** Every production decode path is
+  grammar-constrained end to end. Unconstrained arms
+  (`--unconstrained-control`, HTTP `grammar_constrained=false`, eval `raw`
+  arms) are **diagnostic controls only** — never production defaults, never
+  serving paths, and their output is never shipped, certified, or gated on.
+- **I6 — Fail closed.** Production configs must not set
+  `allow_unconstrained_fallback=True`, must run finalize validation, and must
+  raise (not return uncertified text) when certification fails — in every
+  backend, ONNX included. An empty legal domain is a constrained dead end,
+  never a full-vocabulary fallback. This extends past decode: no load-bearing
+  contract may silently widen when a dependency is unavailable.
+- **I6 — No lever, experiment, or skill may remove or weaken deterministic /
+  constrained decoding.** Levers may change *how legal symbols are chosen*
+  (ranking, speculation technique, batching) — never *whether output is
+  legal*. Weakening levers are registered in
+  `levers.CONSTRAINT_WEAKENING_LEVERS` and CI-blocked from production configs.
+
+### II. Inference is the last resort (deterministic completion law)
+
+- **I1 — Deterministic completion paths bypass inference wherever a
+  deterministic answer exists.** Authoritative deterministic decode proofs
+  always outrank learned, semantic, confidence, or preference scores.
+- **I2 — Forced bypass on singletons:** when the scope-aware symbol table (DFA
+  domain / `CompletionDomainV1` / choice-codec state) shows **exactly one**
+  valid next symbol, that symbol is committed **without any neural forward or
+  ranking**, in every decode path and every backend. Never downgrade certainty
+  into a soft preference. New decode paths ship with a bypass test (the
+  `forwards_count == 0` pattern) or they do not merge.
+- **I3 — Speculative completion from forward-calculated symbol tables:** symbol
+  tables are computed *before* the model; at non-singleton branch points, rank
+  legal symbols with a deterministic scorer
+  (`dsl/grammar/fastpath/speculative_rank.py`, committed train-only n-gram
+  table at `resources/decode/speculative_ngram_v1.json`) and speculatively commit
+  multi-token spans that stay inside the certified domain (lookahead-then-
+  verify, arXiv:2602.00612; intersection-witness completions,
+  arXiv:2508.10111). **I5 —** the *technique* is a lever, swappable by
+  preregistered experiment, but speculation always verifies against the grammar
+  oracle before commit.
+- **I4 — Symbol tables schedule compute:** use them to plan subsequent prefills —
+  compact ambiguous rows into minimal forwards, place prefill boundaries at
+  grammar checkpoints proven by `common_forced_run` (what the grammar forces
+  after *every* legal candidate is determined before the model picks), route
+  by detected device (`runtime/decode_schedule.py`). Record scheduled-prefill
+  and forwards-avoided counters in `DecodeStats`; utilization regressions are
+  measured, never vibes.
+
+### III. What the model is (and is not)
+
+- **I9 — Output = scaffolded grammar.** Targets contain only grammar/AST literals
+  and placeholder symbols. Natural-language vocab is **optional fluff** —
+  optimizable later, never load-bearing, never a ship blocker.
+- **I10 — Use-case ladder (in order, no skipping):** AST-2-AST → grammar-2-AST →
+  grammar+ops-2-AST → simplified-NL-2-AST → complex-NL-2-AST. Each rung is
+  certified before the next opens (`CERT_CAP*` gates stay). Current position
+  and blockers: `docs/MODEL_CARD.md` + `docs/design/decode-invariants.md`.
+- **I10b — Calculator/solver enhanced with inference** — not a chat model.
+  Inference fills ambiguity; it never authors structure a deterministic solver
+  can derive.
+
+### IV. Encoder/decoder vocabulary law
+
+- **I13 — The encoder vocabulary MUST reserve a compute-ops vocabulary** —
+  AST/graph/set/topology operations — **known and shared by the decoder
+  vocabulary**. That vocabulary is `dsl/ops_vocab.py`: derived from the live
+  operator registries (an op cannot be in it without an implementation, or
+  implemented without being in it), reserved in the versioned `ops` token-id
+  namespace, and exposed through the single `shared_token_ids()` mapping both
+  towers call. Grammar symbols layer on top via `assert_layering`; NL sits
+  above and is strictly optional. Adding, removing, or reclassifying an
+  operator changes the fingerprint and fails
+  `verify_decode_invariants` until `resources/ops_vocab_registry.json` is
+  rebuilt and `ops.vocab` is bumped. e803 rejected *decoder-target* op tokens
+  and says nothing about encoder-side sharing; that campaign is the open rung.
+  The output tokenizer layout is likewise a frozen, checkpoint-bound contract
+  (`resources/tokenizer_layout_registry.json`) — never re-derived from whichever
+  grammar backend happens to be live.
+- **I11 — Multi-turn = CRDT event store.** Append-only, content-addressed events
+  over the conversation AST (`ConversationTraceV1`). Turn inputs are ops on
+  that AST; ops include **copy/undo/redo**. Merge must converge (CRDT
+  semantics) — the conflict-rejecting merge is a documented interim state,
+  not the goal. The AST artifact is a **materialization of the entire
+  conversation history** (full replay, no hidden cursors).
+- **I12 — Patch/diff outputs across turns.** Turns emit operation patches/diffs,
+  not full rewrites, wherever the edit space can reach the target
+  (reachability-certified). Full-AST output is the bootstrap mode, not the
+  end state; reachability blockers are open goals, not closed questions.
+
+### VI. Parameter-efficiency law (capability is not bought with size)
+
+16. **The deliverable is the smartest output at the smallest model.** Quality
+    rises with capacity on its own, so a quality win from a larger model is
+    not evidence about the change under test. Model size is a **budget that is
+    spent and charged**, never a free knob. Capacity levers are registered in
+    `levers.CAPACITY_SCALING_LEVERS` with their baseline value.
+17. **Growth must pay for itself.** Parameters are a first-class cost axis
+    (`scaling_fit.CostKey` includes `params`). A candidate with more trainable
+    parameters than its baseline is promotable only with a size-normalized
+    gain — `EG_params` LCB ≥ 1 (`PromotionCriteria.eg_params_lcb_min`).
+    Unmeasured growth **fails closed**: wall-time parity is not a size budget,
+    because a wider model can hold its latency and still buy its loss.
+18. **Promote the smallest sufficient model.** Selecting the lowest loss over
+    a ladder that spans widths promotes the widest rung by construction. Rank
+    by loss, then take the *smallest* model within the noise band
+    (`promotion_engine.select_smallest_sufficient`).
+19. **Scaling is a diagnostic control arm, never a default lever.** Arms
+    compared to attribute a quality delta must be size-matched
+    (`levers.require_size_matched_arms`) or charge the difference. Growing the
+    model to green a gate is the size-analogue of weakening a gate, and is
+    equally forbidden. A capacity deviation is legal only when it is the
+    declared subject of a preregistered experiment.
+
+### V. Goal-drift guard
+
+- **I14 — Goals are non-negotiable; approaches are disposable.** A rejected
+  experiment closes an *approach*, never a *goal*. Every rejected approach to
+  an invariant above must file its successor approach (or an explicit, dated,
+  documented waiver) in the same measured-results doc. Labels like
+  "rejected" / "unavailable" / `nl_available=False` /
+  `reachable_fraction=0.0` describe **current approach state** and may never
+  be cited as reason the invariant does not apply.
+- **I7 — Every agent surface carries the law.** Each configured harness reads a
+  different instruction file, so a law stated only here reaches only some
+  agents. `python -m scripts.verify_agent_surfaces` owns the obligation ×
+  surface matrix and certifies every law on every surface. See
+  [`docs/design/agent-harness-parity-audit.md`](docs/design/agent-harness-parity-audit.md).
+- **I15 — Everything is documented.** These invariants live canonically in
+  `docs/design/decode-invariants.md`, are linked from README, MODEL_CARD, and
+  the decode/vocab/conversation design docs, and are regenerated into
+  OpenWiki. Changing one requires editing that doc, bumping the
+  `decode.invariants` component in `resources/versions.json`, and passing
+  `python -m scripts.verify_decode_invariants` in CI — a silent weakening is
+  a regression and blocks merge.
 
 ## Hard run cap
 
@@ -87,21 +245,11 @@ with Cursor rule files under [`.cursor/rules/`](.cursor/rules/) and GHCP under
 | [headroom](https://github.com/roman-ryzenadvanced/headroom-skill) | Smaller pasted tool results | When outputs are large / context is tight |
 | [rtk](https://github.com/rtk-ai/rtk) | Smaller shell command output | Prefer `rtk` when binary available |
 
-Refresh / reinstall (project, four agents):
-
-```bash
-npx skills add DietrichGebert/ponytail --skill '*' \
-  -a claude-code -a cursor -a codex -a github-copilot -y --copy
-npx skills add JuliusBrussee/caveman \
-  --skill caveman --skill caveman-commit --skill caveman-review \
-  --skill caveman-help --skill caveman-compress --skill caveman-stats \
-  -a claude-code -a cursor -a codex -a github-copilot -y --copy
-npx skills add roman-ryzenadvanced/headroom-skill --skill headroom \
-  -a claude-code -a cursor -a codex -a github-copilot -y --copy
-# then re-symlink .claude/.cursor discovery → .agents/skills (see skills README)
-curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
-rtk init --copilot   # project GHCP hooks + instructions
-```
+Refresh / reinstall: **[`.agents/skills/README.md`](.agents/skills/README.md) is
+the single owner** of those commands. Do not copy them here — the two lists had
+already diverged, and the marketplace installers need cleanup steps
+(`--copy` leaves real directories where `repo_policy` requires symlinks) that
+only the README carries.
 
 Optional **plugin** installs (Claude Code / Codex / Copilot CLI) when you want
 host lifecycle hooks beyond skills:
@@ -129,20 +277,30 @@ Optional full Headroom proxy (heavier than the portable skill):
 Source: [huggingface/skills](https://github.com/huggingface/skills) (Cursor:
 marketplace installs `hf-cli`; additional skills via `hf skills add`).
 
-Project install (already in `.agents/skills/`, symlinked for Cursor/Claude):
-
-```bash
-curl -LsSf https://hf.co/cli/install.sh | bash   # once per machine
-hf skills add --force                            # regenerate hf-cli
-hf skills add <name> --force                     # one marketplace skill
-hf skills update                                 # refresh installed marketplace skills
-hf skills add --claude --force                   # Claude discovery symlinks
-hf skills add --dest=.cursor/skills --force      # Cursor discovery (hf-cli)
-```
+Already installed under `.agents/skills/` and symlinked for Cursor/Claude.
+Refresh commands and their cleanup steps live in
+[`.agents/skills/README.md`](.agents/skills/README.md) — the single owner.
 
 Cursor also loads MCP from [`.cursor/mcp.json`](.cursor/mcp.json) (Playwright +
 Hugging Face Hub MCP + **Serena**). Optional UI install:
 [Cursor marketplace — Hugging Face](https://cursor.com/marketplace/huggingface).
+
+### MCP servers are not uniform across harnesses
+
+Skills are identical everywhere; MCP servers are not. Check before assuming a
+server is available, and fall back to the CLI (`hf`, `npx playwright`) when it
+is not.
+
+| Server | Claude Code | Cursor | VS Code / Copilot Chat | Codex |
+| --- | :-: | :-: | :-: | :-: |
+| Serena | ✅ [`.mcp.json`](.mcp.json) | ✅ | ✅ [`.vscode/mcp.json`](.vscode/mcp.json) | ✅ [`.codex/config.toml`](.codex/config.toml) |
+| Linear (`autoresearch` issue filing) | ✅ | — | — | — |
+| Playwright (`playwright-cli`) | — | ✅ | — | — |
+| Hugging Face Hub | — | ✅ | — | — |
+
+Linear is Claude-only because `autoresearch` issue/milestone filing runs there;
+Playwright and the HF Hub server are Cursor-only because both have first-class
+CLIs (`npx playwright`, `hf`) that every other harness uses instead.
 
 ### Serena MCP (semantic code navigation)
 
@@ -167,8 +325,8 @@ local overrides stay gitignored under `.serena/`.
 | Cursor | [`.cursor/mcp.json`](.cursor/mcp.json) (`--context ide --project .`) |
 | Claude Code | [`.mcp.json`](.mcp.json) + hooks in [`.claude/settings.json`](.claude/settings.json) |
 | VS Code / Copilot Chat | [`.vscode/mcp.json`](.vscode/mcp.json) |
-| Codex | copy [`.codex/serena.config.toml.example`](.codex/serena.config.toml.example) → `~/.codex/config.toml` (or `serena setup codex`) |
-| Copilot CLI | `/mcp add` → `serena start-mcp-server --context=copilot-cli --project-from-cwd` |
+| Codex | [`.codex/config.toml`](.codex/config.toml) (committed) + hooks in [`.codex/hooks.json`](.codex/hooks.json); older builds need [`.codex/serena.config.toml.example`](.codex/serena.config.toml.example) → `~/.codex/config.toml` (or `serena setup codex`) |
+| Copilot CLI | `/mcp add` → `serena start-mcp-server --context=copilot-cli --project-from-cwd`; hooks in [`.github/hooks/`](.github/hooks/) |
 
 Prefer Serena symbolic tools over raw grep/read when navigating `src/` /
 `scripts/`. Docs: https://oraios.github.io/serena/
@@ -372,6 +530,9 @@ which revision of the constraints produced it. Contract:
   Historical default-off name-aware experiment modes may remain for checkpoint and
   evidence compatibility, but must not become a production default or new authority.
 - Say fixture-demo vs ship. Do not weaken ship gates to green CI.
+- Do not grow the model to green a gate. Report trainable parameters beside
+  every quality number, size-match compared arms, and charge capacity growth
+  with `EG_params` (goal invariant VI).
 - Match existing style; no unrelated drive-by refactors.
 - Before adding or relocating tracked paths, use `organize-repository`, follow
   `docs/repository-organization.md`, and use `git mv` rather than `mv` for moves.

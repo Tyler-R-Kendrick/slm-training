@@ -2,6 +2,16 @@ A code wiki for the **slm-training** OpenUI layout-SLM research repo.
 
 Prioritize:
 
+0. **Decode invariants (goal law).** Carry
+   [`docs/design/decode-invariants.md`](../design/decode-invariants.md) into
+   every generated page that touches decoding, evaluation, serving, vocabulary,
+   or multi-turn state: constrained decoding is the product and is never
+   removable; deterministic singleton bypass outranks learned scores;
+   speculation ranks over forward-calculated symbol tables and verifies before
+   commit; symbol tables schedule prefills; the compute-ops vocabulary is shared
+   encoder↔decoder; multi-turn is a CRDT event store; goals are non-negotiable
+   while approaches are disposable. Never describe an unconstrained arm as a
+   supported mode — it is a diagnostic control.
 1. Concise quickstart for agents and engineers (where to start, what is fixture vs ship).
 2. Architecture: TwoTower / grammar-diffusion, harnesses (`train_data` / `test_data` / `model_build`), DSL + grammar backends.
 3. Core workflows: train → eval → matrix → docs/MODEL_CARD updates; HF checkpoint bucket sync.

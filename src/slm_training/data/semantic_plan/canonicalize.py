@@ -125,6 +125,15 @@ def plan_factor_fingerprints(plan: SemanticPlanV1) -> dict[str, str]:
         "exact": canonical.model_dump(mode="json"),
         "archetype": canonical.archetype.model_dump(mode="json"),
         "role_set": tuple(sorted(slot.role_id for slot in canonical.role_slots)),
+        "component_family": tuple(
+            sorted((slot.role_id, slot.component_family) for slot in canonical.role_slots)
+        ),
+        "cardinality": tuple(
+            sorted((slot.role_id, slot.min_cardinality, slot.max_cardinality) for slot in canonical.role_slots)
+        ),
+        "symbol_role": tuple(
+            (symbol.symbol_id, symbol.semantic_role) for symbol in canonical.symbols
+        ),
         "topology": canonical.topology.model_dump(mode="json"),
         "bindings": tuple(
             _stable_json(
@@ -135,6 +144,7 @@ def plan_factor_fingerprints(plan: SemanticPlanV1) -> dict[str, str]:
             )
             for binding in canonical.bindings
         ),
+        "coverage": canonical.coverage.model_dump(mode="json"),
     }
     return {name: _sha256(_stable_json(value)) for name, value in factors.items()}
 

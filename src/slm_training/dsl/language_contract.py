@@ -138,6 +138,9 @@ class OutputContractError(ValueError):
     """An OpenUI target contains text outside the symbol-only language."""
 
 
+STRUCTURAL_ID_ATOMS = frozenset(f"${index}" for index in range(64))
+
+
 class SurfaceCategory(str, Enum):
     GRAMMAR = "grammar_keyword_or_punctuation"
     CLOSED_VALUE = "closed_enum_or_primitive"
@@ -512,14 +515,18 @@ def output_contract_violations(
             if not token.startswith(f'{LIT_PREFIX}"'):
                 continue
             value = json.loads(token[len(LIT_PREFIX) :])
-            if not is_placeholder(value) and value not in grammar_string_literals():
+            if (
+                not is_placeholder(value)
+                and value not in grammar_string_literals()
+                and value not in STRUCTURAL_ID_ATOMS
+            ):
                 violations.append(value)
         return tuple(dict.fromkeys(violations))
 
     # Official document validation rejects content literals before encoding;
     # inspect that repairable AST to report the contract violation itself.
     bindings = parse_statement_bindings(source, validate=False)
-    allowed = grammar_string_literals()
+    allowed = grammar_string_literals() | STRUCTURAL_ID_ATOMS
     violations: list[str] = []
 
     def walk(value: Any) -> None:

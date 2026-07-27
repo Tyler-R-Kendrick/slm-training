@@ -1016,9 +1016,13 @@ def roundtrip_openui(
 
 
 def parse_statement_bindings(
-    source: str, *, dsl: str | None = None, validate: bool = True
+    source: str,
+    *,
+    dsl: str | None = None,
+    validate: bool = True,
+    strip_styles: bool = True,
 ) -> dict[str, Any]:
-    """Statement-binding AST for ``source`` (style literals stripped).
+    """Statement-binding AST for ``source``.
 
     Statement-structural OpenUI only — v0.5 typed programs (state, queries,
     expressions) are rejected with ``ParseError`` because their statements are
@@ -1031,7 +1035,9 @@ def parse_statement_bindings(
     official parser still rejects; syntax errors in the statement grammar
     raise either way.
     """
-    scrubbed = strip_style_literals(source or "").strip()
+    scrubbed = (
+        strip_style_literals(source or "") if strip_styles else source or ""
+    ).strip()
     if _requires_v05_codec(scrubbed):
         raise ParseError("v0.5 typed programs have no statement-binding AST")
     if not scrubbed:

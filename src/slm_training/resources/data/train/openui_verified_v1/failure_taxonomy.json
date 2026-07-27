@@ -1,0 +1,22 @@
+[
+  {
+    "failing_gate": "G1",
+    "reason": "verification",
+    "count": 410
+  },
+  {
+    "failing_gate": "G2",
+    "reason": "verification",
+    "count": 4
+  },
+  {
+    "failing_gate": "G3",
+    "reason": "non_placeholder_string; unknown_components",
+    "count": 1
+  },
+  {
+    "failing_gate": "G3",
+    "reason": "verification",
+    "count": 157
+  }
+]

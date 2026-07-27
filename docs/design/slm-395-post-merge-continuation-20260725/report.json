@@ -1,0 +1,97 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/slm395-post-merge-continuation/benchmark.json",
+      "indexPath": "output-dir://agentv/slm395-post-merge-continuation/index.jsonl",
+      "runDir": "output-dir://agentv/slm395-post-merge-continuation",
+      "timingPath": "output-dir://agentv/slm395-post-merge-continuation/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 3,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "fresh-canonical-table:domain_criterion",
+          "expected": true,
+          "id": "fresh-canonical-table:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "old-table-refusal-and-permutation:domain_criterion",
+          "expected": true,
+          "id": "old-table-refusal-and-permutation:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "followup-trace-replay-and-legacy-terminal:domain_criterion",
+          "expected": true,
+          "id": "followup-trace-replay-and-legacy-terminal:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 3
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/slm395-post-merge-continuation.eval.jsonl",
+    "summary": {
+      "durationMs": 413,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 3,
+      "total": 3
+    }
+  },
+  "audit": {
+    "allocation_seed": 7497857396358425878,
+    "branch_candidate_pairs": 1,
+    "followup_action": "07ef20791d29bc35f93a7f2487f61470bf2ad6c5b812ef1d9e83d200427388e5",
+    "followup_legal_set_coverage": "partial",
+    "fresh_table_matches_canonical_rebuild": true,
+    "legacy_terminal_error": "merge.continuation_unsupported_legacy",
+    "merge_id": "93e4fd68e05ef2f882190afcad86f43f8bc3d02103a5b5fd3553144955fad8f4",
+    "old_table_refusal_codes": [
+      "ref.stale_state",
+      "ref.cross_branch"
+    ],
+    "permuted_semantic_membership_matches": true,
+    "reference_table_fingerprint": "ed41afee995dbd14facf85104d23ddf53d7a0520788f478104c43a163edad041",
+    "replayed_state_digest": "be6797568e6da5bb8e74de5778ebe2c6b0f26c242651cd20af00b56541f49843",
+    "run": {
+      "context_backend": "none",
+      "device": "cpu",
+      "honesty": "fixture_wiring_only",
+      "matrix_set": "local_post_merge_continuation",
+      "ship_claim": false,
+      "steps": 0
+    },
+    "schema": "PostMergeContinuationReportV1",
+    "trace_turns": 1
+  },
+  "schema": "PostMergeContinuationReportV1",
+  "version_stamp": {
+    "code_commit": "5e182534ea577d247eaf13434351bd08e1d80ed4",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.merge": "v3",
+      "evals.agentv": "v5"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T00:35:23.776941+00:00"
+  }
+}

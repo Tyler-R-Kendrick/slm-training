@@ -19,8 +19,15 @@ from slm_training.data.progspec.capsules import (
     DependencyKind,
     ScopeEdge,
     ScopeNode,
+    UnresolvedReference,
     VerificationCapsule,
     derive_capsule_graph,
+)
+from slm_training.data.progspec.binder_graph import (
+    BinderGraphG3Result,
+    BinderGraphV1,
+    UnresolvedPlaceholder,
+    derive_binder_graph,
 )
 from slm_training.data.progspec.scopes import (
     SCOPE_DATA_FAMILIES,
@@ -53,6 +60,8 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
+    "BinderGraphG3Result",
+    "BinderGraphV1",
     "CapsuleGraph",
     "CoverageCell",
     "CoverageTracker",
@@ -76,8 +85,11 @@ __all__ = [
     "ScopeNode",
     "ScopeOracleResult",
     "SemanticPlanV1",
+    "UnresolvedPlaceholder",
+    "UnresolvedReference",
     "VerificationCapsule",
     "dependency_closed_failure_cone",
+    "derive_binder_graph",
     "derive_capsule_graph",
     "derive_scope_contracts",
     "derive_scope_records",

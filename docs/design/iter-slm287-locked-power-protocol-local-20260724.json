@@ -1,0 +1,60 @@
+{
+  "schema": "Slm287LockedPowerProtocolAttemptV1",
+  "experiment_id": "slm287-locked-power-protocol",
+  "status": "interrupted_not_evidence",
+  "claim_class": "diagnostic",
+  "recipe": {
+    "model": "TwoTower zero-update initialization",
+    "device": "cpu",
+    "seeds": [0, 1, 2, 3, 4],
+    "backends": ["scratch_design_off", "scratch_design_on"],
+    "locked_manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+    "locked_test_n": 1,
+    "decode_variants": ["raw", "constrained", "repaired"],
+    "per_record_timeout_seconds": 5.0,
+    "outer_interrupt_seconds": 170,
+    "outer_kill_grace_seconds": 10
+  },
+  "outcome": {
+    "completed_cells": 0,
+    "numeric_metrics": null,
+    "failure": "The first constrained grammar-completion decode reached the configured five-second per-record deadline; the runner rejected the cell before aggregation.",
+    "ship_gate": "not_evaluated",
+    "human_rating_gate": "not_required"
+  },
+  "sharded_probe": {
+    "claim_class": "partial_execution_not_evidence",
+    "run_id": "slm287-sharded-local-v6-20260725",
+    "seed": 0,
+    "backend": "scratch_design_off",
+    "shard": "0/64",
+    "locked_records": 4,
+    "decode_variants": ["raw", "constrained", "repaired"],
+    "meaning_v2": 0.0,
+    "binder_reference_f1": 0.0,
+    "agentv_criteria_passed": true,
+    "status": "completed_shard_not_evidence",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "4413814786818a933d970db7db44c0f6d7a4e079",
+      "code_dirty": true,
+      "components": {
+        "data.locked_eval_manifest": "v2",
+        "evals.power_protocol": "v7",
+        "harness.experiments": "v98"
+      },
+      "stamped_at": "2026-07-25T00:30:50.484992+00:00"
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "665c8520fb6a862944f53607206a45094ae0e682",
+    "code_dirty": true,
+    "components": {
+      "data.locked_eval_manifest": "v2",
+      "evals.power_protocol": "v7",
+      "harness.experiments": "v94"
+    },
+    "stamped_at": "2026-07-25T00:07:00.289295+00:00"
+  }
+}

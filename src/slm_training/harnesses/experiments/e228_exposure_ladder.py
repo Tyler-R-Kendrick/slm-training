@@ -231,7 +231,7 @@ def build_e228_recipe_config(manifest: E228ExposureLadderManifest) -> ModelBuild
         honest_slot_contract=bool(recipe.get("honest_slot_contract", False)),
         design_md_in_context=bool(recipe.get("design_md_in_context", True)),
         allow_unconstrained_fallback=bool(
-            recipe.get("allow_unconstrained_fallback", True)
+            recipe.get("allow_unconstrained_fallback", False)
         ),
         grammar_constrained=True,
         grammar_ltr_primary=True,

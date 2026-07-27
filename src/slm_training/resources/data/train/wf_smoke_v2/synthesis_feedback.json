@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "version": "wf_smoke_v2",
+  "profile": "strict",
+  "built_at": "2026-07-26T13:42:15.834660+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "frontier_described": {
+      "admitted": 3,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 3,
+      "yield": 1.0
+    },
+    "human_curated": {
+      "admitted": 20,
+      "rejected": 1,
+      "by_stage": {
+        "decontamination": 1
+      },
+      "by_reason": {
+        "ngram_overlap": 1
+      },
+      "candidates": 21,
+      "yield": 0.9524
+    },
+    "layout_augment": {
+      "admitted": 28,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 28,
+      "yield": 1.0
+    },
+    "prompt_paraphrase": {
+      "admitted": 50,
+      "rejected": 13,
+      "by_stage": {
+        "decontamination": 2,
+        "dedup": 8,
+        "exposure": 3
+      },
+      "by_reason": {
+        "fuzzy_minhash": 5,
+        "semantic_cosine": 3,
+        "max_records_per_parent": 3,
+        "ngram_overlap": 2
+      },
+      "candidates": 63,
+      "yield": 0.7937
+    }
+  },
+  "synthesizers": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "frontier_described": {
+      "admitted": 3,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 3,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 28,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 28,
+      "yield": 1.0
+    },
+    "template": {
+      "admitted": 50,
+      "rejected": 13,
+      "by_stage": {
+        "decontamination": 2,
+        "dedup": 8,
+        "exposure": 3
+      },
+      "by_reason": {
+        "fuzzy_minhash": 5,
+        "semantic_cosine": 3,
+        "max_records_per_parent": 3,
+        "ngram_overlap": 2
+      },
+      "candidates": 63,
+      "yield": 0.7937
+    }
+  },
+  "warnings": [
+    {
+      "code": "eval_overlap_flagged",
+      "value": 3,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "human_curated",
+      "evidence": {
+        "decontamination_drops": 1
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "prompt_paraphrase",
+      "evidence": {
+        "decontamination_drops": 2
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "template",
+      "evidence": {
+        "decontamination_drops": 2
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "family:human_curated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build wf_smoke_v2: {'decontamination_drops': 1}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "family:prompt_paraphrase inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build wf_smoke_v2: {'decontamination_drops': 2}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:template inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build wf_smoke_v2: {'decontamination_drops': 2}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b34bf6606d5fa3e3ce3f2ac7e729c43742f9d423",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v22"
+    },
+    "stamped_at": "2026-07-26T13:42:15.885196+00:00"
+  }
+}

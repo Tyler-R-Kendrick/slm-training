@@ -272,8 +272,12 @@ def _topology_effect(
     cost: float,
     cardinality: tuple[EffectDeltaV1, ...] = (),
     explicit: bool = False,
+    transfers_node: bool = False,
 ) -> ActionEffectV1:
+    node_flow = (target,) if transfers_node and isinstance(target, NodeRef) else ()
     return ActionEffectV1(
+        consumed_nodes=node_flow,
+        produced_nodes=node_flow,
         cardinality_deltas=cardinality,
         topology_deltas=(
             EffectDeltaV1(
@@ -361,6 +365,7 @@ def _move_or_duplicate(
             (action, parent_location.path, role.property_name, position),
             cost=2.0 if duplicate else 1.5,
             cardinality=tuple(cardinality),
+            transfers_node=not duplicate,
         ),
         state.source,
     )

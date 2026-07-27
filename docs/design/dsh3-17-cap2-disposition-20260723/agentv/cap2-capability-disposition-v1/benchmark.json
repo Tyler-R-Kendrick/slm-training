@@ -1,7 +1,7 @@
 {
   "metadata": {
     "eval_file": "output-dir:///agentv/cap2-capability-disposition-v1.eval.jsonl",
-    "timestamp": "2026-07-23T18:55:23.526Z",
+    "timestamp": "2026-07-25T13:51:54.879Z",
     "targets": [
       "custom-task"
     ],
@@ -30,11 +30,19 @@
     }
   },
   "per_grader_summary": {
-    "is-json:is-json": {
+    "complete-capability-ledger:domain_criterion:code-grader": {
       "mean": 1,
       "stddev": 0
     },
-    "inline-assert-0:inline-assert": {
+    "exact-evidence-identities:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "unrun-is-not-benefit:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "cert-cap2-rejected:domain_criterion:code-grader": {
       "mean": 1,
       "stddev": 0
     }

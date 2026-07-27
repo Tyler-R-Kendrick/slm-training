@@ -20,6 +20,10 @@ CAP2_REPORT = (
 TOKEN_REPORT = (
     ROOT / "docs/design/e803-reserved-operator-baseline-20260723/report.json"
 )
+HIERARCHICAL_HEAD_REPORT = (
+    ROOT
+    / "docs/design/dsh3-15-hierarchical-operator-head-baseline-20260725/report.json"
+)
 
 
 def _portable(value: Any, output_dir: Path) -> Any:
@@ -110,7 +114,7 @@ def _markdown(report: dict[str, Any]) -> str:
     lines = [
         "# DSH3-17 CAP2 capability disposition (SLM-385)",
         "",
-        "Date: 2026-07-23",
+        "Date: 2026-07-25 (rerun; original disposition published 2026-07-23)",
         "Status: CERT_CAP2 rejected; DSH4 action distillation closed",
         "Scope: terminal evidence disposition; no model, checkpoint, or ship claim",
         "",
@@ -136,10 +140,12 @@ def _markdown(report: dict[str, Any]) -> str:
             "",
             "Symbolic transformation and bounded merge are `contract_only`: exact fixture",
             "generation/replay exists, but no learned benefit passed. E803 rejects the",
-            "discrete token action. NL is unavailable without CERT_CAP1. The hierarchical",
-            "head and topology application remain unrun conditionals because their",
-            "prerequisite failed. No exact-hardware matched-quality efficiency evidence",
-            "exists.",
+            "discrete token action. NL is unavailable without CERT_CAP1. SLM-383's",
+            "follow-up causal experiment now rejects the hierarchical head too -- it",
+            "beats its own weight-zero capacity control but ties the token baseline, so",
+            "it does not causally improve beyond it. Topology application remains an",
+            "unrun conditional because no accepted hierarchical-head arm exists. No",
+            "exact-hardware matched-quality efficiency evidence exists.",
             "",
             "## Certificate and downstream gate",
             "",
@@ -174,9 +180,9 @@ def _markdown(report: dict[str, Any]) -> str:
             "",
             f"AgentV passed {summary['passed']}/{summary['total']} cases with mean "
             f"{summary['meanScore']:.1f} and {summary['executionErrors']} execution errors.",
-            "No experiment was rerun for this disposition; it consumes the immutable",
-            "SLM-381 and E803 reports and preserves their positive, negative, unavailable,",
-            "and unrun boundaries.",
+            "This disposition consumes the immutable SLM-381, E803, and SLM-383",
+            "(hierarchical-operator-head-baseline) reports and preserves their positive,",
+            "negative, unavailable, and unrun boundaries.",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -192,10 +198,14 @@ def main(argv: list[str] | None = None) -> int:
         "evals.cap2_disposition",
         "evals.cap2_operator",
         "harness.experiments.reserved_operator_baseline",
+        "harness.experiments.hierarchical_operator_head_baseline",
     )
     disposition = build_cap2_disposition(
         cap2_report=json.loads(CAP2_REPORT.read_text(encoding="utf-8")),
         token_report=json.loads(TOKEN_REPORT.read_text(encoding="utf-8")),
+        hierarchical_head_report=json.loads(
+            HIERARCHICAL_HEAD_REPORT.read_text(encoding="utf-8")
+        ),
         version_stamp=stamp,
     ).to_dict()
     agentv = publish_agentv_evaluation(
