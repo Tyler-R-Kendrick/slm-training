@@ -398,3 +398,47 @@ scope is untouched) or the next queued `AP-007+` campaign arm. That work
 requires deeper context-loading than a single bounded scheduled iteration
 safely affords in one pass, so a future iteration should budget for reading
 the relevant harness files first rather than rushing a training claim.
+
+## Step-scaling / loss-trend check, extended range (2026-07-27, follow-up)
+
+Complementary to the batch-#4, joint-sweep, and batch-size sections above (steps
+4/8/16/32, seeds 0-3, batch sizes 1/2/4/8): extends the step range higher, to 64
+and 128, at `seed=0`/default batch size, against `main` HEAD `b908b543` (rebased
+onto `2f2d6b42` — includes #1120/#1132/#1130 above — before merge; same
+fixture/model/recipe). Per-iteration notes:
+[steps64](autotrain-wf-smoke-20260727-steps64-measured-results.md),
+[steps128](autotrain-wf-smoke-20260727-steps128-measured-results.md).
+
+| steps | last_loss | token_loss_proxy first_20_mean | token_loss_proxy last_20_mean | wall_s |
+| --- | --- | --- | --- | --- |
+| 8 (iter1008-1022, seed=0) | 32.610084533691406 | 65.47187957763671 | 29.61243019104004 | 2.1-3.5 (range across iter1008-1022) |
+| 64 | 3.9243931770324707 | 65.47187957763671 | 4.4185902833938595 | 13.13 |
+| 128 | 5.877634525299072 | 65.47187957763671 | 3.269563728570938 | 13.22 |
+
+**Result:** this extends the already-established monotonic loss-decrease trend (56.9@4 -> 32.6@8
+-> 15.1@16 -> 8.4@32, from batch #4 above) further out to 64 and 128 steps, and adds a metric
+this ledger hadn't surfaced before: the smoothed `example_token_loss_proxy.last_20_mean` field
+(already present in every run's `train_summary.json`) falls monotonically as steps increase --
+29.6 -> 4.4 -> 3.3 at 8/64/128 -- confirming the model keeps fitting the 101-record fixture past
+32 steps, not plateauing. `last_loss` itself is noisier: it's a single final-minibatch value, not
+a running average, so it actually *rises* from 64 to 128 steps (3.92 -> 5.88) even while the
+smoothed trend keeps improving. **Practical takeaway for future rows in this ledger:** `last_loss`
+alone is not a reliable single-number summary of training progress when comparing across step
+counts at this fixture size; `example_token_loss_proxy.last_20_mean` is the more stable signal.
+This doesn't change any verified `--steps 8` row above (where `last_loss` is reproducible even if
+noisy on its own, since seed and steps are both held fixed there).
+
+Still `fixture_or_scratch`: 101-record fixture, `--no-sync-checkpoints`, no held-out split, no
+ship gates -- near-memorization at 64-128 steps is expected and is not a model-quality claim.
+
+Total independently verified rows across this file: **30** (all prior batches -- seed, steps,
+joint sweep, batch-size -- plus this extended-range check).
+
+**Next steps note (reaffirmed, 2026-07-27):** step-count, seed, and now batch-size variance on
+this fixed 101-record fixture are covered from every angle this ledger is going to usefully
+cover. Three independent scheduled sessions (this one, the joint-sweep PR, and the batch-size PR)
+have now separately reached the same conclusion: **do not** default back to this fixture for the
+next iteration. Pick up the DSH5-10 SFT/preference-training and four-baseline comparison scope
+(`docs/design/dsh5-10-replay-preference-rows.md` -- row extraction is done, 7/7 patterns; the
+training + held-out measurement scope is untouched) or the next queued `AP-007+` campaign arm
+instead.
