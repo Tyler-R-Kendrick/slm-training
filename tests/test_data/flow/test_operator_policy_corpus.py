@@ -12,6 +12,8 @@ from slm_training.data.flow.operator_policy_corpus import (
     build_operator_policy_corpus,
     build_operator_policy_rows,
     build_operator_termination_rows,
+    freeze_collapse_negative_ablation,
+    materialize_operator_policy_selection,
 )
 from slm_training.dsl.operators import (
     ActionEffectV1,
@@ -203,6 +205,51 @@ def test_conflict_hard_negative_is_reprojected_onto_step_zero() -> None:
     assert rows[1].hard_negative is None
 
 
+def test_freeze_collapse_negative_ablation_requires_both_replay_outcomes_per_split() -> None:
+    _pack, _library, conflict_trace, conflict_collapse, conflict_resolver = _conflict_fixture()
+    _pack, _library, result_trace, result_collapse, result_resolver = _different_result_fixture()
+    conflict_rows, _ = build_operator_policy_rows(
+        trace=conflict_trace, collapse=conflict_collapse, authority_resolver=conflict_resolver
+    )
+    result_rows, _ = build_operator_policy_rows(
+        trace=result_trace, collapse=result_collapse, authority_resolver=result_resolver
+    )
+
+    stopped = freeze_collapse_negative_ablation((*conflict_rows, *result_rows))
+    ready = freeze_collapse_negative_ablation(
+        (
+            *conflict_rows,
+            *result_rows,
+            *(
+                replace(row, split="dev", collapse_id=_sha("dev:" + row.collapse_id))
+                for row in conflict_rows
+            ),
+            *(
+                replace(row, split="dev", collapse_id=_sha("dev:" + row.collapse_id))
+                for row in result_rows
+            ),
+        )
+    )
+
+    assert not stopped.ready
+    assert stopped.stop_reason == "missing replay-verified matched negative strata: dev:conflict, dev:different_result"
+    assert ready.ready
+    assert ready.stop_reason is None
+    assert [example.outcome for example in ready.examples].count(HardNegativeOutcome.CONFLICT) == 2
+    assert [example.outcome for example in ready.examples].count(HardNegativeOutcome.DIFFERENT_RESULT) == 2
+    assert "hard_negative" not in result_rows[0].policy_input
+
+
+def test_freeze_collapse_negative_ablation_rejects_cross_split_source_trace() -> None:
+    _pack, _library, trace, collapse, authority_resolver = _conflict_fixture()
+    rows, _ = build_operator_policy_rows(
+        trace=trace, collapse=collapse, authority_resolver=authority_resolver
+    )
+
+    with pytest.raises(ValueError, match="source trace appears"):
+        freeze_collapse_negative_ablation((rows[0], replace(rows[0], split="dev")))
+
+
 def test_rows_carry_only_allowlisted_policy_input_fields() -> None:
     _pack, _library, trace, collapse, authority_resolver = _different_result_fixture()
     rows, _rejected = build_operator_policy_rows(
@@ -265,6 +312,31 @@ def test_corpus_quality_report_aggregates_hard_negatives_and_rejections() -> Non
     assert report.positive_only_rows == 1
     payload = report.to_dict()
     assert payload["schema"] == "operator_policy_corpus_quality_report/v1"
+
+
+def test_policy_selection_is_replayed_only_from_a_fresh_live_legal_set() -> None:
+    _pack, _library, trace, collapse, authority_resolver = _different_result_fixture()
+    rows, _rejected = build_operator_policy_rows(
+        trace=trace, collapse=collapse, authority_resolver=authority_resolver
+    )
+    row = rows[0]
+    materialized = materialize_operator_policy_selection(
+        trace=trace,
+        row=row,
+        authority_resolver=authority_resolver,
+        selected_action_row=row.accepted_action_row,
+        selected_argument_rows=row.accepted_argument_rows,
+    )
+    assert materialized.application_id == row.accepted_application_id
+    assert materialized.result.state is not None
+    with pytest.raises(ValueError, match="outside policy input"):
+        materialize_operator_policy_selection(
+            trace=trace,
+            row=row,
+            authority_resolver=authority_resolver,
+            selected_action_row=999,
+            selected_argument_rows=(),
+        )
 
 
 def test_policy_reprojection_rejects_an_unbounded_combination_cap() -> None:

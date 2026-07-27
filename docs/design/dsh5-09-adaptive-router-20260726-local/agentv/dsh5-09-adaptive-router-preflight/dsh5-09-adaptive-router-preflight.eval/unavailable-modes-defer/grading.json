@@ -1,0 +1,52 @@
+{
+  "assertions": [
+    {
+      "text": "unavailable-modes-defer:domain_criterion",
+      "passed": true,
+      "evidence": "actual=True operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "unavailable-modes-defer:domain_criterion",
+      "type": "code-grader",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "unavailable-modes-defer:domain_criterion",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "unavailable-modes-defer:domain_criterion",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f134e514385fbce0a634be00eb3ffdc5bd653ad0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.operator_router": "v1"
+    },
+    "stamped_at": "2026-07-26T23:27:03.984289+00:00"
+  }
+}

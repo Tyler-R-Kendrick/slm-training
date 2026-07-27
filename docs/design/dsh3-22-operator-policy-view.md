@@ -151,6 +151,11 @@ Covered in `tests/test_models/test_operator_policy_view.py`:
   (`test_opaque_id_and_candidate_order_permutation_preserve_the_view`).
 * Canonical action/reference maps preserve evaluator-only joins after both
   axes reorder (`test_canonical_row_maps_keep_external_labels_joined_to_persisted_rows`).
+* Exact selector rows join the same live legal-set domain as ordinary
+  references while exposing only the closed selector kind, allowlisted
+  selector facts, cardinality, and fanout. Target fingerprints, scope
+  fingerprints, target order, and opaque IDs remain excluded
+  (`test_bulk_selector_row_is_sanitized_and_joined_to_the_live_legal_set`).
 
 ## Adversarial controls
 

@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): regression test proves the new ModelBuildConfig.encoder_ops_conditioning lever is default-off and, correctly, absent from CONSTRAINT_WEAKENING_LEVERS (it changes encoder conditioning, never decode legality). Also closes a pre-existing gap found while adding that test: binder_slot_ownership_decode_weight, binder_slot_presence_decode_weight, and binder_reference_presence_decode_weight had ModelBuildConfig fields but no _COMPILER_PATH_DECODE_LEVERS / TRAINED_DECODE_REQUIREMENTS entry (unlike their binder_arity/binder_topology/binder_component_plan siblings) -- added, mirroring the sibling pattern exactly."
+        },
         {
           "version": "v23",
           "date": "2026-07-25",
@@ -186,7 +191,7 @@
       ]
     },
     "data.flow.operator_policy_corpus": {
-      "version": "v4",
+      "version": "v6",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/flow/operator_policy_corpus.py",
@@ -194,6 +199,16 @@
         "docs/design/dsh3-24-operator-policy-corpus.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-405: freeze replay-derived conflict and different-result labels outside the policy input and fail closed when either source-disjoint split lacks a matched stratum"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-403: materialize selected policy rows only by fresh legal-set re-enumeration and compiler application outside the sanitized model boundary"
+        },
         {
           "version": "v4",
           "date": "2026-07-26",
@@ -379,13 +394,38 @@
       ]
     },
     "dsl.operators.contracts": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/",
         "tests/test_dsl/test_operator_contracts.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-26",
+          "note": "no-bump: pre-merge review fixup -- resolve_turn_op_ids now translates an unrecognized operator_fingerprint KeyError (CodeRabbit) into OpsVocabConditioningError, so a genuinely unrepresentable turn becomes a real unrepresentable_intents finding instead of crashing the caller; added a regression test."
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-428 (VAR2-01) adds src/slm_training/dsl/operators/ops_vocab_conditioning.py under this directory's wildcard path; tracked separately by the new harness.experiments.var2_01_ops_vocab_first_consumer component. No change to contracts.py itself."
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-418 (DSH5-10) re-exports OperatorEventMemoryReportV1/OperatorReplayPreferenceRowV1/ReplayPreferenceRelation/extract_replay_preference_rows from operators/__init__.py (new dsl.operators.replay_preference component); no change to contracts.py itself"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-416 (DSH5-08) re-exports ConversationControlDecision/ConversationControlEntryV1/ConversationControlKind/ConversationControlLegalSetV1/ConversationControlPolicyReportV1/ConversationControlResultV1/ControlSupportVerdict/LegalControlActionV1/MergeCandidateV1/apply_conversation_control_action/deterministic_control_priority/enumerate_conversation_control_legal_set from operators/__init__.py (new dsl.operators.control_actions component); no change to contracts.py itself"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-415 (DSH5-07) re-exports BranchApplicationSequenceV1/BranchSequenceMergeArtifactV1/BranchSequenceMergeConflictV1/BranchSequenceMergeDecisionV1/merge_branch_application_sequences/replay_branch_sequence_merge/sequence_from_branch_edits/sequence_merged_continuation_node from operators/__init__.py (new dsl.operators.sequence_merge component); no change to contracts.py itself"
+        },
         {
           "version": "v15",
           "date": "2026-07-25",
@@ -595,6 +635,32 @@
         }
       ]
     },
+    "dsl.operators.control_actions": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/control_actions.py",
+        "tests/test_dsl/test_conversation_control_actions.py",
+        "docs/design/dsh5-08-conversation-control-actions.md"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "fix python-static CI failure -- importing flow.termination.brier_score/expected_calibration_error transitively pulled in numpy via flow.reference.generator, violating the numpy-free dsl/operators/ invariant; replaced with local _brier_score/_expected_calibration_error duplicating the same formulas (regression test: test_control_actions_module_does_not_import_flow_termination), reverted the CI workaround that had installed numpy into the python-static lane instead of fixing the root cause, and made ConversationControlPolicyReportV1.from_predictions raise ValueError on mismatched predicted/expected-actions or stop_probabilities/stop_targets lengths instead of silently truncating via zip"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "fix SLM-416 missing-authority MERGE_BRANCHES classification to remain UNKNOWN rather than collapsing it into proven UNSUPPORTED"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-416 (DSH5-08): define ConversationControlActionV1 as a candidate space disjoint from AstOperatorV1 (STOP/CONTINUE, UNDO, REDO, CHECKOUT, FORK, MERGE_BRANCHES); enumerate legal control actions from the ConversationTraceV1 branch graph alone (plus caller-proposed MergeCandidateV1 triples resolved through the existing merge.py/sequence_merge.py functions), execute every legal action through the existing conversation/merge functions with no new mutation logic, and add a deterministic-priority baseline arm plus ConversationControlPolicyReportV1 reusing flow.termination's brier_score/expected_calibration_error"
+        }
+      ]
+    },
     "dsl.operators.merge": {
       "version": "v3",
       "kind": "harness",
@@ -626,6 +692,22 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial bounded three-way branch merge with fork-ref lineage, pack revalidation, deterministic replay, and typed conflict artifacts"
+        }
+      ]
+    },
+    "dsl.operators.sequence_merge": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/sequence_merge.py",
+        "tests/test_dsl/test_operator_sequence_merge.py",
+        "docs/design/dsh5-07-branch-sequence-merge.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-415 (DSH5-07): extend conservative branch merge from one verified step per branch to N-step BranchApplicationSequenceV1 histories; collapses each branch's whole sequence into one base-relative composite ActionEffectV1/lineage map (content-addressed by reference descriptor fingerprint, distinguishing a genuinely stale/forged ref from legitimate intra-branch-only content) and reuses merge.classify_merge_effects/ast_merge.merge_ast_value/merge.BranchMergeContinuationV1 unchanged; no commuting override at the composite level (strictly more conservative than the one-step bound)"
         }
       ]
     },
@@ -676,7 +758,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v3",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -684,6 +766,16 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): add OperatorLibraryV1.lookup_by_fingerprint, the public counterpart of replay()'s internal fingerprint resolution, for dsl.operators.ops_vocab_conditioning."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "SLM-426: canonical DslPack owns finite tree-edit inventory and property domains; this is a no-quality-claim extension point for TreeEditSpace."
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -757,19 +849,29 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-411 updates the DSH5-02 scope note to point at the selector enumeration now owned by dsl.operators.legal_set; the bulk executor contract is unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-25",
           "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
     "dsl.operators.legal_set": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/legal_set.py",
         "tests/test_dsl/test_operator_legal_set.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-411: enumerate exact state-bound SelectorRef candidates alongside ordinary references so bulk actions have a complete compiler-owned legal domain and semantic action identity"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -837,6 +939,26 @@
         }
       ]
     },
+    "dsl.operators.replay_preference": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/replay_preference.py",
+        "tests/test_dsl/test_replay_preference.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "Review fixes: rejection candidates are drawn from the full legal set (operator actions and history controls alike), not just operator actions, so a valid row is never dropped for lack of an AST-edit alternative; OperatorEventMemoryReportV1 now carries and serializes a version_stamp"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-418 (DSH5-10) first slice: replay-grounded preference rows for edit-then-undo and undo-then-redo, checked against the exact legal set at the shared input state; partial (2 of ~7 verified patterns), no SFT/preference training or held-out measurement"
+        }
+      ]
+    },
     "dsl.operators.topology": {
       "version": "v2",
       "kind": "harness",
@@ -854,6 +976,21 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial exact move, reparent, wrap, unwrap, duplicate, expand, and contract operator family"
+        }
+      ]
+    },
+    "dsl.operators.topology_apply": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/topology_apply.py",
+        "tests/test_dsl/test_topology_apply.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-384 (DSH3-16) wiring-only, default-off integration mapping exact compiler-verified ActionEffectV1 transitions to topology expand/contract/move/rewrite edits over typed topology nodes; exact legal-set membership only, singleton/DEFER authority untouched, stale request/branch/state identity fails closed"
         }
       ]
     },
@@ -1011,16 +1148,22 @@
       ]
     },
     "evals.cap2_operator": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/cap2_operator.py",
         "src/slm_training/resources/evals/cap2_operator_v1.json",
+        "src/slm_training/resources/evals/cap2_operator_v2.json",
         "scripts/run_cap2_operator_eval_fixture.py",
         "tests/test_evals/test_cap2_operator.py",
         "tests/test_scripts/test_run_cap2_operator_eval_fixture.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "current-contract CAP2 v2 fixture preserves the immutable v1 manifest while binding replay to post-DSH5 action-effect identities"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -1698,12 +1841,17 @@
       ]
     },
     "harness.core": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-26",
+          "note": "Record version stamps from the caller worktree before falling back to the packaged source checkout."
+        },
         {
           "version": "v9",
           "date": "2026-07-24",
@@ -1790,33 +1938,53 @@
       ]
     },
     "harness.distill": {
-      "version": "v7",
+      "version": "v9",
       "kind": "harness",
       "paths": [
+        "docs/design/ap020-on-policy-abstract-self-distillation.md",
+        "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
+        "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.json",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.md",
+        "docs/design/iter-spv2-05-semantic-repair-20260720.json",
+        "docs/design/iter-spv2-05-semantic-repair-20260720.md",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.json",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.md",
+        "scripts/run_dsh4_01_operator_decision_state_fixture.py",
+        "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
+        "scripts/run_dsh4_03_operator_verifier_kd_defer_fixture.py",
+        "scripts/run_spv2_05_semantic_repair_fixture.py",
+        "scripts/run_var3_01_real_teacher_ceiling.py",
         "src/slm_training/harnesses/distill/__init__.py",
         "src/slm_training/harnesses/distill/legal_set_kl.py",
         "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
-        "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/operator_decision_state.py",
         "src/slm_training/harnesses/distill/operator_teacher_ceiling.py",
+        "src/slm_training/harnesses/distill/operator_verifier_kd_defer.py",
+        "src/slm_training/harnesses/distill/prompted_teacher.py",
         "src/slm_training/harnesses/distill/self_distill_collect.py",
-        "scripts/run_spv2_05_semantic_repair_fixture.py",
-        "scripts/run_dsh4_01_operator_decision_state_fixture.py",
-        "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
+        "src/slm_training/harnesses/distill/semantic_repair.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
-        "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
+        "tests/test_harnesses/distill/test_operator_verifier_kd_defer.py",
+        "tests/test_harnesses/distill/test_prompted_teacher.py",
         "tests/test_harnesses/distill/test_self_distill_collect.py",
-        "docs/design/iter-spv2-05-semantic-repair-20260720.md",
-        "docs/design/iter-spv2-05-semantic-repair-20260720.json",
-        "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
-        "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
-        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
-        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
-        "docs/design/ap020-on-policy-abstract-self-distillation.md"
+        "tests/test_harnesses/distill/test_semantic_repair.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-26",
+          "note": "SLM-429 (VAR3-01): wire PromptedTeacherV1 -- a real prompted LLM teacher (Qwen/Qwen3-4B-Instruct-2507 via OpenAI-compatible HF router, temperature=0, content-addressed response cache) -- behind the existing OperatorTeacherAdapter Protocol with NO harness change; anti-leak surface identical to the synthetic stand-in (operator_id/arity/proof_checks/semantic_id-derived identity only; never opaque ids, presentation order as authority, current_scores, or accepted ids); re-ran the unchanged DSH4-02 compare_operator_teacher_ceiling (all baselines, oracle, 8 DecisionFamily slices, 4 perturbation kinds, paired bootstrap) over the identical GOLD_WEIGHTS fixture pools, SyntheticDescriptorTeacherV1 kept as control; iter doc docs/design/var3-01-real-teacher-ceiling-20260726.{md,json}"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-27",
+          "note": "SLM-388 DSH4-03: accepted-set/verifier-backed operator distillation with DEFER -- matched arms (hard accepted-set, teacher argmax, offline conditional KD, verifier-ranking+KD, +DEFER) over DSH4-01/02's trace/ranking contracts, entropy/reliability-aware forward-KL-JS-vs-reverse-KL-pressure shaping, a disjoint-trained verifier(frequency) anchor, a fail-closed DEFER margin gate, and a held-out CAP2-proxy stop rule (fixture result: no_go_defer)"
+        },
         {
           "version": "v7",
           "date": "2026-07-26",
@@ -1855,17 +2023,210 @@
       ]
     },
     "harness.experiments": {
-      "version": "v115",
+      "version": "v134",
       "kind": "harness",
       "paths": [
-        "src/slm_training/harnesses/experiments/",
         "scripts/run_slm298_capacity_context_curriculum.py",
+        "src/slm_training/harnesses/experiments/",
         "tests/test_harnesses/experiments/test_slm298_capacity_context_curriculum.py",
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
-        {"version": "v115", "date": "2026-07-25", "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"},
-        {"version": "v114", "date": "2026-07-25", "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"},
+        {
+          "version": "v134",
+          "date": "2026-07-26",
+          "note": "SLM-429 (VAR3-01): wire PromptedTeacherV1 -- a real prompted LLM teacher (Qwen/Qwen3-4B-Instruct-2507 via OpenAI-compatible HF router, temperature=0, content-addressed response cache) -- behind the existing OperatorTeacherAdapter Protocol with NO harness change; anti-leak surface identical to the synthetic stand-in (operator_id/arity/proof_checks/semantic_id-derived identity only; never opaque ids, presentation order as authority, current_scores, or accepted ids); re-ran the unchanged DSH4-02 compare_operator_teacher_ceiling (all baselines, oracle, 8 DecisionFamily slices, 4 perturbation kinds, paired bootstrap) over the identical GOLD_WEIGHTS fixture pools, SyntheticDescriptorTeacherV1 kept as control; iter doc docs/design/var3-01-real-teacher-ceiling-20260726.{md,json}"
+        },
+        {
+          "version": "v133",
+          "date": "2026-07-26",
+          "note": "AP-025 (SLM-318): role-factorized abstract token families -- RoleSpanV1/AbstractPlanV1.role_spans, optional role_sequence masking on AbstractPlanHead.forward (zero new params, None bit-exact, fail-closed out-of-role targets), role_slot_probe interventions (swap/dropout/truncate) with run_role_probes/causal_effect_matrix, and fixture-only scripts/run_role_slot_probe.py wiring demo"
+        },
+        {
+          "version": "v132",
+          "date": "2026-07-25",
+          "note": "add SLM-276 DCA2-03 CausalDispositionBundleV1 fail-closed publisher (dca_causal_disposition.py): aggregates prerequisite dispositions; no_model_ship_ready_measurement_or_data_blocker, no tournament, no promotion"
+        },
+        {
+          "version": "v131",
+          "date": "2026-07-25",
+          "note": "register SLM-275 DCA2-02 in the DCA activation gate registry; closes blocked/reward_variance_insufficient off unqualified prerequisites"
+        },
+        {
+          "version": "v130",
+          "date": "2026-07-25",
+          "note": "register SLM-274 DCA2-01 in the DCA activation gate registry; closes not_activated/blocked off unqualified prerequisites"
+        },
+        {
+          "version": "v129",
+          "date": "2026-07-25",
+          "note": "register SLM-273 DCA1-02 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites"
+        },
+        {
+          "version": "v128",
+          "date": "2026-07-25",
+          "note": "register SLM-272 DCA1-01 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites"
+        },
+        {
+          "version": "v127",
+          "date": "2026-07-25",
+          "note": "register SLM-271 DCA0-03 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites"
+        },
+        {
+          "version": "v126",
+          "date": "2026-07-25",
+          "note": "add generic DCA-chain activation gate (dca_activation_gate.py) closing SLM-270 DCA0-02 blocked/inconclusive off unqualified SLM-261/268/269 artifacts"
+        },
+        {
+          "version": "v125",
+          "date": "2026-07-25",
+          "note": "add SLM-269 DCA0-01 fail-closed activation audit (slm269_dca0_activation.py): prerequisite evidence unqualified (SLM-260 fixture-only, SLM-261 missing, SLM-268 blocked) -> inconclusive, no corpus/training launched"
+        },
+        {
+          "version": "v124",
+          "date": "2026-07-25",
+          "note": "add SLM-258 LOT4-02 LotusOpenUIDispositionV1 fail-closed publisher (lotus_openui_disposition.py): aggregates the real upstream gate artifacts; inconclusive_missing_evidence, no adoption, production defaults unchanged"
+        },
+        {
+          "version": "v123",
+          "date": "2026-07-25",
+          "note": "register SLM-257 LOT4-01 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2/LOT3 chain"
+        },
+        {
+          "version": "v122",
+          "date": "2026-07-25",
+          "note": "register SLM-256 LOT2-03 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain"
+        },
+        {
+          "version": "v121",
+          "date": "2026-07-25",
+          "note": "register SLM-255 LOT3-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain"
+        },
+        {
+          "version": "v120",
+          "date": "2026-07-25",
+          "note": "register SLM-254 LOT3-01 in the LOT downstream gate registry; closes not_authorized (causal study not authorized) off the unmet LOT1/LOT2 chain"
+        },
+        {
+          "version": "v119",
+          "date": "2026-07-25",
+          "note": "register SLM-253 LOT2-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1-02 launch gate"
+        },
+        {
+          "version": "v118",
+          "date": "2026-07-25",
+          "note": "add generic LOT2+ downstream launch-gate evaluator (lot_downstream_gate.py) closing SLM-252 LOT2-01 not_authorized off the unmet LOT1-02 launch gate; no campaign code"
+        },
+        {
+          "version": "v117",
+          "date": "2026-07-25",
+          "note": "add SLM-251 LOT1-02 launch-gate evaluator (lot1_02_activation_gate.py): reuses the LOT1-01 gate plus SLM-249 allowed_lot1_implementation and closes not_authorized in plan-only mode, no training/curriculum code"
+        },
+        {
+          "version": "v116",
+          "date": "2026-07-25",
+          "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code"
+        },
+        {
+          "version": "v115",
+          "date": "2026-07-26",
+          "note": "no-bump: migrate the CAP2 local-action fixture to TernaryECOCHead.entry_for without changing its action-code lookup."
+        },
+        {
+          "version": "v115",
+          "date": "2026-07-25",
+          "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control"
+        },
+        {
+          "version": "v114",
+          "date": "2026-07-25",
+          "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives"
+        },
+        {
+          "version": "v117",
+          "date": "2026-07-25",
+          "note": "add SLM-258 LOT4-02 LotusOpenUIDispositionV1 fail-closed publisher (lotus_openui_disposition.py): aggregates the real upstream gate artifacts; inconclusive_missing_evidence, no adoption, production defaults unchanged"
+        },
+        {
+          "version": "v116",
+          "date": "2026-07-25",
+          "note": "register SLM-257 LOT4-01 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2/LOT3 chain"
+        },
+        {
+          "version": "v115",
+          "date": "2026-07-25",
+          "note": "register SLM-256 LOT2-03 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain"
+        },
+        {
+          "version": "v114",
+          "date": "2026-07-25",
+          "note": "register SLM-255 LOT3-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain"
+        },
+        {
+          "version": "v113",
+          "date": "2026-07-25",
+          "note": "register SLM-254 LOT3-01 in the LOT downstream gate registry; closes not_authorized (causal study not authorized) off the unmet LOT1/LOT2 chain"
+        },
+        {
+          "version": "v112",
+          "date": "2026-07-25",
+          "note": "register SLM-253 LOT2-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1-02 launch gate"
+        },
+        {
+          "version": "v111",
+          "date": "2026-07-25",
+          "note": "add generic LOT2+ downstream launch-gate evaluator (lot_downstream_gate.py) closing SLM-252 LOT2-01 not_authorized off the unmet LOT1-02 launch gate; no campaign code"
+        },
+        {
+          "version": "v110",
+          "date": "2026-07-25",
+          "note": "add SLM-251 LOT1-02 launch-gate evaluator (lot1_02_activation_gate.py): reuses the LOT1-01 gate plus SLM-249 allowed_lot1_implementation and closes not_authorized in plan-only mode, no training/curriculum code"
+        },
+        {
+          "version": "v109",
+          "date": "2026-07-25",
+          "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code"
+        },
+        {
+          "version": "v121",
+          "date": "2026-07-25",
+          "note": "add SLM-276 DCA2-03 CausalDispositionBundleV1 fail-closed publisher (dca_causal_disposition.py): aggregates prerequisite dispositions; no_model_ship_ready_measurement_or_data_blocker, no tournament, no promotion"
+        },
+        {
+          "version": "v120",
+          "date": "2026-07-25",
+          "note": "register SLM-275 DCA2-02 in the DCA activation gate registry; closes blocked/reward_variance_insufficient off unqualified prerequisites"
+        },
+        {
+          "version": "v119",
+          "date": "2026-07-25",
+          "note": "register SLM-274 DCA2-01 in the DCA activation gate registry; closes not_activated/blocked off unqualified prerequisites"
+        },
+        {
+          "version": "v118",
+          "date": "2026-07-25",
+          "note": "register SLM-273 DCA1-02 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites"
+        },
+        {
+          "version": "v117",
+          "date": "2026-07-25",
+          "note": "register SLM-272 DCA1-01 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites"
+        },
+        {
+          "version": "v116",
+          "date": "2026-07-25",
+          "note": "register SLM-271 DCA0-03 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites"
+        },
+        {
+          "version": "v115",
+          "date": "2026-07-25",
+          "note": "add generic DCA-chain activation gate (dca_activation_gate.py) closing SLM-270 DCA0-02 blocked/inconclusive off unqualified SLM-261/268/269 artifacts"
+        },
+        {
+          "version": "v114",
+          "date": "2026-07-25",
+          "note": "add SLM-269 DCA0-01 fail-closed activation audit (slm269_dca0_activation.py): prerequisite evidence unqualified (SLM-260 fixture-only, SLM-261 missing, SLM-268 blocked) -> inconclusive, no corpus/training launched"
+        },
         {
           "version": "v113",
           "date": "2026-07-25",
@@ -2502,6 +2863,22 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; SLM-294 external-ceiling frontier execution (chunked resume, atomic raw JSONL, Wilson scoreboard) and scorer generate()"
+        }
+      ]
+    },
+    "harness.experiments.one_step_latent_hybrid": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/one_step_latent_hybrid.py",
+        "tests/test_harnesses/experiments/test_one_step_latent_hybrid.py",
+        "docs/design/one-step-latent-hybrid-disposition.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-336 (AP-035) admission gate: enforce in code that AP-034's oracle-support gate (SLM-335, admission-denied) must clear before the one-step MeanFlow-style prior work can start; no prior or refinement loop is built"
         }
       ]
     },
@@ -3934,6 +4311,22 @@
         }
       ]
     },
+    "harness.experiments.topology_apply_arms": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/topology_apply_arms.py",
+        "scripts/run_topology_apply_arms.py",
+        "tests/test_harnesses/experiments/test_topology_apply_arms.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-384 (DSH3-16) fixture-scale arm comparison: recompute-only vs hierarchical-head(off)+ordinary-lowering vs topology-apply at matched quality (identical action sequences, legal terminal set, per-step typed trees); execution-sparsity disposition with no systems/wall-clock claim"
+        }
+      ]
+    },
     "harness.experiments.slm183_power_protocol": {
       "version": "v13",
       "kind": "harness",
@@ -4627,6 +5020,11 @@
         {
           "version": "v1",
           "date": "2026-07-26",
+          "note": "no-bump: add the SLM-322/AP-027 scratch checkpoint roster row; SLM-228 behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
           "note": "no-bump: replace the SLM-313 scratch checkpoint roster row with its measured rejected result; SLM-228 behavior is unchanged."
         },
         {
@@ -5212,7 +5610,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v3",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -5223,9 +5621,33 @@
         "src/slm_training/models/tree_edit_diffusion.py",
         "docs/design/iter-slm305-edit-language-20260724.json",
         "docs/design/iter-slm305-edit-language-20260724.md",
-        "tests/test_models/test_tree_edit_diffusion.py"
+        "tests/test_models/test_tree_edit_diffusion.py",
+        "docs/design/var0-03-pack-derived-inventory-20260726.json",
+        "docs/design/var0-03-pack-derived-inventory-20260726.md",
+        "docs/design/var1-02-set-property-action-20260726.json",
+        "docs/design/var1-02-set-property-action-20260726.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-425: add the real pack-owned SET_PROPERTY action to TreeEditSpace, its format-3 migration and SLM-299 production enumeration. The finite declared rest domain remains narrower than VAR1-01's hypothetical row control; the local audit is capability evidence only."
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-426: TreeEditSpace and the SLM-299 analyzer resolve finite edit inventory, rest domains, and statement templates from canonical DslPack metadata; pack extension is tested without a model edit. Current-corpus audit is explicitly scope-limited because the frozen train input is unavailable and RICO grew from 6 to 35 records."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "no-bump: pre-merge review fixup -- collapse the set_property if/pass/elif chain in _check_invariants into an early-return guard clause (same behavior, verified by the full existing + new test suite passing unchanged)."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "VAR1-01 (SLM-424): add set_property_action() and component_widen_action() hypothetical ExtraAction factories plus matching capability gates in _check_invariants ('set_property', 'component_widen'); thread an optional extra_actions_for hook through run_slm299_reachability_audit's analyze_record/_summarize_records/build_report (default None preserves prior behavior exactly). No production action space, TreeEditSpace, or checkpoint change; what-if lanes only, re-validated through the real parser and marked uses_synthetic_actions."
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -5240,6 +5662,62 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; real X22 tree-edit reachability analyzer, suite audit CLI, and reachability-unproven gate input"
+        }
+      ]
+    },
+    "harness.experiments.var1_01_set_property_probe": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_var1_01_set_property_probe.py",
+        "tests/test_harnesses/experiments/test_var1_01_set_property_probe.py",
+        "docs/design/var1-01-set-property-probe-20260725.json",
+        "docs/design/var1-01-set-property-probe-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-426 migrates VAR1 fixture monkeypatches from the removed analyzer module tuple to the actual TreeEditSpace domain; the hypothetical probe behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: pre-merge review fixup -- suppress x22_evidence_annotations for hypothetical arms B/C/D (only the real baseline's reachable_fraction may attribute to the real design docs those annotations name); default --node-budget to 15 (matches the committed evidence; 120 remains available via the flag for a longer out-of-cap job); create --md-out's parent directory before writing; _fmt_fraction now renders a None reachable_fraction as the explicit no_decided_cases label instead of the string 'None'; compute _record_target_components once per record in arms C/D."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: pre-merge CI fixup -- 3 tests assumed 'Modal([], \"column\")' parses validly, which held in the dev sandbox but not in CI's environment; replaced with a Card-based construction already proven valid throughout the existing test suite, and added a report section explaining why Arm A cannot reproduce the referenced (now-stale) iter-slm305 doc bit-for-bit. Behavior of the probe/registry itself is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-424 (VAR1-01): four-arm hypothetical property-mutation/component-widening reachability probe over the SLM-299 suite corpora (A baseline, B set_property, C component_widen, D both). hypothetical=true throughout; no production action space change. node_budget reduced from the issue's suggested 120 to 15 to fit the repository's MAX_RUN_MINUTES=3 hard cap -- see the report's methodology note."
+        }
+      ]
+    },
+    "harness.experiments.var2_01_ops_vocab_first_consumer": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/ops_vocab_conditioning.py",
+        "tests/test_dsl/test_operator_ops_vocab_conditioning.py",
+        "scripts/run_var2_01_ops_vocab_first_consumer.py",
+        "tests/test_scripts/test_run_var2_01_ops_vocab_first_consumer.py",
+        "docs/design/var2-01-ops-vocab-first-consumer-20260726.json",
+        "docs/design/var2-01-ops-vocab-first-consumer-20260726.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: pre-merge review fixup -- derive the local-operator-id set used by the arity_mismatches check from library.declarations instead of a hardcoded literal (CodeRabbit), so registry drift can't silently skip newly added/removed local operators; regenerated the published report/doc (same corpus, identical result)."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): first encoder-side consumer of the shared OPS_VOCAB kernel (I13). dsl.operators.ops_vocab_conditioning resolves a persisted conversation trace's turns onto reserved OPS_VOCAB op ids and renders them as literal reserved tokens; the harness script builds a small real operator corpus, publishes the four-table adequacy audit (unrepresentable_intents, unused_ops, family_confusions, arity_mismatches) as claim class measurement, and runs a matched off/on wiring-reachability probe (claim class wiring, hypothetical=true) through a preregistered ExperimentCampaignV1. No production behavior changes: ModelBuildConfig.encoder_ops_conditioning defaults False."
         }
       ]
     },
@@ -5286,7 +5764,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -5303,6 +5781,11 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-26",
+          "note": "SLM-406: persist only a per-record prefix-time DecodeStats projection in eval details; terminal outcomes remain evaluator labels"
+        },
         {
           "version": "v60",
           "date": "2026-07-25",
@@ -6852,7 +7335,7 @@
       ]
     },
     "model.operator_feature_encoder": {
-      "version": "v1",
+      "version": "v2",
       "kind": "model",
       "paths": [
         "src/slm_training/models/operator_feature_encoder.py",
@@ -6862,6 +7345,11 @@
         "docs/design/dsh3-23-operator-feature-encoder.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-411: encode allowlisted selector cardinality and fanout alongside selector kind/facts from the sanitized operator-policy view"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -6888,7 +7376,7 @@
       ]
     },
     "model.operator_policy_view": {
-      "version": "v3",
+      "version": "v4",
       "kind": "model",
       "paths": [
         "src/slm_training/models/operator_policy_view.py",
@@ -6896,6 +7384,11 @@
         "docs/design/dsh3-22-operator-policy-view.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-26",
+          "note": "SLM-411: project exact SelectorRef rows with only closed selector kind, allowlisted facts, cardinality, and fanout; preserve target/scope identities as runtime-only"
+        },
         {
           "version": "v3",
           "date": "2026-07-26",
@@ -6913,16 +7406,115 @@
         }
       ]
     },
+    "harness.experiments.operator_failure_prediction": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_failure_prediction.py",
+        "scripts/run_dsh3_31_operator_failure_prediction.py",
+        "tests/test_harnesses/experiments/test_operator_failure_prediction.py",
+        "tests/test_scripts/test_run_dsh3_31_operator_failure_prediction.py",
+        "docs/design/dsh3-31-operator-failure-prediction.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-406 unit tests stub the required AgentV publisher so Python-only CI does not depend on a Node runtime"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-406: leak-sealed per-record temporal DecodeStats feature rows and shadow-only preflight"
+        }
+      ]
+    },
+    "harness.experiments.operator_router": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_router.py",
+        "scripts/run_dsh5_09_adaptive_router_preflight.py",
+        "tests/test_harnesses/experiments/test_operator_router.py",
+        "docs/design/dsh5-09-adaptive-router-20260726-local/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-417: fail-closed execution-mode router contract with leak-sealed pre-routing features, compiler availability filtering, deterministic fallback, diagnostic-only all-arm oracle labels, and bounded local admission disposition"
+        }
+      ]
+    },
+    "harness.experiments.operator_transaction_policy": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_transaction_policy.py",
+        "tests/test_harnesses/experiments/test_operator_transaction_policy.py",
+        "docs/design/dsh5-06-operator-transaction-policy.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-414: bounded K=2/K=4 set-valued transaction selection over DSH3-28's independent-set/recurrent-set per-action logits; every ranked subset is re-verified by the real DSH5-05 build_operator_transaction/commit_operator_transaction before it can be selected. Fixture-scale wiring evidence only, no held-out claim yet."
+        }
+      ]
+    },
     "harness.experiments.typed_operator_policy": {
-      "version": "v5",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "scripts/run_dsh3_28_typed_operator_policy.py",
         "src/slm_training/harnesses/experiments/typed_operator_policy.py",
         "tests/test_harnesses/experiments/test_typed_operator_policy.py",
-        "docs/design/dsh3-28-typed-operator-policy.md"
+        "tests/test_scripts/test_run_dsh3_28_typed_operator_policy.py",
+        "docs/design/dsh3-28-typed-operator-policy.md",
+        "docs/design/dsh3-29-operator-ecoc-coverage.md",
+        "docs/design/dsh3-30-collapse-negative-ablation.md"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-26",
+          "note": "SLM-405: add the replay-negative matched-arm preflight to the canonical bounded local policy matrix; no arm runs without both labels in both source-disjoint splits"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-26",
+          "note": "SLM-404: allow evaluator-only compiler-visible cost-aware ECOC assignments without changing partial DEFER routing or the sanitized policy input."
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-26",
+          "note": "SLM-403: materialize held-out selected policy rows through fresh legal-set enumeration and compiler application into current CAP2 v2 transitions."
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "no-bump: record CAP2 v2 fixture reconciliation without changing the typed-policy harness behavior."
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "no-bump: document the review-corrected bounded control rerun and its unchanged reject verdict."
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "Preserve every typed-head matrix cell in AgentV evidence and validate selected head families."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "Attach typed policy decisions through request-aligned ModelPlugin evidence."
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-26",
+          "note": "SLM-403: add the required matched five-family typed action-policy matrix over the shared sanitized scorer"
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
@@ -7003,13 +7595,18 @@
       ]
     },
     "model.quantization": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "Expose ECOC entries for legal-set scoring and make singleton independent-set loss finite."
+        },
         {
           "version": "v6",
           "date": "2026-07-25",
@@ -7276,7 +7873,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v254",
+      "version": "v258",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -7315,9 +7912,30 @@
         "scripts/build_speculative_ngram_table.py",
         "tests/test_dsl/test_speculative_rank.py",
         "tests/test_runtime/test_decode_schedule.py",
-        "src/slm_training/resources/decode/speculative_ngram_v1.json"
+        "src/slm_training/resources/decode/speculative_ngram_v1.json",
+        "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v258",
+          "date": "2026-07-26",
+          "note": "AP-025 (SLM-318): AbstractPlanHead.forward gains an optional role_sequence param (zero new parameters -- masks the existing proj's logits/RANDOM-mode sampling to each round's declared RoleSpanV1 range); None is bit-exact identical to pre-AP-025 behavior, and target_plan_ids outside the declared role now fail closed"
+        },
+        {
+          "version": "v257",
+          "date": "2026-07-26",
+          "note": "SLM-428 (VAR2-01): format_context_text and _format_one_context gain an optional history_ops_text parameter (omitted by every existing caller -- exact prior output when absent); ModelBuildConfig.encoder_ops_conditioning / TwoTowerConfig.encoder_ops_conditioning is a new default-off lever gating the effect at the model layer, wired through _twotower_config_from_build. First real consumer of the shared OPS_VOCAB kernel (I13)."
+        },
+        {
+          "version": "v256",
+          "date": "2026-07-26",
+          "note": "SLM-425: migrate tree-edit checkpoints from format 2 to 3 while preserving the existing action-head prefix and initializing the new property-value head."
+        },
+        {
+          "version": "v255",
+          "date": "2026-07-26",
+          "note": "choice_tokenizer object-key candidates: skip schema property names absent from live vocab (use token_to_id.get) so constrained decode fails closed with empty/partial domain instead of KeyError on n:<name> (hit on smoke eval with n:required)."
+        },
         {
           "version": "v254",
           "date": "2026-07-26",
@@ -9038,7 +9656,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v3",
+      "version": "v5",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -9046,6 +9664,16 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-26",
+          "note": "SLM-427 (VAR1-03): re-disposition I12 to name the tree_edit_diffusion variant and its action_alphabet_fingerprint the reachable_fraction=0.0 was measured on, mark repl_operators/twotower_prompt_ast NOT_MEASURED, and replace the successor list with one traceable to the measured reason histogram (unsupported_component, needs_direction_change). Add I14a: a variant-scoped measurement is never a program-scoped status, and a successor must map to an observed reason code. No invariant weakened."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "SLM-422 (VAR0-01): certify() gains variant_contracts via check_variant_contracts(), mirroring check_ops_vocab() -- pins slm_training.dsl.variants' registry against its live sources. No existing check's behavior changed."
+        },
         {
           "version": "v3",
           "date": "2026-07-25",
@@ -9096,6 +9724,37 @@
         }
       ]
     },
+    "dsl.variants": {
+      "version": "v3",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/variants.py",
+        "src/slm_training/resources/variant_registry.json",
+        "tests/test_dsl/test_variants.py"
+      ],
+      "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "SLM-425: tree_edit_diffusion declares openui.set_property as its realized kernel operation and regenerates the derived contract registry."
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "SLM-426: tree_edit_diffusion now declares pack-derived inventory after importing the canonical DslPack authority; regenerated the derived variant registry and retained the false-authority rejection test."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "no-bump: pre-merge review fixup -- _imports_module now requires an exact dotted-prefix match (module itself or a true submodule) instead of a bare substring, so e.g. slm_training.dsl.packaging can no longer be mistaken for slm_training.dsl.pack; added a negative regression test. No change to any of the three registered variants' inventory_source outcome."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-422 (VAR0-01): VariantContractV1 registers repl_operators, tree_edit_diffusion, and twotower_prompt_ast, each scoping pack_id / action_alphabet_id+fingerprint / kernel_ops / seed_policy_id / inventory_source; derived (not authored) from live sources (module ACTION_* constants, OPS_VOCAB, STRUCTURAL_TOKENS), content-addressed and drift-gated in check_variant_contracts() alongside check_ops_vocab(). Records tree_edit_diffusion's component inventory as an honest module_constant violation (LEAF_COMPONENTS/CONTAINER_COMPONENTS still hardcoded; VAR0-03 migrates this) rather than certifying it fixed. No model/decode-path/quality change; contract and survey only."
+        }
+      ]
+    },
     "harness.experiments.slm249_compiler_reasoning_trace": {
       "version": "v1",
       "kind": "harness",
@@ -9117,6 +9776,26 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial registration; SLM-249 (LOT0-02) CompilerReasoningTraceV1 typed step schema, deterministic extractor reusing SemanticPlanV1/production_codec, lossless visible serialization, permutation-invariant/cycle-free/truncation-explicit helpers, a bounded (n=16 fixture) K/c coverage probe, and the CompilerReasoningTraceGateV1 contract with an inconclusive verdict (oracle-ceiling experiment plan only, no training run, per the LOT0-01 authorization's allowed_lot1_work scope)"
+        }
+      ]
+    },
+    "harness.experiments.slm320_binder_precision_channel": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/data/progspec/binder_graph.py",
+        "src/slm_training/data/progspec/capsules.py",
+        "src/slm_training/data/progspec/__init__.py",
+        "src/slm_training/models/binder_precision_channel.py",
+        "tests/test_data/test_binder_graph.py",
+        "tests/test_models/test_binder_precision_channel.py",
+        "docs/design/binder-precision-channel-v1.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial registration; SLM-320 (AP-026) BinderGraphV1 structural type (definitions/uses/directed reference edges/scopes/unresolved placeholders), reusing capsules.py's ScopeNode/ScopeEdge/DependencyKind walk (extracted into shared derive_node_edge_walk) but collecting forward/undefined references as UnresolvedPlaceholder data instead of raising; a G3-shaped check_g3() (one root, resolved binders, reachability, no cycles) and an alpha-rename-invariant structural fingerprint; the BinderChannelArm oracle/predicted_soft/absent/shuffled/corrupted/disabled connector in models/binder_precision_channel.py mirroring AbstractPlanConnector's matched-arm discipline, gated by confirm_predicted_edges (a predicted reference edge is never legal on its own authority -- only edges also present in the deterministic verifier graph are confirmed) and a zero-initialized BinderChannelGate scalar. Structural wiring only: no training run, no DenoiserTower/TwoTowerModel integration, no hard-valid contrast-pair training loop -- deferred to a follow-up issue per the design doc's honesty note."
         }
       ]
     },
@@ -9221,6 +9900,30 @@
         }
       ]
     },
+    "harness.experiments.ap027_discrete_plan_pareto": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/discrete_plan_pareto.py",
+        "scripts/run_discrete_plan_pareto.py",
+        "tests/test_harnesses/experiments/test_discrete_plan_pareto.py",
+        "tests/test_scripts/test_run_discrete_plan_pareto.py",
+        "docs/design/discrete-plan-pareto.md",
+        "docs/design/iter-slm322-discrete-plan-pareto-20260726.json"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-26",
+          "note": "ParetoLatencyRow.to_dict() and summarize_pareto's Pareto point ids now canonicalize aliased arm names (e.g. oracle_plan) instead of persisting the raw alias, which previously disagreed with the canonicalized measured_arms field; added a metrics_provenance field so proxy metrics (parse_rate/placeholder_fidelity standing in for meaning-v2/binder-F1 at screening scale) travel with each JSON row instead of only being documented in the generated Markdown caption; deduplicated the version-stamp component pair into a shared STAMP_COMPONENTS constant"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial AP-027/SLM-322 discrete-plan Pareto contract: extends AP-022's arm/campaign pattern with a 1/2/4/8 refinement-round axis and the issue's named successor arm (learned_plan_binder_precision), structurally enforcing that AP-022's closed ignored_or_collapsed verdict for learned_abstract_plan can never be marked promotion_eligible"
+        }
+      ]
+    },
     "harness.experiments.slm332_latent_geometry": {
       "version": "v5",
       "kind": "harness",
@@ -9234,11 +9937,31 @@
         "tests/test_harnesses/test_slm332_latent_geometry.py"
       ],
       "history": [
-        {"version": "v5", "date": "2026-07-25", "note": "normalize AgentV code-grader paths to portable repo URIs in committed evidence"},
-        {"version": "v4", "date": "2026-07-25", "note": "retain declared opaque binding-target ordinals so AP-009 binding swaps survive factorization"},
-        {"version": "v3", "date": "2026-07-25", "note": "add bounded local control-versus-combined runner with AgentEvals non-promotion assertion"},
-        {"version": "v2", "date": "2026-07-25", "note": "wire admitted AP-009 binding pairs through the codec-only geometry harness"},
-        {"version": "v1", "date": "2026-07-25", "note": "initial SLM-332 fail-closed latent geometry primitive"}
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "normalize AgentV code-grader paths to portable repo URIs in committed evidence"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "retain declared opaque binding-target ordinals so AP-009 binding swaps survive factorization"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "add bounded local control-versus-combined runner with AgentEvals non-promotion assertion"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "wire admitted AP-009 binding pairs through the codec-only geometry harness"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial SLM-332 fail-closed latent geometry primitive"
+        }
       ]
     },
     "matrix.self_context_curriculum": {
@@ -9261,13 +9984,21 @@
       ]
     },
     "dsl.abstract_plan": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/abstract_plan.py",
-        "tests/test_dsl/test_abstract_plan.py"
+        "tests/test_dsl/test_abstract_plan.py",
+        "src/slm_training/dsl/role_slot_probe.py",
+        "tests/test_dsl/test_role_slot_probe.py",
+        "scripts/run_role_slot_probe.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-26",
+          "note": "AP-025 (SLM-318): add RoleSpanV1 (ordered, non-overlapping named codebook ranges with an optional per-role max_length budget), AbstractPlanV1.role_spans (mutually exclusive with role_metadata) plus role_for_slot/role_slot_indices/role_slot_token_ids/role_slot_mask helpers, and the new role_slot_probe module (swap_role/dropout_role/truncate_role cross-example interventions, run_role_probes/causal_effect_matrix orchestration) with a fixture-only wiring demo script"
+        },
         {
           "version": "v2",
           "date": "2026-07-25",
@@ -9277,6 +10008,44 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "AP-016 (SLM-302): initial registration -- collision-free AbstractPlanV1 latent-plan token codebook contract (reserved <beginabstract>/<endabstract> + M-slot pool), default-off in every consuming tokenizer, plus embedding-resize migration helpers"
+        }
+      ]
+    },
+    "harness.experiments.cap2_latent_causal_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/cap2_latent_causal_audit.py",
+        "scripts/run_cap2_latent_causal_audit.py",
+        "tests/test_harnesses/experiments/test_cap2_07_latent_causal_audit.py",
+        "docs/design/program-latent-causal-use.md",
+        "docs/design/program-latent-causal-use-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration: CAP2-07 oracle-latent causal-necessity/support/robustness/collapse audit (SLM-330/AP-031), reusing the AP-029/AP-030 codec/decoder and SLM-183 paired-CI stats helpers unchanged"
+        }
+      ]
+    },
+    "harness.experiments.cap2_selective_hybrid_latent": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/selective_latent_connector.py",
+        "src/slm_training/harnesses/experiments/cap2_selective_hybrid_latent.py",
+        "scripts/run_cap2_selective_hybrid_latent.py",
+        "tests/test_models/test_selective_latent_connector.py",
+        "tests/test_harnesses/experiments/test_cap2_08_selective_hybrid_latent.py",
+        "docs/design/selective-hybrid-latent-objective.md",
+        "docs/design/selective-hybrid-latent-objective-20260726.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "initial registration: CAP2-08 selective-hybrid continuous/discrete program-factor latent audit (SLM-333/AP-033) -- SelectiveLatentConnector (AbstractPlanConnector's gated-additive idiom applied to a continuous soft-factor vector, structurally drop-in-compatible with DenoiserTower.set_plan_connector), the soft/precision-critical factor routing split, and the six-arm (discrete_only/continuous_only/selective_hybrid/all_continuous/random_continuous/oracle_continuous) fixture-scale audit reusing AP-029/030/031's tensorizer, fixture corpus, DISTORTION_THRESHOLD, and SLM-183 paired-CI stats unchanged"
         }
       ]
     },
@@ -9321,6 +10090,59 @@
         }
       ]
     },
+    "evals.bulk_operator_matrix": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/bulk_operator_matrix.py",
+        "scripts/run_dsh5_03_bulk_operator_crossover.py",
+        "tests/test_evals/test_bulk_operator_matrix.py",
+        "tests/test_scripts/test_run_dsh5_03_bulk_operator_crossover.py",
+        "docs/design/dsh5-03-bulk-operator-crossover.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-411: exact legal-set/replay bulk crossover preflight that retains the unavailable matched-policy verdict until all serving arms are measured"
+        }
+      ]
+    },
+    "harness.experiments.operator_systems_benchmark": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_systems_benchmark.py",
+        "scripts/run_dsh3_32_operator_systems_benchmark.py",
+        "tests/test_harnesses/experiments/test_operator_systems_benchmark.py",
+        "tests/test_scripts/test_run_dsh3_32_operator_systems_benchmark.py",
+        "docs/design/dsh3-32-operator-serving-work.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-407: canonical full-denominator operator serving work contract and local no-claim preflight"
+        }
+      ]
+    },
+    "evals.cap2_operator_policy_disposition": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/cap2_operator_policy_disposition.py",
+        "scripts/publish_dsh3_33_operator_policy_disposition.py",
+        "tests/test_evals/test_cap2_operator_policy_disposition.py",
+        "docs/design/dsh3-33-rebased-cap2-disposition.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-408: claim-separated rebased CAP2 operator-policy disposition that preserves negative and unavailable evidence"
+        }
+      ]
+    },
     "model.block_attention": {
       "version": "v1",
       "kind": "harness",
@@ -9335,6 +10157,219 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "SLM-307: default-off packed block-structured bottleneck mask and masked SFT loss, with no-plan leakage and direct target-plan bypass canaries"
+        }
+      ]
+    },
+    "harness.experiments.lot1_01_activation_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lot1_01_activation_gate.py",
+        "scripts/evaluate_lot1_01_activation_gate.py",
+        "tests/test_harnesses/experiments/test_lot1_01_activation_gate.py",
+        "tests/test_scripts/test_evaluate_lot1_01_activation_gate.py",
+        "docs/design/iter-slm250-lot1-01-not-authorized-20260725.json",
+        "docs/design/iter-slm250-lot1-01-not-authorized-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-250 LOT1-01 hard-activation-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts"
+        }
+      ]
+    },
+    "harness.experiments.lot1_02_activation_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lot1_02_activation_gate.py",
+        "scripts/evaluate_lot1_02_activation_gate.py",
+        "tests/test_harnesses/experiments/test_lot1_02_activation_gate.py",
+        "tests/test_scripts/test_evaluate_lot1_02_activation_gate.py",
+        "docs/design/iter-slm251-lot1-02-not-authorized-20260725.json",
+        "docs/design/iter-slm251-lot1-02-not-authorized-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-251 LOT1-02 launch-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts and the LOT1-01 not_authorized disposition"
+        }
+      ]
+    },
+    "harness.experiments.lot_downstream_gate": {
+      "version": "v7",
+      "kind": "gate",
+      "paths": [
+        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json",
+        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.md",
+        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.json",
+        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.md",
+        "docs/design/iter-slm254-lot3-01-not-authorized-20260725.json",
+        "docs/design/iter-slm254-lot3-01-not-authorized-20260725.md",
+        "docs/design/iter-slm255-lot3-02-not-authorized-20260725.json",
+        "docs/design/iter-slm255-lot3-02-not-authorized-20260725.md",
+        "docs/design/iter-slm256-lot2-03-not-authorized-20260725.json",
+        "docs/design/iter-slm256-lot2-03-not-authorized-20260725.md",
+        "docs/design/iter-slm257-lot4-01-not-authorized-20260725.json",
+        "docs/design/iter-slm257-lot4-01-not-authorized-20260725.md",
+        "scripts/evaluate_lot_downstream_gate.py",
+        "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
+        "tests/test_harnesses/experiments/test_lot_downstream_gate.py",
+        "tests/test_scripts/test_evaluate_lot_downstream_gate.py"
+      ],
+      "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "re-sequenced against concurrent main registration (union of paths/history during queue merge)"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-25",
+          "note": "add SLM-257 LOT4-01 registry entry + not_authorized iter docs (lotus-openui-compute-frontier-v1)"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "add SLM-256 LOT2-03 registry entry + not_authorized iter docs (latent-workspace-capacity-gate-v1)"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "add SLM-255 LOT3-02 registry entry + not_authorized iter docs (alternative-valid-latent-gate-v1)"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "add SLM-254 LOT3-01 registry entry + not_authorized iter docs (causal-latent-use-gate-v1)"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "add SLM-253 LOT2-02 registry entry + not_authorized iter docs (structured-latent-readout-gate-v1)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; generic LOT2+ downstream gate closes SLM-252 LOT2-01 not_authorized against the real upstream contracts"
+        }
+      ]
+    },
+    "harness.experiments.lotus_openui_disposition": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lotus_openui_disposition.py",
+        "scripts/publish_lotus_openui_disposition.py",
+        "tests/test_harnesses/experiments/test_lotus_openui_disposition.py",
+        "tests/test_scripts/test_publish_lotus_openui_disposition.py",
+        "docs/design/iter-slm258-lot4-02-disposition-20260725.json",
+        "docs/design/iter-slm258-lot4-02-disposition-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-258 LOT4-02 disposition publisher aggregates upstream gates fail-closed"
+        }
+      ]
+    },
+    "harness.experiments.slm269_dca0_activation": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm269_dca0_activation.py",
+        "scripts/audit_dca0_target_policy_activation.py",
+        "tests/test_harnesses/experiments/test_slm269_dca0_activation.py",
+        "tests/test_scripts/test_audit_dca0_target_policy_activation.py",
+        "docs/design/iter-slm269-dca0-01-activation-20260725.json",
+        "docs/design/iter-slm269-dca0-01-activation-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-269 DCA0-01 activation audit closes inconclusive/blocked against real prerequisite artifacts"
+        }
+      ]
+    },
+    "harness.experiments.dca_activation_gate": {
+      "version": "v7",
+      "kind": "gate",
+      "paths": [
+        "docs/design/iter-slm270-dca0-02-activation-20260725.json",
+        "docs/design/iter-slm270-dca0-02-activation-20260725.md",
+        "docs/design/iter-slm271-dca0-03-activation-20260725.json",
+        "docs/design/iter-slm271-dca0-03-activation-20260725.md",
+        "docs/design/iter-slm272-dca1-01-activation-20260725.json",
+        "docs/design/iter-slm272-dca1-01-activation-20260725.md",
+        "docs/design/iter-slm273-dca1-02-activation-20260725.json",
+        "docs/design/iter-slm273-dca1-02-activation-20260725.md",
+        "docs/design/iter-slm274-dca2-01-activation-20260725.json",
+        "docs/design/iter-slm274-dca2-01-activation-20260725.md",
+        "docs/design/iter-slm275-dca2-02-activation-20260725.json",
+        "docs/design/iter-slm275-dca2-02-activation-20260725.md",
+        "scripts/audit_dca_activation.py",
+        "src/slm_training/harnesses/experiments/dca_activation_gate.py",
+        "tests/test_harnesses/experiments/test_dca_activation_gate.py",
+        "tests/test_scripts/test_audit_dca_activation.py"
+      ],
+      "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-26",
+          "note": "re-sequenced against concurrent main registration (union of paths/history during queue merge)"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-25",
+          "note": "add SLM-275 DCA2-02 registry entry + blocked iter docs (diffusion-rl-activation-v1)"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-25",
+          "note": "add SLM-274 DCA2-01 registry entry + blocked iter docs (block-conversion-activation-v1)"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-25",
+          "note": "add SLM-273 DCA1-02 registry entry + blocked iter docs (cross-pack-transfer-activation-gate-v1)"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "add SLM-272 DCA1-01 registry entry + blocked iter docs (program-preference-activation-gate-v1)"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "add SLM-271 DCA0-03 registry entry + blocked iter docs (mask-curriculum-activation-gate-v1)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; generic DCA activation gate closes SLM-270 DCA0-02 blocked against real prerequisite artifacts"
+        }
+      ]
+    },
+    "harness.experiments.dca_causal_disposition": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/dca_causal_disposition.py",
+        "scripts/build_causal_disposition.py",
+        "tests/test_harnesses/experiments/test_dca_causal_disposition.py",
+        "tests/test_scripts/test_build_causal_disposition.py",
+        "docs/design/iter-slm276-dca2-03-disposition-20260725.json",
+        "docs/design/iter-slm276-dca2-03-disposition-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-276 DCA2-03 disposition bundle publisher aggregates prerequisite gates fail-closed"
         }
       ]
     }

@@ -6,7 +6,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from slm_training.dsl.abstract_plan import AbstractPlanV1
+from slm_training.dsl.abstract_plan import AbstractPlanV1, RoleSpanV1
 from slm_training.models.abstract_plan_head import (
     AbstractPlanHead,
     AbstractPlanMode,
@@ -216,6 +216,125 @@ def test_twotower_config_rejects_unknown_abstract_plan_mode() -> None:
             denoiser_layers=1,
             output_tokenizer="lexer",
             abstract_plan_mode="dissabled",  # typo: must not silently enable
+        )
+
+
+# --- role_sequence masking (AP-025 / SLM-318) -------------------------------
+
+
+def _role_factorized_plan(rounds: int = 4, slot_count: int = 8) -> AbstractPlanV1:
+    return AbstractPlanV1(
+        slot_count=slot_count,
+        max_slot_count=slot_count,
+        rounds=rounds,
+        role_spans=(
+            RoleSpanV1(role="intent", start=0, length=3),
+            RoleSpanV1(role="topology", start=3, length=5),
+        ),
+    )
+
+
+def test_role_sequence_none_is_bit_exact_with_no_role_sequence_argument() -> None:
+    plan = _role_factorized_plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+
+    trace_default = head(
+        context, pad_mask, mode="sampled", generator=torch.Generator().manual_seed(9)
+    )
+    trace_explicit_none = head(
+        context,
+        pad_mask,
+        mode="sampled",
+        generator=torch.Generator().manual_seed(9),
+        role_sequence=None,
+    )
+    assert torch.equal(trace_default.plan_tokens, trace_explicit_none.plan_tokens)
+    assert torch.equal(trace_default.logits, trace_explicit_none.logits)
+    assert trace_default.provenance["role_sequence"] is None
+
+
+def test_role_sequence_requires_role_factorized_plan() -> None:
+    plan = _plan()  # homogeneous, no role_spans
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+    with pytest.raises(ValueError, match="role_spans"):
+        head(
+            context,
+            pad_mask,
+            mode="sampled",
+            role_sequence=["intent"] * plan.rounds,
+        )
+
+
+def test_role_sequence_rejects_wrong_length() -> None:
+    plan = _role_factorized_plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+    with pytest.raises(ValueError, match="length"):
+        head(context, pad_mask, mode="sampled", role_sequence=["intent"])
+
+
+def test_role_sequence_restricts_sampled_tokens_to_the_declared_role() -> None:
+    plan = _role_factorized_plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+    role_sequence = ["intent", "topology", "intent", "topology"]
+
+    trace = head(
+        context,
+        pad_mask,
+        mode="sampled",
+        generator=torch.Generator().manual_seed(11),
+        role_sequence=role_sequence,
+    )
+
+    intent_slots = set(plan.role_slot_indices("intent"))
+    topology_slots = set(plan.role_slot_indices("topology"))
+    tokens = trace.plan_tokens.tolist()
+    for row in tokens:
+        assert row[0] in intent_slots
+        assert row[1] in topology_slots
+        assert row[2] in intent_slots
+        assert row[3] in topology_slots
+
+
+def test_role_sequence_restricts_random_mode_tokens() -> None:
+    plan = _role_factorized_plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+    role_sequence = ["intent", "topology", "intent", "topology"]
+
+    trace = head(
+        context,
+        pad_mask,
+        mode="random",
+        generator=torch.Generator().manual_seed(5),
+        role_sequence=role_sequence,
+    )
+
+    intent_slots = set(plan.role_slot_indices("intent"))
+    topology_slots = set(plan.role_slot_indices("topology"))
+    tokens = trace.plan_tokens.tolist()
+    for row in tokens:
+        assert row[0] in intent_slots
+        assert row[1] in topology_slots
+
+
+def test_role_sequence_rejects_target_plan_ids_outside_the_declared_role() -> None:
+    plan = _role_factorized_plan()
+    head = AbstractPlanHead(D_MODEL, plan)
+    context, pad_mask = _context()
+    role_sequence = ["intent"] * plan.rounds
+    # slot 5 belongs to "topology", not "intent" -- out of range for round 0.
+    target = torch.tensor([[5, 0, 1, 2]] * BATCH)
+    with pytest.raises(ValueError, match="assigned role_sequence range"):
+        head(
+            context,
+            pad_mask,
+            mode="teacher_forced",
+            target_plan_ids=target,
+            role_sequence=role_sequence,
         )
 
 

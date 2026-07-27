@@ -1,0 +1,121 @@
+{
+  "schema": "ap027_discrete_plan_pareto_run/v1",
+  "generated_at": "2026-07-26T10:08:31.924776+00:00",
+  "campaign_id": "ap027-discrete-plan-pareto",
+  "arms": [
+    "no_plan",
+    "empty",
+    "random_norm_matched",
+    "shuffle_between_examples",
+    "within_plan_permutation",
+    "prefix_truncation",
+    "length_matched_verbal",
+    "gold_semantic_plan",
+    "learned_abstract_plan",
+    "current_auxiliary_heads",
+    "learned_plan_binder_precision",
+    "retrieval_baseline"
+  ],
+  "refinement_rounds": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "rounds_measured": [
+    1
+  ],
+  "rounds_pending": [
+    2,
+    4,
+    8
+  ],
+  "rows": [
+    {
+      "record_id": "ap027_discrete_plan_pareto_round1",
+      "arm": "no_plan",
+      "refinement_round": 1,
+      "path": "constrained",
+      "total_latency_ms": 118829.03,
+      "plan_latency_ms": 0.0,
+      "generation_latency_ms": 45.088,
+      "verification_latency_ms": 8.754999999999999,
+      "peak_memory_proxy": 22.0,
+      "output_tokens": 22,
+      "metrics": {
+        "binding_aware_meaningful_v2": 0.0,
+        "binder_reference_f1": 0.0
+      },
+      "promotion_eligible": false,
+      "metrics_provenance": {
+        "binding_aware_meaningful_v2": "parse_rate_proxy",
+        "binder_reference_f1": "placeholder_fidelity_proxy"
+      }
+    },
+    {
+      "record_id": "ap027_discrete_plan_pareto_round1",
+      "arm": "current_auxiliary_heads",
+      "refinement_round": 1,
+      "path": "constrained",
+      "total_latency_ms": 118829.03,
+      "plan_latency_ms": 0.0,
+      "generation_latency_ms": 45.088,
+      "verification_latency_ms": 8.754999999999999,
+      "peak_memory_proxy": 22.0,
+      "output_tokens": 22,
+      "metrics": {
+        "binding_aware_meaningful_v2": 0.0,
+        "binder_reference_f1": 0.0
+      },
+      "promotion_eligible": false,
+      "metrics_provenance": {
+        "binding_aware_meaningful_v2": "parse_rate_proxy",
+        "binder_reference_f1": "placeholder_fidelity_proxy"
+      }
+    }
+  ],
+  "summary": {
+    "schema": "discrete_plan_pareto_summary/v1",
+    "measured_arms": [
+      "current_auxiliary_heads",
+      "no_plan"
+    ],
+    "arms_pending": [
+      "empty",
+      "gold_semantic_plan",
+      "learned_plan_binder_precision",
+      "length_matched_verbal",
+      "prefix_truncation",
+      "random_norm_matched",
+      "retrieval_baseline",
+      "shuffle_between_examples",
+      "within_plan_permutation"
+    ],
+    "arms_closed": [
+      "learned_abstract_plan"
+    ],
+    "ap022_disposition": {
+      "campaign_id": "slm313-abstract-plan-functional-evidence",
+      "verdict": "ignored_or_collapsed",
+      "doc": "docs/design/abstract-plan-functional-evidence.md",
+      "result_json": "docs/design/iter-slm313-abstract-plan-functional-evidence-20260726.json"
+    },
+    "non_dominated": [
+      "no_plan@1",
+      "current_auxiliary_heads@1"
+    ],
+    "claim_class": "wiring",
+    "ship_eligible": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "841ca817bfa02437fe6618601b003faacbfd90de",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.ap027_discrete_plan_pareto": "v1",
+      "harness.experiments.slm313_abstract_plan_functional_evidence": "v11"
+    },
+    "stamped_at": "2026-07-26T10:08:31.924757+00:00"
+  },
+  "max_harness_wall_seconds": 155
+}
