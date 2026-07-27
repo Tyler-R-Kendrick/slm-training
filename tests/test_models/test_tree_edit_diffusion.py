@@ -14,6 +14,7 @@ from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.tree_edit_diffusion import (
+    ACTION_STOP,
     TreeEditDiffusionConfig,
     TreeEditDiffusionModel,
     TreeEditSpace,
@@ -363,3 +364,169 @@ def test_training_loss_decode_all_valid_and_checkpoint(tmp_path) -> None:
         ]
     )
     assert reproduced == outputs
+
+
+# --- SLM-434 (LAR0-07): value_label_mode / stop_slot_accounting port -------
+#
+# Ported default-off from the never-merged SLM-308/SLM-310 forks so the
+# landed SLM-317/SLM-431 harness (which builds
+# ``TreeEditDiffusionConfig(value_label_mode=..., stop_slot_accounting=...)``)
+# can run on main. Both knobs default to the historical behavior: these
+# tests prove that default is unchanged and that the new arm (bounded
+# distance values / corrected STOP accounting) is independently well-formed.
+
+
+def test_new_knobs_default_off_matching_historical_behavior() -> None:
+    cfg = TreeEditDiffusionConfig()
+    assert cfg.value_label_mode == "mutation_count"
+    assert cfg.stop_slot_accounting == "legacy"
+
+
+def test_unknown_value_label_mode_and_stop_slot_accounting_raise() -> None:
+    records = [
+        ExampleRecord(
+            id="a", prompt="p", openui=PROGRAM, placeholders=INVENTORY
+        )
+    ]
+    bad_value_cfg = TreeEditDiffusionConfig(
+        d_model=32, n_heads=4, context_layers=1, denoiser_layers=1,
+        value_label_mode="not_a_mode",
+    )
+    model = TreeEditDiffusionModel.from_records(
+        records, config=bad_value_cfg, device="cpu"
+    )
+    with pytest.raises(ValueError, match="value_label_mode"):
+        model.training_loss(records)
+
+    bad_stop_cfg = TreeEditDiffusionConfig(
+        d_model=32, n_heads=4, context_layers=1, denoiser_layers=1,
+        beam_width=2, expand_per_state=2, max_search_steps=2,
+        stop_slot_accounting="not_a_mode",
+    )
+    model = TreeEditDiffusionModel.from_records(
+        records, config=bad_stop_cfg, device="cpu"
+    )
+    with pytest.raises(ValueError, match="stop_slot_accounting"):
+        model.generate_batch_requests(
+            [GenerationRequest(prompt="p", slot_contract=tuple(INVENTORY))]
+        )
+
+
+def test_bounded_distance_mode_masks_unknown_and_reports_metrics() -> None:
+    records = [
+        ExampleRecord(id="a", prompt="p", openui=PROGRAM, placeholders=INVENTORY)
+    ]
+    cfg = TreeEditDiffusionConfig(
+        d_model=32, n_heads=4, context_layers=1, denoiser_layers=1,
+        max_chain=2, seed=5, value_label_mode="bounded_distance",
+    )
+    model = TreeEditDiffusionModel.from_records(records, config=cfg, device="cpu")
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert "value_bounded" in metrics
+    assert "value_unknown_excluded" in metrics
+
+
+def test_bounded_distance_mode_excludes_unknown_from_value_loss(monkeypatch) -> None:
+    from slm_training.harnesses.experiments.slm308_distance_oracle import DistanceKind
+
+    records = [
+        ExampleRecord(id="a", prompt="p", openui=PROGRAM, placeholders=INVENTORY)
+    ]
+    cfg = TreeEditDiffusionConfig(
+        d_model=32, n_heads=4, context_layers=1, denoiser_layers=1,
+        max_chain=2, seed=5, value_label_mode="bounded_distance",
+    )
+    model = TreeEditDiffusionModel.from_records(records, config=cfg, device="cpu")
+
+    class _Unknown:
+        kind = DistanceKind.UNKNOWN
+
+        def value_target(self, max_depth: int):
+            return None
+
+    monkeypatch.setattr(
+        TreeEditDiffusionModel, "_distance_label", lambda *a, **k: _Unknown()
+    )
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    assert model.last_training_metrics["value_unknown_excluded"] >= 1.0
+
+
+def test_mutation_count_mode_never_touches_oracle(monkeypatch) -> None:
+    import slm_training.harnesses.experiments.slm308_distance_oracle as oracle
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("oracle reached from mutation_count training path")
+
+    monkeypatch.setattr(oracle, "distance_to_target", _boom)
+    records = [
+        ExampleRecord(id="a", prompt="p", openui=PROGRAM, placeholders=INVENTORY)
+    ]
+    cfg = TreeEditDiffusionConfig(
+        d_model=32, n_heads=4, context_layers=1, denoiser_layers=1, seed=5,
+    )
+    model = TreeEditDiffusionModel.from_records(records, config=cfg, device="cpu")
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    assert "value_bounded" not in model.last_training_metrics
+
+
+def test_decode_never_calls_the_oracle() -> None:
+    import inspect
+
+    for fn_name in ("_decode_one", "_enumerate_edits", "_seed_state", "generate"):
+        source = inspect.getsource(getattr(TreeEditDiffusionModel, fn_name))
+        assert "distance_to_target" not in source
+        assert "slm308" not in source
+
+
+def test_apply_reason_out_list_is_accept_only() -> None:
+    space = TreeEditSpace()
+    statements = parse_statements(PROGRAM)
+    reason: list[str] = []
+    # An out-of-range REPLACE is rejected; a single generic marker appended.
+    rejected = space.apply(
+        statements, Edit(action=1, stmt=999, comp=0), INVENTORY, reason=reason
+    )
+    assert rejected is None
+    assert reason == ["rejected"]
+    # A successful STOP appends nothing.
+    reason.clear()
+    accepted = space.apply(statements, Edit(ACTION_STOP), INVENTORY, reason=reason)
+    assert accepted is not None
+    assert reason == []
+
+
+def test_corrected_stop_accounting_consumes_fewer_slots_on_duplicate() -> None:
+    """Two STOP proposals for the same (unchanged) row state: legacy consumes
+    a decode-budget slot for both; corrected consumes one only for the
+    proposal actually retained on the beam."""
+    records = [
+        ExampleRecord(id="a", prompt="p", openui=PROGRAM, placeholders=INVENTORY)
+    ]
+    duplicate_stop_candidates = [(1.0, Edit(ACTION_STOP)), (0.5, Edit(ACTION_STOP))]
+
+    def _evidence_for(stop_slot_accounting: str) -> dict:
+        cfg = TreeEditDiffusionConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1,
+            beam_width=2, expand_per_state=2, max_search_steps=1,
+            stop_slot_accounting=stop_slot_accounting,
+        )
+        model = TreeEditDiffusionModel.from_records(
+            records, config=cfg, device="cpu"
+        )
+        model._enumerate_edits = lambda *a, **k: duplicate_stop_candidates
+        model.generate_batch_requests(
+            [GenerationRequest(prompt="p", slot_contract=tuple(INVENTORY))]
+        )
+        return model._generation_evidence[0]
+
+    legacy = _evidence_for("legacy")
+    assert legacy["stop_proposals"] == 2
+    assert legacy["stop_slots_consumed"] == 2
+
+    corrected = _evidence_for("corrected")
+    assert corrected["stop_proposals"] == 2
+    assert corrected["stop_slots_consumed"] == 1

@@ -4,8 +4,8 @@ status: active
 tags: [recurrence, diagnostics, fixture]
 created: 2026-07-23
 updated: 2026-07-27
-linear: SLM-282, SLM-421, SLM-317, SLM-431
-design: docs/design/iter-slm282-recurrence-health-20260723.md, docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md
+linear: SLM-282, SLM-421, SLM-317, SLM-431, SLM-434
+design: docs/design/iter-slm282-recurrence-health-20260723.md, docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md, docs/design/iter-slm434-lar0-07-model-work-port-20260727.md, docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.md
 sources: "[[deeploop-source]], [[training-free-looped-transformers-source]], https://arxiv.org/abs/2106.14342"
 ---
 
@@ -84,3 +84,34 @@ was produced, and the second LAR3-reopening condition remains **unmet**. Next
 step: a decision issue on whether to land/port the SLM-305/308/310 model
 work (or re-express the historical/improved arms against main's model) before
 any powered rerun is attempted.
+
+**SLM-434 (2026-07-27): model-work port landed; powered rerun executed —
+`repair_negative`.** Decided the SLM-431 blocker by porting only the two
+knobs SLM-317's harness actually references (`value_label_mode`,
+`stop_slot_accounting`, both default-off, reproducing main's pre-existing
+behavior exactly per the full unmodified pre-existing test suite) plus a
+scoped port of the SLM-308 bounded-distance oracle module and an accept-only
+`reason` shim on `TreeEditSpace.apply`; SLM-308's pairwise-progress loss and
+SLM-310's corruption-distribution knob and full reason-code taxonomy were
+**not** ported (the SLM-317 harness never references them). Full decision
+record: `docs/design/iter-slm434-lar0-07-model-work-port-20260727.md`.
+
+With the blocker cleared, the SLM-431-preregistered powered rerun executed
+for the first time: 20 seeds (2..21, disjoint from SLM-317's original
+`[0, 1]`), `min_pass_rate=0.5`, ≈50s wall time. Safety and reachability gates
+PASS; the value gate FAILS with Wilson 95% CI `[0.0, 0.161]` against the
+0.5 threshold → **`repair_negative`**. Both `ar_only` and every repair arm
+sit at 100% hard-valid rate on the frozen SLM-155 fixture corpus, so there is
+no invalid AR baseline for repair to improve on — a legitimate, expected
+negative, not reframed as inconclusive. Full evidence:
+`docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.{json,md}`.
+
+**Net effect on LAR3 (updated)**: the second PR #853-#856 reopening
+condition (a passing do-no-harm repair value screen) is now **resolved as
+not met** (`repair_negative`), joining SLM-421's already-satisfied
+recurrence-health condition. Both conditions have now been measured; only
+one is satisfied. **LAR3 stays CLOSED.** This record does not itself reopen
+or re-close LAR3 beyond stating that outcome — any further campaign design
+would need a fixture corpus with headroom for repair to demonstrate value
+(the current SLM-155 corpus fixture is saturated at ceiling validity for the
+AR arm), which is out of scope for this issue.

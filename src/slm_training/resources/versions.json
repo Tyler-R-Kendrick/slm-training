@@ -6662,7 +6662,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -6680,6 +6680,11 @@
         "docs/design/var1-02-set-property-action-20260726.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-27",
+          "note": "SLM-434 (LAR0-07): default-off port of the never-merged SLM-308/SLM-310 forks' value_label_mode (\"mutation_count\" default / \"bounded_distance\") and stop_slot_accounting (\"legacy\" default / \"corrected\") config knobs onto TreeEditDiffusionConfig, needed by the SLM-317/SLM-431 harness's ar_repair_historical/ar_repair_improved arms. Defaults reproduce pre-existing training_loss/_decode_one behavior exactly (full unmodified test suite passes unchanged). TreeEditSpace.apply gains an accept-only optional reason out-list (single generic marker, not the full SLM-310 per-cause taxonomy) so the already-landed harness's repair_decode call resolves. New bounded_distance path delegates to the newly-registered harness.experiments.slm308_distance_oracle component; no change to mutation_count/legacy behavior or any frozen SLM-279/SLM-238 objective contract."
+        },
         {
           "version": "v8",
           "date": "2026-07-26",
@@ -6766,6 +6771,23 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; SLM-303 decode-budget audit with hash pins, preregistered budget sweep, and taxonomy disposition"
+        }
+      ]
+    },
+    "harness.experiments.slm308_distance_oracle": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm308_distance_oracle.py",
+        "tests/test_harnesses/experiments/test_slm308_distance_oracle.py",
+        "docs/design/iter-slm434-lar0-07-model-work-port-20260727.json",
+        "docs/design/iter-slm434-lar0-07-model-work-port-20260727.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-434 (LAR0-07): scoped port of the never-merged SLM-308 fork's (commit ae5448c5) bounded reverse-BFS distance oracle onto main's evolved slm299_edit_reachability (its four SLM-299 dependencies -- _canonical_key, _check_invariants, _enumerate_children, _normalize_inventory -- kept identical signatures, so the oracle logic is unchanged from the fork). Feeds TreeEditDiffusionConfig.value_label_mode=\"bounded_distance\" (harness.experiments.slm299_edit_reachability v9). SLM-308's pairwise progress margin loss and SLM-310's corruption_action_distribution knob are NOT ported -- the SLM-317/SLM-431 harness this unblocks does not reference either."
         }
       ]
     },
@@ -10888,16 +10910,23 @@
       ]
     },
     "harness.experiments.slm317_repair_hybrid": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm317_repair_hybrid.py",
         "scripts/run_slm317_repair_hybrid.py",
         "tests/test_harnesses/experiments/test_slm317_repair_hybrid.py",
         "docs/design/iter-slm317-repair-hybrid-20260724.json",
-        "docs/design/iter-slm317-repair-hybrid-20260724.md"
+        "docs/design/iter-slm317-repair-hybrid-20260724.md",
+        "docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.json",
+        "docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-27",
+          "note": "SLM-434 (LAR0-07): SLM-431's powered-rerun surface could not execute on main (TypeError: TreeEditDiffusionConfig had no value_label_mode/stop_slot_accounting) until SLM-434 ported those two knobs; no change to this module or script. First real powered rerun: 20 seeds (2..21, disjoint from SLM-317's original [0, 1]), min_pass_rate=0.5. Result: safety PASS (invalid_over_valid=0), value gate FAIL, disposition repair_negative (Wilson 95% [0.0, 0.161] vs 0.5) -- both AR-only and every repair arm are already at ceiling (100%) hard-valid rate on this fixture corpus, so there is no invalid AR baseline left for repair to improve. LAR3 stays CLOSED; the second PR #853-#856 reopening condition (repair_positive) is not met."
+        },
         {
           "version": "v2",
           "date": "2026-07-27",

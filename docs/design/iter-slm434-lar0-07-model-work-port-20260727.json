@@ -1,0 +1,48 @@
+{
+  "decision": "Port the value_label_mode and stop_slot_accounting config knobs from the never-merged SLM-308 (ae5448c5) / SLM-310 (d8f35563) forks onto main, default-off, rather than re-expressing the SLM-317 historical/improved arms against main without them.",
+  "experiment": "slm434-lar0-07-model-work-port",
+  "follow_up_of": "SLM-431 (LAR0-06) stop-rule finding",
+  "issue": "SLM-434",
+  "non_goals_honored": [
+    "No change to the do-no-harm commit rule, the frozen SLM-155 corpus, or any ship/production claim.",
+    "No weakening of the preregistered min_pass_rate=0.5 threshold to force a decision.",
+    "No change to the frozen SLM-279 depth-supervision arithmetic contract (unrelated model).",
+    "LAR3 is NOT declared reopened or closed by this issue beyond what the powered rerun result itself states; SLM-432 (LAR4-06) remains correctly gated since LAR3 authorization was not achieved."
+  ],
+  "powered_rerun_result": {
+    "artifact": "docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.{json,md}",
+    "disposition": "repair_negative",
+    "max_run_minutes_cap": 3,
+    "ran": "python -m scripts.run_slm317_repair_hybrid --seeds 2..21 --min-pass-rate 0.5",
+    "summary": "Safety PASS (invalid_over_valid=0), reachability PASS, value gate FAIL: Wilson 95% CI [0.0, 0.161] over 20 seeds vs required min_pass_rate 0.5. Both ar_only and every repair arm sit at 100% hard-valid rate on the frozen SLM-155 fixture corpus (no invalid AR baseline exists for repair to fix), so no seed can show a paired improvement. LAR3 stays CLOSED: this is the second of the two PR #853-#856 reopening conditions and it is not met.",
+    "wall_seconds_observed": 50.0
+  },
+  "regression_evidence": "Full pre-existing tests/test_models/test_tree_edit_diffusion.py (10), tests/test_harnesses/experiments/test_slm299_edit_reachability.py, and tests/test_harnesses/experiments/test_slm317_repair_hybrid.py suites pass unmodified after the port, proving default (mutation_count + legacy) behavior is byte-for-byte unchanged. 8 new tests added to test_tree_edit_diffusion.py + 7 new tests in test_slm308_distance_oracle.py cover the new bounded_distance / corrected arms, validation errors, the accept-only reason shim, and a no-oracle-at-decode audit.",
+  "scope_excluded_out_of_scope_for_slm317": [
+    "SLM-308 pairwise_progress_margin loss / pairwise_progress_loss (SLM-317 harness never references it)",
+    "SLM-310 corruption_action_distribution reweighting knob (SLM-317 harness never references it)",
+    "SLM-310 full per-cause reason-code taxonomy on TreeEditSpace.apply (23 machine-readable codes) -- only a single generic accept-only marker is ported, since repair_decode discards the reason list contents",
+    "scripts/run_slm308_distance_value.py matched fixture experiment (SLM-308s own promotion evidence; not needed to unblock SLM-317/SLM-431)"
+  ],
+  "scope_included": [
+    "TreeEditDiffusionConfig.value_label_mode (mutation_count default / bounded_distance)",
+    "TreeEditDiffusionConfig.stop_slot_accounting (legacy default / corrected)",
+    "training_loss branch: bounded_distance value targets from the ported SLM-308 oracle, UNKNOWN-masked out of the value MSE",
+    "_decode_one branch: corrected STOP-slot accounting only consumes expand_per_state budget when the frozen STOP candidate is retained",
+    "TreeEditSpace.apply gains an accept-only optional reason out-list (single generic marker) so the already-landed SLM-317 harness repair_decode call site resolves",
+    "src/slm_training/harnesses/experiments/slm308_distance_oracle.py ported near-verbatim from ae5448c5 (its 4 SLM-299 dependencies kept identical signatures on main)"
+  ],
+  "unblocks": "SLM-432 (LAR4-06), gated on LAR3 authorization",
+  "version_stamp": {
+    "code_commit": "226df88592c6ea824ac3454cdf3e763da437fbc8",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm299_edit_reachability": "v9",
+      "harness.experiments.slm308_distance_oracle": "v1",
+      "harness.experiments.slm317_repair_hybrid": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-27T06:40:52.469655+00:00"
+  },
+  "why_port_not_reexpress": "Re-expressing (route b) would have been a no-op for the historical arm only -- main.training_loss/_decode_one already implement exactly mutation_count value labels (1 - applied/(max_chain+1)) and legacy STOP-slot accounting (every STOP proposal consumes a slot), confirmed by the full pre-existing test suite passing unmodified after the port. But the improved arm inherently needs the bounded_distance oracle + corrected STOP accounting -- there is no way to re-express that arm without the knobs; per the SLM-434 contract (\"if (b) changes what the arms measure, prefer (a)\"), route (a) was mandatory for that arm, so the port covers both."
+}

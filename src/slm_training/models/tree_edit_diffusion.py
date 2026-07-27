@@ -327,6 +327,7 @@ class TreeEditSpace:
         edit: Edit,
         inventory: list[str],
         pre_validate: Callable[[list[Statement]], bool] | None = None,
+        reason: list[str] | None = None,
     ) -> list[Statement] | None:
         """Apply one edit; None when inapplicable or invalid (fail closed).
 
@@ -335,7 +336,24 @@ class TreeEditSpace:
         reachability analyzer to skip already-visited states). It can only
         reject, never accept: every accepted state is still re-validated
         through the real parser.
+
+        ``reason`` (SLM-434/LAR0-07 port, accept-only): optional out-list;
+        on rejection a single generic ``"rejected"`` marker is appended.
+        The full per-cause SLM-310 reason-code taxonomy is out of scope for
+        this port and is not reproduced here.
         """
+        result = self._apply_impl(statements, edit, inventory, pre_validate)
+        if result is None and reason is not None:
+            reason.append("rejected")
+        return result
+
+    def _apply_impl(
+        self,
+        statements: list[Statement],
+        edit: Edit,
+        inventory: list[str],
+        pre_validate: Callable[[list[Statement]], bool] | None = None,
+    ) -> list[Statement] | None:
         if edit.action == ACTION_STOP:
             return [Statement(**vars(s)) for s in statements]
         working = [
@@ -985,6 +1003,26 @@ class TreeEditDiffusionConfig:
     schema_in_context: bool = False
     slot_contract_in_context: bool = True
     seed: int = 0
+    # SLM-434 (LAR0-07): value-label objective mode, ported default-off from
+    # the never-merged SLM-308 fork. "mutation_count" (default): historical
+    # 1 - applied/(max_chain+1) label. "bounded_distance": SLM-308's bounded
+    # reverse-BFS oracle cost-to-go, UNKNOWN excluded from the value loss.
+    # The default preserves main's pre-existing training behavior exactly.
+    value_label_mode: str = "mutation_count"
+    # SLM-434 (LAR0-07): STOP-slot decode accounting, ported default-off from
+    # the never-merged SLM-310 fork. "legacy" (default): every enumerated
+    # STOP proposal consumes an expand_per_state slot. "corrected": STOP
+    # consumes a slot only when its frozen candidate is actually retained on
+    # the beam. The default preserves main's pre-existing decode behavior.
+    stop_slot_accounting: str = "legacy"
+
+
+# SLM-434 (LAR0-07): oracle depth/budget used for bounded_distance value
+# labels. The budget is shallow by design (extended-space enumeration is
+# parser-backed and expensive); states beyond the explored layers get
+# witness-bounded BOUNDED labels or are excluded (UNKNOWN), never coerced.
+VALUE_ORACLE_MAX_DEPTH = 8
+VALUE_ORACLE_NODE_BUDGET = 8
 
 
 class TreeEditPolicy(nn.Module):
@@ -1155,12 +1193,38 @@ class TreeEditDiffusionModel(nn.Module):
     def forward(self, batch: list[ExampleRecord]) -> float:
         return float(self.training_loss(batch).detach().cpu())
 
+    def _distance_label(self, statements, target, inventory, witness: int):
+        """Training-time ONLY gold-distance label (SLM-308 oracle, ported by
+        SLM-434/LAR0-07). Imported lazily: the oracle reads the gold target
+        and must never be reachable from any decode path."""
+        from slm_training.harnesses.experiments.slm308_distance_oracle import (
+            distance_to_target,
+        )
+
+        return distance_to_target(
+            statements,
+            target,
+            space=self.space,
+            inventory=inventory,
+            max_depth=VALUE_ORACLE_MAX_DEPTH,
+            node_budget=VALUE_ORACLE_NODE_BUDGET,
+            upper_bound_witness=witness,
+        )
+
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
+        if self.config.value_label_mode not in {"mutation_count", "bounded_distance"}:
+            raise ValueError(
+                f"unknown value_label_mode {self.config.value_label_mode!r}"
+            )
+        bounded_mode = self.config.value_label_mode == "bounded_distance"
         prompts: list[str] = []
         states: list[str] = []
         targets: list[Edit] = []
         values: list[float] = []
+        value_mask: list[bool] = []
         skipped = 0
+        n_bounded = 0
+        n_unknown_excluded = 0
         for record in batch:
             source = (record.openui or "").strip()
             statements = parse_statements(source) if source else None
@@ -1182,6 +1246,7 @@ class TreeEditDiffusionModel(nn.Module):
                 states.append(source)
                 targets.append(Edit(ACTION_STOP))
                 values.append(1.0)
+                value_mask.append(True)
                 continue
             k = self._rng.randint(1, self.config.max_chain)
             current = statements
@@ -1199,7 +1264,25 @@ class TreeEditDiffusionModel(nn.Module):
             prompts.append(prompt)
             states.append(render_statements(current))
             targets.append(inverse)
-            values.append(1.0 - applied / float(self.config.max_chain + 1))
+            if not bounded_mode:
+                values.append(1.0 - applied / float(self.config.max_chain + 1))
+                value_mask.append(True)
+                continue
+            # SLM-434/SLM-308: normalized cost-to-go from the bounded distance
+            # oracle. UNKNOWN / unbounded states are excluded from value
+            # loss, never coerced; the mutation chain length is a proven
+            # witness upper bound (the inverse edits walk back to gold).
+            label = self._distance_label(current, statements, inventory, applied)
+            target_value = label.value_target(VALUE_ORACLE_MAX_DEPTH)
+            if target_value is None:
+                values.append(0.0)
+                value_mask.append(False)
+                n_unknown_excluded += 1
+            else:
+                values.append(target_value)
+                value_mask.append(True)
+                if label.kind.value == "BOUNDED":
+                    n_bounded += 1
         if not states:
             return torch.zeros((), device=self.device_name, requires_grad=True)
         ctx, ctx_pad = self._encode_context(prompts)
@@ -1264,10 +1347,20 @@ class TreeEditDiffusionModel(nn.Module):
             loss = loss + property_loss
             losses["property_value"] = float(property_loss.detach().cpu())
         value_t = torch.tensor(values, device=device, dtype=out["value"].dtype)
-        value_loss = F.mse_loss(out["value"], value_t)
+        if bounded_mode:
+            mask_t = torch.tensor(value_mask, dtype=torch.bool, device=device)
+            if bool(mask_t.any()):
+                value_loss = F.mse_loss(out["value"][mask_t], value_t[mask_t])
+            else:
+                value_loss = torch.zeros((), device=device)
+        else:
+            value_loss = F.mse_loss(out["value"], value_t)
         loss = loss + value_loss
         losses["value"] = float(value_loss.detach().cpu())
         losses["skipped"] = float(skipped)
+        if bounded_mode:
+            losses["value_bounded"] = float(n_bounded)
+            losses["value_unknown_excluded"] = float(n_unknown_excluded)
         self.last_training_metrics = losses
         return loss
 
@@ -1429,6 +1522,11 @@ class TreeEditDiffusionModel(nn.Module):
         seed = self._seed_state(inventory)
         if seed is None:
             return "", {"failure": "no_valid_seed"}
+        if self.config.stop_slot_accounting not in {"legacy", "corrected"}:
+            raise ValueError(
+                f"unknown stop_slot_accounting {self.config.stop_slot_accounting!r}"
+            )
+        corrected_stop = self.config.stop_slot_accounting == "corrected"
         beam: list[tuple[float, list[Statement], bool]] = [(0.0, seed, False)]
         # DSH3-32 (SLM-407): forwards/forward_rows count every self.policy(...)
         # call below so a systems benchmark can charge X22's real batched
@@ -1439,6 +1537,8 @@ class TreeEditDiffusionModel(nn.Module):
             "kind": "tree_edit",
             "forwards": 0,
             "forward_rows": 0,
+            "stop_proposals": 0,
+            "stop_slots_consumed": 0,
         }
         for _ in range(self.config.max_search_steps):
             live = [entry for entry in beam if not entry[2]]
@@ -1469,12 +1569,20 @@ class TreeEditDiffusionModel(nn.Module):
                         break
                     if edit.action == ACTION_STOP:
                         text = render_statements(statements)
-                        if text not in seen:
+                        retained = text not in seen
+                        if retained:
                             seen.add(text)
                             next_beam.append(
                                 (float(out["value"][row]), statements, True)
                             )
-                        expanded += 1
+                        # SLM-434/SLM-310 STOP-slot accounting: legacy
+                        # consumes a slot for every STOP proposal; corrected
+                        # consumes one only when the frozen candidate is
+                        # actually retained on the beam.
+                        evidence["stop_proposals"] += 1
+                        if not corrected_stop or retained:
+                            expanded += 1
+                            evidence["stop_slots_consumed"] += 1
                         continue
                     child = self.space.apply(statements, edit, inventory)
                     if child is None:
