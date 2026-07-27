@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_local_replay_context_not_ship", "result": {"held_out_n": 8, "pair_count": 48, "pair_rejections": {}, "relations": ["checkout_another_state", "fork_then_choose_branch", "partial_rollback", "undo_then_redo"], "row_count": 48, "train_n": 40}}

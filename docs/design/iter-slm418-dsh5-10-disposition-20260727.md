@@ -155,6 +155,17 @@ all 25 cells 1.0, best `state_plus_recent_receipts` depth 1 at 1.0 tied
 with baseline). Tests: **50 passed**. `verify_version_stamps --check`,
 `repo_policy`, and `git diff --check`: clean (see PR body).
 
+## Recovered local evidence (superseded, retained)
+
+`dsh5-10-replay-preference-20260726-local/` preserves the exact AgentEvals
+bundle recovered from the original SLM-418 worktree: 48 pairs (40 train / 8
+held-out) across four relations on CPU. It is a bounded structural result
+only: the recorded `state_retrieved_events` arm tied every other arm at
+`action_accuracy=0.5`; it did not use the final seven-pattern corpus or the
+merged context-view harness. The result JSON records `code_dirty=true`, so
+it is immutable historical provenance, not reproducible current-main
+evidence and does not alter the final disposition above.
+
 Note: the task-brief claim of a merged demo pairs builder
 (`scripts/build_replay_preference_pairs.py`, PRs #1125/#1127/#1128) does
 not hold on `origin/main` — those commits live only on an unmerged branch

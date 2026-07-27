@@ -1,0 +1,147 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh5-10-replay-preference/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh5-10-replay-preference/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh5-10-replay-preference",
+      "timingPath": "agentv-dir://agentv/dsh5-10-replay-preference/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 4,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "replay-pair-provenance:domain_criterion",
+          "expected": true,
+          "id": "replay-pair-provenance:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "split-held-out:domain_criterion",
+          "expected": true,
+          "id": "split-held-out:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "five-context-arms:domain_criterion",
+          "expected": true,
+          "id": "five-context-arms:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "no-ship-claim:domain_criterion",
+          "expected": true,
+          "id": "no-ship-claim:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 4
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh5-10-replay-preference.eval.jsonl",
+    "summary": {
+      "durationMs": 199,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 4,
+      "total": 4
+    }
+  },
+  "arms": {
+    "current_state": {
+      "action_accuracy": 0.5,
+      "chosen_brier": 0.48663162830044254,
+      "chosen_ece": 0.4932551571973204,
+      "command_accuracy": 0.625,
+      "n": 8
+    },
+    "full_transcript_state": {
+      "action_accuracy": 0.5,
+      "chosen_brier": 0.49999977057336487,
+      "chosen_ece": 0.4999998852866649,
+      "command_accuracy": 0.625,
+      "n": 8
+    },
+    "last_three_text": {
+      "action_accuracy": 0.5,
+      "chosen_brier": 0.49999977057336487,
+      "chosen_ece": 0.4999998852866649,
+      "command_accuracy": 0.625,
+      "n": 8
+    },
+    "state_recent_receipts": {
+      "action_accuracy": 0.5,
+      "chosen_brier": 0.49998747403821564,
+      "chosen_ece": 0.49999373696680705,
+      "command_accuracy": 0.625,
+      "n": 8
+    },
+    "state_retrieved_events": {
+      "action_accuracy": 0.5,
+      "chosen_brier": 0.49999539188320496,
+      "chosen_ece": 0.49999769593452414,
+      "command_accuracy": 0.625,
+      "n": 8
+    }
+  },
+  "corpus": {
+    "content_fingerprint": "d4e412fe2064e4b3e806df8b742403f75e8e81b72b3d233d88e77aae7d90cc0b",
+    "record_count": 56
+  },
+  "coverage": {
+    "held_out_n": 8,
+    "pair_count": 48,
+    "pair_rejections": {},
+    "relations": [
+      "checkout_another_state",
+      "fork_then_choose_branch",
+      "partial_rollback",
+      "undo_then_redo"
+    ],
+    "row_count": 48,
+    "train_n": 40
+  },
+  "decision": {
+    "best_view": "state_retrieved_events",
+    "reason": "bounded local structural replay rows with production-visible templated context; not a natural-language or ship result",
+    "verdict": "measured"
+  },
+  "run": {
+    "backend": "pairwise_count_preference",
+    "checkpoint": null,
+    "device": "cpu",
+    "max_roots": 8,
+    "meaningful_parse": "not applicable: legal control-action selection, not program generation",
+    "primary_metric": "action_accuracy",
+    "ship_claim": false
+  },
+  "schema": "dsh5_10_replay_preference_report/v1",
+  "version_stamp": {
+    "code_commit": "0f65cc4c2e5f80b6d1b20be2abf4b399a904c468",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.replay_preference": "v6",
+      "harness.preference.operator_history_pairs": "v2"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-27T03:55:29.437350+00:00"
+  }
+}

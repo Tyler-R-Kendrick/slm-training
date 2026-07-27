@@ -1,0 +1,53 @@
+{
+  "assertions": [
+    {
+      "text": "no-ship-claim:domain_criterion",
+      "passed": true,
+      "evidence": "actual=True operator=eq expected=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "no-ship-claim:domain_criterion",
+      "type": "code-grader",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "no-ship-claim:domain_criterion",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
+        }
+      ],
+      "details": {
+        "criterion_id": "no-ship-claim:domain_criterion",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0f65cc4c2e5f80b6d1b20be2abf4b399a904c468",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.replay_preference": "v6",
+      "harness.preference.operator_history_pairs": "v2"
+    },
+    "stamped_at": "2026-07-27T03:55:29.437350+00:00"
+  }
+}

@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_local_replay_context_not_ship", "result": {"backend": "pairwise_count_preference", "checkpoint": null, "device": "cpu", "max_roots": 8, "meaningful_parse": "not applicable: legal control-action selection, not program generation", "primary_metric": "action_accuracy", "ship_claim": false}}
