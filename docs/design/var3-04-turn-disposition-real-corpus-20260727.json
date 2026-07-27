@@ -1,0 +1,121 @@
+{
+  "arms": {
+    "held_out": {
+      "derived_only": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 8,
+        "composite_penalized_error_rate": 0.5625,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 6,
+        "wrong_op_rate": 0.75
+      },
+      "disposition_off": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 8,
+        "composite_penalized_error_rate": 0.5625,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 6,
+        "wrong_op_rate": 0.75
+      },
+      "disposition_trained": {
+        "abstention_count": 5,
+        "abstention_rate": 0.625,
+        "case_count": 8,
+        "composite_penalized_error_rate": 0.4375,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 3,
+        "wrong_op_rate": 0.375
+      }
+    },
+    "train": {
+      "derived_only": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 16,
+        "composite_penalized_error_rate": 0.375,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 8,
+        "wrong_op_rate": 0.5
+      },
+      "disposition_off": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 16,
+        "composite_penalized_error_rate": 0.375,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 8,
+        "wrong_op_rate": 0.5
+      },
+      "disposition_trained": {
+        "abstention_count": 8,
+        "abstention_rate": 0.5,
+        "case_count": 16,
+        "composite_penalized_error_rate": 0.125,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 0,
+        "wrong_op_rate": 0.0
+      }
+    }
+  },
+  "claim_class": "wiring",
+  "clarify_margin_threshold": 0.5,
+  "clarify_top_k": 3,
+  "corpus": {
+    "dev_forced_singleton_rows": 0,
+    "dev_rejected": 0,
+    "dev_roots_admitted": 4,
+    "dev_roots_skipped": [],
+    "dev_rows": 8,
+    "distinct_action_operator_ids": 6,
+    "distinct_reference_signatures": 5,
+    "train_forced_singleton_rows": 0,
+    "train_rejected": 0,
+    "train_roots_admitted": 8,
+    "train_roots_skipped": [
+      "07e122e7030b65a8_scope",
+      "07e122e7030b65a8_scope"
+    ],
+    "train_rows": 16
+  },
+  "disposition": "held_out_improvement",
+  "final_train_loss": 0.5800141096115112,
+  "honesty": "fixture_or_scratch",
+  "max_wall_minutes": 3.0,
+  "note": "The trained classifier's held-out composite_penalized_error_rate (0.4375) is lower than the always-emit baselines' (0.5625) on this real, argument-bound corpus. Directional only at this scale (n_dev=8 rows) -- see claim_class.",
+  "recipe": {
+    "dim": 8,
+    "learning_rate": 0.05,
+    "n_dev_roots": 4,
+    "n_train_roots": 8,
+    "steps": 30
+  },
+  "schema": "var3_04_turn_disposition_real_corpus/v1",
+  "seed": 43304,
+  "sources": {
+    "dev_source": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722/suites/held_out/records.jsonl",
+    "train_source": "src/slm_training/resources/data/train/openui_verified_v1/records.jsonl"
+  },
+  "version_stamp": {
+    "code_commit": "5f94b925a121d90a31dfba78209e4d8b8d5f00fc",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v26",
+      "data.flow.turn_disposition_corpus": "v1",
+      "dsl.operators.turn_disposition": "v1",
+      "harness.experiments.turn_disposition_training": "v1",
+      "harness.train_data": "v23",
+      "model.operator_feature_encoder": "v2",
+      "model.turn_disposition_head": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-27T14:02:38.092471+00:00"
+  }
+}
