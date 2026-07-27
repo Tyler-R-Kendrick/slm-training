@@ -73,7 +73,7 @@ def merge_ast_value(base: Any, left: Any, right: Any) -> Any:
     composition without ever re-deriving an output from another output —
     every call still diffs against the one fixed ``base``. This is the
     composition primitive DSH5-05's transaction executor folds over; see
-    that module's ``_compose_prepared_outputs``.
+    that module's ``compose_operator_transaction``.
     """
     if left == right:
         return left
