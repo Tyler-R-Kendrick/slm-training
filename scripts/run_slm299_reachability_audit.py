@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from slm_training.dsl.placeholders import extract_placeholders
+from slm_training.dsl.variants import VariantContractV1
 from slm_training.harnesses.experiments.slm299_edit_reachability import (
     DEFAULT_SEED_SOURCE,
     EXPERIMENT_ID,
@@ -94,6 +95,7 @@ def analyze_record(
     node_budget: int,
     mode: str = "extended",
     extra_actions: Sequence[ExtraAction] = (),
+    variant: VariantContractV1 | None = None,
 ) -> ReachabilityCase:
     target = str(record.get("openui") or "")
     placeholders = record.get("placeholders") or extract_placeholders(target)
@@ -104,6 +106,7 @@ def analyze_record(
         max_edits=max_edits,
         node_budget=node_budget,
         mode=mode,
+        variant=variant,
         extra_actions=extra_actions,
     )
 

@@ -103,3 +103,19 @@ no ship claim, no gate weakened, nothing promoted. The lineage tag moves to
 **Faithful (mechanism)** with the observation-channel boundary stated; the
 render-feedback half of the paper remains unreproduced because the domain
 has no target render at generation time.
+
+## X22 evidence annotations (append-only)
+
+- `docs/design/iter-slm305-edit-language-20260724.md` [all suites]: SLM-299/305
+  edit-reachability audit: `reachable_fraction=0.0` measured from the standard
+  X22 minimal seed. VAR0-02 (2026-07-26) attribution: this reading is scoped
+  to the `tree_edit_diffusion` variant's action alphabet only (fingerprint
+  `ab2662a497d8359ffaee46ebbd4bee3789f5b0f2accaf8bf46c5dee489622dab`), never a
+  program-wide verdict on patch-based generation — the `repl_operators` and
+  `twotower_prompt_ast` variants are separately tracked as
+  `not_measured_deferred` and `not_applicable` respectively in
+  `docs/design/var0-02-reachability-matrix-20260726.md`. Suite-level quality
+  readings of the X22 tree-edit decode in this document are bounded by that
+  fraction: the unreachable share of gold programs cannot be produced by the
+  decode space at all, so measured quality on those cases reflects space
+  coverage, not model quality.

@@ -375,7 +375,11 @@ standard seed on all suites
 ([`iter-slm305-edit-language-20260724.md`](iter-slm305-edit-language-20260724.md)).
 The **`repl_operators`** and **`twotower_prompt_ast`** variants are
 `NOT_MEASURED` for this invariant (see [I14](#i14--goals-are-non-negotiable-approaches-are-disposable)'s
-scoping rule below).
+scoping rule below). VAR0-02 publishes the full `(variant, suite)` matrix in
+[`var0-02-reachability-matrix-20260726.md`](var0-02-reachability-matrix-20260726.md):
+`repl_operators` is `not_measured_deferred` and `twotower_prompt_ast` is
+`not_applicable` — reachability is a `(variant, suite)` cell, never a
+program-wide scalar.
 
 **Rejected approach, live goal.** Full-AST output is the *bootstrap* mode for
 `tree_edit_diffusion`, not the end state. **Successor approach, ordered by
@@ -416,7 +420,11 @@ dated, documented waiver — in the same measured-results doc, and links it here
 
 Status labels like `rejected`, `unavailable`, `nl_available=False`, and
 `reachable_fraction=0.0` describe **current approach state**. They may never be
-cited as a reason an invariant does not apply.
+cited as a reason an invariant does not apply. A variant-scoped measurement
+may also never be cited as a program-scoped status (VAR0-02): a
+`reachable_fraction` is attributed to one registered variant's action
+alphabet and says nothing about any other variant until that variant is
+separately measured.
 
 Open goals with named successors, at a glance:
 

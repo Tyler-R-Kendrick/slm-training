@@ -31,6 +31,7 @@ from enum import Enum
 from typing import Any, Callable, Sequence
 
 from slm_training.dsl.parser import validate
+from slm_training.dsl.variants import VARIANTS, VariantContractV1
 from slm_training.models.tree_edit_diffusion import (
     ACTION_ADD,
     ACTION_ADD_CONTAINER,
@@ -54,13 +55,16 @@ from slm_training.models.tree_edit_diffusion import (
 
 __all__ = [
     "DEFAULT_SEED_SOURCE",
+    "TREE_EDIT_VARIANT_ID",
     "ExtraAction",
     "ReachabilityCase",
+    "ReachabilityNotMeasuredError",
     "Verdict",
     "add_container_action",
     "analyze_reachability",
     "component_widen_action",
     "set_property_action",
+    "tree_edit_variant",
 ]
 
 EXPERIMENT_ID = "slm299-edit-reachability"
@@ -69,6 +73,26 @@ EXPERIMENT_ID = "slm299-edit-reachability"
 # ``slm155_factorization_comparison._MINIMAL_SEED_SOURCE`` (and to the
 # fallback candidate in ``TreeEditDiffusionModel._seed_state``).
 DEFAULT_SEED_SOURCE = 'root = Stack([], "column")'
+
+# VAR0-02: the only variant this analyzer currently has a real BFS engine
+# for. Reachability is a function of (action alphabet x seed x target set,
+# VAR0-01/VAR0-02) -- this module's BFS is built entirely around
+# TreeEditSpace/Statement and is meaningful only for this one variant.
+TREE_EDIT_VARIANT_ID = "tree_edit_diffusion"
+
+
+class ReachabilityNotMeasuredError(NotImplementedError):
+    """No reachability engine is registered for the requested variant yet.
+
+    Never silently substitutes another variant's result or returns a fake
+    verdict -- VAR0-02's own non-goal: "a variant-scoped measurement may not
+    be cited as a program-scoped status," which cuts both ways.
+    """
+
+
+def tree_edit_variant() -> VariantContractV1:
+    """The registered ``tree_edit_diffusion`` contract this module analyzes."""
+    return next(v for v in VARIANTS if v.variant_id == TREE_EDIT_VARIANT_ID)
 
 # Reason codes for PROVEN_UNREACHABLE / UNKNOWN_BUDGET.
 REASON_REACHED = "reached"
@@ -701,6 +725,7 @@ def analyze_reachability(
     extra_actions: Sequence[ExtraAction] = (),
     node_budget: int = 800,
     mode: str = "extended",
+    variant: VariantContractV1 | None = None,
 ) -> ReachabilityCase:
     """Prove (or honestly fail to prove) reachability of ``target_source``
     from ``seed_source`` under the real tree-edit space of ``mode``.
@@ -710,9 +735,26 @@ def analyze_reachability(
     extended edit language. ``extra_actions`` are hypothetical transitions
     (what-if analysis only); when any appear on a found path the case is
     marked in ``details`` so the proof is never confused with the real space.
+
+    ``variant`` (VAR0-02) scopes which registered variant's action alphabet
+    this call analyzes -- reachability is a function of
+    ``(action alphabet x seed x target set)``, never a program-wide scalar.
+    Omitting it (the default) resolves to :func:`tree_edit_variant` and
+    reproduces prior behavior exactly: this module's BFS engine has only
+    ever analyzed that one variant. Passing any other registered variant
+    raises :class:`ReachabilityNotMeasuredError` rather than silently running
+    the tree-edit engine against a different alphabet's action space.
     """
     if mode not in {"v1", "extended"}:
         raise ValueError(f"unknown reachability mode {mode!r}")
+    variant = variant or tree_edit_variant()
+    if variant.variant_id != TREE_EDIT_VARIANT_ID:
+        raise ReachabilityNotMeasuredError(
+            f"no reachability engine is registered for variant "
+            f"{variant.variant_id!r} yet; see "
+            "docs/design/var0-02-reachability-matrix-20260726.md for what "
+            "measuring it would require"
+        )
     space = _shared_space()
     inventory = _normalize_inventory(slot_inventory)
 
@@ -730,6 +772,8 @@ def analyze_reachability(
         "inventory_size": len(inventory),
         "extra_actions": [a.name for a in extra_actions],
         "mode": mode,
+        "variant_id": variant.variant_id,
+        "alphabet_fingerprint": variant.action_alphabet_fingerprint,
     }
 
     if _is_unsupported_pack_feature(target_source, extended=(mode == "extended")):
