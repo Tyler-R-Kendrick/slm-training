@@ -124,3 +124,50 @@ independently-run command against `main` HEAD `ae4b446` exactly as merged
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
 | `wf_smoke_v2_verify_ae4b446` | True | 8 | steps | 32.610084533691406 | 13.61 |
+
+## Verified batch #2 (2026-07-27)
+
+10 more rows, each independently run for real in this scheduled session
+against `main` HEAD `abfe291` (post-`ae4b446` fix, already merged), same
+recipe as the re-anchor above:
+
+```bash
+python -m scripts.train_model \
+  --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+  --model twotower --context-backend scratch --steps 8 \
+  --run-id <run_id> --no-sync-checkpoints --device cpu --seed 0
+```
+
+Checked (not committed — `outputs/` is gitignored) at
+`outputs/runs/<run_id>/`. `last_loss` is identical to the re-anchor row
+because the recipe is fully deterministic (same committed `wf_smoke_v2`
+fixture, seed 0, 8 steps). Per-iteration notes:
+[iter1008](autotrain-wf-smoke-20260727-iter1008-measured-results.md) …
+[iter1017](autotrain-wf-smoke-20260727-iter1017-measured-results.md).
+
+| run_id | ok | steps | stopped_on | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260727_iter1008` | True | 8 | steps | 32.610084533691406 | 4.27 |
+| `autotrain_wf_smoke_20260727_iter1009` | True | 8 | steps | 32.610084533691406 | 2.53 |
+| `autotrain_wf_smoke_20260727_iter1010` | True | 8 | steps | 32.610084533691406 | 2.50 |
+| `autotrain_wf_smoke_20260727_iter1011` | True | 8 | steps | 32.610084533691406 | 2.52 |
+| `autotrain_wf_smoke_20260727_iter1012` | True | 8 | steps | 32.610084533691406 | 2.24 |
+| `autotrain_wf_smoke_20260727_iter1013` | True | 8 | steps | 32.610084533691406 | 2.53 |
+| `autotrain_wf_smoke_20260727_iter1014` | True | 8 | steps | 32.610084533691406 | 2.76 |
+| `autotrain_wf_smoke_20260727_iter1015` | True | 8 | steps | 32.610084533691406 | 2.12 |
+| `autotrain_wf_smoke_20260727_iter1016` | True | 8 | steps | 32.610084533691406 | 2.10 |
+| `autotrain_wf_smoke_20260727_iter1017` | True | 8 | steps | 32.610084533691406 | 2.26 |
+
+Total independently verified rows in this file: **11** (the re-anchor plus
+this batch), out of 946+ historically claimed-but-unverifiable rows above.
+
+**Numbering caveat:** this batch reuses the `iter1008`-`iter1017` numbers
+against `main`'s actual last-merged row (`iter1007`, PR #1103). At the time
+this batch ran, PRs #1101 and #1102 (open, unmerged, on sibling
+`claude/great-dirac-*` branches) already claim `iter1008`-`iter1037` on top
+of each other rather than `main`; those still carry the "claimed, not
+independently re-verified against this fixture" status every pre-integrity-fix
+row does until someone actually runs them. Whichever of these branches
+merges first should win the number range; the other(s) should renumber
+against the new `main` tip rather than silently overwrite this batch's
+results.
