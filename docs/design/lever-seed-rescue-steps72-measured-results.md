@@ -68,21 +68,36 @@ AgentV/node publish subprocess stall, or a genuine 3×30s decode-timeout worst
 case plus overhead exceeding the 170-180s wrapper); worth isolating before
 trusting a wider steps=72 sweep on CPU.
 
-## Methodology confound (read before comparing across PRs)
+## Methodology gap (read before comparing across PRs) — corrected
 
-This session built its own eval fixture
-(`slm data build-test --source fixture ... --suites smoke`, 3 records) rather
-than reusing whatever fixture PR #1135 evaluated against (that fixture's
-content was not persisted — `outputs/` is gitignored and PR #1135 left no
-committed eval-suite artifact). An ad hoc reproduction of PR #1135's
-`s36_seed42` arm under *this session's* fixture gave
-`meaningful_program_rate=0.0`, not PR #1135's `0.333`, for the nominally
-identical recipe — confirming the two fixture builds are not guaranteed
-byte-identical. **The steps=30-vs-72 delta is still trustworthy** because it
-is internally controlled (same session, same freshly-built fixture, only
-`--steps`/`--seed` varied) — but do not diff raw latency/reward magnitudes
-between this table and PR #1135's without rebuilding a shared, committed eval
-fixture first.
+**Correction (2026-07-27, same day):** this section originally attributed an
+observed discrepancy — an ad hoc reproduction of PR #1135's `s36_seed42` arm
+under this session's fixture gave `meaningful_program_rate=0.0`, not PR
+#1135's `0.333`, for the nominally identical recipe — to the eval fixture
+build being non-deterministic across sessions. **That explanation is false
+and was not verified before being written.** A same-session, same-input
+rebuild of the eval fixture (`slm data build-test --source fixture
+--train-manifest wf_smoke_v2/manifest.json --suites smoke`, twice, diffed
+`records.jsonl`) produced a **byte-identical** file both times — the fixture
+build is deterministic given the same `train-manifest` and the repo's fixed
+`src/slm_training/resources/test_seeds.jsonl` seed path.
+
+The real cause of the `s36_seed42` discrepancy is **still unknown** — this
+session did not isolate it before running out of scope. Candidates not yet
+ruled out: floating-point non-determinism in training/decode despite a fixed
+`--seed` (CPU thread-count or BLAS-library differences across sessions),
+a different `torch` build/version between this session's fresh `.venv`
+(`torch==2.5.1`, resolved via `pip install -e ".[dev,torch]"` today) and
+whatever the PR #1135 session had installed, or a mistake in this session's
+ad hoc reproduction command that wasn't captured in a saved log. Do not treat
+"the eval fixture differs" as the explanation going forward.
+
+**The steps=30-vs-72 delta in the scoreboard above is still trustworthy**
+because it is internally controlled — same session, same fixture (now shown
+deterministic), same environment, only `--steps`/`--seed` varied. What is
+*not* safe is diffing raw latency/reward magnitudes between this table and PR
+#1135's numbers, since the true source of that earlier discrepancy is
+unconfirmed.
 
 ## Result
 
@@ -99,14 +114,17 @@ held-out generalization claim, and the fixture-build confound above means the
 ## Next steps (evidence-backed)
 
 1. Diagnose the seed=44 eval hang before trusting steps=72 broadly — it may
-   indicate a real tail-latency failure mode masked as "not evidence" here.
-2. Commit a reusable, version-controlled eval fixture for this smoke line so
-   future sessions stop confounding "different recipe" with "different eval
-   build" (the confound noted above has now recurred across at least two
-   sessions).
+   indicate a real tail-latency failure mode masked as "not evidence" here
+   (see the stacked follow-up,
+   [decode-timeout-hang-seed44-steps72-finding.md](decode-timeout-hang-seed44-steps72-finding.md)).
+2. Diagnose the *actual* cause of the `s36_seed42` cross-session discrepancy
+   now that fixture non-determinism has been ruled out (floating-point
+   non-determinism vs. `torch` version drift vs. an uncaptured repro mistake
+   — see the correction above) before drawing any conclusion that depends on
+   comparing magnitudes across sessions/PRs.
 3. Per the original PR #1135 note once step-count brittleness is genuinely
    covered: move off `wf_smoke_v2` onto real held-out data or the DSH5-10 /
    `AP-007+` threads — this smoke-scale seed check should not keep
    regenerating indefinitely.
 
-Captured: 2026-07-27T14:46:00+00:00
+Captured: 2026-07-27T14:46:00+00:00. Corrected: 2026-07-27T15:15:00+00:00.

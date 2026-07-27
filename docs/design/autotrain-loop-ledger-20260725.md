@@ -323,16 +323,26 @@ confound caveat: [lever-seed-rescue-steps72-measured-results.md](lever-seed-resc
 steps=72. Seed 44's eval was killed twice at the `MAX_RUN_MINUTES=3` wall
 (zero stdout either time) and is excluded — **not evidence**, per this
 file's own iron law, not backfilled. n=5 evidenced seeds, all successful.
-Still `fixture_or_scratch`; see the linked doc for the fixture-build
-confound that limits cross-PR magnitude comparisons.
+Still `fixture_or_scratch`.
+
+**Same-day correction:** the linked doc originally blamed a cross-session
+metric discrepancy on the eval fixture build being non-deterministic. That
+was checked *after* being written, not before, and is false — rebuilding the
+fixture twice in the same session produced a byte-identical `records.jsonl`.
+The doc and its JSON companion are corrected in place; the real cause of
+that discrepancy is still open (floating-point non-determinism, `torch`
+version drift across sessions, or an uncaptured mistake in the ad hoc
+repro). Lesson for this loop: verify a "confound" hypothesis before writing
+it down, not after — see the doc's corrected "Methodology gap" section.
 
 Environment: fresh `.venv-autotrain` (Python 3.12, `pip install -e
 ".[dev,torch]"`) plus `npm ci` for the AgentV publish step — neither was
 pre-installed in this session's checkout.
 
 **Next steps:** diagnose the seed=44 eval hang (may be a real tail-latency
-failure mode, not just an unlucky wrapper timeout); commit a reusable
-version-controlled eval fixture for this smoke line so future sessions stop
-confounding "different recipe" with "different eval build"; otherwise move
-on to the DSH5-10 / `AP-007+` threads per the original note — this smoke
-line's role as a harness liveness + lever check is now well covered.
+failure mode, not just an unlucky wrapper timeout — tracked in the stacked
+[decode-timeout-hang-seed44-steps72-finding.md](decode-timeout-hang-seed44-steps72-finding.md));
+diagnose the actual cross-session discrepancy cause now that fixture
+non-determinism is ruled out; otherwise move on to the DSH5-10 / `AP-007+`
+threads per the original note — this smoke line's role as a harness
+liveness + lever check is now well covered.
