@@ -1,0 +1,60 @@
+{
+  "schema": "iter_report/v1",
+  "experiment_id": "E76",
+  "run_id": "qx_e76_cache_reuse",
+  "matrix": "quality-experiment-matrix-v7",
+  "claim_class": "blocked_attempt",
+  "status": "blocked_not_run_to_completion",
+  "summary": "Fixed a real fail-closed-safety regression that broke every quality-matrix Experiment row (allow_unconstrained_fallback defaulted True since commit d9a526f, tripping ModelBuildConfig's hard reject). After the fix, attempted E76 (V7 'cache reuse' arm: stability + cluster + survival + successor-cache decode, no trust/entropy remask gates) twice; training itself completed both times, but the ship-gate evaluate_suites() stage (generation + grammar-bridge verification + AgentV grading) exceeded the repo's MAX_RUN_MINUTES=3 bounded run cap and was killed both times. No parse/fidelity/reward numbers for E76 were produced, so none are reported.",
+  "bug_found_and_fixed": {
+    "file": "scripts/run_quality_matrix.py",
+    "symptom": "Every Experiment row (E0 baseline included) raised ValueError('allow_unconstrained_fallback=True is unsafe for OpenUI generation') from ModelBuildConfig.__post_init__ before any training step ran.",
+    "root_cause": "commit d9a526f (SLM-291, 2026-07-24) added Experiment.allow_unconstrained_fallback with default True and a matching `getattr(exp, \"allow_unconstrained_fallback\", True)` fallback in _train_cfg/_eval_cfg. Since the dataclass field always exists, the getattr default was moot and every row silently requested the unsafe decode invariant I6 override, which ModelBuildConfig fail-closes on.",
+    "fix": "Changed the Experiment field default and both getattr() fallbacks to False, matching ModelBuildConfig's own default and every other Experiment row's implicit intent. No existing row explicitly set this field, so no row's behavior regresses; every row is simply no longer requesting an override it never meant to request.",
+    "verification": "Reproduced with `E0` (0-token baseline) and `E76` before the fix -- identical ValueError both times. After the fix, both rows progress past ModelBuildConfig construction into real training."
+  },
+  "environment_prep_required_for_any_matrix_run": [
+    "cd src/apps/openui_bridge && NODE_OPTIONS= npm ci (G2/G8 schema + canonicalization gates in the deterministic verifier stack call out to this Node bridge; without it every generated ProgramSpec is quarantined at G2)",
+    "NODE_OPTIONS= npm ci at repo root (AgentV SDK; scripts/run_agentv_eval.mjs + node_modules/@agentv/core are required by the unconditional final loss-suite AgentV publish step in train())",
+    "uv venv .venv --python 3.12 && uv pip install -e '.[dev,grammar,rico]' (no committed venv; torch/lark/etc. are not on the base image python3.11)"
+  ],
+  "data_compatibility_notes": [
+    "A fresh `build_train_data --source all --curriculum` run (the doc's own canonical build command) includes default-on scope-corpus (include_scope_corpus=True, also from d9a526f) and language-contract fragment records that lack a root binding; these are incompatible with V5+ arms' output_tokenizer=lexer + use_symbol_table parser and must be filtered (--no-scope-corpus --no-language-contract, or post-hoc filter on a `root =` regex) before use as V5+ curriculum data.",
+    "The committed src/slm_training/resources/data/train/e937_role_safe_all_targets_v2 corpus (used by grammar X0 baseline) has the same root-binding contamination (173/524 records) plus ~13% of its clean records whose prompt does not enumerate every declared :slot_N contiguously once the shared boilerplate DESIGN.md text is included in the heuristic slot-inventory extraction (its own illustrative example text mentions `:slot_2`, polluting inventory_from_prompt for records that declare fewer than 3 slots). Neither issue is caused by this session; both were worked around locally by filtering to outputs/data/train/e937_root_only (310 records) and stripping design_md from both the filtered train copy and a local eval copy (outputs/data/eval/e938_dm_stripped) -- these are session-local scratch copies under outputs/, not committed fixes to the shared corpus."
+  ],
+  "attempts": [
+    {
+      "n": 1,
+      "command": "python -m scripts.run_quality_matrix --matrix v7 --only E76 --steps 40 --device cpu --context-backend scratch --no-design-md-context --scratch-control --rico-limit 4 --test-dir outputs/data/eval/e938_dm_stripped --curriculum-dir outputs/data/train/e937_root_only",
+      "wrapped_in": "timeout 175",
+      "outcome": "killed",
+      "evidence": "training completed (40 steps, checkpoints + train_summary.json + loss_suites_step_40.json written); evaluate_suites() (5 suites: smoke, held_out, adversarial, ood, rico_held) never wrote a final result before the 175s wall clock killed the process"
+    },
+    {
+      "n": 2,
+      "command": "python -m scripts.run_quality_matrix --matrix v7 --only E76 --steps 40 --device cpu --context-backend scratch --no-design-md-context --scratch-control --rico-limit 2 --suites smoke,held_out --test-dir outputs/data/eval/e938_dm_stripped --curriculum-dir outputs/data/train/e937_root_only",
+      "wrapped_in": "timeout 170",
+      "outcome": "killed",
+      "evidence": "identical shape: training completed in 10.3s (last_loss=1848.01, final_loss_eval.weighted_nll=8.87 on 310 records), then evaluate_suites() restricted to just smoke+held_out (n=3+5, rico excluded) still did not finish before the 170s wall clock killed the process"
+    }
+  ],
+  "real_measured_values_from_the_completed_training_portion_only": {
+    "steps": 40,
+    "record_count": 310,
+    "elapsed_wall_seconds_training_only": 10.318618172000242,
+    "last_loss": 1848.0120849609375,
+    "final_loss_eval_weighted_nll": 8.870403411018732,
+    "final_loss_eval_bits_per_char": 3.189918633455784,
+    "note": "These are real numbers from the training-loop's own internal loss-suite probe, NOT the quality-matrix ship-gate scoreboard (parse/structural_similarity/placeholder_fidelity/reward). The ship-gate scoreboard never completed and is not reported."
+  },
+  "conclusion": "E76 is not run to completion in this session. Do not treat this as a pass/fail matrix result. The concrete deliverable is the allow_unconstrained_fallback fix (verified) plus the environment-prep and data-compatibility notes above, which should let a future session reach evaluate_suites() faster (skip the bridge/AgentV/venv setup, start from a pre-filtered curriculum) and budget the remaining time for the eval stage specifically.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "390e07bef24d2cce950c187f9b434ecaae09d94f",
+    "code_dirty": true,
+    "components": {
+      "matrix.quality": "v8"
+    },
+    "stamped_at": "2026-07-25T21:12:07.214411+00:00"
+  }
+}
