@@ -7402,7 +7402,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v62",
+      "version": "v63",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7417,9 +7417,15 @@
         "docs/design/iter-slm293-property-role-saturation-20260725.md",
         "src/slm_training/runtime/telemetry/trace.py",
         "tests/test_runtime_trace.py",
-        "tests/test_harnesses/model_build/test_eval_seed.py"
+        "tests/test_harnesses/model_build/test_eval_seed.py",
+        "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v63",
+          "date": "2026-07-27",
+          "note": "Hard decode wall: cooperative monotonic deadline (decode_stats) + interval SIGALRM in eval_runner so timeout cannot be swallowed past decode_timeout_seconds"
+        },
         {
           "version": "v62",
           "date": "2026-07-27",
@@ -9320,7 +9326,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v260",
+      "version": "v261",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9363,6 +9369,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v261",
+          "date": "2026-07-27",
+          "note": "LTR and MaskGIT loops call check_decode_deadline each step so eval decode_timeout_seconds is a hard cooperative wall (pairs with harness.model_build.eval v63)"
+        },
         {
           "version": "v260",
           "date": "2026-07-27",

@@ -205,6 +205,41 @@ def timed_ms(stats: DecodeStats | None, field_name: str) -> Iterator[None]:
 # Thread-local-ish active stats for helpers that cannot take an explicit arg.
 _ACTIVE: DecodeStats | None = None
 
+# Cooperative decode wall (monotonic deadline). SIGALRM alone can be swallowed by
+# bare ``except Exception`` in the LTR/MaskGIT path after a one-shot timer fire;
+# checking this deadline at loop heads makes the wall hard.
+_DECODE_DEADLINE_MONO: float | None = None
+
+
+def set_decode_deadline(seconds: float | None) -> None:
+    """Arm a cooperative wall-clock deadline ``seconds`` from now (or clear)."""
+    global _DECODE_DEADLINE_MONO
+    if seconds is None or float(seconds) <= 0:
+        _DECODE_DEADLINE_MONO = None
+        return
+    _DECODE_DEADLINE_MONO = time.monotonic() + float(seconds)
+
+
+def clear_decode_deadline() -> None:
+    """Disarm the cooperative decode deadline."""
+    global _DECODE_DEADLINE_MONO
+    _DECODE_DEADLINE_MONO = None
+
+
+def decode_deadline_remaining() -> float | None:
+    """Seconds remaining before deadline, or None if unarmed."""
+    deadline = _DECODE_DEADLINE_MONO
+    if deadline is None:
+        return None
+    return max(0.0, deadline - time.monotonic())
+
+
+def check_decode_deadline() -> None:
+    """Raise ``TimeoutError`` when the cooperative decode wall has elapsed."""
+    deadline = _DECODE_DEADLINE_MONO
+    if deadline is not None and time.monotonic() >= deadline:
+        raise TimeoutError("decode deadline exceeded")
+
 
 def get_active_stats() -> DecodeStats | None:
     return _ACTIVE

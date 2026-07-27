@@ -1,0 +1,394 @@
+{
+  "lever": "hard_ltr_decode_timeout_wall",
+  "hypothesis": "Cooperative decode deadline + interval SIGALRM enforces decode_timeout_seconds so LTR cannot run 160s+; seeded multi-rep metrics become stable.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "harness_change": {
+    "harness.model_build.eval": "v63",
+    "model.twotower": "v261",
+    "mechanism": "set_decode_deadline + check_decode_deadline in LTR/MaskGIT loops; SIGALRM with interval re-fire"
+  },
+  "checkpoint": "outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt",
+  "budget_seconds": 30,
+  "seed": 47,
+  "prior_seeded_pre_wall": [
+    {
+      "eval_id": "exp_lever_decode_seeded_rep1_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8443333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30005.7,
+      "latency_ms_p95": 163248.21,
+      "max_latency_ms": 163248.21,
+      "sum_latency_ms": 223257.24,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "model_valid",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 163248.21,
+          "stop_reason": "completed",
+          "fallback_used": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30005.7,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30003.33,
+          "stop_reason": "completed",
+          "fallback_used": true
+        }
+      ],
+      "hero": {
+        "id": "smoke_hero_01",
+        "decode_outcome": "model_valid",
+        "meaningful": true,
+        "parse_ok": true,
+        "latency_ms": 163248.21,
+        "stop_reason": "completed",
+        "fallback_used": false
+      }
+    },
+    {
+      "eval_id": "exp_lever_decode_seeded_rep2_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8443333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30006.59,
+      "latency_ms_p95": 171309.39,
+      "max_latency_ms": 171309.39,
+      "sum_latency_ms": 231319.01,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "model_valid",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 171309.39,
+          "stop_reason": "completed",
+          "fallback_used": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30006.59,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30003.03,
+          "stop_reason": "completed",
+          "fallback_used": true
+        }
+      ],
+      "hero": {
+        "id": "smoke_hero_01",
+        "decode_outcome": "model_valid",
+        "meaningful": true,
+        "parse_ok": true,
+        "latency_ms": 171309.39,
+        "stop_reason": "completed",
+        "fallback_used": false
+      }
+    },
+    {
+      "eval_id": "exp_lever_decode_seeded_rep3_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.836,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30007.72,
+      "latency_ms_p95": 193361.1,
+      "max_latency_ms": 193361.1,
+      "sum_latency_ms": 253374.55000000002,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30007.72,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30005.73,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "model_valid",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 193361.1,
+          "stop_reason": "completed",
+          "fallback_used": false
+        }
+      ],
+      "hero": {
+        "id": "smoke_hero_01",
+        "decode_outcome": "fallback_output",
+        "meaningful": false,
+        "parse_ok": false,
+        "latency_ms": 30007.72,
+        "stop_reason": "completed",
+        "fallback_used": true
+      }
+    }
+  ],
+  "hardwall_seeded": [
+    {
+      "eval_id": "exp_lever_hardwall_seeded_rep1_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30007.02,
+      "latency_ms_p95": 30032.84,
+      "max_latency_ms": 30032.84,
+      "sum_latency_ms": 90042.3,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 3,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30007.02,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30032.84,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30002.44,
+          "stop_reason": "completed",
+          "fallback_used": true
+        }
+      ],
+      "hero": {
+        "id": "smoke_hero_01",
+        "decode_outcome": "fallback_output",
+        "meaningful": false,
+        "parse_ok": false,
+        "latency_ms": 30007.02,
+        "stop_reason": "completed",
+        "fallback_used": true
+      }
+    },
+    {
+      "eval_id": "exp_lever_hardwall_seeded_rep2_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30003.14,
+      "latency_ms_p95": 30007.47,
+      "max_latency_ms": 30007.47,
+      "sum_latency_ms": 90013.1,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 3,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30007.47,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30003.14,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30002.49,
+          "stop_reason": "completed",
+          "fallback_used": true
+        }
+      ],
+      "hero": {
+        "id": "smoke_hero_01",
+        "decode_outcome": "fallback_output",
+        "meaningful": false,
+        "parse_ok": false,
+        "latency_ms": 30007.47,
+        "stop_reason": "completed",
+        "fallback_used": true
+      }
+    },
+    {
+      "eval_id": "exp_lever_hardwall_seeded_rep3_exp12_seed47",
+      "seed": 47,
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.5379999999999999,
+      "empty_prediction_count": 1,
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 30012.17,
+      "latency_ms_p95": 32912.25,
+      "max_latency_ms": 32912.25,
+      "sum_latency_ms": 92927.76999999999,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 1,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "runtime_timeout",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 32912.25,
+          "stop_reason": "decode_timeout",
+          "fallback_used": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30012.17,
+          "stop_reason": "completed",
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30003.35,
+          "stop_reason": "completed",
+          "fallback_used": true
+        }
+      ],
+      "hero": {
+        "id": "smoke_hero_01",
+        "decode_outcome": "runtime_timeout",
+        "meaningful": false,
+        "parse_ok": false,
+        "latency_ms": 32912.25,
+        "stop_reason": "decode_timeout",
+        "fallback_used": false
+      }
+    }
+  ],
+  "summary": {
+    "prior_max_latencies_ms": [
+      163248.21,
+      171309.39,
+      193361.1
+    ],
+    "hardwall_max_latencies_ms": [
+      30032.84,
+      30007.47,
+      32912.25
+    ],
+    "hardwall_meaningful": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "wall_ok": true,
+    "repro_ok": true
+  },
+  "decision": "accept",
+  "decision_reason": "hard wall holds: max_lat per sample \u226435000ms; seeded meanful stable at 0.3333333333333333",
+  "captured_at": "2026-07-27T18:06:11.390196+00:00"
+}

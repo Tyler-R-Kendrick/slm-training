@@ -43,7 +43,12 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_MIN_SUITE_N,
     DEFAULT_SHIP_GATES,
 )
-from slm_training.models.decode_stats import collect_decode_stats
+from slm_training.models.decode_stats import (
+    check_decode_deadline,
+    clear_decode_deadline,
+    collect_decode_stats,
+    set_decode_deadline,
+)
 from slm_training.harnesses.model_build.decode_outcome import outcome_counts
 from slm_training.versioning import component_version
 
@@ -1113,12 +1118,21 @@ def evaluate(
     def _generate_chunk(
         chunk: list[ExampleRecord],
     ) -> tuple[list[str], list[dict[str, Any]]]:
-        """Generate a chunk, converting an explicit diagnostic timeout to failures."""
+        """Generate a chunk, converting an explicit diagnostic timeout to failures.
+
+        Hard wall: cooperative monotonic deadline (checked in LTR/MaskGIT loops)
+        plus a SIGALRM backup. The alarm uses a short interval re-fire so a
+        one-shot timeout swallowed by bare ``except Exception`` cannot leave
+        decode running for minutes past ``decode_timeout_seconds``.
+        """
         nonlocal decode_timeout_count
         seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
 
         def _run(timed_out: bool) -> tuple[list[str], list[dict[str, Any]]]:
             stats_before = len(decode_stats_rows)
+            # Re-check at chunk entry so deadline is live even without LTR hooks.
+            if not timed_out:
+                check_decode_deadline()
             result = _generate_chunk_unbounded(chunk)
             stats = (
                 decode_stats_rows[-1] if len(decode_stats_rows) > stats_before else None
@@ -1126,14 +1140,21 @@ def evaluate(
             chunk_decode_meta.append({"timed_out": timed_out, "stats": stats})
             return result
 
-        if seconds <= 0 or not hasattr(signal, "setitimer"):
+        if seconds <= 0:
             return _run(timed_out=False)
 
-        def _alarm(_signum: int, _frame: object) -> None:
-            raise TimeoutError(f"decode exceeded {seconds:g}s")
+        set_decode_deadline(seconds)
+        use_alarm = hasattr(signal, "setitimer") and hasattr(signal, "SIGALRM")
+        previous = None
+        if use_alarm:
 
-        previous = signal.signal(signal.SIGALRM, _alarm)
-        signal.setitimer(signal.ITIMER_REAL, seconds)
+            def _alarm(_signum: int, _frame: object) -> None:
+                raise TimeoutError(f"decode exceeded {seconds:g}s")
+
+            previous = signal.signal(signal.SIGALRM, _alarm)
+            # First fire at budget; then every 0.1s until cleared. Interval
+            # prevents a swallowed one-shot from disabling the wall.
+            signal.setitimer(signal.ITIMER_REAL, seconds, min(0.1, max(0.05, seconds / 10.0)))
         try:
             return _run(timed_out=False)
         except TimeoutError as exc:
@@ -1145,8 +1166,11 @@ def evaluate(
             decode_timeout_count += len(chunk)
             return ["" for _ in chunk], []
         finally:
-            signal.setitimer(signal.ITIMER_REAL, 0)
-            signal.signal(signal.SIGALRM, previous)
+            if use_alarm:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                if previous is not None:
+                    signal.signal(signal.SIGALRM, previous)
+            clear_decode_deadline()
 
     def _decode_outcome_fields(
         pred: str,

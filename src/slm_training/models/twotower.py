@@ -4900,6 +4900,12 @@ class TwoTowerModel(nn.Module):
 
         t = 0
         while t < length:
+            # Hard wall: cooperative deadline set by eval_runner (or callers).
+            # Bare ``except Exception`` handlers can swallow one-shot SIGALRM
+            # TimeoutError; checking here each step makes the budget binding.
+            from slm_training.models.decode_stats import check_decode_deadline
+
+            check_decode_deadline()
             # Contract/template decode may leave only a few masked slots in a
             # long padded canvas. Once the final slot is committed, stop the
             # LTR scan instead of spending one denoiser forward per trailing
@@ -13257,6 +13263,9 @@ class TwoTowerModel(nn.Module):
             else None
         )
         for step in range(steps):
+            from slm_training.models.decode_stats import check_decode_deadline
+
+            check_decode_deadline()
             if not unknown.any():
                 if remask_ratio <= 0.0 or step >= steps - 1:
                     break
