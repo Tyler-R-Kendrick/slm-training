@@ -2836,6 +2836,22 @@
         }
       ]
     },
+    "harness.experiments.one_step_latent_hybrid": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/one_step_latent_hybrid.py",
+        "tests/test_harnesses/experiments/test_one_step_latent_hybrid.py",
+        "docs/design/one-step-latent-hybrid-disposition.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-26",
+          "note": "SLM-336 (AP-035) admission gate: enforce in code that AP-034's oracle-support gate (SLM-335, admission-denied) must clear before the one-step MeanFlow-style prior work can start; no prior or refinement loop is built"
+        }
+      ]
+    },
     "harness.experiments.ast_sketch_retrieval": {
       "version": "v3",
       "kind": "harness",
