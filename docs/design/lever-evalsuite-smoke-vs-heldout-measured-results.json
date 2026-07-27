@@ -1,0 +1,84 @@
+{
+  "lever": "eval_suite_size",
+  "hypothesis": "At the frozen champion micro-recipe (s16 · lr=1e-3 · bs=2 · structural_bias=1.5 · seed=47 · ASAP · t30 · scratch/cpu), the smoke suite's meaningful_program_rate=0.333 (n=3) reflects real headroom that persists or improves on a larger held-out suite, rather than n=3 sampling noise.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "recipe": {
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true,
+    "asap_decode": true
+  },
+  "train": {
+    "run_id": "exp_lever_evalsuite_s16_lr1e3_bs2_sb15_seed47",
+    "train_dir": "src/slm_training/resources/data/train/wf_smoke_v2",
+    "record_count": 101,
+    "data_manifest_sha": "fb320850f701ffe76170d2f26e570f1103d7815c7ea2186da846c6d185f21d10",
+    "stopped_on": "steps",
+    "last_loss": 12.85036563873291,
+    "elapsed_wall_seconds": 3.2132084190000114,
+    "checkpoint_sha256": "7aaf18e3366bf8607b85d9ce25362fcd29d3e1dd44528ffc8e1ade97f6f33b34"
+  },
+  "eval_data_build": {
+    "command": "slm data build-test --source fixture --no-rico-path --version wf_smoke_v2 --train-manifest src/slm_training/resources/data/train/wf_smoke_v2/manifest.json",
+    "suite_counts": {
+      "smoke": 3,
+      "held_out": 5,
+      "adversarial": 4,
+      "ood": 4,
+      "rico_held": 0
+    },
+    "eval_data_manifest_sha": "d6ee90ee05d244a76393fdd8d5c1d9512cd9e1b214c1058829074344bce414b9"
+  },
+  "rows": [
+    {
+      "arm": "smoke",
+      "run_id": "exp_lever_evalsuite_s16_lr1e3_bs2_sb15_seed47_eval_smoke_t30",
+      "n": 3,
+      "parse_rate": 1.0,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7833333333333333,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.25416666666666665,
+      "latency_ms_p50": 30002.79
+    },
+    {
+      "arm": "held_out",
+      "run_id": "exp_lever_evalsuite_s16_lr1e3_bs2_sb15_seed47_eval_heldout_t30",
+      "n": 5,
+      "parse_rate": 1.0,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.694,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.29,
+      "structural_similarity": 0.09758,
+      "latency_ms_p50": 30002.1
+    }
+  ],
+  "confound": "held_out differs from smoke in BOTH suite domain and n (5 vs 3) -- this is a suite-generalization check, not a pure n ablation. No isolated same-domain n=3-vs-n>3 suite exists in this fixture build.",
+  "decision": "reject_headroom_hypothesis",
+  "decision_reason": "meaningful_program_rate collapses 0.333 (smoke n=3) -> 0.0 (held_out n=5) on the identical checkpoint; placeholder_fidelity (0.528->0.29) and structural_similarity (0.254->0.098) both drop substantially too, while parse_rate holds at 1.0 on both. The smoke n=3 meaningful-program result does not generalize to a different, still-tiny held-out suite. This reinforces honest-ship-eval's fixture-demo-vs-ship distinction and must not be read as new headroom to chase via more micro-recipe tuning.",
+  "reproducibility_finding": {
+    "summary": "The currently-committed src/slm_training/resources/data/train/wf_smoke_v2 fixture (101 records) is NOT the corpus behind the historical 'wf_smoke_v2' champion baseline cited in prior lever docs (see lever-train-corpus-e1291-e937-vs-smoke-measured-results.json: arm wf_smoke_v2, record_count=103, last_loss=7.451866626739502).",
+    "detail": "This session trained fresh on the committed 101-record wf_smoke_v2 fixture (outputs/ is gitignored/ephemeral per session, so the original 103-record build is not reproducible from source control) and got last_loss=12.85036563873291 -- matching the separately-documented 'lever_fixture_v1' fresh-fixture-rebuild lever (docs/design/lever-fresh-fixture-build-vs-smoke-measured-results.json), not the original champion snapshot.",
+    "action_needed": "Resolve the wf_smoke_v2 naming/reproducibility drift (the committed resource no longer matches what prior docs call 'wf_smoke_v2') so future lever docs cite a corpus that is actually reproducible from this checkout. Not fixed in this doc pass."
+  },
+  "next_lever": [
+    "Resolve the wf_smoke_v2 fixture drift noted above before running further comparisons against the old champion baseline numbers.",
+    "Pursue real data-quality work via the synthesis-feedback loop (abstraction_ladder exposure yield=0, noted in lever-fresh-fixture-build-vs-smoke-measured-results.json) rather than further n<=5-scale hyperparameter sweeps on fixture suites."
+  ],
+  "captured_at": "2026-07-27T16:47:06.689Z"
+}
