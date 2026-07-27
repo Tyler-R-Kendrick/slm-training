@@ -786,6 +786,27 @@ def _eval_data_sha(directory: Path) -> str | None:
         return None
 
 
+def _seed_eval_rng(seed: int) -> None:
+    """Lock Python / NumPy / Torch RNG for greedy constrained evals."""
+    import random
+
+    random.seed(seed)
+    try:
+        import numpy as np
+
+        np.random.seed(seed)
+    except Exception:  # noqa: BLE001 - numpy optional in some envs
+        pass
+    try:
+        import torch
+
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+    except Exception:  # noqa: BLE001 - torch optional at import time
+        pass
+
+
 def evaluate(
     config: ModelBuildConfig,
     model=None,
@@ -799,6 +820,7 @@ def evaluate(
 
     config, flag_snapshot = resolve(config, phase="evaluation")
     generation_overrides = dict(generation_overrides or {})
+    _seed_eval_rng(int(getattr(config, "seed", 0) or 0))
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
 
@@ -1511,6 +1533,7 @@ def evaluate(
         "fragment_n": n - document_n,
         "eval_limit": suite_limit,
         "eval_offset": suite_offset,
+        "seed": int(getattr(config, "seed", 0) or 0),
         "diagnostic_subset": suite_limit is not None or suite_offset > 0,
         # Persist the effective decode policy beside every scoreboard.  This
         # is essential for comparing historical runs: checkpoint defaults and
