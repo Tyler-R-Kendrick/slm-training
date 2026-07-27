@@ -1938,38 +1938,48 @@
       ]
     },
     "harness.distill": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
+        "docs/design/ap020-on-policy-abstract-self-distillation.md",
+        "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
+        "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
+        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.json",
+        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.md",
+        "docs/design/iter-spv2-05-semantic-repair-20260720.json",
+        "docs/design/iter-spv2-05-semantic-repair-20260720.md",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.json",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.md",
+        "scripts/run_dsh4_01_operator_decision_state_fixture.py",
+        "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
+        "scripts/run_dsh4_03_operator_verifier_kd_defer_fixture.py",
+        "scripts/run_spv2_05_semantic_repair_fixture.py",
+        "scripts/run_var3_01_real_teacher_ceiling.py",
         "src/slm_training/harnesses/distill/__init__.py",
         "src/slm_training/harnesses/distill/legal_set_kl.py",
         "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
-        "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/operator_decision_state.py",
         "src/slm_training/harnesses/distill/operator_teacher_ceiling.py",
+        "src/slm_training/harnesses/distill/operator_verifier_kd_defer.py",
+        "src/slm_training/harnesses/distill/prompted_teacher.py",
         "src/slm_training/harnesses/distill/self_distill_collect.py",
-        "scripts/run_spv2_05_semantic_repair_fixture.py",
-        "scripts/run_dsh4_01_operator_decision_state_fixture.py",
-        "scripts/run_dsh4_02_operator_teacher_ceiling_fixture.py",
+        "src/slm_training/harnesses/distill/semantic_repair.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
-        "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
-        "tests/test_harnesses/distill/test_self_distill_collect.py",
-        "docs/design/iter-spv2-05-semantic-repair-20260720.md",
-        "docs/design/iter-spv2-05-semantic-repair-20260720.json",
-        "docs/design/dsh4-01-operator-decision-state-export-20260725.md",
-        "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
-        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
-        "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
-        "docs/design/ap020-on-policy-abstract-self-distillation.md",
-        "src/slm_training/harnesses/distill/operator_verifier_kd_defer.py",
-        "scripts/run_dsh4_03_operator_verifier_kd_defer_fixture.py",
         "tests/test_harnesses/distill/test_operator_verifier_kd_defer.py",
-        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.md",
-        "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.json"
+        "tests/test_harnesses/distill/test_prompted_teacher.py",
+        "tests/test_harnesses/distill/test_self_distill_collect.py",
+        "tests/test_harnesses/distill/test_semantic_repair.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-26",
+          "note": "SLM-429 (VAR3-01): wire PromptedTeacherV1 -- a real prompted LLM teacher (Qwen/Qwen3-4B-Instruct-2507 via OpenAI-compatible HF router, temperature=0, content-addressed response cache) -- behind the existing OperatorTeacherAdapter Protocol with NO harness change; anti-leak surface identical to the synthetic stand-in (operator_id/arity/proof_checks/semantic_id-derived identity only; never opaque ids, presentation order as authority, current_scores, or accepted ids); re-ran the unchanged DSH4-02 compare_operator_teacher_ceiling (all baselines, oracle, 8 DecisionFamily slices, 4 perturbation kinds, paired bootstrap) over the identical GOLD_WEIGHTS fixture pools, SyntheticDescriptorTeacherV1 kept as control; iter doc docs/design/var3-01-real-teacher-ceiling-20260726.{md,json}"
+        },
         {
           "version": "v8",
           "date": "2026-07-27",
@@ -2013,7 +2023,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v133",
+      "version": "v134",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2022,6 +2032,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v134",
+          "date": "2026-07-26",
+          "note": "SLM-429 (VAR3-01): wire PromptedTeacherV1 -- a real prompted LLM teacher (Qwen/Qwen3-4B-Instruct-2507 via OpenAI-compatible HF router, temperature=0, content-addressed response cache) -- behind the existing OperatorTeacherAdapter Protocol with NO harness change; anti-leak surface identical to the synthetic stand-in (operator_id/arity/proof_checks/semantic_id-derived identity only; never opaque ids, presentation order as authority, current_scores, or accepted ids); re-ran the unchanged DSH4-02 compare_operator_teacher_ceiling (all baselines, oracle, 8 DecisionFamily slices, 4 perturbation kinds, paired bootstrap) over the identical GOLD_WEIGHTS fixture pools, SyntheticDescriptorTeacherV1 kept as control; iter doc docs/design/var3-01-real-teacher-ceiling-20260726.{md,json}"
+        },
         {
           "version": "v133",
           "date": "2026-07-26",
