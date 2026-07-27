@@ -1,0 +1,259 @@
+{
+  "schema_version": "semantic_counterfactuals/v1",
+  "issue": "SLM-366",
+  "milestone": "DSH2 M2 - Paraphrase synthesis and ambiguity control",
+  "date": "2026-07-25",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "implementation": "generate_counterfactual_pair / mutate_program / one_fact_proof / dimension_projection / check_pair_prompt_controls / pair_artifact_nodes / embedding_close_negative / topology_negative / constant_baseline_accuracy / marker_permutation",
+  "depends_on": "dsl.semantic_frame (SLM-363), dsl.paraphrase_provenance (SLM-364), harnesses.train_data.frame_paraphrases (SLM-365 fixture provider + leak detector), harnesses.train_data.artifact_graph + split_policy (root split families)",
+  "fact_dimensions": [
+    "role",
+    "order",
+    "cardinality",
+    "closed_value",
+    "required_child",
+    "relation"
+  ],
+  "provider": {
+    "id": "slm365-frame-fixture",
+    "model_id": "frame-style-renderer",
+    "model_revision": "v1",
+    "network": "none (fully offline deterministic fixture, no credentials)"
+  },
+  "controls": {
+    "one_fact_proof": "path-insensitive per-dimension frame projections; admitted only when the declared dimension's projection diff is non-empty, every other dimension's diff is empty, canonical fingerprints differ, and the inverse mutation round-trips to the source canonical AST",
+    "matched_style": "both prompts rendered by the same style template through the DSH2-03 provider contract; style_mismatch rejects",
+    "length_bound": "relative prompt-length gap <= 0.4; length_out_of_tolerance rejects",
+    "marker_surface": "placeholder markers never rendered (SLM-365 leak floor); state reads neutralized to declaration ordinals; marker_permutation of both sources leaves prompts and proof unchanged; marker_surface_cue / leak_detected reject, cross-checked against both frames' detectors",
+    "split_family": "counterfactual inherits the source root_family_id; RootFamilySplitPolicyV1 assigns both to one split; artifact graph quarantines cross-split surface reuse",
+    "stop_rule": "any uncontrolled semantic or surface cue rejects with a code (REJECTION_CODES) and is never counted as grounding evidence"
+  },
+  "fixture_results": {
+    "per_dimension": {
+      "role": {
+        "admitted": true,
+        "dimension_diffs": {
+          "role": 4,
+          "order": 0,
+          "cardinality": 0,
+          "closed_value": 0,
+          "required_child": 0,
+          "relation": 0
+        },
+        "single_dimension_change": true,
+        "inverse_roundtrip": true,
+        "fingerprints_differ": true,
+        "prompt_length_ratio": 0.0,
+        "style": "concise",
+        "split": "train",
+        "mutation": {
+          "dimension": "role",
+          "locus": [
+            "props"
+          ],
+          "detail": "first children of slots 'buttons'/'fields' exchanged",
+          "old_value": [
+            "buttons",
+            "fields"
+          ],
+          "new_value": [
+            "fields",
+            "buttons"
+          ]
+        },
+        "source_prompt": "Layout: a form component; the name is f; exactly 1 item in the buttons slot; exactly 1 item in the fields slot; a button component; placeholder text for the label field; the action is unset; the variant is button; the type is md; a input component; the name is email; placeholder text for the placeholder field; the type is text.",
+        "counterfactual_prompt": "Layout: a form component; the name is f; exactly 1 item in the buttons slot; exactly 1 item in the fields slot; a input component; the name is email; placeholder text for the placeholder field; the type is text; a button component; placeholder text for the label field; the action is unset; the variant is button; the type is md."
+      },
+      "order": {
+        "admitted": true,
+        "dimension_diffs": {
+          "role": 0,
+          "order": 2,
+          "cardinality": 0,
+          "closed_value": 0,
+          "required_child": 0,
+          "relation": 0
+        },
+        "single_dimension_change": true,
+        "inverse_roundtrip": true,
+        "fingerprints_differ": true,
+        "prompt_length_ratio": 0.0,
+        "style": "concise",
+        "split": "train",
+        "mutation": {
+          "dimension": "order",
+          "locus": [
+            "props",
+            "children"
+          ],
+          "detail": "siblings at positions 0/1 swapped",
+          "old_value": [
+            "TextContent",
+            "Separator"
+          ],
+          "new_value": [
+            "Separator",
+            "TextContent"
+          ]
+        },
+        "source_prompt": "Layout: a stack component; exactly 2 items in the children slot; the direction is column; the gap is 8; the align is start; the justify is start; the wrap is nowrap; a text content component; placeholder text for the text field; the size is 14; a separator component; the orientation is horizontal; the decorative is true.",
+        "counterfactual_prompt": "Layout: a stack component; exactly 2 items in the children slot; the direction is column; the gap is 8; the align is start; the justify is start; the wrap is nowrap; a separator component; the orientation is horizontal; the decorative is true; a text content component; placeholder text for the text field; the size is 14."
+      },
+      "cardinality": {
+        "admitted": true,
+        "dimension_diffs": {
+          "role": 0,
+          "order": 0,
+          "cardinality": 2,
+          "closed_value": 0,
+          "required_child": 0,
+          "relation": 0
+        },
+        "single_dimension_change": true,
+        "inverse_roundtrip": true,
+        "fingerprints_differ": true,
+        "prompt_length_ratio": 0.195,
+        "style": "concise",
+        "split": "train",
+        "mutation": {
+          "dimension": "cardinality",
+          "locus": [
+            "props",
+            "children"
+          ],
+          "detail": "slot cardinality 2 -> 3 (last child duplicated)",
+          "old_value": 2,
+          "new_value": 3
+        },
+        "source_prompt": "Layout: a stack component; exactly 2 items in the children slot; the direction is column; the gap is 8; the align is start; the justify is start; the wrap is nowrap; a text content component; placeholder text for the text field; the size is 14; a separator component; the orientation is horizontal; the decorative is true.",
+        "counterfactual_prompt": "Layout: a stack component; exactly 3 items in the children slot; the direction is column; the gap is 8; the align is start; the justify is start; the wrap is nowrap; a text content component; placeholder text for the text field; the size is 14; a separator component; the orientation is horizontal; the decorative is true; a separator component; the orientation is horizontal; the decorative is true."
+      },
+      "closed_value": {
+        "admitted": true,
+        "dimension_diffs": {
+          "role": 0,
+          "order": 0,
+          "cardinality": 0,
+          "closed_value": 2,
+          "required_child": 0,
+          "relation": 0
+        },
+        "single_dimension_change": true,
+        "inverse_roundtrip": true,
+        "fingerprints_differ": true,
+        "prompt_length_ratio": 0.003096,
+        "style": "concise",
+        "split": "train",
+        "mutation": {
+          "dimension": "closed_value",
+          "locus": [
+            "props",
+            "children",
+            1,
+            "props",
+            "decorative"
+          ],
+          "detail": "closed value of decorative flipped",
+          "old_value": true,
+          "new_value": false
+        },
+        "source_prompt": "Layout: a stack component; exactly 2 items in the children slot; the direction is column; the gap is 8; the align is start; the justify is start; the wrap is nowrap; a text content component; placeholder text for the text field; the size is 14; a separator component; the orientation is horizontal; the decorative is true.",
+        "counterfactual_prompt": "Layout: a stack component; exactly 2 items in the children slot; the direction is column; the gap is 8; the align is start; the justify is start; the wrap is nowrap; a text content component; placeholder text for the text field; the size is 14; a separator component; the orientation is horizontal; the decorative is false."
+      },
+      "required_child": {
+        "admitted": true,
+        "dimension_diffs": {
+          "role": 0,
+          "order": 0,
+          "cardinality": 0,
+          "closed_value": 0,
+          "required_child": 2,
+          "relation": 0
+        },
+        "single_dimension_change": true,
+        "inverse_roundtrip": true,
+        "fingerprints_differ": true,
+        "prompt_length_ratio": 0.004785,
+        "style": "concise",
+        "split": "train",
+        "mutation": {
+          "dimension": "required_child",
+          "locus": [
+            "props",
+            "input"
+          ],
+          "detail": "required singleton child in slot 'input' replaced Input -> TextArea",
+          "old_value": "Input",
+          "new_value": "TextArea"
+        },
+        "source_prompt": "Layout: a form control component; placeholder text for the label field; placeholder text for the hint field; a input component; the name is email; placeholder text for the placeholder field; the type is text.",
+        "counterfactual_prompt": "Layout: a form control component; placeholder text for the label field; placeholder text for the hint field; a text area component; the name is email; placeholder text for the placeholder field; the rows is 3."
+      },
+      "relation": {
+        "admitted": true,
+        "dimension_diffs": {
+          "role": 0,
+          "order": 0,
+          "cardinality": 0,
+          "closed_value": 0,
+          "required_child": 0,
+          "relation": 2
+        },
+        "single_dimension_change": true,
+        "inverse_roundtrip": true,
+        "fingerprints_differ": true,
+        "prompt_length_ratio": 0.0,
+        "style": "concise",
+        "split": "train",
+        "mutation": {
+          "dimension": "relation",
+          "locus": [
+            "props",
+            "visible"
+          ],
+          "detail": "state read target $s0 -> $s1",
+          "old_value": "$s0",
+          "new_value": "$s1"
+        },
+        "source_prompt": "Layout: a callout component; the variant is info; placeholder text for the title field; placeholder text for the description field; reads the state declared state 1.",
+        "counterfactual_prompt": "Layout: a callout component; the variant is info; placeholder text for the title field; placeholder text for the description field; reads the state declared state 2."
+      }
+    },
+    "embedding_close_action_distant_negative": {
+      "kind": "embedding_close_action_distant",
+      "prompt_token_jaccard": 1.0,
+      "prompts_distinct": true,
+      "targets_differ": true,
+      "structural_dimension_diffs": {
+        "role": 0,
+        "order": 2,
+        "cardinality": 0,
+        "required_child": 0,
+        "relation": 0
+      },
+      "source_target_sha256": "17ca0ee3ca4ba7b65752c536aef3e13ae32082bce3c1dc5b2d1783db99c875c9",
+      "negative_target_sha256": "a331234dff079c09b3d251358187a7f859ffda1df4e8e7dcc2b6629d3233bac1"
+    },
+    "inventory_matched_topology_negative": {
+      "kind": "inventory_matched_topology",
+      "inventory_match": true,
+      "topology_differs": true,
+      "source_target_sha256": "4e77464dedbd39fede616247ff55491f9bd470ff7d36344fae5c811d4a74f230",
+      "negative_target_sha256": "893218c7005bc673519027eff79a39394f6df4b5d422713035d568456ba0afac",
+      "source_target": "root = Stack([v1, v2], \"column\", 8, \"start\", \"start\", \"nowrap\")\nv0 = TextContent(\":ns.a\", 14)\nv1 = Card([v0], \"filled\", \"column\", 8, \"start\", \"start\", \"nowrap\")\nv2 = Separator(\"horizontal\", true)",
+      "negative_target": "root = Card([v1, v2], \"filled\", \"column\", 8, \"start\", \"start\", \"nowrap\")\nv0 = TextContent(\":ns.a\", 14)\nv1 = Stack([v0], \"column\", 8, \"start\", \"start\", \"nowrap\")\nv2 = Separator(\"horizontal\", true)"
+    },
+    "constant_frequency_baseline_accuracy": 0.5
+  },
+  "tests": "tests/test_harnesses/train_data/test_semantic_counterfactuals.py (44 tests)",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ba3e5b7bcca9db00dc9c30f48cdf3f59a41af7b7",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm366_counterfactuals": "v1"
+    },
+    "stamped_at": "2026-07-25T08:02:38.641313+00:00"
+  }
+}
