@@ -1,0 +1,54 @@
+{
+  "lever": "SFT.steps_ladder",
+  "seed": 47,
+  "decode": "asap+t30",
+  "rows": [
+    {
+      "steps": 8,
+      "seed": 47,
+      "stopped_on": "steps",
+      "completed_steps": 8,
+      "last_loss": 29.533615112304688,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "decode_timeout_count": 3,
+      "latency_ms_p50": 30003.01,
+      "run_id": "exp_lever_steps_ladder_s8_seed47",
+      "eval_id": "exp_lever_steps_ladder_s8_seed47_eval_asap_t30"
+    },
+    {
+      "steps": 16,
+      "seed": 47,
+      "stopped_on": "steps",
+      "completed_steps": 16,
+      "last_loss": 24.963964462280273,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 5787.27,
+      "run_id": "exp_lever_steps_ladder_s16_seed47",
+      "eval_id": "exp_lever_steps_ladder_s16_seed47_eval_asap_t30"
+    },
+    {
+      "steps": 30,
+      "seed": 47,
+      "stopped_on": "steps",
+      "completed_steps": 30,
+      "last_loss": 22.679147720336914,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 17045.49,
+      "run_id": "exp_lever_steps_ladder_s30_seed47",
+      "eval_id": "exp_lever_steps_ladder_s30_seed47_eval_asap_t30"
+    }
+  ],
+  "captured_at": "2026-07-27T14:40:32.530949+00:00",
+  "not_ship": true
+}

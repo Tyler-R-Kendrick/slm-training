@@ -346,3 +346,92 @@ diagnose the actual cross-session discrepancy cause now that fixture
 non-determinism is ruled out; otherwise move on to the DSH5-10 / `AP-007+`
 threads per the original note — this smoke line's role as a harness
 liveness + lever check is now well covered.
+## Joint seed x steps sweep (2026-07-27, scheduled autotrain-loop session)
+
+Acting on the note above: 6 more rows, independently run for real against
+`main` HEAD `f3adde1b` (DSH5-10 sixth slice, PR #1131, already merged),
+varying `--seed` (1, 2, 3) and `--steps` (4, 16) jointly rather than one
+knob at a time. Same fixture/model/recipe as every prior batch. Full
+per-run numbers, the combined seed x steps grid, and the honest
+result/scope notes: see
+[joint seed x steps sweep](autotrain-wf-smoke-20260727-joint-seedvar-measured-results.md).
+
+| run_id | steps | seed | stopped_on | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260727_joint_seed1_steps4` | 4 | 1 | steps | 52.60234069824219 | 3.63 |
+| `autotrain_wf_smoke_20260727_joint_seed2_steps4` | 4 | 2 | steps | 49.65409851074219 | 3.94 |
+| `autotrain_wf_smoke_20260727_joint_seed3_steps4` | 4 | 3 | steps | 64.18412017822266 | 3.57 |
+| `autotrain_wf_smoke_20260727_joint_seed1_steps16` | 16 | 1 | steps | 19.269824981689453 | 4.76 |
+| `autotrain_wf_smoke_20260727_joint_seed2_steps16` | 16 | 2 | steps | 16.698604583740234 | 5.33 |
+| `autotrain_wf_smoke_20260727_joint_seed3_steps16` | 16 | 3 | steps | 22.079015731811523 | 5.21 |
+
+Total independently verified rows across this file: **25** (all prior
+batches plus this joint sweep).
+
+**Next steps note:** single-variable and now joint seed x steps variance are
+both covered; the smoke-loop's role as a harness liveness check is
+thoroughly exhausted at this fixture size. The next scheduled iteration
+should move off this fixed fixture and pick up one of the repo's actually-
+open threads — for DSH5-10 specifically, the real next step is locating and
+wiring the `TypedOperatorPolicyScorer`
+(`src/slm_training/harnesses/experiments/typed_operator_policy.py:316`) the
+issue's own text names as the intended consumer, since PR #1131 found the
+existing `PreferencePair` composite-reward shape is a structural mismatch
+for exact-state action-token rows — or the next queued `AP-007+` campaign
+arm.
+## Batch-size variation (2026-07-27, scheduled autotrain-loop session)
+
+Acting on the note above: this scheduled session's iteration varies
+`--batch-size` (1, 2, 8) at `--seed 0`, independently run for real against
+`main` HEAD `5f94b92` (already merged), same fixture/model as every prior
+batch:
+
+```bash
+python -m scripts.train_model \
+  --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+  --model twotower --context-backend scratch --steps 8 --batch-size <N> \
+  --run-id <run_id> --no-sync-checkpoints --device cpu --seed 0
+```
+
+Environment: fresh `.venv` (Python 3.12, `torch==2.5.1+cu124`,
+`pip install -e ".[torch]"`), created in this scheduled session — not
+committed (`.venv/` is gitignored). Checked (not committed — `outputs/` is
+gitignored) at `outputs/runs/<run_id>/`. `python -m scripts.verify_version_stamps
+--check` reports 0 components touched (no harness code changed). Per-iteration
+notes:
+[bs1](autotrain-wf-smoke-20260727-bs1-seed0-measured-results.md),
+[bs2](autotrain-wf-smoke-20260727-bs2-seed0-measured-results.md),
+[bs8](autotrain-wf-smoke-20260727-bs8-seed0-measured-results.md).
+
+| run_id | ok | steps | stopped_on | batch_size | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260727_bs1_seed0` | True | 8 | steps | 1 | 38.93706130981445 | 3.08 |
+| `autotrain_wf_smoke_20260727_bs2_seed0` | True | 8 | steps | 2 | 36.706016540527344 | 2.85 |
+| already-verified `steps8_seed0` baseline (`--batch-size 4` implicit default) | True | 8 | steps | 4 | 32.610084533691406 | 2.10 |
+| `autotrain_wf_smoke_20260727_bs8_seed0` | True | 8 | steps | 8 | 28.973106384277344 | 7.63 |
+
+Loss falls monotonically as batch size grows at fixed step count (38.9 at
+bs=1 → 36.7 at bs=2 → 32.6 at the already-verified bs=4 baseline → 29.0 at
+bs=8), the expected direction (each step sees more records, so 8 steps at a
+larger batch size covers proportionally more of the 101-record fixture) and
+confirms `--batch-size` reaches the optimizer rather than being a silent
+no-op — a third genuinely different single-variable check, alongside the
+seed- and step-variation batches above. Still `fixture_or_scratch`: 1 run per
+batch size (n=1), a 101-record from-scratch fixture, no convergence or ship
+claim.
+
+Total independently verified rows across this file: **28** (all prior batches
+plus the joint seed x steps sweep and this batch-size variation).
+
+**Next steps note (2026-07-27):** step-count, seed, and batch-size are now
+all covered as distinct single-variable checks against this fixture — the
+smoke-loop's role as a harness liveness check is thoroughly exercised.
+Repeating this pattern with a fourth knob would have rapidly diminishing
+value. The next scheduled iteration of this loop should **not** default back
+to this fixture: it should pick up the DSH5-10 SFT/preference-training and
+four-baseline comparison scope (`docs/design/dsh5-10-replay-preference-rows.md`
+— row extraction is done, 7/7 patterns; the training + held-out measurement
+scope is untouched) or the next queued `AP-007+` campaign arm. That work
+requires deeper context-loading than a single bounded scheduled iteration
+safely affords in one pass, so a future iteration should budget for reading
+the relevant harness files first rather than rushing a training claim.

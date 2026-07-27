@@ -780,9 +780,9 @@ def build_advanced_operator_disposition(
 
     dv, dr = dims(
         (S, "The delivered slice (edit-then-undo, undo-then-redo) extracts rows whose chosen/rejected actions are verified legal-set members and whose chosen_output_state matches independent replay."),
-        (R, "All 7 of 7 named extraction patterns now extract and replay-verify; merge conflict is honestly scoped out as a non-row legality constraint rather than a row. No SFT/preference training, no four-baseline comparison, no held-out benefit measurement exists."),
-        (R, "No CAP0/CAP1/CAP2 retention or calibration measurement exists yet for rows sourced from this module."),
-        (R, "No turn-depth or context-view ablation exists; OperatorEventMemoryReportV1 is row counts only."),
+        (R, "All 7 of 7 named extraction patterns extract and replay-verify; merge conflict is honestly scoped out as a non-row legality constraint rather than a row. A bounded fixture-scale two-feature diagnostic scorer comparison now exists, but no SFT/preference training against a real DSH3 policy/control head, no powered corpus, and no certified held-out benefit measurement exist."),
+        (R, "No CAP0/CAP1/CAP2 retention or calibration measurement exists yet for rows sourced from this module (the sixth slice's pairwise calibration proxy is a narrow, fixture-scale diagnostic, not a CAP-gated measurement)."),
+        (R, "The turn-depth/context-view *structural* ablation dimension now exists (dsl.operators.replay_preference_context_views: five context-views x five turn-depths) and a bounded matched-variant comparison is wired (harness.preference.replay_preference_context_view_variants), but only over a tiny synthetic corpus and a two-feature linear scorer -- never a trained DSH3 policy/control head."),
     )
     claims.append(
         AdvancedOperatorClaimV1(
@@ -791,8 +791,9 @@ def build_advanced_operator_disposition(
             reason=(
                 "DSH5-10/SLM-418's own doc states plainly: 'not yet dispositioned -- this PR delivers "
                 "a scoped subset, not the full issue,' and that the issue 'should stay open.' The "
-                "delivered row-extraction wiring is real and replay-verified, but the issue's held-out "
-                "benefit question remains unrun_conditional."
+                "delivered row-extraction wiring is real and replay-verified, and a sixth slice adds a "
+                "real (fixture-scale) turn-depth/context-view ablation and comparison, but the issue's "
+                "held-out benefit question against a real trained policy remains unrun_conditional."
             ),
             dimension_verdicts=dv,
             dimension_reasons=dr,
