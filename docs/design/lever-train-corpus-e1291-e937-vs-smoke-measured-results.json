@@ -1,0 +1,109 @@
+{
+  "lever": "train_corpus",
+  "hypothesis": "Richer contract-valid train corpora (e1291 n=350, e937 n=524) lift meaningful_program_rate on smoke eval vs wf_smoke_v2 (n\u2248103) at fixed champion recipe.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "suite": "smoke",
+  "eval_limit": 3,
+  "recipe": {
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true,
+    "asap_decode": true,
+    "eval_test_dir": "outputs/data/eval/wf_smoke_v2"
+  },
+  "rows": [
+    {
+      "arm": "wf_smoke_v2",
+      "corpus_records": 103,
+      "run_id": "exp_lever_sb15_s16_lr1e3_bs2_seed47",
+      "seed": 47,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 7.451866626739502,
+      "train_dir": "outputs/data/train/wf_smoke_v2",
+      "record_count": 103,
+      "data_manifest_sha": "146f74173a853dd3a5ea75c02175b3fc6e731e2e6b6b4e5f72977103345998e4",
+      "batch_size": 2,
+      "lr": 0.001,
+      "eval_id": "exp_lever_sb15_s16_lr1e3_bs2_seed47_eval_asap_t30",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 1469.53,
+      "n": 3
+    },
+    {
+      "arm": "e1291_document_only",
+      "corpus_records": 350,
+      "run_id": "exp_lever_data_e1291_s16_lr1e3_bs2_sb15_seed47",
+      "seed": 47,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 22.43915367126465,
+      "train_dir": "src/slm_training/resources/data/train/e1291_document_only_full_program_v1",
+      "record_count": 350,
+      "data_manifest_sha": "50b88f2a037eae6e7e02157d301a8e7da885370819469313659e4885c9144366",
+      "batch_size": 2,
+      "lr": 0.001,
+      "eval_id": "exp_lever_data_e1291_s16_lr1e3_bs2_sb15_seed47_eval_asap_t30",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 23356.02,
+      "n": 3
+    },
+    {
+      "arm": "e937_role_safe",
+      "corpus_records": 524,
+      "run_id": "exp_lever_data_e937_s16_lr1e3_bs2_sb15_seed47",
+      "seed": 47,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 16.56879425048828,
+      "train_dir": "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2",
+      "record_count": 524,
+      "data_manifest_sha": "23e81f05616592a29c755a96849da1af279e40ee075a4353277b36739af679e1",
+      "batch_size": 2,
+      "lr": 0.001,
+      "eval_id": "exp_lever_data_e937_s16_lr1e3_bs2_sb15_seed47_eval_asap_t30",
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.5296666666666666,
+      "empty_prediction_count": 1,
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 27683.62,
+      "n": 3
+    }
+  ],
+  "baseline_arm": "wf_smoke_v2",
+  "decision": "reject",
+  "decision_reason": "no corpus beat wf_smoke_v2 baseline on meaningful/parse under champion micro-recipe; e937_role_safe regressed quality (parse=0.6666666666666666, empty=1)",
+  "blocked_corpora": [
+    {
+      "path": "e230_diverse_judged_roots_v2",
+      "error": "symbol_only/v2 free-form strings"
+    },
+    {
+      "path": "e826_target_slots_only_v4",
+      "error": "placeholder in non-content property"
+    },
+    {
+      "path": "scope_graded_v1",
+      "error": "symbol_only/v2 free-form strings"
+    }
+  ],
+  "captured_at": "2026-07-27T16:12:17.255969+00:00"
+}
