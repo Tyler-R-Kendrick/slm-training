@@ -72,6 +72,36 @@ PREREGISTERED = {
     "leakage_safety": "split is trace-level; all four rows of one trace share one split",
 }
 
+# A single (corpus_seed, train_seed) point is not a reproducible claim: CPU
+# BLAS reduction order can differ across environments/thread counts even
+# with a fixed torch.manual_seed, and this toy corpus/model is small enough
+# that one flipped held-out prediction can flip the whole comparison (a
+# real reviewer re-run on a different machine reproduced the corpus/split
+# exactly but got a different final_train_loss and the opposite disposition
+# from the original single-seed run). The seed sweep below is the actual
+# preregistered evidence surface; run_experiment() at one seed is a
+# building block, not a standalone claim.
+DEFAULT_SWEEP_SEEDS: tuple[int, ...] = tuple(range(433, 443))  # 10 independent draws
+
+SWEEP_PREREGISTERED = {
+    "hypothesis": PREREGISTERED["hypothesis"],
+    "aggregate_stop_rule": (
+        "Across the preregistered seed sweep (each seed independently redraws "
+        "both the corpus and the trained head, corpus_seed == train_seed), "
+        "compare disposition_trained's composite_penalized_error_rate against "
+        "derived_only's per seed. The hypothesis is supported "
+        "('trained_head_improves_on_derived_only') only if "
+        "wins > losses across the sweep, where a seed counts as a win if "
+        "trained is strictly lower, a loss if trained is strictly higher, "
+        "and a tie otherwise (ties count toward neither). wins == losses "
+        "(including 0-0) is 'no_held_out_improvement' -- a legitimate "
+        "negative/inconclusive result, not evidence for the hypothesis. "
+        "No seed is excluded or cherry-picked; every seed in "
+        "DEFAULT_SWEEP_SEEDS is reported."
+    ),
+    "leakage_safety": PREREGISTERED["leakage_safety"],
+}
+
 
 def _classifier_module():
     import torch
@@ -255,3 +285,80 @@ def run_experiment(
         "data.flow.turn_disposition_corpus",
     )
     return payload
+
+
+def run_seed_sweep_experiment(
+    *,
+    n_per_tier: int = 40,
+    train_fraction: float = 0.7,
+    train_steps: int = 200,
+    train_lr: float = 0.05,
+    seeds: tuple[int, ...] = DEFAULT_SWEEP_SEEDS,
+) -> dict[str, Any]:
+    """The actual preregistered evidence surface for SLM-433: run
+    ``run_experiment`` once per seed (each seed independently redraws both
+    the corpus and the trained head via ``corpus_seed == train_seed == seed``)
+    and aggregate via the sign test in ``SWEEP_PREREGISTERED``. Every seed is
+    reported -- none excluded or cherry-picked."""
+    per_seed: list[dict[str, Any]] = []
+    wins = losses = ties = 0
+    for seed in seeds:
+        payload = run_experiment(
+            n_per_tier=n_per_tier,
+            train_fraction=train_fraction,
+            corpus_seed=seed,
+            train_steps=train_steps,
+            train_lr=train_lr,
+            train_seed=seed,
+        )
+        trained = payload["arm_scores"]["disposition_trained"]["composite_penalized_error_rate"]
+        derived = payload["arm_scores"]["derived_only"]["composite_penalized_error_rate"]
+        if trained < derived:
+            wins += 1
+            outcome = "trained_wins"
+        elif trained > derived:
+            losses += 1
+            outcome = "derived_wins"
+        else:
+            ties += 1
+            outcome = "tie"
+        per_seed.append(
+            {
+                "seed": seed,
+                "trained_composite": trained,
+                "derived_composite": derived,
+                "outcome": outcome,
+                "final_train_loss": payload["final_train_loss"],
+            }
+        )
+
+    disposition = "trained_head_improves_on_derived_only" if wins > losses else "no_held_out_improvement"
+
+    return {
+        "experiment": f"{EXPERIMENT_ID}-seed-sweep",
+        "issue": "SLM-433",
+        "preregistered": SWEEP_PREREGISTERED,
+        "seeds": list(seeds),
+        "per_seed": per_seed,
+        "wins": wins,
+        "ties": ties,
+        "losses": losses,
+        "disposition": disposition,
+        "honesty": (
+            "fixture_or_scratch, capability class -- not a ship claim. A "
+            "single-seed run of this experiment is not a reproducible "
+            "claim (CPU BLAS reduction order can differ across "
+            "environments/thread counts even with a fixed torch seed, and "
+            "this toy corpus/model is small enough that one flipped "
+            "held-out prediction flips the comparison); this sweep across "
+            "10 independent seeds is the real evidence surface. No "
+            "promotion, ship-gate, or production-readiness claim is made "
+            "regardless of outcome."
+        ),
+        "version_stamp": build_version_stamp(
+            "harness.experiments.slm433_turn_disposition_corpus",
+            "model.turn_disposition_head",
+            "dsl.operators.turn_disposition",
+            "data.flow.turn_disposition_corpus",
+        ),
+    }

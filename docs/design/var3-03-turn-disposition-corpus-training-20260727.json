@@ -1,99 +1,103 @@
 {
-  "experiment": "slm433-turn-disposition-corpus",
+  "experiment": "slm433-turn-disposition-corpus-seed-sweep",
   "issue": "SLM-433",
   "preregistered": {
     "hypothesis": "A TurnDispositionHead trained on real, corpus-derived clarify-margin examples reduces composite_penalized_error_rate on a held-out split relative to derived_only (free rules, clarify never fires).",
-    "stop_rule": "If disposition_trained shows no held-out improvement over derived_only, that is a legitimate negative result; do not add further trained-head complexity to this surface.",
+    "aggregate_stop_rule": "Across the preregistered seed sweep (each seed independently redraws both the corpus and the trained head, corpus_seed == train_seed), compare disposition_trained's composite_penalized_error_rate against derived_only's per seed. The hypothesis is supported ('trained_head_improves_on_derived_only') only if wins > losses across the sweep, where a seed counts as a win if trained is strictly lower, a loss if trained is strictly higher, and a tie otherwise (ties count toward neither). wins == losses (including 0-0) is 'no_held_out_improvement' -- a legitimate negative/inconclusive result, not evidence for the hypothesis. No seed is excluded or cherry-picked; every seed in DEFAULT_SWEEP_SEEDS is reported.",
     "leakage_safety": "split is trace-level; all four rows of one trace share one split"
   },
-  "arms": [
-    "disposition_off",
-    "derived_only",
-    "disposition_trained"
+  "seeds": [
+    433,
+    434,
+    435,
+    436,
+    437,
+    438,
+    439,
+    440,
+    441,
+    442
   ],
-  "corpus_config": {
-    "n_per_tier": 40,
-    "train_fraction": 0.7,
-    "corpus_seed": 433,
-    "tier_margins": [
-      0.0,
-      0.2,
-      0.4,
-      0.6,
-      1.0
-    ],
-    "tier_gold_cheap_probability": [
-      0.5,
-      0.6,
-      0.75,
-      0.85,
-      0.95
-    ]
-  },
-  "quality_report": {
-    "schema": "turn_disposition_corpus_quality_report/v1",
-    "total_traces": 200,
-    "total_rows": 800,
-    "rows_by_kind": {
-      "answer": 200,
-      "forced_emit": 200,
-      "out_of_scope": 200,
-      "scored": 200
+  "per_seed": [
+    {
+      "seed": 433,
+      "trained_composite": 0.037500000000000006,
+      "derived_composite": 0.04375,
+      "outcome": "trained_wins",
+      "final_train_loss": 0.6752055883407593
     },
-    "rows_by_split": {
-      "heldout": 240,
-      "train": 560
+    {
+      "seed": 434,
+      "trained_composite": 0.046875,
+      "derived_composite": 0.046875,
+      "outcome": "tie",
+      "final_train_loss": 1.3857791423797607
     },
-    "rows_by_tier": {
-      "0": 160,
-      "1": 160,
-      "2": 160,
-      "3": 160,
-      "4": 160
+    {
+      "seed": 435,
+      "trained_composite": 0.046875,
+      "derived_composite": 0.07187500000000001,
+      "outcome": "trained_wins",
+      "final_train_loss": 1.4735493659973145
     },
-    "out_of_scope_never_from_nonempty_set": true
-  },
-  "leakage_safe_split": true,
-  "train_scored_count": 140,
-  "heldout_scored_count": 60,
-  "final_train_loss": 0.6752055883407593,
-  "arm_scores": {
-    "disposition_off": {
-      "schema": "cap2_disposition_score/v1",
-      "case_count": 240,
-      "wrong_op_count": 134,
-      "abstention_count": 0,
-      "wrong_op_rate": 0.5583333333333333,
-      "abstention_rate": 0.0,
-      "wrong_emit_penalty_ratio": 3.0,
-      "composite_penalized_error_rate": 0.41875
+    {
+      "seed": 436,
+      "trained_composite": 0.05,
+      "derived_composite": 0.05,
+      "outcome": "tie",
+      "final_train_loss": 0.10612095147371292
     },
-    "derived_only": {
-      "schema": "cap2_disposition_score/v1",
-      "case_count": 240,
-      "wrong_op_count": 14,
-      "abstention_count": 0,
-      "wrong_op_rate": 0.058333333333333334,
-      "abstention_rate": 0.0,
-      "wrong_emit_penalty_ratio": 3.0,
-      "composite_penalized_error_rate": 0.04375
+    {
+      "seed": 437,
+      "trained_composite": 0.03125,
+      "derived_composite": 0.034374999999999996,
+      "outcome": "trained_wins",
+      "final_train_loss": 0.45746779441833496
     },
-    "disposition_trained": {
-      "schema": "cap2_disposition_score/v1",
-      "case_count": 240,
-      "wrong_op_count": 8,
-      "abstention_count": 12,
-      "wrong_op_rate": 0.03333333333333333,
-      "abstention_rate": 0.05,
-      "wrong_emit_penalty_ratio": 3.0,
-      "composite_penalized_error_rate": 0.037500000000000006
+    {
+      "seed": 438,
+      "trained_composite": 0.043750000000000004,
+      "derived_composite": 0.059375,
+      "outcome": "trained_wins",
+      "final_train_loss": 0.6142268180847168
+    },
+    {
+      "seed": 439,
+      "trained_composite": 0.034375,
+      "derived_composite": 0.046875,
+      "outcome": "trained_wins",
+      "final_train_loss": 1.1156983375549316
+    },
+    {
+      "seed": 440,
+      "trained_composite": 0.05,
+      "derived_composite": 0.0625,
+      "outcome": "trained_wins",
+      "final_train_loss": 0.11387328803539276
+    },
+    {
+      "seed": 441,
+      "trained_composite": 0.04375,
+      "derived_composite": 0.04375,
+      "outcome": "tie",
+      "final_train_loss": 0.0013391345273703337
+    },
+    {
+      "seed": 442,
+      "trained_composite": 0.059375,
+      "derived_composite": 0.059375,
+      "outcome": "tie",
+      "final_train_loss": 0.5776028037071228
     }
-  },
+  ],
+  "wins": 6,
+  "ties": 4,
+  "losses": 0,
   "disposition": "trained_head_improves_on_derived_only",
-  "honesty": "fixture_or_scratch, capability class -- not a ship claim. The corpus is a real, freshly-enumerated symbolic fixture (5 real declared-cost tiers x n_per_tier traces), not natural-language data; the classifier is a tiny 3-feature MLP. Held-out split is trace-level leakage-safe. No promotion, ship-gate, or production-readiness claim is made regardless of outcome.",
+  "honesty": "fixture_or_scratch, capability class -- not a ship claim. A single-seed run of this experiment is not a reproducible claim (CPU BLAS reduction order can differ across environments/thread counts even with a fixed torch seed, and this toy corpus/model is small enough that one flipped held-out prediction flips the comparison); this sweep across 10 independent seeds is the real evidence surface. No promotion, ship-gate, or production-readiness claim is made regardless of outcome.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "cefd7cb32cf1faecd322536db19f10342ee99c1b",
+    "code_commit": "a94aeabcef587b95568b150fda034dd874653ac4",
     "code_dirty": true,
     "components": {
       "harness.experiments.slm433_turn_disposition_corpus": "v1",
@@ -101,6 +105,6 @@
       "dsl.operators.turn_disposition": "v1",
       "data.flow.turn_disposition_corpus": "v1"
     },
-    "stamped_at": "2026-07-27T04:18:42.144844+00:00"
+    "stamped_at": "2026-07-27T05:15:10.935632+00:00"
   }
 }

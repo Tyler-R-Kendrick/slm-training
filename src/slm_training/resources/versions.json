@@ -7029,7 +7029,7 @@
       ]
     },
     "harness.experiments.slm433_turn_disposition_corpus": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm433_turn_disposition_corpus.py",
@@ -7039,6 +7039,11 @@
         "docs/design/var3-03-turn-disposition-corpus-training-20260727.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "PR #1113 review: a reviewer re-run reproduced the corpus/split exactly but got a different final_train_loss and the opposite disposition from the original single-seed (corpus_seed=train_seed=433) claim -- CPU BLAS reduction order can differ across environments/thread counts even with a fixed torch seed, and one flipped held-out row is enough to flip this toy comparison. Replaced the single-seed claim with run_seed_sweep_experiment: a preregistered 10-seed sign test (wins > losses; ties count against the hypothesis, not for it) is now the real evidence surface. Regenerated docs/design artifacts from the sweep: wins=6, ties=4, losses=0 across seeds 433-442 -- trained never loses to derived_only on any seed. run_experiment() at one seed remains a building block, not a standalone claim."
+        },
         {
           "version": "v1",
           "date": "2026-07-27",
