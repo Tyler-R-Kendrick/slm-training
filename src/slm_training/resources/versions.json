@@ -11063,6 +11063,11 @@
         {
           "version": "v1",
           "date": "2026-07-27",
+          "note": "no-bump: archive the recovered pre-disposition SLM-418 local evidence bundle and label it superseded; no harness behavior, metric, gate, or final disposition changed."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-27",
           "note": "SLM-418 (DSH5-10): final issue-level disposition. Publishes OperatorEventMemoryReportV1-style final report + disposition invoking the issue's own falsification/stop rule: fixture-scale ablation (8 sessions, 40 rows, 25 context-view x turn-depth cells) showed no held-out benefit over the current_state_only baseline (ceiling 1.0 everywhere), so the conversation event DAG is retained for runtime/evaluation only and no preference training complexity is added. Successor conditions (real argument-bound corpus build showing benefit over derived_only baselines, per the VAR3-04/05 pattern) are recorded for re-opening."
         }
       ]
