@@ -8859,7 +8859,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -8883,9 +8883,21 @@
         "docs/design/iter-slm279-depth-supervision-correction-20260723.json",
         "docs/design/iter-slm279-depth-supervision-correction-20260723.md",
         "docs/design/iter-slm282-recurrence-health-20260723.json",
-        "docs/design/iter-slm282-recurrence-health-20260723.md"
+        "docs/design/iter-slm282-recurrence-health-20260723.md",
+        "docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.json",
+        "docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-25",
+          "note": "no-bump: register the SLM-421 powered-rerun JSON/markdown (n=20 fresh seeds 2..21, min_pass_rate=0.5, disposition recursive_core_positive) produced by the v19 power_rule capability; no further code/behavior change"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-25",
+          "note": "add an additive, default-off Wilson-interval power rule (--seed-count/--min-pass-rate) to the SLM-282 recurrence-health screen for the LAR3 powered-rerun blocking condition (PR #853/#854/#855/#856 reopening criteria); the original fixed passed-seeds>=2/2 rule stays the exact default path (power_rule=None) and is unchanged byte-for-byte"
+        },
         {
           "version": "v18",
           "date": "2026-07-23",
