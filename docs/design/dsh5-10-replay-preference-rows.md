@@ -510,6 +510,56 @@ this fix.
 No causal, calibration, or promotion claim is made. No checkpoint or model
 card update applies -- this slice creates no checkpoint.
 
+## Review fixes (sixth slice)
+
+CodeRabbit review on the PR surfaced four real issues, fixed here rather than
+argued past:
+
+* **NaN baseline could silently produce a "no benefit" verdict.** If the
+  `current_state_only` baseline cell had zero held-out pairs,
+  `pairwise_preference_accuracy` was `float("nan")`, and every
+  `accuracy > baseline_accuracy` comparison against a NaN is `False` --
+  producing a spurious, unearned `no_benefit_fixture_scale` verdict instead
+  of failing closed. `train_replay_preference_context_view_variants` now
+  raises `ValueError` when the baseline cell is unmeasured *or* NaN.
+* **The `held_out_benefit_statistical_power` scope note hardcoded "8
+  sessions."** `evaluate_ambiguous_operator_followups` accepts an arbitrary
+  caller-supplied corpus (a test passes exactly two sessions), so a fixed
+  "8 sessions" string was simply false for any other corpus size. The note
+  is now derived per-call from `comparison.row_count` /
+  `comparison.session_count`.
+* **`docs/design/dsh5-10-replay-preference-rows.md` (this file) was missing
+  from `harness.preference.replay_preference_context_view_variants`'s
+  registered `paths`** in `versions.json`, leaving the experiment narrative
+  outside that component's version/no-bump tracking contract. Added.
+* **Two tests accepted every possible `held_out_benefit` verdict**,
+  including `no_non_baseline_held_out_data` (the "we could not measure
+  anything" outcome), which made a real corpus/split regression on the
+  default full synthetic corpus indistinguishable from a genuine
+  fixture-scale result. Both tests now assert the narrower
+  `{benefit_observed_fixture_scale, no_benefit_fixture_scale}` set for that
+  corpus; the excluded verdict remains a legitimate code path for a
+  caller-supplied corpus too small to have non-baseline held-out data.
+
+Also applied, both trivial and uncontroversial: an unchecked `int()` parse
+in the counter fixture operator now raises `OperatorRejectedError` instead
+of a bare `ValueError` on malformed input; the per-iteration `_pairs`
+closure in the comparison loop is now a module-level `_view_depth_pairs`
+function taking `view`/`depth` as explicit arguments instead of capturing
+loop variables; and the unused `TURN_DEPTH_IS_BOUNDING` constant was
+deleted.
+
+Not applied, with reasons: prefixing the doc's own reproducibility commands
+with `rtk` was skipped -- these blocks are exact, copy-pasteable
+reproduction commands (the convention every prior slice in this file
+follows), and `rtk` is a token-compression wrapper for an agent's own shell
+usage, not part of the documented commands themselves. Promoting the test
+modules' shared private fixture helpers (`_provenance`,
+`_rollback_chain_trace`, `_bump`, `_counter_pack_and_root`, `_sha`,
+`_table`) to a public/shared `conftest.py` API was also skipped as a
+non-functional structural refactor left for a future slice, not a
+correctness or honesty defect.
+
 ## Reproducibility
 
 ```bash

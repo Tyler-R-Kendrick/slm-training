@@ -39,6 +39,10 @@ from slm_training.harnesses.preference.replay_preference_context_view_variants i
 
 #: Metrics the issue's own bullet names that this slice does NOT measure, and
 #: why -- printed verbatim into the report so a reader never has to guess.
+#: ``held_out_benefit_statistical_power`` is corpus-size-dependent and is
+#: filled in per-call by ``_out_of_scope_metrics`` below, never hardcoded,
+#: since ``evaluate_ambiguous_operator_followups`` accepts an arbitrary
+#: caller-supplied corpus (a test passes exactly two sessions).
 OUT_OF_SCOPE_METRICS: dict[str, str] = {
     "real_action_operator_argument_accuracy": (
         "measured only via a two-feature diagnostic linear scorer's pairwise "
@@ -53,12 +57,20 @@ OUT_OF_SCOPE_METRICS: dict[str, str] = {
         "requires the full CAP-gated eval suite integrated with a trained "
         "policy checkpoint; out of scope for a fixture-scale diagnostic scorer"
     ),
-    "held_out_benefit_statistical_power": (
-        "the synthetic corpus is a few dozen rows across 8 sessions; any "
-        "verdict below is fixture-scale wiring evidence, never a powered or "
-        "certified held-out-benefit claim"
-    ),
 }
+
+
+def _out_of_scope_metrics(comparison: ReplayPreferenceContextViewComparisonReportV1) -> dict[str, str]:
+    """``OUT_OF_SCOPE_METRICS`` plus a corpus-size-accurate statistical-power note."""
+    return {
+        **OUT_OF_SCOPE_METRICS,
+        "held_out_benefit_statistical_power": (
+            f"the corpus supplied to this run is {comparison.row_count} row(s) "
+            f"across {comparison.session_count} session(s); any verdict below "
+            "is fixture-scale wiring evidence, never a powered or certified "
+            "held-out-benefit claim"
+        ),
+    }
 
 
 @dataclass(frozen=True)
@@ -108,7 +120,7 @@ def evaluate_ambiguous_operator_followups(
     return AmbiguousOperatorFollowupEvalReportV1(
         comparison=comparison,
         ablation_cell_counts=ablation_cell_counts,
-        out_of_scope_metrics=dict(OUT_OF_SCOPE_METRICS),
+        out_of_scope_metrics=_out_of_scope_metrics(comparison),
         version_stamp=build_version_stamp(
             "harness.preference.replay_preference_context_view_variants"
         ),

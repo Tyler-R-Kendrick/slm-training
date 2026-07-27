@@ -1145,6 +1145,11 @@
         {
           "version": "v1",
           "date": "2026-07-27",
+          "note": "no-bump: CodeRabbit review fix on PR #1129 -- deleted the unused TURN_DEPTH_IS_BOUNDING constant (never re-exported or consumed by any test/harness). No behavior, schema, or public API change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-27",
           "note": "SLM-418 (DSH5-10) sixth slice: initial registration. Defines the five context-view input representations (current_state_only, state_plus_recent_receipts, state_plus_retrieved_events, full_trace_plus_state, last_three_text_history) and the five turn-depths (1/2/4/8/16) the issue's own matrix names, plus OperatorEventMemoryAblationReportV1/build_ablation_report -- the structural (not yet trained) turn-depth x context-view ablation grid OperatorEventMemoryReportV1's own docstring flagged as missing. Every view is built only from state/event ids and a small closed action_kind vocabulary derived by string-prefix check -- never transcript text, never a semantic embedding of any id. Trains nothing; harness.preference.replay_preference_context_view_variants consumes it to train and compare matched context-view variants"
         }
       ]
@@ -8001,16 +8006,22 @@
       ]
     },
     "harness.preference.replay_preference_context_view_variants": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_preference_context_view_variants.py",
         "scripts/run_replay_preference_context_view_ablation.py",
         "tests/test_harnesses/preference/test_operator_history_pairs.py",
         "tests/test_evals/test_ambiguous_operator_followups.py",
-        "src/slm_training/evals/ambiguous_operator_followups.py"
+        "src/slm_training/evals/ambiguous_operator_followups.py",
+        "docs/design/dsh5-10-replay-preference-rows.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "CodeRabbit review fix on PR #1129: train_replay_preference_context_view_variants now raises instead of silently emitting a spurious no-benefit verdict when the current_state_only baseline cell is NaN (zero held-out pairs); held_out_benefit_statistical_power is now derived per-call from the actual corpus size instead of a hardcoded '8 sessions' string; registered this doc file under this component's paths; narrowed two tests' accepted held_out_benefit verdict set so a real corpus/split regression on the default full corpus can no longer hide behind the can't-measure-anything outcome; the ablation-fixture counter operator now raises OperatorRejectedError instead of a bare ValueError on a malformed parse; the per-iteration _pairs closure is now a module-level _view_depth_pairs function. No schema change to any public dataclass"
+        },
         {
           "version": "v1",
           "date": "2026-07-27",

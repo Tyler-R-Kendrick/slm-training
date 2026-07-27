@@ -80,16 +80,6 @@ class ContextView(str, Enum):
     LAST_THREE_TEXT_HISTORY = "last_three_text_history"
 
 
-#: Whether ``turn_depth`` is a real bound (True) or a documented no-op
-#: ceiling / fixed-window override (False) for this view.
-TURN_DEPTH_IS_BOUNDING: dict[ContextView, bool] = {
-    ContextView.CURRENT_STATE_ONLY: False,
-    ContextView.STATE_PLUS_RECENT_RECEIPTS: True,
-    ContextView.STATE_PLUS_RETRIEVED_EVENTS: True,
-    ContextView.FULL_TRACE_PLUS_STATE: False,
-    ContextView.LAST_THREE_TEXT_HISTORY: False,
-}
-
 _OPERATION_ACTION_KIND: dict[ConversationOperation, str] = {
     ConversationOperation.UNDO: "undo",
     ConversationOperation.REDO: "redo",

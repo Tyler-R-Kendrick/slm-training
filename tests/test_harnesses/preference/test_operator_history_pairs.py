@@ -303,10 +303,13 @@ def test_train_variants_covers_every_view_depth_cell_with_real_numbers() -> None
         assert cell.train_pair_count > 0
         assert len(cell.weights) == 2
 
+    # "no_non_baseline_held_out_data" is deliberately excluded: the full
+    # synthetic corpus always has non-baseline held-out pairs, so accepting
+    # it here would make a real corpus/split regression indistinguishable
+    # from a genuine fixture-scale result.
     assert report.held_out_benefit["verdict"] in {
         "benefit_observed_fixture_scale",
         "no_benefit_fixture_scale",
-        "no_non_baseline_held_out_data",
     }
     assert 0.0 < report.undo_family_rate < 1.0
     assert report.row_count == sum(len(session.report.rows) for session in sessions)

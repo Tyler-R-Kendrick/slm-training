@@ -39,12 +39,16 @@ def test_report_schema_and_version_stamp_are_real() -> None:
 def test_held_out_benefit_verdict_is_never_a_ship_or_certified_claim() -> None:
     report = evaluate_ambiguous_operator_followups()
     verdict = report.comparison.held_out_benefit["verdict"]
-    # The only vocabulary this disposition may use -- an honest fixture-scale
-    # finding either way, never "ship" / "certified" / "production-ready".
+    # The default full synthetic corpus always has non-baseline held-out
+    # pairs, so "no_non_baseline_held_out_data" is deliberately excluded --
+    # accepting it here would make a real corpus/split regression
+    # indistinguishable from a genuine fixture-scale result. The remaining
+    # vocabulary is the only one this disposition may use -- an honest
+    # fixture-scale finding either way, never "ship" / "certified" /
+    # "production-ready".
     assert verdict in {
         "benefit_observed_fixture_scale",
         "no_benefit_fixture_scale",
-        "no_non_baseline_held_out_data",
     }
     for banned in ("ship", "certified", "production", "promote"):
         assert banned not in verdict
@@ -52,7 +56,21 @@ def test_held_out_benefit_verdict_is_never_a_ship_or_certified_claim() -> None:
 
 def test_out_of_scope_metrics_names_every_unmeasured_issue_metric() -> None:
     report = evaluate_ambiguous_operator_followups()
-    assert report.out_of_scope_metrics == OUT_OF_SCOPE_METRICS
+    # held_out_benefit_statistical_power is corpus-size-dependent (derived
+    # from the actual comparison.row_count/session_count), so it is checked
+    # separately rather than by exact dict equality with the static constant.
+    assert report.out_of_scope_metrics.keys() == {
+        *OUT_OF_SCOPE_METRICS,
+        "held_out_benefit_statistical_power",
+    }
+    for key, note in OUT_OF_SCOPE_METRICS.items():
+        assert report.out_of_scope_metrics[key] == note
+    assert str(report.comparison.row_count) in report.out_of_scope_metrics[
+        "held_out_benefit_statistical_power"
+    ]
+    assert str(report.comparison.session_count) in report.out_of_scope_metrics[
+        "held_out_benefit_statistical_power"
+    ]
     assert "cap0_cap1_cap2_retention" in report.out_of_scope_metrics
     assert "unintended_mutations" in report.out_of_scope_metrics
     # Every note must itself be honest, not a placeholder.
@@ -108,6 +126,11 @@ def test_evaluate_accepts_a_smaller_externally_supplied_corpus() -> None:
     assert report.comparison.session_count == 2
     assert report.comparison.train_session_count == 1
     assert report.comparison.held_out_session_count == 1
+    # The statistical-power note must reflect this smaller corpus, not the
+    # hardcoded "8 sessions" of the module's own default full corpus.
+    note = report.out_of_scope_metrics["held_out_benefit_statistical_power"]
+    assert "2 session" in note
+    assert "8 session" not in note
 
 
 def test_a_corpus_row_independently_replays_reusing_the_real_operator_api() -> None:

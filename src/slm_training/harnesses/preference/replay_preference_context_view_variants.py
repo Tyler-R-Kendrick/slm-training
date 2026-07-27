@@ -141,7 +141,10 @@ def _counter_pack_and_root() -> tuple[object, OperatorLibraryV1, OperatorStateV1
         prefix = ':hero.step_'
         if prefix not in state.source:
             raise OperatorRejectedError("ablation_fixture.no_counter")
-        current = int(state.source.split(prefix, 1)[1].split('"', 1)[0])
+        try:
+            current = int(state.source.split(prefix, 1)[1].split('"', 1)[0])
+        except ValueError as exc:
+            raise OperatorRejectedError("ablation_fixture.bad_counter") from exc
         return OperatorMutationV1(
             source=_counter_source(current + 1),
             effect=ActionEffectV1(compiler_coverage=CompilerCoverage.EXACT),
@@ -617,6 +620,30 @@ def _score(action: str, window: ContextViewWindowV1, weights: tuple[float, float
     return weights[0] * f0 + weights[1] * f1
 
 
+def _view_depth_pairs(sessions: Sequence[ReplayPreferenceSessionV1], *, view: ContextView, depth: int):
+    """Chosen/rejected feature pairs and their (row, window) pairs for one (view, depth) cell.
+
+    A plain module-level function, not a closure re-defined per loop
+    iteration, so ``view``/``depth`` are always explicit arguments rather
+    than captured loop variables (Ruff B023).
+    """
+    pairs = []
+    windows = []
+    for session in sessions:
+        for row in session.report.rows:
+            window = build_context_view_window(
+                state_lookup=session.state_lookup,
+                receipts=session.receipts,
+                decision_state_id=row.input_state_id,
+                chosen_output_state_id=row.chosen_output_state_id,
+                view=view,
+                turn_depth=depth,
+            )
+            pairs.append((_features(row.chosen_action, window), _features(row.rejected_action, window)))
+            windows.append((row, window))
+    return pairs, windows
+
+
 # --------------------------------------------------------------------------- #
 # Comparison report.
 # --------------------------------------------------------------------------- #
@@ -759,25 +786,8 @@ def train_replay_preference_context_view_variants(
                 "run is never evidence (AGENTS.md hard run cap)"
             )
 
-        def _pairs(session_list):
-            pairs = []
-            windows = []
-            for session in session_list:
-                for row in session.report.rows:
-                    window = build_context_view_window(
-                        state_lookup=session.state_lookup,
-                        receipts=session.receipts,
-                        decision_state_id=row.input_state_id,
-                        chosen_output_state_id=row.chosen_output_state_id,
-                        view=view,
-                        turn_depth=depth,
-                    )
-                    pairs.append((_features(row.chosen_action, window), _features(row.rejected_action, window)))
-                    windows.append((row, window))
-            return pairs, windows
-
-        train_pairs, _train_windows = _pairs(train_sessions)
-        held_out_pairs, held_out_windows = _pairs(held_out_sessions)
+        train_pairs, _train_windows = _view_depth_pairs(train_sessions, view=view, depth=depth)
+        held_out_pairs, held_out_windows = _view_depth_pairs(held_out_sessions, view=view, depth=depth)
 
         weights = _train_pairwise_linear_scorer(train_pairs, steps=steps, lr=lr)
 
@@ -822,8 +832,11 @@ def train_replay_preference_context_view_variants(
             if best_non_baseline is None or accuracy > best_non_baseline[0]:
                 best_non_baseline = (accuracy, view, depth)
 
-    if baseline_accuracy is None:
-        raise ValueError("baseline (current_state_only) cell was not computed")
+    if baseline_accuracy is None or math.isnan(baseline_accuracy):
+        raise ValueError(
+            "baseline (current_state_only) cell was not computed or had no "
+            "held-out pairs; a NaN baseline can never support a benefit verdict"
+        )
 
     if best_non_baseline is None:
         held_out_benefit = {
