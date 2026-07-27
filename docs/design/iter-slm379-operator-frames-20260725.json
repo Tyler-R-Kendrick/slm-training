@@ -1,0 +1,87 @@
+{
+  "schema_version": "operator_nl_turns/v1",
+  "issue": "SLM-379",
+  "milestone": "DSH3-11 operator frames (schema-grounded NL edit turns)",
+  "date": "2026-07-25",
+  "run_class": "contract_fixture",
+  "decision": "supported_with_stop_rule",
+  "implementation": "derive_operator_frame / OperatorFrameV1 + generate_operator_nl_turns / OperatorLeakDetectorV1 / classify_state_references / build_operator_disambiguation_report / OperatorNlFixtureProviderV1",
+  "depends_on": "dsl.operators.contracts+registry+references+legal_set (DSH3-01..06), dsl.paraphrase_provenance (DSH2-03, SLM-364 provider/provenance/quarantine contract reused unchanged), harnesses.train_data.operator_corpus (OperatorTargetView), CAP1 structured schema interpretation of SLM-343 (see dsl.semantic_frame)",
+  "frame_contract": {
+    "required_edit_facts": "every ActionEffectV1 delta (target+delta kind+before/after) plus consumed/produced roles and binders",
+    "forbidden_edit_facts": "every reference-table entry the effect does NOT touch, claimed only under compiler_coverage=exact; empty under bounded/approximate (no overclaim)",
+    "state_reference_facts": "bound arguments + effect targets resolved through ReferenceTableV1 typed descriptor tables; inference-visible compiler facts only; undescribed refs fail closed",
+    "provenance": "every fact carries source (effect/argument/reference_table), slot_id, delta_kind, descriptor_fingerprint"
+  },
+  "admission": {
+    "codes": [
+      "missing_legal_membership",
+      "not_in_accepted_set",
+      "ambiguous_state_reference",
+      "compatible_with_non_equivalent",
+      "accepted_set_not_named",
+      "leak",
+      "provider_response_invalid"
+    ],
+    "rule": "admit only if the target application is in the exact OperatorLegalSetV1 and accepted set, every state reference is unambiguous or accepted-set-scored, and the prompt is not compatible with any non-equivalent application outside the accepted set; several accepted matches require the prompt to name the accepted set",
+    "targets": "symbol-only: reserved OPERATOR serialization, resulting canonical AST, or declared dual view; NL never enters targets"
+  },
+  "disambiguation_report": {
+    "schema_version": "operator_nl_disambiguation_report/v1",
+    "families": [
+      {
+        "family": "fixture_ambiguous_shared_descriptor",
+        "candidates": 2,
+        "admitted": 0,
+        "disambiguation_rate": 0.0,
+        "rejection_counts": {
+          "ambiguous_state_reference": 2
+        },
+        "disposition": "symbolic_cap2_only"
+      },
+      {
+        "family": "fixture_equivalent_accepted_set",
+        "candidates": 2,
+        "admitted": 2,
+        "disambiguation_rate": 1.0,
+        "rejection_counts": {},
+        "disposition": "nl_prompts_admitted"
+      },
+      {
+        "family": "fixture_non_equivalent_single_accept",
+        "candidates": 2,
+        "admitted": 0,
+        "disambiguation_rate": 0.0,
+        "rejection_counts": {
+          "compatible_with_non_equivalent": 2
+        },
+        "disposition": "symbolic_cap2_only"
+      },
+      {
+        "family": "fixture_unambiguous_single_accept",
+        "candidates": 2,
+        "admitted": 2,
+        "disambiguation_rate": 1.0,
+        "rejection_counts": {},
+        "disposition": "nl_prompts_admitted"
+      }
+    ],
+    "overall_rate": 0.5,
+    "symbolic_cap2_only_families": [
+      "fixture_ambiguous_shared_descriptor",
+      "fixture_non_equivalent_single_accept"
+    ]
+  },
+  "stop_rule": "families whose prompts cannot be disambiguated under the current state/schema record disposition symbolic_cap2_only (fixture_ambiguous_shared_descriptor); symbolic CAP2 is retained for those families honestly",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ddf7b5424324882d8373235ccd075e521a350591",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm379_operator_frames": "v1",
+      "dsl.operators.legal_set": "v2",
+      "harness.train_data": "v19"
+    },
+    "stamped_at": "2026-07-25T11:07:53.194414+00:00"
+  }
+}
