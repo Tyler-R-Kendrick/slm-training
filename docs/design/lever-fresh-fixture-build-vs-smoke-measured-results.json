@@ -1,0 +1,100 @@
+{
+  "lever": "fresh_fixture_train_build",
+  "hypothesis": "Strict fixture rebuild (lever_fixture_v1) with current synthesizers lifts meaningful_program vs older wf_smoke_v2 under champion micro-recipe.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "suite": "smoke",
+  "eval_limit": 3,
+  "recipe": {
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true
+  },
+  "rows": [
+    {
+      "arm": "wf_smoke_v2",
+      "run_id": "exp_lever_sb15_s16_lr1e3_bs2_seed47",
+      "last_loss": 7.451866626739502,
+      "steps": 16,
+      "stopped_on": "steps",
+      "train_dir": "outputs/data/train/wf_smoke_v2",
+      "record_count": 103,
+      "data_manifest_sha": "146f74173a853dd3a5ea75c02175b3fc6e731e2e6b6b4e5f72977103345998e4",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 1469.53
+    },
+    {
+      "arm": "lever_fixture_v1",
+      "run_id": "exp_lever_data_fixturev1_s16_lr1e3_bs2_sb15_seed47",
+      "last_loss": 12.850366592407227,
+      "steps": 16,
+      "stopped_on": "steps",
+      "train_dir": "outputs/data/train/lever_fixture_v1",
+      "record_count": 101,
+      "data_manifest_sha": "fb320850f701ffe76170d2f26e570f1103d7815c7ea2186da846c6d185f21d10",
+      "seed": 47,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.48100000000000004,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30016.3
+    }
+  ],
+  "build": {
+    "version": "lever_fixture_v1",
+    "record_count": 101,
+    "rejected_total": 19,
+    "warnings": [
+      {
+        "code": "eval_overlap_flagged",
+        "value": 3,
+        "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+      }
+    ],
+    "families": {
+      "abstraction_ladder": {
+        "admitted": 0,
+        "rejected": 5,
+        "yield": 0.0
+      },
+      "frontier_described": {
+        "admitted": 3,
+        "rejected": 0,
+        "yield": 1.0
+      },
+      "human_curated": {
+        "admitted": 20,
+        "rejected": 1,
+        "yield": 0.9524
+      },
+      "layout_augment": {
+        "admitted": 28,
+        "rejected": 0,
+        "yield": 1.0
+      },
+      "prompt_paraphrase": {
+        "admitted": 50,
+        "rejected": 13,
+        "yield": 0.7937
+      }
+    },
+    "synthesis_note": "abstraction_ladder yield=0 (max_records_per_parent exposure); eval n-gram overlap rejected 3"
+  },
+  "decision": "reject",
+  "decision_reason": "fresh fixture rebuild does not lift meaningful/parse vs wf_smoke_v2 at micro recipe",
+  "captured_at": "2026-07-27T16:18:48.030712+00:00"
+}
