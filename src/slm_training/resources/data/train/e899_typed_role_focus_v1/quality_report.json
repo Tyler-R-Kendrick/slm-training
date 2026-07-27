@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "version": "e899_typed_role_focus_v1",
+  "profile": "strict",
+  "built_at": "2026-07-22T21:46:37.311706+00:00",
+  "counts": {
+    "seeds": 2,
+    "candidates": 2,
+    "collected": 2,
+    "admitted": 2,
+    "rejected_total": 0,
+    "source_errors": 0,
+    "by_stage": {}
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Silver": 2
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 2
+    },
+    "mean_quality_score": 1.0,
+    "min_quality_score": 1.0
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 0,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 2,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "280ab43452c740f6|a562a7550ec74f50ba34c00109898a62096df68c9e231e0a10bdae85ce3a3e7f|ad29c1d510316867",
+        "count": 1,
+        "sample_ids": [
+          "train_card_stack_01"
+        ]
+      },
+      {
+        "cluster": "9be2f0b744e6a777|bee6377f552c2329e319a4b0c340c085af251d1027cf7b2698492d299be4b990|2e5e20c54c4fd78e",
+        "count": 1,
+        "sample_ids": [
+          "train_tabs_01"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 2,
+    "changed": 2,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 2,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 0
+    },
+    "literals_templatized": 2,
+    "records_templatized": 1,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 0,
+      "misses": 18
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "human_curated",
+      "record_count": 2,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 2
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6527d6a1f5a68008f8f78c9783874a57971fad94",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v22"
+    },
+    "stamped_at": "2026-07-22T21:46:37.333925+00:00"
+  }
+}

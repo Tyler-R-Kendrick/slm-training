@@ -1,9 +1,9 @@
 {
   "artifacts": [
     {
-      "gold_content_hash": "776bf3c3e99c59b2",
+      "gold_content_hash": "595af84ecd9a3ed1",
       "gold_id": "train_auth_01",
-      "path": "src/slm_training/resources/frontier/train_auth_01.776bf3c3e99c59b2.json",
+      "path": "src/slm_training/resources/frontier/train_auth_01.595af84ecd9a3ed1.json",
       "status": "pending"
     },
     {
@@ -37,15 +37,21 @@
       "status": "pending"
     },
     {
-      "gold_content_hash": "a0d376afc51a67b0",
+      "gold_content_hash": "6c8ae0abdac5a359",
       "gold_id": "train_form_01",
-      "path": "src/slm_training/resources/frontier/train_form_01.a0d376afc51a67b0.json",
+      "path": "src/slm_training/resources/frontier/train_form_01.6c8ae0abdac5a359.json",
       "status": "pending"
     },
     {
-      "gold_content_hash": "f3af321525402669",
+      "gold_content_hash": "49ef3c16a8cb049a",
       "gold_id": "train_form_control_01",
-      "path": "src/slm_training/resources/frontier/train_form_control_01.f3af321525402669.json",
+      "path": "src/slm_training/resources/frontier/train_form_control_01.49ef3c16a8cb049a.json",
+      "status": "pending"
+    },
+    {
+      "gold_content_hash": "fc073a91f234a255",
+      "gold_id": "train_form_three_controls_01",
+      "path": "src/slm_training/resources/frontier/train_form_three_controls_01.fc073a91f234a255.json",
       "status": "pending"
     },
     {
@@ -103,15 +109,21 @@
       "status": "pending"
     },
     {
-      "gold_content_hash": "76aaf35e280450c8",
+      "gold_content_hash": "9d6fa222b5f87ae7",
       "gold_id": "train_settings_01",
-      "path": "src/slm_training/resources/frontier/train_settings_01.76aaf35e280450c8.json",
+      "path": "src/slm_training/resources/frontier/train_settings_01.9d6fa222b5f87ae7.json",
       "status": "pending"
     },
     {
-      "gold_content_hash": "91ca1e83f7cbe7be",
+      "gold_content_hash": "bf21bf45e1e7cf89",
+      "gold_id": "train_switch_group_three_items_01",
+      "path": "src/slm_training/resources/frontier/train_switch_group_three_items_01.bf21bf45e1e7cf89.json",
+      "status": "pending"
+    },
+    {
+      "gold_content_hash": "25a57ce5b62ebcb8",
       "gold_id": "train_tabs_01",
-      "path": "src/slm_training/resources/frontier/train_tabs_01.91ca1e83f7cbe7be.json",
+      "path": "src/slm_training/resources/frontier/train_tabs_01.25a57ce5b62ebcb8.json",
       "status": "pending"
     },
     {
@@ -127,10 +139,10 @@
     "dsl": 0,
     "literal_copy": 0
   },
-  "pending": 19,
+  "pending": 21,
   "schema_version": 1,
   "skill": "frontier-describe",
   "skill_version": "0.1.0",
-  "total": 20,
+  "total": 22,
   "worklist": "src/slm_training/resources/frontier/worklist.jsonl"
 }

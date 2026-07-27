@@ -42,6 +42,10 @@ class DecodeStats:
     compiler_prefill_batches: int = 0
     compiler_prefill_states: int = 0
     compiler_prefill_tokens: int = 0
+    # SLM-293: inventory is a live factor bias, so causal-use controls need
+    # the same eligible-position/argmax accounting as the other factor heads.
+    component_inventory_applications: int = 0
+    component_inventory_choice_changes: int = 0
     component_plan_applications: int = 0
     component_plan_choice_changes: int = 0
     semantic_plan_applications: int = 0
@@ -259,6 +263,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_prefill_batches",
         "compiler_prefill_states",
         "compiler_prefill_tokens",
+        "component_inventory_applications",
+        "component_inventory_choice_changes",
         "component_plan_applications",
         "component_plan_choice_changes",
         "semantic_plan_applications",

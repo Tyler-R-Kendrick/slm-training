@@ -20,6 +20,7 @@ import pytest
 from slm_training.harnesses.distill.trace_store import TraceStore
 from slm_training.harnesses.preference.decision_events_v2 import admit_semantic_corpus
 from slm_training.models.causal_trace import (
+    CausalLatentUseFalsificationSpecV1,
     CausalTraceIdentity,
     CausalTraceWriter,
     GeneratedOutcome,
@@ -27,6 +28,7 @@ from slm_training.models.causal_trace import (
     TracePolicy,
     TraceSelection,
     capture_raw_steps,
+    describe_causal_latent_use_falsification_test,
     emit_causal_decision,
     fold_policy_identity,
     legal_set_reference,
@@ -297,3 +299,31 @@ def test_generated_outcome_returns_pre_judge_candidate() -> None:
     assert candidate["token_id"] == 3
     assert candidate["finalization_changed"] is False
     assert "verified" not in candidate and "metrics" not in candidate
+
+
+def test_causal_latent_use_falsification_spec_is_defined_not_run() -> None:
+    """LOT0-02 (SLM-249): the spec is a pure dataclass -- no model, no execution."""
+    spec = describe_causal_latent_use_falsification_test()
+    assert isinstance(spec, CausalLatentUseFalsificationSpecV1)
+    assert spec.linear_issue == "SLM-249"
+    for field_name in (
+        "hypothesis",
+        "intervention",
+        "falsifier",
+        "reused_mechanism",
+        "blocked_reason",
+    ):
+        value = getattr(spec, field_name)
+        assert isinstance(value, str) and value.strip()
+    # It must name the concrete replay primitive it will reuse once LOT1 exists,
+    # not invent a second counterfactual mechanism.
+    assert "replay_causal_action" in spec.reused_mechanism
+    assert "capture_raw_steps" in spec.reused_mechanism
+    # It must be honest that it cannot run yet.
+    assert "SLM-250" in spec.blocked_reason or "LOT1" in spec.blocked_reason
+
+
+def test_causal_latent_use_falsification_spec_calls_are_deterministic() -> None:
+    assert describe_causal_latent_use_falsification_test() == (
+        describe_causal_latent_use_falsification_test()
+    )

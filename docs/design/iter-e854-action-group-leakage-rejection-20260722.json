@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E854",
+  "date_utc": "2026-07-22",
+  "run_class": "data_build",
+  "run_id": "e854_single_action_group_v1",
+  "local_compute": true,
+  "data": {
+    "derived_from": "e851_e826_typed_supplement_v1",
+    "records": 351,
+    "rejected": 1,
+    "rejection_stage": "decontamination",
+    "rejection_reason": "test_fixture_structure",
+    "content_fingerprint": "b5193be89e42fb052a056584f22a9159cf1dccbb1edf2271ec1941cd41e56fb9",
+    "changed_from_parent": false
+  },
+  "suites": {
+    "data_quality": {
+      "n": 1,
+      "test_structure_rejection_rate": 1.0,
+      "admitted_new_records": 0,
+      "source_errors": 0,
+      "sanitize_fallbacks": 0,
+      "parse_rate": 1.0,
+      "placeholder_fidelity": 1.0
+    }
+  },
+  "decision": {
+    "reject": "standalone action-group hand-authored fixture",
+    "retain": "strict test-structure decontamination gate",
+    "next": "use structurally distinct real or programmatic action-group examples"
+  },
+  "ship_gates": {"evaluated": false, "pass": false, "reason": "data-only rejected arm"},
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "42ba26cc2111ca014b774c923a83a2cc27872da6",
+    "code_dirty": true,
+    "components": {"harness.train_data": "v18"}
+  }
+}

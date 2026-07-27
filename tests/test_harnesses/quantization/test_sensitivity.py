@@ -150,6 +150,16 @@ def test_baseline_parameters_restored_after_profiling(model: nn.Module, manifest
             ParameterGroup(group_id="embeddings", param_name_patterns=(r"local_head\.action_embeddings\.",), quantize_kind="embedding_dict"),
         ),
     )
+    # DSH3-21: action embeddings are now a registered nn.ParameterDict, so a
+    # per-action embedding materializes into named_parameters() on first
+    # score() (matching the other tests in this file). Warm the head with
+    # every action in the corpus *before* snapshotting so the "restored"
+    # assertion below actually covers every parameter profiling will touch,
+    # rather than only the ones that happened to already exist.
+    ctx = StateContext(state_family_id="warm")
+    all_actions = {a for s in samples for a in s.legal_action_ids}
+    for action in sorted(all_actions):
+        model.local_head.score(torch.randn(1, 16), ctx, [action])
     before = {n: p.data.clone() for n, p in model.named_parameters()}
     profile_group_sensitivity(
         model,

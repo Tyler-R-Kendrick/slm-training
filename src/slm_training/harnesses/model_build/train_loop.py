@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -16,7 +17,7 @@ from pathlib import Path
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import batched, load_train_records
 from slm_training.harnesses.model_build.factory import build_model
-from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.levers import MAX_HARNESS_WALL_MINUTES
 from slm_training.runtime.telemetry import (
     CycleTelemetry,
     bind_telemetry,
@@ -66,20 +67,32 @@ def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
 
 def _strict_root_reference_identity_records(records, tokenizer) -> list:
     """Find records whose terminal root uses a nonempty strict section subset."""
-    from slm_training.models.choice_tokenizer import (
-        structural_root_reference_identity_target,
-    )
+    if hasattr(tokenizer, "bind_slot_of"):
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            root_declaration_reference_identity_target,
+        )
+
+        def identity_target(record, token_ids):
+            return root_declaration_reference_identity_target(tokenizer, token_ids)
+
+    else:
+        from slm_training.models.choice_tokenizer import (
+            structural_root_reference_identity_target,
+        )
+
+        def identity_target(record, token_ids):
+            return structural_root_reference_identity_target(
+                tokenizer,
+                token_ids,
+                slot_count=len(record.placeholders or ()),
+            )
 
     strict = []
     for record in records:
         token_ids = tokenizer.encode(
             record.openui, placeholders=list(record.placeholders or ())
         )
-        target = structural_root_reference_identity_target(
-            tokenizer,
-            token_ids,
-            slot_count=len(record.placeholders or ()),
-        )
+        target = identity_target(record, token_ids)
         if target is None:
             continue
         references, section_count = target
@@ -211,11 +224,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
     max_wall_minutes = (
-        float(MAX_RUN_MINUTES) if max_wall_minutes is None else float(max_wall_minutes)
+        float(MAX_HARNESS_WALL_MINUTES)
+        if max_wall_minutes is None
+        else float(max_wall_minutes)
     )
-    if not 0 < max_wall_minutes <= MAX_RUN_MINUTES:
+    if not 0 < max_wall_minutes <= MAX_HARNESS_WALL_MINUTES:
         raise ValueError(
-            f"max_wall_minutes must be positive and at most {MAX_RUN_MINUTES}"
+            "max_wall_minutes must be positive and at most "
+            f"{MAX_HARNESS_WALL_MINUTES}"
         )
     wall_started = time.monotonic()
     wall_deadline = wall_started + max_wall_minutes * 60
@@ -376,7 +392,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
             if plugin_config is not None and hasattr(plugin_config, field_name)
         }
-        loader(initialize_path)
+        load_kwargs = {}
+        if "preserve_tokenizers" in inspect.signature(loader).parameters:
+            load_kwargs["preserve_tokenizers"] = True
+        loader(initialize_path, **load_kwargs)
         initialized_from = str(initialize_path)
         initialized_prior_fields = list(getattr(plugin, "initialized_prior_fields", ()))
         # These priors are deterministic corpus statistics, not learned weights.
@@ -768,6 +787,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         step = int(payload.get("step") or 0)
         seen_prompt_tokens = int(payload.get("seen_prompt_tokens") or 0)
         seen_target_tokens = int(payload.get("seen_target_tokens") or 0)
+        seen_primary_examples = int(payload.get("seen_primary_examples") or 0)
+        seen_replay_examples = int(payload.get("seen_replay_examples") or 0)
         if payload.get("best_weighted_nll") is not None:
             best_weighted_nll = float(payload["best_weighted_nll"])
         if payload.get("best_ship_score") is not None:
@@ -858,6 +879,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 step=step,
                 seen_prompt_tokens=seen_prompt_tokens,
                 seen_target_tokens=seen_target_tokens,
+                seen_primary_examples=seen_primary_examples,
+                seen_replay_examples=seen_replay_examples,
                 loop_rng=rng,
                 pending_batches=pending,
                 config=config,
@@ -1038,6 +1061,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         return row
 
     stopped_on = "steps"
+    checkpoint_every_steps = int(
+        getattr(config, "checkpoint_every_steps", 0) or 0
+    )
     mode = "a" if resumed_from else "w"
     with bind_telemetry(tel), metrics_path.open(mode, encoding="utf-8") as metrics_file:
         while step < config.steps:
@@ -1125,7 +1151,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     _emit_progress(step, last_loss)
                     did_eval = _maybe_eval(step)
                     did_loss_eval = _maybe_loss_eval(step)
-                    if did_eval or did_loss_eval:
+                    if did_eval or did_loss_eval or (
+                        checkpoint_every_steps > 0
+                        and step % checkpoint_every_steps == 0
+                    ):
                         _save_full_state_now()
             else:
                 with timed("forward"):
@@ -1334,6 +1363,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
+            "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),
             "compiler_alignment_loss_weight": getattr(
                 config, "compiler_alignment_loss_weight", 0.0
             ),
@@ -1417,6 +1448,24 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "binder_topology_decode_weight": getattr(
                 config, "binder_topology_decode_weight", 0.0
+            ),
+            "binder_slot_ownership_loss_weight": getattr(
+                config, "binder_slot_ownership_loss_weight", 0.0
+            ),
+            "binder_slot_ownership_decode_weight": getattr(
+                config, "binder_slot_ownership_decode_weight", 0.0
+            ),
+            "binder_slot_presence_loss_weight": getattr(
+                config, "binder_slot_presence_loss_weight", 0.0
+            ),
+            "binder_slot_presence_decode_weight": getattr(
+                config, "binder_slot_presence_decode_weight", 0.0
+            ),
+            "binder_reference_presence_loss_weight": getattr(
+                config, "binder_reference_presence_loss_weight", 0.0
+            ),
+            "binder_reference_presence_decode_weight": getattr(
+                config, "binder_reference_presence_decode_weight", 0.0
             ),
             "binder_arity_loss_weight": getattr(
                 config, "binder_arity_loss_weight", 0.0

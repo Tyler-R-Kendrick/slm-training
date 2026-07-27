@@ -24,12 +24,15 @@ from slm_training.dsl.language_contract import (
     assert_symbol_only_output,
     require_current_output_contract,
 )
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
     ChoiceGenerationResult,
     RuntimeSymbol,
+    assert_canonical_template_markers,
+    assert_no_template_semantic_labels,
     choice_generation_fingerprint,
 )
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -108,12 +111,26 @@ from slm_training.dsl.action_shortlist import (
     retrieve_then_rerank,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
+from slm_training.dsl.abstract_plan import AbstractPlanV1
+from slm_training.models.abstract_plan_connector import (
+    AbstractPlanConnector,
+    PlanConnectorArm,
+    PlanConnectorTrace,
+    resolve_plan_vector,
+)
+from slm_training.models.abstract_plan_head import (
+    AbstractPlanHead,
+    AbstractPlanMode,
+    AbstractPlanTrace,
+)
 from slm_training.models.tokenizer import (
     OpenUITokenizer,
     load_tokenizer_sidecar,
     tokenize_text,
 )
 
+_ABSTRACT_PLAN_MODES: tuple[str, ...] = tuple(mode.value for mode in AbstractPlanMode)
+_PLAN_CONNECTOR_ARMS: tuple[str, ...] = tuple(arm.value for arm in PlanConnectorArm)
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
     "twotower_opaque_projection_models",
     default=frozenset(),
@@ -196,8 +213,17 @@ def format_context_text(
     slot_contract: list[str] | None = None,
     output_kind: str | None = None,
     output_category: str | None = None,
+    history_ops_text: str | None = None,
 ) -> str:
-    """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md."""
+    """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md.
+
+    ``history_ops_text`` (SLM-428 / VAR2-01): literal reserved ``OPS_VOCAB``
+    tokens for the conversation's turn history — see
+    `dsl.operators.ops_vocab_conditioning.format_history_ops_text`. Omitted by
+    every existing caller today, so passing ``None`` reproduces prior output
+    exactly; callers only pass a value when
+    `ModelBuildConfig.encoder_ops_conditioning` is enabled.
+    """
     prompt = (prompt or "").strip()
     parts = [prompt] if prompt else []
     if output_kind is not None:
@@ -214,6 +240,8 @@ def format_context_text(
     if slot_contract:
         slots = ", ".join(slot_contract)
         parts.append(f"---SLOT_CONTRACT---\n{slots[: min(800, budget)]}")
+    if history_ops_text and history_ops_text.strip():
+        parts.append(f"---HISTORY_OPS---\n{history_ops_text.strip()}")
     if design_md and design_md.strip():
         dm = design_md.strip()
         if len(dm) > budget:
@@ -325,6 +353,9 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    # Extra weight on the final real LTR tokens (default-off).
+    ltr_tail_loss_weight: float = 0.0
+    ltr_tail_tokens: int = 32
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
@@ -405,6 +436,9 @@ class TwoTowerConfig:
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
+    # SLM-428 (VAR2-01): default-off first consumer of the shared OPS_VOCAB
+    # kernel (decode invariant I13) -- see ModelBuildConfig.encoder_ops_conditioning.
+    encoder_ops_conditioning: bool = False
     semantic_role_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
@@ -573,6 +607,25 @@ class TwoTowerConfig:
     # sparse grammar-action scorer.  ``none`` is identity; other values select a
     # standalone connector variant for future wiring.
     semantic_connector: str = "none"  # none | linear | low_rank | cross_attention
+    # AP-023 (SLM-315): default-off discrete abstract-plan head over pooled
+    # context-tower states. ``disabled`` builds no head at all, so
+    # compatibility_fingerprint/RNG stream/optimizer groups stay bit-exact
+    # with the pre-existing baseline. This only ever populates
+    # ``TwoTowerModel.abstract_plan_trace(...)``, a side channel that
+    # ``training_loss``/``forward`` never call on their own.
+    abstract_plan_mode: str = "disabled"  # disabled | teacher_forced | sampled | oracle | random | shuffled
+    # AP-022 (SLM-313): default-off auxiliary supervision and conditioning for
+    # the discrete plan.  The structural target is derived only from training
+    # labels; held-out decoding always uses the predicted plan.
+    abstract_plan_loss_weight: float = 0.0
+    abstract_plan_train_conditioning: bool = False
+    # AP-024 (SLM-316): default-off gated-additive conditioning of MaskGIT/
+    # tree denoising on the discrete abstract plan (see
+    # ``models/abstract_plan_connector.py``). ``disabled`` builds no
+    # connector at all -- bit-exact with the pre-AP-024 baseline. Requires
+    # ``abstract_plan_mode != "disabled"``, since every arm conditions on
+    # that head's trace (see ``AbstractPlanConnector``/``PlanConnectorArm``).
+    abstract_plan_connector_arm: str = "disabled"  # disabled | learned | oracle | detached | empty | random | shuffled
     connector_hidden_dim: int = 256
     connector_rank: int = 32
     connector_n_queries: int = 4
@@ -683,6 +736,64 @@ class TwoTowerConfig:
                 raise ValueError(
                     f"{field_name}={value!r} is not one of {supported!r}"
                 )
+        # AP-023 (SLM-315): reject typo'd/unknown modes early so an invalid
+        # value can never silently take the "enabled" branch in __init__ and
+        # break the disabled-by-default bit-exact guarantee.
+        if self.abstract_plan_mode not in _ABSTRACT_PLAN_MODES:
+            raise ValueError(
+                f"abstract_plan_mode={self.abstract_plan_mode!r} is not one of "
+                f"{_ABSTRACT_PLAN_MODES!r}"
+            )
+        # AP-024 (SLM-316): same fail-closed convention as abstract_plan_mode above.
+        if self.abstract_plan_connector_arm not in _PLAN_CONNECTOR_ARMS:
+            raise ValueError(
+                f"abstract_plan_connector_arm={self.abstract_plan_connector_arm!r} "
+                f"is not one of {_PLAN_CONNECTOR_ARMS!r}"
+            )
+        if (
+            self.abstract_plan_connector_arm != "disabled"
+            and self.abstract_plan_mode == "disabled"
+        ):
+            raise ValueError(
+                "abstract_plan_connector_arm requires abstract_plan_mode != "
+                "'disabled' (the connector conditions on the plan head's trace)"
+            )
+        if self.abstract_plan_train_conditioning and (
+            self.abstract_plan_mode == "disabled"
+            or self.abstract_plan_connector_arm == "disabled"
+            or self.abstract_plan_loss_weight <= 0.0
+        ):
+            raise ValueError(
+                "abstract_plan_train_conditioning requires an enabled abstract "
+                "plan head, connector, and positive abstract_plan_loss_weight"
+            )
+        if (
+            self.abstract_plan_connector_arm != "disabled"
+            and self.denoiser_arch in SHARED_RECURSIVE_ARCH_Z_STATE_MODES
+        ):
+            # SharedRecursiveDenoiserTower duck-types DenoiserTower's public
+            # contract but does not (yet) implement set_plan_connector/
+            # project's plan-bias hook; wiring the tree/recursive denoiser is
+            # deferred rather than silently no-op'd or left to crash.
+            raise ValueError(
+                "abstract_plan_connector_arm is not yet supported with "
+                f"denoiser_arch={self.denoiser_arch!r} (shared-recursive "
+                "tree denoising); use the default 'stacked' denoiser_arch"
+            )
+        if self.abstract_plan_connector_arm != "disabled" and str(
+            self.denoiser_backend
+        ).lower() in {"hf", "huggingface", "transformers"}:
+            # HFDenoiserTower is a standalone nn.Module (not a DenoiserTower
+            # subclass): it has its own project() with no plan-bias hook and
+            # no set_plan_connector at all. StackedMatchedStateDenoiserTower
+            # is deliberately not rejected here -- it subclasses DenoiserTower
+            # without overriding project(), so it inherits the hook correctly.
+            raise ValueError(
+                "abstract_plan_connector_arm is not yet supported with "
+                f"denoiser_backend={self.denoiser_backend!r} (HFDenoiserTower "
+                "has no plan-connector hook); use the default 'scratch' "
+                "denoiser_backend"
+            )
         if self.denoiser_arch not in SHARED_RECURSIVE_ARCH_Z_STATE_MODES and any(
             value != default for value, _, default in repair_modes.values()
         ):
@@ -812,6 +923,33 @@ def _load_checkpoint_state(
             "checkpoint state mismatch: "
             f"missing={bad_missing!r} unexpected={bad_unexpected!r}"
         )
+
+
+def _remap_vocab_weight(
+    source_weight: torch.Tensor,
+    source_token_to_id: dict[str, int],
+    target_weight: torch.Tensor,
+    target_token_to_id: dict[str, int],
+) -> torch.Tensor:
+    """Copy shared token rows while retaining initialized rows for new tokens."""
+    remapped = target_weight.detach().clone()
+    for token, target_id in target_token_to_id.items():
+        source_id = source_token_to_id.get(token)
+        if source_id is not None:
+            remapped[target_id] = source_weight[source_id]
+    return remapped
+
+
+def _resize_position_weight(
+    source_weight: torch.Tensor, target_weight: torch.Tensor
+) -> torch.Tensor:
+    """Copy the shared learned position prefix across context-length changes."""
+    if source_weight.ndim != 2 or source_weight.shape[1:] != target_weight.shape[1:]:
+        return source_weight
+    resized = target_weight.detach().clone()
+    shared = min(source_weight.shape[0], target_weight.shape[0])
+    resized[:shared] = source_weight[:shared]
+    return resized
 
 
 def _check_output_head_tie_migration(
@@ -1633,6 +1771,56 @@ class TwoTowerModel(nn.Module):
             if root_reference_identity_enabled and _is_choice_output(self.config)
             else None
         )
+        # AP-023 (SLM-315): default-off discrete abstract-plan head over
+        # pooled context-tower states. ``disabled`` constructs nothing (zero
+        # params, RNG/optimizer/fingerprint untouched); see
+        # ``abstract_plan_trace`` for the only caller of this head.
+        abstract_plan_mode = str(
+            getattr(self.config, "abstract_plan_mode", "disabled") or "disabled"
+        )
+        self.abstract_plan: AbstractPlanV1 | None = (
+            AbstractPlanV1() if abstract_plan_mode != "disabled" else None
+        )
+        self.abstract_plan_head: AbstractPlanHead | None = (
+            isolated_aux_init(
+                lambda: AbstractPlanHead(self.config.d_model, self.abstract_plan),
+                116,
+            )
+            if abstract_plan_mode != "disabled"
+            else None
+        )
+        # AP-024 (SLM-316): default-off gated-additive plan-conditioning
+        # connector. ``disabled`` constructs nothing (zero params, RNG/
+        # optimizer/fingerprint untouched, denoiser.project byte-identical);
+        # __post_init__ already rejects this being enabled while
+        # abstract_plan_mode is disabled.
+        abstract_plan_connector_arm = str(
+            getattr(self.config, "abstract_plan_connector_arm", "disabled")
+            or "disabled"
+        )
+        _abstract_plan_connector: AbstractPlanConnector | None = (
+            isolated_aux_init(
+                lambda: AbstractPlanConnector(
+                    self.config.d_model,
+                    self.abstract_plan.slot_count,
+                    tokenizer.vocab_size,
+                ),
+                117,
+            )
+            if abstract_plan_connector_arm != "disabled"
+            else None
+        )
+        # Registered only once, as `denoiser._plan_connector` -- not also as a
+        # direct TwoTowerModel submodule attribute, which would register the
+        # same parameters under two module paths. named_parameters() dedups
+        # by identity and (silently) keeps whichever path it visits first, so
+        # a second registration wouldn't raise -- it would just make
+        # `optimizer_parameter_groups`'s prefix match nothing.
+        # `abstract_plan_connector` (the property below) reads it back out.
+        if _abstract_plan_connector is not None:
+            self.denoiser.set_plan_connector(
+                _abstract_plan_connector, arm=abstract_plan_connector_arm
+            )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -1669,6 +1857,7 @@ class TwoTowerModel(nn.Module):
         self._component_token_ids_cache: tuple[int, ...] | None = None
         self._binder_token_ids_cache: tuple[int, ...] | None = None
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
+        self._abstract_plan_target_cache: dict[str, tuple[int, ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_role_properties: list[dict[str, tuple[str, ...]]] | None = None
@@ -1813,6 +2002,7 @@ class TwoTowerModel(nn.Module):
         self._target_ids_cache.clear()
         self._compiler_decision_cache.clear()
         self._context_token_count_cache.clear()
+        self._abstract_plan_target_cache.clear()
         if is_hf_context(self.context) and hasattr(
             self.context, "clear_backbone_cache"
         ):
@@ -1846,6 +2036,10 @@ class TwoTowerModel(nn.Module):
             "root_reference_identity_head.",
             "trust_gate.",
             "survival_head.",
+            "abstract_plan_head.",
+            # Registered under the denoiser (see the property of the same
+            # name), not as a direct top-level submodule -- see __init__.
+            "denoiser._plan_connector.",
         )
         grouped: dict[str, list[nn.Parameter]] = {"base": []}
         seen: set[int] = set()
@@ -2169,6 +2363,146 @@ class TwoTowerModel(nn.Module):
                     device=self.device_name,
                 )
 
+    def abstract_plan_trace(
+        self,
+        prompts: list[str],
+        *,
+        target_plan_ids: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+        cache_keys: list[str] | None = None,
+    ) -> AbstractPlanTrace | None:
+        """Predict a plan trace from pooled context-tower states (AP-023 / SLM-315).
+
+        Returns ``None`` when ``abstract_plan_mode == "disabled"`` (the
+        default). A pure side channel: neither ``training_loss`` nor
+        ``forward`` ever calls this, so no plan signal reaches the decoder
+        unless a caller invokes it explicitly.
+        """
+        if self.abstract_plan_head is None:
+            return None
+        ctx, ctx_pad = self._encode_context(prompts, cache_keys=cache_keys)
+        return self.abstract_plan_head(
+            ctx,
+            ctx_pad,
+            mode=self.config.abstract_plan_mode,
+            target_plan_ids=target_plan_ids,
+            generator=generator,
+        )
+
+    def _abstract_plan_targets(self, batch: list[ExampleRecord]) -> torch.Tensor:
+        """Return opaque structural supervision for the optional plan head.
+
+        Targets are extracted from training labels only.  They encode four
+        bounded program facts (node count, leaf count, maximum depth, and
+        placeholder bindings), not component spellings or caller identifiers.
+        The slots remain opaque at inference; this is supervision for a
+        compact latent code, not a runtime semantic authority.
+        """
+        if self.abstract_plan is None:
+            raise ValueError("abstract plan targets require an enabled plan")
+        from slm_training.dsl.parser import parse
+
+        rows: list[tuple[int, ...]] = []
+        for record in batch:
+            cached = self._abstract_plan_target_cache.get(record.openui)
+            if cached is None:
+                root = parse(record.openui).root
+                node_count = 0
+                leaf_count = 0
+                max_depth = 0
+                binding_count = 0
+
+                def walk(node: object, depth: int) -> None:
+                    nonlocal node_count, leaf_count, max_depth, binding_count
+                    if not isinstance(node, dict):
+                        return
+                    node_count += 1
+                    max_depth = max(max_depth, depth)
+                    props = node.get("props")
+                    children = props.get("children") if isinstance(props, dict) else None
+                    if not isinstance(children, list) or not children:
+                        leaf_count += 1
+                    if isinstance(props, dict):
+                        binding_count += sum(
+                            isinstance(value, str) and value.startswith(":")
+                            for key, value in props.items()
+                            if key != "children"
+                        )
+                    if isinstance(children, list):
+                        for child in children:
+                            walk(child, depth + 1)
+
+                walk(root, 1)
+                facts = (node_count, leaf_count, max_depth, binding_count)
+                cached = tuple(
+                    min(self.abstract_plan.slot_count - 1, value) for value in facts
+                )
+                self._abstract_plan_target_cache[record.openui] = cached
+            rows.append(cached)
+        base = torch.tensor(rows, dtype=torch.long, device=self.device_name)
+        rounds = self.abstract_plan.rounds
+        if base.size(1) < rounds:
+            repeats = (rounds + base.size(1) - 1) // base.size(1)
+            base = base.repeat(1, repeats)
+        return base[:, :rounds]
+
+    @property
+    def abstract_plan_connector(self) -> AbstractPlanConnector | None:
+        """The AP-024 connector, or ``None`` when disabled.
+
+        Reads through to ``denoiser._plan_connector`` -- its single point of
+        registration -- rather than being a second submodule attribute of its
+        own (see the comment at construction time in ``__init__``).
+        """
+        return self.denoiser._plan_connector
+
+    def generate_with_plan_connector(
+        self,
+        prompt: str,
+        *,
+        gold: ExampleRecord | None = None,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+        design_md: str | None = None,
+        target_plan_ids: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+    ) -> tuple[str, list[PlanConnectorTrace]]:
+        """Generate one sample with the AP-024 plan connector active (SLM-316).
+
+        Delegates to the existing, unmodified :meth:`generate` for the actual
+        decode -- every connector arm shares the exact same call, scheduling,
+        and (when ``generator`` is supplied for arm-specific randomness)
+        prompt/seed; only the plan vector fed to the denoiser differs by arm.
+        Off by default: raises unless ``abstract_plan_connector_arm`` is
+        non-disabled. The plan vector is cleared from the denoiser (even on
+        an exception) so this call never leaks conditioning into unrelated
+        ``generate`` calls.
+        """
+        if self.abstract_plan_connector is None:
+            raise ValueError(
+                "abstract plan connector is default-off: set "
+                "TwoTowerConfig.abstract_plan_connector_arm to a non-disabled arm"
+            )
+        trace = self.abstract_plan_trace(
+            [prompt], target_plan_ids=target_plan_ids, generator=generator
+        )
+        assert trace is not None  # abstract_plan_head is required to be enabled too
+        vector = self.abstract_plan_connector.plan_vector_from_trace(trace)
+        arm = PlanConnectorArm(self.config.abstract_plan_connector_arm)
+        resolved = resolve_plan_vector(vector, arm=arm, generator=generator)
+        self.denoiser.set_plan_vector(resolved)
+        try:
+            text = self.generate(
+                prompt,
+                gold=gold,
+                max_len=max_len,
+                grammar_constrained=grammar_constrained,
+                design_md=design_md,
+            )
+        finally:
+            self.denoiser.set_plan_vector(None)
+        return text, self.denoiser.pop_plan_connector_traces()
+
     def apply_dynamic_quant(self) -> bool:
         """P5: dynamically quantize Linear layers to int8 (CPU). Returns True on success."""
         if str(self.device_name) != "cpu":
@@ -2444,6 +2778,17 @@ class TwoTowerModel(nn.Module):
                     noisy[i, j] = self.tokenizer.mask_id
         return noisy, predict_mask, ltr_suffix
 
+    def _ltr_tail_mask(
+        self, target_ids: torch.Tensor, ltr_suffix: torch.Tensor
+    ) -> torch.Tensor:
+        """Select the final configured number of real LTR-suffix tokens."""
+        count = int(self.config.ltr_tail_tokens or 0)
+        if count <= 0:
+            return torch.zeros_like(ltr_suffix)
+        real_suffix = ltr_suffix & target_ids.ne(self.tokenizer.pad_id)
+        from_end = real_suffix.flip(1).cumsum(dim=1).flip(1)
+        return real_suffix & from_end.le(count)
+
     def _placeholder_ids(self) -> set[int]:
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
@@ -2695,7 +3040,10 @@ class TwoTowerModel(nn.Module):
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         _require_symbol_only_tokenizer(self.tokenizer)
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -2762,6 +3110,36 @@ class TwoTowerModel(nn.Module):
 
         from slm_training.runtime.telemetry import timed
 
+        abstract_trace: AbstractPlanTrace | None = None
+        abstract_targets: torch.Tensor | None = None
+        train_plan_conditioning = bool(
+            getattr(self.config, "abstract_plan_train_conditioning", False)
+        )
+        abstract_plan_w = float(
+            getattr(self.config, "abstract_plan_loss_weight", 0.0) or 0.0
+        )
+        if abstract_plan_w > 0.0:
+            if self.abstract_plan_head is None or self.abstract_plan is None:
+                raise ValueError(
+                    "abstract_plan_loss_weight requires abstract_plan_mode != 'disabled'"
+                )
+            abstract_targets = self._abstract_plan_targets(batch)
+            abstract_trace = self.abstract_plan_head(
+                ctx,
+                ctx_pad,
+                mode="teacher_forced",
+                target_plan_ids=abstract_targets,
+            )
+            if train_plan_conditioning:
+                connector = self.abstract_plan_connector
+                if connector is None:
+                    raise ValueError(
+                        "abstract_plan_train_conditioning requires a plan connector"
+                    )
+                vector = connector.plan_vector_from_trace(abstract_trace)
+                arm = PlanConnectorArm(self.config.abstract_plan_connector_arm)
+                self.denoiser.set_plan_vector(resolve_plan_vector(vector, arm=arm))
+
         depth_logits: list[torch.Tensor] | None = None
         with timed("denoiser_forward"):
             self._set_runtime_symbol_features(
@@ -2792,6 +3170,8 @@ class TwoTowerModel(nn.Module):
                 # bias it. (Same defect class as PR #275's loss-suite fix —
                 # cleared here at the source.)
                 self.denoiser.set_runtime_symbol_features(None)
+                if train_plan_conditioning:
+                    self.denoiser.set_plan_vector(None)
 
         # SLM-237/SLM-238 (RSC-A01/RSC-A02): validate/normalize before any loss
         # term is computed from depth_logits. This runs unconditionally (not
@@ -2844,6 +3224,12 @@ class TwoTowerModel(nn.Module):
                     content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
                     prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
                     weights = weights + (prefix_w * prefix.reshape(-1).float())
+                tail_w = float(
+                    getattr(self.config, "ltr_tail_loss_weight", 0.0) or 0.0
+                )
+                if tail_w > 0.0:
+                    tail = self._ltr_tail_mask(target_ids, ltr_suffix)
+                    weights = weights + (tail_w * tail.reshape(-1).float())
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -2986,6 +3372,28 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics["recursive_intermediate_aux_loss"] = 0.0
             self.last_training_metrics["recursive_final_depth_aux_contribution"] = 0.0
             self.last_training_metrics["combined_training_loss"] = 0.0
+
+        if abstract_trace is not None and abstract_targets is not None:
+            assert abstract_trace.logits is not None
+            plan_loss = F.cross_entropy(
+                abstract_trace.logits.reshape(-1, abstract_trace.logits.size(-1)),
+                abstract_targets.reshape(-1),
+            )
+            mask_loss = mask_loss + abstract_plan_w * plan_loss
+            self.last_training_metrics.update(
+                {
+                    "abstract_plan_loss": float(plan_loss.detach().cpu()),
+                    "abstract_plan_accuracy": float(
+                        abstract_trace.logits.argmax(dim=-1)
+                        .eq(abstract_targets)
+                        .float()
+                        .mean()
+                        .detach()
+                        .cpu()
+                    ),
+                    "abstract_plan_train_conditioning": train_plan_conditioning,
+                }
+            )
 
         # SLM-238 (RSC-A02): the required RecursiveObjectiveContractV2 schema,
         # built from (never a second source of truth alongside) the flat
@@ -4001,7 +4409,9 @@ class TwoTowerModel(nn.Module):
                 token_id: index for index, token_id in enumerate(component_ids)
             }
             plan_logits = self.binder_component_plan_head(
-                self._pool_context(ctx, ctx_pad)
+                # Preserve the primary objective's gradients while this
+                # auxiliary planner learns its own legal-decision signal.
+                self._pool_context(ctx, ctx_pad).detach()
             ).view(len(batch), len(binder_ids), len(component_ids))
             plan_losses: list[torch.Tensor] = []
             plan_hits: list[torch.Tensor] = []
@@ -4189,6 +4599,7 @@ class TwoTowerModel(nn.Module):
         schema: str | None = None,
         output_kind: str | None = None,
         output_category: str | None = None,
+        history_ops_text: str | None = None,
     ) -> str:
         if schema is None and getattr(self.config, "schema_in_context", False):
             from slm_training.harnesses.quality import compact_schema_snippet
@@ -4213,6 +4624,14 @@ class TwoTowerModel(nn.Module):
             if getattr(self.config, "slot_contract_in_context", False)
             else None
         )
+        # SLM-428 / VAR2-01: the lever gates the *effect*, not just the call
+        # site — a caller passing history_ops_text while the lever is off
+        # must reproduce prior (no-history) output exactly.
+        ops_text = (
+            history_ops_text
+            if history_ops_text and getattr(self.config, "encoder_ops_conditioning", False)
+            else None
+        )
         return format_context_text(
             prompt,
             dm,
@@ -4222,6 +4641,7 @@ class TwoTowerModel(nn.Module):
             slot_contract=contract,
             output_kind=output_kind,
             output_category=output_category,
+            history_ops_text=ops_text,
         )
 
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
@@ -4884,6 +5304,60 @@ class TwoTowerModel(nn.Module):
         )
         return self._action_shortlist_vectors
 
+    def _grammar_checkpoints(
+        self,
+        ids: torch.Tensor,
+        t: int,
+        canvas: int,
+        need_model: list[int],
+        states: Any,
+    ) -> dict[int, int] | None:
+        """Prove where branching stops after ``t``, without a forward (I4).
+
+        For every row still needing the model, ask how many lexemes the grammar
+        forces after *each* of its legal candidates. The minimum across rows and
+        candidates is determined no matter what the model picks, so the forward
+        only needs to read up to it. Returns ``None`` (no claim) when the lever
+        is off or any probe budget is exceeded — the planner then falls back to
+        device-window sizing.
+        """
+        if str(getattr(self.config, "prefill_schedule", "off") or "off") == "off":
+            return None
+        if not need_model or states is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            build_completion_forest,
+        )
+        from slm_training.runtime.decode_schedule import common_forced_run
+
+        tok = self.tokenizer
+        rows = need_model[:4]  # probe budget: the batch, not the whole canvas
+        shortest: int | None = None
+        for bi in rows:
+            st = states[bi] if bi < len(states) else None
+            if st is None:
+                return None
+            prefix = ids[bi, :t].tolist()
+            try:
+                forest = build_completion_forest(
+                    tok, prefix, state=st, remaining_tokens=canvas - t
+                )
+            except Exception:  # noqa: BLE001 - an unprovable probe claims nothing
+                return None
+            if forest.coverage != "complete":
+                return None
+            run = common_forced_run(
+                prefix,
+                [path.token_ids for path in forest.paths if path.token_ids],
+                lambda working: force_emit_token_id(tok, working, state=None),
+            )
+            shortest = run if shortest is None else min(shortest, run)
+            if not shortest:
+                return None
+        if not shortest:
+            return None
+        return {t + 1: int(shortest)}
+
     def _schedule_backend(self) -> str:
         """Cached accelerator id used by the I4 prefill planner."""
         cached = getattr(self, "_schedule_backend_cache", None)
@@ -4913,13 +5387,10 @@ class TwoTowerModel(nn.Module):
                 )
             from slm_training.dsl.grammar.fastpath.speculative_rank import load_ranker
 
-            table = getattr(self.config, "speculative_rank_table", None)
-            if not table:
-                raise ValueError(
-                    "speculative_rank='ngram' requires speculative_rank_table"
-                )
+            # An unset table resolves to the committed default artifact, so the
+            # lever is reachable without a build step.
             ranker = load_ranker(
-                table,
+                getattr(self.config, "speculative_rank_table", None),
                 margin=float(getattr(self.config, "speculative_rank_margin", 0.0) or 0.0),
             )
         self._speculative_ranker_cache = ranker
@@ -9173,7 +9644,13 @@ class TwoTowerModel(nn.Module):
             scores = raw_logits[list(candidates)]
             inventory_bias = self._component_inventory_bias(ctx, ctx_pad, candidates)
             if inventory_bias is not None:
+                before_inventory = int(scores.argmax().item())
                 scores = scores + inventory_bias
+                if stats is not None:
+                    stats.component_inventory_applications += 1
+                    stats.component_inventory_choice_changes += int(
+                        int(scores.argmax().item()) != before_inventory
+                    )
             plan_bias = self._component_plan_bias(
                 ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
             )
@@ -9376,7 +9853,13 @@ class TwoTowerModel(nn.Module):
                     ctx, ctx_pad, candidate_ids
                 )
                 if inventory_bias is not None:
+                    before_inventory = int(scores.argmax().item())
                     scores = scores + inventory_bias
+                    if stats is not None:
+                        stats.component_inventory_applications += 1
+                        stats.component_inventory_choice_changes += int(
+                            int(scores.argmax().item()) != before_inventory
+                        )
                 if parent == tuple(prefix):
                     plan_bias = self._component_plan_bias(
                         ctx,
@@ -10352,7 +10835,13 @@ class TwoTowerModel(nn.Module):
                         candidate_ids,
                     )
                     if inventory_bias is not None:
+                        before_inventory = int(scores.argmax().item())
                         scores = scores + inventory_bias
+                        if stats is not None:
+                            stats.component_inventory_applications += 1
+                            stats.component_inventory_choice_changes += int(
+                                int(scores.argmax().item()) != before_inventory
+                            )
                     candidate_kinds = tuple(
                         (
                             "component_root"
@@ -10935,12 +11424,9 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "prefill_schedule_max_lookahead", 0) or 0
                     ),
                     backend=self._schedule_backend(),
-                    # No checkpoint input here: at plan time this loop has no
-                    # proof about positions *after* t — a forced run beyond the
-                    # current position only becomes provable once t is
-                    # committed, and the next iteration discovers it for free.
-                    # Callers that already hold a forced-run draft pass one.
-                    forced_run_lengths=None,
+                    forced_run_lengths=self._grammar_checkpoints(
+                        ids, t, canvas, need_model, states
+                    ),
                 )
                 record_plan(stats, plan)
                 step_lookahead = lookahead
@@ -13750,7 +14236,10 @@ class TwoTowerModel(nn.Module):
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
         for record in records:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "

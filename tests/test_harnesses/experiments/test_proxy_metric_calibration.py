@@ -37,7 +37,7 @@ def example_feature_set() -> ProxyFeatureSet:
         target_gate="full_gate_pass",
         allowed_sources=("parser", "binding_aware_metric"),
         forbidden_features=(
-            "agentv_score",
+            "runner_sdk_aggregate",
             "external_judge_score",
             "full_gate_result",
             "gold_action_trace",
@@ -99,11 +99,11 @@ def test_forbidden_feature_makes_contract_unsafe(
 ) -> None:
     unsafe = ProxyFeatureSet(
         feature_schema_version="proxy_features/v1",
-        feature_names=("parser_valid", "agentv_score"),
+        feature_names=("parser_valid", "runner_sdk_aggregate"),
         target_primary="binding_aware_meaningful_program_rate",
         target_gate="full_gate_pass",
         allowed_sources=("parser",),
-        forbidden_features=("agentv_score",),
+        forbidden_features=("runner_sdk_aggregate",),
     )
     manifest = build_proxy_metric_calibration_manifest(
         manifest_id="sde3-03-v1",
@@ -220,7 +220,7 @@ def test_validate_manifest_catches_errors() -> None:
     assert any("omission_reason" in e for e in errors)
 
     data = manifest.to_dict()
-    data["feature_set"]["feature_names"].append("agentv_score")
+    data["feature_set"]["feature_names"].append("runner_sdk_aggregate")
     errors = validate_proxy_metric_calibration_manifest(data)
     assert any("forbidden" in e for e in errors)
 

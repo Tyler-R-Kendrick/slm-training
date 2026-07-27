@@ -18,10 +18,10 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = (
-    'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
-    "hero = Card([hero_title, hero_body])"
+    'root = Stack([b3], "column")\n'
+    'b1 = TextContent(":slot_0")\n'
+    'b2 = TextContent(":slot_1")\n'
+    "b3 = Card([b1, b2])"
 )
 
 
@@ -32,7 +32,7 @@ def _model() -> TwoTowerModel:
             prompt="Hero",
             openui=HERO,
             split="train",
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         )
     ]
     return TwoTowerModel.from_records(

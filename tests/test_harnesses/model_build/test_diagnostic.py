@@ -14,25 +14,23 @@ from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     'hero = Card([hero_title, hero_body])'
 )
 SMOKE = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":smoke.hero.title")\n'
-    'hero_body = TextContent(":smoke.hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     'hero = Card([hero_title, hero_body])'
 )
 
 
-def test_compositional_placeholder_tokenization() -> None:
-    tokens = tokenize_text('hero = TextContent(":smoke.hero.title")')
+def test_canonical_placeholder_tokenization() -> None:
+    tokens = tokenize_text('hero = TextContent(":slot_0")')
     assert ":" in tokens
-    assert "smoke" in tokens
-    assert "hero" in tokens
-    assert "title" in tokens
-    assert '":smoke.hero.title"' not in tokens
+    assert "slot_0" in tokens
+    assert '":slot_0"' not in tokens
 
 
 def test_gold_as_prediction_ceiling() -> None:
@@ -40,7 +38,7 @@ def test_gold_as_prediction_ceiling() -> None:
         id="smoke_hero",
         prompt="Hero",
         openui=SMOKE,
-        placeholders=[":smoke.hero.title", ":smoke.hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="smoke",
     )
     row = score_gold_as_prediction(record)
@@ -58,7 +56,7 @@ def test_vocab_coverage_atomic_vs_compositional() -> None:
             id="sm1",
             prompt="Hero smoke",
             openui=SMOKE,
-            placeholders=[":smoke.hero.title", ":smoke.hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
             split="smoke",
         ),
     ]
@@ -71,9 +69,8 @@ def test_vocab_coverage_atomic_vs_compositional() -> None:
         for ph in record.placeholders or []:
             placeholder_tokens.extend(tokenize_text(f'"{ph}"'))
     missing = [t for t in placeholder_tokens if t not in vocab]
-    # Compositional tokenization: only namespace segments (e.g. "smoke") may be OOV.
-    assert set(missing) <= {"smoke"}
-    assert ":" in vocab and "hero" in vocab and "title" in vocab
+    assert missing == []
+    assert ":" in vocab and "slot_0" in vocab and "slot_1" in vocab
 
 
 def test_ceiling_report_fixture_suites(tmp_path: Path) -> None:
@@ -86,7 +83,7 @@ def test_ceiling_report_fixture_suites(tmp_path: Path) -> None:
                 id="sm1",
                 prompt="Hero",
                 openui=SMOKE,
-                placeholders=[":smoke.hero.title", ":smoke.hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
                 split="smoke",
             ),
         ],
@@ -104,19 +101,19 @@ def test_length_budget_flags_truncation() -> None:
         prompt="dashboard",
         openui=(
             'root = Stack([a, b, c, d], "column")\n'
-            'a = TextContent(":smoke.a")\n'
-            'b = TextContent(":smoke.b")\n'
-            'c = TextContent(":smoke.c")\n'
+            'a = TextContent(":slot_0")\n'
+            'b = TextContent(":slot_1")\n'
+            'c = TextContent(":slot_2")\n'
             'd = Card([e, f])\n'
-            'e = TextContent(":smoke.e")\n'
-            'f = TextContent(":smoke.f")\n'
+            'e = TextContent(":slot_3")\n'
+            'f = TextContent(":slot_4")\n'
         ),
         placeholders=[
-            ":smoke.a",
-            ":smoke.b",
-            ":smoke.c",
-            ":smoke.e",
-            ":smoke.f",
+            ":slot_0",
+            ":slot_1",
+            ":slot_2",
+            ":slot_3",
+            ":slot_4",
         ],
     )
     # Legacy 64-token budget must fail on compositional lengths.

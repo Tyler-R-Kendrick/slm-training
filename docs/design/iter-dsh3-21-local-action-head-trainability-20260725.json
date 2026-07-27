@@ -1,0 +1,269 @@
+{
+  "report_schema": "LocalActionHeadTrainabilityReportV1",
+  "linear_issue": "SLM-396",
+  "dsh_id": "DSH3-21",
+  "title": "Make LocalFlatHead optimizer-visible and checkpoint-stable",
+  "date": "2026-07-25",
+  "decision": "Yes, with a documented capacity limit: the flat action head is now genuinely trainable, serializable, and reproducible under a dynamic action vocabulary via an explicit materialize()/checkpoint contract, but it remains an O(distinct semantic actions) table with no unseen-action generalization.",
+  "hypothesis_outcome": "supported",
+  "hypothesis": "Registered parameter containers plus explicit pre-optimizer materialization yield nonzero gradients, optimizer updates, and exact checkpoint round trips without changing fixture scores.",
+  "changed_files": [
+    "src/slm_training/models/local_action_head.py",
+    "tests/test_models/test_local_action_head.py",
+    "tests/test_harnesses/experiments/test_cap2_state_local_action.py",
+    "tests/test_harnesses/quantization/test_sensitivity.py",
+    "src/slm_training/resources/versions.json"
+  ],
+  "implementation_summary": [
+    "LocalFlatHead.action_embeddings is now an nn.ParameterDict (was a plain Python dict invisible to model.parameters()/named_parameters()).",
+    "canonical_action_key(action) derives a semantic key independent of opaque reference ids (dsl.operators.legal_set reserved 'OPERATOR <op> <slot>=<kind>:<request_id>:<opaque_id>' serialization collapses to '<slot>=<kind>') and independent of candidate order/list position; plain (non-operator) action identities pass through unchanged, preserving every existing fixture harness's behavior.",
+    "LocalFlatHead.materialize(action_views) pre-registers one parameter per canonical key, deduplicating, and must run before optimizer construction. After materialize(), an unseen canonical key either raises (unseen_action_policy='error', default) or routes to a dedicated '__unk__' parameter (unseen_action_policy='unk') -- it never silently lazily allocates a parameter the optimizer cannot see.",
+    "Before materialize() (fixture/wiring mode), unseen actions still lazily allocate exactly as before DSH3-21, so zero-step fixture numeric behavior is unchanged.",
+    "checkpoint_state()/load_checkpoint_state() add an explicit CHECKPOINT_FORMAT_VERSION and fail closed (raise ValueError/RuntimeError) on format_version mismatch, action-registry mismatch (vocabulary must match exactly before loading), or tensor shape mismatch (torch's own strict=True state_dict load).",
+    "score() rejects (ValueError) legal_actions whose canonical keys collide within one call, instead of silently scoring one of the duplicates."
+  ],
+  "verification_matrix": {
+    "zero_step_fixture_parity": {
+      "oracle_accuracy": 1.0,
+      "random_init_accuracy": 1.0,
+      "forced_states_recovered": 1,
+      "abstain_count": 0,
+      "detected_error_count": 0,
+      "notes": [
+        "oracle pass recovered every correct action",
+        "random-init pass: 100.00% legal/forced, 0 abstain, 0 detected_error"
+      ]
+    },
+    "two_action_overfit": {
+      "loss_curve_samples": [
+        {
+          "step": 0,
+          "loss": 1.3587085008621216
+        },
+        {
+          "step": 9,
+          "loss": 2.1457660750456853e-06
+        },
+        {
+          "step": 49,
+          "loss": 0.0
+        },
+        {
+          "step": 99,
+          "loss": 0.0
+        },
+        {
+          "step": 199,
+          "loss": 0.0
+        }
+      ],
+      "final_decision_a": "action_a",
+      "final_decision_b": "action_b",
+      "correct": true
+    },
+    "save_load_round_trip": {
+      "params_exact_equal": true,
+      "logits_exact_equal": true,
+      "format_version_mismatch_fails_closed": true,
+      "registry_mismatch_fails_closed": true,
+      "shape_mismatch_fails_closed": true
+    },
+    "candidate_reference_permutation": {
+      "candidate_order_permutation_stable": true,
+      "note": "Verified in tests/test_models/test_local_action_head.py::test_local_flat_head_candidate_order_permutation_stable (score depends on action identity, not its position in legal_actions) and test_canonical_action_key_drops_opaque_reference_ids / test_local_flat_head_opaque_id_only_change_shares_one_parameter (opaque reference-id permutation collapses to one parameter)."
+    },
+    "unseen_action_after_optimizer_construction": {
+      "error_policy_fails_closed": true,
+      "unk_policy_routes_explicitly": [
+        "c"
+      ]
+    }
+  },
+  "optimizer_visibility_and_gradients": {
+    "optimizer_visibility": {
+      "named_parameters_before_materialize": [
+        "scorer.bias",
+        "scorer.weight"
+      ],
+      "named_parameters_after_materialize": [
+        "action_embeddings.a",
+        "action_embeddings.b",
+        "action_embeddings.c",
+        "scorer.bias",
+        "scorer.weight"
+      ],
+      "optimizer_param_elems": 65,
+      "module_param_elems": 65,
+      "match": true
+    },
+    "gradients_and_one_step": {
+      "grad_l1_norms": {
+        "a": 6.289365768432617,
+        "b": 6.289364337921143
+      },
+      "grad_finite": {
+        "a": true,
+        "b": true
+      },
+      "loss_before_step": 0.7518848776817322,
+      "logits_before_step": [
+        [
+          -0.08913964778184891,
+          0.0250761229544878
+        ]
+      ],
+      "logits_after_step": [
+        [
+          6.988575458526611,
+          -7.052638053894043
+        ]
+      ],
+      "logits_changed": true
+    }
+  },
+  "adversarial_controls": {
+    "opaque_id_only_change_collapses_to_one_key": true,
+    "semantic_differences_preserved": true,
+    "materialize_allocates_one_param_for_opaque_variants": true,
+    "score_time_duplicate_canonical_actions_rejected": true,
+    "materialize_deduplicates_repeated_actions": true,
+    "late_unseen_action_after_optimizer_construction_fails_closed": true,
+    "unk_routed_actions_metadata": [
+      "c"
+    ]
+  },
+  "torch_version": "2.5.1+cu124",
+  "hidden_dim": 16,
+  "acceptance_criteria": {
+    "all_intended_tensors_in_named_parameters_before_optimizer": true,
+    "finite_nonzero_gradients_and_correct_score_change": true,
+    "exact_checkpoint_round_trip": true,
+    "fixture_outputs_unchanged_before_training": true
+  },
+  "stop_rule_applied": "The flat head inherently requires an unbounded per-action parameter table (no compositional structure over action identity). Per the issue's stop rule, it is kept and documented as a non-generalizing diagnostic/baseline head -- capacity is O(distinct semantic actions) -- rather than forcing a fake generalization claim. Heads with bounded capacity over an unbounded vocabulary already exist in this module (TernaryDigitHead, TernaryECOCHead, GrammarFactorizedHead).",
+  "non_goals": [
+    "No unseen-action generalization claim for LocalFlatHead.",
+    "Opaque reference ids are never used as vocabulary/scoring authority; canonical_action_key strips them by construction.",
+    "No legal-membership changes: decode() still only ever returns an action_identity present in the supplied legal_actions (or None)."
+  ],
+  "tests": {
+    "command": "pytest -q tests/test_models/test_local_action_head.py tests/test_harnesses/experiments/test_cap2_state_local_action.py",
+    "result": "43 passed",
+    "also_run": "tests/test_harnesses/quantization/test_sensitivity.py, tests/test_harnesses/quantization/test_calibration.py, tests/test_harnesses/experiments/test_cap3_03_ternary_falsification.py, tests/test_harnesses/experiments/test_cap2_04_state_ablation.py (all downstream LocalFlatHead consumers) -- 47 passed after updating test_sensitivity.py's test_baseline_parameters_restored_after_profiling to warm the head's action embeddings before snapshotting baseline parameters, since those embeddings are now real named_parameters() entries instead of being invisible outside a plain dict"
+  },
+  "version_stamp_bump": {
+    "component": "model.quantization",
+    "from_version": "v5",
+    "to_version": "v6",
+    "reason": "src/slm_training/models/local_action_head.py is a watched path for this component; the ParameterDict/materialize/checkpoint change is not behavior-neutral (it changes named_parameters() membership and adds fail-closed checkpoint validation), so this is a real bump, not a no-bump note."
+  },
+  "honest_caveats": [
+    "This is a CPU fixture/unit-test verification, not a production TwoTowerModel training integration or ship-gate run; no checkpoint bucket sync or MODEL_CARD update applies (no checkpoint was created/promoted).",
+    "canonical_action_key only strips the opaque request_id/opaque_id pair from the reserved operator serialization format; it does not resolve a reference's semantic_fingerprint from a live ReferenceTableV1 (out of scope for this head -- it has no access to one). Two structurally different references of the same kind in the same slot still collapse onto one parameter; this is a precision limit, not full compositional action identity.",
+    "GlobalMaskedHead, TernaryDigitHead, TernaryECOCHead, and GrammarFactorizedHead were not touched; this issue is scoped to LocalFlatHead only."
+  ],
+  "run_evidence": {
+    "report_schema": "LocalActionHeadTrainabilityReportV1",
+    "linear_issue": "SLM-396",
+    "dsh_id": "DSH3-21",
+    "generated_at": "2026-07-25T08:44:13.733163+00:00",
+    "hidden_dim": 16,
+    "torch_version": "2.5.1+cu124",
+    "zero_step_fixture_parity": {
+      "oracle_accuracy": 1.0,
+      "random_init_accuracy": 1.0,
+      "forced_states_recovered": 1,
+      "abstain_count": 0,
+      "detected_error_count": 0,
+      "notes": [
+        "oracle pass recovered every correct action",
+        "random-init pass: 100.00% legal/forced, 0 abstain, 0 detected_error"
+      ]
+    },
+    "optimizer_visibility": {
+      "named_parameters_before_materialize": [
+        "scorer.bias",
+        "scorer.weight"
+      ],
+      "named_parameters_after_materialize": [
+        "action_embeddings.a",
+        "action_embeddings.b",
+        "action_embeddings.c",
+        "scorer.bias",
+        "scorer.weight"
+      ],
+      "optimizer_param_elems": 65,
+      "module_param_elems": 65,
+      "match": true
+    },
+    "gradients_and_one_step": {
+      "grad_l1_norms": {
+        "a": 6.289365768432617,
+        "b": 6.289364337921143
+      },
+      "grad_finite": {
+        "a": true,
+        "b": true
+      },
+      "loss_before_step": 0.7518848776817322,
+      "logits_before_step": [
+        [
+          -0.08913964778184891,
+          0.0250761229544878
+        ]
+      ],
+      "logits_after_step": [
+        [
+          6.988575458526611,
+          -7.052638053894043
+        ]
+      ],
+      "logits_changed": true
+    },
+    "two_action_overfit": {
+      "loss_curve_samples": [
+        {
+          "step": 0,
+          "loss": 1.3587085008621216
+        },
+        {
+          "step": 9,
+          "loss": 2.1457660750456853e-06
+        },
+        {
+          "step": 49,
+          "loss": 0.0
+        },
+        {
+          "step": 99,
+          "loss": 0.0
+        },
+        {
+          "step": 199,
+          "loss": 0.0
+        }
+      ],
+      "final_decision_a": "action_a",
+      "final_decision_b": "action_b",
+      "correct": true
+    },
+    "checkpoint_round_trip": {
+      "params_exact_equal": true,
+      "logits_exact_equal": true,
+      "format_version_mismatch_fails_closed": true,
+      "registry_mismatch_fails_closed": true,
+      "shape_mismatch_fails_closed": true
+    },
+    "adversarial_controls": {
+      "opaque_id_only_change_collapses_to_one_key": true,
+      "semantic_differences_preserved": true,
+      "materialize_allocates_one_param_for_opaque_variants": true,
+      "score_time_duplicate_canonical_actions_rejected": true,
+      "materialize_deduplicates_repeated_actions": true,
+      "late_unseen_action_after_optimizer_construction_fails_closed": true,
+      "unk_routed_actions_metadata": [
+        "c"
+      ]
+    }
+  }
+}

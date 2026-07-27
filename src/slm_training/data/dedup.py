@@ -21,7 +21,6 @@ from slm_training.harnesses.train_data.catalog import classify_source_family
 # Higher index = higher keep priority when collapsing duplicates.
 FAMILY_PRIORITY: tuple[str, ...] = (
     "stress_adversarial",
-    "namespace_augment",
     "layout_augment",
     "prompt_paraphrase",
     "self_distilled_repair",

@@ -23,6 +23,20 @@ CONTENT_PROPS = frozenset(
     }
 )
 
+# String-property roles shared by synthesis validation and constrained decode.
+# Content roles own request-local placeholders; structural roles own opaque
+# identifier atoms such as ``$0``.  A string property outside both sets is not
+# allowed to borrow either namespace.
+TEMPLATIZABLE_PROPS = CONTENT_PROPS | {
+    "codeString",
+    "data",
+    "details",
+    "subtitle",
+    "tags",
+    "textMarkdown",
+}
+STRUCTURAL_ID_PROPS = frozenset({"category", "language", "name", "src", "value"})
+
 
 def is_placeholder(value: str) -> bool:
     return bool(PLACEHOLDER_RE.fullmatch(value.strip().strip('"')))

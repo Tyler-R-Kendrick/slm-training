@@ -78,6 +78,39 @@ def train_latent_codec(
     return {"final_loss": losses[-1], "steps": steps, "lr": lr}
 
 
+def audit_no_bypass(model: LatentCodecModel, x: torch.Tensor) -> bool:
+    """Verify the decoder depends only on ``codec.decode_input(encoding)``.
+
+    Generalizes :meth:`KaryBottleneck.audit_no_bypass` to any ``LatentCodec``
+    family (uniform scalar, mixed-radix FSQ, binary LFQ, learned VQ,
+    continuous). Two checks:
+
+    1. Recomputing the decoder output from ``codec.decode_input(encoding)``
+       alone must equal the full ``model(x, hard=True)`` forward output. This
+       proves the decoder never sees ``x`` or ``encoding.metadata`` directly.
+    2. When the codec has a learned encoder (``mode="semantic_trace"``),
+       zeroing the raw input must change the encoded hard code (unless ``x``
+       was already all-zero). This proves the raw input actually determines
+       the code, ruling out a constant/dead encoder acting as a side channel
+       that would let an unencoded gold factor reach the decoder unnoticed.
+    """
+    model.eval()
+    with torch.no_grad():
+        full_logits, _ = model(x, hard=True)
+        encoding = model.codec.encode(x, hard=True)
+        decoder_input = model.codec.decode_input(encoding)
+        recomputed = model.decoder(decoder_input)
+        if not torch.allclose(recomputed, full_logits, atol=1e-6):
+            return False
+
+        encoder = getattr(model.codec, "encoder", None)
+        if encoder is not None and x.numel() > 0 and not torch.equal(x, torch.zeros_like(x)):
+            zero_encoding = model.codec.encode(torch.zeros_like(x), hard=True)
+            if torch.equal(zero_encoding.hard, encoding.hard):
+                return False
+    return True
+
+
 def evaluate_latent_codec(
     model: LatentCodecModel,
     states: torch.Tensor,

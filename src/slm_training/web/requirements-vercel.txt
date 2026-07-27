@@ -1,0 +1,15 @@
+# Slim dependency set for the Vercel FastAPI function only.
+#
+# The deployed control plane serves dashboards, annotations, and DSL parse
+# checks; it does NOT run server-side inference (the fixture checkpoint and
+# its ~109 MB numpy/onnxruntime stack stay out of the 250 MB function bundle).
+# When the inference stack is absent, src/slm_training/web/vercel.py loads
+# without a model factory and generation hands off to the browser path
+# (honest GenerationExhausted, never a 500). Local development and training
+# keep using the full pyproject/uv.lock dependency set.
+fastapi>=0.110,<1
+lark>=1.1,<2
+openfeature-sdk>=0.10,<1
+pydantic>=2.7,<3
+PyYAML>=6,<7
+vercel>=0.5,<1

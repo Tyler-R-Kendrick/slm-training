@@ -1,0 +1,26 @@
+{
+  "contract_hash": "d312bc70e05cbff00233edb79e34408bb4a9e7e7c09dffd14c64497e73f61eaa",
+  "contract_id": "structured-latent-readout-gate-v1",
+  "issue": {
+    "activation_requirement": "SLM-251 (LOT1-02) provides a qualified faithful causal checkpoint/recipe and continued explicit control, and SLM-252 (LOT2-01) selects or bounds the supervision timing/readout routing.",
+    "alias": "LOT2-02",
+    "gate_contract_id": "structured-latent-readout-gate-v1",
+    "linear_issue": "SLM-253",
+    "slug": "lot2-02-structured-readout",
+    "title": "Compare independent-token PCL with structured, set-valued, and block-autoregressive semantic readouts"
+  },
+  "lot1_01_disposition": "not_authorized",
+  "lot1_02_disposition": "not_authorized",
+  "schema_version": "lot_downstream_gate/v1",
+  "verdict": "not_authorized",
+  "verdict_rationale": "LOT2-02 (SLM-253) activation requires: SLM-251 (LOT1-02) provides a qualified faithful causal checkpoint/recipe and continued explicit control, and SLM-252 (LOT2-01) selects or bounds the supervision timing/readout routing. The LOT1-02 launch gate reports 'not_authorized' (LOT1-01 disposition 'not_authorized'): no faithful K x c model path, curriculum, Stage 0 parent, or continued-explicit control exists, and SLM-249's oracle ceiling is not positive. Closing not_authorized in plan-only/bounded-diagnostic mode; no training, factorial, intervention, or systems code is added by this disposition.",
+  "version_stamp": {
+    "code_commit": "e77a0efc18618a854e95938357b97d09b62f9a38",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v112"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T16:08:42.975048+00:00"
+  }
+}

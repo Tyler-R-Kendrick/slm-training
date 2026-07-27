@@ -182,3 +182,69 @@ def test_record_plan_ignores_a_step_with_no_forward() -> None:
 
 def test_schedule_backend_never_raises() -> None:
     assert schedule_backend() in {"cpu", "cuda", "npu", "dml"}
+
+
+def test_common_forced_run_finds_the_shared_determined_suffix() -> None:
+    """I4: what the grammar forces after *every* choice is a real checkpoint."""
+    from slm_training.runtime.decode_schedule import common_forced_run
+
+    # Both candidates lead into two forced lexemes, then branch again.
+    forced = {(1, 10): 100, (1, 10, 100): 101, (1, 20): 200, (1, 20, 200): 201}
+
+    def next_forced(ids):
+        return forced.get(tuple(ids))
+
+    assert common_forced_run([1], [[10], [20]], next_forced) == 2
+
+
+def test_common_forced_run_claims_nothing_when_one_branch_is_open() -> None:
+    """A run that only some choices share is not determined."""
+    from slm_training.runtime.decode_schedule import common_forced_run
+
+    forced = {(1, 10): 100, (1, 10, 100): 101}
+
+    def next_forced(ids):
+        return forced.get(tuple(ids))
+
+    assert common_forced_run([1], [[10], [20]], next_forced) == 0
+
+
+def test_common_forced_run_respects_its_probe_budgets() -> None:
+    from slm_training.runtime.decode_schedule import common_forced_run
+
+    def always_forced(ids):
+        return 999
+
+    # Too many candidates to probe: claim nothing rather than pay for it.
+    many = [[index] for index in range(20)]
+    assert common_forced_run([1], many, always_forced, max_candidates=8) == 0
+    # Depth is capped even when the grammar would keep forcing forever.
+    assert common_forced_run([1], [[10]], always_forced, max_depth=3) == 3
+
+
+def test_common_forced_run_ignores_empty_candidates() -> None:
+    from slm_training.runtime.decode_schedule import common_forced_run
+
+    assert common_forced_run([1], [], lambda ids: None) == 0
+    assert common_forced_run([1], [[]], lambda ids: None) == 0
+
+
+def test_a_proven_checkpoint_truncates_the_prefill_window() -> None:
+    """End to end: the probe's answer is what shortens the forward."""
+    run = 3
+    position, canvas = 4, 128
+    plan = plan_prefill(
+        position=position,
+        canvas=canvas,
+        active_rows=[0],
+        committed_rows=[],
+        mode="checkpoint",
+        legacy_lookahead=64,
+        max_lookahead=64,
+        backend="cpu",
+        forced_run_lengths={position + 1: run},
+    )
+    assert plan.checkpoint == position + 1
+    assert plan.prefill_end == position + 1
+    assert plan.reason == "grammar_checkpoint"
+    assert plan.tokens_saved > 0

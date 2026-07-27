@@ -356,6 +356,24 @@ def exact_forced_token_id(
     DSL-native tokenizers use the active pack's complete completion domain, so
     scope-aware semantic singletons bypass inference just like structural
     singletons. Other tokenizers retain the stricter DFA/vocabulary proof.
+
+    A *horizon-limited* completion domain is not a contradiction. When the
+    compiler cannot enumerate a terminal witness inside the remaining budget
+    (``coverage != "complete"``) it has proven nothing either way, so the DFA
+    proof below is consulted instead of discarding a decision the grammar has
+    already made (decode invariant I2, ``docs/design/decode-invariants.md``). A
+    *complete* domain that names more than one candidate genuinely contradicts
+    a singleton and still refuses.
+
+    The whitespace veto at the end of the DFA proof does not apply to the
+    DSL-native codec. That veto exists because a compositional tokenizer can
+    legally emit insignificant whitespace that competes with the forced lexeme
+    for the picker's argmax. The native completion domain already excludes
+    insignificant whitespace from its candidate set, so applying the veto only
+    in the horizon-limited fallback would make short-horizon repair disagree
+    with the very same position under a complete domain. Whitespace is not a
+    symbol under the symbol-only output contract, and emitting the forced
+    lexeme in its place cannot make a program illegal.
     """
     if state is None or state.engine is None:
         return None
@@ -368,7 +386,8 @@ def exact_forced_token_id(
         if forced_token_id is not None
         else force_emit_token_id(tokenizer, prefix_ids, state=state)
     )
-    if is_dsl_native_tokenizer(tokenizer):
+    native = is_dsl_native_tokenizer(tokenizer)
+    if native:
         try:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
                 build_completion_forest,
@@ -387,9 +406,13 @@ def exact_forced_token_id(
                 runtime_symbols=runtime_symbols,
             )
             candidates = set(forest.candidate_ids)
-            if forest.coverage != "complete" or len(candidates) != 1:
-                return None
-            return next(iter(candidates))
+            if forest.coverage == "complete":
+                # A complete domain is authoritative in both directions: one
+                # candidate proves the singleton, more than one refutes it.
+                if len(candidates) != 1:
+                    return None
+                return next(iter(candidates))
+            # Horizon-limited: fall through to the DFA proof below.
         except Exception:  # noqa: BLE001 - incomplete proof must fail closed
             return None
 
@@ -417,6 +440,11 @@ def exact_forced_token_id(
         state=state,
     ):
         return None
+
+    if native:
+        # Insignificant whitespace is not a candidate in the native completion
+        # domain, so it does not get a veto here either. See the docstring.
+        return forced
 
     # The picker honors a structural force ahead of every non-whitespace
     # candidate. Its one deliberate exception is a legal whitespace argmax,

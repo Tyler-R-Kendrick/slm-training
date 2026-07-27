@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "run_class": "data_build",
+  "run_id": "e899_typed_role_focus_v1",
+  "experiment_id": "E899",
+  "date": "2026-07-22",
+  "decision": "retain_focused_corpus_for_base_replay_continuation",
+  "data": {
+    "path": "src/slm_training/resources/data/train/e899_typed_role_focus_v1",
+    "profile": "strict",
+    "source": "fixture",
+    "fixture_ids": [
+      "train_tabs_01",
+      "train_card_stack_01"
+    ],
+    "candidates": 2,
+    "admitted": 2,
+    "rejected": 0,
+    "warnings": 0,
+    "recommendations": 0,
+    "experiment_candidates": 0,
+    "decontamination_rejections": 0,
+    "sanitizer_fallbacks": 0,
+    "mean_quality_score": 1.0,
+    "content_fingerprint": "d037a43b1c210a3b58fbf2d5d1c76480f8f494562f138477a4706e6fc12e31d6",
+    "lineage_snapshot": "d94eeccd9db53bd1b6181100f9f2646ee8c6778c4ce7ae2ffac1cb21ce00e363"
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "data build only; model quality and ship gates not evaluated"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6527d6a1f5a68008f8f78c9783874a57971fad94",
+    "code_dirty": true,
+    "dirty_reason": "unrelated untracked SLM189 result files in shared worktree",
+    "components": {
+      "harness.train_data": "v22"
+    },
+    "stamped_at": "2026-07-22T21:46:37.333925+00:00"
+  }
+}
