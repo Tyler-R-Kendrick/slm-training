@@ -22,10 +22,10 @@ Before training, this run re-checked the canonicalization invariant the
 original fix (`ae4b446`, PR #1015) established:
 
 ```bash
-python3 -c "import json;print(any(not p.startswith(':slot_') for r in \
+python3 -c "import json,re;print(any(not re.fullmatch(r':slot_[0-9]+', p) for r in \
   map(json.loads, open('src/slm_training/resources/data/train/wf_smoke_v2/records.jsonl')) \
   for p in r['placeholders']))"
-# -> False (all placeholders remain canonical :slot_N)
+# -> False (all placeholders remain canonical :slot_N, fully matched)
 ```
 
 ## Recipe
@@ -33,7 +33,8 @@ python3 -c "import json;print(any(not p.startswith(':slot_') for r in \
 ```bash
 python3.12 -m venv .venv-smoke  # fresh, untracked, gitignored
 source .venv-smoke/bin/activate
-pip install --find-links <local wheel cache> -e ".[torch,dev]"
+pip download --no-deps -d /tmp/torchcheck torch==2.5.1  # local wheel cache
+pip install --find-links /tmp/torchcheck -e ".[torch,dev]"
 
 slm sft train --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
   --model twotower --context-backend scratch --steps 8 \
@@ -44,7 +45,10 @@ slm sft train --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
 `ae4b446`. Environment: `python3.12` venv (`.venv-smoke/`, untracked,
 gitignored), `torch==2.5.1+cu124` (CPU execution). Code state: `main` HEAD
 `abfe2910` (== `claude/great-dirac-1kvmhx` at the time this run started),
-`code_dirty=false`.
+`code_dirty=false`. Run cap: `MAX_RUN_MINUTES=3` (`src/slm_training/levers.py`)
+derives `max_wall_minutes=2.5833333333333335` (see table below), which
+`train_model` enforces internally as its `stopped_on` wall-clock ceiling; this
+run stopped on `steps` (8/8) well inside that cap at 2.23s elapsed.
 
 ## Result
 
