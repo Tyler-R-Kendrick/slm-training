@@ -3,8 +3,8 @@ type: concept
 status: active
 tags: [recurrence, diagnostics, fixture]
 created: 2026-07-23
-updated: 2026-07-25
-linear: SLM-282, SLM-421
+updated: 2026-07-27
+linear: SLM-282, SLM-421, SLM-317, SLM-431
 design: docs/design/iter-slm282-recurrence-health-20260723.md, docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md
 sources: "[[deeploop-source]], [[training-free-looped-transformers-source]], https://arxiv.org/abs/2106.14342"
 ---
@@ -56,8 +56,31 @@ systematic property of the core.
 
 **Net effect on LAR3**: only one of the two PR #853-#856 reopening conditions
 is now met. LAR3 stays closed — the second condition (a passing SLM-317-style
-valid-state repair advancement screen) is untouched by this issue; SLM-317's
-own harness is not yet merged to `main`, so its powered rerun is a separate,
-not-yet-landable follow-up. No ship, checkpoint, or production-default claim
-follows from either record; residual_delta remains a fixture-only
-counterfactual, never a production default.
+valid-state repair advancement screen) is unresolved; see the SLM-431 blocker
+below. No ship, checkpoint, or production-default claim follows from either
+record; residual_delta remains a fixture-only counterfactual, never a
+production default.
+
+**SLM-431 (2026-07-27): harness landed; powered rerun BLOCKED by unmerged
+branch-only model dependencies (stop rule).** The SLM-317 harness
+(`src/slm_training/harnesses/experiments/slm317_repair_hybrid.py`),
+its runner (`scripts/run_slm317_repair_hybrid.py`), its tests, and the frozen
+`docs/design/iter-slm317-repair-hybrid-20260724.{md,json}` record were landed
+byte-identical from unmerged branch commit `48e5cadc`; the 20 original tests
+pass unmodified against main HEAD, and SLM-431 added the same additive,
+default-off `--min-pass-rate` Wilson power-rule surface SLM-421 added to
+`run_slm138_recursive_denoiser_fixture.py` (7 new deterministic helper
+tests). However the powered rerun itself **cannot execute on main**: the
+runner's improved/historical repair arms construct `TreeEditDiffusionConfig`
+with `value_label_mode` and `stop_slot_accounting` knobs that exist **only**
+in the branch's forked `tree_edit_diffusion.py` (unmerged SLM-305/308/310
+branch commits; main's model has neither the knobs nor the concepts under
+any name). Running the rerun would require porting those branch model
+changes — a behavior change the issue explicitly forbids. Per the issue's
+falsification/stop rule this is reported honestly and the rerun was **not**
+forced: no `iter-slm317-repair-hybrid-powered-rerun-*` artifact exists, no
+disposition (repair_positive / repair_negative / inconclusive_underpowered)
+was produced, and the second LAR3-reopening condition remains **unmet**. Next
+step: a decision issue on whether to land/port the SLM-305/308/310 model
+work (or re-express the historical/improved arms against main's model) before
+any powered rerun is attempted.
