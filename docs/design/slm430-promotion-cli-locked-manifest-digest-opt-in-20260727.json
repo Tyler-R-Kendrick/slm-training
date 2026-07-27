@@ -1,0 +1,74 @@
+{
+  "schema_version": "slm430_promotion_cli_locked_manifest_digest_opt_in/v1",
+  "run_id": "slm430_local_promotion_cli_locked_manifest_digest_opt_in_20260727",
+  "status": "completed",
+  "device": "local CPU",
+  "backend": "offline committed resources only; no network, no GPU",
+  "distinct_from": "SLM-306 (docs/design/slm306-locked-manifest-digest-verification.md) built the verify_locked_manifest_digest/load_locked_manifest_payload primitive and threaded locked_manifest_path through the library functions with a None default everywhere, including the real promotion entrypoints. SLM-430 wires an explicit, default-off opt-in into the three real entrypoints SLM-306 flagged as a follow-up (scripts/resume_climb.py, scripts/run_scaling_ladder.py, ModelBuildConfig.register_promoted via train_loop.py) so the check is reachable at all, without flipping any existing default.",
+  "canonical_manifest": {
+    "path": "src/slm_training/resources/data/eval/manifests/abstract_planning_locked_v1.jsonl",
+    "manifest_schema": "LockedPromotionManifestV1",
+    "recomputed_manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+    "rows": 286,
+    "note": "recomputed via load_locked_manifest_payload(canonical_manifest_path()); matches the digest SLM-306 recorded, confirming the committed manifest is still untampered"
+  },
+  "entrypoints_wired": [
+    {
+      "entrypoint": "train() / ModelBuildConfig.register_promoted",
+      "file": "src/slm_training/harnesses/model_build/train_loop.py",
+      "new_config_field": "ModelBuildConfig.verify_locked_manifest_digest (default False)",
+      "flag_absent_locked_manifest_path": null,
+      "flag_present_locked_manifest_path": "canonical_manifest_path()"
+    },
+    {
+      "entrypoint": "scripts/resume_climb.py::main",
+      "new_cli_flag": "--verify-locked-manifest-digest",
+      "flag_absent_locked_manifest_path": null,
+      "flag_present_locked_manifest_path": "canonical_manifest_path()"
+    },
+    {
+      "entrypoint": "scripts/run_scaling_ladder.py::main",
+      "new_cli_flag": "--verify-locked-manifest-digest",
+      "flag_absent_locked_manifest_path": null,
+      "flag_present_locked_manifest_path": "canonical_manifest_path()"
+    }
+  ],
+  "reproduction": {
+    "new_test_module": "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py",
+    "command": "python -m pytest tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py -q",
+    "result": "7 passed",
+    "tests": [
+      "test_verify_locked_manifest_digest_defaults_to_false",
+      "test_train_loop_omits_disk_check_by_default",
+      "test_train_loop_threads_canonical_path_when_flag_set",
+      "test_resume_climb_cli_omits_disk_check_by_default",
+      "test_resume_climb_cli_threads_canonical_path_when_flag_set",
+      "test_run_scaling_ladder_cli_threads_canonical_path_when_flag_set",
+      "test_run_scaling_ladder_cli_omits_disk_check_by_default"
+    ],
+    "method": "each test monkeypatches slm_training.harnesses.experiments.promotion.load_campaign_governance to capture its kwargs and raise a sentinel exception, asserting locked_manifest_path before any real training/RL/ladder work executes",
+    "regression_command": "python -m pytest tests/test_harnesses/experiments/test_ladder_promotion.py tests/test_autoresearch/test_experiment_campaign.py tests/test_scripts/test_publish_spectral_disposition.py -q",
+    "regression_result": "28 passed",
+    "unrelated_preexisting_failure": {
+      "test": "tests/test_harnesses/experiments/test_capacity_ladder.py::test_capacity_arms_match_on_everything_but_tokenizer",
+      "note": "fails identically with this change stashed out (git stash); a preexisting grammar_ltr_primary regression unrelated to SLM-430"
+    }
+  },
+  "honesty": {
+    "model_or_ship_claim": false,
+    "scope": "governance/gate CLI-wiring audit only -- no model quality, promotion, or training result is claimed here",
+    "backward_compatibility": "verify_locked_manifest_digest / --verify-locked-manifest-digest default to False/absent everywhere; every existing caller, script invocation, and test that never set them keeps its prior (self-consistency-only) behavior unchanged.",
+    "still_open": "Flipping the default to always supply canonical_manifest_path() (rather than requiring the flag) remains open, exactly as SLM-306 scoped it, pending a live end-to-end promotion run to validate against -- not available in this GPU-less sandbox."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4b3abb0ae88cc1da6d17c51b0eaeec0c86d51573",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v26",
+      "model.twotower": "v259",
+      "harness.experiments": "v137"
+    },
+    "stamped_at": "2026-07-27T00:00:00+00:00"
+  }
+}

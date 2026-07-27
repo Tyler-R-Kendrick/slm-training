@@ -199,6 +199,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     )
 
     campaign_governance = None
+    locked_manifest_path = None
     if bool(getattr(config, "register_promoted", False)):
         from slm_training.harnesses.experiments.promotion import (
             load_campaign_governance,
@@ -215,11 +216,16 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 "register_promoted requires campaign manifest, result, store root, "
                 "and artifact root"
             )
+        if bool(getattr(config, "verify_locked_manifest_digest", False)):
+            from slm_training.data.locked_eval_manifest import canonical_manifest_path
+
+            locked_manifest_path = canonical_manifest_path()
         campaign_governance = load_campaign_governance(
             manifest_path=config.campaign_manifest,
             result_path=config.campaign_result,
             store_root=config.campaign_store_root,
             artifact_root=config.campaign_artifact_root,
+            locked_manifest_path=locked_manifest_path,
         )
 
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
@@ -1217,6 +1223,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             campaign_result=result,
             campaign_store=store,
             artifact_root=artifact_root,
+            locked_manifest_path=locked_manifest_path,
         )
         source = ckpt_dir / "best_weighted_nll.pt"
         if not source.exists():
@@ -1231,6 +1238,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             campaign_result=result,
             campaign_store=store,
             artifact_root=artifact_root,
+            locked_manifest_path=locked_manifest_path,
             meta={
                 "step": step,
                 "best_weighted_nll": (
