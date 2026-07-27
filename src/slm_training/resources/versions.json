@@ -7941,6 +7941,21 @@
         }
       ]
     },
+    "harness.preference.replay_pairs": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/replay_pairs.py",
+        "tests/test_harnesses/preference/test_replay_pairs.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "initial registration; SLM-418 (DSH5-10) sixth slice: render OperatorReplayPreferenceRowV1 rows (both extract_replay_preference_rows turn-scan rows and extract_merge_preference_row's standalone MERGE_SUCCESS rows) into PreferencePair, the shape scripts/train_preference.py's build-pairs/train path consumes. No prior converter existed. Wiring only -- no training run, no held-out claim; see docs/design/dsh5-10-replay-preference-rows.md's sixth-slice note for the honesty scope and the still-open prompt-shape modeling question"
+        }
+      ]
+    },
     "harness.preference.remine_campaign": {
       "version": "v2",
       "kind": "harness",

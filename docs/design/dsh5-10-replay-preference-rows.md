@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (fifth increment).
+**Status:** partial slice, in progress (sixth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -13,13 +13,17 @@ SFT/preference training against four context-view baselines, and (4)
 held-out measurement of action/operator/argument/reference/branch accuracy,
 calibration, and CAP0/CAP1/CAP2 retention.
 
-This slice adds the seventh and final named pattern, **pronoun-focus-
-followup** (see "Fifth slice (v6)" below), bringing extraction coverage to
-7 of 7. All seven named patterns from the issue's own list now extract and
-replay-verify. What remains is the issue's separate, still fully unattempted
-training/measurement scope: SFT/preference training against the
-DSH3-selected policy/control heads, the four-baseline comparison, held-out
-benefit measurement, and turn-depth/context-view ablations.
+The fifth slice added the seventh and final named pattern, bringing
+extraction coverage to 7 of 7 (see "Fifth slice (v6)" below). This slice
+starts on the issue's remaining training/measurement scope: it adds the
+first (and, until now, entirely missing) converter from an extracted row to
+the `PreferencePair` shape `scripts/train_preference.py` actually consumes
+-- see "Sixth slice" below. It still does not run any training or measure
+any held-out benefit. What remains after this slice is: wiring the rendered
+pairs (or a purpose-built successor shape) into an actual training run
+against the DSH3-selected policy/control heads, the four-baseline
+comparison, held-out benefit measurement, and turn-depth/context-view
+ablations.
 
 ## What this PR delivers
 
@@ -288,10 +292,72 @@ training/evaluation work enumerated above.
   snapshot is untouched, staying immutable point-in-time evidence from
   before this slice landed.
 
+## Sixth slice
+
+* New module `src/slm_training/harnesses/preference/replay_pairs.py`:
+  `render_replay_preference_pair` renders one `OperatorReplayPreferenceRowV1`
+  into a `PreferencePair` (`prompt`/`chosen`/`rejected`, the shape
+  `scripts/train_preference.py`'s `build-pairs`/`train` path consumes), and
+  `render_replay_preference_pairs` batches a report's rows. Before this
+  slice **nothing in the repo converted a row into any trainable shape** --
+  confirmed by grepping the whole tree for `ReplayPreferenceRelation`,
+  `extract_replay_preference_rows`, and `extract_merge_preference_row`: only
+  the operators module itself, its own test file, the version-stamp
+  registry, and this doc referenced them.
+* **Never fabricates a state.** `chosen_output_state_id` is always an
+  already-materialized node by construction (true of every row every prior
+  slice has produced). The rejected side is resolved the same
+  replay-grounded way, with no shortcut:
+  * `undo` -> the input state's own parent (an existing node -- no
+    computation).
+  * `redo:<state_id>` / `checkout:<state_id>` -> that state is already
+    materialized; the id is read directly out of the action string.
+  * an operator action's serialized form (the `pronoun_focus_followup`
+    sibling case) -> recomputes the exact legal set at the input state
+    (`enumerate_operator_legal_set`, the identical call
+    `extract_replay_preference_rows` itself makes), matches the row's
+    `rejected_action` string against it, and actually applies it through
+    the pack-authorized `OperatorLibraryV1.apply` -- the same executor
+    every other application in this module goes through. This is a real,
+    independently-reproducible state, not a guess.
+  * `merge:<pair>` as a *rejected* action is deliberately left unrendered
+    (returns `None`). It cannot occur under today's single-merge-candidate
+    extraction (`extract_merge_preference_row` only ever offers one
+    `merge:<pair>` candidate, and it is always the *chosen* side of a
+    `MERGE_SUCCESS` row -- see `test_rejected_merge_action_is_never_rendered`
+    for the defensive-branch proof), but the renderer refuses to guess a
+    merged state instead of honestly declining if that ever changes.
+* **Two call shapes, one renderer.** Trace-turn-scan rows
+  (`extract_replay_preference_rows`) resolve nodes via
+  `resolve_node=trace.node` directly. `MERGE_SUCCESS` rows
+  (`extract_merge_preference_row`) never live on a shared
+  `ConversationTraceV1` -- `left`/`right` are independently-verified
+  `BranchEditV1` edges and `decision.continuation.merged_node` is a fresh
+  node -- so the new `merge_node_resolver(left, right, decision)` builds the
+  equivalent `NodeResolver` over exactly those nodes instead.
+* **Open, explicitly-flagged modeling choice:** the pair's `prompt` is set
+  to the input state's own DSL source (score chosen/rejected
+  *continuations* of the current AST against it). This is a first,
+  documented cut for compatibility with the existing generic TwoTower pair
+  format, not a validated training-objective decision -- the disposition's
+  own remaining-scope note names the DSH3-selected policy/control heads
+  (`typed_operator_policy.py`) as the actual training target, and whoever
+  wires a real training run should treat the prompt shape as open rather
+  than inherited from this slice.
+* **Still wiring only.** This slice adds the converter and its tests; it
+  does not build a pairs corpus from real conversation traces, does not run
+  `scripts/train_preference.py`, and makes no training or held-out-benefit
+  claim. `harness.preference.replay_pairs` registered fresh (`v1`, initial
+  registration) in `src/slm_training/resources/versions.json`; no existing
+  component's behavior changed (`dsl.operators.replay_preference` stays at
+  `v6` -- this slice only *consumes* its existing public API).
+
 ## Reproducibility
 
 ```bash
-NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
+NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_harnesses/preference/test_replay_pairs.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
 ```
 
-Result (this PR, real run in a fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gates the pack authority requires; the ambient `--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build both for `npm ci` and for `pytest`, unrelated to this change): `61 passed`. Also verified: `ruff check` clean on every changed file; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-v82ph9` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean.
+Result (fifth-slice PR, real run in a fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gates the pack authority requires; the ambient `--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build both for `npm ci` and for `pytest`, unrelated to this change): `61 passed`. Also verified: `ruff check` clean on every changed file; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-v82ph9` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean.
+
+Result (this PR, sixth slice, real run in a fresh `.venv-dsh510` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `env -u NODE_OPTIONS npm ci` in `src/apps/openui_bridge` -- the ambient `NODE_OPTIONS="--import tsx" --max-old-space-size=8192` is rejected outright by Node for both `npm ci` and `pytest` in this environment, so it has to be unset, not just locally overridden, unlike the fifth slice's note above): `69 passed` against `main` HEAD `5f94b92` (includes the fifth slice, already merged). Also verified: `ruff check` clean on both new files; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. No training run in this slice; `outputs/` untouched.
