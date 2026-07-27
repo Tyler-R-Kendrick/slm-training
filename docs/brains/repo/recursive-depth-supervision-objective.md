@@ -49,3 +49,13 @@ Supported as a correctness and compatibility contract by SLM-279. The next
 quality question is a bounded, explicitly labeled `intermediate_only` versus
 `all_depths` comparison on real held-out suites; no such winner is claimed by
 the fixture.
+
+**LAR3 gate state (2026-07-27):** rejected. SLM-421's recurrence-health
+condition passed, but SLM-434 (LAR0-07, PR #1122) ran the powered Wilson rerun
+of SLM-317's value gate and measured `repair_negative` decisively (0/5 seeds,
+Wilson 95% CI [0.000, 0.434] < 0.5; safety and reachability independently
+PASS). No recurrent core is authorized for real-scale training, so SLM-432
+(LAR4-06) was closed `blocked_lar3_rejected` — its comparison is the
+designated first consumer if LAR3 ever reopens. Named successor for the
+repair-value question: a corpus with genuine AR-invalid headroom (the SLM-155
+fixture had zero), then rerun.
