@@ -103,6 +103,14 @@ class OpenUIIncrementalEngine:
         # Used by probe_chunk to detect NAME/COMPONENT gluing that changes
         # an already-fed lexeme's identity without growing the token count.
         self._fed_tokens: list[tuple[str, str]] = []
+        # Absolute offset into ``self._prefix`` where the *last* fed token
+        # starts, or ``None`` when no token has been fed yet. Only that last
+        # token can still be "growing" as more text is appended (maximal
+        # munch settles every earlier token's boundary permanently); this
+        # lets ``_incremental_sync`` re-lex just ``prefix[offset:]`` instead
+        # of the whole prefix. See docs/design/
+        # decode-compiler-tree-incremental-lex-fix.md.
+        self._fed_last_token_start: int | None = None
         self._full_syncs = 0
         self._incremental_advances = 0
         self._copy_probes = 0
@@ -114,6 +122,7 @@ class OpenUIIncrementalEngine:
         self._ip = self._parser.parse_interactive()
         self._fed_token_count = 0
         self._fed_tokens = []
+        self._fed_last_token_start = None
         try:
             self._accepts = frozenset(str(x) for x in self._ip.accepts())
         except Exception:
@@ -161,6 +170,7 @@ class OpenUIIncrementalEngine:
         self._ip = self._parser.parse_interactive()
         self._fed_token_count = 0
         self._fed_tokens = []
+        self._fed_last_token_start = None
         tokens = self._lex_tokens(prefix)
         if tokens is None:
             self._accepts = frozenset()
@@ -176,23 +186,31 @@ class OpenUIIncrementalEngine:
             return False
         except UnexpectedEOF:
             self._fed_tokens = self._token_keys(tokens[: self._fed_token_count])
+        if self._fed_token_count > 0:
+            self._fed_last_token_start = tokens[self._fed_token_count - 1].start_pos
         self._refresh_accepts()
         return True
 
-    def _incremental_sync(self, prefix: str) -> bool:
-        """Extend an existing InteractiveParser when ``prefix`` grows monotonically."""
-        assert self._ip is not None
-        tokens = self._lex_tokens(prefix)
-        if tokens is None:
-            return self._full_sync(prefix)
-        keys = self._token_keys(tokens)
-        # Token count shrank OR an already-fed lexeme changed identity
-        # (NAME/COMPONENT gluing: "Te" → "Text") — must resync.
-        if len(tokens) < self._fed_token_count or keys[: self._fed_token_count] != self._fed_tokens:
-            return self._full_sync(prefix)
+    def _feed_delta_tokens(
+        self,
+        prefix: str,
+        delta: list,
+        keys: list[tuple[str, str]],
+        *,
+        base_offset: int,
+    ) -> bool:
+        """Feed newly-available ``delta`` tokens into ``self._ip`` and update
+        bookkeeping. ``keys`` is the full (merged) token-key list implied by
+        ``prefix``; ``delta`` holds the not-yet-fed ``Token`` objects, whose
+        ``.start_pos`` is relative to ``base_offset`` (0 for a from-scratch
+        lex of the whole prefix, or the safe suffix offset for a
+        suffix-only lex). Shared tail of ``_incremental_sync``'s two lex
+        strategies -- identical feed-loop/error-handling shape either way.
+        """
         prev_prefix = self._prefix
+        start_count = self._fed_token_count
         try:
-            for tok in tokens[self._fed_token_count :]:
+            for tok in delta:
                 self._ip.feed_token(tok)
                 self._fed_token_count += 1
             self._fed_tokens = keys[: self._fed_token_count]
@@ -202,10 +220,79 @@ class OpenUIIncrementalEngine:
             return self._full_sync(prev_prefix)
         except UnexpectedEOF:
             self._fed_tokens = keys[: self._fed_token_count]
+        n_fed = self._fed_token_count - start_count
+        if n_fed > 0:
+            self._fed_last_token_start = base_offset + delta[n_fed - 1].start_pos
         self._prefix = prefix
         self._incremental_advances += 1
         self._refresh_accepts()
         return True
+
+    def _incremental_sync(self, prefix: str) -> bool:
+        """Extend an existing InteractiveParser when ``prefix`` grows monotonically.
+
+        Fast path (``self._fed_token_count > 0`` and a known
+        ``self._fed_last_token_start``): only ``prefix`` from the start of
+        the *last already-fed token* onward is re-lexed, instead of the
+        whole prefix from position 0. This is safe because Lark's
+        ``BasicLexer`` is maximal-munch: a token that already ended at some
+        earlier position, because the lexer found the *next* token (or
+        ignored whitespace/EOF) right after it, can never retroactively
+        extend when characters are appended strictly after that point --
+        every character it could see was already present and unchanged.
+        Only the token that was still live at the *end* of the previously
+        lexed text (nothing yet proved it couldn't keep matching) can grow,
+        e.g. NAME "Te" -> "Text" once "xt" is appended. So we re-verify just
+        that one boundary token (by re-lexing from its start) plus whatever
+        new tokens follow it, and splice the result onto the untouched
+        prefix of already-fed token keys. On any lex failure, ambiguity, or
+        a changed boundary-token identity, this falls back to the exact
+        pre-existing full-prefix-relex path (``_full_sync`` or the
+        from-scratch branch below) -- never guesses. See docs/design/
+        decode-compiler-tree-incremental-lex-fix.md for the full argument
+        and its scope (this grammar's terminals contain no lookbehind/`\\b`
+        assertions, which the suffix-only lex would not see correctly).
+        """
+        assert self._ip is not None
+        if self._fed_token_count == 0 or self._fed_last_token_start is None:
+            # Nothing fed yet (or the boundary offset is unknown after a
+            # rare partial-feed-then-error edge case) -- no anchor to lex a
+            # safe suffix from. Same full-prefix lex this method always did
+            # pre-optimization; harmless since nothing fed means "prefix" is
+            # still short at this point in a session.
+            tokens = self._lex_tokens(prefix)
+            if tokens is None:
+                return self._full_sync(prefix)
+            keys = self._token_keys(tokens)
+            if (
+                len(tokens) < self._fed_token_count
+                or keys[: self._fed_token_count] != self._fed_tokens
+            ):
+                return self._full_sync(prefix)
+            return self._feed_delta_tokens(
+                prefix, tokens[self._fed_token_count :], keys, base_offset=0
+            )
+
+        safe_offset = self._fed_last_token_start
+        suffix_tokens = self._lex_tokens(prefix[safe_offset:])
+        if not suffix_tokens:
+            # Lex failure, or the boundary token's text didn't come back at
+            # all -- can't happen for a monotonically-growing prefix if our
+            # safety argument holds, but never guess: prove it via full lex.
+            return self._full_sync(prefix)
+        suffix_keys = self._token_keys(suffix_tokens)
+        boundary_idx = self._fed_token_count - 1
+        if suffix_keys[0] != self._fed_tokens[boundary_idx]:
+            # Boundary token's identity changed (still growing, e.g.
+            # NAME/COMPONENT gluing) -- an already-fed InteractiveParser
+            # token can't be patched in place; full resync.
+            return self._full_sync(prefix)
+        keys = self._fed_tokens[:boundary_idx] + suffix_keys
+        if len(keys) < self._fed_token_count:
+            return self._full_sync(prefix)
+        return self._feed_delta_tokens(
+            prefix, suffix_tokens[1:], keys, base_offset=safe_offset
+        )
 
     def _sync(self, prefix: str) -> bool:
         t0 = time.perf_counter()

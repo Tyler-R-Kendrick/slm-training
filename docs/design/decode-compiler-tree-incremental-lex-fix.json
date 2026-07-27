@@ -1,0 +1,161 @@
+{
+  "finding": "compiler_tree_incremental_lex_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "Apply next_steps item 2 from decode-compiler-tree-lexer-cache-fix.json: make _incremental_sync genuinely incremental at the lex layer (re-lex only newly appended text on the common path) instead of re-lexing the full prefix through the cached lexer every call; prove I3/I6 (next_terminals()/accepts() and build_completion_forest coverage/n_paths) byte-identical at every step, not just the final one.",
+  "change": {
+    "file": "src/slm_training/dsl/grammar/fastpath/engine.py",
+    "summary": [
+      "New self._fed_last_token_start: int | None -- absolute offset into self._prefix where the last already-fed token starts; None before anything is fed. Reset in reset().",
+      "_full_sync now also records self._fed_last_token_start = tokens[fed_token_count-1].start_pos after a successful feed.",
+      "New shared helper _feed_delta_tokens(prefix, delta, keys, *, base_offset): factored feed-loop (same UnexpectedToken/UnexpectedEOF handling as before) that also updates self._fed_last_token_start from whichever delta token was last fed, at base_offset + tok.start_pos.",
+      "_incremental_sync: when self._fed_token_count > 0 and self._fed_last_token_start is not None, re-lex only prefix[safe_offset:] (the last fed token plus newly appended text) instead of the whole prefix. Compares the suffix's first token against the previously-fed boundary token; if unchanged, splices self._fed_tokens[:boundary_idx] onto the freshly-lexed suffix keys and feeds only the new tokens. Falls back to the exact pre-existing _full_sync(prefix) path on any lex failure, empty suffix-lex result, or a changed boundary-token identity (token still growing, e.g. NAME/COMPONENT gluing) -- never guesses.",
+      "No change to _full_sync/_sync external contract, probe_chunk (explicitly out of scope), or any grammar/terminal definition."
+    ],
+    "why_safe": "Lark's BasicLexer is maximal-munch: a token that already ended before an unchanged character is permanently settled and cannot be reopened by appending text strictly after it -- only the LAST fed token (still live at end-of-string when it was lexed) can grow. self._fed_last_token_start anchors exactly that one uncertain token; re-lexing prefix[start:] re-derives it (and anything after it) exactly as a full relex would. Verified directly (not assumed): Token.start_pos/end_pos are populated by BasicLexer.next_token unconditionally, independent of propagate_positions (which only controls parse-tree metadata, a different Lark option) -- confirmed by reading lark/lexer.py and by direct .venv-diag REPL check. Also verified no terminal in openui.lark uses a lookbehind/\\b-style regex assertion, which matters because LexerThread.from_text(lexer, suffix) lexes suffix as a fresh string (no left-context view into the original prefix)."
+  },
+  "reproduction": {
+    "method": "self-contained before/after via a monkeypatched _incremental_sync reproducing the exact pre-fix method body (no git stash needed for the perf/I3-I6 comparison itself); git stash used separately to sanity-check the new unit tests are not vacuous and to confirm regression-sweep failures are pre-existing",
+    "env_setup": [
+      "python3.12 -m venv .venv-diag",
+      ".venv-diag/bin/pip install --quiet -e .",
+      ".venv-diag/bin/pip install --quiet \"pytest>=8.0,<9\" \"pytest-asyncio>=0.23,<2\" \"ruff>=0.9,<0.16\"",
+      ".venv-diag/bin/pip install --quiet \"torch>=2.2,<2.6\" --index-url https://download.pytorch.org/whl/cpu",
+      "cd src/apps/openui_bridge && env -u NODE_OPTIONS npm ci --silent"
+    ],
+    "tokenizer": "DSLNativeTokenizer.build()",
+    "long_program": "543-char, 10-line, multi-statement valid OpenUI DSL program driven one character at a time through set_prefix -- long enough to show the O(n) vs O(n^2) relex-cost gap; the finding's own 4 prefixes (15-17 chars) are too short.",
+    "finding_prefixes": {
+      "prefix8": "root = Card([b1 (PR #1171 dead_end_trace position 8)",
+      "prefix9": "root = Card([b1, (PR #1171 dead_end_trace position 9)"
+    },
+    "call_kwargs": {"remaining_tokens": 24, "max_path_tokens": 8, "min_content": 0},
+    "sandbox_note": "NODE_OPTIONS unset for the same pre-existing sandbox reason PR #1173 documented; unrelated to this fix.",
+    "scripts_not_committed": ["before_after_incremental.py", "scaling_check.py", "diag_fullsync.py", "diag2.py", "forest_bench.py"]
+  },
+  "measured_long_growing_prefix": {
+    "prefix_len_chars": 543,
+    "before_forced_full_relex": {"chars_lexed": 147696, "wall_s": 0.406},
+    "after_suffix_lex": {"chars_lexed": 49777, "wall_s": 0.159},
+    "chars_lexed_reduction_x": 2.97,
+    "wall_time_speedup_x": 2.56,
+    "next_terminals_mismatches_across_543_steps": 0
+  },
+  "measured_finding_prefixes_build_completion_forest": [
+    {
+      "label": "prefix8",
+      "before_wall_s": 0.5474,
+      "after_wall_s": 0.3668,
+      "speedup_x": 1.49,
+      "before_chars_lexed": 65230,
+      "after_chars_lexed": 44876,
+      "chars_ratio_x": 1.45,
+      "before_n_paths": 2,
+      "after_n_paths": 2,
+      "before_coverage": "complete",
+      "after_coverage": "complete",
+      "lex_calls_before": 1558,
+      "lex_calls_after": 1558
+    },
+    {
+      "label": "prefix9",
+      "before_wall_s": 5.8577,
+      "after_wall_s": 5.3739,
+      "speedup_x": 1.09,
+      "before_chars_lexed": 1014590,
+      "after_chars_lexed": 697043,
+      "chars_ratio_x": 1.46,
+      "before_n_paths": 12,
+      "after_n_paths": 12,
+      "before_coverage": "complete",
+      "after_coverage": "complete",
+      "lex_calls_before": 23546,
+      "lex_calls_after": 23546,
+      "note": "lex-call count unchanged (this fix reduces chars-per-call, not call count); modest wall speedup explained in the doc's 'Why the build_completion_forest speedup is modest' section -- short absolute branch lengths (max_path_tokens<=8) plus an unavoidable per-candidate full-lex cost this fix does not touch."
+    }
+  ],
+  "decode_invariant_check": {
+    "claim": "I3/I6: a caching/perf change must never become a legality change",
+    "result": "next_terminals() identical at every one of 543 steps in the long-growing-prefix drive (not just the final step); build_completion_forest coverage/n_paths identical before vs after on prefix8 (2) and prefix9 (12), matching PR #1173's recorded values",
+    "verified": true
+  },
+  "known_limitation": {
+    "growing_boundary_token": "When the last-fed token itself keeps growing one character/byte at a time (e.g. advance('T'), advance('Te'), advance('Tex'), ... -- the DSL tokenizer's byte/char literal-content fallback channel, B: tokens), every such call still triggers a full _full_sync, identical cost to pre-fix. Not a regression (this is exactly what _incremental_sync already did for this case), but this fix provides no benefit there. The grammar-vocabulary path (whole COMPONENT/NAME/keyword pieces per advance() call, which is what build_completion_forest's witness search and _forward_binder_component_requirements predominantly exercise) is where this fix's benefit concentrates. See next_steps item 1 for the properly-scoped follow-up."
+  },
+  "unit_test": {
+    "file": "tests/test_dsl/test_grammar_fastpath_incremental_lex.py",
+    "committed": true,
+    "n_tests": 7,
+    "tests": [
+      "test_fed_last_token_start_tracks_last_fed_token_offset",
+      "test_incremental_sync_relexes_fewer_characters_than_full_relex_baseline",
+      "test_incremental_sync_matches_forced_full_relex_at_every_step",
+      "test_build_completion_forest_unchanged_with_suffix_lex[root = Card([b1-2]",
+      "test_build_completion_forest_unchanged_with_suffix_lex[root = Card([b1,-12]",
+      "test_suffix_lex_speedup_floor_on_long_growing_prefix",
+      "test_growing_boundary_token_falls_back_to_full_relex_and_stays_correct"
+    ],
+    "result_after_fix": "7 passed in ~14s",
+    "result_before_fix_sanity_check": "6/7 fail with AttributeError (new _feed_delta_tokens/_fed_last_token_start API does not exist pre-fix, via git stash push/pop on engine.py only); test_growing_boundary_token_falls_back_to_full_relex_and_stays_correct passes both before and after (asserts the fallback path's pre-existing correctness invariant, not this fix's optimization) -- confirms the tests are not vacuous"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath_lexer_cache.py",
+      "result": "6 passed, unaffected"
+    },
+    {
+      "suite": "tests/test_dsl/{test_pack,test_speculative_rank,test_exact_forced_horizon,test_lattice_search,test_solver_state,test_packs,test_solver_decode}.py",
+      "result": "102 passed, 3 failed",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_speculative_rank.py::test_committed_table_matches_its_builder",
+        "test_speculative_rank.py::test_committed_table_ranks_real_branch_points_confidently",
+        "test_packs.py::test_pack_fixture_loop_generate_train_eval"
+      ]
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath.py -k \"lexer or force or completion_forest or engine or pick_constrained\"",
+      "result": "24 passed, 1 failed, 18 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_grammar_fastpath.py::test_completion_forest_admits_null_for_optional_string_after_slots_exhaust"
+      ]
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_lexer_smoke,test_dsl_tokenizer}.py",
+      "result": "27 passed, 1 failed, 1 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_lexer_smoke.py::test_surface_identifier_arm_is_prohibited"
+      ]
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_grammar_hf,test_v4_levers,test_a3_coverage_remask,test_template_fill,test_v6_remask}.py",
+      "result": "30 passed, 1 failed, 2 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_v4_levers.py::test_generate_batch_requests_consumes_harness_slot_contract"
+      ],
+      "note": "PR #1173 could not confirm this one in isolation within the run cap (killed at 150s); this session's isolated rerun completed in 38.81s against unmodified engine.py and reproduced the identical failure, closing that open caveat."
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "2 changed file(s), 0 component(s) touched -- fastpath/engine.py is still not a registered path in any versions.json component; no bump required",
+    "repo_policy": "ok (tracked + untracked)",
+    "git_diff_check": "clean"
+  },
+  "interpretation": "Closes next_steps item 2 from decode-compiler-tree-lexer-cache-fix.json. The suffix-only relex is correct (I3/I6 proven at every step of a long incremental drive and at the build_completion_forest decode-output layer) and measurably reduces lex work: 2.97x fewer characters lexed / up to 2.56x wall time on a long growing prefix; 1.45-1.46x fewer characters / 1.09-1.49x wall time on the finding's own short prefixes. The gap between the two results is explained (short absolute branch lengths bounded by max_path_tokens<=8, plus a large unavoidable per-candidate full-lex cost this fix does not touch), not hidden.",
+  "scope_note": "No train/eval run, no checkpoint, no --ship-gates scoreboard -- same tier as the rest of this PR chain. Does not help the growing-boundary-token case (see known_limitation). Slicing prefix[safe_offset:] into a fresh string relies on this grammar's terminals having no lookbehind/\\b assertions -- verified true today, not enforced by a runtime check. probe_chunk is untouched (out of scope per task).",
+  "next_steps": [
+    "Close the growing-boundary-token gap: maintain a pre-boundary InteractiveParser checkpoint (self._ip.copy(), the same primitive probe_chunk already uses) taken before each token is fed, so a boundary-token identity change can restore-and-refeed instead of a full _full_sync. Larger, riskier change (adds .copy() to the hot feed path, more edge cases around UnexpectedToken/UnexpectedEOF mid-restore) -- deserves its own finding/fix pair.",
+    "Re-measure against the full per-record compiler_ms telemetry / the exposure12 quality-champion eval protocol now that both the lexer-object cache (PR #1173) and this suffix-lex change are in place.",
+    "If a future terminal is added to openui.lark using a lookbehind/\\b assertion, revisit the suffix-slicing safety argument before relying on it remaining correct."
+  ],
+  "cleanup_note": ".venv-diag and src/apps/openui_bridge/node_modules/ created for this session are not committed (both gitignored); scratch benchmark/diagnostic scripts live under the session scratchpad, not the repo.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6d85924c5629ae55543ec79f4efac631be3b24ea",
+    "code_dirty": true,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: src/slm_training/dsl/grammar/fastpath/engine.py is not a registered path of any component in src/slm_training/resources/versions.json, so no bump is required for this change."
+  },
+  "captured_at": "2026-07-27T22:46:44Z"
+}
