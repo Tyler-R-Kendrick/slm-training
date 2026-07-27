@@ -620,7 +620,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
@@ -1000,7 +1000,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally — public behavior and every test_operator_merge.py test are unchanged"
+          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally \u2014 public behavior and every test_operator_merge.py test are unchanged"
         },
         {
           "version": "v1",
@@ -1274,7 +1274,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-05: initial atomic multi-action operator transaction executor — independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
+          "note": "DSH5-05: initial atomic multi-action operator transaction executor \u2014 independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
         }
       ]
     },
@@ -1290,7 +1290,7 @@
         {
           "version": "v3",
           "date": "2026-07-25",
-          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all — previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
+          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all \u2014 previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
         },
         {
           "version": "v2",
@@ -1300,7 +1300,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts \u2014 one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
         }
       ]
     },
@@ -1901,7 +1901,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -2589,7 +2589,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v139",
+      "version": "v140",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2602,6 +2602,11 @@
       ],
       "history": [
         {
+          "version": "v140",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10): final disposition doc pair added (own component harness.experiments.slm418_dsh5_10_disposition v1); no file under harness.experiments's watched paths changed. Falsification close: no held-out benefit at fixture scale, event DAG retained for runtime/evaluation only."
+        },
+        {
           "version": "v139",
           "date": "2026-07-27",
           "note": "SLM-434 (LAR0-07): add src/slm_training/harnesses/experiments/slm308_distance_oracle.py (ported from unmerged branch commit ae5448c5; own component harness.experiments.slm308_distance_oracle v1) and run the SLM-431-preregistered powered SLM-317 rerun now that the repair-arm model knobs exist on main."
@@ -2609,7 +2614,7 @@
         {
           "version": "v138",
           "date": "2026-07-27",
-          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes — the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2."
+          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes \u2014 the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2."
         },
         {
           "version": "v137",
@@ -3274,7 +3279,7 @@
         {
           "version": "v31",
           "date": "2026-07-20",
-          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         },
         {
           "version": "v30",
@@ -3314,7 +3319,7 @@
         {
           "version": "v24",
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         },
         {
           "version": "v23",
@@ -3374,7 +3379,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -3495,7 +3500,7 @@
         {
           "version": "v1",
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
@@ -4080,7 +4085,7 @@
         {
           "version": "sde5-03-v1",
           "date": "2026-07-21",
-          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness"
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan \u00d7 grammar-mass \u00d7 high-debt exposure floor-escape matrix wiring/fixture harness"
         }
       ]
     },
@@ -4558,7 +4563,7 @@
         {
           "version": "v1",
           "date": "2026-07-20",
-          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         }
       ]
     },
@@ -5617,7 +5622,7 @@
         {
           "version": "v4",
           "date": "2026-07-25",
-          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy — exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy \u2014 exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
         },
         {
           "version": "v4",
@@ -8292,7 +8297,7 @@
         {
           "version": "v19",
           "date": "2026-07-25",
-          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified — the new module is versioned under harness.experiments.slm379_operator_frames v1"
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified \u2014 the new module is versioned under harness.experiments.slm379_operator_frames v1"
         },
         {
           "version": "v19",
@@ -11027,6 +11032,21 @@
           "version": "v1",
           "date": "2026-07-27",
           "note": "SLM-434 (LAR0-07): port the SLM-308 bounded distance oracle (EXACT/BOUNDED/UNKNOWN cost-to-go over SLM-299 canonical fingerprints, training-time only, never reachable from decode) from unmerged branch commit ae5448c5 onto main's evolved edit space (SLM-425 N_ACTIONS=12 / SLM-426 pack-owned actions); dependencies (_canonical_key/_check_invariants/_enumerate_children/_normalize_inventory) verified signature-compatible with main's slm299_edit_reachability."
+        }
+      ]
+    },
+    "harness.experiments.slm418_dsh5_10_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "docs/design/iter-slm418-dsh5-10-disposition-20260727.json",
+        "docs/design/iter-slm418-dsh5-10-disposition-20260727.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10): final issue-level disposition. Publishes OperatorEventMemoryReportV1-style final report + disposition invoking the issue's own falsification/stop rule: fixture-scale ablation (8 sessions, 40 rows, 25 context-view x turn-depth cells) showed no held-out benefit over the current_state_only baseline (ceiling 1.0 everywhere), so the conversation event DAG is retained for runtime/evaluation only and no preference training complexity is added. Successor conditions (real argument-bound corpus build showing benefit over derived_only baselines, per the VAR3-04/05 pattern) are recorded for re-opening."
         }
       ]
     }
