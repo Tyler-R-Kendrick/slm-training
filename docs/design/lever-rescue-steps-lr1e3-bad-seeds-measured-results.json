@@ -1,0 +1,30 @@
+{
+  "seed42": {
+    "s30": {
+      "steps": 21,
+      "parse": 0.33,
+      "empty": 2
+    },
+    "s36": {
+      "steps": 27,
+      "parse": 1.0,
+      "empty": 0,
+      "reward": 0.765,
+      "lat": 4191
+    }
+  },
+  "seed51": {
+    "s30": {
+      "steps": 25,
+      "parse": 0.67,
+      "empty": 1
+    },
+    "s36": {
+      "steps": 31,
+      "parse": 0.0,
+      "empty": 3
+    }
+  },
+  "not_ship": true,
+  "captured_at": "2026-07-27T15:29:56.170599+00:00"
+}
