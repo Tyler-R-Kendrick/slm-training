@@ -1917,7 +1917,7 @@
       ]
     },
     "features.openfeature": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
@@ -1927,6 +1927,7 @@
         "src/slm_training/web/observability.py",
         "src/slm_training/web/app.py",
         "src/slm_training/web/routes.py",
+        "tests/test_web/test_promotion_evaluate_locked_manifest_digest.py",
         "src/apps/dashboard/src/features/keys.ts",
         "src/apps/dashboard/src/features/runtime.ts",
         "src/apps/dashboard/src/interpret/library.tsx",
@@ -1937,6 +1938,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-27",
+          "note": "SLM-431: PromotionEvalRequest gains verify_locked_manifest_digest (default False); when set, POST /api/promotion/evaluate threads locked_eval_manifest.canonical_manifest_path() through to validate_result_claim as locked_manifest_path, closing the one remaining reachable caller of the SLM-306 digest primitive that SLM-430 (wiring the three CLI/train entrypoints) left untouched. Default False preserves prior self-consistency-only behavior for every existing caller."
+        },
         {
           "version": "v9",
           "date": "2026-07-24",
