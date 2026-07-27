@@ -1,0 +1,222 @@
+{
+  "version": "e1281_text_form_input_required_direct_natural_v1",
+  "kind": "train",
+  "profile": "strict",
+  "source": "programspec",
+  "records": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/stats.json",
+  "quality_report": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/quality_report.json",
+  "rejected": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/rejected.jsonl",
+  "synthesis_feedback": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/synthesis_feedback.json",
+  "record_count": 8,
+  "ids": [
+    "program_0cf566867241c2ff",
+    "program_1e720308f05e5c8c",
+    "program_30e4b417e8c2b00d",
+    "program_51b9572fe527f686",
+    "program_7433930eaf3e98bf",
+    "program_8784d949f0c43e53",
+    "program_b516a85f56d12db1",
+    "program_d9a4ae3525c0c850"
+  ],
+  "split_group_ids": [
+    "group_3cfb2c8dab7d",
+    "group_6142a0bb55ab",
+    "group_8b7a77125491",
+    "group_d6badcebcecf",
+    "group_ea395e084d97",
+    "group_f79116925029",
+    "group_fc4d42dc91f4"
+  ],
+  "prompt_fingerprints": [
+    "17761fa2fe34ceec0afc20f8da6c4b0b8ad680a7d18b4263f7bd5b63753e7ee4",
+    "3c5a912dc319f6d58d3c252364ae10b426e71ea481fbb4bedf51a33b24e497ef",
+    "9fc5d08ce49078c9a3ce3e3d0540be8e8dc42e747d0d9f048e2aace158dd8b78",
+    "ae3cee3873a594c67355b7efba185ea5431207b103070581d655779033e455cf",
+    "b3bb97577071a94c38655b19d2b42a16c676d8034f221b782abe7662c079fd6e",
+    "c2d50444c7cc7c0b91fd3c5d01ca9af08609eefafcc32f075fee0b318d85aad6",
+    "c841749eb33ebc611842a93ce5580c059b58e25e0a5af4bccd1630a5aea26ec2",
+    "dbf6bf6132618a35a895b6c9db47c92ff98d95acaee801efc51549876fc2e414"
+  ],
+  "openui_fingerprints": [
+    "06bf752e5e2469ce0cbf96fc2e802c51fac7573312eb2eb704e07af764e79bb4",
+    "2656af9b5f51d36ec9faf5c6f3be08960b0a25dcf78f500b4d4e30cb41754afe",
+    "4c5b21739569b19d908c844145e0f3bd7e667d6852335989a37b612169cd1bf6",
+    "5c560d1fa27059afd401e4b1d8a945215570e085f0fc9a84221925df62c97d94",
+    "9ff6a293287d5b2ab76be4fe1989642e24af04aefa1adaebc99c9d4510fb5716",
+    "a1805f43d703d946c8d60cc332e7c8bb888d3afacda2f2d32a355fac1aa7c4b3",
+    "b7bd9350ef883c1a44bc91c42e069359368ee5ea98fa2d3ce8a1e72c6ee59916",
+    "efef86e6f0d0116ae0e972b306eb3bcb4b108849117c6aa459f2332aa7baec09"
+  ],
+  "structure_fingerprints": [
+    "0766333049737f5fca7a6503c4860e81e21389c41a7c1a0e50a8c20a32ab1018",
+    "67b41539f2b1f91216db6cd5d39c72b32b0ddc6e379d549af4b638669d91675d",
+    "77e56eba8bc1429e03c1085fa2be2aa8109b7b12b552581bf0c8e1f3fc8479c5",
+    "8ad70f210535ae2a088b1967b67769596202d14352eb5b54d22c4331fd5866e8",
+    "978970bff91a7856210325144546520534c0605ff556f75cba9c61132517518e",
+    "abf5eee74693c8d2591ab36379b987dc5522a3ef6540d62139b819e40a4a3ffb",
+    "d76c581b164add447c8957dc7eeb839884cf476e4439de964ace2c5cb1308d0d",
+    "fea8ec391f26fb294e12faa09a6589606f972a6051dec3977f1f4ead20b88c14"
+  ],
+  "pair_fingerprints": [
+    "1c56fcd86462ef337ecdc31ad5cc07e1427d29388116b9cf97424dc03d0a4e07",
+    "1e987ddac50fb41d28b69c97711d3c92578d97ae535c71beba0245bb90b07e2c",
+    "371e0f204d67b870f7d43c75435b2abc05730e8c6a94c9fdf2e506f0118227a9",
+    "8748a8e9a0d263c4fea6b0e500307f39fe900f7a6237408476990c3ee772c480",
+    "f7bff4d6f37b9f85321ac481a5749d9f856a21049e8dc3f50f73d90c4b33712f",
+    "f936ae02493500d6dc35fa8b00d2d1e9e93cda0382487452840b1fbc6deb03c9",
+    "fa7b964fbdafb13e67357a33e0646dcd02c4a7ddb48bf00be8c8ad4c9ed6c1e9",
+    "ff053b4acd5db7379a1b5a3e1ea17b63fb7e060698e6142a729f7c4484122bb0"
+  ],
+  "design_md_fingerprints": [
+    "2087120b43ad0089246e3ba006644affbfd2623459253b3eaca0c0fd80583d60",
+    "26f7858cf62f01a439524a619dc0d1f549718bb6c27e2916fbec27d6fd69cf48",
+    "2dd51c87da1e8568fdca02cd67d2cd489b9c060aa5d59c03b7ce71329f1db1bb",
+    "43cf356c219d091b9a947ed0b1b4cfd992d23e4b62f849a55b7a5ba02955e811",
+    "734e85d31960e6e836852df2aa36858e2796a505a6c6e6e1e620b5b4f47a3768",
+    "7f2b35a2d3667b145ab8d2d093034bb0982ce287a36f4d73fd9b096b47f939ec",
+    "b3f9232ca96d0e886b6d5b4387c0879ba809f79528adf97436cf87833ea2ecf1",
+    "dc7b8e4db1f15f2cc4c56c7cf817a223363ec7b361baaef3483183e8f4cb9331"
+  ],
+  "content_fingerprint": "a550c0c2bfb76d49fc3b59a903d0524b4f8916f9ab8463715b0ef15495cde773",
+  "source_families": {
+    "families": {
+      "programspec_generated": {
+        "unique_records": 8,
+        "unique_root_parents": 8,
+        "prompt_chars": 956,
+        "target_chars": 992,
+        "target_tokens": 560,
+        "records_per_root_parent": {
+          "max": 1,
+          "p50": 1,
+          "p95": 1
+        }
+      }
+    },
+    "total_records": 8,
+    "unique_root_parents": 8,
+    "records_per_root_parent": {
+      "max": 1,
+      "p50": 1,
+      "p95": 1
+    },
+    "cluster_exposure": {
+      "unique_clusters": 8,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    }
+  },
+  "governance": {
+    "croissant.json": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/governance/dataset.spdx.json"
+  },
+  "mixture": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e1281_text_form_input_required_direct_natural_v1/synthesis_telemetry.jsonl",
+  "synthesis_telemetry_sha256": "93a5eff1db24b06e74f9d273c1144147b0e13b90b6c23f18b72bb9d801a3f648",
+  "diffusion_online": {
+    "policies": [
+      "uniform",
+      "contiguous",
+      "statement",
+      "ast_subtree",
+      "reference",
+      "edit_local",
+      "disjoint",
+      "all_mask",
+      "expansion",
+      "contraction",
+      "reorder",
+      "macro_substitution"
+    ],
+    "mask_min": 0.15,
+    "mask_max": 0.85,
+    "overallocate": 8,
+    "length_buckets": [
+      32,
+      64,
+      96,
+      128,
+      192,
+      256,
+      384,
+      512
+    ],
+    "max_length": null
+  },
+  "built_at": "2026-07-24T07:08:42.169168+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v29"
+    },
+    "stamped_at": "2026-07-24T07:08:42.190030+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e1281_text_form_input_required_direct_natural_v1",
+  "immutable": true,
+  "trace_id": "7bedc1712e33603cf3b28cadd7f6697a",
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "4c5db9027eb2f34398e211f4a7e3e83de4ae40ac9133453b216fafd97b03b420",
+      "size": 2544
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "b455efd19a7b64addfe3ad15279b0055b077858f41ce6fe2d15ccc5ea4859268",
+      "size": 434
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "336d8c28cbaf0f17fcee329d38ef75984ba46ef33c521ffaa1a39fdeee9eed48",
+      "size": 1046
+    },
+    {
+      "path": "governance/records.jsonl",
+      "sha256": "c9ebb0f067b01adca9360a47a799f85d9df955d316d486d1af368a05ffcc09e1",
+      "size": 57684
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "2e26762570b119d65bffeb494d00ae12fe706f834d78cf70f75a63b2305e2147",
+      "size": 3886
+    },
+    {
+      "path": "quality_report.json",
+      "sha256": "b7b5a91e65bd5be555d1dd8970c90c02c4360a3917fb609c0ab5d8186ca19212",
+      "size": 5744
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "260f809cc38cc688141f5705e6078ecc1bd5fccda86bd698a28d5d03ef099968",
+      "size": 60380
+    },
+    {
+      "path": "rejected.jsonl",
+      "sha256": "2fbb66a4e2b91d235db251251e535db847d0c6682c13651598e3a40825de1e96",
+      "size": 2552
+    },
+    {
+      "path": "stats.json",
+      "sha256": "be5830689ef2cd99bb1c51ef15f451cdec541fecd41648e419c33957723d448e",
+      "size": 10202
+    },
+    {
+      "path": "synthesis_feedback.json",
+      "sha256": "ad8173c60338a5548b5d01d68888da02b0c9cc5fd8754a36b4008623a1408619",
+      "size": 2016
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "93a5eff1db24b06e74f9d273c1144147b0e13b90b6c23f18b72bb9d801a3f648",
+      "size": 199
+    }
+  ]
+}

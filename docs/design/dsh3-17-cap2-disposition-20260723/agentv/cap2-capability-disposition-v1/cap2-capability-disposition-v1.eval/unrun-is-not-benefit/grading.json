@@ -1,20 +1,15 @@
 {
   "assertions": [
     {
-      "text": "Output is valid JSON",
+      "text": "unrun-is-not-benefit:domain_criterion",
       "passed": true,
-      "evidence": ""
-    },
-    {
-      "text": "openui-domain-gate",
-      "passed": true,
-      "evidence": ""
+      "evidence": "actual=True operator=eq expected=True"
     }
   ],
   "summary": {
-    "passed": 2,
+    "passed": 1,
     "failed": 0,
-    "total": 2,
+    "total": 1,
     "pass_rate": 1
   },
   "execution_metrics": {
@@ -24,35 +19,24 @@
   },
   "graders": [
     {
-      "name": "is-json",
-      "type": "is-json",
+      "name": "unrun-is-not-benefit:domain_criterion",
+      "type": "code-grader",
       "score": 1,
       "reasoning": "",
       "weight": 1,
       "verdict": "pass",
       "assertions": [
         {
-          "text": "Output is valid JSON",
-          "passed": true
-        }
-      ]
-    },
-    {
-      "name": "inline-assert-0",
-      "type": "inline-assert",
-      "score": 1,
-      "reasoning": "",
-      "weight": 1,
-      "verdict": "pass",
-      "assertions": [
-        {
-          "text": "openui-domain-gate",
-          "passed": true
+          "text": "unrun-is-not-benefit:domain_criterion",
+          "passed": true,
+          "evidence": "actual=True operator=eq expected=True"
         }
       ],
       "details": {
-        "claim": "cert_cap2_rejected_dsh4_closed",
-        "failures": []
+        "criterion_id": "unrun-is-not-benefit:domain_criterion",
+        "actual": true,
+        "operator": "eq",
+        "expected": true
       }
     }
   ]

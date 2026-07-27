@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     ship = payload["run"]["honest_ship_gates"]
-    payload["agentv"] = publish_agentv_evaluation(
+    payload["evaluation_artifacts"] = publish_agentv_evaluation(
         args.out.parent,
         name=f"openui-task-equivalence-{args.out.stem}",
         claim="fixture_prediction_evidence_not_ship",

@@ -1,0 +1,333 @@
+{
+  "arms": [
+    {
+      "arm_label": "A_control",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 0% seed 0",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=1.00 model_current=0.00 model_lagged=0.00",
+        "mixture zero reproduces legacy gold-only corruption exactly"
+      ],
+      "policy_origin_mixture": {
+        "gold": 1.0,
+        "model_current": 0.0,
+        "model_lagged": 0.0
+      },
+      "run_id": "slm300_fixture_A_control_s0",
+      "seed": 0,
+      "self_context_rate": 0.0,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "A_control",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 0% seed 1",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=1.00 model_current=0.00 model_lagged=0.00",
+        "mixture zero reproduces legacy gold-only corruption exactly"
+      ],
+      "policy_origin_mixture": {
+        "gold": 1.0,
+        "model_current": 0.0,
+        "model_lagged": 0.0
+      },
+      "run_id": "slm300_fixture_A_control_s1",
+      "seed": 1,
+      "self_context_rate": 0.0,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "A_control",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 0% seed 2",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=1.00 model_current=0.00 model_lagged=0.00",
+        "mixture zero reproduces legacy gold-only corruption exactly"
+      ],
+      "policy_origin_mixture": {
+        "gold": 1.0,
+        "model_current": 0.0,
+        "model_lagged": 0.0
+      },
+      "run_id": "slm300_fixture_A_control_s2",
+      "seed": 2,
+      "self_context_rate": 0.0,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC10",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 10% seed 0",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.90 model_current=0.05 model_lagged=0.05"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.9,
+        "model_current": 0.05,
+        "model_lagged": 0.05
+      },
+      "run_id": "slm300_fixture_SC10_s0",
+      "seed": 0,
+      "self_context_rate": 0.1,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC10",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 10% seed 1",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.90 model_current=0.05 model_lagged=0.05"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.9,
+        "model_current": 0.05,
+        "model_lagged": 0.05
+      },
+      "run_id": "slm300_fixture_SC10_s1",
+      "seed": 1,
+      "self_context_rate": 0.1,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC10",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 10% seed 2",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.90 model_current=0.05 model_lagged=0.05"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.9,
+        "model_current": 0.05,
+        "model_lagged": 0.05
+      },
+      "run_id": "slm300_fixture_SC10_s2",
+      "seed": 2,
+      "self_context_rate": 0.1,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC25",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 25% seed 0",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.75 model_current=0.12 model_lagged=0.12"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.75,
+        "model_current": 0.125,
+        "model_lagged": 0.125
+      },
+      "run_id": "slm300_fixture_SC25_s0",
+      "seed": 0,
+      "self_context_rate": 0.25,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC25",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 25% seed 1",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.75 model_current=0.12 model_lagged=0.12"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.75,
+        "model_current": 0.125,
+        "model_lagged": 0.125
+      },
+      "run_id": "slm300_fixture_SC25_s1",
+      "seed": 1,
+      "self_context_rate": 0.25,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC25",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 25% seed 2",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.75 model_current=0.12 model_lagged=0.12"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.75,
+        "model_current": 0.125,
+        "model_lagged": 0.125
+      },
+      "run_id": "slm300_fixture_SC25_s2",
+      "seed": 2,
+      "self_context_rate": 0.25,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC50",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 50% seed 0",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.50 model_current=0.25 model_lagged=0.25"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.5,
+        "model_current": 0.25,
+        "model_lagged": 0.25
+      },
+      "run_id": "slm300_fixture_SC50_s0",
+      "seed": 0,
+      "self_context_rate": 0.5,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC50",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 50% seed 1",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.50 model_current=0.25 model_lagged=0.25"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.5,
+        "model_current": 0.25,
+        "model_lagged": 0.25
+      },
+      "run_id": "slm300_fixture_SC50_s1",
+      "seed": 1,
+      "self_context_rate": 0.5,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    },
+    {
+      "arm_label": "SC50",
+      "binder_reference_recovery": null,
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "denoising_round_recovery": null,
+      "notes": [
+        "planned self-context rate 50% seed 2",
+        "fixture-only: no model trained",
+        "policy origin mixture: gold=0.50 model_current=0.25 model_lagged=0.25"
+      ],
+      "policy_origin_mixture": {
+        "gold": 0.5,
+        "model_current": 0.25,
+        "model_lagged": 0.25
+      },
+      "run_id": "slm300_fixture_SC50_s2",
+      "seed": 2,
+      "self_context_rate": 0.5,
+      "status": "fixture_planned",
+      "train_loss": null,
+      "validity_regression": null
+    }
+  ],
+  "curriculum_id": "self-context-scheduled-corruption",
+  "manifest": {
+    "base_recipe": {
+      "batch_size": 4,
+      "checkpoint_sync": false,
+      "context_backend": "hf_local_files_only",
+      "device": "cpu",
+      "eval_version": "remediated",
+      "learning_rate": 0.0003,
+      "max_wall_minutes": 3.0,
+      "seed": 0,
+      "steps": 32,
+      "train_version": "e218_schema_normalized_judge_v5"
+    },
+    "base_recipe_hash": "11a333490bd3913a8ed1c573d36d1e6c12a38b000253611f5de34ecd021b8e0d",
+    "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
+    "claim_class": "wiring",
+    "curriculum_id": "self-context-scheduled-corruption",
+    "falsifier": "Self-context mixture produces no paired strict-semantic recovery gain over the gold-only (rate=0) control, or any gain requires validity regression greater than 0.01 or more total tokens/updates than the matched control.",
+    "hypothesis": "Train-decode state mismatch (exposure bias) contributes to binding/reference recovery failures, and mixing verifier-aware, model-generated partial states into the corruption schedule at a moderate self-context rate improves recovery without validity regression or a hidden training-budget increase.",
+    "lagged_policy_share": 0.5,
+    "matrix_set": "self-context-exposure-bias",
+    "matrix_version": "ap015-v1",
+    "parent_checkpoint_uri": null,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "self_context_rates": [
+      0.0,
+      0.1,
+      0.25,
+      0.5
+    ],
+    "status": "not_run"
+  },
+  "matrix_set": "self-context-exposure-bias",
+  "matrix_version": "ap015-v1",
+  "run_id": "slm300_fixture",
+  "status": "fixture",
+  "version_stamp": {
+    "code_commit": "caa144b0524a758dbdefa3b8e70b563dc126e11a",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v106"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T08:43:03.262457+00:00"
+  }
+}

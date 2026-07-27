@@ -89,6 +89,21 @@ def test_untrained_model_generate_returns_none_or_fallback(tiny_config: SurfaceA
     assert value is None or constraint.is_complete(value)
 
 
+def test_surface_autoregressor_rejects_stochastic_generation(
+    tiny_config: SurfaceAutoregressorConfig,
+    vocab: SurfaceByteVocab,
+) -> None:
+    model = SurfaceAutoregressor(tiny_config)
+    prompt_ids = torch.tensor([vocab.bos_id], dtype=torch.long)
+    with pytest.raises(ValueError, match="stochastic surface generation"):
+        model.generate(
+            prompt_ids,
+            IdentifierConstraint(vocab),
+            temperature=0.7,
+            top_k=4,
+        )
+
+
 def test_tiny_fixture_overfit(tiny_config: SurfaceAutoregressorConfig, vocab: SurfaceByteVocab) -> None:
     model = SurfaceAutoregressor(tiny_config)
     # Use a single example so the tiny fixture model reliably overfits.

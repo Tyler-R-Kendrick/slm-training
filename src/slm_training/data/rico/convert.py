@@ -137,6 +137,7 @@ def screen_to_openui(
             name = f"{base}_{n}"
             n += 1
         child_ids.append(name)
+        structural_id = f"${idx}"
 
         if role in {"button", "nav"}:
             ph = f":{name}.label"
@@ -154,39 +155,42 @@ def screen_to_openui(
         elif role == "input":
             ph = f":{name}.placeholder"
             placeholders.append(ph)
-            lines.append(f'{name} = Input("{name}", "{ph}")')
+            lines.append(f'{name} = Input("{structural_id}", "{ph}")')
         elif role == "slider":
             ph = f":{name}.label"
             placeholders.append(ph)
             variant = generated_enum_literal("Slider", "variant")
             default_value = generated_value_literal("Slider", "defaultValue", "50")
             lines.append(
-                f'{name} = Slider("{name}", {variant}, 0, 100, 1, '
+                f'{name} = Slider("{structural_id}", {variant}, 0, 100, 1, '
                 f'{default_value}, "{ph}")'
             )
         elif role == "datepicker":
-            lines.append(f'{name} = DatePicker("{name}")')
+            lines.append(f'{name} = DatePicker("{structural_id}")')
         elif role == "checkbox":
             ph = f":{name}.label"
             desc = f":{name}.description"
             placeholders.extend([ph, desc])
-            lines.append(f'{name} = CheckBoxItem("{ph}", "{desc}", "{name}")')
+            lines.append(
+                f'{name} = CheckBoxItem("{ph}", "{desc}", "{structural_id}")'
+            )
         elif role == "radio":
             ph = f":{name}.label"
             desc = f":{name}.description"
             placeholders.extend([ph, desc])
-            lines.append(f'{name} = RadioItem("{ph}", "{desc}", "{name}")')
+            lines.append(f'{name} = RadioItem("{ph}", "{desc}", "{structural_id}")')
         elif role == "switch":
             ph = f":{name}.label"
             desc = f":{name}.description"
             placeholders.extend([ph, desc])
-            lines.append(f'{name} = SwitchItem("{ph}", "{desc}", "{name}")')
+            lines.append(
+                f'{name} = SwitchItem("{ph}", "{desc}", "{structural_id}")'
+            )
         elif role == "image":
             alt = f":{name}.alt"
             # ImageBlock src is an asset ref; keep placeholder-shaped path for policy.
-            src = f":assets.{name}"
-            placeholders.extend([src, alt])
-            lines.append(f'{name} = ImageBlock("{src}", "{alt}")')
+            placeholders.append(alt)
+            lines.append(f'{name} = ImageBlock("{structural_id}", "{alt}")')
         else:
             ph = f":{name}.text"
             placeholders.append(ph)

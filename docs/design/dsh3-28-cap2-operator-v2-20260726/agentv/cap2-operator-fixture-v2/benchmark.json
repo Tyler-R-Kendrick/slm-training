@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "eval_file": "output-dir:///agentv/cap2-operator-fixture-v2.eval.jsonl",
+    "timestamp": "2026-07-26T14:31:33.703Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "anti-cheat-constant_operator",
+      "anti-cheat-generic_valid_ast",
+      "anti-cheat-unchanged",
+      "frozen-suite-identity",
+      "oracle-replay",
+      "symbol-only-boundary"
+    ],
+    "experiment": "cap2-operator-fixture-v2"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "frozen-suite-identity:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "oracle-replay:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "anti-cheat-unchanged:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "anti-cheat-generic_valid_ast:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "anti-cheat-constant_operator:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "symbol-only-boundary:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": []
+}

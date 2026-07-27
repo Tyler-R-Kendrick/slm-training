@@ -1,0 +1,38 @@
+{
+  "schema": "slm389_dsh4_04_gate_closeout/v1",
+  "run_id": "dsh4_04_gate_closeout",
+  "issue": "SLM-389",
+  "matrix_set": "dsh4-selective-acquisition",
+  "matrix_version": "slm389-v1",
+  "status": "closeout",
+  "claim_class": "wiring",
+  "decision": "not_authorized",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "gates": {
+    "gate_dsh4_03": {
+      "issue": "SLM-388",
+      "required_outcome": "legal-action distillation (accepted-set mass, verifier-backed ranking, entropy/reliability-aware KD, +DEFER) demonstrates value over the nondistilled certified controller",
+      "observed_outcome": "no_go_defer -- neither verifier_ranking_kd nor verifier_ranking_kd_defer cleared the acceptance bar; both teacher-imitation arms (teacher_argmax, offline_conditional_kd) changed 100% of eligible decisions but were wrong 28/30 times; verifier_ranking_kd was prediction-identical to the baseline on every eligible decision and was correctly rejected rather than credited",
+      "evidence": "docs/design/dsh4-03-operator-verifier-kd-defer-fixture-20260725.json",
+      "passed": false
+    }
+  },
+  "failed_gates": [
+    "gate_dsh4_03"
+  ],
+  "reason": "DSH4-04's own Decision statement scopes the question to 'after legal-action distillation has demonstrated value' -- an explicit entry condition, not a general acquisition-policy question. SLM-388 (DSH4-03) is the only completed distillation experiment in this line and returned no_go_defer: no teacher-informed arm (teacher_argmax, offline_conditional_kd, verifier_ranking_kd, verifier_ranking_kd_defer) cleared its acceptance gates. The only arm that did improve held-out CAP2-proxy quality (hard_accepted_set) is a disjoint-trained hard-label frequency prior used as DSH4-03's reference control, not a distillation arm -- it does not establish that legal-action distillation (teacher- or verifier-informed supervision) has demonstrated value. Running DSH4-04's selective-acquisition comparison (uniform vs. student entropy vs. divergence vs. low accepted rank vs. verifier failure cone vs. high regret vs. hybrid, at equal teacher-query budget) would compare acquisition policies for a teacher signal that has not itself been shown worth acquiring. Per this repository's evidence-before-implementation contract, the DSH4-04 architecture is not authorized to build against an unmet entry condition.",
+  "downstream_effect": "DSH4-04 (SLM-389) stays closed pending a distillation line that clears DSH4-03-equivalent gates. No selective-acquisition policy, uniform-vs-selective comparator, or query-budget harness is implemented.",
+  "reopening_conditions": [
+    "a legal-action distillation experiment (DSH4-03 rerun with a non-synthetic/real teacher, or a successor issue) returns a `go` verdict with at least one teacher-informed arm (teacher_argmax, offline_conditional_kd, verifier_ranking_kd, or verifier_ranking_kd_defer) clearing every DSH4-03 acceptance gate: >=5% of eligible choices changed, correct changes exceed wrong changes, held-out CAP2-proxy (or the frozen dsh3-13 suite) improves across seeds, and the comparison is not prediction-identical-rejected"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f3f26330fb01f5a6318bb5596871d58c4f798f22",
+    "code_dirty": false,
+    "components": {
+      "harness.distill": "v5"
+    },
+    "stamped_at": "2026-07-25T16:00:38.823969+00:00"
+  }
+}

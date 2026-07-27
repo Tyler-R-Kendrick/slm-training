@@ -1632,19 +1632,42 @@ and legal-set identity but no edit intent, so the experiment does not add a
 hidden target channel to make the treatment pass. Evidence and scope:
 [`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md).
 
+## Hierarchical operator action head causal baseline (DSH3-15 / SLM-383)
+
+**Fidelity label: adapted repository experiment.** E803 rejected only the
+*decoder-visible* discrete-token hypothesis; per AGENTS.md IV.11 that left the
+encoder-side/masked scoring mechanism -- what the SLM-168 `DynamicPointerScorer`-based
+hierarchical head implements -- untested. This is the follow-up multi-seed
+causal-attribution experiment DSH3-15's own acceptance criteria require.
+
+| | |
+| --- | --- |
+| **Arms** | token baseline (decoder-visible), weight-zero (frozen no-op capacity control), enabled (trained) |
+| **Authority** | candidates drawn solely from a live, compiler-verified `OperatorLegalSetV1`; typed features from `ActionEffectV1` counts only, never opaque ids/display names |
+| **Corpus** | a small fixed vocabulary of candidate-group-size "shapes" recurring across independently-constructed fixture states, so gold depends only on a typed feature |
+| **Matched result** | enabled and token baseline both reach 1.000 operator accuracy (ceiling); weight-zero stays at 0.500 (tie-break); zero false legal admissions across all arms/seeds |
+| **Decision** | reject: the enabled head strictly beats its own weight-zero capacity control (it is trainable, not a dead architecture) but ties exactly with the token baseline, so it does not causally improve beyond it |
+
+Stage-1 (operator-kind) only; stage-2 (typed-argument) selection has no
+distinguishing typed-feature signal under the current hash-scalar candidate
+features (SLM-398's declared follow-up) and is out of scope here. Evidence and
+scope:
+[`dsh3-15-hierarchical-operator-head-baseline-20260725/summary.md`](dsh3-15-hierarchical-operator-head-baseline-20260725/summary.md).
+
 ## Terminal CAP2 capability disposition (DSH3-17 / SLM-385)
 
 **Fidelity label: repository evidence disposition.** This terminal ledger adds
 no paper-derived mechanism. It preserves the adapted evidence boundaries from
-DSH3-13 and E803 while preventing compiler correctness, unavailable evidence,
-or unrun conditional branches from being reported as learned capability.
+DSH3-13, E803, and SLM-383 while preventing compiler correctness, unavailable
+evidence, or unrun conditional branches from being reported as learned
+capability.
 
 | | |
 | --- | --- |
 | **Capabilities** | symbolic transform, NL transform, discrete-token action, hierarchical head, topology application, bounded merge, efficiency |
 | **Positive boundary** | no learned capability has implemented benefit; symbolic transform and bounded merge remain compiler contracts only |
-| **Negative boundary** | E803 rejects discrete-token action benefit; CAP1-dependent NL and exact-hardware efficiency evidence are unavailable |
-| **Unrun boundary** | hierarchical head and topology application remain explicit unrun conditionals after their prerequisite failed |
+| **Negative boundary** | E803 rejects discrete-token action benefit; SLM-383 rejects the hierarchical head (ties the token baseline); CAP1-dependent NL and exact-hardware efficiency evidence are unavailable |
+| **Unrun boundary** | topology application remains an explicit unrun conditional because no accepted hierarchical-head arm exists |
 | **Decision** | reject `CERT_CAP2`; close DSH4 action distillation; no checkpoint or ship claim |
 
 The disposition is machine-checkable, records exact evidence identities, and
@@ -1906,6 +1929,30 @@ The verdict is `needs_target_trace_contract`: this is research intake only.
 It authorizes a follow-up to define the OpenUI target-trace and control
 contract, but it authorizes no model, training, checkpoint, semantic-quality,
 latency, or adoption claim.
+
+## OpenUI target-trace contract (LOT0-02 / SLM-249)
+
+**Fidelity label: docs/spec + bounded probe, no model or training claim.**
+[`compiler-reasoning-trace-v1.md`](compiler-reasoning-trace-v1.md) (machine-readable:
+[`compiler-reasoning-trace-v1.json`](compiler-reasoning-trace-v1.json)) defines
+`CompilerReasoningTraceV1` and its typed step schema
+(`src/slm_training/data/progspec/compiler_reasoning_trace.py`), a deterministic
+extractor reusing `SemanticPlanV1` and the production codec's canonical statement
+order (`src/slm_training/data/semantic_plan/compiler_reasoning_trace_extract.py`,
+no new compiler/parser/evaluator), and a lossless visible serialization. A bounded
+n=16 fixture probe
+([`compiler-reasoning-trace-coverage/coverage_report.md`](compiler-reasoning-trace-coverage/coverage_report.md))
+gives a provisional K=6/c=479-char budget. The oracle ceiling experiment that would
+justify LOT1's actual K×c model implementation is fully specified (arms, matching
+rules, measurements) but deliberately **not run** — GPU training and corpus
+generation are out of scope for this issue per the LOT0-01 authorization. A
+`causal_latent_use` falsification test is defined (not run) in
+`src/slm_training/models/causal_trace.py`
+(`CausalLatentUseFalsificationSpecV1`), reusing the existing
+`replay_causal_action`/`capture_raw_steps` counterfactual-replay machinery.
+
+The gate verdict is `inconclusive`: it authorizes no semantic-quality,
+oracle-ceiling, or causal-latent-use claim, and no LOT1 model implementation.
 
 ## Honesty rules (for docs & claims)
 

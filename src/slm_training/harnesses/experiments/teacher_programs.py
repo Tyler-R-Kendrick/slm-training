@@ -426,12 +426,16 @@ def verify_teacher_generation_campaign_lock(
 ) -> str:
     """Return the pre-execution lock digest matching this generation manifest."""
     if not manifest.campaign_manifest_sha256:
-        raise ValueError("teacher generation requires a locked campaign manifest sha256")
+        raise ValueError(
+            "teacher generation requires a locked campaign manifest sha256"
+        )
     lock = archive.load_experiment_campaign(manifest.manifest_id)
     if lock.manifest.campaign_id != archive.campaign_id:
         raise ValueError("teacher generation campaign lock belongs to another archive")
     if lock.manifest_sha256 != manifest.campaign_manifest_sha256:
-        raise ValueError("teacher generation campaign lock digest does not match manifest")
+        raise ValueError(
+            "teacher generation campaign lock digest does not match manifest"
+        )
     return lock.manifest_sha256
 
 
@@ -521,9 +525,13 @@ class LocalTransformersTeacherTransport:
         dtype: str = "bfloat16",
     ) -> None:
         if not all((model, revision, system_prompt.strip())):
-            raise ValueError("local teacher requires pinned model, revision, and prompt")
+            raise ValueError(
+                "local teacher requires pinned model, revision, and prompt"
+            )
         if dtype not in {"float32", "float16", "bfloat16"}:
-            raise ValueError("local teacher dtype must be float32, float16, or bfloat16")
+            raise ValueError(
+                "local teacher dtype must be float32, float16, or bfloat16"
+            )
         self.model_id = model
         self.revision = revision
         self.system_prompt = system_prompt
@@ -665,6 +673,7 @@ class TeacherProgramCandidate:
     lineage_id: str
     split_group_id: str
     provenance_complete: bool
+    raw_artifact_sha256: str | None = None
     independent_judge_passed: bool | None = None
     judge_evidence: Mapping[str, Any] | None = None
     human_audit_passed: bool | None = None
@@ -673,6 +682,61 @@ class TeacherProgramCandidate:
     required_facts: tuple[str, ...] = ()
     forbidden_facts: tuple[str, ...] = ()
     facts: Mapping[str, Any] = field(default_factory=dict)
+
+
+def candidate_from_local_teacher_attempt(
+    attempt: Mapping[str, Any],
+    *,
+    candidate_id: str,
+    response_id: str,
+    prompt: str,
+    generator_family: str,
+    judge_family: str | None,
+    coverage_gap_ids: tuple[str, ...],
+    program_family_id: str,
+    lineage_id: str,
+    split_group_id: str,
+    raw_artifact_sha256: str,
+    judge_evidence: Mapping[str, Any] | None = None,
+    required_facts: tuple[str, ...] = (),
+) -> TeacherProgramCandidate:
+    """Normalize one immutable local attempt without inventing trust evidence."""
+    if len(raw_artifact_sha256) != 64 or any(
+        char not in "0123456789abcdef" for char in raw_artifact_sha256
+    ):
+        raise ValueError("raw_artifact_sha256 must be a lowercase sha256")
+    response = attempt.get("raw_response")
+    raw = response.get("raw") if isinstance(response, Mapping) else None
+    if not isinstance(raw, Mapping):
+        raise ValueError("local teacher attempt omitted raw response")
+    if (
+        raw.get("provider") != "local_transformers"
+        or raw.get("local_files_only") is not True
+    ):
+        raise ValueError("attempt is not an offline local teacher response")
+    text = raw.get("response_text")
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("local teacher attempt omitted response_text")
+    return TeacherProgramCandidate(
+        candidate_id=candidate_id,
+        request_id=str(attempt["request_id"]),
+        response_id=response_id,
+        prompt=prompt,
+        program_payloads=(text.strip(),),
+        provider="local_transformers",
+        model=str(raw["model"]),
+        revision=str(raw["revision"]),
+        generator_family=generator_family,
+        judge_family=judge_family,
+        coverage_gap_ids=coverage_gap_ids,
+        program_family_id=program_family_id,
+        lineage_id=lineage_id,
+        split_group_id=split_group_id,
+        provenance_complete=True,
+        raw_artifact_sha256=raw_artifact_sha256,
+        judge_evidence=judge_evidence,
+        required_facts=required_facts,
+    )
 
 
 @dataclass(frozen=True)
@@ -762,6 +826,11 @@ def _automatic_judge_passed(candidate: TeacherProgramCandidate) -> bool:
         raise ValueError(f"independent_judge_evidence_missing:{','.join(missing)}")
     if str(evidence["candidate_id"]) != candidate.candidate_id:
         raise ValueError("independent_judge_candidate_mismatch")
+    if (
+        candidate.raw_artifact_sha256 is not None
+        and evidence["raw_artifact_sha256"] != candidate.raw_artifact_sha256
+    ):
+        raise ValueError("independent_judge_raw_artifact_hash_mismatch")
     if str(evidence["provider"]) == candidate.provider:
         raise ValueError("independent_judge_provider_not_independent")
     if str(evidence["model_family"]) == candidate.generator_family:
@@ -832,6 +901,7 @@ def _admit_one(
                 "request_id": candidate.request_id,
                 "response_id": candidate.response_id,
                 "coverage_gap_ids": list(candidate.coverage_gap_ids),
+                "raw_artifact_sha256": candidate.raw_artifact_sha256,
             },
         )
     except (ValueError, TypeError) as exc:
@@ -848,6 +918,7 @@ def _admit_one(
             "provenance_complete": candidate.provenance_complete,
             "independent_judge_passed": judge_passed,
             "teacher_judge_evidence": dict(candidate.judge_evidence or {}),
+            "raw_artifact_sha256": candidate.raw_artifact_sha256,
             "human_audit_passed": candidate.human_audit_passed,
             "require_runtime": candidate.require_runtime,
             "require_behavior": candidate.require_behavior,

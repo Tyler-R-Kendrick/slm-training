@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e898-e897-typed-role-scratch600-r2",
+  "experiment_id": "E898",
+  "date": "2026-07-22",
+  "decision": "invalidate_both_attempts_use_focused_short_continuation",
+  "attempts": {
+    "r1": {
+      "run_id": "e898-e897-typed-role-scratch600-r1",
+      "status": "externally_interrupted",
+      "summary_emitted": false,
+      "checkpoint_emitted": false,
+      "valid_evidence": false
+    },
+    "r2": {
+      "run_id": "e898-e897-typed-role-scratch600-r2",
+      "status": "wall_time_budget",
+      "steps_requested": 600,
+      "steps_completed": 279,
+      "elapsed_wall_seconds": 95.0900894690003,
+      "last_loss": 4.477096080780029,
+      "device": "cpu",
+      "context_backend": "scratch",
+      "train_dir": "src/slm_training/resources/data/train/e897_e851_typed_role_supplement_v1",
+      "data_manifest_sha": "d1ad590287a79a7a35d190f6cc916575e2ea175f6a0fce48c4babde8ea79c832",
+      "checkpoint_sha256": "a1683be86d0452319126051a19d94f6ce602cd305f11dbb269a48ea328cf2161",
+      "checkpoint_sync": "disabled_local_scratch",
+      "valid_evidence": false,
+      "invalid_reason": "incomplete 279/600 steps; stopped on wall-time budget"
+    }
+  },
+  "agentv": {
+    "evaluated": false,
+    "passed": 0,
+    "total": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "both training attempts invalid and no evaluation ran"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d0801f46840e40803377458fb4b4a4269bf7703b",
+    "code_dirty": true,
+    "dirty_reason": "unrelated untracked SLM189 result files in shared worktree",
+    "components": {
+      "harness.model_build.train": "v22"
+    },
+    "stamped_at": "2026-07-22T21:44:59.510840+00:00"
+  }
+}

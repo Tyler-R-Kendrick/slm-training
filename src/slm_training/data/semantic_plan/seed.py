@@ -45,9 +45,6 @@ class PlanSeedBuilder:
             for slot in plan.role_slots
         }
 
-        symbol_role: dict[str, str] = {
-            sym.symbol_id: sym.semantic_role or "text" for sym in plan.symbols
-        }
         # Surface syntax uses request-local ordinals only.  Semantic roles remain
         # typed authority for choosing the component property; neither the caller's
         # symbol spelling nor the role name becomes a template-marker identity.
@@ -114,13 +111,10 @@ class PlanSeedBuilder:
                     args.append(child_stmt)
             content_symbol = info["content"]
             if content_symbol is not None:
-                prop = symbol_role.get(
-                    content_symbol, self._content_prop(family) or "text"
-                )
                 slot = symbol_slot.get(content_symbol)
                 if slot is None:
                     raise ValueError(f"unknown content symbol {content_symbol}")
-                args.append(f'":{slot}.{prop}"')
+                args.append(f'":{slot}"')
 
             if args:
                 expr = (
@@ -169,16 +163,3 @@ class PlanSeedBuilder:
             return SeedResult(seed=None, ok=False, reason=f"invalid seed: {exc}")
 
         return SeedResult(seed=seed_text, ok=True, reason=None)
-
-    @classmethod
-    def _content_prop(cls, family: str) -> str | None:
-        mapping = {
-            "TextContent": "text",
-            "Text": "text",
-            "TextField": "value",
-            "Button": "label",
-            "Label": "text",
-            "Title": "text",
-            "Image": "src",
-        }
-        return mapping.get(family)

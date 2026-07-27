@@ -1,11 +1,11 @@
 {
   "schema": "tokenizer-layout-registry/v1",
-  "namespace_registry_version": 1,
+  "namespace_registry_version": 2,
   "codecs": {
     "choice_codec": {
-      "version": 2,
-      "vocab_size": 717,
-      "layout_sha256": "df0a1a317757fc0692dfce70b08007e63f5de77e9a5b6862d1e5dbeb48804574",
+      "version": 3,
+      "vocab_size": 781,
+      "layout_sha256": "50d5ee9484c972a76f8e2d2d58129943380dcb5dbd28099a21795f1b25ce19c8",
       "special_ids": {
         "pad": 0,
         "bos": 1,
@@ -15,9 +15,9 @@
       }
     },
     "dsl_native": {
-      "version": 4,
-      "vocab_size": 505,
-      "layout_sha256": "5ce4a6f69b12024a9ea1c5ef4547659b0f9f7c058fc60c86e58fc1f19eeb559a",
+      "version": 5,
+      "vocab_size": 569,
+      "layout_sha256": "381a05d05d6fbe85366997286e9e36b7d3d89c9771efe7b24117a45534793a0a",
       "special_ids": {
         "pad": 0,
         "bos": 1,
@@ -26,5 +26,21 @@
         "unk": 4
       }
     }
-  }
+  },
+  "migration_notes": [
+    {
+      "date": "2026-07-25",
+      "codec": "choice_codec",
+      "from_version": 2,
+      "to_version": 3,
+      "note": "STRUCTURAL_ID_ATOMS ($0..$63) added to fixed string bodies so choice encode matches native/structural-id contract from main #920"
+    },
+    {
+      "date": "2026-07-25",
+      "codec": "dsl_native",
+      "from_version": 4,
+      "to_version": 5,
+      "note": "STRUCTURAL_ID_ATOMS folded into fixed string bodies (vocab 505->569); layout fingerprint refreshed after main #920"
+    }
+  ]
 }

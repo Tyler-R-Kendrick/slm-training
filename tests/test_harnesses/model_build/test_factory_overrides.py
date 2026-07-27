@@ -23,6 +23,32 @@ def test_none_decode_overrides_preserve_checkpoint_settings() -> None:
     assert model.config.grammar_ltr_repair is True
 
 
+def test_legacy_unsafe_checkpoint_flags_are_normalized_to_mandatory_policy() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(
+            grammar_constrained=False,
+            grammar_ltr_primary=False,
+            grammar_finalize_validate=False,
+            grammar_fastpath=False,
+            grammar_sample_decode=True,
+            grammar_uniform_at_unforced=True,
+            allow_unconstrained_fallback=True,
+        )
+    )
+    config = ModelBuildConfig(train_dir=Path("."))
+
+    apply_runtime_overrides(model, config)
+
+    assert model._declared_generation_policy["grammar_constrained"] is False
+    assert model.config.grammar_constrained is True
+    assert model.config.grammar_ltr_primary is True
+    assert model.config.grammar_finalize_validate is True
+    assert model.config.grammar_fastpath is True
+    assert model.config.grammar_sample_decode is False
+    assert model.config.grammar_uniform_at_unforced is False
+    assert model.config.allow_unconstrained_fallback is False
+
+
 def test_compiler_decode_mode_activates_primary_ltr_path() -> None:
     model = SimpleNamespace(
         config=SimpleNamespace(

@@ -52,6 +52,31 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 [adversarial-review.md](design/adversarial-review.md),
 [quality-experiment-matrix.md](design/quality-experiment-matrix.md).
 
+## Capability ladder position (decode invariant I10)
+
+Every checkpoint in this card is claimed **at a rung**, and a rung is never
+credited by a lower rung's evidence. Goal law:
+[decode-invariants.md](design/decode-invariants.md).
+
+| Rung | Status | Note |
+| --- | --- | --- |
+| 1. AST → AST | built | tree-edit diffusion + edit corpora |
+| 2. grammar → AST | built | prompt→AST corpus |
+| 3. grammar+ops → AST | built | `harnesses/train_data/operator_corpus.py` |
+| 4. simplified-NL → AST | thin | frozen frontier families L3–L5, tiny inventory — the bridge to rung 5 |
+| 5. complex NL → AST | **unbuilt** | fail-closed `nl_available=False` / `CERT_CAP1_unavailable` |
+
+Every checkpoint below is a rung-1–3 artifact. No row in this card claims rung 4
+or 5. Rung 5 is *unbuilt*, not abandoned: its successor approach is building out
+the simplified-NL inventory as the bridge, tracked in
+[decode-invariants.md § I10](design/decode-invariants.md).
+
+Serving-side decode contract for every promoted checkpoint: grammar-constrained
+end to end, `allow_unconstrained_fallback=False`, deterministic singleton bypass
+on, and fail-closed certification in every backend (torch and ONNX). A
+checkpoint evaluated under a `weakens_constraint` lever is diagnostic evidence,
+never a ship claim.
+
 ---
 
 ## Current checkpoint roster
@@ -65,6 +90,10 @@ scratch baseline.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| SLM-313 AbstractPlan local checkpoint | `slm313_local_plan_1k_v2` | CPU scratch Choice TwoTower with predicted-plan head and learned connector conditioning; 8 canonical direct-natural rows | `outputs/runs/slm313_local_plan_1k_v2/checkpoints/last.pt` (local, explicit no-sync) | 9 steps / 1,006 target tokens / 24.70s, SHA `66bd535f…b3868ce4`; full locked 226-record × 9-arm × 3-path matrix (6,102 rows) has meaning-v2/binder-F1 CI `[0,0]` versus every destructive control—**ignored_or_collapsed, not promotable, reusable, or ship** ([SLM-313 evidence](design/abstract-plan-functional-evidence.md)) |
+| SLM-322 AP-027 Pareto screening checkpoint | `slm322_ap027_scratch_v1` | CPU scratch TwoTower, connector-free (no AbstractPlanConnector attached); trained only so `run_discrete_plan_pareto.py` could load a symbol_only/v2-compatible checkpoint (the committed `playground_demo` checkpoint predates the current output contract and no longer loads) | `outputs/runs/slm322_ap027_scratch_v1/checkpoints/last.pt` (local, explicit no-sync) | 8 steps, SHA `62ddcc77…92f39167`; 1-seed screening decode at refinement rounds 1-2 only (rounds 4/8 and every arm needing a trained connector/binder-precision channel/retrieval index are pending)—**claim_class: wiring, ship_eligible: false, not promotable or reusable** ([SLM-322 evidence](design/discrete-plan-pareto.md)) |
+| E1211 seed-7 topology-dose control | `e1211_v273_e937_batch4_seed7_lr1e4_binder_topology_quarter` | CPU scratch role-safe lexer topology-loss dose control | `outputs/runs/e1211_v273_e937_batch4_seed7_lr1e4_binder_topology_quarter/checkpoints/last.pt` (local) | 395 × 4 draws, SHA `8c969406...4ebf11`; E1212 strict held `n=5` exactly matches E1182/E1200 (parse/meaning .4, strict-v2 .2, fidelity .28, structure .2852, recall .3333, reward .3388, 3 timeouts, zero fallback) — **neutral/rejected; never sync/promote/serve/use as parent** ([results](design/iter-e1211-e1214-seed7-topology-slot-component-20260725.md)) |
+| SLM-298 local factorial diagnostics | `d32/d64-scratch-{trainable,frozen}-{flat,complexity_ordered}-s*` | CPU scratch symbol-only lexer, 520 strict rows, 5,000-token matched budget | `outputs/runs/slm298_local_factorial*/cells/` (local, explicit no-sync) | 20/24 bounded locked `n=1` cells completed with AgentV; constrained syntax 1.0, strict meaningful/binder F1 0.0 in every completed cell. Four d32 seed-2 cells repeatedly exceeded the immutable cap and are non-evidence. **Rejected, not promotable or ship** ([results](design/iter-slm298-capacity-context-curriculum-20260725.md)) |
 | SLM-287 five-seed locked baseline | `slm287-trained-local-v13-20260725` | Ten CPU float32 scratch Choice TwoTower cells (five seeds × design off/on); 97-record strict `slm230_symbol_only_v1`, 5,000-token budget | `outputs/runs/slm287-trained-local-v13-20260725/trained_cells/` (local, explicit no-sync) | Full locked local 226-record sweep with AgentV per shard: meaning-v2/binder F1 0 in all raw/constrained/repaired variants; absolute-probability MDE 0.0200. **Diagnostic, rejected for promotion and not ship** ([results](design/iter-slm287-locked-power-protocol-20260724.md)) |
 | SLM-294 tiny ceiling baseline | `slm294_tiny_baseline` | CPU scratch output-contract-v2 lexer baseline (600 steps via capped chunked resume, final loss 1.5187) | `outputs/runs/slm294_tiny_baseline/checkpoints/last.pt` (local) | Trained within the run cap for the SLM-294 external-ceiling campaign, but constrained decode is infeasible on rico-scale layouts under the cap (>280s/16 tokens); campaign disposition `inconclusive` — **diagnostic, not promotable or ship** ([results](design/iter-slm294-external-ceiling-20260724.md)) |
 | SLM-230 bounded recurrence diagnostic | `slm230_bounded_recursive_r4_r2` | CPU scratch symbol-only shared-recursive R=4 diagnostic | `outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt` (local) | 4 steps / 1.70s, SHA `1604b2cb…8b28a`; held-out depth 1→4 CE improves, but accuracy/parse/structure/reward stay 0.0 (`stagnant`). SLM-231 finds exact product top `4.7243` / FTLE `0.3882` (`expansive_unstable`); SLM-232 finds z0 rank `2.1054` but rank `0.0` after context/position removal and vacuous bounded ablations (`unstable`). The RSC4 disposition remains blocked—no latent checkpoint is promoted or synced ([RSC4](design/recurrent-semantic-computation-looped-latent-disposition.md)) — **explicit no-sync, rejected, not ship** ([observability](design/iter-slm230-recurrence-observability-20260724.md), [dynamics](design/iter-slm231-recurrence-dynamics-20260724.md), [latent state](design/iter-slm232-latent-state-use-20260724.md)) |

@@ -133,8 +133,12 @@ def test_fingerprints_cover_all_factors(
         "exact",
         "archetype",
         "role_set",
+        "component_family",
+        "cardinality",
+        "symbol_role",
         "topology",
         "bindings",
+        "coverage",
     }
     for value in fingerprints.values():
         assert len(value) == 64  # SHA-256 hex length

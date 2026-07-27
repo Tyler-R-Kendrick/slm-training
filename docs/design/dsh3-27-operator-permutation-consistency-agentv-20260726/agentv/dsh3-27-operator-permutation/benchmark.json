@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/dsh3-27-operator-permutation.eval.jsonl",
+    "timestamp": "2026-07-26T10:10:55.686Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "unaugmented_typed_policy_is_invariant"
+    ],
+    "experiment": "dsh3-27-operator-permutation"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "stop_rule_negative:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2a814f089866a5bde2297ae889751cee1757c83c",
+    "code_dirty": true,
+    "components": {
+      "model.operator_permutation_consistency": "v1"
+    },
+    "stamped_at": "2026-07-26T10:10:53.009929+00:00"
+  }
+}

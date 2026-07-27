@@ -92,6 +92,7 @@ def test_local_probes_and_regression_propose() -> None:
 
 def test_default_mix_and_probes_cover_new_families() -> None:
     base = default_base_weights()
+    assert "namespace_augment" not in base
     assert set(NEW_FAMILIES) <= set(base)
     assert set(KNOWN_FAMILIES) <= set(base)
     probes = local_probe_candidates(base, task_weights=DEFAULT_TASK_WEIGHTS)
@@ -181,6 +182,23 @@ def test_capacity_aware_sampling_is_deterministic_and_cycles() -> None:
     assert [record.id for record in first] == [record.id for record in second]
     assert len({record.id for record in first[:3]}) == 3
     assert len({record.id for record in first[3:6]}) == 3
+
+
+def test_capacity_aware_sampling_uses_one_random_key_per_record() -> None:
+    class KeyOnlyRandom(random.Random):
+        def choices(self, *args: object, **kwargs: object) -> list[object]:
+            raise AssertionError("capacity-aware sampling must not rebuild choices per draw")
+
+    records = [_rec(f"r{i}", "rico_real") for i in range(8)]
+    batch = sample_mixture_batch(
+        records,
+        weights={"rico_real": 1.0},
+        batch_size=8,
+        rng=KeyOnlyRandom(4),
+        sampling_policy="capacity_aware",
+    )
+
+    assert len({record.id for record in batch}) == 8
 
 
 def test_quota_capacity_aware_sampling_preserves_task_allocation() -> None:
@@ -508,7 +526,7 @@ def test_exposure_targeted_increases_rare_action_exposure() -> None:
         ExampleRecord(
             id=f"rare_{i}",
             prompt=f"r{i}",
-            openui='root = Map(":x")',
+            openui="root = Map()",
             meta={"source_family": "fixture"},
         )
         for i in range(3)

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e885-e879-v52-policy-atomic-smoke-n3-r1",
+  "experiment_id": "E879-E885",
+  "date": "2026-07-22",
+  "decision": "retain_vocab_union_and_atomic_policy_keep_e877_research_only",
+  "warm_start": {
+    "run_id": "e879-e852-e872-vocab-union-zero-r1",
+    "status": "completed_diagnostic",
+    "steps": 0,
+    "elapsed_wall_seconds": 1.5219859179924242,
+    "initialized_weight_rms_drift": 0.0,
+    "tensor_count": 131,
+    "changed_tensor_count": 0,
+    "parent_context_vocab_size": 712,
+    "current_filtered_context_vocab_size": 634,
+    "union_context_vocab_size": 712,
+    "checkpoint_sha256": "76cd2dc28b921cd9de3efff29e2b07ebf8df453abbca31559f95368525b09819",
+    "full_state_sha256": "82a1c842ae524ebdcb58128be22a33efc59e1f5593b77f49af8779010cf7faba",
+    "checkpoint_sync": "disabled_local_scratch"
+  },
+  "invalid_runs": [
+    {
+      "run_id": "e880-e879-v51-smoke-n3-r1",
+      "reason": "unmatched_ast_plan_weights_0_and_0"
+    }
+  ],
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "structural_similarity": 0.7633333333333333,
+      "component_type_recall": 0.75,
+      "reward_score": 0.949,
+      "decode_timeout_count": 0
+    },
+    "held_out": {
+      "n": 3,
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity_normalized": 0.5714285714285715,
+      "structural_similarity": 0.41606666666666664,
+      "component_type_recall": 0.4761904761904762,
+      "reward_score": 0.6041,
+      "decode_timeout_count": 1
+    }
+  },
+  "comparisons": {
+    "smoke": {
+      "control_run_id": "e885-e879-v52-policy-atomic-smoke-n3-r1",
+      "candidate_run_id": "e882-e877-v51-plan4-margin2-smoke-n3-r1",
+      "control": {"parse_rate": 1.0, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 1.0, "placeholder_fidelity_normalized": 1.0, "structural_similarity": 0.6589, "component_type_recall": 0.75, "reward_score": 0.949, "decode_timeout_count": 0}
+    },
+    "held_out": {
+      "control_run_id": "e883-e852-v51-plan4-margin2-heldout-n3-r1",
+      "candidate_run_id": "e884-e877-v51-plan4-margin2-heldout-n3-r1",
+      "control": {"parse_rate": 0.3333333333333333, "meaningful_program_rate": 0.3333333333333333, "binding_aware_meaningful_v2_rate_strict": 0.3333333333333333, "placeholder_fidelity_normalized": 0.3333333333333333, "structural_similarity": 0.14166666666666666, "component_type_recall": 0.3333333333333333, "reward_score": 0.3203333333333333, "decode_timeout_count": 2}
+    }
+  },
+  "agentv": {"passed": 0, "total": 4, "failed": 4, "execution_errors": 0},
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "evaluation_policy": "strict_compiler_tree",
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "diagnostic_subset": true,
+    "decode_timeout_seconds": 12.0,
+    "max_wall_minutes": 1.5833333333333333,
+    "checkpoint_sync": "disabled_local_scratch",
+    "remote_workflow": false
+  },
+  "completion_contract": "grammar/AST symbols plus canonical opaque :slot_N markers only",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "913ec43150ac6650e051574d6fab957dd97e993b",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v26",
+      "harness.model_build.eval": "v51",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v236"
+    },
+    "stamped_at": "2026-07-22T20:47:53.989430+00:00"
+  }
+}

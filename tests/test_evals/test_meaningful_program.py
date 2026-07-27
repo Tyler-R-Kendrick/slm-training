@@ -53,6 +53,27 @@ def test_unknown_prompt_contract_never_scores_positive() -> None:
     assert any(check.status is CheckStatus.UNKNOWN for check in report.checks)
 
 
+def test_compact_prompt_equivalent_can_pass_v2_but_fail_gold_relative_v1() -> None:
+    prediction = 'root = Button(":cta.label")'
+    record = ExampleRecord(
+        id="compact-equivalent",
+        prompt="Build a Button. Placeholders: :cta.label",
+        openui=(
+            "root = Card([button, copy])\n"
+            'button = Button(":cta.label")\n'
+            'copy = TextContent("Reference-only decoration")'
+        ),
+        placeholders=[":cta.label"],
+    )
+
+    report = binding_aware_meaningful_v2(prediction, record=record)
+    assert report.verdict is True
+
+    ok, reason, _ = meaningful_program_v1(prediction, gold=record)
+    assert ok is False
+    assert reason == "low_component_recall:0.33"
+
+
 def test_free_form_output_string_fails_both_meaningfulness_metrics() -> None:
     source = 'root = Button(":cta.label", "submit")'
     record = ExampleRecord(
@@ -234,11 +255,11 @@ def test_v2_recognizes_singular_prose_for_plural_schema_component() -> None:
     assert "free_form_output_string" in report.reason_codes
 
 
-def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
+def test_v2_rejects_duplicate_overview_slot_across_opaque_tab_ids() -> None:
     source = (
         'overview = TextContent(":tabs.overview")\n'
-        'one = TabItem("one", ":tabs.tab1", [overview])\n'
-        'two = TabItem("two", ":tabs.tab2", [overview])\n'
+        'one = TabItem("$0", ":tabs.tab1", [overview])\n'
+        'two = TabItem("$1", ":tabs.tab2", [overview])\n'
         'root = Tabs([one, two])'
     )
     report = binding_aware_meaningful_v2(
@@ -254,7 +275,7 @@ def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
     )
 
     assert report.verdict is False
-    assert "free_form_output_string" in report.reason_codes
+    assert "duplicate_placeholder_identity" in report.reason_codes
 
 
 def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:

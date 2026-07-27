@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "run_id": "dsh4-01-20260725-fixture",
+  "run_class": "fixture_demo",
+  "linear_issue": "SLM-386",
+  "issue_slug": "DSH4-01",
+  "blocked_by": "SLM-385",
+  "suites": {
+    "fixture": {
+      "gold_trace_legal_actions": 1,
+      "gold_trace_coverage": "complete",
+      "on_policy_trace_legal_actions": 1,
+      "on_policy_trace_coverage": "complete",
+      "trajectory_steps": 2,
+      "trajectory_verified_against_original_registry": true,
+      "trajectory_steps_replayed_verified": 2,
+      "trajectory_verified_against_drifted_registry": false,
+      "trajectory_steps_replayed_drifted": 1,
+      "first_divergence_step_index": 1,
+      "first_divergence_code": "operator.replay.application_identity_mismatch",
+      "export_succeeded_with_verified_trajectory": true,
+      "export_blocked_by_stop_rule_on_drifted_registry": true
+    }
+  },
+  "recipe": {
+    "pack_id": "openui",
+    "fixture_operator_id": "openui.dsh4_01_fixture",
+    "gold_state_source": "root = TextContent(\":hero.title\")",
+    "trajectory": [
+      "hero.title -> hero.body (state0 -> state1, captured GOLD)",
+      "hero.body -> hero.subtitle (state1 -> state2, captured ON_POLICY)"
+    ],
+    "reused_contracts": [
+      "slm_training.dsl.operators.legal_set.enumerate_operator_legal_set (DSH3-06)",
+      "slm_training.dsl.operators.legal_set.OperatorLegalSetV1 (DSH3-06)",
+      "slm_training.dsl.operators.references.ReferenceTableV1 (DSH3-03)",
+      "slm_training.dsl.operators.registry.OperatorStateV1 / OperatorLibraryV1.replay (DSH3-02)",
+      "slm_training.dsl.operators.contracts.ApplicationProvenanceV1 / ActionEffectV1",
+      "slm_training.harnesses.distill.legal_set_teacher_trace.TeacherTraceManifest (SPV2-03)",
+      "slm_training.evals.solver_state_supervision.SupervisionSource (EFS3-01)"
+    ],
+    "added_fields": [
+      "OperatorDecisionStateTraceV1.supervision_source",
+      "OperatorDecisionStateTraceV1.accepted_application_ids",
+      "OperatorDecisionStateTraceV1.current_scores",
+      "OperatorDecisionStateTraceV1.approximate",
+      "OperatorDecisionStateTraceV1.capture_stage"
+    ]
+  },
+  "claim_class": "wiring",
+  "status": "wiring_only",
+  "disposition": "fixture_wiring",
+  "honest_verdict": "fixture_wiring",
+  "note": "Wiring-only fixture demonstration over a small deterministic compiler operator. No external teacher model, checkpoint, or ship-gate claim is made. Demonstrates that an accepted trajectory replays to a canonical verified result against the original registry, and that export_for_teacher_query fails closed (stop rule) when the registry drifts between recording and replay-time verification.",
+  "manifest_id": "manifest-dsh4-01-fixture-0",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "86212e9ab2338bb9cf5ab135e85e3d3d4e7d21b5",
+    "code_dirty": true,
+    "components": {
+      "harness.distill": "v3"
+    },
+    "stamped_at": "2026-07-25T10:45:21.277846+00:00"
+  }
+}

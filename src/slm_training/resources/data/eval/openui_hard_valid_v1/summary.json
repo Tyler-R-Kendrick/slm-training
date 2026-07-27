@@ -1,0 +1,82 @@
+{
+  "builder_version": "2.0.0",
+  "dataset_id": "openui_hard_valid_v1",
+  "seed": 0,
+  "source_count": 210,
+  "pairs": 1206,
+  "records": 2412,
+  "rejected": 617,
+  "mutation_classes": [
+    "binding_swap_symbol",
+    "binding_swap_symbol_reverse",
+    "content_invert_role",
+    "content_swap_family",
+    "contract_archetype_mismatch"
+  ],
+  "runtime_required": true,
+  "scoreboard": [
+    {
+      "family": "binding",
+      "n_total": 366,
+      "n_admitted": 366,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 2.248633879781421,
+      "top_reasons": [
+        "required_placeholder_missing",
+        "duplicate_placeholder_identity",
+        "placeholder_semantic_role_mismatch"
+      ]
+    },
+    {
+      "family": "content",
+      "n_total": 420,
+      "n_admitted": 420,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 1.430952380952381,
+      "top_reasons": [
+        "required_placeholder_missing",
+        "placeholder_semantic_role_mismatch",
+        "prompt_component_missing",
+        "required_component_missing",
+        "mechanical_inventory_coverage"
+      ]
+    },
+    {
+      "family": "contract",
+      "n_total": 210,
+      "n_admitted": 210,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 1.0,
+      "top_reasons": [
+        "required_placeholder_missing"
+      ]
+    },
+    {
+      "family": "positive",
+      "n_total": 1416,
+      "n_admitted": 1206,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 1.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 0.0,
+      "top_reasons": []
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d77dfa08a76e6b7030f039bd1c36fd93fdc0a62b",
+    "code_dirty": true,
+    "components": {
+      "data.semantic_contrast": "v2",
+      "evals.meaningful_program": "2.13.0"
+    },
+    "stamped_at": "2026-07-25T05:15:51.730197+00:00"
+  },
+  "runtime_shards": 29
+}

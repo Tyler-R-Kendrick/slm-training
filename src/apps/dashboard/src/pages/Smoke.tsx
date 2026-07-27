@@ -102,8 +102,8 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "id", label: "experiment" },
-            { key: "parse", label: metricLabel(gate.lever), align: "right", digits: 2, help: "Headline smoke lever from the ship-gate policy. * = legacy board where parse_rate stood in for meaningful." },
-            { key: "fidelity", label: "fidelity", align: "right", digits: 2, help: "Placeholder fidelity against the expected target." },
+            { key: "parse", label: metricLabel(gate.lever), align: "right", digits: 2, help: "Headline smoke lever from the ship-gate policy. Meaningful v1 includes a gold component-recall floor; strict semantic v2 is reported separately pending calibration. * = legacy board where parse_rate stood in for meaningful." },
+            { key: "fidelity", label: "slot fidelity", align: "right", digits: 2, help: "Coverage of the authoritative placeholder contract; this is not whole-program resemblance." },
             { key: "reward", label: "reward", align: "right", digits: 2, help: "Aggregate smoke reward; higher is better." },
             { key: "gate", label: gate.label },
           ]}

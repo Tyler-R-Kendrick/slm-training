@@ -7,6 +7,7 @@ import json
 import random
 import re
 from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -25,16 +26,17 @@ from slm_training.data.semantic_contrast.schema import (
 )
 from slm_training.data.semantic_contrast.transforms import generate_transforms
 from slm_training.data.semantic_plan.extract import OpenUISemanticPlanExtractor
+from slm_training.data.semantic_plan.canonicalize import plan_factor_fingerprints
 from slm_training.data.semantic_plan.seed import PlanSeedBuilder
 from slm_training.data.store import DataStore, write_common_manifest
-from slm_training.data.verify import VerificationContext, verify_record
+from slm_training.data.verify import VerificationContext, run_preview_verifier_many, verify_record
 from slm_training.dsl.pack import get_pack
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.meaningful_program import binding_aware_meaningful_v2
 from slm_training.harness_core.versioning import build_version_stamp
 
 
-BUILDER_VERSION = "1.0.0"
+BUILDER_VERSION = "2.0.0"
 PROGRAM_FAMILY = "semantic_contrast"
 
 
@@ -159,6 +161,11 @@ class SemanticContrastBuilder:
         splits: tuple[CorpusSplit, ...] = ("train", "test"),
         split_weights: tuple[float, ...] = (0.8, 0.2),
         honesty_mode: str = "production",
+        require_runtime: bool = False,
+        min_pairs: int = 0,
+        min_mutation_classes: int = 0,
+        wide_sources: bool = False,
+        strict_delta: bool = False,
     ) -> None:
         if len(splits) != len(split_weights):
             raise ValueError("splits and split_weights must have the same length")
@@ -170,6 +177,11 @@ class SemanticContrastBuilder:
         self.splits = splits
         self.split_weights = split_weights
         self.honesty_mode = honesty_mode
+        self.require_runtime = require_runtime
+        self.min_pairs = min_pairs
+        self.min_mutation_classes = min_mutation_classes
+        self.wide_sources = wide_sources
+        self.strict_delta = strict_delta
         self.store = DataStore(local_root=output_root)
         self.output_dir = self.store.path("eval", dataset_id)
         self.pack = get_pack("openui")
@@ -190,11 +202,26 @@ class SemanticContrastBuilder:
         return self.splits[-1]
 
     def _build_sources(self) -> tuple[ProgramSpec, ...]:
+        if self.wide_sources:
+            groups = tuple(
+                tuple("Button" if (mask >> bit) & 1 else "TextContent" for bit in range(10))
+                for mask in range(1 << 10)
+            )
+            generator = ProgramGenerator(
+                GeneratorConfig(
+                    components=("TextContent", "Button"), max_depth=2, max_width=10,
+                    selected_groups=groups, split="train",
+                ), seed=self.seed,
+            )
+            result = generator.generate(self.source_count)
+            from slm_training.dsl.placeholders import extract_placeholders
+            return tuple(ProgramSpec.from_dict({
+                **source.to_dict(), "facts": {**source.facts,
+                "placeholders": extract_placeholders(source.canonical_openui)}})
+                for source in result.programs)
         config = GeneratorConfig(
             max_depth=2,
             max_width=3,
-            # Restrict to scalar-content components so the plan compiler never
-            # has to emit empty containers or mismatched child-array bindings.
             components=("TextContent", "Button"),
             split="train",
         )
@@ -202,8 +229,6 @@ class SemanticContrastBuilder:
         # Over-sample then filter for sources rich enough to carry a known
         # prompt-component contract.  Single-component roots leave the evaluator
         # in the UNKNOWN state, so they are dropped deterministically.
-        # The generator has a finite candidate grid; do not request more than
-        # twice the needed count so the grid is not exhausted.
         result = generator.generate(self.source_count * 2)
         from slm_training.dsl.placeholders import extract_placeholders
 
@@ -238,6 +263,7 @@ class SemanticContrastBuilder:
             )
         return tuple(sources[: self.source_count])
 
+
     def _compile_candidate(self, plan: SemanticPlanV1) -> tuple[str | None, str | None]:
         seed_result = self.seed_builder.build(plan)
         if not seed_result.ok or seed_result.seed is None:
@@ -255,6 +281,15 @@ class SemanticContrastBuilder:
         family = candidate.family
         severity = candidate.severity
         description = candidate.description
+        before_factors = plan_factor_fingerprints(plan)
+        after_factors = plan_factor_fingerprints(candidate.plan)
+        semantic_delta = {
+            name: {"before": before_factors[name], "after": after_factors[name]}
+            for name in before_factors if before_factors[name] != after_factors[name]
+        }
+        declared_delta_count = len(set(semantic_delta) - {"exact"})
+        if self.strict_delta and family is not ContrastFamily.POSITIVE and declared_delta_count != 1:
+            return None
         if family is ContrastFamily.POSITIVE:
             # Positive controls keep the original surface so the control pair
             # is bit-for-bit identical and is expected to pass meaningful eval.
@@ -296,7 +331,7 @@ class SemanticContrastBuilder:
             verifier_ok=True,
             verifier_tier=verifier_tier,
             meaningful_report=positive_score,
-            meta={"split": split},
+            meta={"split": split, "semantic_delta": semantic_delta},
         )
         negative = SemanticContrastRecord(
             record=negative_record,
@@ -310,7 +345,7 @@ class SemanticContrastBuilder:
             verifier_ok=verifier_ok,
             verifier_tier=verifier_tier,
             meaningful_report=negative_score,
-            meta={"split": split},
+            meta={"split": split, "semantic_delta": semantic_delta},
         )
 
         admitted = bool(
@@ -377,6 +412,53 @@ class SemanticContrastBuilder:
                 records.append(pair.positive)
                 records.append(pair.negative)
 
+        if self.require_runtime:
+            surfaces = tuple(
+                dict.fromkeys(record.record.openui for record in records)
+            )
+            evidence = dict(zip(surfaces, run_preview_verifier_many(surfaces)))
+            admitted_pairs: list[ContrastPair] = []
+            records = []
+            for pair in pairs:
+                sides = []
+                for row in (pair.positive, pair.negative):
+                    runtime = evidence[row.record.openui]
+                    report = verify_record(
+                        row.record,
+                        VerificationContext(
+                            source_kind="program", runtime=runtime,
+                            require_runtime=True,
+                        ),
+                    )
+                    sides.append(replace(
+                        row, verifier_ok=report.ok,
+                        verifier_tier=report.tier.value,
+                        meta={**row.meta, "runtime_evidence": runtime.to_dict(),
+                              "verification": report.to_dict()},
+                    ))
+                checked = replace(
+                    pair, positive=sides[0], negative=sides[1],
+                    admitted=pair.admitted and sides[0].verifier_ok and sides[1].verifier_ok,
+                    admission_reason=(pair.admission_reason if pair.admitted else pair.admission_reason) or (
+                        None if sides[0].verifier_ok and sides[1].verifier_ok else "runtime_failed"),
+                )
+                if checked.admitted:
+                    admitted_pairs.append(checked)
+                    records.extend(sides)
+                else:
+                    rejected.append({"source_id": checked.source_program_id,
+                                     "transform_id": checked.transform_id,
+                                     "reason": checked.admission_reason or "runtime_failed"})
+            pairs = admitted_pairs
+
+        mutation_classes = sorted({pair.transform_id for pair in pairs if pair.family is not ContrastFamily.POSITIVE})
+        if len(pairs) < self.min_pairs:
+            raise RuntimeError(f"admitted pairs {len(pairs)} below required minimum {self.min_pairs}")
+        if len(mutation_classes) < self.min_mutation_classes:
+            raise RuntimeError(
+                f"mutation classes {len(mutation_classes)} below required minimum {self.min_mutation_classes}"
+            )
+
         scoreboard = self._scoreboard(pairs)
         summary = {
             "builder_version": BUILDER_VERSION,
@@ -386,6 +468,8 @@ class SemanticContrastBuilder:
             "pairs": len(pairs),
             "records": len(records),
             "rejected": len(rejected),
+            "mutation_classes": mutation_classes,
+            "runtime_required": self.require_runtime,
             "scoreboard": [m.to_dict() for m in scoreboard],
             "version_stamp": build_version_stamp(
                 "data.semantic_contrast",
@@ -404,6 +488,20 @@ class SemanticContrastBuilder:
         )
         (self.output_dir / "summary.json").write_text(
             json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+        )
+        (self.output_dir / "source_manifest.json").write_text(
+            json.dumps({"seed": self.seed, "sources": [source.id for source in sources]}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        (self.output_dir / "quality_report.json").write_text(
+            json.dumps({"schema": "semantic_contrast_quality/v1", "pairs": len(pairs),
+                        "mutation_classes": mutation_classes, "warnings": []}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        (self.output_dir / "synthesis_feedback.json").write_text(
+            json.dumps({"schema": "synthesis_feedback/v1", "recommendations": [],
+                        "experiment_candidates": []}, indent=2) + "\n",
+            encoding="utf-8",
         )
 
         manifest = {

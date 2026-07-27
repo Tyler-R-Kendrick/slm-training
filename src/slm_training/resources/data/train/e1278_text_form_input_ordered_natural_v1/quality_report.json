@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "version": "e1278_text_form_input_ordered_natural_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T07:04:34.810530+00:00",
+  "counts": {
+    "seeds": 926,
+    "candidates": 962,
+    "collected": 604,
+    "admitted": 128,
+    "rejected_total": 838,
+    "source_errors": 0,
+    "by_stage": {
+      "decontamination": 16,
+      "dedup": 302,
+      "normalize": 358,
+      "quality": 60,
+      "verification": 102
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 358,
+    "parse_rate": 0.6279,
+    "tier_histogram": {
+      "Bronze": 21,
+      "Silver": 107
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 102,
+    "placeholder_contract_violations": 24,
+    "judge_contract_violations": 36,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 60,
+    "reason_histogram": {
+      "identity_echo_mismatch": 36,
+      "too_few_placeholders": 24
+    },
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 128
+    },
+    "mean_quality_score": 1.0,
+    "min_quality_score": 1.0
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 243,
+      "fuzzy_minhash": 19,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 40,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 121,
+      "records_per_cluster": {
+        "max": 3,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "b755ff5727a8ed8a|e47c813531e8b468c750305fc3f4e35a84d3c51cc938da82a4e668bacd6ec81e|cd6972b52cb11f7a",
+        "count": 3,
+        "sample_ids": [
+          "42407b7e44c6180e_scope",
+          "ad786769f4a21abf_scope",
+          "ad786769f4a21abf_scope"
+        ]
+      },
+      {
+        "cluster": "bb616c649bf86b36|978970bff91a7856210325144546520534c0605ff556f75cba9c61132517518e|76ccbfc14e65180a",
+        "count": 3,
+        "sample_ids": [
+          "40076bc81e7534f9_scope",
+          "a8eab7f112dddfb5_scope",
+          "a8eab7f112dddfb5_scope"
+        ]
+      },
+      {
+        "cluster": "a886321e2af454b3|87b2a0725f29ad8e83412969238f5b641e82f8170cb54a510ebb7409079c6185|d818f0f83f2164ad",
+        "count": 2,
+        "sample_ids": [
+          "1fedf4516a0fdb0b_scope",
+          "1fedf4516a0fdb0b_scope"
+        ]
+      },
+      {
+        "cluster": "c79af0a248837b22|19300cd1dda009c0e7e6eabeba054c07348173f674f81caa4c6e288b3ecb3c92|0540142b7b79c5da",
+        "count": 2,
+        "sample_ids": [
+          "6372c573bdb0a108_scope",
+          "6372c573bdb0a108_scope"
+        ]
+      },
+      {
+        "cluster": "d6f66af58a4033fa|558f936762ac4bcfa6e28029c0797a56efbd028a431d583f8e6200aa278121e4|9c758a6b2920c45a",
+        "count": 2,
+        "sample_ids": [
+          "93ec1cec4e39f5f6_scope",
+          "93ec1cec4e39f5f6_scope"
+        ]
+      },
+      {
+        "cluster": "00864299e2466fb1|87b2a0725f29ad8e83412969238f5b641e82f8170cb54a510ebb7409079c6185|d818f0f83f2164ad",
+        "count": 1,
+        "sample_ids": [
+          "program_4966f57521c11fbf_patch_fe230e42b466"
+        ]
+      },
+      {
+        "cluster": "08301692d59624de|c633b44abd429ec297447107cdb825c345622ef5bf964914dae47a2b196dee02|1568ab2933226f7d",
+        "count": 1,
+        "sample_ids": [
+          "program_3bed308495679c3a_repair_9e127e1c9ec1"
+        ]
+      },
+      {
+        "cluster": "108d11e7e4777781|e551641242ce7246ae460270ed60105e4c8370fd38b7144debd8688931c703f6|e3b0c44298fc1c14",
+        "count": 1,
+        "sample_ids": [
+          "041a444d677a44e7_scope"
+        ]
+      },
+      {
+        "cluster": "1450d3da9153ef63|558f936762ac4bcfa6e28029c0797a56efbd028a431d583f8e6200aa278121e4|9c758a6b2920c45a",
+        "count": 1,
+        "sample_ids": [
+          "program_55af8442a76c85e1_patch_6254200e0094"
+        ]
+      },
+      {
+        "cluster": "1ac2ef0e95ce4acc|41c17756ccab8395d03975e3c7b37363b604a17474d0b7f11c56129bc70a0008|f038764dedf66d11",
+        "count": 1,
+        "sample_ids": [
+          "88acdc2651cf4c17_scope"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 16,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e938_role_safe_all_targets_v2/adversarial",
+      "e938_role_safe_all_targets_v2/held_out",
+      "e938_role_safe_all_targets_v2/ood",
+      "e938_role_safe_all_targets_v2/rico_held",
+      "e938_role_safe_all_targets_v2/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 604,
+    "changed": 244,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 683,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 81,
+      "flatten_opportunities": 353
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 164,
+      "misses": 96
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 14,
+      "root_parent_count": 14,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 14
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 21,
+      "root_parent_count": 14,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 3,
+        "generation": 4,
+        "patch": 14
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 6,
+      "root_parent_count": 3,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 6
+      }
+    },
+    {
+      "source_family": "scope_canonical_document",
+      "record_count": 21,
+      "root_parent_count": 14,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 21
+      }
+    },
+    {
+      "source_family": "scope_canonical_expression",
+      "record_count": 8,
+      "root_parent_count": 8,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 8
+      }
+    },
+    {
+      "source_family": "scope_canonical_lexical",
+      "record_count": 9,
+      "root_parent_count": 9,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 9
+      }
+    },
+    {
+      "source_family": "scope_canonical_statement",
+      "record_count": 8,
+      "root_parent_count": 8,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 8
+      }
+    },
+    {
+      "source_family": "scope_identity_lexical",
+      "record_count": 12,
+      "root_parent_count": 10,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 12
+      }
+    },
+    {
+      "source_family": "scope_identity_statement",
+      "record_count": 5,
+      "root_parent_count": 5,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 5
+      }
+    },
+    {
+      "source_family": "scope_repair_expression",
+      "record_count": 9,
+      "root_parent_count": 9,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 9
+      }
+    },
+    {
+      "source_family": "scope_repair_lexical",
+      "record_count": 4,
+      "root_parent_count": 4,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 4
+      }
+    },
+    {
+      "source_family": "scope_repair_statement",
+      "record_count": 11,
+      "root_parent_count": 10,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 11
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.1331,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 24,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v27"
+    },
+    "stamped_at": "2026-07-24T07:04:34.833761+00:00"
+  }
+}
