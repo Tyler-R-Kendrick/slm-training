@@ -1,18 +1,19 @@
 """SLM-418 (DSH5-10): replay-grounded preference rows from undo/redo history.
 
-Builds versioned preference rows over one exact input state from six
+Builds versioned preference rows over one exact input state from all seven
 verified conversation patterns -- edit-then-undo, undo-then-redo, partial
 rollback (a second or later consecutive undo, chosen over redo/checkout/edit
-alternatives), checkout-another-state, fork-then-choose-one-branch, and
-merge-success -- where the chosen and rejected control-or-operator actions
-are checked against the exact legal set available at that state
-(``enumerate_operator_legal_set``), never against transcript text.
+alternatives), checkout-another-state, fork-then-choose-one-branch,
+merge-success, and pronoun-focus-followup -- where the chosen and rejected
+control-or-operator actions are checked against the exact legal set
+available at that state (``enumerate_operator_legal_set``), never against
+transcript text.
 
-This is an honestly partial slice of SLM-418. It does not implement:
-pronoun/focus follow-up patterns; it does not train an SFT/preference
-variant, measure held-out benefit, or produce turn-depth / context-view
-ablations. See ``docs/design/dsh5-10-replay-preference-rows.md`` for the
-full disposition and the remaining scope.
+This is an honestly partial slice of SLM-418. All seven named extraction
+patterns now exist, but it does not train an SFT/preference variant,
+measure held-out benefit, or produce turn-depth / context-view ablations.
+See ``docs/design/dsh5-10-replay-preference-rows.md`` for the full
+disposition and the remaining scope.
 
 Merge conflict (the other half of the issue's "merge success/conflict"
 pattern) is deliberately *not* modeled as a preference row here: unlike
@@ -45,8 +46,12 @@ from slm_training.dsl.operators.conversation import (
     ConversationOperation,
     ConversationTraceV1,
 )
-from slm_training.dsl.operators.contracts import ApplicationProvenanceV1
+from slm_training.dsl.operators.contracts import (
+    ApplicationProvenanceV1,
+    OperatorApplicationV1,
+)
 from slm_training.dsl.operators.legal_set import (
+    LegalOperatorActionV1,
     OperatorLegalSetV1,
     enumerate_operator_legal_set,
 )
@@ -69,6 +74,7 @@ class ReplayPreferenceRelation(str, Enum):
     CHECKOUT_ANOTHER_STATE = "checkout_another_state"
     FORK_THEN_CHOOSE_ONE_BRANCH = "fork_then_choose_one_branch"
     MERGE_SUCCESS = "merge_success"
+    PRONOUN_FOCUS_FOLLOWUP = "pronoun_focus_followup"
 
 
 @dataclass(frozen=True)
@@ -203,6 +209,23 @@ def _pick_rejected(legal_set: OperatorLegalSetV1, chosen: str) -> str | None:
     return candidates[0] if candidates else None
 
 
+def _touched_refs(application: OperatorApplicationV1) -> frozenset:
+    """The opaque refs one ``AST_EDIT`` application actually bound as arguments.
+
+    This is the module's only notion of "focus": never a transcript pronoun,
+    never a semantic descriptor, just the exact ``OperatorRef`` values the
+    prior turn's own verified application used -- so pronoun-focus
+    classification stays grounded in the DAG, per the issue's own adversarial
+    control that text history cannot reconstruct a different state than the
+    DAG.
+    """
+    return frozenset(argument.value for argument in application.arguments)
+
+
+def _action_refs(action: LegalOperatorActionV1) -> frozenset:
+    return frozenset(argument.value for argument in action.arguments)
+
+
 def extract_replay_preference_rows(
     trace: ConversationTraceV1,
     *,
@@ -210,15 +233,18 @@ def extract_replay_preference_rows(
     library: OperatorLibraryV1,
     provenance_for: ProvenanceFactory,
 ) -> OperatorEventMemoryReportV1:
-    """Scan ``trace.turns`` for five replay-grounded preference patterns.
+    """Scan ``trace.turns`` for six replay-grounded preference patterns.
 
     edit-then-undo, undo-then-redo, partial-rollback (a second or later
-    consecutive undo), checkout-another-state, and fork-then-choose-one-
-    branch (a checkout that crosses a branch boundary a prior ``FORK`` turn
-    opened). Each match produces one row whose chosen and rejected actions
-    are both verified members of the exact legal set at the shared input
-    state. A row is only emitted when an unchosen alternative actually
-    exists in that legal set -- undo/redo/checkout is never asserted
+    consecutive undo), checkout-another-state, fork-then-choose-one-branch
+    (a checkout that crosses a branch boundary a prior ``FORK`` turn opened),
+    and pronoun-focus-followup (a second ``AST_EDIT`` that continues
+    operating on the same ref its immediate predecessor touched, over an
+    equally legal same-operator action targeting a different, untouched
+    ref). Each match produces one row whose chosen and rejected actions are
+    both verified members of the exact legal set at the shared input state.
+    A row is only emitted when an unchosen alternative actually exists in
+    that legal set -- undo/redo/checkout/continued-focus is never asserted
     preferred by default.
     """
     rows: list[OperatorReplayPreferenceRowV1] = []
@@ -307,6 +333,74 @@ def extract_replay_preference_rows(
                         legal_set_fingerprint=legal_set.fingerprint,
                     )
                 )
+
+        if (
+            current.operation is ConversationOperation.AST_EDIT
+            and following.operation is ConversationOperation.AST_EDIT
+            and following.input_state_id == current.output_state_id
+        ):
+            assert current.application is not None
+            assert following.application is not None
+            focus_refs = _touched_refs(current.application)
+            chosen_refs = _touched_refs(following.application)
+            # No focus was ever established (e.g. a zero-argument operator),
+            # or the follow-up shares nothing with it: not this pattern.
+            if focus_refs and (focus_refs & chosen_refs):
+                decision_state_id = following.input_state_id
+                legal_set = _legal_set_at(
+                    trace,
+                    pack=pack,
+                    library=library,
+                    state_id=decision_state_id,
+                    provenance_for=provenance_for,
+                )
+                entry = next(
+                    (
+                        candidate
+                        for candidate in legal_set.entries
+                        if candidate.operator_fingerprint
+                        == following.application.operator_fingerprint
+                    ),
+                    None,
+                )
+                chosen_match = (
+                    next(
+                        (
+                            action
+                            for action in entry.legal_actions
+                            if action.arguments == following.application.arguments
+                        ),
+                        None,
+                    )
+                    if entry is not None
+                    else None
+                )
+                if entry is not None and chosen_match is not None:
+                    sibling_candidates = sorted(
+                        (
+                            action
+                            for action in entry.legal_actions
+                            if action.serialized != chosen_match.serialized
+                            and not (_action_refs(action) & focus_refs)
+                        ),
+                        key=lambda action: action.serialized,
+                    )
+                    if sibling_candidates:
+                        rows.append(
+                            OperatorReplayPreferenceRowV1(
+                                input_state_id=decision_state_id,
+                                chosen_action=chosen_match.serialized,
+                                rejected_action=sibling_candidates[0].serialized,
+                                chosen_output_state_id=following.output_state_id,
+                                semantic_relation=(
+                                    ReplayPreferenceRelation.PRONOUN_FOCUS_FOLLOWUP
+                                ),
+                                correction_reason=(
+                                    "user_continued_implicit_focus_over_sibling_target"
+                                ),
+                                legal_set_fingerprint=legal_set.fingerprint,
+                            )
+                        )
 
     fork_branch_digests = {
         trace.node(turn.output_state_id).branch_digest
