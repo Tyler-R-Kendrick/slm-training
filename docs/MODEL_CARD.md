@@ -272,6 +272,25 @@ as unavailable or unrun conditionals. DSH4 action distillation is closed.
 No checkpoint roster, promotion, or ship claim changed. Full evidence:
 [`dsh3-17-cap2-disposition-20260723/summary.md`](design/dsh3-17-cap2-disposition-20260723/summary.md).
 
+### DSH5 advanced-operator disposition
+
+DSH5 ("Bulk Operators, Transactions & Control Plane") is closed by SLM-420
+(DSH5-12). Selector correctness, bulk atomicity, transaction contracts/
+execution, sequence merge, and control-plane execution are **supported** as
+compiler-owned runtime utilities only — none is a learned capability and none
+changes the CAP2 certificate posture above (`CERT_CAP2` remains not-issued,
+retained unchanged). Crossover work, adaptive routing, parameterized
+templates, and systems efficiency are **unavailable** (each ran a real
+preflight or repository-wide audit that confirmed its own measurement
+prerequisite does not exist). Set-valued selection and replay-grounded event
+memory are **unrun_conditional** wiring preconditions with no corpus or
+baseline to answer their held-out-benefit question. The disposition inherits
+DSH3-33's (SLM-408) empty allowed learned-policy inventory (`may_start=false`,
+zero heads/objectives/actions) unchanged. Recommendation:
+`retain_as_compiler_utility`. No checkpoint roster, promotion, ship claim, or
+advanced-operator default-on change follows. Full evidence:
+[`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](design/dsh5-12-advanced-operator-disposition-20260727-local/summary.md).
+
 Update the table in place when a checkpoint is written or superseded. Keep
 invalidated / superseded rows in **Checkpoint history** below.
 

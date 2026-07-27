@@ -1675,6 +1675,32 @@ fails closed if a positive E803 claim or unsupported benefit is substituted.
 Evidence and scope:
 [`dsh3-17-cap2-disposition-20260723/summary.md`](dsh3-17-cap2-disposition-20260723/summary.md).
 
+## Advanced operator disposition (DSH5-12 / SLM-420)
+
+**Fidelity label: repository evidence disposition.** This capstone ledger adds
+no paper-derived mechanism. It closes "DSH5 — Bulk Operators, Transactions &
+Control Plane" (M1-M4) by binding one independent verdict, split across
+runtime-correctness/learned-benefit/partial-coverage-safety/systems-efficiency
+dimensions, to each of eleven advanced-operator abstractions, preventing a
+proven compiler primitive from being generalized into an unrelated, unrun
+learned claim.
+
+| | |
+| --- | --- |
+| **Capabilities** | selector correctness, bulk atomicity, primitive/bulk/regeneration crossover, transaction contracts/execution, set-valued selection, sequence merge, control-plane execution/learning, adaptive routing, event memory, parameterized templates, systems efficiency |
+| **Positive boundary** | selector correctness, bulk atomicity, transaction contracts/execution, sequence merge, and control-plane execution are `supported` as compiler-owned runtime utilities only; no learned-benefit or efficiency claim accompanies any of them |
+| **Negative boundary** | none of the eleven claims is `negative` -- every unresolved claim is `unavailable` (a real preflight/audit confirmed its own prerequisite absent: DSH5-03's crossover fanout wiring, DSH5-09's router admission preflight, DSH5-11's repository-wide TSA/template-manifest audit, and every DSH5 abstraction's systems-efficiency measurement) |
+| **Unrun boundary** | set-valued selection and replay-grounded event memory are `unrun_conditional`: both deliver a real, adversarially-tested wiring precondition, but neither has a corpus or baseline to answer its held-out-benefit question |
+| **Decision** | inherit DSH3-33's (SLM-408) empty allowed learned-policy inventory unchanged; retain CAP2 posture unchanged, not advanced; recommend `retain_as_compiler_utility`; no checkpoint, ship, or advanced-operator default-on claim |
+
+The disposition is machine-checkable (`AdvancedOperatorDispositionV1`), binds
+every verdict to exact commit/data/suite/hardware identity, and fails closed
+if a headline verdict does not equal one of its own per-dimension verdicts
+(so a runtime-correctness result can never silently stand in for a
+learned-benefit or systems-efficiency result). Evidence and scope:
+[`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](dsh5-12-advanced-operator-disposition-20260727-local/summary.md),
+narrative: [`dsh5-12-advanced-operator-disposition.md`](dsh5-12-advanced-operator-disposition.md).
+
 ## Staged DSL capability baseline (DSH0-01 / SLM-345)
 
 **Fidelity label: repository contract.** The staged vocabulary introduces no

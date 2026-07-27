@@ -6474,3 +6474,40 @@ rejects topology supervision as a seed-7 stabilizer. E1213/E1214 is preregistere
 as the remaining decode-off slot-component replication; it is local scratch only
 and cannot make a ship claim. Full recipe, AgentEvals/AgentV evidence, version
 stamp, and scorecard: [E1211-E1214 result](iter-e1211-e1214-seed7-topology-slot-component-20260725.md).
+
+# DSH5-12 — advanced operator disposition (2026-07-27)
+
+Publish the claim-separated capstone disposition closing "DSH5 — Bulk
+Operators, Transactions & Control Plane" (M1-M4). Eleven independent verdicts
+cover selector correctness, bulk atomicity, primitive/bulk/regeneration
+crossover, transaction contracts/execution, set-valued selection, sequence
+merge, control-plane execution/learning, adaptive routing, replay-grounded
+event memory, parameterized templates, and systems efficiency, each split
+across runtime-correctness, learned-semantic-benefit, partial-coverage-safety,
+and systems-efficiency dimensions so a proven primitive can never stand in
+for an unrelated, unrun claim.
+
+Selector correctness, bulk atomicity, transaction contracts/execution,
+sequence merge, and control-plane execution are `supported` as compiler-owned
+runtime utilities (exact membership/freshness, structural atomicity, atomic
+N-way composition/commit/replay, N-step conservative merge, and a compiler-
+owned control legal set are each proven by their own dedicated test suites).
+Crossover work, adaptive routing, parameterized templates, and systems
+efficiency are `unavailable` — each ran a real preflight or audit
+(DSH5-03's fanout wiring check, DSH5-09's router admission preflight,
+DSH5-11's repository-wide TSA-artifact audit) that confirmed its own
+measurement prerequisite does not exist, never an unattempted question.
+Set-valued selection and replay-grounded event memory are `unrun_conditional`:
+both deliver a real, adversarially-tested wiring precondition but no corpus
+or baseline exists to answer their held-out-benefit question.
+
+The disposition inherits DSH3-33's (SLM-408) empty allowed learned-policy
+inventory (`may_start=false`, zero heads/objectives/actions) unchanged rather
+than re-deriving it, and records CAP2 as retained-unchanged (not advanced) —
+DSH5's supported claims are compiler utilities, never a learned CAP2
+capability. Recommendation: `retain_as_compiler_utility`. No checkpoint,
+model-card checkpoint-roster change, remote run, human-rating gate,
+production change, or advanced-operator default-on authorization follows.
+Full evidence:
+[`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](dsh5-12-advanced-operator-disposition-20260727-local/summary.md),
+narrative: [`dsh5-12-advanced-operator-disposition.md`](dsh5-12-advanced-operator-disposition.md).
