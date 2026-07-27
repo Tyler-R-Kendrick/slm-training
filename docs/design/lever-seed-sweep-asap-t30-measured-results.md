@@ -33,3 +33,6 @@ Target seed brittleness: longer train wall / larger data / curriculum — not mo
 ```
 
 Captured: 2026-07-27T14:18:23.824243+00:00
+
+## Correction
+success_seeds=[42, 47] hard_fail=[43, 45, 46] rate=2/6 (fixed empty-count check)
