@@ -7,7 +7,9 @@ from pathlib import Path
 
 from scripts.build_replay_preference_pairs import (
     _provenance,
+    build_demo_fork_choose_scenario,
     build_demo_merge_scenario,
+    build_demo_partial_rollback_scenario,
     build_demo_trace,
     main,
 )
@@ -25,6 +27,32 @@ def test_build_demo_trace_exercises_three_named_patterns() -> None:
         ReplayPreferenceRelation.EDIT_THEN_UNDO.value,
         ReplayPreferenceRelation.UNDO_THEN_REDO.value,
         ReplayPreferenceRelation.CHECKOUT_ANOTHER_STATE.value,
+    }
+
+
+def test_build_demo_partial_rollback_scenario_yields_the_second_consecutive_undo() -> None:
+    pack, library, trace = build_demo_partial_rollback_scenario()
+
+    report = extract_replay_preference_rows(
+        trace, pack=pack, library=library, provenance_for=_provenance
+    )
+    # Both rows this trace produces are kept, honestly -- the first undo is
+    # its own edit_then_undo row, the second (no intervening edit) is the
+    # new partial_rollback relation this scenario targets.
+    assert report.counts_by_relation == {
+        ReplayPreferenceRelation.EDIT_THEN_UNDO.value: 1,
+        ReplayPreferenceRelation.PARTIAL_ROLLBACK.value: 1,
+    }
+
+
+def test_build_demo_fork_choose_scenario_yields_one_fork_then_choose_row() -> None:
+    pack, library, trace = build_demo_fork_choose_scenario()
+
+    report = extract_replay_preference_rows(
+        trace, pack=pack, library=library, provenance_for=_provenance
+    )
+    assert report.counts_by_relation == {
+        ReplayPreferenceRelation.FORK_THEN_CHOOSE_ONE_BRANCH.value: 1,
     }
 
 
@@ -50,23 +78,31 @@ def test_main_writes_a_real_pairs_file_and_reports_honest_counts(
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
     assert report["corpus_kind"] == "fixture_or_scratch"
-    assert report["rows"] == 4
+    assert report["rows"] == 7
     assert report["counts_by_relation"] == {
-        "edit_then_undo": 1,
+        "edit_then_undo": 2,
         "undo_then_redo": 1,
         "checkout_another_state": 1,
+        "partial_rollback": 1,
+        "fork_then_choose_one_branch": 1,
         "merge_success": 1,
     }
     # undo_then_redo never renders here: redo and "reapply the same
     # deterministic zero-arg operator" are the identical text by
     # construction, so the renderer's dedup guard correctly declines it.
-    assert report["pairs_rendered"] == 3
+    assert report["pairs_rendered"] == 6
     assert report["pairs_dropped"] == 1
 
     pairs = load_pairs(out_path)
     assert len(pairs) == report["pairs_rendered"]
     relations = {pair.meta["semantic_relation"] for pair in pairs}
-    assert relations == {"edit_then_undo", "checkout_another_state", "merge_success"}
+    assert relations == {
+        "edit_then_undo",
+        "checkout_another_state",
+        "partial_rollback",
+        "fork_then_choose_one_branch",
+        "merge_success",
+    }
     for pair in pairs:
         assert pair.meta["pair_corpus"] == "replay_preference"
         assert pair.chosen != pair.rejected

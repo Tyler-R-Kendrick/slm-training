@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (ninth increment).
+**Status:** partial slice, in progress (tenth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -35,7 +35,13 @@ pairs corpus (no captured conversation-trace data exists anywhere in this
 repo -- see below), a scope decision for the other six patterns' history-
 control/merge actions (none has a row in the typed policy's action space),
 the four-baseline comparison, held-out benefit measurement, and turn-depth/
-context-view ablations.
+context-view ablations. This slice does not attempt that scope decision;
+instead it closes a smaller, independent gap on the generic TwoTower demo
+corpus side: two of the seven named patterns (`partial_rollback`,
+`fork_then_choose_one_branch`) were still absent from
+`scripts/build_replay_preference_pairs.py`'s demo corpus even though
+extraction has covered them since the fifth slice -- see "Tenth slice"
+below.
 
 ## What this PR delivers
 
@@ -547,6 +553,79 @@ there.
 * `harness.experiments.argument_preference` registered fresh (`v1`, initial
   registration) in `src/slm_training/resources/versions.json`.
 
+## Tenth slice
+
+This slice does not attempt the ninth slice's flagged scope decision
+(what an "action row" means for a history-control or merge action in the
+typed policy's action space) -- that remains genuinely open. Instead it
+closes a smaller, independent gap on the generic TwoTower demo-corpus side
+that the eighth and ninth slices both left explicitly unaddressed: two of
+the seven named patterns were still absent from
+`scripts/build_replay_preference_pairs.py`'s demo corpus even though
+`extract_replay_preference_rows` has covered them since the fifth slice.
+
+* Two new standalone scratch traces, `build_demo_partial_rollback_scenario`
+  and `build_demo_fork_choose_scenario`, mirror the exact shapes
+  `tests/test_dsl/test_replay_preference.py`'s own
+  `test_partial_rollback_yields_a_row_for_the_second_consecutive_undo` and
+  `test_fork_then_return_to_original_branch_yields_a_distinct_relation`
+  already verify -- root->edit1->edit2->undo->undo for `partial_rollback`
+  (a second consecutive undo, no intervening edit), and
+  root->edit->fork->checkout(pre-fork branch) for
+  `fork_then_choose_one_branch` -- using the script's existing toy 4-state
+  cycling operator rather than inventing a new one.
+* The three trace-building scenarios' near-duplicated pack/library/root
+  setup was factored into two shared helpers, `_new_toy_trace` and
+  `_apply_cycle`, rather than copied a third time; `build_demo_trace`
+  itself is behavior-unchanged (same rows, same pairs) after the refactor,
+  which the unmodified `test_build_demo_trace_exercises_three_named_patterns`
+  test confirms.
+* `main()` now combines four sources instead of two: **7 rows total** (2
+  `edit_then_undo` + 1 each of `undo_then_redo` / `checkout_another_state` /
+  `partial_rollback` / `fork_then_choose_one_branch` / `merge_success`), **6
+  render**. `undo_then_redo` is still the only drop, for the same
+  structural reason the seventh slice documented (never a bug on this
+  fixture family). The `partial_rollback` scenario's own extra
+  `edit_then_undo` row is kept and counted honestly rather than
+  cherry-picked out, matching every prior slice's convention of reporting
+  everything a scenario extracts.
+* **6 of the 7 named patterns are now exercised in this demo TwoTower
+  corpus.** Only `pronoun_focus_followup` remains absent here -- and
+  deliberately so: the ninth slice already covers it on the separate
+  `typed_operator_policy` argument-preference path (a different pair
+  format from this script's generic TwoTower one), and wiring it into this
+  corpus too would just duplicate that slice's already-documented
+  structural (feature-identical-siblings) null-training finding rather
+  than add new information.
+* Reran the full training chain against the richer 6-pair corpus:
+  ```bash
+  python -m scripts.train_model --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+    --model twotower --context-backend scratch --steps 8 \
+    --run-id replay_pref_sft_ckpt3 --no-sync-checkpoints --device cpu --seed 0
+  python -m scripts.build_replay_preference_pairs \
+    --out outputs/data/preference/replay_demo_pairs_v4.jsonl
+  python -m scripts.train_preference train \
+    --checkpoint outputs/runs/replay_pref_sft_ckpt3/checkpoints/last.pt \
+    --pairs outputs/data/preference/replay_demo_pairs_v4.jsonl \
+    --out-dir outputs/runs/replay_pref_dpo3 --steps 12 --device cpu
+  ```
+  SFT step: `last_loss=32.610084533691406` again -- the same deterministic
+  artifact every prior `wf_smoke_v2`/seed-0/8-step row in this ledger
+  reproduces. Preference step, now over 6 pairs instead of 3:
+  `{"steps": 12, "last_loss": 1.1219162940979004, "mean_loss":
+  1.0559024934967358, "n_pairs": 6, "reference_free": true}`
+  (`outputs/runs/replay_pref_dpo3/preference_summary.json`, not committed).
+  Both commands again well under `MAX_RUN_MINUTES=3`.
+* **Still not a training or held-out-benefit claim.** `n_pairs=6` on a
+  scratch fixture with no held-out split is a broader, more structurally
+  diverse smoke corpus (now covering 6 of 7 named patterns instead of 4),
+  not evidence the signal helps the model or generalizes. The ninth
+  slice's flagged scope decision for wiring history-control/merge actions
+  into the typed policy's own action space remains the actual open item
+  for the issue's real training target.
+* `harness.preference.replay_pairs` bumped `v3` -> `v4` in
+  `src/slm_training/resources/versions.json`.
+
 ## Reproducibility
 
 ```bash
@@ -562,3 +641,5 @@ Result (seventh-slice PR #1125, real run in a fresh `.venv-dsh510`, same environ
 Result (eighth-slice PR #1126, real run in a fresh `.venv-dsh510`, same environment recipe as above, stacked on top of PR #1125 which was still unmerged when this slice started): `72 passed` (71 from the seventh slice + 1 new). Also verified: `ruff check` clean; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. Plus the reran training chain described above; `outputs/runs/replay_pref_sft_ckpt2/` and `outputs/runs/replay_pref_dpo2/` are not committed (`outputs/` is gitignored).
 
 Result (this PR, ninth slice, real run in the same `.venv-dsh510`, stacked on top of PR #1126 which was still unmerged when this slice started): `92 passed` (72 from the prior slices + 6 new in `test_argument_preference.py`, plus `test_typed_operator_policy.py`'s own 14 pre-existing tests now included in this suite's reproduction command for the first time since this slice touches that module's consumer surface). Also verified: `ruff check` clean on both new files; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. No end-to-end training run in this slice (the `train_typed_operator_argument_preference` calls are inside the test suite itself, proving the mechanism works on a synthetic distinguishable pair and correctly plateaus on the real fixture's feature-identical pair -- not a separate `outputs/`-writing run).
+
+Result (this PR, tenth slice, real run in a fresh `.venv-autotrain` -- Python 3.12.3, `torch==2.5.1+cu124` (CPU-only invocation via `--device cpu`), `pip install -e ".[dev,grammar]"`, plus `env -u NODE_OPTIONS npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gate, same recipe as every prior slice's note above -- stacked on top of PR #1127 which was still unmerged when this slice started, base commit `9be1464`): `94 passed` (92 from the ninth slice + 2 new in `tests/test_scripts/test_build_replay_preference_pairs.py`). Also verified: `ruff check` clean on both changed files; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-ni43oh-pronoun-focus-policy` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. Plus the reran training chain described above (SFT checkpoint + 6-pair demo corpus + preference-training pass, both commands well under `MAX_RUN_MINUTES=3`); `outputs/runs/replay_pref_sft_ckpt3/` and `outputs/runs/replay_pref_dpo3/` are not committed (`outputs/` is gitignored).

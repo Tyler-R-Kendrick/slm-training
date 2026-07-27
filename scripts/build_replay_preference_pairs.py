@@ -37,6 +37,22 @@ A second, separate scenario (``build_demo_merge_scenario``) covers
 so it needs its own two-branch fixture with disjoint-target edits, mirroring
 the shape ``tests/test_dsl/test_operator_merge.py`` already verifies is
 valid, replayable, and order-invariant.
+
+Two more standalone scratch traces -- ``build_demo_partial_rollback_scenario``
+and ``build_demo_fork_choose_scenario`` (tenth slice) -- cover
+``partial_rollback`` (a second consecutive undo, not preceded by an
+intervening edit) and ``fork_then_choose_one_branch`` (a checkout back
+across a fork boundary), mirroring the exact shapes
+``tests/test_dsl/test_replay_preference.py``'s own
+``test_partial_rollback_yields_a_row_for_the_second_consecutive_undo`` and
+``test_fork_then_return_to_original_branch_yields_a_distinct_relation``
+already verify, using this script's own toy cycling operator rather than
+inventing a new one. That leaves ``pronoun_focus_followup`` as the only
+named pattern absent from this demo TwoTower corpus -- the ninth slice
+covers it on the separate `typed_operator_policy` argument-preference path
+instead (see the disposition doc's "Ninth slice"); wiring it here too would
+just duplicate that slice's already-documented structural finding on the
+generic pair format this script produces.
 """
 
 from __future__ import annotations
@@ -71,6 +87,7 @@ from slm_training.dsl.operators import (
     create_conversation_trace,
     extract_merge_preference_row,
     extract_replay_preference_rows,
+    fork_conversation,
     merge_conversation_branches,
     redo_conversation,
     undo_conversation,
@@ -144,14 +161,14 @@ def _execute(state: OperatorStateV1, _arguments) -> OperatorMutationV1:
     raise ValueError("demo.no_transition")
 
 
-def build_demo_trace() -> tuple[DslPack, OperatorLibraryV1, ConversationTraceV1]:
-    """A single scratch trace exercising three of the seven named patterns.
-
-    root -> edit -> undo (edit_then_undo) -> redo (undo_then_redo) -> edit
-    -> checkout(root) (checkout_another_state). Deterministic (fixed seeds,
-    no randomness); see the module docstring for why this is not real
-    captured conversation data.
-    """
+def _new_toy_trace(
+    *, branch_label: str
+) -> tuple[DslPack, OperatorLibraryV1, ConversationTraceV1]:
+    """One fresh, standalone scratch conversation using this script's own
+    toy 4-state cycling operator (see ``_execute``). Every demo scenario
+    below starts from its own call to this helper so scenarios never share
+    trace/branch state -- each is independently replayable and its rows
+    are independently attributable to that one scenario."""
     base_pack = get_pack("openui")
     root_state = OperatorStateV1.from_source(base_pack, _SOURCE)
     declaration = AstOperatorV1(
@@ -167,7 +184,7 @@ def build_demo_trace() -> tuple[DslPack, OperatorLibraryV1, ConversationTraceV1]
     )
     library = OperatorLibraryV1((RegisteredOperatorV1(declaration, _execute),))
     pack = replace(base_pack, operator_library=library)
-    branch = branch_fingerprint(root_state.state_digest, _sha("demo-branch"))
+    branch = branch_fingerprint(root_state.state_digest, _sha(f"demo-branch-{branch_label}"))
     root_table = _table(root_state, branch, seed=1)
     trace = create_conversation_trace(
         pack=pack,
@@ -175,31 +192,94 @@ def build_demo_trace() -> tuple[DslPack, OperatorLibraryV1, ConversationTraceV1]
         root_reference_table=root_table,
         provenance=_provenance(root_state),
     )
+    return pack, library, trace
 
-    def apply_once(current: ConversationTraceV1, *, seed: int) -> ConversationTraceV1:
-        result = library.apply(
-            pack, current.current.state, _OPERATOR_ID, (), _provenance(current.current.state)
-        )
-        assert result.succeeded and result.state is not None
-        return append_operator_turn(
-            current,
-            pack=pack,
-            library=library,
-            application=result.application,
-            output_reference_table=_table(result.state, current.current.branch_digest, seed=seed),
-        )
 
-    edited = apply_once(trace, seed=2)
+def _apply_cycle(
+    pack: DslPack, library: OperatorLibraryV1, trace: ConversationTraceV1, *, seed: int
+) -> ConversationTraceV1:
+    result = library.apply(
+        pack, trace.current.state, _OPERATOR_ID, (), _provenance(trace.current.state)
+    )
+    assert result.succeeded and result.state is not None
+    return append_operator_turn(
+        trace,
+        pack=pack,
+        library=library,
+        application=result.application,
+        output_reference_table=_table(result.state, trace.current.branch_digest, seed=seed),
+    )
+
+
+def build_demo_trace() -> tuple[DslPack, OperatorLibraryV1, ConversationTraceV1]:
+    """A single scratch trace exercising three of the seven named patterns.
+
+    root -> edit -> undo (edit_then_undo) -> redo (undo_then_redo) -> edit
+    -> checkout(root) (checkout_another_state). Deterministic (fixed seeds,
+    no randomness); see the module docstring for why this is not real
+    captured conversation data.
+    """
+    pack, library, trace = _new_toy_trace(branch_label="main")
+    edited = _apply_cycle(pack, library, trace, seed=2)
     original_child_id = edited.current_state_id
     undone = undo_conversation(edited, provenance=_provenance(edited.current.state))
     redone = redo_conversation(
         undone, target_state_id=original_child_id, provenance=_provenance(undone.current.state)
     )
-    edited_again = apply_once(redone, seed=3)
+    edited_again = _apply_cycle(pack, library, redone, seed=3)
     checked_out = checkout_conversation_state(
         edited_again,
         target_state_id=edited_again.root_state_id,
         provenance=_provenance(edited_again.current.state),
+    )
+    return pack, library, checked_out
+
+
+def build_demo_partial_rollback_scenario() -> (
+    tuple[DslPack, OperatorLibraryV1, ConversationTraceV1]
+):
+    """A second, standalone scratch trace reaching ``partial_rollback``.
+
+    root -> edit1 -> edit2 -> undo (edit_then_undo, edit2's state) -> undo
+    (partial_rollback, edit1's state) -- mirrors
+    ``test_partial_rollback_yields_a_row_for_the_second_consecutive_undo``.
+    Both rows this trace yields are kept and reported honestly (this
+    scenario is not cherry-picked down to only the new relation).
+    """
+    pack, library, trace = _new_toy_trace(branch_label="rollback")
+    edited_once = _apply_cycle(pack, library, trace, seed=2)
+    edited_twice = _apply_cycle(pack, library, edited_once, seed=3)
+    undone_once = undo_conversation(
+        edited_twice, provenance=_provenance(edited_twice.current.state)
+    )
+    undone_twice = undo_conversation(
+        undone_once, provenance=_provenance(undone_once.current.state)
+    )
+    return pack, library, undone_twice
+
+
+def build_demo_fork_choose_scenario() -> (
+    tuple[DslPack, OperatorLibraryV1, ConversationTraceV1]
+):
+    """A third, standalone scratch trace reaching ``fork_then_choose_one_branch``.
+
+    root -> edit (main branch) -> fork (new branch) -> checkout(main) --
+    mirrors
+    ``test_fork_then_return_to_original_branch_yields_a_distinct_relation``.
+    """
+    pack, library, trace = _new_toy_trace(branch_label="fork")
+    edited = _apply_cycle(pack, library, trace, seed=2)
+    main_branch_state_id = edited.current_state_id
+    forked = fork_conversation(
+        edited,
+        branch_nonce_digest=_sha("demo-fork-target"),
+        reference_seed=8,
+        provenance=_provenance(edited.current.state),
+    )
+    checked_out = checkout_conversation_state(
+        forked,
+        target_state_id=main_branch_state_id,
+        provenance=_provenance(forked.current.state),
     )
     return pack, library, checked_out
 
@@ -383,6 +463,22 @@ def build_demo_merge_scenario() -> tuple[list[OperatorReplayPreferenceRowV1], li
     return [row], ([pair] if pair is not None else [])
 
 
+def _extract_and_render(
+    pack: DslPack, library: OperatorLibraryV1, trace: ConversationTraceV1
+) -> tuple[list[OperatorReplayPreferenceRowV1], list[PreferencePair]]:
+    report = extract_replay_preference_rows(
+        trace, pack=pack, library=library, provenance_for=_provenance
+    )
+    pairs = render_replay_preference_pairs(
+        report.rows,
+        resolve_node=trace.node,
+        pack=pack,
+        library=library,
+        provenance_for=_provenance,
+    )
+    return list(report.rows), pairs
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -390,24 +486,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    pack, library, trace = build_demo_trace()
-    trace_report = extract_replay_preference_rows(
-        trace, pack=pack, library=library, provenance_for=_provenance
-    )
-    trace_pairs = render_replay_preference_pairs(
-        trace_report.rows,
-        resolve_node=trace.node,
-        pack=pack,
-        library=library,
-        provenance_for=_provenance,
-    )
-
+    trace_rows, trace_pairs = _extract_and_render(*build_demo_trace())
+    rollback_rows, rollback_pairs = _extract_and_render(*build_demo_partial_rollback_scenario())
+    fork_rows, fork_pairs = _extract_and_render(*build_demo_fork_choose_scenario())
     merge_rows, merge_pairs = build_demo_merge_scenario()
 
-    all_rows = list(trace_report.rows) + merge_rows
-    all_pairs = trace_pairs + merge_pairs
-    counts_by_relation = dict(trace_report.counts_by_relation)
-    for row in merge_rows:
+    all_rows = trace_rows + rollback_rows + fork_rows + merge_rows
+    all_pairs = trace_pairs + rollback_pairs + fork_pairs + merge_pairs
+    counts_by_relation: dict[str, int] = {}
+    for row in all_rows:
         key = row.semantic_relation.value
         counts_by_relation[key] = counts_by_relation.get(key, 0) + 1
 
