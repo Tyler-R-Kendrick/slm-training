@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/dsh3-31-operator-failure-prediction.eval.jsonl",
+    "timestamp": "2026-07-26T16:19:18.137Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "temporal-row-preflight"
+    ],
+    "experiment": "dsh3-31-operator-failure-prediction"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "temporal-row-preflight:domain_criterion:code-grader": {
+      "mean": 0,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dd1783f9238963aceeec7c1c384e99f1b9fae06c",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v61",
+      "harness.experiments.operator_failure_prediction": "v1"
+    },
+    "stamped_at": "2026-07-26T16:19:17.732899+00:00"
+  }
+}

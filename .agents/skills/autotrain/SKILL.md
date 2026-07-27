@@ -55,3 +55,8 @@ Digest — full versions in [references/contracts.md](references/contracts.md):
   `--ship-gates` on full scoreboards.
 - **RL is fail-closed**: approved `RLReadinessReport` or no RL — no override.
 - **No shadow paths**: reuse canonical scripts/harnesses and artifact roots.
+- **Decode invariants**: constrained decoding is the product. Deterministic
+  singleton bypass outranks any learned score; unconstrained arms are
+  diagnostic controls, never defaults, serving paths, or gate inputs. Full
+  law in `AGENTS.md` §Non-negotiable architecture invariants +
+  [decode-invariants.md](../../../docs/design/decode-invariants.md).

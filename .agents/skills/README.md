@@ -38,25 +38,36 @@ Pinned via root [`skills-lock.json`](../../skills-lock.json). Installed for
 Cursor always-on / opt-in rules: [`.cursor/rules/`](../../.cursor/rules/).
 GHCP: [`.github/copilot-instructions.md`](../../.github/copilot-instructions.md).
 
-Refresh:
+Refresh. **Run the whole block**, including the normalisation step — the
+marketplace installer copies rather than symlinks, and `-a codex` writes a
+`.codex/skills/` tree that Codex does not need. Both states are rejected by
+`python -m scripts.repo_policy`, so the installer alone leaves the repo failing.
 
 ```bash
+# Note: no `-a codex` — Codex and GitHub Copilot read .agents/skills/ directly,
+# and scripts/repo_policy.py rejects a redundant .codex/skills/ copy.
 npx skills add DietrichGebert/ponytail --skill '*' \
-  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+  -a claude-code -a cursor -a github-copilot -y --copy
 npx skills add JuliusBrussee/caveman \
   --skill caveman --skill caveman-commit --skill caveman-review \
   --skill caveman-help --skill caveman-compress --skill caveman-stats \
-  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+  -a claude-code -a cursor -a github-copilot -y --copy
 npx skills add roman-ryzenadvanced/headroom-skill --skill headroom \
-  -a claude-code -a cursor -a codex -a github-copilot -y --copy
-# Prefer symlinks for discovery dirs (after --copy duplicates):
-for name in ponytail ponytail-audit ponytail-debt ponytail-gain ponytail-help \
-  ponytail-review caveman caveman-commit caveman-compress caveman-help \
-  caveman-review caveman-stats headroom rtk; do
-  rm -rf ".claude/skills/$name" ".cursor/skills/$name"
-  ln -s "../../.agents/skills/$name" ".claude/skills/$name"
-  ln -s "../../.agents/skills/$name" ".cursor/skills/$name"
+  -a claude-code -a cursor -a github-copilot -y --copy
+
+# Normalise discovery roots: every canonical skill gets a symlink, no copies,
+# no stray Codex tree. Idempotent, and also fixes an `hf skills add --dest=`
+# copy. repo_policy checks both directions, so a missing mirror fails too.
+rm -rf .codex/skills
+for name in $(ls .agents/skills); do
+  [ -d ".agents/skills/$name" ] || continue
+  for root in .claude/skills .cursor/skills; do
+    rm -rf "$root/$name"
+    ln -s "../../.agents/skills/$name" "$root/$name"
+  done
 done
+python -m scripts.repo_policy   # must print "repo-policy: ok"
+
 # Re-copy headroom helpers if the skills CLI only dropped SKILL.md:
 # git clone --depth 1 https://github.com/roman-ryzenadvanced/headroom-skill /tmp/hr
 # cp -a /tmp/hr/{scripts,prompts,docs,examples,AGENTS.md,CLAUDE.md,LICENSE,NOTICE} .agents/skills/headroom/
@@ -93,13 +104,16 @@ ships `hf-cli`; use the CLI for the rest). Symlinked under `.claude/skills/` and
 | `trl-training` | TRL language-model training |
 | `hf-cloud-*` | SageMaker / AWS helper skills |
 
-Refresh:
+Refresh. `hf skills add --dest=…` copies rather than symlinks, so re-run the
+normalisation loop from the token-efficiency block above (and
+`python -m scripts.repo_policy`) after any of these.
 
 ```bash
 hf skills update
 hf skills add --force                 # regenerate hf-cli
 hf skills add <name> --force          # one skill
 hf skills add --claude --force        # Claude symlinks
+# then: normalisation loop + python -m scripts.repo_policy
 ```
 
 Full HF-context trains sync checkpoints to `hf://buckets/TKendrick/OpenUI` (see `docs/design/checkpoint-bucket.md`).

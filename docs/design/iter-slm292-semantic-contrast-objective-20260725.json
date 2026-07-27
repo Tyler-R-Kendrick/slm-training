@@ -1,0 +1,42 @@
+{
+  "schema": "slm292_semantic_contrast_objective/v1",
+  "claim_class": "wiring_only",
+  "recipe": {
+    "device": "cpu",
+    "backend": "scratch",
+    "pairs": 2,
+    "seeds": 1,
+    "checkpoint_written": false
+  },
+  "disabled": {
+    "objective": 0.0,
+    "legacy_loss_bit_exact": true
+  },
+  "enabled": {
+    "loss": 37.23735046386719,
+    "semantic_contrast_loss": 0.7715082168579102,
+    "pairs": 2,
+    "family_sides": {
+      "content": 4
+    },
+    "positive_nll": 20.25637435913086,
+    "negative_nll": 20.484867095947266,
+    "score_distance": 0.22849178314208984,
+    "violation_rate": 1.0
+  },
+  "promotion": {
+    "eligible": false,
+    "reason": "local wiring control only"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b8fabf4c21f27c2d019570a3bc153b9dd1467b4c",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v240",
+      "harness.model_build.train": "v25",
+      "harness.experiments.slm292_semantic_contrast_objective": "v1"
+    },
+    "stamped_at": "2026-07-25T05:38:57.358084+00:00"
+  }
+}

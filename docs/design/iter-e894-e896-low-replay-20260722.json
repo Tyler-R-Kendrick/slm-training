@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e896-e894-current-policy-smoke-n3-r1",
+  "experiment_id": "E894-E896",
+  "date": "2026-07-22",
+  "decision": "reject_low_replay_dominated_by_e891_target_typed_roles",
+  "train": {
+    "run_id": "e894-e886-base90-hard10-warm20-r1",
+    "parent_run_id": "e886-e851-recovery-scratch600-r1",
+    "train_dir": "src/slm_training/resources/data/train/e851_e826_typed_supplement_v1",
+    "replay_train_dir": "src/slm_training/resources/data/train/e872_e851_hard80_v2",
+    "requested_replay_fraction": 0.1,
+    "effective_replay_fraction": 0.1125,
+    "seen_primary_examples": 71,
+    "seen_replay_examples": 9,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 20,
+    "elapsed_wall_seconds": 3.263847553000005,
+    "last_loss": 4.059552192687988,
+    "initialized_weight_count": 1681282,
+    "initialized_weight_rms_drift": 0.0010598372632404731,
+    "data_manifest_sha": "4e06a1b709474c6198edc942236c03c5dff7bd713730d37c00c1e6bf9348789c",
+    "checkpoint_sha256": "8b45d5753499bf5b263435f23c19503226f547854f2beb1c3003f1d6ccdb4f59",
+    "checkpoint_sync": "disabled_local_scratch"
+  },
+  "baseline": {
+    "checkpoint_run_id": "e891-e886-base75-hard25-warm20-r1",
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "structural_similarity": 0.5783333333333333,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.945,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 0.8,
+      "meaningful_program_rate": 0.8,
+      "binding_aware_meaningful_v2_rate_strict": 0.2,
+      "placeholder_fidelity_normalized": 0.8,
+      "structural_similarity": 0.32984,
+      "component_type_recall": 0.7142857142857142,
+      "reward_score": 0.7844,
+      "decode_timeout_count": 1,
+      "fallback_count": 0
+    }
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "structural_similarity": 0.5783333333333333,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.945,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6,
+      "binding_aware_meaningful_v2_rate_strict": 0.2,
+      "placeholder_fidelity_normalized": 0.6733333333333333,
+      "structural_similarity": 0.30346,
+      "component_type_recall": 0.6476190476190476,
+      "reward_score": 0.8492000000000001,
+      "decode_timeout_count": 0,
+      "fallback_count": 3,
+      "failure_breakdown": {
+        "low_component_recall": 2
+      }
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 2,
+    "failed": 2,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "diagnostic smoke and held_out only; AgentV failed and candidate is dominated by E891"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "evaluation_policy": "strict_compiler_tree",
+    "diagnostic_subset": true,
+    "max_wall_minutes": 1.5833333333333333,
+    "checkpoint_sync": "disabled_local_scratch",
+    "remote_workflow": false
+  },
+  "completion_contract": "grammar/AST symbols plus canonical opaque :slot_N markers only",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e68acbe79ffbf31a9365cf23c23eabe936445f00",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v29",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v51",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v236"
+    },
+    "stamped_at": "2026-07-22T21:36:06.967861+00:00"
+  }
+}

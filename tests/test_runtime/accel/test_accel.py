@@ -15,6 +15,15 @@ def test_detect_device_cpu_fallback() -> None:
     assert info.num_threads >= 1
 
 
+def test_detect_device_respects_omp_thread_request(monkeypatch) -> None:
+    before = torch.get_num_threads()
+    monkeypatch.setenv("OMP_NUM_THREADS", "1")
+    try:
+        assert detect_device("cpu").num_threads == 1
+    finally:
+        torch.set_num_threads(before)
+
+
 def test_detect_device_auto() -> None:
     info = detect_device("auto")
     assert info.backend in {"cpu", "cuda", "npu", "dml"}

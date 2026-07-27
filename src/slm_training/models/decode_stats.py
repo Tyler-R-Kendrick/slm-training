@@ -26,6 +26,7 @@ class DecodeStats:
     ambiguous_rows_forwarded: int = 0
     forced_row_tokens_without_forward: int = 0
     all_forced_steps_without_forward: int = 0
+    semantic_singleton_bypasses: int = 0
     probes_count: int = 0
     dfa_sync_count: int = 0
     tokens_emitted: int = 0
@@ -38,6 +39,13 @@ class DecodeStats:
     compiler_ms: float = 0.0
     trie_ms: float = 0.0
     compiler_candidates: int = 0
+    compiler_prefill_batches: int = 0
+    compiler_prefill_states: int = 0
+    compiler_prefill_tokens: int = 0
+    # SLM-293: inventory is a live factor bias, so causal-use controls need
+    # the same eligible-position/argmax accounting as the other factor heads.
+    component_inventory_applications: int = 0
+    component_inventory_choice_changes: int = 0
     component_plan_applications: int = 0
     component_plan_choice_changes: int = 0
     semantic_plan_applications: int = 0
@@ -71,6 +79,19 @@ class DecodeStats:
     binder_arity_choice_changes: int = 0
     forced_spans: int = 0
     forced_tokens: int = 0
+    # I3 deterministic speculative ranking over the symbol table: how often the
+    # corpus scorer was consulted, how often it was confident enough to commit
+    # without a forward, and how many tokens that bought.
+    speculative_rank_evaluations: int = 0
+    speculative_rank_commits: int = 0
+    speculative_rank_tokens: int = 0
+    speculative_rank_declined: int = 0
+    # I4 symbol-table prefill scheduling: how many forwards the planner shaped,
+    # how many rows it dropped from them, and how much canvas it did not read.
+    scheduled_prefills: int = 0
+    scheduled_rows_skipped: int = 0
+    scheduled_prefill_tokens_saved: int = 0
+    schedule_checkpoint_hits: int = 0
     choice_state_cache_hits: int = 0
     choice_state_cache_misses: int = 0
     choice_candidates_considered: int = 0
@@ -227,6 +248,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "ambiguous_rows_forwarded",
         "forced_row_tokens_without_forward",
         "all_forced_steps_without_forward",
+        "semantic_singleton_bypasses",
         "probes_count",
         "dfa_sync_count",
         "tokens_emitted",
@@ -238,6 +260,11 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_ms",
         "trie_ms",
         "compiler_candidates",
+        "compiler_prefill_batches",
+        "compiler_prefill_states",
+        "compiler_prefill_tokens",
+        "component_inventory_applications",
+        "component_inventory_choice_changes",
         "component_plan_applications",
         "component_plan_choice_changes",
         "semantic_plan_applications",
@@ -268,6 +295,14 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "binder_arity_choice_changes",
         "forced_spans",
         "forced_tokens",
+        "speculative_rank_evaluations",
+        "speculative_rank_commits",
+        "speculative_rank_tokens",
+        "speculative_rank_declined",
+        "scheduled_prefills",
+        "scheduled_rows_skipped",
+        "scheduled_prefill_tokens_saved",
+        "schedule_checkpoint_hits",
         "choice_state_cache_hits",
         "choice_state_cache_misses",
         "choice_candidates_considered",

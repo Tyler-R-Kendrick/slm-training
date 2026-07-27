@@ -22,10 +22,12 @@ from slm_training.dsl.operators import (
     ReferenceDescriptorV1,
     ReferenceResolutionError,
     RegisteredOperatorV1,
+    TurnArtifactV1,
     append_operator_turn,
     branch_fingerprint,
     build_reference_table,
     checkout_conversation_state,
+    copy_conversation_state,
     collapse_conversation_trace,
     create_conversation_trace,
     fork_conversation,
@@ -498,3 +500,94 @@ def test_trace_values_are_frozen_and_provenance_complete() -> None:
             authority_resolver=lambda _node: (pack, library),
             trace=trace,
         )
+
+
+def test_copy_state_materializes_an_earlier_artifact_on_the_same_branch() -> None:
+    """I11: copy is one of the ops a turn may be, alongside undo/redo/fork."""
+    pack, library, trace = _fixture()
+    root_id = trace.root_state_id
+    trace, _ = _append(pack, library, trace)
+    edited_source = trace.current.state.source
+    assert edited_source != SOURCE
+
+    trace = undo_conversation(trace, provenance=_provenance(trace.current.state))
+    assert trace.current_state_id == root_id
+
+    # Undo rewound the cursor, but the edited child still occupies this
+    # parent/branch slot, so copying onto it must fail closed.
+    with pytest.raises(ConversationTraceError, match="already has a next state"):
+        copy_conversation_state(
+            trace, source_state_id=root_id, provenance=_provenance(trace.current.state)
+        )
+
+
+def test_copy_state_replays_and_carries_the_source_artifact() -> None:
+    pack, library, trace = _fixture()
+    root_id = trace.root_state_id
+    trace = copy_conversation_state(
+        trace, source_state_id=root_id, provenance=_provenance(trace.current.state)
+    )
+    assert trace.turns[-1].operation is ConversationOperation.COPY_STATE
+    assert trace.turns[-1].copy_source_state_id == root_id
+    assert trace.current.state.source == SOURCE
+    assert trace.current_state_id != root_id
+    replayed = replay_conversation_trace(pack=pack, library=library, trace=trace)
+    assert replayed.state_id == trace.current_state_id
+
+
+def test_copy_state_refuses_a_cross_branch_source() -> None:
+    """Reference tables are branch-scoped; a cross-branch copy would smuggle one."""
+    pack, library, trace = _fixture()
+    root_id = trace.root_state_id
+    forked = fork_conversation(
+        trace,
+        branch_nonce_digest=_sha("copy-branch"),
+        reference_seed=7,
+        provenance=_provenance(trace.current.state),
+    )
+    with pytest.raises(ConversationTraceError, match="another branch"):
+        copy_conversation_state(
+            forked,
+            source_state_id=root_id,
+            provenance=_provenance(forked.current.state),
+        )
+
+
+def test_copy_source_state_id_is_required_and_exclusive() -> None:
+    pack, library, trace = _fixture()
+    provenance = _provenance(trace.current.state)
+    with pytest.raises(ConversationTraceError, match="copy requires a source state"):
+        TurnArtifactV1(
+            operation=ConversationOperation.COPY_STATE,
+            input_state_id=trace.root_state_id,
+            output_state_id=trace.root_state_id,
+            provenance=provenance,
+        )
+    with pytest.raises(ConversationTraceError, match="only copy turns"):
+        TurnArtifactV1(
+            operation=ConversationOperation.CHECKOUT_STATE,
+            input_state_id=trace.root_state_id,
+            output_state_id=trace.root_state_id,
+            provenance=provenance,
+            copy_source_state_id=trace.root_state_id,
+        )
+
+
+def test_copy_replay_detects_a_tampered_source() -> None:
+    pack, library, trace = _fixture()
+    root_id = trace.root_state_id
+    edited, _ = _append(pack, library, trace)
+    copied = copy_conversation_state(
+        edited,
+        source_state_id=edited.current_state_id,
+        provenance=_provenance(edited.current.state),
+    )
+    tampered = replace(
+        copied,
+        turns=(
+            *copied.turns[:-1],
+            replace(copied.turns[-1], copy_source_state_id=root_id),
+        ),
+    )
+    with pytest.raises(ConversationTraceError, match="copy replay differs"):
+        replay_conversation_trace(pack=pack, library=library, trace=tampered)

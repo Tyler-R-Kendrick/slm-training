@@ -1,0 +1,792 @@
+{
+  "schema_version": 1,
+  "version": "e1278_text_form_input_ordered_natural_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T07:04:34.810530+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "corruption_repair": {
+      "admitted": 14,
+      "rejected": 6,
+      "by_stage": {
+        "decontamination": 1,
+        "quality": 4,
+        "verification": 1
+      },
+      "by_reason": {
+        "quality_gate_failed": 4,
+        "quarantine": 1,
+        "test_fixture_structure": 1
+      },
+      "candidates": 20,
+      "yield": 0.7
+    },
+    "edit_trajectory": {
+      "admitted": 21,
+      "rejected": 34,
+      "by_stage": {
+        "decontamination": 6,
+        "dedup": 17,
+        "verification": 11
+      },
+      "by_reason": {
+        "quarantine": 11,
+        "semantic_cosine": 9,
+        "exact_pair_duplicate": 7,
+        "test_fixture_structure": 6,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 55,
+      "yield": 0.3818
+    },
+    "edit_trajectory+design_md_contrastive": {
+      "admitted": 0,
+      "rejected": 9,
+      "by_stage": {
+        "verification": 9
+      },
+      "by_reason": {
+        "quarantine": 9
+      },
+      "candidates": 9,
+      "yield": 0.0
+    },
+    "lexical_typed_map": {
+      "admitted": 0,
+      "rejected": 68,
+      "by_stage": {
+        "normalize": 68
+      },
+      "by_reason": {
+        "parse_or_contract_error": 68
+      },
+      "candidates": 68,
+      "yield": 0.0
+    },
+    "programspec_generated": {
+      "admitted": 6,
+      "rejected": 21,
+      "by_stage": {
+        "decontamination": 6,
+        "dedup": 2,
+        "quality": 4,
+        "verification": 9
+      },
+      "by_reason": {
+        "quarantine": 9,
+        "test_fixture_structure": 6,
+        "quality_gate_failed": 4,
+        "fuzzy_minhash": 2
+      },
+      "candidates": 27,
+      "yield": 0.2222
+    },
+    "programspec_generated+design_md_contrastive": {
+      "admitted": 0,
+      "rejected": 13,
+      "by_stage": {
+        "quality": 4,
+        "verification": 9
+      },
+      "by_reason": {
+        "quarantine": 9,
+        "quality_gate_failed": 4
+      },
+      "candidates": 13,
+      "yield": 0.0
+    },
+    "scope_canonical_document": {
+      "admitted": 21,
+      "rejected": 43,
+      "by_stage": {
+        "decontamination": 3,
+        "dedup": 25,
+        "quality": 12,
+        "verification": 3
+      },
+      "by_reason": {
+        "semantic_cosine": 25,
+        "quality_gate_failed": 12,
+        "quarantine": 3,
+        "test_fixture_structure": 3
+      },
+      "candidates": 64,
+      "yield": 0.3281
+    },
+    "scope_canonical_expression": {
+      "admitted": 8,
+      "rejected": 52,
+      "by_stage": {
+        "dedup": 1,
+        "normalize": 51
+      },
+      "by_reason": {
+        "parse_or_contract_error": 51,
+        "exact_pair_duplicate": 1
+      },
+      "candidates": 60,
+      "yield": 0.1333
+    },
+    "scope_canonical_lexical": {
+      "admitted": 9,
+      "rejected": 49,
+      "by_stage": {
+        "dedup": 49
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 49
+      },
+      "candidates": 58,
+      "yield": 0.1552
+    },
+    "scope_canonical_statement": {
+      "admitted": 8,
+      "rejected": 52,
+      "by_stage": {
+        "dedup": 19,
+        "normalize": 33
+      },
+      "by_reason": {
+        "parse_or_contract_error": 33,
+        "exact_pair_duplicate": 14,
+        "semantic_cosine": 3,
+        "fuzzy_minhash": 2
+      },
+      "candidates": 60,
+      "yield": 0.1333
+    },
+    "scope_identity_document": {
+      "admitted": 0,
+      "rejected": 60,
+      "by_stage": {
+        "verification": 60
+      },
+      "by_reason": {
+        "quarantine": 60
+      },
+      "candidates": 60,
+      "yield": 0.0
+    },
+    "scope_identity_expression": {
+      "admitted": 0,
+      "rejected": 120,
+      "by_stage": {
+        "normalize": 113,
+        "quality": 7
+      },
+      "by_reason": {
+        "parse_or_contract_error": 113,
+        "quality_gate_failed": 7
+      },
+      "candidates": 120,
+      "yield": 0.0
+    },
+    "scope_identity_lexical": {
+      "admitted": 12,
+      "rejected": 106,
+      "by_stage": {
+        "dedup": 106
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 97,
+        "fuzzy_minhash": 7,
+        "semantic_cosine": 2
+      },
+      "candidates": 118,
+      "yield": 0.1017
+    },
+    "scope_identity_statement": {
+      "admitted": 5,
+      "rejected": 112,
+      "by_stage": {
+        "dedup": 20,
+        "normalize": 63,
+        "quality": 29
+      },
+      "by_reason": {
+        "parse_or_contract_error": 63,
+        "quality_gate_failed": 29,
+        "exact_pair_duplicate": 14,
+        "fuzzy_minhash": 5,
+        "semantic_cosine": 1
+      },
+      "candidates": 117,
+      "yield": 0.0427
+    },
+    "scope_repair_expression": {
+      "admitted": 9,
+      "rejected": 31,
+      "by_stage": {
+        "dedup": 11,
+        "normalize": 20
+      },
+      "by_reason": {
+        "parse_or_contract_error": 20,
+        "exact_pair_duplicate": 11
+      },
+      "candidates": 40,
+      "yield": 0.225
+    },
+    "scope_repair_lexical": {
+      "admitted": 4,
+      "rejected": 36,
+      "by_stage": {
+        "dedup": 36
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 36
+      },
+      "candidates": 40,
+      "yield": 0.1
+    },
+    "scope_repair_statement": {
+      "admitted": 11,
+      "rejected": 26,
+      "by_stage": {
+        "dedup": 16,
+        "normalize": 10
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 14,
+        "parse_or_contract_error": 10,
+        "fuzzy_minhash": 2
+      },
+      "candidates": 37,
+      "yield": 0.2973
+    }
+  },
+  "synthesizers": {
+    "corruption_repair": {
+      "admitted": 14,
+      "rejected": 6,
+      "by_stage": {
+        "decontamination": 1,
+        "quality": 4,
+        "verification": 1
+      },
+      "by_reason": {
+        "quality_gate_failed": 4,
+        "quarantine": 1,
+        "test_fixture_structure": 1
+      },
+      "candidates": 20,
+      "yield": 0.7
+    },
+    "design_md_contrastive": {
+      "admitted": 3,
+      "rejected": 33,
+      "by_stage": {
+        "decontamination": 4,
+        "dedup": 7,
+        "quality": 4,
+        "verification": 18
+      },
+      "by_reason": {
+        "quarantine": 18,
+        "exact_pair_duplicate": 6,
+        "quality_gate_failed": 4,
+        "test_fixture_structure": 4,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 36,
+      "yield": 0.0833
+    }
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.1331,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 24,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "corruption_repair",
+      "evidence": {
+        "decontamination_drops": 1
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "edit_trajectory",
+      "evidence": {
+        "decontamination_drops": 6
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "edit_trajectory",
+      "evidence": {
+        "yield": 0.3818,
+        "top_reason": "quarantine",
+        "candidates": 55
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "edit_trajectory+design_md_contrastive",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 9
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "lexical_typed_map",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 68
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "programspec_generated",
+      "evidence": {
+        "decontamination_drops": 6
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "programspec_generated",
+      "evidence": {
+        "yield": 0.2222,
+        "top_reason": "quarantine",
+        "candidates": 27
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "programspec_generated+design_md_contrastive",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 13
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "scope_canonical_document",
+      "evidence": {
+        "decontamination_drops": 3
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_canonical_document",
+      "evidence": {
+        "yield": 0.3281,
+        "top_reason": "semantic_cosine",
+        "candidates": 64
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: semantic_cosine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_canonical_expression",
+      "evidence": {
+        "yield": 0.1333,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 60
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_canonical_lexical",
+      "evidence": {
+        "dup_share": 0.8448,
+        "candidates": 58
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_canonical_statement",
+      "evidence": {
+        "yield": 0.1333,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 60
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_identity_document",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 60
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_identity_expression",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 120
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_identity_lexical",
+      "evidence": {
+        "dup_share": 0.8983,
+        "candidates": 118
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_identity_statement",
+      "evidence": {
+        "yield": 0.0427,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 117
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_repair_expression",
+      "evidence": {
+        "yield": 0.225,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 40
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_repair_lexical",
+      "evidence": {
+        "dup_share": 0.9,
+        "candidates": 40
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_repair_statement",
+      "evidence": {
+        "yield": 0.2973,
+        "top_reason": "exact_pair_duplicate",
+        "candidates": 37
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: exact_pair_duplicate) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "corruption_repair",
+      "evidence": {
+        "decontamination_drops": 1
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "design_md_contrastive",
+      "evidence": {
+        "decontamination_drops": 4
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "synthesizer",
+      "target": "design_md_contrastive",
+      "evidence": {
+        "yield": 0.0833,
+        "top_reason": "quarantine",
+        "candidates": 36
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "family:corruption_repair inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'decontamination_drops': 1}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "family:edit_trajectory inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'decontamination_drops': 6}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:edit_trajectory raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.3818, 'top_reason': 'quarantine', 'candidates': 55}",
+      "expected_effect": "family:edit_trajectory yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:edit_trajectory+design_md_contrastive raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 9}",
+      "expected_effect": "family:edit_trajectory+design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:lexical_typed_map raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.0, 'top_reason': 'parse_or_contract_error', 'candidates': 68}",
+      "expected_effect": "family:lexical_typed_map yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:programspec_generated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'decontamination_drops': 6}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.2222, 'top_reason': 'quarantine', 'candidates': 27}",
+      "expected_effect": "family:programspec_generated yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated+design_md_contrastive raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 13}",
+      "expected_effect": "family:programspec_generated+design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:scope_canonical_document inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'decontamination_drops': 3}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_canonical_document raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.3281, 'top_reason': 'semantic_cosine', 'candidates': 64}",
+      "expected_effect": "family:scope_canonical_document yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_canonical_expression raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.1333, 'top_reason': 'parse_or_contract_error', 'candidates': 60}",
+      "expected_effect": "family:scope_canonical_expression yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'dup_share': 0.8448, 'candidates': 58}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_canonical_statement raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.1333, 'top_reason': 'parse_or_contract_error', 'candidates': 60}",
+      "expected_effect": "family:scope_canonical_statement yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_identity_document raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 60}",
+      "expected_effect": "family:scope_identity_document yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_identity_expression raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.0, 'top_reason': 'parse_or_contract_error', 'candidates': 120}",
+      "expected_effect": "family:scope_identity_expression yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'dup_share': 0.8983, 'candidates': 118}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_identity_statement raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.0427, 'top_reason': 'parse_or_contract_error', 'candidates': 117}",
+      "expected_effect": "family:scope_identity_statement yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_repair_expression raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.225, 'top_reason': 'parse_or_contract_error', 'candidates': 40}",
+      "expected_effect": "family:scope_repair_expression yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_repair_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'dup_share': 0.9, 'candidates': 40}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_repair_statement raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.2973, 'top_reason': 'exact_pair_duplicate', 'candidates': 37}",
+      "expected_effect": "family:scope_repair_statement yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:corruption_repair inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'decontamination_drops': 1}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:design_md_contrastive inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'decontamination_drops': 4}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for synthesizer:design_md_contrastive raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_natural_v1: {'yield': 0.0833, 'top_reason': 'quarantine', 'candidates': 36}",
+      "expected_effect": "synthesizer:design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v27"
+    },
+    "stamped_at": "2026-07-24T07:04:34.833761+00:00"
+  }
+}

@@ -19,6 +19,7 @@
     "corpus": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722"
   },
   "arms": ["raw", "constrained", "repaired", "uniform_at_unforced"],
+  "historical_policy_status": "superseded; raw and uniform emitted arms are retained only as attempted provenance and are now replaced by constrained_native and constrained_compiler",
   "outcome": "incomplete_no_scorecard",
   "attempts": [
     {

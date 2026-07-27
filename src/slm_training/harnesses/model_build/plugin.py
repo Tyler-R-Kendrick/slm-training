@@ -54,6 +54,9 @@ class StubModel:
     seed: int = 0
     _rng: random.Random = field(init=False, repr=False)
     last_training_metrics: dict[str, float] = field(default_factory=dict, init=False)
+    _generation_evidence: list[dict[str, object]] = field(
+        default_factory=list, init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         self._rng = random.Random(self.seed)
@@ -64,12 +67,28 @@ class StubModel:
         return 1.0 / (1.0 + float(len(self.memory)))
 
     def generate(self, prompt: str, gold: ExampleRecord | None = None) -> str:
+        from slm_training.dsl.parser import validate
+
         _ = gold  # never oracle-leak at eval
         if self.noise_rate > 0 and self._rng.random() < self.noise_rate:
-            return "root = Broken("
-        if prompt in self.memory:
-            return self.memory[prompt]
-        return 'root = Stack([missing])\nmissing = TextContent(":stub.missing")'
+            candidate = "root = Broken("
+        elif prompt in self.memory:
+            candidate = self.memory[prompt]
+        else:
+            candidate = 'root = Stack([missing])\nmissing = TextContent(":stub.missing")'
+        try:
+            program = validate(candidate)
+            output = (program.serialized or candidate).strip()
+            fallback_used = False
+        except Exception:  # noqa: BLE001
+            fallback = "root = Separator()"
+            program = validate(fallback)
+            output = (program.serialized or fallback).strip()
+            fallback_used = True
+        self._generation_evidence.append(
+            {"grammar_constrained": True, "fallback_used": fallback_used}
+        )
+        return output
 
     def generate_batch(
         self,
@@ -84,7 +103,9 @@ class StubModel:
         return [self.generate(request.prompt) for request in requests]
 
     def consume_generation_evidence(self) -> list[dict[str, object]]:
-        return []
+        evidence = list(self._generation_evidence)
+        self._generation_evidence = []
+        return evidence
 
     def artifact_identity(self) -> dict[str, str]:
         from slm_training.lineage.records import content_sha

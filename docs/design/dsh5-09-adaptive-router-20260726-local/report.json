@@ -1,0 +1,84 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh5-09-adaptive-router-preflight/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh5-09-adaptive-router-preflight/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh5-09-adaptive-router-preflight",
+      "timingPath": "agentv-dir://agentv/dsh5-09-adaptive-router-preflight/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 2,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "unavailable-modes-defer:domain_criterion",
+          "expected": true,
+          "id": "unavailable-modes-defer:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "no-fixture-promotion:domain_criterion",
+          "expected": true,
+          "id": "no-fixture-promotion:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 2
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh5-09-adaptive-router-preflight.eval.jsonl",
+    "summary": {
+      "durationMs": 118,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 2,
+      "total": 2
+    }
+  },
+  "decision": {
+    "mode": "defer",
+    "source": "defer"
+  },
+  "disposition": {
+    "reason": "No locked, group-disjoint matched all-arm outcomes exist; AP-028's fixture proxy cannot admit learned-router training or a quality/work claim.",
+    "required_next_evidence": [
+      "matched per-request outcomes for every fixed and candidate arm",
+      "prefix-time-only features with oracle/outcome fields rejected",
+      "frozen group-disjoint calibration and held-out evaluation"
+    ],
+    "verdict": "unavailable"
+  },
+  "run": {
+    "backend": "local_contract_preflight",
+    "device": "cpu",
+    "human_rating_gate": false,
+    "primary_metric": "meaningful_parse",
+    "ship_claim": false,
+    "suite_n": 0,
+    "timestamp": "2026-07-26T23:27:04.518608+00:00"
+  },
+  "schema": "dsh5_09_adaptive_router_preflight/v1",
+  "version_stamp": {
+    "code_commit": "f134e514385fbce0a634be00eb3ffdc5bd653ad0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.operator_router": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T23:27:03.984289+00:00"
+  }
+}

@@ -1,0 +1,432 @@
+{
+  "arms": [
+    {
+      "arm": "discrete_only",
+      "arm_id": "discrete_only",
+      "factor_swaps": [
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "shuffled_between_example",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "zeroed",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "random",
+          "precision_recon_bit_exact": true
+        }
+      ],
+      "notes": [
+        "strict rates are AP-030's DISTORTION_THRESHOLD MSE-threshold proxy, not binding_aware_meaningful_v2 -- see module scope decision.",
+        "precision-critical channel is unbottlenecked (raw features decoded directly) for every arm except all_continuous, which routes it through a ContinuousLatentCodec bottleneck as the negative control.",
+        "discrete_only: soft_codec/connector not constructed (zero extra params)."
+      ],
+      "num_holdout": 7,
+      "overall_strict_rate": 0.2857142984867096,
+      "precise_codec_collapsed": false,
+      "precision_mse_overall": 2.2348416450768127e-08,
+      "precision_mse_per_family": {
+        "binder_reference": 5.475362740980927e-08,
+        "cardinality": 1.2862316072425983e-17,
+        "inventory": 7.728330728330604e-16,
+        "topology": 8.952411987900133e-18
+      },
+      "precision_strict_rate": 1.0,
+      "soft_codec_collapsed": false,
+      "soft_mse_overall": 0.09367619454860687,
+      "soft_mse_per_family": {
+        "property_role_value": 1.4864653189166233e-15,
+        "style_layout": 0.3747047781944275
+      },
+      "soft_strict_rate": 0.2857142984867096
+    },
+    {
+      "arm": "continuous_only",
+      "arm_id": "continuous_only",
+      "factor_swaps": [
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "shuffled_between_example",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "zeroed",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "random",
+          "precision_recon_bit_exact": true
+        }
+      ],
+      "notes": [
+        "strict rates are AP-030's DISTORTION_THRESHOLD MSE-threshold proxy, not binding_aware_meaningful_v2 -- see module scope decision.",
+        "precision-critical channel is unbottlenecked (raw features decoded directly) for every arm except all_continuous, which routes it through a ContinuousLatentCodec bottleneck as the negative control."
+      ],
+      "num_holdout": 7,
+      "overall_strict_rate": 1.0,
+      "precise_codec_collapsed": false,
+      "precision_mse_overall": 2.2348416450768127e-08,
+      "precision_mse_per_family": {
+        "binder_reference": 5.475362740980927e-08,
+        "cardinality": 1.2862316072425983e-17,
+        "inventory": 7.728330728330604e-16,
+        "topology": 8.952411987900133e-18
+      },
+      "precision_strict_rate": 1.0,
+      "soft_codec_collapsed": false,
+      "soft_mse_overall": 5.947664185294724e-16,
+      "soft_mse_per_family": {
+        "property_role_value": 7.158212968566232e-16,
+        "style_layout": 2.316016247293424e-16
+      },
+      "soft_strict_rate": 1.0
+    },
+    {
+      "arm": "selective_hybrid",
+      "arm_id": "selective_hybrid",
+      "factor_swaps": [
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "shuffled_between_example",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "zeroed",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "random",
+          "precision_recon_bit_exact": true
+        }
+      ],
+      "notes": [
+        "strict rates are AP-030's DISTORTION_THRESHOLD MSE-threshold proxy, not binding_aware_meaningful_v2 -- see module scope decision.",
+        "precision-critical channel is unbottlenecked (raw features decoded directly) for every arm except all_continuous, which routes it through a ContinuousLatentCodec bottleneck as the negative control."
+      ],
+      "num_holdout": 7,
+      "overall_strict_rate": 1.0,
+      "precise_codec_collapsed": false,
+      "precision_mse_overall": 2.2348416450768127e-08,
+      "precision_mse_per_family": {
+        "binder_reference": 5.475362740980927e-08,
+        "cardinality": 1.2862316072425983e-17,
+        "inventory": 7.728330728330604e-16,
+        "topology": 8.952411987900133e-18
+      },
+      "precision_strict_rate": 1.0,
+      "soft_codec_collapsed": false,
+      "soft_mse_overall": 1.5756555853916758e-16,
+      "soft_mse_per_family": {
+        "property_role_value": 1.3915648857067744e-16,
+        "style_layout": 2.127927419748584e-16
+      },
+      "soft_strict_rate": 1.0
+    },
+    {
+      "arm": "all_continuous",
+      "arm_id": "all_continuous",
+      "factor_swaps": [
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "shuffled_between_example",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "zeroed",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "random",
+          "precision_recon_bit_exact": true
+        }
+      ],
+      "notes": [
+        "strict rates are AP-030's DISTORTION_THRESHOLD MSE-threshold proxy, not binding_aware_meaningful_v2 -- see module scope decision.",
+        "precision-critical channel is unbottlenecked (raw features decoded directly) for every arm except all_continuous, which routes it through a ContinuousLatentCodec bottleneck as the negative control."
+      ],
+      "num_holdout": 7,
+      "overall_strict_rate": 1.0,
+      "precise_codec_collapsed": false,
+      "precision_mse_overall": 0.004882678855210543,
+      "precision_mse_per_family": {
+        "binder_reference": 0.0013969112187623978,
+        "cardinality": 5.5175723900902085e-06,
+        "inventory": 0.023447977378964424,
+        "topology": 4.823930430575274e-05
+      },
+      "precision_strict_rate": 1.0,
+      "soft_codec_collapsed": false,
+      "soft_mse_overall": 1.2589858964921243e-14,
+      "soft_mse_per_family": {
+        "property_role_value": 1.6602762255833216e-14,
+        "style_layout": 5.511464452073625e-16
+      },
+      "soft_strict_rate": 1.0
+    },
+    {
+      "arm": "random_continuous",
+      "arm_id": "random_continuous",
+      "factor_swaps": [
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "shuffled_between_example",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "zeroed",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "random",
+          "precision_recon_bit_exact": true
+        }
+      ],
+      "notes": [
+        "strict rates are AP-030's DISTORTION_THRESHOLD MSE-threshold proxy, not binding_aware_meaningful_v2 -- see module scope decision.",
+        "precision-critical channel is unbottlenecked (raw features decoded directly) for every arm except all_continuous, which routes it through a ContinuousLatentCodec bottleneck as the negative control."
+      ],
+      "num_holdout": 7,
+      "overall_strict_rate": 0.2857142984867096,
+      "precise_codec_collapsed": false,
+      "precision_mse_overall": 2.2348416450768127e-08,
+      "precision_mse_per_family": {
+        "binder_reference": 5.475362740980927e-08,
+        "cardinality": 1.2862316072425983e-17,
+        "inventory": 7.728330728330604e-16,
+        "topology": 8.952411987900133e-18
+      },
+      "precision_strict_rate": 1.0,
+      "soft_codec_collapsed": false,
+      "soft_mse_overall": 0.09268499165773392,
+      "soft_mse_per_family": {
+        "property_role_value": 1.6329429399775108e-06,
+        "style_layout": 0.3707350492477417
+      },
+      "soft_strict_rate": 0.2857142984867096
+    },
+    {
+      "arm": "oracle_continuous",
+      "arm_id": "oracle_continuous",
+      "factor_swaps": [
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "shuffled_between_example",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "zeroed",
+          "precision_recon_bit_exact": true
+        },
+        {
+          "max_abs_precision_delta": 0.0,
+          "perturbation": "random",
+          "precision_recon_bit_exact": true
+        }
+      ],
+      "notes": [
+        "strict rates are AP-030's DISTORTION_THRESHOLD MSE-threshold proxy, not binding_aware_meaningful_v2 -- see module scope decision.",
+        "precision-critical channel is unbottlenecked (raw features decoded directly) for every arm except all_continuous, which routes it through a ContinuousLatentCodec bottleneck as the negative control."
+      ],
+      "num_holdout": 7,
+      "overall_strict_rate": 1.0,
+      "precise_codec_collapsed": false,
+      "precision_mse_overall": 2.2348416450768127e-08,
+      "precision_mse_per_family": {
+        "binder_reference": 5.475362740980927e-08,
+        "cardinality": 1.2862316072425983e-17,
+        "inventory": 7.728330728330604e-16,
+        "topology": 8.952411987900133e-18
+      },
+      "precision_strict_rate": 1.0,
+      "soft_codec_collapsed": false,
+      "soft_mse_overall": 5.043502042121673e-16,
+      "soft_mse_per_family": {
+        "property_role_value": 9.995311708911885e-17,
+        "style_layout": 1.7175414126417536e-15
+      },
+      "soft_strict_rate": 1.0
+    }
+  ],
+  "comparisons": [
+    {
+      "arm_id": "continuous_only",
+      "binder_reference_mse_ci": {},
+      "binder_reference_mse_delta": 0.0,
+      "exact_paired_test_overall": {
+        "candidate_only": 5,
+        "control_only": 0,
+        "discordant": 5,
+        "effect": 0.7142857142857143,
+        "method": "two_sided_exact_mcnemar",
+        "n": 7,
+        "p_value": 0.0625,
+        "schema": "exact_paired_binary_test/v1"
+      },
+      "overall_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "overall_strict_rate_delta": 0.7142857015132904,
+      "soft_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "soft_strict_rate_delta": 0.7142857015132904
+    },
+    {
+      "arm_id": "selective_hybrid",
+      "binder_reference_mse_ci": {},
+      "binder_reference_mse_delta": 0.0,
+      "exact_paired_test_overall": {
+        "candidate_only": 5,
+        "control_only": 0,
+        "discordant": 5,
+        "effect": 0.7142857142857143,
+        "method": "two_sided_exact_mcnemar",
+        "n": 7,
+        "p_value": 0.0625,
+        "schema": "exact_paired_binary_test/v1"
+      },
+      "overall_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "overall_strict_rate_delta": 0.7142857015132904,
+      "soft_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "soft_strict_rate_delta": 0.7142857015132904
+    },
+    {
+      "arm_id": "all_continuous",
+      "binder_reference_mse_ci": {},
+      "binder_reference_mse_delta": 0.001396856465134988,
+      "exact_paired_test_overall": {
+        "candidate_only": 5,
+        "control_only": 0,
+        "discordant": 5,
+        "effect": 0.7142857142857143,
+        "method": "two_sided_exact_mcnemar",
+        "n": 7,
+        "p_value": 0.0625,
+        "schema": "exact_paired_binary_test/v1"
+      },
+      "overall_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "overall_strict_rate_delta": 0.7142857015132904,
+      "soft_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "soft_strict_rate_delta": 0.7142857015132904
+    },
+    {
+      "arm_id": "random_continuous",
+      "binder_reference_mse_ci": {},
+      "binder_reference_mse_delta": 0.0,
+      "exact_paired_test_overall": {
+        "candidate_only": 0,
+        "control_only": 0,
+        "discordant": 0,
+        "effect": 0.0,
+        "method": "two_sided_exact_mcnemar",
+        "n": 7,
+        "p_value": 1.0,
+        "schema": "exact_paired_binary_test/v1"
+      },
+      "overall_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.0,
+        "high": 0.0,
+        "low": 0.0,
+        "resamples": 1000
+      },
+      "overall_strict_rate_delta": 0.0,
+      "soft_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.0,
+        "high": 0.0,
+        "low": 0.0,
+        "resamples": 1000
+      },
+      "soft_strict_rate_delta": 0.0
+    },
+    {
+      "arm_id": "oracle_continuous",
+      "binder_reference_mse_ci": {},
+      "binder_reference_mse_delta": 0.0,
+      "exact_paired_test_overall": {
+        "candidate_only": 5,
+        "control_only": 0,
+        "discordant": 5,
+        "effect": 0.7142857142857143,
+        "method": "two_sided_exact_mcnemar",
+        "n": 7,
+        "p_value": 0.0625,
+        "schema": "exact_paired_binary_test/v1"
+      },
+      "overall_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "overall_strict_rate_delta": 0.7142857015132904,
+      "soft_strict_rate_ci": {
+        "alpha": 0.05,
+        "estimate": 0.7142857142857143,
+        "high": 1.0,
+        "low": 0.4285714285714286,
+        "resamples": 1000
+      },
+      "soft_strict_rate_delta": 0.7142857015132904
+    }
+  ],
+  "disposition": "promote_selective_hybrid",
+  "disposition_reasons": [
+    "selective_hybrid matched/exceeded discrete_only strict-semantics-proxy rate (1.000 vs 0.286) and improved a soft-factor metric (soft_strict_rate 1.000 vs 0.286; soft_mse 0.0000 vs 0.0937) without a binder/reference MSE regression beyond DISTORTION_THRESHOLD.",
+    "all_continuous (negative control) binder_reference MSE 0.0014 vs discrete_only's 0.0000."
+  ],
+  "fixture_count": 32,
+  "fixture_seed": 0,
+  "num_holdout": 7,
+  "num_train": 25,
+  "run_id": "a88bcaf9d8319f29",
+  "timestamp": "2026-07-26T18:38:40.499647+00:00",
+  "version": "cap2-08-v1"
+}

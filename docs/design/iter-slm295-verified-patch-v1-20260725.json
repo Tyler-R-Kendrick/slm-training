@@ -1,0 +1,695 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/slm295-local-retrieval/benchmark.json",
+      "indexPath": "output-dir://agentv/slm295-local-retrieval/index.jsonl",
+      "runDir": "output-dir://agentv/slm295-local-retrieval",
+      "timingPath": "output-dir://agentv/slm295-local-retrieval/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 1,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "index-and-patch-verifier:domain_criterion",
+          "expected": true,
+          "id": "index-and-patch-verifier:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 1
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/slm295-local-retrieval.eval.jsonl",
+    "summary": {
+      "durationMs": 295,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 1,
+      "total": 1
+    }
+  },
+  "arms": {
+    "learned_rerank_fallback": {
+      "binder_reference_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "constrained_syntax_validity": 1.0,
+      "diagnostic_non_promotable": false,
+      "latency_ms_p50": 3.9419059903593734,
+      "latency_ms_p95": 3.9419059903593734,
+      "n": 1,
+      "peak_memory_bytes": 241651712,
+      "raw_syntax_validity": 1.0,
+      "repaired_syntax_validity": 1.0
+    },
+    "oracle_topk_diagnostic": {
+      "binder_reference_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "constrained_syntax_validity": 1.0,
+      "diagnostic_non_promotable": true,
+      "latency_ms_p50": 3.4330360067542642,
+      "latency_ms_p95": 3.4330360067542642,
+      "n": 1,
+      "peak_memory_bytes": 241651712,
+      "raw_syntax_validity": 1.0,
+      "repaired_syntax_validity": 1.0
+    },
+    "patching": {
+      "binder_reference_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "constrained_syntax_validity": 1.0,
+      "diagnostic_non_promotable": false,
+      "latency_ms_p50": 3.0458789988188073,
+      "latency_ms_p95": 3.0458789988188073,
+      "n": 1,
+      "peak_memory_bytes": 241651712,
+      "raw_syntax_validity": 1.0,
+      "repaired_syntax_validity": 1.0
+    },
+    "top1": {
+      "binder_reference_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "constrained_syntax_validity": 1.0,
+      "diagnostic_non_promotable": false,
+      "latency_ms_p50": 3.8551409961655736,
+      "latency_ms_p95": 3.8551409961655736,
+      "n": 1,
+      "peak_memory_bytes": 241651712,
+      "raw_syntax_validity": 1.0,
+      "repaired_syntax_validity": 1.0
+    }
+  },
+  "claim_class": "local_diagnostic_non_ship",
+  "index_manifest": {
+    "index_records": [
+      {
+        "ast_sketch": {
+          "binding_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+          "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+          "component_topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661",
+          "placeholder_signature": ":title",
+          "schema": "AstTrainingSketchV1",
+          "sketch_hash": "a0b900934e7a93a2231f2578ebedadc1df9561c1adebef65680211fea654b798",
+          "sketch_version": "ast_sketch_v1",
+          "slot_contract_shape_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+          "structural_fingerprint": "3d5ab02b133ecd77",
+          "topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661"
+        },
+        "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+        "prompt_fingerprint": "959d38403a2789074928d53a0dbe660971a05261d5c1260a73158c8597633019",
+        "record_id": "train-card",
+        "semantic_plan_factors": {
+          "archetype": "ef4b24ad6e1058afa7721f148d6124eebad509e10d77d5ff540cf10bd6d501eb",
+          "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+          "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+          "component_family": "c9daa2101a29b913f2763f8467711dde7422d74cb88d1d0b1fd94ebc97143b89",
+          "coverage": "56575d111b92d15771c251d496c26c76d04bdd442142d1bd320185dcf680d94a",
+          "exact": "81d4b00c613fd8fd672182511b362394480faeb9427be16c97ae5c30bc5e70dd",
+          "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+          "symbol_role": "de1aaecce7898dd374604e9de1c0fb9ae4bb1416fac79dfa7d463abbd2b261d4",
+          "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+        },
+        "verifier_ok": true
+      },
+      {
+        "ast_sketch": {
+          "binding_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+          "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+          "component_topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57",
+          "placeholder_signature": ":save",
+          "schema": "AstTrainingSketchV1",
+          "sketch_hash": "bf6b93b903c09d66f631194f2380a99602e55711af6c9406911f565b5bb43a47",
+          "sketch_version": "ast_sketch_v1",
+          "slot_contract_shape_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+          "structural_fingerprint": "8ccb18ed993b2863",
+          "topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57"
+        },
+        "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+        "prompt_fingerprint": "e1a9e8a895afe4b22773024c37998a2f79b725f806bb78f0f20eda197f3659d9",
+        "record_id": "train-action",
+        "semantic_plan_factors": {
+          "archetype": "a0f534025d26f6db317bb9b2bd1a770f3c82e77f0c1bd39a4f3cd87b0e114101",
+          "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+          "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+          "component_family": "73061338e70cc34bc1bf0e6346cc06e1748ea40a009c1a643050b375eb10c3d4",
+          "coverage": "a4fda931588b5dc34ab0b7fa5ac9507b09f586d3fb2a7c30ad9a7df2d861f861",
+          "exact": "a817a325a0116ed518d54f0448a4da2d933494d24da4e98eb6f29390eb91109a",
+          "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+          "symbol_role": "d621bc79fb76a50fdc1f5e898d63dc40062949a34bbb5775ecf9b40d8aefb834",
+          "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+        },
+        "verifier_ok": true
+      }
+    ],
+    "n_entries": 2,
+    "rejected": [
+      {
+        "id": "train-form",
+        "reason": "invalid_program"
+      }
+    ],
+    "schema": "VerifiedPatchRetrievalV1",
+    "split": "train"
+  },
+  "recipe": {
+    "backend": "local_cpu",
+    "fixture_n": 1,
+    "human_ratings": "not_used",
+    "index_n": 3,
+    "remote_replay": "not_used"
+  },
+  "records": [
+    {
+      "arm": "top1",
+      "binder_reference_f1": 0.0,
+      "constrained_syntax_validity": true,
+      "diagnostic_non_promotable": false,
+      "latency_ms": 3.8551409961655736,
+      "meaningful": false,
+      "raw_syntax_validity": true,
+      "repaired_syntax_validity": true,
+      "result": {
+        "arm": "top1",
+        "candidates": [
+          {
+            "ast_sketch": {
+              "binding_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+              "component_topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57",
+              "placeholder_signature": ":save",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "bf6b93b903c09d66f631194f2380a99602e55711af6c9406911f565b5bb43a47",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "structural_fingerprint": "8ccb18ed993b2863",
+              "topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57"
+            },
+            "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+            "prompt_fingerprint": "e1a9e8a895afe4b22773024c37998a2f79b725f806bb78f0f20eda197f3659d9",
+            "rank": 1,
+            "record_id": "train-action",
+            "score": 0.3055555555555555,
+            "semantic_plan_factors": {
+              "archetype": "a0f534025d26f6db317bb9b2bd1a770f3c82e77f0c1bd39a4f3cd87b0e114101",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "73061338e70cc34bc1bf0e6346cc06e1748ea40a009c1a643050b375eb10c3d4",
+              "coverage": "a4fda931588b5dc34ab0b7fa5ac9507b09f586d3fb2a7c30ad9a7df2d861f861",
+              "exact": "a817a325a0116ed518d54f0448a4da2d933494d24da4e98eb6f29390eb91109a",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "d621bc79fb76a50fdc1f5e898d63dc40062949a34bbb5775ecf9b40d8aefb834",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          },
+          {
+            "ast_sketch": {
+              "binding_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+              "component_topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661",
+              "placeholder_signature": ":title",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "a0b900934e7a93a2231f2578ebedadc1df9561c1adebef65680211fea654b798",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "structural_fingerprint": "3d5ab02b133ecd77",
+              "topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661"
+            },
+            "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+            "prompt_fingerprint": "959d38403a2789074928d53a0dbe660971a05261d5c1260a73158c8597633019",
+            "rank": 2,
+            "record_id": "train-card",
+            "score": 0.14285714285714285,
+            "semantic_plan_factors": {
+              "archetype": "ef4b24ad6e1058afa7721f148d6124eebad509e10d77d5ff540cf10bd6d501eb",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "c9daa2101a29b913f2763f8467711dde7422d74cb88d1d0b1fd94ebc97143b89",
+              "coverage": "56575d111b92d15771c251d496c26c76d04bdd442142d1bd320185dcf680d94a",
+              "exact": "81d4b00c613fd8fd672182511b362394480faeb9427be16c97ae5c30bc5e70dd",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "de1aaecce7898dd374604e9de1c0fb9ae4bb1416fac79dfa7d463abbd2b261d4",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          }
+        ],
+        "excluded_reasons": {},
+        "fallback": null,
+        "latency_ms": 3.8551409961655736,
+        "output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "patch": {
+          "inverse": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "undo: retrieve verified layout",
+            "operations": [
+              {
+                "before": "Button(\":save\")",
+                "kind": "remove",
+                "name": "save",
+                "previous_index": 1
+              },
+              {
+                "after": "Stack([], \"column\")",
+                "before": "Stack([save], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "operations": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "retrieve verified layout",
+            "operations": [
+              {
+                "after": "Button(\":save\")",
+                "index": 1,
+                "kind": "add",
+                "name": "save"
+              },
+              {
+                "after": "Stack([save], \"column\")",
+                "before": "Stack([], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "render_verified": true
+        },
+        "raw_output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "request_id": "held-out",
+        "reranker": "deterministic_retrieval",
+        "selected_id": "train-action",
+        "verifier_ok": true
+      }
+    },
+    {
+      "arm": "learned_rerank_fallback",
+      "binder_reference_f1": 0.0,
+      "constrained_syntax_validity": true,
+      "diagnostic_non_promotable": false,
+      "latency_ms": 3.9419059903593734,
+      "meaningful": false,
+      "raw_syntax_validity": true,
+      "repaired_syntax_validity": true,
+      "result": {
+        "arm": "learned_rerank_fallback",
+        "candidates": [
+          {
+            "ast_sketch": {
+              "binding_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+              "component_topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57",
+              "placeholder_signature": ":save",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "bf6b93b903c09d66f631194f2380a99602e55711af6c9406911f565b5bb43a47",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "structural_fingerprint": "8ccb18ed993b2863",
+              "topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57"
+            },
+            "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+            "prompt_fingerprint": "e1a9e8a895afe4b22773024c37998a2f79b725f806bb78f0f20eda197f3659d9",
+            "rank": 1,
+            "record_id": "train-action",
+            "score": 0.3055555555555555,
+            "semantic_plan_factors": {
+              "archetype": "a0f534025d26f6db317bb9b2bd1a770f3c82e77f0c1bd39a4f3cd87b0e114101",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "73061338e70cc34bc1bf0e6346cc06e1748ea40a009c1a643050b375eb10c3d4",
+              "coverage": "a4fda931588b5dc34ab0b7fa5ac9507b09f586d3fb2a7c30ad9a7df2d861f861",
+              "exact": "a817a325a0116ed518d54f0448a4da2d933494d24da4e98eb6f29390eb91109a",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "d621bc79fb76a50fdc1f5e898d63dc40062949a34bbb5775ecf9b40d8aefb834",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          },
+          {
+            "ast_sketch": {
+              "binding_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+              "component_topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661",
+              "placeholder_signature": ":title",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "a0b900934e7a93a2231f2578ebedadc1df9561c1adebef65680211fea654b798",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "structural_fingerprint": "3d5ab02b133ecd77",
+              "topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661"
+            },
+            "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+            "prompt_fingerprint": "959d38403a2789074928d53a0dbe660971a05261d5c1260a73158c8597633019",
+            "rank": 2,
+            "record_id": "train-card",
+            "score": 0.14285714285714285,
+            "semantic_plan_factors": {
+              "archetype": "ef4b24ad6e1058afa7721f148d6124eebad509e10d77d5ff540cf10bd6d501eb",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "c9daa2101a29b913f2763f8467711dde7422d74cb88d1d0b1fd94ebc97143b89",
+              "coverage": "56575d111b92d15771c251d496c26c76d04bdd442142d1bd320185dcf680d94a",
+              "exact": "81d4b00c613fd8fd672182511b362394480faeb9427be16c97ae5c30bc5e70dd",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "de1aaecce7898dd374604e9de1c0fb9ae4bb1416fac79dfa7d463abbd2b261d4",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          }
+        ],
+        "excluded_reasons": {},
+        "fallback": null,
+        "latency_ms": 3.9419059903593734,
+        "output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "patch": {
+          "inverse": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "undo: retrieve verified layout",
+            "operations": [
+              {
+                "before": "Button(\":save\")",
+                "kind": "remove",
+                "name": "save",
+                "previous_index": 1
+              },
+              {
+                "after": "Stack([], \"column\")",
+                "before": "Stack([save], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "operations": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "retrieve verified layout",
+            "operations": [
+              {
+                "after": "Button(\":save\")",
+                "index": 1,
+                "kind": "add",
+                "name": "save"
+              },
+              {
+                "after": "Stack([save], \"column\")",
+                "before": "Stack([], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "render_verified": true
+        },
+        "raw_output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "request_id": "held-out",
+        "reranker": "deterministic_retrieval",
+        "selected_id": "train-action",
+        "verifier_ok": true
+      }
+    },
+    {
+      "arm": "patching",
+      "binder_reference_f1": 0.0,
+      "constrained_syntax_validity": true,
+      "diagnostic_non_promotable": false,
+      "latency_ms": 3.0458789988188073,
+      "meaningful": false,
+      "raw_syntax_validity": true,
+      "repaired_syntax_validity": true,
+      "result": {
+        "arm": "patching",
+        "candidates": [
+          {
+            "ast_sketch": {
+              "binding_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+              "component_topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57",
+              "placeholder_signature": ":save",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "bf6b93b903c09d66f631194f2380a99602e55711af6c9406911f565b5bb43a47",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "structural_fingerprint": "8ccb18ed993b2863",
+              "topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57"
+            },
+            "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+            "prompt_fingerprint": "e1a9e8a895afe4b22773024c37998a2f79b725f806bb78f0f20eda197f3659d9",
+            "rank": 1,
+            "record_id": "train-action",
+            "score": 0.3055555555555555,
+            "semantic_plan_factors": {
+              "archetype": "a0f534025d26f6db317bb9b2bd1a770f3c82e77f0c1bd39a4f3cd87b0e114101",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "73061338e70cc34bc1bf0e6346cc06e1748ea40a009c1a643050b375eb10c3d4",
+              "coverage": "a4fda931588b5dc34ab0b7fa5ac9507b09f586d3fb2a7c30ad9a7df2d861f861",
+              "exact": "a817a325a0116ed518d54f0448a4da2d933494d24da4e98eb6f29390eb91109a",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "d621bc79fb76a50fdc1f5e898d63dc40062949a34bbb5775ecf9b40d8aefb834",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          },
+          {
+            "ast_sketch": {
+              "binding_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+              "component_topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661",
+              "placeholder_signature": ":title",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "a0b900934e7a93a2231f2578ebedadc1df9561c1adebef65680211fea654b798",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "structural_fingerprint": "3d5ab02b133ecd77",
+              "topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661"
+            },
+            "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+            "prompt_fingerprint": "959d38403a2789074928d53a0dbe660971a05261d5c1260a73158c8597633019",
+            "rank": 2,
+            "record_id": "train-card",
+            "score": 0.14285714285714285,
+            "semantic_plan_factors": {
+              "archetype": "ef4b24ad6e1058afa7721f148d6124eebad509e10d77d5ff540cf10bd6d501eb",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "c9daa2101a29b913f2763f8467711dde7422d74cb88d1d0b1fd94ebc97143b89",
+              "coverage": "56575d111b92d15771c251d496c26c76d04bdd442142d1bd320185dcf680d94a",
+              "exact": "81d4b00c613fd8fd672182511b362394480faeb9427be16c97ae5c30bc5e70dd",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "de1aaecce7898dd374604e9de1c0fb9ae4bb1416fac79dfa7d463abbd2b261d4",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          }
+        ],
+        "excluded_reasons": {},
+        "fallback": null,
+        "latency_ms": 3.0458789988188073,
+        "output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "patch": {
+          "inverse": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "undo: retrieve verified layout",
+            "operations": [
+              {
+                "before": "Button(\":save\")",
+                "kind": "remove",
+                "name": "save",
+                "previous_index": 1
+              },
+              {
+                "after": "Stack([], \"column\")",
+                "before": "Stack([save], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "operations": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "retrieve verified layout",
+            "operations": [
+              {
+                "after": "Button(\":save\")",
+                "index": 1,
+                "kind": "add",
+                "name": "save"
+              },
+              {
+                "after": "Stack([save], \"column\")",
+                "before": "Stack([], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "render_verified": true
+        },
+        "raw_output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "request_id": "held-out",
+        "reranker": "deterministic_retrieval",
+        "selected_id": "train-action",
+        "verifier_ok": true
+      }
+    },
+    {
+      "arm": "oracle_topk_diagnostic",
+      "binder_reference_f1": 0.0,
+      "constrained_syntax_validity": true,
+      "diagnostic_non_promotable": true,
+      "latency_ms": 3.4330360067542642,
+      "meaningful": false,
+      "raw_syntax_validity": true,
+      "repaired_syntax_validity": true,
+      "result": {
+        "arm": "oracle_topk_diagnostic",
+        "candidates": [
+          {
+            "ast_sketch": {
+              "binding_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+              "component_topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57",
+              "placeholder_signature": ":save",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "bf6b93b903c09d66f631194f2380a99602e55711af6c9406911f565b5bb43a47",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "c028f5d4fa0f3d6b3ca2789d4d150e465ba4f4209d5b427abc785617f5376a5b",
+              "structural_fingerprint": "8ccb18ed993b2863",
+              "topology_hash": "8eb90bfc32fcf1a3ec30ff58d47bb943d12d8e0b17b0aa220994c8727f39ea57"
+            },
+            "canonical_fingerprint": "9ee9bb828af898f8c3b03b560ae971f49ee127e9216e9fcc667a5cdef9805986",
+            "prompt_fingerprint": "e1a9e8a895afe4b22773024c37998a2f79b725f806bb78f0f20eda197f3659d9",
+            "rank": 1,
+            "record_id": "train-action",
+            "score": 0.3055555555555555,
+            "semantic_plan_factors": {
+              "archetype": "a0f534025d26f6db317bb9b2bd1a770f3c82e77f0c1bd39a4f3cd87b0e114101",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "73061338e70cc34bc1bf0e6346cc06e1748ea40a009c1a643050b375eb10c3d4",
+              "coverage": "a4fda931588b5dc34ab0b7fa5ac9507b09f586d3fb2a7c30ad9a7df2d861f861",
+              "exact": "a817a325a0116ed518d54f0448a4da2d933494d24da4e98eb6f29390eb91109a",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "d621bc79fb76a50fdc1f5e898d63dc40062949a34bbb5775ecf9b40d8aefb834",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          },
+          {
+            "ast_sketch": {
+              "binding_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+              "component_topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661",
+              "placeholder_signature": ":title",
+              "schema": "AstTrainingSketchV1",
+              "sketch_hash": "a0b900934e7a93a2231f2578ebedadc1df9561c1adebef65680211fea654b798",
+              "sketch_version": "ast_sketch_v1",
+              "slot_contract_shape_hash": "a72240117e2b372c11301cbd078b23d673b683fd62022fe3d3f1c4f009f89ec8",
+              "structural_fingerprint": "3d5ab02b133ecd77",
+              "topology_hash": "095b0cfd17b9031f6c81ed3ca335e5ef3ea0b68ac2e9749a6a9d574c67168661"
+            },
+            "canonical_fingerprint": "09d65819a9374a33b4611738ebb0a61487e8caabedd10d9c1b81b6643caac4e3",
+            "prompt_fingerprint": "959d38403a2789074928d53a0dbe660971a05261d5c1260a73158c8597633019",
+            "rank": 2,
+            "record_id": "train-card",
+            "score": 0.14285714285714285,
+            "semantic_plan_factors": {
+              "archetype": "ef4b24ad6e1058afa7721f148d6124eebad509e10d77d5ff540cf10bd6d501eb",
+              "bindings": "08cb7c9a21da1d0e169d8168dd0c28fc6a41c280223a334d0d637f6aaec13204",
+              "cardinality": "53bc59c7ecbef16b47e6aa6629516253c7f84d3ac821ffad139a3c2095c10a4c",
+              "component_family": "c9daa2101a29b913f2763f8467711dde7422d74cb88d1d0b1fd94ebc97143b89",
+              "coverage": "56575d111b92d15771c251d496c26c76d04bdd442142d1bd320185dcf680d94a",
+              "exact": "81d4b00c613fd8fd672182511b362394480faeb9427be16c97ae5c30bc5e70dd",
+              "role_set": "1f16e853e21ca3a40cac8a9e8b404bce37522c49b0ec62bc4677067da17aa8f2",
+              "symbol_role": "de1aaecce7898dd374604e9de1c0fb9ae4bb1416fac79dfa7d463abbd2b261d4",
+              "topology": "973ac4893ac6574813a7cf0bf63f5eecfaccd5a5be9072918c1908cabd9156b6"
+            },
+            "verifier_ok": true
+          }
+        ],
+        "excluded_reasons": {},
+        "fallback": null,
+        "latency_ms": 3.4330360067542642,
+        "output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "patch": {
+          "inverse": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "undo: retrieve verified layout",
+            "operations": [
+              {
+                "before": "Button(\":save\")",
+                "kind": "remove",
+                "name": "save",
+                "previous_index": 1
+              },
+              {
+                "after": "Stack([], \"column\")",
+                "before": "Stack([save], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "operations": {
+            "ast_operation_count": 2,
+            "collect_unreachable": true,
+            "instruction": "retrieve verified layout",
+            "operations": [
+              {
+                "after": "Button(\":save\")",
+                "index": 1,
+                "kind": "add",
+                "name": "save"
+              },
+              {
+                "after": "Stack([save], \"column\")",
+                "before": "Stack([], \"column\")",
+                "kind": "replace",
+                "name": "root"
+              }
+            ]
+          },
+          "render_verified": true
+        },
+        "raw_output": "root = Stack([save], \"column\")\nsave = Button(\":save\")",
+        "request_id": "held-out",
+        "reranker": "gold_diagnostic_only",
+        "selected_id": "train-action",
+        "verifier_ok": true
+      }
+    }
+  ],
+  "schema": "VerifiedPatchRetrievalV1",
+  "version_stamp": {
+    "code_commit": "8dd4794a7cea10f1fe9732e5bb25d198b810fc22",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "harness.experiments.ast_sketch_retrieval": "v3",
+      "harness.retrieval.verified_patch": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T07:09:20.428878+00:00"
+  }
+}

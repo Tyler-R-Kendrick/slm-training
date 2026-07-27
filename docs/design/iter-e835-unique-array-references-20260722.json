@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E835",
+  "date_utc": "2026-07-22",
+  "run_class": "scratch_matrix",
+  "run_id": "e835-unique-array-reference-heldout-n5-r1",
+  "local_compute": true,
+  "checkpoint": {
+    "run_id": "e832-target-slots-v4-scratch600-r1",
+    "path": "outputs/runs/e832-target-slots-v4-scratch600-r1/checkpoints/last.pt",
+    "sha256": "01561831ea4638dec9f29d7cea085152f471940579751c92ba1931db9477992d",
+    "changed": false,
+    "synced": false
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.2,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 0.6,
+      "structural_similarity": 0.24925999999999998,
+      "component_type_recall": 0.29523809523809524,
+      "reward_score": 0.9874,
+      "latency_ms_p50": 5405.48,
+      "latency_ms_p95": 5609.18,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "strict_v2_reason_prevalence": {
+        "duplicate_subtree_spam": 5,
+        "prompt_component_missing": 5,
+        "required_component_missing": 5
+      }
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "diagnostic subset; strict-v2 is zero and AgentV is 0/1"
+  },
+  "decision": {
+    "retain": "AST-derived unique binder ownership within each structural array",
+    "reject": "quality improvement, checkpoint changes, sync, promotion, deployment, and ship claims",
+    "next": "represent required component coverage with grammar/AST symbols rather than template names or free text"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0d3040eda03f789b7db4dd41cb033d97c0ea45d8",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v20",
+      "harness.model_build.eval": "v48",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v228"
+    }
+  }
+}

@@ -25,7 +25,6 @@ KNOWN_FAMILIES = (
     "awwwards_real",
     "prompt_paraphrase",
     "layout_augment",
-    "namespace_augment",
     "stress_adversarial",
     "self_distilled_success",
     "self_distilled_repair",
@@ -61,7 +60,6 @@ KNOWN_FAMILIES = (
 _SYNTH_TO_FAMILY = {
     "template": "prompt_paraphrase",
     "layout_augment": "layout_augment",
-    "namespace_augment": "namespace_augment",
     "corruption_repair": "corruption_repair",
     "edit_trajectory": "edit_trajectory",
     "frontier_described": "frontier_described",
@@ -99,14 +97,20 @@ _BASE_SOURCE_TO_FAMILY = {
 def classify_source_family(record: ExampleRecord) -> str:
     """Normalize a record's provenance to a mixture family name.
 
-    The *outermost* transformation wins: a namespace augment of a template
-    paraphrase belongs to ``namespace_augment`` (its lineage records the rest).
+    The outermost supported transformation wins while lineage records the rest.
     """
     meta = record.meta or {}
     synth = str(meta.get("synth") or "")
+    declared_family = str(meta.get("source_family") or "")
+    source = (record.source or "").lower()
+    source_parts = set(source.split("+"))
+    if "namespace_augment" in {synth, declared_family} or source_parts & {
+        "namespace",
+        "namespace_augment",
+    }:
+        raise ValueError("namespace_augment is prohibited")
     if synth in _SYNTH_TO_FAMILY:
         return _SYNTH_TO_FAMILY[synth]
-    source = (record.source or "").lower()
     if synth == "stress" or "stress" in source:
         return "stress_adversarial"
     base = source.split("+", 1)[0].strip()

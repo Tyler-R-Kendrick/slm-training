@@ -1,0 +1,86 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh3-27-operator-permutation/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh3-27-operator-permutation/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh3-27-operator-permutation",
+      "timingPath": "agentv-dir://agentv/dsh3-27-operator-permutation/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 0,
+      "failures": [],
+      "pass": true,
+      "passed": 1,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "stop_rule_negative",
+          "expected": true,
+          "id": "stop_rule_negative",
+          "operator": "eq",
+          "pass": true
+        }
+      ],
+      "total": 1
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh3-27-operator-permutation.eval.jsonl",
+    "summary": {
+      "durationMs": 379,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 1,
+      "total": 1
+    }
+  },
+  "claim_class": "wiring",
+  "disposition": "closed_negative_unaugmented_invariant",
+  "generated_at": "2026-07-26T10:10:53.009966+00:00",
+  "honest_verdict": "fixture_wiring_stop_rule_negative",
+  "probe": {
+    "accepted_set_mass_drift": 0.0,
+    "cache": {
+      "entries": 4,
+      "hits": 4,
+      "misses": 4
+    },
+    "calibration_confidence_drift": 0.0,
+    "comparable": 7,
+    "comparisons": 7,
+    "incomparable_reasons": [],
+    "schema": "operator_permutation_report/v1",
+    "score_disagreement": 0.0,
+    "top1_flips": 0
+  },
+  "recipe": {
+    "backend": "local",
+    "device": "cpu",
+    "k_values": [
+      1,
+      2,
+      4
+    ],
+    "seed": 402,
+    "steps": 150,
+    "suite_n": 7,
+    "train_decisions": 30
+  },
+  "schema": "dsh3_27_operator_permutation_fixture/v1",
+  "version_stamp": {
+    "code_commit": "2a814f089866a5bde2297ae889751cee1757c83c",
+    "code_dirty": true,
+    "components": {
+      "model.operator_permutation_consistency": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T10:10:53.009929+00:00"
+  }
+}

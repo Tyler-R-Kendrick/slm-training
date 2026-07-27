@@ -70,6 +70,23 @@ required immutable raw archive URI plus manifest SHA; large provider I/O is not
 copied into Git. The ordinary strict train-data builder and explicit
 `DataStore.publish` remain the only canonical curation/publication path.
 
+## SLM-296 normalization and hands-off boundary — 2026-07-25
+
+SLM-296 adds `candidate_from_local_teacher_attempt` to the existing SLM-266
+owner. It converts one content-addressed, `local_files_only` archive attempt
+into a `TeacherProgramCandidate` without inventing a trust verdict. Deep
+admission still requires cross-provider/family G11 evidence, now bound to the
+exact raw artifact hash. G12/human audit is recorded-only and never admits or
+promotes a row.
+
+Focused local regression evidence: 15 `test_teacher_programs` cases passed,
+including raw-artifact-bound hands-off deep admission. This is harness wiring,
+not a corpus, train, checkpoint, or ship evaluation. The existing bounded CPU
+yield disposition below remains the only measured local result: zero
+deep-verified roots. Therefore SLM-296 does not claim 500 accepted records or
+any grammar-off/meaning improvement; no HF, remote replay, or human-rating gate
+was used.
+
 ## Current disposition — 2026-07-24
 
 The one-request local CPU screening is recorded in

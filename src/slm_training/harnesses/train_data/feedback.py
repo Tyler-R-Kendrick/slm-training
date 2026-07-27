@@ -183,7 +183,7 @@ def _experiment_candidates(
                     "falsification_criteria": (
                         "admitted count drops >10% or dup_share stays >=0.5"
                     ),
-                    "knobs": ["max_children", "synthesizer", "namespace_augment"],
+                    "knobs": ["max_children", "synthesizer"],
                 }
             )
         elif item["code"] == "low_yield":

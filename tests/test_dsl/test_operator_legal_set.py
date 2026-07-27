@@ -23,7 +23,9 @@ from slm_training.dsl.operators import (
     RefKind,
     ReferenceDescriptorV1,
     RegisteredOperatorV1,
+    SelectorKind,
     build_reference_table,
+    build_selector,
     deserialize_operator_action,
     enumerate_operator_legal_set,
     serialize_operator_action,
@@ -198,6 +200,53 @@ def test_complete_empty_domain_is_exactly_hard_prunable() -> None:
     assert entry.total_combinations == 0
     assert result.hard_prunable_operator_ids == (OPERATOR_ID,)
     assert result.operator_actions == ()
+
+
+def test_selector_entries_are_enumerated_as_exact_legal_candidates() -> None:
+    pack, _library, state, table, provenance, _ = _fixture(count=2)
+    table, selector = build_selector(
+        table,
+        selector_kind=SelectorKind.COMPONENT_TYPE_IN_SCOPE,
+        scope_fingerprint=_sha("scope"),
+        matching_refs=tuple(entry.ref for entry in table.entries),
+        max_fanout=2,
+        seed=19,
+    )
+    declaration = AstOperatorV1(
+        operator_id="openui.fixture_selector_legal_set",
+        version="v1",
+        domain="openui.ast",
+        codomain="openui.ast",
+        argument_slots=(
+            OperatorArgumentSlotV1("selector", RefKind.SELECTOR, BindingPhase.STATE),
+        ),
+        preconditions=(),
+        effect_signature=(),
+        locality="selector",
+        cost=1.0,
+    )
+
+    def execute(operator_state, arguments):
+        assert arguments == (BoundArgumentV1("selector", selector),)
+        return OperatorMutationV1(
+            source=operator_state.source,
+            effect=ActionEffectV1(compiler_coverage=CompilerCoverage.EXACT),
+        )
+
+    library = OperatorLibraryV1((RegisteredOperatorV1(declaration, execute),))
+    result = enumerate_operator_legal_set(
+        pack=replace(pack, operator_library=library),
+        library=library,
+        state=state,
+        reference_table=table,
+        provenance=provenance,
+    )
+
+    entry = result.entries[0]
+    assert entry.total_combinations == entry.evaluated_combinations == 1
+    assert entry.verdict is OperatorSupportVerdict.SUPPORTED
+    assert entry.argument_domains[0].candidates == (selector,)
+    assert entry.legal_actions[0].arguments == (BoundArgumentV1("selector", selector),)
 
 
 def test_budget_truncation_is_lazy_unknown_and_never_hard_prunes() -> None:

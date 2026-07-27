@@ -6,6 +6,7 @@ from dataclasses import replace
 
 import pytest
 
+from slm_training.dsl.lang_core import ParseError
 from slm_training.dsl.semantic_frame import (
     CAP1SchemaV1,
     CounterfactualError,
@@ -150,7 +151,10 @@ def test_unknown_component_fails_closed_instead_of_guessing(
 ) -> None:
     """`Text` parses fine syntactically but is not in the declared component
     vocabulary (only `TextContent` is) — a real, non-vacuous negative control."""
-    with pytest.raises(UnsupportedSemanticFactError):
+    # Fail-closed either way: with the official @openuidev bridge installed,
+    # upstream validation raises ParseError first; the Lark backend reaches
+    # derive_semantic_frame, which raises UnsupportedSemanticFactError.
+    with pytest.raises((UnsupportedSemanticFactError, ParseError)):
         derive_semantic_frame('root = Text(":ns.body")', schema)
 
 
@@ -159,7 +163,8 @@ def test_excess_positional_args_fail_closed_instead_of_guessing(
 ) -> None:
     """More positional args than the schema declares names for become the Lark
     backend's `_args` catch-all, which has no schema-declared role."""
-    with pytest.raises(UnsupportedSemanticFactError):
+    # Same backend-dependent layer as the unknown-component control above.
+    with pytest.raises((UnsupportedSemanticFactError, ParseError)):
         derive_semantic_frame('root = TextContent(":ns.body", 14, 99)', schema)
 
 

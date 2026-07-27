@@ -8,6 +8,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
+from slm_training.data.contract import canonicalize_example_template_markers
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.progspec import ProgramSpec, derive_scope_records
 from slm_training.harnesses.model_build.config import ModelBuildConfig
@@ -36,8 +37,8 @@ from slm_training.models.checkpoint_migrate import migrate_grammar_diffusion_che
 from scripts.run_grammar_matrix import _x_experiments, main as grammar_matrix_main
 from slm_training.dsl.production_codec import ProductionCodec
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":slot_0")\nhero_body = TextContent(":slot_1")\nhero = Card([hero_title, hero_body])'
+CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 def test_from_records_uses_production_codec() -> None:
@@ -52,19 +53,50 @@ def test_from_records_uses_production_codec() -> None:
     assert isinstance(model.codec, ProductionCodec)
 
 
+def test_context_rejects_named_markers() -> None:
+    model = GrammarDiffusionModel.from_records(
+        [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
+        config=GrammarDiffusionConfig(d_model=64),
+        device="cpu",
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        model._format_context(
+            "Use :hero.title then :hero.cta",
+            slot_contract=[":hero.title", ":hero.cta"],
+        )
+    canonical = model._format_context(
+        "Use :slot_0 then :slot_1",
+        slot_contract=[":slot_0", ":slot_1"],
+    )
+    assert ":slot_0" in canonical
+
+
+def test_model_rejects_named_markers_before_context_vocab_build() -> None:
+    semantic = ExampleRecord(
+        id="semantic",
+        prompt="Use :hero.title",
+        openui='root = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        GrammarDiffusionModel.from_records(
+            [semantic], config=GrammarDiffusionConfig(d_model=64)
+        )
+
+
 def test_inline_codec_roundtrip() -> None:
     codec = InlineProductionCodec.build([HERO, CTA])
-    inventory = [":hero.title", ":hero.body"]
+    inventory = [":slot_0", ":slot_1"]
     prod, slot = codec.encode(HERO, inventory)
     decoded = codec.decode(prod, slot, inventory)
     assert "Stack" in decoded
     assert "Card" in decoded
-    assert '":hero.title"' in decoded or ":hero.title" in decoded
+    assert '":slot_0"' in decoded or ":slot_0" in decoded
 
 
 def test_production_codec_topology_roundtrip() -> None:
     codec = ProductionCodec.build([HERO, CTA])
-    inventory = [":hero.title", ":hero.body"]
+    inventory = [":slot_0", ":slot_1"]
     expected_prod, expected_slot = codec.encode(HERO, inventory, max_len=0)
     topology = topology_from_openui(codec, HERO, inventory)
     actual_prod, actual_slot = _serialize_topology(codec, topology)
@@ -103,8 +135,8 @@ def test_fragment_records_reach_grammar_diffusion_training_loss() -> None:
         ExampleRecord(
             id="button",
             prompt="Return a Button expression",
-            openui='Button(":cta")',
-            placeholders=[":cta"],
+            openui='Button(":slot_0")',
+            placeholders=[":slot_0"],
             target_kind="expression",
         ),
     ]
@@ -189,10 +221,10 @@ def test_training_loss_decreases() -> None:
             prompt="Hero",
             openui=HERO,
             split="train",
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         ),
         ExampleRecord(
-            id="b", prompt="CTA", openui=CTA, split="train", placeholders=[":cta.label"]
+            id="b", prompt="CTA", openui=CTA, split="train", placeholders=[":slot_0"]
         ),
     ]
     model = GrammarDiffusionModel.from_records(
@@ -226,7 +258,7 @@ def test_save_load_and_generate_batch_requests(tmp_path: Path) -> None:
             prompt="Hero",
             openui=HERO,
             split="train",
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         ),
     ]
     model = GrammarDiffusionModel.from_records(
@@ -245,7 +277,7 @@ def test_save_load_and_generate_batch_requests(tmp_path: Path) -> None:
     ckpt = tmp_path / "gd.pt"
     model.save(ckpt)
     loaded = GrammarDiffusionModel.from_checkpoint(ckpt, device="cpu")
-    req = GenerationRequest(prompt="Hero", slot_contract=(":hero.title", ":hero.body"))
+    req = GenerationRequest(prompt="Hero", slot_contract=(":slot_0", ":slot_1"))
     out = loaded.generate_batch_requests([req])[0]
     assert isinstance(out, str)
     evidence = loaded.consume_generation_evidence()
@@ -255,7 +287,7 @@ def test_save_load_and_generate_batch_requests(tmp_path: Path) -> None:
     assert out or evidence[0]["candidate_productions"]
 
 
-def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
+def test_checkpoint_rejects_pre_opaque_marker_contract(tmp_path: Path) -> None:
     model = GrammarDiffusionModel.from_records(
         [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
         config=GrammarDiffusionConfig(
@@ -266,10 +298,42 @@ def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
     path = tmp_path / "legacy.pt"
     model.save(path)
     payload = torch.load(path, map_location="cpu", weights_only=True)
-    payload["output_contract_version"] = 1
+    payload["output_contract_version"] = 3
     torch.save(payload, path)
     with pytest.raises(ValueError, match="retrain from symbol-only targets"):
         GrammarDiffusionModel.from_checkpoint(path, device="cpu")
+
+
+def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
+    model = GrammarDiffusionModel.from_records(
+        [ExampleRecord(id="valid", prompt="Hero", openui=HERO, split="train")],
+        config=GrammarDiffusionConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+        device="cpu",
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="named",
+                    prompt="Hero",
+                    openui='root = TextContent(":hero.title")',
+                    placeholders=[":hero.title"],
+                )
+            ]
+        )
+    with pytest.raises(ValueError, match="non-content property Input.name"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="wrong-role",
+                    prompt="Input",
+                    openui='root = Input(":slot_0")',
+                    placeholders=[":slot_0"],
+                )
+            ]
+        )
 
 
 def test_factory_builds_grammar_diffusion() -> None:
@@ -312,10 +376,12 @@ def test_scope_contract_heads_train_only_when_enabled() -> None:
         lineage_id="scope-lineage",
         split_group_id="scope-group",
     )
-    record = next(
-        row
-        for row in derive_scope_records(spec)
-        if row.meta["scope_family"] == "local_valid_global_invalid"
+    record = canonicalize_example_template_markers(
+        next(
+            row
+            for row in derive_scope_records(spec)
+            if row.meta["scope_family"] == "local_valid_global_invalid"
+        )
     )
     model = GrammarDiffusionModel.from_records(
         [record],
@@ -364,9 +430,9 @@ def test_topology_scoring_maps_unseen_productions_without_mutating_codec() -> No
     held_out = ExampleRecord(
         id="held-out",
         prompt="Novel component",
-        openui='root = TextContent(":copy")',
+        openui='root = TextContent(":slot_0")',
         split="held_out",
-        placeholders=[":copy"],
+        placeholders=[":slot_0"],
     )
 
     evidence = model.score_topology_targets([held_out])
@@ -447,7 +513,7 @@ def test_eval_mode_has_no_canned_fallback() -> None:
         device="cpu",
     )
     # Untrained model should return raw constrained decode, not a canned program.
-    req = GenerationRequest(prompt="Hero", slot_contract=(":hero.title",))
+    req = GenerationRequest(prompt="Hero", slot_contract=(":slot_0",))
     out = model.generate_batch_requests([req])[0]
     assert "Broken" not in out
     assert "stub.missing" not in out

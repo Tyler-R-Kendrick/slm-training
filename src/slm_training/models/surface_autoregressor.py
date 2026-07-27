@@ -384,11 +384,15 @@ class SurfaceAutoregressor(nn.Module):
         top_k: int = 1,
         seed: int | None = None,
     ) -> str | None:
-        """Constrained greedy/top-k generation for one slot.
+        """Constrained deterministic generation for one slot.
 
         Returns the generated string, or ``None`` if the decoder reaches a dead
         end before a legal EOS.
         """
+        if temperature > 0.0 and top_k > 1:
+            raise ValueError(
+                "stochastic surface generation is disabled; use greedy legal ranking"
+            )
         if seed is not None:
             torch.manual_seed(seed)
             random.seed(seed)
@@ -402,28 +406,24 @@ class SurfaceAutoregressor(nn.Module):
         generated: list[int] = [self.vocab.bos_id]
         prefix = ""
         for _ in range(max_steps + 2):
-            input_ids = torch.tensor([generated], dtype=torch.long, device=device)
-            pos = torch.arange(len(generated), device=device).unsqueeze(0)
-            x = self.tok(input_ids) + self.pos(pos)
-            pad_mask = input_ids.eq(self.vocab.pad_id)
-            for layer in self.layers:
-                x = layer(x, self_pad_mask=pad_mask, ctx=ctx)
-            logits = self.lm_head(self.norm(x))[:, -1, :]  # [1, V]
-
             allowed = constraint.allowed_next(prefix)
             if not allowed:
                 return None
-            mask = torch.full_like(logits, float("-inf"))
-            mask[0, list(allowed)] = 0.0
-            logits = logits + mask
-
-            if temperature <= 0.0 or top_k == 1:
-                next_id = int(logits.argmax(dim=-1).item())
+            if len(allowed) == 1:
+                next_id = next(iter(allowed))
             else:
-                probs = F.softmax(logits / temperature, dim=-1)
-                topk = torch.topk(probs, min(top_k, probs.size(-1)))
-                next_id = int(torch.multinomial(topk.values, num_samples=1).item())
-                next_id = int(topk.indices[0, next_id].item())
+                input_ids = torch.tensor([generated], dtype=torch.long, device=device)
+                pos = torch.arange(len(generated), device=device).unsqueeze(0)
+                x = self.tok(input_ids) + self.pos(pos)
+                pad_mask = input_ids.eq(self.vocab.pad_id)
+                for layer in self.layers:
+                    x = layer(x, self_pad_mask=pad_mask, ctx=ctx)
+                logits = self.lm_head(self.norm(x))[:, -1, :]  # [1, V]
+                mask = torch.full_like(logits, float("-inf"))
+                mask[0, list(allowed)] = 0.0
+                logits = logits + mask
+
+                next_id = int(logits.argmax(dim=-1).item())
 
             if next_id == self.vocab.eos_id:
                 if constraint.is_complete(prefix):

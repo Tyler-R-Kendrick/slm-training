@@ -14,11 +14,11 @@ from slm_training.dsl.schema import ExampleRecord
 
 
 RICH = '''root = Stack([panel, dialog], "column")
-email = Input("email", ":form.email", "email")
+email = Input("$0", ":form.email", "email")
 control = FormControl(":form.label", email)
 button = Button(":form.submit")
 buttons = Buttons([button])
-form = Form("signup", buttons, [control])
+form = Form("$1", buttons, [control])
 panel = Card([form])
 copy = TextContent(":modal.body")
 dialog = Modal(":modal.title", true, [copy])'''

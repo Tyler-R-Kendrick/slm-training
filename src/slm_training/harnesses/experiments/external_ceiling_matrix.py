@@ -150,7 +150,6 @@ class ArmResult:
     records_evaluated: int = 0
     parse_rate: float | None = None
     binding_aware_meaningful_v2_rate_strict: float | None = None
-    agentv_score: float | None = None
     whole_contract_pass: float | None = None
     non_empty_rate: float | None = None
     fallback_rate: float | None = None
@@ -411,11 +410,11 @@ def _fixture_requests() -> list[GenerationRequest]:
     return [
         GenerationRequest(
             prompt="Create a screen with a title and a button that submits a form.",
-            slot_contract=(":title", ":submit_label"),
+            slot_contract=(":slot_0", ":slot_1"),
         ),
         GenerationRequest(
             prompt="Create a login form with username and password fields.",
-            slot_contract=(":username", ":password"),
+            slot_contract=(":slot_0", ":slot_1"),
         ),
     ]
 

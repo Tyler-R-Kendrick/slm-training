@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -16,6 +15,7 @@ from slm_training.harnesses.train_data.catalog import (
     family_stats,
     resolve_lineage,
 )
+from slm_training.harnesses.train_data.synth import get_synthesizer
 
 pytestmark_bridge = pytest.mark.skipif(
     not bridge_available(),
@@ -24,11 +24,11 @@ pytestmark_bridge = pytest.mark.skipif(
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     "hero = Card([hero_title, hero_body])"
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 def _record(rid: str, source: str = "fixture", **meta) -> ExampleRecord:
@@ -36,7 +36,7 @@ def _record(rid: str, source: str = "fixture", **meta) -> ExampleRecord:
         id=rid,
         prompt=f"prompt {rid}",
         openui=CTA,
-        placeholders=[":cta.label"],
+        placeholders=[":slot_0"],
         split="train",
         source=source,
         meta=meta,
@@ -55,8 +55,7 @@ def test_classify_source_family() -> None:
         )
         == "prompt_paraphrase"
     )
-    # Outermost transformation wins for stacked lineages.
-    assert (
+    with pytest.raises(ValueError, match="namespace_augment is prohibited"):
         classify_source_family(
             _record(
                 "a_syn_0_ns",
@@ -65,19 +64,22 @@ def test_classify_source_family() -> None:
                 parent_id="a_syn_0",
             )
         )
-        == "namespace_augment"
-    )
+
+
+def test_namespace_synthesizer_is_not_available() -> None:
+    with pytest.raises(ValueError, match="unknown synthesizer"):
+        get_synthesizer("namespace_augment")
 
 
 def test_resolve_lineage_walks_to_root() -> None:
     index = {
         "a": (None, None),
         "a_syn_0": ("a", "template"),
-        "a_syn_0_ns": ("a_syn_0", "namespace_augment"),
+        "a_syn_0_layout": ("a_syn_0", "layout_augment"),
     }
-    root, lineage = resolve_lineage("a_syn_0_ns", index)
+    root, lineage = resolve_lineage("a_syn_0_layout", index)
     assert root == "a"
-    assert lineage == ["template", "namespace_augment"]
+    assert lineage == ["template", "layout_augment"]
     root, lineage = resolve_lineage("a", index)
     assert root == "a"
     assert lineage == []
@@ -151,52 +153,27 @@ def test_pipeline_manifest_source_families(tmp_path: Path) -> None:
                 id="t1",
                 prompt="Hero card",
                 openui=HERO,
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
                 split="train",
             ),
             ExampleRecord(
                 id="t2",
                 prompt="Button only",
                 openui=CTA,
-                placeholders=[":cta.label"],
+                placeholders=[":slot_0"],
                 split="train",
             ),
         ],
     )
-    result = build_train_data(
-        TrainDataConfig(
-            seed_path=seeds,
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "out",
-            version="vfam",
-            synthesizer="quality",
-            namespace_augment=True,
-        )
+    config = TrainDataConfig(
+        seed_path=seeds,
+        rico_path=None,
+        source="fixture",
+        output_root=tmp_path / "out",
+        version="vfam",
+        synthesizer="quality",
     )
-    manifest = result["manifest"]
-    families = manifest["source_families"]["families"]
-    assert "human_curated" in families
-    assert "prompt_paraphrase" in families
-    assert "namespace_augment" in families
-    # Every record carries lineage metadata pointing back to a seed.
-    records = [
-        json.loads(line)
-        for line in (Path(result["output_dir"]) / "records.jsonl")
-        .read_text(encoding="utf-8")
-        .splitlines()
-    ]
-    for row in records:
-        assert row["meta"]["source_family"]
-        assert row["meta"]["root_parent_id"] in {"t1", "t2"}
-        assert isinstance(row["meta"]["transformation_lineage"], list)
-    # Namespace of a template variant records the full chain.
-    stacked = [
-        r
-        for r in records
-        if r["meta"]["transformation_lineage"] == ["template", "namespace_augment"]
-    ]
-    assert stacked
+    assert not hasattr(config, "namespace_augment")
 
 
 @pytestmark_bridge
@@ -209,7 +186,7 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
                 id="t1",
                 prompt="Hero card",
                 openui=HERO,
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
                 split="train",
             ),
         ],
@@ -222,7 +199,6 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
             output_root=tmp_path / "out",
             version="vuncapped",
             synthesizer="quality",
-            namespace_augment=True,
         )
     )
     capped = build_train_data(
@@ -233,7 +209,6 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
             output_root=tmp_path / "out",
             version="vcapped",
             synthesizer="quality",
-            namespace_augment=True,
             max_records_per_parent=3,
         )
     )

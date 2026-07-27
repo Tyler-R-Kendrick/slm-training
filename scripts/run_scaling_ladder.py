@@ -267,6 +267,7 @@ def main(argv: list[str] | None = None) -> int:
         model_build_config_for_point,
         scratch_ladder_default,
     )
+    from slm_training.harness_core.promotion_engine import select_smallest_sufficient
     from slm_training.harnesses.experiments.promotion import (
         check_data_integrity,
         evaluate_promotion,
@@ -436,6 +437,22 @@ def main(argv: list[str] | None = None) -> int:
                 eg_vals.append(eg)
     eg_stats = efficiency_gain_lcb(eg_vals) if eg_vals else None
 
+    # Goal invariant VI: a ladder that spans widths must charge the capacity it
+    # spends. Wall time alone lets a wider rung look free, so fit and score the
+    # same curve against trainable parameters.
+    params_fit = (
+        fit_power_law(observations, cost_key="params")
+        if len({o.trainable_params for o in observations if o.trainable_params}) >= 2
+        else None
+    )
+    eg_params_vals: list[float] = []
+    if params_fit is not None:
+        for obs in observations:
+            eg_p = efficiency_gain(params_fit, obs, cost_key="params")
+            if eg_p is not None:
+                eg_params_vals.append(eg_p)
+    eg_params_stats = efficiency_gain_lcb(eg_params_vals) if eg_params_vals else None
+
     # Rank by loss ascending per horizon bucket (point_id encodes horizon).
     rankings: dict[str, list[str]] = {}
     by_point: dict[str, list[ScalingObservation]] = {}
@@ -458,14 +475,23 @@ def main(argv: list[str] | None = None) -> int:
         integrity=integrity,
         rankings=rankings if len(rankings) >= 2 else None,
         eg_time_by_seed=eg_vals or None,
+        eg_params_by_seed=eg_params_vals or None,
         **governance_kwargs,
     )
 
-    if summaries and promotion.get("promotable"):
-        best = min(
+    # Promote the smallest rung that reaches the frontier, not the lowest loss
+    # on the ladder: loss falls with capacity, so `min(best_weighted_nll)` over
+    # a width-spanning ladder promotes the widest rung by construction.
+    best = (
+        select_smallest_sufficient(
             summaries,
-            key=lambda s: float(s.get("best_weighted_nll") or 1e9),
+            params_of=lambda s: (s.get("track") or {}).get("trainable_params"),
+            loss_of=lambda s: s.get("best_weighted_nll"),
         )
+        if summaries
+        else None
+    )
+    if best is not None and promotion.get("promotable"):
         ckpt = Path(best["checkpoint"]).parent
         register_promoted_checkpoint(
             ckpt,
@@ -485,6 +511,17 @@ def main(argv: list[str] | None = None) -> int:
         "semantic_bits": bits_report,
         "params_per_bit_rows": params_per_bit_rows,
         "fit": fit,
+        "params_fit": params_fit,
+        "eg_params": (
+            {
+                "mean": eg_params_stats[0],
+                "lcb": eg_params_stats[1],
+                "ucb": eg_params_stats[2],
+            }
+            if eg_params_stats
+            else None
+        ),
+        "promoted_selection_rule": "smallest_sufficient",
         "eg_time": (
             {"mean": eg_stats[0], "lcb": eg_stats[1], "ucb": eg_stats[2]}
             if eg_stats
