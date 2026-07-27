@@ -1,0 +1,41 @@
+{
+  "rows": [
+    {
+      "lr": 0.0003,
+      "seed": 47,
+      "steps": 16,
+      "last_loss": 24.963964462280273,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 5787.27,
+      "run_id": "exp_lever_steps_ladder_s16_seed47"
+    },
+    {
+      "lr": 0.0001,
+      "seed": 47,
+      "steps": 16,
+      "last_loss": 47.052059173583984,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "latency_ms_p50": 30001.48,
+      "run_id": "exp_lever_lr_00001_s16_seed47"
+    },
+    {
+      "lr": 0.001,
+      "seed": 47,
+      "steps": 16,
+      "last_loss": 14.628984451293945,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 2176.43,
+      "run_id": "exp_lever_lr_0001_s16_seed47"
+    }
+  ],
+  "not_ship": true
+}
