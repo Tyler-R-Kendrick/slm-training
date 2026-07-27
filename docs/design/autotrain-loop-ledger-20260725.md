@@ -309,6 +309,43 @@ DSH5-10 SFT/preference-training and four-baseline comparison scope, or the
 next queued `AP-007+` campaign arm) — the smoke-loop's role as a harness
 liveness check is now well covered by the batches in this file.
 
+## Seed-rescue check: steps 30/36 → 72 (2026-07-27, scheduled autotrain-loop session)
+
+Acted on PR #1135's evidence-backed next step ("target seed brittleness:
+longer train wall ... not more smoke iters"): reran the six seeds from that
+campaign (42-47) at `--steps 72` (2x the champion) with the same
+ASAP+decode_timeout=30 recipe, against `main` HEAD `b799c19` (PR #1135,
+already merged). Full recipe, scoreboard, and an important eval-fixture
+confound caveat: [lever-seed-rescue-steps72-measured-results.md](lever-seed-rescue-steps72-measured-results.md).
+
+**Result:** all three seeds that hard-failed at steps=30 (43, 45, 46:
+`parse_rate=0`, `empty=3/3`) flip to `parse_rate=1.0`, `empty=0` at
+steps=72. Seed 44's eval was killed twice at the `MAX_RUN_MINUTES=3` wall
+(zero stdout either time) and is excluded — **not evidence**, per this
+file's own iron law, not backfilled. n=5 evidenced seeds, all successful.
+Still `fixture_or_scratch`.
+
+**Same-day correction:** the linked doc originally blamed a cross-session
+metric discrepancy on the eval fixture build being non-deterministic. That
+was checked *after* being written, not before, and is false — rebuilding the
+fixture twice in the same session produced a byte-identical `records.jsonl`.
+The doc and its JSON companion are corrected in place; the real cause of
+that discrepancy is still open (floating-point non-determinism, `torch`
+version drift across sessions, or an uncaptured mistake in the ad hoc
+repro). Lesson for this loop: verify a "confound" hypothesis before writing
+it down, not after — see the doc's corrected "Methodology gap" section.
+
+Environment: fresh `.venv-autotrain` (Python 3.12, `pip install -e
+".[dev,torch]"`) plus `npm ci` for the AgentV publish step — neither was
+pre-installed in this session's checkout.
+
+**Next steps:** diagnose the seed=44 eval hang (may be a real tail-latency
+failure mode, not just an unlucky wrapper timeout — tracked in the stacked
+[decode-timeout-hang-seed44-steps72-finding.md](decode-timeout-hang-seed44-steps72-finding.md));
+diagnose the actual cross-session discrepancy cause now that fixture
+non-determinism is ruled out; otherwise move on to the DSH5-10 / `AP-007+`
+threads per the original note — this smoke line's role as a harness
+liveness + lever check is now well covered.
 ## Joint seed x steps sweep (2026-07-27, scheduled autotrain-loop session)
 
 Acting on the note above: 6 more rows, independently run for real against
