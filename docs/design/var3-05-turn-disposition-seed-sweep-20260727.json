@@ -1,0 +1,95 @@
+{
+  "claim_class": "wiring",
+  "disposition_counts": {
+    "held_out_improvement": 5
+  },
+  "honesty": "fixture_or_scratch",
+  "max_wall_minutes_per_run": 3.0,
+  "note": "held_out_improvement replicated on all 5 seeds tried. Still not a capability or ship claim: every seed shares the same n_dev=4-root real corpus and the same fixed recipe -- this rules out single-seed noise as the explanation, it does not establish generalization to a larger or different held-out set.",
+  "recipe": {
+    "dim": 8,
+    "learning_rate": 0.05,
+    "n_dev_roots": 4,
+    "n_train_roots": 8,
+    "steps": 30
+  },
+  "rows": [
+    {
+      "baseline_composite_penalized_error_rate": 0.5625,
+      "dev_roots_skipped": [],
+      "disposition": "held_out_improvement",
+      "seed": 43304,
+      "train_roots_skipped": [
+        "07e122e7030b65a8_scope",
+        "07e122e7030b65a8_scope"
+      ],
+      "trained_abstention_rate": 0.625,
+      "trained_composite_penalized_error_rate": 0.4375
+    },
+    {
+      "baseline_composite_penalized_error_rate": 0.5625,
+      "dev_roots_skipped": [],
+      "disposition": "held_out_improvement",
+      "seed": 1,
+      "train_roots_skipped": [
+        "07e122e7030b65a8_scope",
+        "07e122e7030b65a8_scope"
+      ],
+      "trained_abstention_rate": 0.5,
+      "trained_composite_penalized_error_rate": 0.5
+    },
+    {
+      "baseline_composite_penalized_error_rate": 0.5625,
+      "dev_roots_skipped": [],
+      "disposition": "held_out_improvement",
+      "seed": 2,
+      "train_roots_skipped": [
+        "07e122e7030b65a8_scope",
+        "07e122e7030b65a8_scope"
+      ],
+      "trained_abstention_rate": 0.75,
+      "trained_composite_penalized_error_rate": 0.375
+    },
+    {
+      "baseline_composite_penalized_error_rate": 0.5625,
+      "dev_roots_skipped": [],
+      "disposition": "held_out_improvement",
+      "seed": 3,
+      "train_roots_skipped": [
+        "07e122e7030b65a8_scope",
+        "07e122e7030b65a8_scope"
+      ],
+      "trained_abstention_rate": 0.5,
+      "trained_composite_penalized_error_rate": 0.5
+    },
+    {
+      "baseline_composite_penalized_error_rate": 0.5625,
+      "dev_roots_skipped": [],
+      "disposition": "held_out_improvement",
+      "seed": 4,
+      "train_roots_skipped": [
+        "07e122e7030b65a8_scope",
+        "07e122e7030b65a8_scope"
+      ],
+      "trained_abstention_rate": 0.625,
+      "trained_composite_penalized_error_rate": 0.4375
+    }
+  ],
+  "schema": "var3_05_turn_disposition_seed_sweep/v1",
+  "verdict": "replicates_every_seed",
+  "version_stamp": {
+    "code_commit": "12d04bf69c1b53ee6c931e634e01c75a6ad5318f",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v26",
+      "data.flow.turn_disposition_corpus": "v1",
+      "dsl.operators.turn_disposition": "v1",
+      "harness.experiments.turn_disposition_training": "v1",
+      "harness.train_data": "v23",
+      "model.operator_feature_encoder": "v2",
+      "model.turn_disposition_head": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-27T14:16:42.426077+00:00"
+  }
+}
