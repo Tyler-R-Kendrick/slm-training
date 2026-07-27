@@ -1,0 +1,217 @@
+{
+  "lever": "decode_reproducibility_quality_champ",
+  "hypothesis": "Same quality checkpoint + identical eval flags yields identical scoreboard metrics (decode is deterministic).",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "checkpoint": "outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt",
+  "flags": "grammar_constrained ASAP t30 eval_limit=3 suite=smoke",
+  "n_repeats": 4,
+  "rows": [
+    {
+      "eval_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47_eval_asap_t30",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8523333333333333,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30011.11,
+      "max_latency_ms": 277005.45,
+      "sum_latency_ms": 337025.72000000003,
+      "decode_outcome_counts": {
+        "model_valid": 1,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "model_valid",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 277005.45,
+          "fallback_used": false
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30011.11,
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30009.16,
+          "fallback_used": true
+        }
+      ],
+      "hero_outcome": "model_valid",
+      "hero_meaningful": true,
+      "hero_latency": 277005.45
+    },
+    {
+      "eval_id": "exp_lever_decode_rng_rep1_exp12_seed47",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30003.65,
+      "max_latency_ms": 30004.78,
+      "sum_latency_ms": 90011.39,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 3,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30004.78,
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30002.96,
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30003.65,
+          "fallback_used": true
+        }
+      ],
+      "hero_outcome": "fallback_output",
+      "hero_meaningful": false,
+      "hero_latency": 30004.78
+    },
+    {
+      "eval_id": "exp_lever_decode_rng_rep2_exp12_seed47",
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.5296666666666666,
+      "empty_prediction_count": 1,
+      "latency_ms_p50": 30007.76,
+      "max_latency_ms": 30008.48,
+      "sum_latency_ms": 90018.53,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 1,
+        "fallback_output": 2,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30007.76,
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30002.29,
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "runtime_timeout",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30008.48,
+          "fallback_used": false
+        }
+      ],
+      "hero_outcome": "fallback_output",
+      "hero_meaningful": false,
+      "hero_latency": 30007.76
+    },
+    {
+      "eval_id": "exp_lever_decode_rng_rep3_exp12_seed47",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 30005.24,
+      "max_latency_ms": 30006.22,
+      "sum_latency_ms": 90015.05,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 0,
+        "fallback_output": 3,
+        "harness_error": 0
+      },
+      "per_example": [
+        {
+          "id": "smoke_hero_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30006.22,
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_button_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": false,
+          "parse_ok": false,
+          "latency_ms": 30003.59,
+          "fallback_used": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "decode_outcome": "fallback_output",
+          "meaningful": true,
+          "parse_ok": true,
+          "latency_ms": 30005.24,
+          "fallback_used": true
+        }
+      ],
+      "hero_outcome": "fallback_output",
+      "hero_meaningful": false,
+      "hero_latency": 30006.22
+    }
+  ],
+  "summary": {
+    "meaningful_min": 0.0,
+    "meaningful_max": 0.6666666666666666,
+    "meaningful_unique": 3,
+    "parse_unique": 2,
+    "hero_outcomes": [
+      "model_valid",
+      "fallback_output",
+      "fallback_output",
+      "fallback_output"
+    ],
+    "hero_latency_min": 30004.78,
+    "hero_latency_max": 277005.45
+  },
+  "decision": "non_deterministic",
+  "decision_reason": "meanful 0.0\u20130.6666666666666666 across 4 re-evals; hero outcomes {'model_valid', 'fallback_output'}; hero lat 30005\u2013277005ms",
+  "implication": "If non_deterministic: quality claims need multi-rep medians; fix decode RNG seeding before more decode levers. If deterministic: prior ltr64 seed47 discrepancy was flag/env drift, not pure RNG.",
+  "captured_at": "2026-07-27T17:42:53.873262+00:00"
+}
