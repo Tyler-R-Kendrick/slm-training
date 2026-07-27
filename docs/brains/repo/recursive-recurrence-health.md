@@ -4,8 +4,8 @@ status: active
 tags: [recurrence, diagnostics, fixture]
 created: 2026-07-23
 updated: 2026-07-27
-linear: SLM-282, SLM-421, SLM-317, SLM-431
-design: docs/design/iter-slm282-recurrence-health-20260723.md, docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md
+linear: SLM-282, SLM-421, SLM-317, SLM-431, SLM-434
+design: docs/design/iter-slm282-recurrence-health-20260723.md, docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md, docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.md
 sources: "[[deeploop-source]], [[training-free-looped-transformers-source]], https://arxiv.org/abs/2106.14342"
 ---
 
@@ -56,10 +56,37 @@ systematic property of the core.
 
 **Net effect on LAR3**: only one of the two PR #853-#856 reopening conditions
 is now met. LAR3 stays closed — the second condition (a passing SLM-317-style
-valid-state repair advancement screen) is unresolved; see the SLM-431 blocker
-below. No ship, checkpoint, or production-default claim follows from either
-record; residual_delta remains a fixture-only counterfactual, never a
-production default.
+valid-state repair advancement screen) is now resolved **negative** by
+SLM-434's powered rerun (below). No ship, checkpoint, or production-default
+claim follows from either record; residual_delta remains a fixture-only
+counterfactual, never a production default.
+
+**SLM-434 (2026-07-27): model knobs ported; powered rerun executed →
+`repair_negative`.** The decision SLM-431's stop rule deferred was resolved
+as route (a): the SLM-308/310 repair-arm knobs (`value_label_mode`,
+`pairwise_progress_margin`, `stop_slot_accounting`) plus the SLM-308 bounded
+distance oracle were ported from the never-merged branch forks
+(`dbe2fd59`/`ae5448c5`/`d8f35563`) onto main, default-off and byte-identical
+when unset (verified against pre-port main; regression tests in
+`tests/test_models/test_tree_edit_diffusion_value_modes.py`). The powered
+rerun then executed exactly as SLM-431 preregistered: frozen SLM-155 fixture
+decision corpus, matched arms, byte-identical do-no-harm commit rule, seeds
+disjoint from [0, 1], `--min-pass-rate 0.5` (mirroring SLM-421). Declared
+deviation: 5 seeds (2..6) instead of 20 — a 20-seed run measurably exceeds
+`MAX_RUN_MINUTES=3` (~16 s/seed decode cost on the shared CPU host). Result:
+0/5 seeds passed (the frozen fixture leaves no headroom — `ar_only` is
+hard-valid on every eval example), Wilson 95% CI [0.000, 0.434] lies entirely
+below 0.5, so the preregistered pass rate is **ruled out**; safety
+(invalid-over-valid = 0) and reachability gates independently PASS.
+Disposition: **`repair_negative`** — the second LAR3-reopening condition is
+NOT met and LAR3 stays CLOSED. Record:
+`docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.{md,json}`;
+per-seed/per-example paired outcomes and durable commit decisions are
+preserved (`outputs/slm317/commit_decisions_powered_20260727.jsonl`). Per
+SLM-434's goal-drift obligations this closes the *approach* (fixture-scale
+do-no-harm repair hybrid as measured), never the goal; successor approaches
+(e.g. a corpus with genuine AR-invalid headroom) belong to a future decision
+issue.
 
 **SLM-431 (2026-07-27): harness landed; powered rerun BLOCKED by unmerged
 branch-only model dependencies (stop rule).** The SLM-317 harness
