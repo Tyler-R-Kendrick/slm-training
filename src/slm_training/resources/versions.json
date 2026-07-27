@@ -311,6 +311,21 @@
         }
       ]
     },
+    "data.flow.turn_disposition_corpus": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/flow/turn_disposition_corpus.py",
+        "tests/test_data/flow/test_turn_disposition_corpus.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-433 (VAR3-03): real-corpus TurnDispositionTargetV1 rows derived through derive_turn_disposition over freshly re-enumerated legal sets (never a hand-labeled shortcut); out_of_scope structurally unreachable given an already-proven accepted action; trace-level leakage-safe split assertion mirroring freeze_collapse_negative_ablation"
+        }
+      ]
+    },
     "data.locked_eval_manifest": {
       "version": "v4",
       "kind": "data_builder",
@@ -7106,6 +7121,24 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "SLM-403 (DSH3-28): default-off typed action and argument scorer over persisted sanitized policy rows, with COMPLETE singleton bypass and PARTIAL defer-only routing"
+        }
+      ]
+    },
+    "harness.experiments.turn_disposition_training": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/turn_disposition_training.py",
+        "tests/test_harnesses/experiments/test_turn_disposition_training.py",
+        "scripts/run_slm433_turn_disposition_training.py",
+        "docs/design/var3-03-turn-disposition-corpus-training-20260727.md",
+        "docs/design/var3-03-turn-disposition-corpus-training-20260727.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-433 (VAR3-03): first trained TurnDispositionHead classifier (a linear head over the existing DSH3-23 OperatorFeatureEncoder) wired against turn_disposition_losses; reports disposition_off/derived_only/disposition_trained on one identical trace-level held-out real-corpus split via unchanged score_disposition_predictions"
         }
       ]
     },

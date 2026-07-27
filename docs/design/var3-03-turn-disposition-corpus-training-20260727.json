@@ -1,0 +1,109 @@
+{
+  "arms": {
+    "held_out": {
+      "derived_only": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 8,
+        "composite_penalized_error_rate": 0.1875,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 2,
+        "wrong_op_rate": 0.25
+      },
+      "disposition_off": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 8,
+        "composite_penalized_error_rate": 0.1875,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 2,
+        "wrong_op_rate": 0.25
+      },
+      "disposition_trained": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 8,
+        "composite_penalized_error_rate": 0.1875,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 2,
+        "wrong_op_rate": 0.25
+      }
+    },
+    "train": {
+      "derived_only": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 16,
+        "composite_penalized_error_rate": 0.1875,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 4,
+        "wrong_op_rate": 0.25
+      },
+      "disposition_off": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 16,
+        "composite_penalized_error_rate": 0.1875,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 4,
+        "wrong_op_rate": 0.25
+      },
+      "disposition_trained": {
+        "abstention_count": 0,
+        "abstention_rate": 0.0,
+        "case_count": 16,
+        "composite_penalized_error_rate": 0.1875,
+        "schema": "cap2_disposition_score/v1",
+        "wrong_emit_penalty_ratio": 3.0,
+        "wrong_op_count": 4,
+        "wrong_op_rate": 0.25
+      }
+    }
+  },
+  "claim_class": "wiring",
+  "clarify_margin_threshold": 0.5,
+  "clarify_top_k": 3,
+  "corpus": {
+    "dev_forced_singleton_rows": 4,
+    "dev_rejected": 0,
+    "dev_rows": 8,
+    "train_forced_singleton_rows": 8,
+    "train_rejected": 0,
+    "train_rows": 16
+  },
+  "disposition": "no_difference",
+  "final_train_loss": 0.0,
+  "honesty": "fixture_or_scratch",
+  "max_wall_minutes": 3.0,
+  "note": "The trained classifier's held-out predictions score identically to the always-emit baselines. This corpus's competing operators carry no per-row distinguishing argument content, so every non-forced row shares one feature vector and one gold label; the classifier necessarily collapses to a constant policy rather than learning a genuine per-row disambiguation. A no_difference result here is expected and legitimate, not reframed as inconclusive.",
+  "recipe": {
+    "dim": 8,
+    "learning_rate": 0.05,
+    "n_dev_traces": 4,
+    "n_train_traces": 8,
+    "steps": 30
+  },
+  "schema": "var3_03_turn_disposition_training/v1",
+  "seed": 433,
+  "version_stamp": {
+    "code_commit": "e9bab2b32b7bc02b939b9fb7d0a7566ba43fca02",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v26",
+      "data.flow.operator_policy_corpus": "v6",
+      "data.flow.turn_disposition_corpus": "v1",
+      "dsl.operators.turn_disposition": "v1",
+      "evals.cap2_operator": "v3",
+      "harness.experiments.turn_disposition_training": "v1",
+      "model.operator_feature_encoder": "v2",
+      "model.turn_disposition_head": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-27T04:49:46.795832+00:00"
+  }
+}
