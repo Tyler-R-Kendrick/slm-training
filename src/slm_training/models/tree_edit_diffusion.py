@@ -1430,7 +1430,16 @@ class TreeEditDiffusionModel(nn.Module):
         if seed is None:
             return "", {"failure": "no_valid_seed"}
         beam: list[tuple[float, list[Statement], bool]] = [(0.0, seed, False)]
-        evidence: dict[str, Any] = {"steps": 0, "expansions": 0, "kind": "tree_edit"}
+        # DSH3-32 (SLM-407): forwards/forward_rows count every self.policy(...)
+        # call below so a systems benchmark can charge X22's real batched
+        # forward-equivalent work instead of assuming one forward per step.
+        evidence: dict[str, Any] = {
+            "steps": 0,
+            "expansions": 0,
+            "kind": "tree_edit",
+            "forwards": 0,
+            "forward_rows": 0,
+        }
         for _ in range(self.config.max_search_steps):
             live = [entry for entry in beam if not entry[2]]
             if not live:
@@ -1442,6 +1451,8 @@ class TreeEditDiffusionModel(nn.Module):
                 ctx.expand(len(sources), -1, -1),
                 ctx_pad.expand(len(sources), -1),
             )
+            evidence["forwards"] += 1
+            evidence["forward_rows"] += len(sources)
             next_beam: list[tuple[float, list[Statement], bool]] = [
                 entry for entry in beam if entry[2]
             ]
@@ -1488,6 +1499,8 @@ class TreeEditDiffusionModel(nn.Module):
                     ctx.expand(len(sources), -1, -1),
                     ctx_pad.expand(len(sources), -1),
                 )
+                evidence["forwards"] += 1
+                evidence["forward_rows"] += len(sources)
                 rescored = [
                     (float(rescore["value"][i]), entry[1], False)
                     for i, entry in enumerate(unfrozen)
