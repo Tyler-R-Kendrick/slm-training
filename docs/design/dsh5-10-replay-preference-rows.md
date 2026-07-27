@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (sixth increment).
+**Status:** partial slice, in progress (seventh increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -26,12 +26,24 @@ policy/control heads, the four-baseline comparison, held-out benefit
 measurement, or turn-depth/context-view ablations -- all of that remains
 exactly as unattempted as before this slice.
 
-**Update (sixth slice, below):** the turn-depth/context-view *structural*
+**Update (sixth slice):** the turn-depth/context-view *structural*
 ablation dimension and a bounded, fixture-scale matched context-view
 comparison are now wired -- see "Sixth slice" for exactly what that does and
 does not close. Real SFT/preference training against the DSH3-selected
 policy/control heads, a powered/real corpus, and CAP0/CAP1/CAP2 retention
 measurement remain unattempted.
+
+**Update (seventh slice, below):** the sixth slice (v7)'s own "explicitly
+still not attempted" gap is now closed for the bounded synthetic corpus --
+the converted `PreferencePair`s are written to a real corpus file under this
+repo's existing preference-pairs root, and a real (non-fixture, from-scratch)
+`TwoTowerModel` checkpoint is trained against them via the existing `slm
+preference train` harness. Held-out pairwise-preference accuracy is measured
+before and after training and is honestly a **ceiling effect** (1.0 in both
+cases, on 4 held-out pairs) -- see "Seventh slice" for the real numbers and
+why no benefit claim is made. The DSH3-selected `TypedOperatorPolicyScorer`,
+the four-baseline comparison, and CAP0/CAP1/CAP2 retention remain
+unattempted.
 
 ## What this PR delivers
 
@@ -648,6 +660,203 @@ correctness or honesty defect.
   gets a `no-bump:` history entry for the two new re-exports from
   `operators/__init__.py`.
 
+## Seventh slice (2026-07-27)
+
+The sixth slice (v7)'s own "Explicitly still not attempted" note said: no
+`PreferencePair` produced by that slice had been written to a corpus file or
+fed to `slm preference build-pairs`/`train`. This slice closes exactly that
+gap for the bounded synthetic corpus
+(`synthesize_bounded_session_corpus`) -- writing real corpus files and
+running the real, already-existing `slm preference train` harness against
+them, then measuring the real held-out result. It does **not** attempt the
+DSH3-selected `TypedOperatorPolicyScorer`, the four-baseline comparison, or
+CAP0/CAP1/CAP2 retention -- those stay exactly as out of scope as every prior
+slice left them.
+
+### What was built
+
+* `src/slm_training/harnesses/preference/replay_preference_context_view_variants.py`:
+  `ReplayPreferenceSessionV1` gains a `trace: ConversationTraceV1 | None =
+  None` field -- the real trace every session but `merge_success` was already
+  built from internally, now exposed on the dataclass so a caller can feed a
+  session's own rows into `preference_pairs_from_trace` directly rather than
+  re-deriving a trace from `state_lookup`. Additive and optional; no existing
+  field, schema serialization, or behavior changed.
+  `synthesize_bounded_session_corpus` now passes `trace=trace` for the seven
+  sessions that have one; `merge_success` keeps `trace=None` (no trace object
+  exists for a merge decision -- see `replay_preference.py`'s own module
+  docstring).
+* `src/slm_training/harnesses/preference/replay_preference_corpus.py` (new;
+  `harness.preference.replay_preference_corpus` v1). Pure, no-torch corpus
+  writer:
+  * `replay_preference_pairs_for_split(sessions, split)` -- converts every
+    row of every session in one split (`"train"` or `"held_out"`) into a
+    `PreferencePair`. Reuses `preference_pairs_from_trace` unchanged for
+    every session that carries a real trace, and
+    `preference_pair_from_replay_row` directly (looked up via that session's
+    own `state_lookup`) for `merge_success` -- the exact trace/direct-path
+    skip convention the sixth slice's own tests already prove at
+    single-trace scale, now applied uniformly across a whole corpus. A row
+    whose input state is missing from its session's `state_lookup` is
+    honestly recorded in a `skipped` list, never fabricated; in a real run,
+    `skipped` is empty for both splits (every row's input state really is in
+    its own session's lookup, by construction).
+  * `write_replay_preference_corpus(out_path, split, sessions=None)` --
+    writes one split's pairs to `out_path` via the existing `write_pairs`
+    writer, into this repo's existing preference-pairs corpus root
+    (`outputs/data/preference/` -- the same root `slm preference
+    build-pairs --out` already writes into; no second corpus tree). Fails
+    closed (`ValueError`) rather than writing an empty file when a split
+    produces zero pairs.
+* `src/slm_training/harnesses/preference/train.py` gains three new
+  functions, reusing `dpo_loss`'s own private masked-log-prob machinery
+  rather than inventing a parallel scoring path:
+  * `pairwise_preference_margin(model, pair)` -- `chosen_logprob -
+    rejected_logprob` under a `TwoTowerModel`'s current weights; the same
+    quantity `dpo_loss` already computes, exposed standalone.
+  * `held_out_pairwise_accuracy(model, pairs)` -- pairwise chosen>rejected
+    accuracy over a list of pairs. **Not unconditionally deterministic**:
+    `_logprob_of_target` applies fresh random masking noise on every call
+    (the same "mild noise" `dpo_loss` trains under), so repeated calls can
+    differ by a small amount unless the caller fixes `torch.manual_seed`
+    immediately beforehand -- documented directly in the function's own
+    docstring rather than glossed over.
+  * `evaluate_replay_preference_held_out_benefit(*, baseline_checkpoint,
+    held_out_pairs, trained_checkpoint=None, device="cpu", seed=0)` -- loads
+    one or two checkpoints, measures each (seeding `torch.manual_seed(seed)`
+    immediately before each measurement so a given seed reproduces the same
+    result for the same pairs/architecture), and reports a `verdict` using
+    the same strict-greater-than convention as the sixth slice's own
+    `held_out_benefit` (`benefit_observed_fixture_scale` only when the
+    trained checkpoint's accuracy strictly exceeds the baseline's;
+    `no_benefit_fixture_scale` otherwise, including ties).
+* `scripts/build_replay_preference_corpus.py` (new) -- CLI writing the
+  train and/or held-out split to the canonical corpus root.
+* `scripts/measure_replay_preference_held_out_benefit.py` (new) -- CLI
+  wrapping `evaluate_replay_preference_held_out_benefit` over checkpoints and
+  a pairs file on disk.
+* Tests: `tests/test_harnesses/preference/test_replay_preference_corpus.py`
+  (new, pure corpus-conversion/writer coverage, including the
+  fail-closed-on-empty-split path) and
+  `tests/test_harnesses/preference/test_replay_preference_held_out_benefit.py`
+  (new, exercises the three new `train.py` functions against a tiny real
+  `TwoTowerModel` built the same way `tests/test_harnesses/preference/
+  test_local_train.py`'s own `_model()` fixture does). One new test in
+  `tests/test_harnesses/preference/test_operator_history_pairs.py` asserts
+  every session but `merge_success` now carries its real trace.
+* `harness.preference.replay_preference_context_view_variants` bumped v2 ->
+  v3 (the `trace` field addition); new component
+  `harness.preference.replay_preference_corpus` registered at v1, claiming
+  the new module/scripts/tests plus `train.py` (previously unclaimed by any
+  component).
+
+### What was measured (real runs)
+
+Real corpus build (`python -m scripts.build_replay_preference_corpus
+--split both`): **36 train pairs** across 6 sessions (`rollback_chain_2`,
+`rollback_chain_4`, `rollback_chain_8`, `rollback_chain_16`, `pronoun_focus`,
+`merge_success`) and **4 held-out pairs** across 2 sessions
+(`rollback_chain_1`, `checkout_and_fork`) -- matching the sixth slice's own
+6-train/2-held-out session split and 36+4=40 total row count exactly.
+`skipped` was empty for both splits, including the `merge_success` session's
+one row (confirmed converting via the direct `state_lookup` path, not
+`preference_pairs_from_trace`, since `merge_success.trace is None`).
+
+Real from-scratch checkpoint (reusing the existing `wf_smoke_v2` smoke-loop
+recipe, per this repo's own prior "docs(autotrain)" entries -- never a new
+fixture corpus):
+
+```bash
+python -m scripts.train_model --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+  --model twotower --context-backend scratch --steps 8 \
+  --run-id dsh5_10_seventh_slice_scratch --no-sync-checkpoints --device cpu --seed 0
+```
+
+Wall time: 10.7s (well inside `MAX_RUN_MINUTES`). Checkpoint written to
+`outputs/runs/dsh5_10_seventh_slice_scratch/checkpoints/last.pt` (not
+committed; `outputs/` is gitignored).
+
+Real preference training against the 36 train-split pairs, via the existing,
+unchanged `slm preference train` harness:
+
+```bash
+python -m scripts.train_preference train \
+  --checkpoint outputs/runs/dsh5_10_seventh_slice_scratch/checkpoints/last.pt \
+  --pairs outputs/data/preference/replay_preference_train_pairs.jsonl \
+  --out-dir outputs/runs/dsh5_10_seventh_slice_preference --steps 20 --device cpu
+```
+
+Wall time: 9.5s. Real output: `last_loss=0.04492715746164322`,
+`mean_loss=0.12848591189831496`, `n_pairs=36`,
+`note="Surrogate preference loss on masked-token log-probs; no frozen
+reference model (not textbook DPO)."` (the harness's own honesty label,
+unchanged). Checkpoint written to
+`outputs/runs/dsh5_10_seventh_slice_preference/model.pt`.
+
+Real held-out benefit measurement (`python -m
+scripts.measure_replay_preference_held_out_benefit`, `--seed 0`), comparing
+the scratch checkpoint (baseline) against the same checkpoint after the
+preference-training run above (trained), on the 4 held-out pairs:
+
+* **Baseline:** `pairwise_preference_accuracy=1.0`, `mean_margin=5.274`.
+* **Trained:** `pairwise_preference_accuracy=1.0`, `mean_margin=18.103`.
+* **Verdict: `no_benefit_fixture_scale`.** This is an honest **ceiling
+  effect**, not evidence of no benefit in general: the same 4-pair held-out
+  split the sixth slice's diagnostic linear scorer already classified
+  perfectly (`held_out_benefit.verdict=no_benefit_fixture_scale`,
+  `baseline_accuracy=1.0`) is, unsurprisingly, also classified perfectly by
+  a real `TwoTowerModel` both before and after preference training -- there
+  is no headroom left in 4 pairs for a real accuracy improvement to show up.
+  The mean margin (how confidently the model separates chosen from rejected,
+  not whether it does) more than tripled after training (5.274 -> 18.103),
+  which is a real, directionally-consistent training-signal effect, but
+  `verdict` intentionally does not credit a margin increase as "benefit" --
+  only a strict pairwise-accuracy improvement counts, per the same
+  convention the sixth slice's own `held_out_benefit` used. **claim_class:
+  `wiring`** -- this is a real training run and a real measurement, not a
+  certified or powered held-out-benefit claim; the held-out split's own tiny
+  size (4 pairs) is the reason, exactly as `evaluate_replay_preference_held_
+  out_benefit`'s own `notes` field says.
+* Corpus composition, ablation-grid structure, trace-replay, and
+  unintended-mutation properties are unchanged and are not re-measured this
+  slice -- see the sixth slice's own section above for that evidence
+  (nothing in this slice touches `dsl.operators.replay_preference`,
+  `replay_preference_context_views.py`'s view construction, or the linear
+  ablation scorer).
+
+### Explicitly out of scope (unchanged from, or newly identified by, this slice)
+
+* Training against the DSH3-selected policy/control heads
+  (`TypedOperatorPolicyScorer`) -- the checkpoint trained here is the
+  existing `TwoTowerModel` preference harness's own denoiser, never the
+  DSH3-selected head. No `TypedOperatorPolicyScorer` code, checkpoint, or
+  evaluation is touched by this slice.
+* The four-baseline comparison and CAP0/CAP1/CAP2 retention -- still require
+  the full CAP-gated eval suite integrated with a trained policy checkpoint;
+  genuinely out of scope for this slice's real-but-fixture-scale TwoTower
+  run.
+* A powered or real (non-synthetic) corpus -- 36 train / 4 held-out pairs is
+  wiring evidence over a real model, not a statistically powered held-out-
+  benefit study. The held-out ceiling effect above is a direct symptom of
+  this: 4 pairs cannot show accuracy headroom even when the underlying
+  margins move substantially.
+* Turn-depth padding for `CHECKOUT_ANOTHER_STATE`, `FORK_THEN_CHOOSE_ONE_BRANCH`,
+  `MERGE_SUCCESS`, and `PRONOUN_FOCUS_FOLLOWUP` -- unchanged from the sixth
+  slice's own note; still one synthetic session each, no padded history.
+* Reproducibility of `held_out_pairwise_accuracy` across separate,
+  unseeded calls -- documented as a real limitation (masking noise), not
+  silently assumed away; `evaluate_replay_preference_held_out_benefit`'s
+  `seed` parameter is the mitigation this slice ships, not a claim that the
+  underlying measurement is noise-free.
+* Checkpoint promotion, syncing, or `docs/MODEL_CARD.md` / README updates --
+  both checkpoints this slice produces are local, from-scratch/smoke-scale,
+  and gitignored (`outputs/` is never committed); neither is a roster,
+  matrix-champion, or production-ship checkpoint, so no model-card update
+  applies.
+
+No causal, calibration, or promotion claim is made. `claim_class: wiring`
+throughout.
+
 ## Reproducibility
 
 ```bash
@@ -670,3 +879,28 @@ NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/
 Result (fifth slice, v6): real run in a fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gates the pack authority requires; the ambient `--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build both for `npm ci` and for `pytest`, unrelated to this change): `61 passed`. Also verified: `ruff check` clean on every changed file; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-v82ph9` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean.
 
 Result (this PR, sixth slice, v7): same command, same freshly built `.venv` (Python 3.12) plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` -- test file grew by 8 tests (7 conversion-coverage tests + 1 refusal test) in the same `tests/test_dsl/test_replay_preference.py`, no new test module needed: `69 passed`. Also verified: `ruff check` on every changed file (`src/slm_training/dsl/operators/replay_preference.py`, `src/slm_training/dsl/operators/__init__.py`, `tests/test_dsl/test_replay_preference.py`) -- `All checks passed!`; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (vs 5f94b925a121; 4 changed file(s), 2 component(s) touched)`; `python -m scripts.repo_policy` -- `repo-policy: ok (tracked + untracked)`; `python -m scripts.verify_decode_invariants` -- exits clean (`0`).
+
+## Reproducibility (seventh slice)
+
+```bash
+NODE_OPTIONS= pytest -q tests/test_harnesses/preference/test_replay_preference_corpus.py tests/test_harnesses/preference/test_replay_preference_held_out_benefit.py tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_dsl/test_replay_preference.py tests/test_evals/test_ambiguous_operator_followups.py
+python -m scripts.build_replay_preference_corpus --split both
+python -m scripts.train_model --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+  --model twotower --context-backend scratch --steps 8 \
+  --run-id dsh5_10_seventh_slice_scratch --no-sync-checkpoints --device cpu --seed 0
+python -m scripts.train_preference train \
+  --checkpoint outputs/runs/dsh5_10_seventh_slice_scratch/checkpoints/last.pt \
+  --pairs outputs/data/preference/replay_preference_train_pairs.jsonl \
+  --out-dir outputs/runs/dsh5_10_seventh_slice_preference --steps 20 --device cpu
+python -m scripts.measure_replay_preference_held_out_benefit \
+  --baseline-checkpoint outputs/runs/dsh5_10_seventh_slice_scratch/checkpoints/last.pt \
+  --trained-checkpoint outputs/runs/dsh5_10_seventh_slice_preference/model.pt \
+  --held-out-pairs outputs/data/preference/replay_preference_held_out_pairs.jsonl \
+  --device cpu --seed 0
+python -m scripts.verify_version_stamps --check --base origin/main
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+ruff check src/slm_training/harnesses/preference/replay_preference_context_view_variants.py src/slm_training/harnesses/preference/train.py src/slm_training/harnesses/preference/replay_preference_corpus.py scripts/build_replay_preference_corpus.py scripts/measure_replay_preference_held_out_benefit.py tests/test_harnesses/preference/test_replay_preference_corpus.py tests/test_harnesses/preference/test_replay_preference_held_out_benefit.py tests/test_harnesses/preference/test_operator_history_pairs.py
+```
+
+Result (this PR, seventh slice): fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` (same schema-oracle gate requirement as every prior slice). `pytest`: `65 passed` (the two new test files plus the touched `test_operator_history_pairs.py`, `test_replay_preference.py`, and `test_ambiguous_operator_followups.py`, all unaffected by this slice's changes). `python -m scripts.build_replay_preference_corpus --split both`: `36` train pairs (6 sessions) + `4` held-out pairs (2 sessions), `skipped_count=0` for both. `python -m scripts.train_model ...` (scratch checkpoint): `10.7s` wall. `python -m scripts.train_preference train ...` (20 steps against the 36 train pairs): `9.5s` wall, `last_loss=0.04492715746164322`, `mean_loss=0.12848591189831496`. `python -m scripts.measure_replay_preference_held_out_benefit ...` (4 held-out pairs, `--seed 0`): `baseline.pairwise_preference_accuracy=1.0` (`mean_margin=5.274418354034424`), `trained.pairwise_preference_accuracy=1.0` (`mean_margin=18.10257863998413`), `verdict="no_benefit_fixture_scale"` -- an honest ceiling effect (see "Seventh slice" above), not a benefit claim. `ruff check`: clean on every touched/created file. `python -m scripts.verify_version_stamps --check --base origin/main`: `ok (vs 4d650b7e901f; 18 changed file(s), 2 component(s) touched)` (the extra changed files beyond this slice's own 10 are four unrelated upstream `docs(autotrain)` lever-smoke commits that landed on `origin/main` after this branch's base -- no overlap with any file this slice touches). `python -m scripts.repo_policy`: `ok (tracked + untracked)`. `python -m scripts.verify_decode_invariants`: clean.

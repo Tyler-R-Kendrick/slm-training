@@ -466,6 +466,14 @@ class ReplayPreferenceSessionV1:
     ``group_id`` is the unit ``split_for_group`` partitions on: every row in
     one session shares one split (the issue's adversarial control,
     "conversation variants stay in one split").
+
+    ``trace`` (seventh slice) is the real ``ConversationTraceV1`` the session
+    was built from, when one exists -- ``None`` for the ``merge_success``
+    session, since no trace object exists for a merge decision (see
+    ``replay_preference.py``'s own module docstring). This lets a caller feed
+    a session's rows into ``preference_pairs_from_trace`` directly, matching
+    the sixth slice's own trace/direct-path conversion convention, without
+    re-deriving a trace from ``state_lookup`` alone.
     """
 
     group_id: str
@@ -473,6 +481,7 @@ class ReplayPreferenceSessionV1:
     report: OperatorEventMemoryReportV1
     state_lookup: dict
     receipts: tuple[OperatorTurnReceiptV1, ...]
+    trace: ConversationTraceV1 | None = None
 
 
 #: Chain lengths exercised by the rollback-chain sessions -- directly the
@@ -506,6 +515,7 @@ def synthesize_bounded_session_corpus() -> tuple[ReplayPreferenceSessionV1, ...]
                 report=report,
                 state_lookup=state_lookup_from_trace(trace),
                 receipts=receipts_from_trace(trace),
+                trace=trace,
             )
         )
 
@@ -520,6 +530,7 @@ def synthesize_bounded_session_corpus() -> tuple[ReplayPreferenceSessionV1, ...]
             report=checkout_fork_report,
             state_lookup=state_lookup_from_trace(checkout_fork_trace),
             receipts=receipts_from_trace(checkout_fork_trace),
+            trace=checkout_fork_trace,
         )
     )
 
@@ -534,6 +545,7 @@ def synthesize_bounded_session_corpus() -> tuple[ReplayPreferenceSessionV1, ...]
             report=pronoun_report,
             state_lookup=state_lookup_from_trace(pronoun_trace),
             receipts=receipts_from_trace(pronoun_trace),
+            trace=pronoun_trace,
         )
     )
 

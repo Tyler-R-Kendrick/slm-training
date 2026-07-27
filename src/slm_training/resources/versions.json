@@ -8016,7 +8016,7 @@
       ]
     },
     "harness.preference.replay_preference_context_view_variants": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_preference_context_view_variants.py",
@@ -8027,6 +8027,11 @@
         "docs/design/dsh5-10-replay-preference-rows.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) seventh slice: ReplayPreferenceSessionV1 gains a trace field (ConversationTraceV1 | None, default None) -- the real trace every session but merge_success was already built from, now exposed so harness.preference.replay_preference_corpus can feed a session's rows into preference_pairs_from_trace directly instead of re-deriving a trace from state_lookup. Additive/optional field; no existing behavior, schema serialization, or test changes. merge_success keeps trace=None (no trace object exists for a merge decision, per replay_preference.py's own module docstring)"
+        },
         {
           "version": "v2",
           "date": "2026-07-27",
@@ -8041,6 +8046,25 @@
           "version": "v1",
           "date": "2026-07-27",
           "note": "SLM-418 (DSH5-10) sixth slice: initial registration. Bounded, fixture-scale matched context-view variant training over the dsl.operators.replay_preference_context_views five context-views x five turn-depths. A tiny two-feature (history_repeat_score, is_history_control) pairwise linear scorer -- deliberately NOT a DSH3 policy/control head/checkpoint -- is trained per (view, turn_depth) cell over a small deterministic synthetic session corpus (synthesize_bounded_session_corpus), split train/held-out by split_for_group so conversation variants stay in one split. Measures pairwise chosen>rejected preference accuracy (overall and by semantic relation), a narrow pairwise calibration proxy, and undo-family corpus composition; explicitly does not measure real action/operator/argument accuracy against a trained policy, unintended mutations (structurally impossible -- no apply() call is made), or CAP0/CAP1/CAP2 retention (out of scope). src/slm_training/evals/ambiguous_operator_followups.py assembles the held-out-benefit disposition (benefit_observed_fixture_scale / no_benefit_fixture_scale, never a certified claim)"
+        }
+      ]
+    },
+    "harness.preference.replay_preference_corpus": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/replay_preference_corpus.py",
+        "src/slm_training/harnesses/preference/train.py",
+        "scripts/build_replay_preference_corpus.py",
+        "scripts/measure_replay_preference_held_out_benefit.py",
+        "tests/test_harnesses/preference/test_replay_preference_corpus.py",
+        "tests/test_harnesses/preference/test_replay_preference_held_out_benefit.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) seventh slice: initial registration. Closes the sixth slice's own 'explicitly still not attempted' gap -- writes the bounded synthesize_bounded_session_corpus() train/held-out splits to real PreferencePair corpus files (outputs/data/preference/, this repo's existing preference-pairs root; no second corpus tree), reusing preference_pairs_from_trace / preference_pair_from_replay_row verbatim (the sixth slice's own trace/direct-path conversion convention, now applied at corpus scale). train.py gains pairwise_preference_margin, held_out_pairwise_accuracy, and evaluate_replay_preference_held_out_benefit -- standalone exposure of the same masked teacher-forced log-prob margin dpo_loss already trains on, for honest held-out pairwise-preference measurement of a real TwoTowerModel checkpoint before/after a real `slm preference train` run against this corpus's train split. Still explicitly out of scope: the DSH3-selected TypedOperatorPolicyScorer, the four-baseline comparison, and CAP0/CAP1/CAP2 retention"
         }
       ]
     },

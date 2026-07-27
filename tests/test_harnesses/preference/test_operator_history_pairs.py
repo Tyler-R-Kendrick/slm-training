@@ -289,6 +289,31 @@ def test_synthetic_corpus_has_both_train_and_held_out_sessions() -> None:
     assert splits == {"train", "held_out"}
 
 
+def test_every_session_but_merge_success_carries_its_real_trace() -> None:
+    """Seventh slice: ``ReplayPreferenceSessionV1.trace`` -- present or honestly absent.
+
+    Every session but ``merge_success`` was built from a real
+    ``ConversationTraceV1`` and now exposes it (so a caller can feed a
+    session's rows into ``preference_pairs_from_trace`` directly, per
+    docs/design/dsh5-10-replay-preference-rows.md's "Seventh slice"). No
+    trace object exists for a merge decision (see ``replay_preference.py``'s
+    own module docstring), so that one session's ``trace`` stays ``None``
+    rather than fabricating one.
+    """
+    sessions = synthesize_bounded_session_corpus()
+    by_group = {session.group_id: session for session in sessions}
+    assert by_group["merge_success"].trace is None
+    for group_id, session in by_group.items():
+        if group_id == "merge_success":
+            continue
+        assert session.trace is not None
+        # The trace's own state nodes really do contain every row's input
+        # state -- i.e. this is the same trace the row was extracted from,
+        # not merely some other trace of the same shape.
+        for row in session.report.rows:
+            assert session.trace.node(row.input_state_id) is not None
+
+
 # --------------------------------------------------------------------------- #
 # train_replay_preference_context_view_variants: the bounded comparison.
 # --------------------------------------------------------------------------- #
