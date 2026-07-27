@@ -649,6 +649,11 @@
         {
           "version": "v16",
           "date": "2026-07-27",
+          "note": "no-bump: SLM-418 (DSH5-10) sixth slice re-exports ContextView/ContextViewWindowV1/OperatorEventMemoryAblationCellV1/OperatorEventMemoryAblationReportV1/OperatorTurnReceiptV1/TURN_DEPTHS/LAST_THREE_WINDOW/action_kind_of/build_ablation_report/build_context_view_window/receipts_from_trace/state_lookup_from_trace from operators/__init__.py (new dsl.operators.replay_preference_context_views component); no change to contracts.py itself"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-27",
           "note": "no-bump: SLM-418 (DSH5-10) fourth slice re-exports extract_merge_preference_row from operators/__init__.py (dsl.operators.replay_preference bumped to v5); no change to contracts.py itself"
         },
         {
@@ -1127,6 +1132,20 @@
           "version": "v1",
           "date": "2026-07-26",
           "note": "SLM-418 (DSH5-10) first slice: replay-grounded preference rows for edit-then-undo and undo-then-redo, checked against the exact legal set at the shared input state; partial (2 of ~7 verified patterns), no SFT/preference training or held-out measurement"
+        }
+      ]
+    },
+    "dsl.operators.replay_preference_context_views": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/replay_preference_context_views.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) sixth slice: initial registration. Defines the five context-view input representations (current_state_only, state_plus_recent_receipts, state_plus_retrieved_events, full_trace_plus_state, last_three_text_history) and the five turn-depths (1/2/4/8/16) the issue's own matrix names, plus OperatorEventMemoryAblationReportV1/build_ablation_report -- the structural (not yet trained) turn-depth x context-view ablation grid OperatorEventMemoryReportV1's own docstring flagged as missing. Every view is built only from state/event ids and a small closed action_kind vocabulary derived by string-prefix check -- never transcript text, never a semantic embedding of any id. Trains nothing; harness.preference.replay_preference_context_view_variants consumes it to train and compare matched context-view variants"
         }
       ]
     },
@@ -7981,6 +8000,24 @@
         }
       ]
     },
+    "harness.preference.replay_preference_context_view_variants": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/replay_preference_context_view_variants.py",
+        "scripts/run_replay_preference_context_view_ablation.py",
+        "tests/test_harnesses/preference/test_operator_history_pairs.py",
+        "tests/test_evals/test_ambiguous_operator_followups.py",
+        "src/slm_training/evals/ambiguous_operator_followups.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) sixth slice: initial registration. Bounded, fixture-scale matched context-view variant training over the dsl.operators.replay_preference_context_views five context-views x five turn-depths. A tiny two-feature (history_repeat_score, is_history_control) pairwise linear scorer -- deliberately NOT a DSH3 policy/control head/checkpoint -- is trained per (view, turn_depth) cell over a small deterministic synthetic session corpus (synthesize_bounded_session_corpus), split train/held-out by split_for_group so conversation variants stay in one split. Measures pairwise chosen>rejected preference accuracy (overall and by semantic relation), a narrow pairwise calibration proxy, and undo-family corpus composition; explicitly does not measure real action/operator/argument accuracy against a trained policy, unintended mutations (structurally impossible -- no apply() call is made), or CAP0/CAP1/CAP2 retention (out of scope). src/slm_training/evals/ambiguous_operator_followups.py assembles the held-out-benefit disposition (benefit_observed_fixture_scale / no_benefit_fixture_scale, never a certified claim)"
+        }
+      ]
+    },
     "harness.quality.slop_forensics": {
       "version": "v1",
       "kind": "harness",
@@ -10890,6 +10927,11 @@
         "docs/design/dsh5-12-advanced-operator-disposition-20260727-local/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "no-bump: SLM-418 (DSH5-10) sixth slice corrects the hardcoded EVENT_MEMORY dimension_reasons -- a turn-depth/context-view structural ablation and a bounded fixture-scale two-feature diagnostic scorer comparison now exist (dsl.operators.replay_preference_context_views, harness.preference.replay_preference_context_view_variants), so 'No turn-depth or context-view ablation exists' is no longer accurate; the verdict stays unrun_conditional since no real SFT/preference training against a trained DSH3 policy/control head, no powered corpus, and no CAP0/CAP1/CAP2 retention measurement exist. No change to disposition logic, schema, or the already-published dsh5-12-*-20260727-local snapshot, which stays immutable point-in-time evidence from before this slice landed"
+        },
         {
           "version": "v2",
           "date": "2026-07-27",
