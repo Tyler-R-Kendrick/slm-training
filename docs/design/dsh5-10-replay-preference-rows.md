@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (eighth increment).
+**Status:** partial slice, in progress (ninth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -24,12 +24,18 @@ bounded `scripts/train_preference.py train` call against it. This slice
 extends the demo corpus to a fourth pattern, `merge_success` -- the one
 pattern the seventh slice's trace-scan corpus could not reach -- and reruns
 the same training chain against the now-richer 3-pair corpus; see "Eighth
-slice" below. This is still not the issue's actual training/measurement
-claim: what remains is a *real* pairs corpus (no captured
-conversation-trace data exists anywhere in this repo -- see below),
-training against the DSH3-selected policy/control heads specifically (not
-the generic TwoTower pair format used here), the four-baseline comparison,
-held-out benefit measurement, and turn-depth/context-view ablations.
+slice" below. This slice takes the first real step onto the issue's actual
+named training target: `typed_operator_policy.py`'s
+`TypedOperatorPolicyScorer`, not the generic TwoTower pair format the
+sixth/seventh/eighth slices used for tooling compatibility. Only one of the
+seven named patterns (`pronoun_focus_followup`) is honestly representable
+there today -- see "Ninth slice" below for why, and for a real, structural
+(not a bug) null-training finding this exposed. What remains is a *real*
+pairs corpus (no captured conversation-trace data exists anywhere in this
+repo -- see below), a scope decision for the other six patterns' history-
+control/merge actions (none has a row in the typed policy's action space),
+the four-baseline comparison, held-out benefit measurement, and turn-depth/
+context-view ablations.
 
 ## What this PR delivers
 
@@ -470,10 +476,81 @@ training/evaluation work enumerated above.
 * `harness.preference.replay_pairs` bumped `v2` -> `v3` in
   `src/slm_training/resources/versions.json`.
 
+## Ninth slice
+
+Every slice from the sixth onward has flagged the same gap: the sixth
+through eighth slices' `PreferencePair`/TwoTower path exists only for
+tooling compatibility, since the disposition's own remaining-scope note
+names `typed_operator_policy.py`'s `TypedOperatorPolicyScorer` -- not
+TwoTower -- as the issue's actual training target. This slice takes the
+first real step onto that target, and honestly narrows what's reachable
+there.
+
+* New module `src/slm_training/harnesses/experiments/argument_preference.py`:
+  * `build_argument_preference_example` renders one row into a
+    `TypedOperatorArgumentPreferenceExampleV1` -- but **only for
+    `pronoun_focus_followup`**. `OperatorPolicyInputV1.action_rows` is built
+    only from `legal_set.entries` (operator-registry actions;
+    `build_operator_policy_input` in
+    `slm_training.models.operator_policy_view`). The other six named
+    patterns' `chosen_action`/`rejected_action` are history controls
+    (`undo`, `redo:<id>`, `checkout:<id>`) or `merge:<pair>` -- none of
+    which has a row in that space at all. `pronoun_focus_followup` is the
+    one pattern whose chosen and rejected actions are the *same* operator
+    with a different bound argument for the *same* slot: a genuine
+    argument-selection preference the typed policy's
+    `argument_head` (`CandidateScoringHead`) can score. Wiring the other
+    six patterns would require a real scope decision about what an "action
+    row" even means for a control action -- left open here, not guessed at.
+  * `typed_operator_argument_preference_loss` is a Bradley-Terry pairwise
+    margin, `-log_sigmoid(chosen_logit - rejected_logit)`, over the two
+    candidates' `CandidateScoringHead` logits for the differing slot.
+    Surrogate preference loss, not textbook DPO -- the same honesty note
+    `scripts/train_preference.py`'s own `dpo_loss` already carries for the
+    generic TwoTower path.
+  * `train_typed_operator_argument_preference` mirrors
+    `train_typed_operator_policy`'s own matched full-batch schedule exactly,
+    over this new loss.
+* **Real, structural finding, not a bug:** training on the actual
+  `pronoun_focus_followup` fixture
+  (`tests/test_dsl/test_replay_preference.py`'s `_pronoun_focus_fixture`)
+  provably cannot move the loss. Both sibling refs share every field
+  `ReferenceModelViewV1` exposes (`ref_kind=VALUE`, `value_type=
+  openui.string`, no parent, no position) -- they differ only by
+  `semantic_fingerprint`, which `FORBIDDEN_FIELD_NAMES` in
+  `slm_training.models.operator_policy_view` deliberately strips from every
+  model input as anti-identity-leakage. `OperatorFeatureEncoder.
+  _reference_embeddings` is a pure function of exactly those allowed
+  fields, with no row-index feature, so two feature-identical candidates
+  get byte-identical embeddings through the shared-weight
+  `CandidateScoringHead` regardless of any parameter update: the loss sits
+  at `-log_sigmoid(0) = ln(2)` structurally, provably, for as many steps as
+  you run it. `test_training_cannot_move_the_loss_when_candidates_are_feature_identical`
+  proves this is exact (`pytest.approx`, not "roughly unchanged"); a
+  second test with a synthetic, feature-*distinguishable* pair (differing
+  `relative_position`) proves the loss function and gradient flow
+  themselves work correctly (`test_training_reduces_the_pairwise_loss_when_candidates_differ`)
+  -- this is a property of *this fixture's* candidates, not of the
+  mechanism.
+  * Consequence for the open training/measurement scope above: any real
+    corpus of `pronoun_focus_followup` rows will only carry a learnable
+    argument-preference signal for pairs whose candidates differ in
+    `ref_kind`/`value_type`/`compiler_facts`/`has_parent`/
+    `relative_position`/selector fields -- feature-identical siblings
+    (plausibly common for repeated same-type VALUE refs, exactly the
+    minimal case this fixture represents) are structurally unlearnable
+    signal by this scorer's own anti-leakage design, not a data-quantity
+    problem. Worth surfacing before anyone builds a real corpus and is
+    puzzled why training on it plateaus.
+* No harness code outside the new module changed; `typed_operator_policy.py`
+  itself is unchanged (only consumed, not modified).
+* `harness.experiments.argument_preference` registered fresh (`v1`, initial
+  registration) in `src/slm_training/resources/versions.json`.
+
 ## Reproducibility
 
 ```bash
-NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_harnesses/preference/test_replay_pairs.py tests/test_scripts/test_build_replay_preference_pairs.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
+NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_harnesses/preference/test_replay_pairs.py tests/test_scripts/test_build_replay_preference_pairs.py tests/test_harnesses/experiments/test_argument_preference.py tests/test_harnesses/experiments/test_typed_operator_policy.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
 ```
 
 Result (fifth-slice PR, real run in a fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gates the pack authority requires; the ambient `--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build both for `npm ci` and for `pytest`, unrelated to this change): `61 passed`. Also verified: `ruff check` clean on every changed file; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-v82ph9` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean.
@@ -482,4 +559,6 @@ Result (sixth-slice PR #1124, real run in a fresh `.venv-dsh510` -- Python 3.12,
 
 Result (seventh-slice PR #1125, real run in a fresh `.venv-dsh510`, same environment recipe as the sixth slice above, stacked on top of PR #1124 which was still unmerged when this slice started): `71 passed` (69 from the sixth slice + 2 new). Also verified: `ruff check` clean on both new files; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`. Plus the real training run described above (SFT checkpoint + demo pairs + preference-training pass, both commands well under `MAX_RUN_MINUTES=3`); its `outputs/runs/replay_pref_sft_ckpt/` and `outputs/runs/replay_pref_dpo/` are not committed (`outputs/` is gitignored) per this repo's checked-not-committed convention for scratch run artifacts.
 
-Result (this PR, eighth slice, real run in a fresh `.venv-dsh510`, same environment recipe as above, stacked on top of PR #1125 which was still unmerged when this slice started): `72 passed` (71 from the seventh slice + 1 new). Also verified: `ruff check` clean; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. Plus the reran training chain described above; `outputs/runs/replay_pref_sft_ckpt2/` and `outputs/runs/replay_pref_dpo2/` are not committed (`outputs/` is gitignored).
+Result (eighth-slice PR #1126, real run in a fresh `.venv-dsh510`, same environment recipe as above, stacked on top of PR #1125 which was still unmerged when this slice started): `72 passed` (71 from the seventh slice + 1 new). Also verified: `ruff check` clean; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (1 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. Plus the reran training chain described above; `outputs/runs/replay_pref_sft_ckpt2/` and `outputs/runs/replay_pref_dpo2/` are not committed (`outputs/` is gitignored).
+
+Result (this PR, ninth slice, real run in the same `.venv-dsh510`, stacked on top of PR #1126 which was still unmerged when this slice started): `92 passed` (72 from the prior slices + 6 new in `test_argument_preference.py`, plus `test_typed_operator_policy.py`'s own 14 pre-existing tests now included in this suite's reproduction command for the first time since this slice touches that module's consumer surface). Also verified: `ruff check` clean on both new files; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean. No end-to-end training run in this slice (the `train_typed_operator_argument_preference` calls are inside the test suite itself, proving the mechanism works on a synthetic distinguishable pair and correctly plateaus on the real fixture's feature-identical pair -- not a separate `outputs/`-writing run).

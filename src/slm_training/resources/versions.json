@@ -7079,6 +7079,21 @@
         }
       ]
     },
+    "harness.experiments.argument_preference": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/argument_preference.py",
+        "tests/test_harnesses/experiments/test_argument_preference.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) ninth slice: first real step onto the DSH3 typed_operator_policy.py target the disposition doc has named as the actual training target since the sixth slice, instead of the generic TwoTower pair format the sixth/seventh/eighth slices used. build_argument_preference_example renders only pronoun_focus_followup rows (the one pattern whose chosen/rejected actions are the same operator with a differing argument for the same slot -- the other six patterns are history controls or merge, none representable in OperatorPolicyInputV1.action_rows). typed_operator_argument_preference_loss is a Bradley-Terry pairwise margin over CandidateScoringHead logits (surrogate, not textbook DPO, same honesty class as scripts/train_preference.py's dpo_loss). Honest finding: the real pronoun-focus fixture's two sibling refs are feature-identical in the sanitized OperatorPolicyInputV1 view (differ only by semantic_fingerprint, which is deliberately stripped for anti-identity-leakage), so training provably cannot move the loss for that exact case -- a structural null result, not a bug, proven distinct from a synthetic fixture where candidates differ in an allowed feature (relative_position) and training does reduce the loss. No harness code outside this new module changed; typed_operator_policy.py itself is unchanged (only consumed)"
+        }
+      ]
+    },
     "harness.experiments.typed_operator_policy": {
       "version": "v11",
       "kind": "harness",
