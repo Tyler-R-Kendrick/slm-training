@@ -1,0 +1,185 @@
+{
+  "lever": "train_signal_under_hard_wall",
+  "hypothesis": "More steps / curriculum / higher lr on exposure12 raises meaningful_program under hard 30s wall + seed multi-rep.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "rows": [
+    {
+      "arm": "baseline_s16",
+      "flags": "s16 lr1e-3 no-curr (hardwall baseline)",
+      "train": {
+        "last_loss": 7.188694000244141,
+        "steps": 16,
+        "stopped_on": "steps",
+        "curriculum": {
+          "enabled": false,
+          "mix": true
+        },
+        "lr": 0.001
+      },
+      "n_reps": 3,
+      "meanful_median": 0.3333333333333333,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 0.8888888888888888,
+      "parse_values": [
+        1.0,
+        1.0,
+        0.6666666666666666
+      ],
+      "empty_mean": 0.3333333333333333,
+      "reward_mean": 0.6895555555555556,
+      "max_lat_mean": 30984.18666666667,
+      "max_lat_values": [
+        30032.84,
+        30007.47,
+        32912.25
+      ],
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output",
+        "runtime_timeout"
+      ],
+      "eval_ids": [
+        "exp_lever_hardwall_seeded_rep1_exp12_seed47",
+        "exp_lever_hardwall_seeded_rep2_exp12_seed47",
+        "exp_lever_hardwall_seeded_rep3_exp12_seed47"
+      ]
+    },
+    {
+      "arm": "s32_train",
+      "flags": "s32 lr1e-3 train, hardwall eval",
+      "train": {
+        "last_loss": 4.899424076080322,
+        "steps": 32,
+        "stopped_on": "steps",
+        "curriculum": {
+          "enabled": false,
+          "mix": true
+        },
+        "lr": 0.001
+      },
+      "n_reps": 2,
+      "meanful_median": 0.3333333333333333,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 1.0,
+      "parse_values": [
+        1.0,
+        1.0
+      ],
+      "empty_mean": 0,
+      "reward_mean": 0.7653333333333334,
+      "max_lat_mean": 30177.695,
+      "max_lat_values": [
+        30048.81,
+        30306.58
+      ],
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output"
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_s32train_rep1_s47",
+        "exp_lever_hwq_s32train_rep2_s47"
+      ]
+    },
+    {
+      "arm": "curriculum_s16",
+      "flags": "s16 lr1e-3 --curriculum",
+      "train": {
+        "last_loss": 15.592713356018066,
+        "steps": 16,
+        "stopped_on": "steps",
+        "curriculum": {
+          "enabled": true,
+          "mix": true
+        },
+        "lr": 0.001
+      },
+      "n_reps": 2,
+      "meanful_median": 0.3333333333333333,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 1.0,
+      "parse_values": [
+        1.0,
+        1.0
+      ],
+      "empty_mean": 0,
+      "reward_mean": 0.7653333333333334,
+      "max_lat_mean": 30106.760000000002,
+      "max_lat_values": [
+        30203.07,
+        30010.45
+      ],
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output"
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_curr_rep1_s47",
+        "exp_lever_hwq_curr_rep2_s47"
+      ]
+    },
+    {
+      "arm": "lr3e3_s16",
+      "flags": "s16 lr=3e-3",
+      "train": {
+        "last_loss": 10.21530532836914,
+        "steps": 16,
+        "stopped_on": "steps",
+        "curriculum": {
+          "enabled": false,
+          "mix": true
+        },
+        "lr": 0.003
+      },
+      "n_reps": 2,
+      "meanful_median": 0.0,
+      "meanful_mean": 0.0,
+      "meanful_values": [
+        0.0,
+        0.0
+      ],
+      "parse_mean": 1.0,
+      "parse_values": [
+        1.0,
+        1.0
+      ],
+      "empty_mean": 0,
+      "reward_mean": 0.7653333333333334,
+      "max_lat_mean": 23811.85,
+      "max_lat_values": [
+        22217.72,
+        25405.98
+      ],
+      "wall_ok": true,
+      "hero_outcomes": [
+        "model_invalid",
+        "model_invalid"
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_lr3e3_rep1_s47",
+        "exp_lever_hwq_lr3e3_rep2_s47"
+      ]
+    }
+  ],
+  "decision": "reject",
+  "decision_reason": "no train-side arm beats baseline meanful_median=0.333 under hard wall; best s32_train=0.3333333333333333",
+  "related_decode_screen": "docs/design/lever-faster-decode-under-hard-wall-measured-results.md",
+  "captured_at": "2026-07-27T18:35:19.685795+00:00"
+}
