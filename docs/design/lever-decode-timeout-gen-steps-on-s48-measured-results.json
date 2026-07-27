@@ -1,0 +1,91 @@
+{
+  "experiment_id": "lever_decode_timeout_and_gen_steps_on_s48_ckpt",
+  "hypothesis": "On fixed s48 checkpoint, raising decode_timeout 12\u219230s or gen_steps 8\u219216 reduces remaining timeouts/empty preds without retraining.",
+  "checkpoint": "outputs/runs/exp_lever_sft_steps_treatment_s48_seed42/checkpoints/last.pt",
+  "seed": 42,
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "arms": {
+    "baseline_default_decode": {
+      "run_id": "exp_lever_sft_steps_treatment_s48_seed42",
+      "metrics": {
+        "parse_rate": 0.3333333333333333,
+        "exact_match": 0.0,
+        "meaningful_program_rate": 0.0,
+        "reward_score": 0.30233333333333334,
+        "decode_timeout_count": 2,
+        "empty_prediction_count": 2,
+        "placeholder_fidelity": 0.3333333333333333,
+        "structural_similarity": 0.02,
+        "latency_ms_p50": 12000.44,
+        "n": 3
+      },
+      "decode_timeout_seconds": 12.0,
+      "gen_steps": 8,
+      "grammar_constrained": true
+    },
+    "decode_timeout_30s": {
+      "run_id": "exp_lever_decode_timeout_30s_from_s48_seed42",
+      "metrics": {
+        "parse_rate": 1.0,
+        "exact_match": 0.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "reward_score": 0.8436666666666667,
+        "decode_timeout_count": 0,
+        "empty_prediction_count": 0,
+        "placeholder_fidelity": 0.7222222222222222,
+        "structural_similarity": 0.31583333333333335,
+        "latency_ms_p50": 19192.26,
+        "n": 3
+      },
+      "decode_timeout_seconds": 30.0,
+      "gen_steps": 8,
+      "grammar_constrained": true
+    },
+    "gen_steps_16": {
+      "run_id": "exp_lever_gen_steps_16_from_s48_seed42",
+      "metrics": {
+        "parse_rate": 0.3333333333333333,
+        "exact_match": 0.0,
+        "meaningful_program_rate": 0.0,
+        "reward_score": 0.30233333333333334,
+        "decode_timeout_count": 2,
+        "empty_prediction_count": 2,
+        "placeholder_fidelity": 0.3333333333333333,
+        "structural_similarity": 0.02,
+        "latency_ms_p50": 12003.23,
+        "n": 3
+      },
+      "decode_timeout_seconds": 12.0,
+      "gen_steps": 16,
+      "grammar_constrained": true
+    }
+  },
+  "deltas_vs_baseline": {
+    "decode_timeout_30s": {
+      "parse_rate": 0.6666666666666667,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.5413333333333333,
+      "decode_timeout_count": -2,
+      "empty_prediction_count": -2,
+      "placeholder_fidelity": 0.3888888888888889,
+      "structural_similarity": 0.29583333333333334,
+      "latency_ms_p50": 7191.819999999998,
+      "n": 0
+    },
+    "gen_steps_16": {
+      "parse_rate": 0.0,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.0,
+      "latency_ms_p50": 2.789999999999054,
+      "n": 0
+    }
+  },
+  "captured_at": "2026-07-27T13:33:02.508399+00:00"
+}

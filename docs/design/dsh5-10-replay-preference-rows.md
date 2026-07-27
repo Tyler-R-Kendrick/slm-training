@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (fifth increment).
+**Status:** partial slice, in progress (sixth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -13,13 +13,18 @@ SFT/preference training against four context-view baselines, and (4)
 held-out measurement of action/operator/argument/reference/branch accuracy,
 calibration, and CAP0/CAP1/CAP2 retention.
 
-This slice adds the seventh and final named pattern, **pronoun-focus-
-followup** (see "Fifth slice (v6)" below), bringing extraction coverage to
-7 of 7. All seven named patterns from the issue's own list now extract and
-replay-verify. What remains is the issue's separate, still fully unattempted
-training/measurement scope: SFT/preference training against the
-DSH3-selected policy/control heads, the four-baseline comparison, held-out
-benefit measurement, and turn-depth/context-view ablations.
+The fifth slice added the seventh and final named pattern, **pronoun-focus-
+followup**, bringing extraction coverage to 7 of 7 -- all seven named
+patterns from the issue's own list now extract and replay-verify. This
+slice (see "Sixth slice (v7)" below) takes the smallest next step of the
+issue's still-unattempted scope: it converts an already-extracted row into
+this repo's *existing* preference-training example format
+(`PreferencePair`), so a future slice can feed rows into the existing
+`slm preference` harness without inventing a second corpus shape. It does
+**not** attempt SFT/preference training against the DSH3-selected
+policy/control heads, the four-baseline comparison, held-out benefit
+measurement, or turn-depth/context-view ablations -- all of that remains
+exactly as unattempted as before this slice.
 
 **Update (sixth slice, below):** the turn-depth/context-view *structural*
 ablation dimension and a bounded, fixture-scale matched context-view
@@ -560,6 +565,89 @@ modules' shared private fixture helpers (`_provenance`,
 non-functional structural refactor left for a future slice, not a
 correctness or honesty defect.
 
+## Sixth slice (v7)
+
+* Added `preference_pair_from_replay_row` and `preference_pairs_from_trace`
+  to `src/slm_training/dsl/operators/replay_preference.py` -- pure
+  data-conversion functions, not another extraction pattern. They take an
+  already-extracted `OperatorReplayPreferenceRowV1` and materialize it into
+  `PreferencePair` (`slm_training.harnesses.preference`), the exact
+  `prompt`/`chosen`/`rejected`/`design_md`/`chosen_score`/`rejected_score`/
+  `meta` schema the existing `slm preference build-pairs`/`train` harness
+  (`.agents/skills/autotrain/references/preference.md`,
+  `src/slm_training/harnesses/preference/train.py`) already reads and
+  writes -- no second corpus shape is invented.
+* **`prompt`** is `trace.node(row.input_state_id).state.source`: the exact,
+  already pack-authorized OpenUI source of the state the choice was made
+  from. This is the one piece of real context a row carries; a
+  `ConversationTraceV1`'s turns are AST operations, never user utterances,
+  so there is no natural-language instruction anywhere upstream to recover.
+  Using the state source as `prompt` is an honest, if unusual, reuse of the
+  field -- `pair.meta["schema"] == "operator_replay_preference_pair/v1"`
+  lets a caller tell these pairs apart from `build_pairs_from_candidates`
+  output, whose `prompt` is a design-task instruction. No instruction text
+  is fabricated.
+* **`chosen`/`rejected`** are `row.chosen_action`/`row.rejected_action`
+  verbatim -- the row's own legal-set action tokens (e.g. `"undo"`,
+  `"checkout:<state>"`, `"merge:<pair>"`, or a serialized `OPERATOR <id>
+  ..."` action). This slice deliberately does **not** attempt to replay the
+  rejected side to an alternate full OpenUI program: for an unchosen
+  operator action, no such program was ever materialized in the trace (only
+  the chosen action was actually applied), and reconstructing one would
+  require independently re-running `OperatorLibraryV1.apply` against a
+  legal-set candidate outside what extraction already computed -- real
+  additional work, out of scope for this slice's stated size. `chosen`/
+  `rejected` here are therefore two *action tokens* being preferred, not two
+  full-program renderings of one prompt the way `build_pairs_from_candidates`
+  pairs are; the doc says so explicitly rather than letting the shared field
+  names imply otherwise.
+* `composite_reward` (and its `grammar_score`/`placeholder_score`/
+  `layout_metrics` components) is deliberately **never called** on these
+  tokens. Scoring `"undo"` or a serialized `OPERATOR ...` action as though it
+  were OpenUI source would silently manufacture a meaningless number (e.g.
+  `grammar_score` would legitimately return `0.0` for non-program text, but
+  that `0.0` would look like a real quality signal to a downstream reader).
+  `chosen_score`/`rejected_score` are therefore left at `PreferencePair`'s
+  own `0.0` default, and the honest distinction lives in `meta` instead.
+* **Honest skip, not fabrication.** `preference_pairs_from_trace` looks up
+  each row's `input_state_id` via `trace.node(...)`; when it is not a member
+  of that trace's own `state_nodes` (the exact case for a `MERGE_SUCCESS`
+  row, which is grounded on a `BranchEditV1` tip rather than any single
+  trace -- see "Fourth slice (v5)" above), the row is skipped and recorded
+  in a separate `skipped` list (row + reason) rather than the function
+  fabricating a prompt or raising. `preference_pair_from_replay_row` also
+  refuses (`ValueError`) a blank/empty `input_state_source` rather than
+  emit a pair with a fabricated prompt.
+  `test_preference_pairs_from_trace_skips_a_row_whose_input_state_is_foreign_to_this_trace`
+  and
+  `test_preference_pair_from_replay_row_refuses_to_fabricate_a_blank_prompt`
+  (`tests/test_dsl/test_replay_preference.py`) prove both paths directly. A
+  `MERGE_SUCCESS` row itself still converts correctly --
+  `test_preference_pair_from_replay_row_converts_merge_success_row` calls
+  `preference_pair_from_replay_row` directly with
+  `left.output_node.state.source` supplied explicitly, exactly as the
+  function's docstring describes for that case.
+* Six more regression tests cover one row of each of the other six
+  extracted relation types converting correctly end to end through
+  `preference_pairs_from_trace`: `EDIT_THEN_UNDO`/`PARTIAL_ROLLBACK` (one
+  trace produces both), `UNDO_THEN_REDO`, `CHECKOUT_ANOTHER_STATE`,
+  `FORK_THEN_CHOOSE_ONE_BRANCH`, and `PRONOUN_FOCUS_FOLLOWUP` -- 7 of 7
+  named patterns are exercised by this slice's tests (six via the trace
+  path, one, `MERGE_SUCCESS`, via the direct path).
+* **Explicitly still not attempted:** no `PreferencePair` produced by this
+  slice has been written to a corpus file, fed to `slm preference
+  build-pairs`/`train`, or trained against; no composite-reward score is
+  computed for any row; no replay of a rejected operator action to an
+  alternate rendering is attempted; the DSH3-selected policy/control heads
+  (`TypedOperatorPolicyScorer`) and `ObjectiveView`/`DecisionStateV2`
+  materializers in `decision_events_v2.py` are untouched. This is
+  data-conversion wiring only, same honesty tier as every prior slice in
+  this doc.
+* `dsl.operators.replay_preference` bumped v6 -> v7 in
+  `src/slm_training/resources/versions.json`; `dsl.operators.contracts`
+  gets a `no-bump:` history entry for the two new re-exports from
+  `operators/__init__.py`.
+
 ## Reproducibility
 
 ```bash
@@ -579,4 +667,6 @@ Result (this PR, same fresh `.venv` -- Python 3.12, `pip install -e ".[dev,gramm
 NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
 ```
 
-Result (this PR, real run in a fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gates the pack authority requires; the ambient `--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build both for `npm ci` and for `pytest`, unrelated to this change): `61 passed`. Also verified: `ruff check` clean on every changed file; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-v82ph9` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean.
+Result (fifth slice, v6): real run in a fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` for the G2/G8 schema-oracle gates the pack authority requires; the ambient `--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build both for `npm ci` and for `pytest`, unrelated to this change): `61 passed`. Also verified: `ruff check` clean on every changed file; `python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-v82ph9` -- `ok (2 component(s) touched)`; `python -m scripts.repo_policy` -- `ok`; `python -m scripts.verify_decode_invariants` -- clean.
+
+Result (this PR, sixth slice, v7): same command, same freshly built `.venv` (Python 3.12) plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` -- test file grew by 8 tests (7 conversion-coverage tests + 1 refusal test) in the same `tests/test_dsl/test_replay_preference.py`, no new test module needed: `69 passed`. Also verified: `ruff check` on every changed file (`src/slm_training/dsl/operators/replay_preference.py`, `src/slm_training/dsl/operators/__init__.py`, `tests/test_dsl/test_replay_preference.py`) -- `All checks passed!`; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (vs 5f94b925a121; 4 changed file(s), 2 component(s) touched)`; `python -m scripts.repo_policy` -- `repo-policy: ok (tracked + untracked)`; `python -m scripts.verify_decode_invariants` -- exits clean (`0`).

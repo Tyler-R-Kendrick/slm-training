@@ -1,0 +1,65 @@
+{
+  "lever": "multi_seed_selection",
+  "recipe": "s30+asap+t30",
+  "honesty": "fixture_or_scratch",
+  "not_ship": true,
+  "rows": [
+    {
+      "seed": 42,
+      "run_id": "exp_lever_multiseed_s30_seed42",
+      "eval_id": "exp_lever_multiseed_s30_seed42_eval_asap_t30",
+      "steps": 30,
+      "stopped_on": "steps",
+      "last_loss": 7.020739555358887,
+      "parse_rate": 0.3333333333333333,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.31233333333333335,
+      "empty_prediction_count": 2,
+      "decode_timeout_count": 2,
+      "latency_ms_p50": 30003.88
+    },
+    {
+      "seed": 47,
+      "run_id": "exp_lever_multiseed_s30_seed47",
+      "eval_id": "exp_lever_multiseed_s30_seed47_eval_asap_t30",
+      "steps": 30,
+      "stopped_on": "steps",
+      "last_loss": 22.679147720336914,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 16281.59
+    },
+    {
+      "seed": 48,
+      "run_id": "exp_lever_multiseed_s30_seed48",
+      "eval_id": "exp_lever_multiseed_s30_seed48_eval_asap_t30",
+      "steps": 30,
+      "stopped_on": "steps",
+      "last_loss": 10.726558685302734,
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 1,
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 9372.65
+    }
+  ],
+  "selected": {
+    "seed": 47,
+    "run_id": "exp_lever_multiseed_s30_seed47",
+    "eval_id": "exp_lever_multiseed_s30_seed47_eval_asap_t30",
+    "steps": 30,
+    "stopped_on": "steps",
+    "last_loss": 22.679147720336914,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.3333333333333333,
+    "reward_score": 0.7653333333333334,
+    "empty_prediction_count": 0,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 16281.59
+  },
+  "captured_at": "2026-07-27T14:32:42.795806+00:00"
+}

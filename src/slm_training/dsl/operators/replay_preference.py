@@ -34,16 +34,29 @@ instead by construction: ``extract_merge_preference_row`` only ever offers
 ``merge_conversation_branches`` has already confirmed it succeeds, so a
 conflicting merge is never mistakenly added to any ranking denominator; see
 ``test_merge_conflict_never_yields_a_preference_row``.
+
+Sixth slice (v7): :func:`preference_pair_from_replay_row` and
+:func:`preference_pairs_from_trace` convert an already-extracted row into
+this repo's existing ``PreferencePair`` shape (``slm_training.harnesses.
+preference``, the same ``prompt``/``chosen``/``rejected`` schema ``slm
+preference build-pairs``/``train`` already reads and writes). This is data-
+conversion wiring only: it does not train, checkpoint, or score against the
+DSH3-selected policy/control heads (``TypedOperatorPolicyScorer``) or the
+``ObjectiveView`` materializers in ``decision_events_v2.py`` -- see
+``docs/design/dsh5-10-replay-preference-rows.md``'s "Sixth slice (v7)" for
+why those remain untouched and what the conversion honestly can and cannot
+do.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum
 
 from slm_training.dsl.operators.conversation import (
     ConversationOperation,
+    ConversationTraceError,
     ConversationTraceV1,
 )
 from slm_training.dsl.operators.contracts import (
@@ -63,6 +76,7 @@ from slm_training.dsl.operators.merge import (
 from slm_training.dsl.operators.registry import OperatorLibraryV1, OperatorStateV1
 from slm_training.dsl.pack import DslPack
 from slm_training.harness_core.versioning import build_version_stamp
+from slm_training.harnesses.preference import PreferencePair
 
 ProvenanceFactory = Callable[[OperatorStateV1], ApplicationProvenanceV1]
 
@@ -531,3 +545,91 @@ def extract_merge_preference_row(
         correction_reason="user_merged_diverged_branches",
         legal_set_fingerprint=legal_set.fingerprint,
     )
+
+
+def preference_pair_from_replay_row(
+    row: OperatorReplayPreferenceRowV1,
+    *,
+    input_state_source: str,
+) -> PreferencePair:
+    """Materialize one row into this repo's existing ``PreferencePair`` shape.
+
+    ``prompt`` is the exact, already pack-authorized OpenUI source of
+    ``row.input_state_id`` -- never a fabricated natural-language instruction.
+    No such instruction exists anywhere in a ``ConversationTraceV1`` (its
+    turns are AST operations, not user utterances), so this honestly reuses
+    the one piece of real context the row is grounded in: the rendered state
+    the choice was made from. This is a real, if unusual, use of the
+    ``prompt`` field -- callers reading ``meta.schema`` can tell these pairs
+    apart from ``build_pairs_from_candidates`` output, whose ``prompt`` is a
+    design-task instruction.
+
+    ``chosen``/``rejected`` are the row's own recorded ``chosen_action``/
+    ``rejected_action`` legal-set tokens verbatim (e.g. ``"undo"``,
+    ``"checkout:<state>"``, ``"merge:<pair>"``, or a serialized ``OPERATOR
+    <id> ...`` action) -- never a replayed or reconstructed OpenUI program
+    for the rejected side. Resolving a full alternate rendering for an
+    unchosen operator action would require independently re-running
+    ``OperatorLibraryV1.apply`` against a legal-set candidate that was never
+    actually applied in this trace; that replay is not attempted here, so
+    this slice does not claim ``chosen``/``rejected`` are two alternative
+    full-program candidates the way ``build_pairs_from_candidates`` pairs
+    are. ``composite_reward`` is deliberately never called on these tokens:
+    scoring an action token as if it were OpenUI source (e.g.
+    ``grammar_score("undo")``) would silently manufacture a meaningless
+    number, so ``chosen_score``/``rejected_score`` stay at the ``0.0``
+    default and the honest distinction is recorded in ``meta`` instead.
+
+    Raises ``ValueError`` if ``input_state_source`` is empty -- the one
+    piece of real context this conversion requires -- rather than emitting a
+    pair with a fabricated or blank prompt.
+    """
+    if not input_state_source or not input_state_source.strip():
+        raise ValueError(
+            "replay preference row conversion requires a non-empty input "
+            "state source; refusing to fabricate a prompt"
+        )
+    return PreferencePair(
+        prompt=input_state_source,
+        chosen=row.chosen_action,
+        rejected=row.rejected_action,
+        design_md=None,
+        chosen_score=0.0,
+        rejected_score=0.0,
+        meta={
+            "schema": "operator_replay_preference_pair/v1",
+            "semantic_relation": row.semantic_relation.value,
+            "correction_reason": row.correction_reason,
+            "input_state_id": row.input_state_id,
+            "chosen_output_state_id": row.chosen_output_state_id,
+            "legal_set_fingerprint": row.legal_set_fingerprint,
+        },
+    )
+
+
+def preference_pairs_from_trace(
+    trace: ConversationTraceV1,
+    rows: Sequence[OperatorReplayPreferenceRowV1],
+) -> tuple[tuple[PreferencePair, ...], tuple[dict, ...]]:
+    """Convert every row grounded in ``trace`` to a ``PreferencePair``.
+
+    Returns ``(pairs, skipped)``. A row is skipped -- never fabricated a
+    prompt -- when ``row.input_state_id`` is not one of ``trace``'s own
+    state nodes, e.g. a ``MERGE_SUCCESS`` row (whose input state lives on a
+    ``BranchEditV1`` tip, not in any single trace's ``state_nodes``; convert
+    those with :func:`preference_pair_from_replay_row` directly, passing
+    ``left.output_node.state.source``). Each ``skipped`` entry carries the
+    row (as ``to_dict()``) and the honest reason it could not be converted.
+    """
+    pairs: list[PreferencePair] = []
+    skipped: list[dict] = []
+    for row in rows:
+        try:
+            node = trace.node(row.input_state_id)
+        except ConversationTraceError as exc:
+            skipped.append({"row": row.to_dict(), "reason": str(exc)})
+            continue
+        pairs.append(
+            preference_pair_from_replay_row(row, input_state_source=node.state.source)
+        )
+    return tuple(pairs), tuple(skipped)

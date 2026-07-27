@@ -1,0 +1,94 @@
+{
+  "seed_sweep": {
+    "42": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 8994.71,
+      "train_id": "exp_lever_sft_steps_s36_seed42",
+      "eval_id": "exp_lever_sft_steps_s36_seed42_eval_asap_t30",
+      "steps": 36,
+      "stopped_on": "steps",
+      "last_loss": 12.026487350463867,
+      "seed": 42
+    },
+    "43": {
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "latency_ms_p50": 30000.82,
+      "train_id": "exp_lever_recipe_s30_seed43",
+      "eval_id": "exp_lever_recipe_s30_seed43_eval_asap_t30",
+      "steps": 30,
+      "stopped_on": "steps",
+      "last_loss": 20.598581314086914,
+      "seed": 43
+    },
+    "44": {
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.463,
+      "decode_timeout_count": 1,
+      "empty_prediction_count": 1,
+      "latency_ms_p50": 13988.58,
+      "train_id": "exp_lever_recipe_s36_seed44",
+      "eval_id": "exp_lever_recipe_s36_seed44_eval_asap_t30",
+      "steps": 36,
+      "stopped_on": "steps",
+      "last_loss": 7.11176872253418,
+      "seed": 44
+    },
+    "45": {
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "latency_ms_p50": 30005.03,
+      "train_id": "exp_lever_recipe_s30_seed45",
+      "eval_id": "exp_lever_recipe_s30_seed45_eval_asap_t30",
+      "steps": 30,
+      "stopped_on": "steps",
+      "last_loss": 9.83629035949707,
+      "seed": 45
+    },
+    "46": {
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "latency_ms_p50": 30002.08,
+      "train_id": "exp_lever_recipe_s30_seed46",
+      "eval_id": "exp_lever_recipe_s30_seed46_eval_asap_t30",
+      "steps": 30,
+      "stopped_on": "steps",
+      "last_loss": 10.84765911102295,
+      "seed": 46
+    },
+    "47": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 17282.51,
+      "train_id": "exp_lever_recipe_s30_seed47",
+      "eval_id": "exp_lever_recipe_s30_seed47_eval_asap_t30",
+      "steps": 30,
+      "stopped_on": "steps",
+      "last_loss": 22.679147720336914,
+      "seed": 47
+    }
+  },
+  "success": [],
+  "fail": [
+    43,
+    45,
+    46
+  ]
+}
