@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Sequence
 
 from slm_training.dsl.operators.contracts import _fingerprint
 from slm_training.dsl.schema import load_jsonl
@@ -14,10 +14,12 @@ from slm_training.harnesses.train_data.operator_corpus import (
     OperatorCorpusConfig,
     build_symbolic_operator_corpus,
 )
+from slm_training.levers import TURN_DISPOSITION_WRONG_EMIT_PENALTY_RATIO
 
 CAP2_SUITE_SCHEMA = "cap2_operator_suite/v1"
 CAP2_PREDICTION_SCHEMA = "cap2_operator_prediction/v1"
 CAP2_SCORE_SCHEMA = "cap2_operator_score/v1"
+CAP2_DISPOSITION_SCORE_SCHEMA = "cap2_disposition_score/v1"
 
 
 def _json(path: Path) -> dict[str, Any]:
@@ -711,7 +713,66 @@ def suite_hash_payload(suite: Mapping[str, Any]) -> str:
     return str(suite["suite_hash"])
 
 
+def score_disposition_predictions(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    wrong_emit_penalty_ratio: float = TURN_DISPOSITION_WRONG_EMIT_PENALTY_RATIO,
+) -> dict[str, Any]:
+    """Score disposition-on turn decisions -- VAR3-02 (SLM-430).
+
+    Each row is ``{"predicted_disposition": str, "emit_correct": bool |
+    None}``: ``predicted_disposition`` is one of ``"out_of_scope"``,
+    ``"answer"``, ``"clarify"``, ``"emit"``; ``emit_correct`` is required
+    (and only meaningful) when ``predicted_disposition == "emit"`` -- whether
+    the single proposed op/transaction exactly matched the gold action.
+
+    ``wrong_op_rate`` and ``abstention_rate`` are reported *separately*,
+    never blended into one number that could hide either regressing while
+    the other improves (this repo's honest-ship-eval framing): a wrong
+    ``emit`` is a silently-wrong action a caller could apply outright; a
+    ``clarify`` abstention is visible and safe by construction. The
+    composite makes that asymmetry an explicit, named, registered constant
+    (``wrong_emit_penalty_ratio``, default
+    ``levers.TURN_DISPOSITION_WRONG_EMIT_PENALTY_RATIO``) rather than an
+    implicit equal weighting -- a wrong emit costs exactly
+    ``wrong_emit_penalty_ratio`` times what one clarify abstention costs.
+    """
+    if wrong_emit_penalty_ratio <= 0:
+        raise ValueError("wrong_emit_penalty_ratio must be positive")
+    total = len(rows)
+    if total == 0:
+        raise ValueError("disposition scoring requires at least one row")
+    wrong_op = 0
+    abstentions = 0
+    for row in rows:
+        predicted = str(row["predicted_disposition"])
+        if predicted == "emit":
+            emit_correct = row.get("emit_correct")
+            if emit_correct is None:
+                raise ValueError("emit rows require emit_correct")
+            if not emit_correct:
+                wrong_op += 1
+        elif predicted == "clarify":
+            abstentions += 1
+    wrong_op_rate = wrong_op / total
+    abstention_rate = abstentions / total
+    composite_penalized_error_rate = (
+        wrong_op_rate * wrong_emit_penalty_ratio + abstention_rate
+    ) / (wrong_emit_penalty_ratio + 1.0)
+    return {
+        "schema": CAP2_DISPOSITION_SCORE_SCHEMA,
+        "case_count": total,
+        "wrong_op_count": wrong_op,
+        "abstention_count": abstentions,
+        "wrong_op_rate": wrong_op_rate,
+        "abstention_rate": abstention_rate,
+        "wrong_emit_penalty_ratio": wrong_emit_penalty_ratio,
+        "composite_penalized_error_rate": composite_penalized_error_rate,
+    }
+
+
 __all__ = [
+    "CAP2_DISPOSITION_SCORE_SCHEMA",
     "CAP2_PREDICTION_SCHEMA",
     "CAP2_SCORE_SCHEMA",
     "CAP2_SUITE_SCHEMA",
@@ -719,5 +780,6 @@ __all__ = [
     "evaluate_fixture_policies",
     "oracle_prediction",
     "score_cap2_predictions",
+    "score_disposition_predictions",
     "suite_hash_payload",
 ]

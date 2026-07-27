@@ -130,6 +130,13 @@ class ConversationStateNodeV1:
         }
 
 
+#: VAR3-02 (SLM-430): the only turn-level dispositions ``TurnArtifactV1`` can
+#: ever carry. ``out_of_scope`` is deliberately absent -- it is derived from
+#: an empty legal set and never advances the trace with a turn at all (see
+#: ``dsl/operators/turn_disposition.py``).
+_RECORDABLE_DISPOSITIONS = frozenset({"emit", "clarify", "answer"})
+
+
 @dataclass(frozen=True)
 class TurnArtifactV1:
     operation: ConversationOperation
@@ -141,6 +148,11 @@ class TurnArtifactV1:
     branch_nonce_digest: str | None = None
     reference_seed: int | None = None
     copy_source_state_id: str | None = None
+    # VAR3-02 (SLM-430): descriptive only -- never consulted by replay to
+    # decide state, so they round-trip through ``replay_conversation_trace``
+    # like every other turn field without any new replay branch.
+    disposition: str | None = None
+    disposition_candidates: tuple[str, ...] = ()
     schema: str = "conversation_turn/v1"
 
     def __post_init__(self) -> None:
@@ -204,6 +216,56 @@ class TurnArtifactV1:
             _require_digest(self.copy_source_state_id, "copy_source_state_id")
         elif self.copy_source_state_id is not None:
             raise ConversationTraceError("only copy turns may name a source state")
+        self._validate_disposition()
+
+    def _validate_disposition(self) -> None:
+        """VAR3-02 (SLM-430): shape rules for the optional disposition fields.
+
+        ``out_of_scope`` can never appear here -- it is not in
+        ``_RECORDABLE_DISPOSITIONS`` at all, so a turn cannot claim it even
+        by mistake; that disposition never advances the trace with a turn.
+        """
+        if self.disposition is None:
+            if self.disposition_candidates:
+                raise ConversationTraceError(
+                    "disposition candidates require a clarify disposition"
+                )
+            return
+        if self.disposition not in _RECORDABLE_DISPOSITIONS:
+            raise ConversationTraceError("unrecordable turn disposition")
+        if self.disposition == "clarify":
+            if not self.disposition_candidates:
+                raise ConversationTraceError(
+                    "clarify turn requires disposition candidates"
+                )
+            if (
+                self.operation is not ConversationOperation.COPY_STATE
+                or self.copy_source_state_id != self.input_state_id
+            ):
+                raise ConversationTraceError(
+                    "clarify turn must be a self-referential copy (no mutation)"
+                )
+        elif self.disposition == "answer":
+            if self.disposition_candidates:
+                raise ConversationTraceError("answer turn carries no candidates")
+            if (
+                self.operation is not ConversationOperation.COPY_STATE
+                or self.copy_source_state_id != self.input_state_id
+            ):
+                raise ConversationTraceError(
+                    "answer turn must be a self-referential copy (no mutation)"
+                )
+        else:
+            assert self.disposition == "emit"
+            if self.disposition_candidates:
+                raise ConversationTraceError("emit turn carries no candidates")
+            if self.operation not in (
+                ConversationOperation.AST_EDIT,
+                ConversationOperation.TRANSACTION_COMMIT,
+            ):
+                raise ConversationTraceError(
+                    "emit disposition requires a mutating turn"
+                )
 
     @property
     def application_ids(self) -> tuple[str, ...]:
@@ -252,6 +314,14 @@ class TurnArtifactV1:
             "reference_seed": self.reference_seed,
             "copy_source_state_id": self.copy_source_state_id,
         }
+        # VAR3-02 (SLM-430): only present when set, so a turn with no
+        # disposition serializes byte-identically to before this field
+        # existed -- turn_id and every fingerprint derived from it (e.g. the
+        # frozen CAP2 operator corpus) stay stable for every pre-existing
+        # (non-disposition) turn.
+        if self.disposition is not None:
+            value["disposition"] = self.disposition
+            value["disposition_candidates"] = list(self.disposition_candidates)
         if include_turn_id:
             value["turn_id"] = self.turn_id
         return value
@@ -413,6 +483,7 @@ def append_operator_turn(
     library: OperatorLibraryV1,
     application: OperatorApplicationV1,
     output_reference_table: ReferenceTableV1,
+    disposition: str | None = None,
 ) -> ConversationTraceV1:
     current = trace.current
     if any(
@@ -453,6 +524,7 @@ def append_operator_turn(
         output_state_id=output.state_id,
         provenance=application.provenance,
         application=application,
+        disposition=disposition,
     )
     return _append_turn(trace, turn, new_node=output)
 
@@ -465,6 +537,7 @@ def append_operator_transaction_turn(
     transaction: "OperatorTransactionV1",
     final_state: OperatorStateV1,
     output_reference_table: ReferenceTableV1,
+    disposition: str | None = None,
 ) -> ConversationTraceV1:
     """Commit one already-composed transaction as exactly one turn (DSH5-05).
 
@@ -536,6 +609,7 @@ def append_operator_transaction_turn(
         output_state_id=output.state_id,
         provenance=transaction.provenance,  # type: ignore[union-attr]
         transaction=transaction,
+        disposition=disposition,
     )
     return _append_turn(trace, turn, new_node=output)
 
@@ -601,6 +675,8 @@ def copy_conversation_state(
     *,
     source_state_id: str,
     provenance: ApplicationProvenanceV1,
+    disposition: str | None = None,
+    disposition_candidates: tuple[str, ...] = (),
 ) -> ConversationTraceV1:
     """Re-materialize an earlier state's artifact as the next state.
 
@@ -608,6 +684,13 @@ def copy_conversation_state(
     of them. Unlike ``fork`` this stays on the current branch, so the copied
     node reuses the source's reference table verbatim — which is only sound
     within one branch, hence the cross-branch refusal below.
+
+    VAR3-02 (SLM-430): a self-referential copy (``source_state_id`` equal to
+    the current state) with ``disposition="clarify"`` or ``"answer"`` is how
+    ``dsl/operators/turn_disposition.py``'s ``append_clarify_turn``/
+    ``append_answer_turn`` record those dispositions in conversation
+    history -- no mutation, one turn later, exactly what those two
+    dispositions mean.
     """
     _history_provenance(trace, provenance)
     source = trace.node(source_state_id)
@@ -632,6 +715,8 @@ def copy_conversation_state(
         output_state_id=output.state_id,
         provenance=provenance,
         copy_source_state_id=source_state_id,
+        disposition=disposition,
+        disposition_candidates=disposition_candidates,
     )
     return _append_turn(trace, turn, new_node=output)
 

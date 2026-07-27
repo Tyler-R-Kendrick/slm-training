@@ -33,6 +33,25 @@ CHANGED_TEST_WORKERS: Final = 4
 # Superfiltering easy-tail fraction for build-time difficulty curation
 # (records below this NLL percentile are down-weighted / droppable).
 DIFFICULTY_EASY_TAIL_FRACTION: Final = 0.2
+
+# VAR3-02 (SLM-430): turn disposition (emit/clarify/answer/out_of_scope) for
+# the REPL variant. ``out_of_scope`` is never governed by a lever -- it is
+# derived solely from an empty accepted legal set
+# (dsl/operators/turn_disposition.py). These three levers gate the remaining,
+# non-derived choices a non-empty legal set still leaves open.
+#
+# Top-1 vs runner-up score margin below which a non-singleton legal set is
+# disposed as CLARIFY instead of EMIT. Defaulted conservative (more-clarify):
+# a wide margin band means more ambiguous decisions surface a clarification
+# instead of silently emitting a possibly-wrong op.
+TURN_DISPOSITION_CLARIFY_MARGIN_THRESHOLD: Final = 0.5
+# How many ranked candidates a CLARIFY disposition carries.
+TURN_DISPOSITION_CLARIFY_TOP_K: Final = 3
+# CAP2 disposition scoring (evals/cap2_operator.py): the exact multiplier by
+# which one wrong EMIT is penalized relative to one CLARIFY abstention in the
+# composite error rate. A wrong EMIT can silently apply an incorrect op; a
+# CLARIFY abstention is visible and safe, so it is deliberately cheaper.
+TURN_DISPOSITION_WRONG_EMIT_PENALTY_RATIO: Final = 3.0
 VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "docs/design/*.json",
     "docs/MODEL_CARD.md",
