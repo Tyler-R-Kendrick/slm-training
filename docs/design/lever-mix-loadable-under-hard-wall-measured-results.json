@@ -1,0 +1,114 @@
+{
+  "lever": "mix_loadable_exp12_programspec_under_hard_wall",
+  "hypothesis": "Mixing exposure12 with train-loadable programspec-doc records (n=566) raises meaningful under hard 30s wall + seed multi-rep.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "corpus": {
+    "version": "lever_mix_loadable_v1",
+    "record_count": 566,
+    "filter": "assert_no_template_semantic_labels+canonical_markers+symbol_only+role_safe"
+  },
+  "recipe": {
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "asap": true,
+    "decode_timeout": 30
+  },
+  "baseline": {
+    "meanful_median": 0.3333333333333333,
+    "meanful_values": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "parse_mean": 0.8888888888888888,
+    "empty_mean": 0.3333333333333333,
+    "max_lat_mean": 30984.18666666667,
+    "wall_ok": true,
+    "reward_mean": 0.6895555555555556
+  },
+  "treatment": {
+    "meanful_median": 0.3333333333333333,
+    "meanful_values": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "parse_mean": 1.0,
+    "empty_mean": 0,
+    "max_lat_mean": 30043.183333333334,
+    "wall_ok": true,
+    "reward_mean": 0.7653333333333334
+  },
+  "base_reps": [
+    {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "max_latency_ms": 30032.84,
+      "sum_latency_ms": 90042.3,
+      "hero_outcome": "fallback_output"
+    },
+    {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "max_latency_ms": 30007.47,
+      "sum_latency_ms": 90013.1,
+      "hero_outcome": "fallback_output"
+    },
+    {
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.5379999999999999,
+      "empty_prediction_count": 1,
+      "decode_timeout_count": 1,
+      "max_latency_ms": 32912.25,
+      "sum_latency_ms": 92927.76999999999,
+      "hero_outcome": "runtime_timeout"
+    }
+  ],
+  "mix_reps": [
+    {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "max_latency_ms": 30109.7,
+      "sum_latency_ms": 90224.98000000001,
+      "hero_outcome": "fallback_output"
+    },
+    {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "max_latency_ms": 30008.64,
+      "sum_latency_ms": 90020.4,
+      "hero_outcome": "fallback_output"
+    },
+    {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "max_latency_ms": 30011.21,
+      "sum_latency_ms": 90019.07,
+      "hero_outcome": "fallback_output"
+    }
+  ],
+  "train_last_loss": 15.150311470031738,
+  "decision": "accept",
+  "decision_reason": "mix iso meanful with better parse 0.889\u21921.000",
+  "captured_at": "2026-07-27T18:45:10.060158+00:00"
+}
