@@ -2391,7 +2391,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v134",
+      "version": "v135",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2400,6 +2400,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v135",
+          "date": "2026-07-27",
+          "note": "SLM-390 quarantined runtime trace-to-eval candidate lifecycle (DSH4-05): register harness.experiments.slm390_trace_evals component (merge resolution of PR #908 onto main; SLM-379 landed via #906)"
+        },
         {
           "version": "v134",
           "date": "2026-07-26",
@@ -6823,6 +6828,23 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial schema-grounded NL operator edit turns: OperatorFrameV1 (required/forbidden edit facts + descriptor-table state references with argument/effect provenance), offline fixture provider over the reused CAP1 DSH2-03 provenance contract, legal-set/accepted-set admission with coded rejections (ambiguous_state_reference, compatible_with_non_equivalent, missing_legal_membership, not_in_accepted_set, accepted_set_not_named, leak), symbol-only targets, per-family disambiguation report with symbolic_cap2_only stop-rule disposition"
+        }
+      ]
+    },
+    "harness.experiments.slm390_trace_evals": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm390_trace_evals.py",
+        "tests/test_harnesses/experiments/test_slm390_trace_evals.py",
+        "docs/design/iter-slm390-trace-evals-20260725.md",
+        "docs/design/iter-slm390-trace-evals-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial quarantined runtime trace-to-eval candidate pipeline (DSH4-05): TraceEvalCandidateV1 with QUARANTINED -> REVIEWED -> FROZEN -> CONFIRMATION_USED lifecycle plus a separate PROMOTED_TO_TRAINING transition; ingest redacts/de-identifies (paths, hosts, secret-shaped strings, known canaries; fail-closed outside redactable fields), normalizes compiler/tool state, clusters fingerprinted recurring failure signatures, and proposes capability/task/environment/verifier artifacts; review requires explicit reviewer id + full human/domain checklist incl. separate agent/verifier trajectory review; freeze requires environment pinning with deterministic replay, held positive/negative verifier validation, train/eval root-family dedup + split-policy disjointness, and exposed-answer/shortcut checks, then writes an immutable sha256-rowed tamper-evident manifest (create-once, fail-closed verify); one-touch confirmation ledger; promotion creates a new derivation activity + dataset version under a new train-split family without mutating the frozen eval; stop rules keep unsafe traces quarantined (deidentification_failed, environment_not_reproducible, not_independently_verifiable); no automatic transitions"
         }
       ]
     },
