@@ -1025,13 +1025,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) second slice: add partial-rollback (a second or later consecutive undo, chosen over redo/checkout/edit alternatives) and checkout-another-state patterns; _available_history_actions now also models checkout:<state> to every other trace state (ancestor/sibling/descendant/cross-branch), listed alongside undo/redo even at a shared destination since checkout is a distinct legal tool invocation. 4 of ~7 verified patterns now covered; fork-then-choose-one-branch, merge success/conflict, and pronoun/focus follow-ups remain, as does all SFT/preference training and held-out measurement"
+        },
         {
           "version": "v2",
           "date": "2026-07-26",
