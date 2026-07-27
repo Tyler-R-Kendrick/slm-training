@@ -220,6 +220,23 @@ def test_mde_simulation_degrades_with_zero_variance() -> None:
     assert result["curve"][0]["power"] <= 0.3
 
 
+def test_mde_simulation_reports_absolute_probability_sensitivity_at_zero_rate() -> None:
+    result = mde_simulation(
+        base_rate=0.0,
+        sigma_seed=0.0,
+        sigma_target=0.0,
+        n_targets=226,
+        paths_per_target=1,
+        n_seeds=5,
+        n_simulations=50,
+        effect_sizes=[0.0, 0.02, 0.05],
+        effect_scale="absolute_probability",
+        seed=3,
+    )
+    assert result["effect_scale"] == "absolute_probability"
+    assert result["mde"] is not None
+
+
 def test_benjamini_hochberg_rejects_expected() -> None:
     p_values = [0.001, 0.02, 0.04, 0.06, 0.5]
     result = benjamini_hochberg(p_values, alpha=0.05)

@@ -1,0 +1,575 @@
+{
+  "cells": [
+    {
+      "capacity": 4,
+      "cell_id": "uniform_scalar_n2_w64_s0",
+      "codec": "uniform_scalar",
+      "elapsed_seconds": 8.897710735000146,
+      "factors_over_threshold": [
+        "style_layout"
+      ],
+      "max_factor_mse": 0.0658452957868576,
+      "mse_overall": 0.009775476530194283,
+      "mse_per_factor": {
+        "binder_reference": 0.0030908125918358564,
+        "cardinality": 8.937891493587813e-07,
+        "inventory": 0.025490734726190567,
+        "property_role_value": 6.016269253450446e-06,
+        "style_layout": 0.0658452957868576,
+        "topology": 0.00012805874575860798
+      },
+      "no_bypass_ok": false,
+      "nominal_bits": 2.0,
+      "nominal_bytes_per_example": 0.25,
+      "num_latents": 2,
+      "seed": 0,
+      "serialized_bytes_per_example": 0.25,
+      "width": 64
+    },
+    {
+      "capacity": 256,
+      "cell_id": "uniform_scalar_n8_w64_s0",
+      "codec": "uniform_scalar",
+      "elapsed_seconds": 9.040697555999941,
+      "factors_over_threshold": [],
+      "max_factor_mse": 0.0167813990265131,
+      "mse_overall": 0.0036277396138757467,
+      "mse_per_factor": {
+        "binder_reference": 0.0025327010080218315,
+        "cardinality": 3.551793497535982e-06,
+        "inventory": 0.0167813990265131,
+        "property_role_value": 8.332169272762258e-06,
+        "style_layout": 0.0005159740103408694,
+        "topology": 0.0001012866705423221
+      },
+      "no_bypass_ok": true,
+      "nominal_bits": 8.0,
+      "nominal_bytes_per_example": 1.0,
+      "num_latents": 8,
+      "seed": 0,
+      "serialized_bytes_per_example": 1.0,
+      "width": 64
+    },
+    {
+      "capacity": 16,
+      "cell_id": "fsq_n2_w64_s0",
+      "codec": "fsq",
+      "elapsed_seconds": 14.091350678001618,
+      "factors_over_threshold": [],
+      "max_factor_mse": 0.016526667401194572,
+      "mse_overall": 0.0036857298109680414,
+      "mse_per_factor": {
+        "binder_reference": 0.0023730602115392685,
+        "cardinality": 5.906103979214095e-07,
+        "inventory": 0.016526667401194572,
+        "property_role_value": 3.729171112354379e-06,
+        "style_layout": 0.0023966962471604347,
+        "topology": 9.812306961975992e-05
+      },
+      "no_bypass_ok": true,
+      "nominal_bits": 4.0,
+      "nominal_bytes_per_example": 0.5,
+      "num_latents": 2,
+      "seed": 0,
+      "serialized_bytes_per_example": 0.5,
+      "width": 64
+    },
+    {
+      "capacity": 65536,
+      "cell_id": "fsq_n8_w64_s0",
+      "codec": "fsq",
+      "elapsed_seconds": 47.34076306800125,
+      "factors_over_threshold": [
+        "style_layout"
+      ],
+      "max_factor_mse": 0.07777425646781921,
+      "mse_overall": 0.014455650933086872,
+      "mse_per_factor": {
+        "binder_reference": 0.002414099872112274,
+        "cardinality": 0.0030987155623733997,
+        "inventory": 0.03326350823044777,
+        "property_role_value": 0.005761112552136183,
+        "style_layout": 0.07777425646781921,
+        "topology": 0.0016810144297778606
+      },
+      "no_bypass_ok": true,
+      "nominal_bits": 16.0,
+      "nominal_bytes_per_example": 2.0,
+      "num_latents": 8,
+      "seed": 0,
+      "serialized_bytes_per_example": 2.0,
+      "width": 64
+    },
+    {
+      "capacity": 4,
+      "cell_id": "lfq_n2_w64_s0",
+      "codec": "lfq",
+      "elapsed_seconds": 2.6979288590009673,
+      "factors_over_threshold": [],
+      "max_factor_mse": 0.02164183370769024,
+      "mse_overall": 0.004572225268930197,
+      "mse_per_factor": {
+        "binder_reference": 0.0024961160961538553,
+        "cardinality": 3.515071567150585e-10,
+        "inventory": 0.02164183370769024,
+        "property_role_value": 2.121220603612528e-07,
+        "style_layout": 0.00019345137116033584,
+        "topology": 0.00010172767360927537
+      },
+      "no_bypass_ok": true,
+      "nominal_bits": 2.0,
+      "nominal_bytes_per_example": 0.25,
+      "num_latents": 2,
+      "seed": 0,
+      "serialized_bytes_per_example": 0.25,
+      "width": 64
+    },
+    {
+      "capacity": 256,
+      "cell_id": "lfq_n8_w64_s0",
+      "codec": "lfq",
+      "elapsed_seconds": 2.9529750939982478,
+      "factors_over_threshold": [],
+      "max_factor_mse": 0.008732031099498272,
+      "mse_overall": 0.002510624472051859,
+      "mse_per_factor": {
+        "binder_reference": 0.0019760190043598413,
+        "cardinality": 4.160428943578154e-05,
+        "inventory": 0.008433445356786251,
+        "property_role_value": 0.00023354808217845857,
+        "style_layout": 0.008732031099498272,
+        "topology": 5.2331080951262265e-05
+      },
+      "no_bypass_ok": true,
+      "nominal_bits": 8.0,
+      "nominal_bytes_per_example": 1.0,
+      "num_latents": 8,
+      "seed": 0,
+      "serialized_bytes_per_example": 1.0,
+      "width": 64
+    },
+    {
+      "capacity": 4.0,
+      "cell_id": "vq_n2_w64_s0",
+      "codec": "vq",
+      "elapsed_seconds": 3.1031549539984553,
+      "factors_over_threshold": [
+        "style_layout"
+      ],
+      "max_factor_mse": 0.0658436119556427,
+      "mse_overall": 0.00976913794875145,
+      "mse_per_factor": {
+        "binder_reference": 0.0030864200089126825,
+        "cardinality": 8.636174414489162e-11,
+        "inventory": 0.0254724882543087,
+        "property_role_value": 5.6800335268558655e-11,
+        "style_layout": 0.0658436119556427,
+        "topology": 0.00012056341802235693
+      },
+      "no_bypass_ok": false,
+      "nominal_bits": 2.0,
+      "nominal_bytes_per_example": 0.25,
+      "num_latents": 2,
+      "seed": 0,
+      "serialized_bytes_per_example": 0.25,
+      "width": 64
+    },
+    {
+      "capacity": 256.0,
+      "cell_id": "vq_n8_w64_s0",
+      "codec": "vq",
+      "elapsed_seconds": 5.909978048999619,
+      "factors_over_threshold": [
+        "style_layout"
+      ],
+      "max_factor_mse": 0.0658436119556427,
+      "mse_overall": 0.009769137017428875,
+      "mse_per_factor": {
+        "binder_reference": 0.003086419776082039,
+        "cardinality": 2.2818021777615272e-11,
+        "inventory": 0.0254724882543087,
+        "property_role_value": 3.447829868830077e-11,
+        "style_layout": 0.0658436119556427,
+        "topology": 0.00012056327977916226
+      },
+      "no_bypass_ok": false,
+      "nominal_bits": 8.0,
+      "nominal_bytes_per_example": 1.0,
+      "num_latents": 8,
+      "seed": 0,
+      "serialized_bytes_per_example": 1.0,
+      "width": 64
+    },
+    {
+      "capacity": 2.0,
+      "cell_id": "continuous_n2_w64_s0",
+      "codec": "continuous",
+      "elapsed_seconds": 2.7258616119979706,
+      "factors_over_threshold": [],
+      "max_factor_mse": 0.019307181239128113,
+      "mse_overall": 0.004935008008033037,
+      "mse_per_factor": {
+        "binder_reference": 0.002483716234564781,
+        "cardinality": 0.00019316497491672635,
+        "inventory": 0.019307181239128113,
+        "property_role_value": 0.0006807510508224368,
+        "style_layout": 0.008889226242899895,
+        "topology": 0.0006227018893696368
+      },
+      "no_bypass_ok": true,
+      "nominal_bits": 2.0,
+      "nominal_bytes_per_example": 0.25,
+      "num_latents": 2,
+      "seed": 0,
+      "serialized_bytes_per_example": 8,
+      "width": 64
+    },
+    {
+      "capacity": 8.0,
+      "cell_id": "continuous_n8_w64_s0",
+      "codec": "continuous",
+      "elapsed_seconds": 2.9473716860011336,
+      "factors_over_threshold": [],
+      "max_factor_mse": 0.0006049126386642456,
+      "mse_overall": 0.00020221155136823654,
+      "mse_per_factor": {
+        "binder_reference": 0.0006049126386642456,
+        "cardinality": 2.155368019884918e-05,
+        "inventory": 0.0005988387856632471,
+        "property_role_value": 2.933147334260866e-05,
+        "style_layout": 0.00011610621004365385,
+        "topology": 8.328982949024066e-05
+      },
+      "no_bypass_ok": true,
+      "nominal_bits": 8.0,
+      "nominal_bytes_per_example": 1.0,
+      "num_latents": 8,
+      "seed": 0,
+      "serialized_bytes_per_example": 32,
+      "width": 64
+    }
+  ],
+  "num_records": 9,
+  "retained": [
+    {
+      "codec": "uniform_scalar",
+      "confirmation_seeds": [
+        {
+          "capacity": 256,
+          "cell_id": "uniform_scalar_n8_w64_s1",
+          "codec": "uniform_scalar",
+          "elapsed_seconds": 8.313411649000045,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.018718194216489792,
+          "mse_overall": 0.00434884475544095,
+          "mse_per_factor": {
+            "binder_reference": 0.0025910583790391684,
+            "cardinality": 0.0001997926738113165,
+            "inventory": 0.018718194216489792,
+            "property_role_value": 0.00013229069008957595,
+            "style_layout": 0.0039367214776575565,
+            "topology": 0.0001681512367213145
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 8.0,
+          "nominal_bytes_per_example": 1.0,
+          "num_latents": 8,
+          "seed": 1,
+          "serialized_bytes_per_example": 1.0,
+          "width": 64
+        },
+        {
+          "capacity": 256,
+          "cell_id": "uniform_scalar_n8_w64_s2",
+          "codec": "uniform_scalar",
+          "elapsed_seconds": 8.103980666997813,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.024504732340574265,
+          "mse_overall": 0.005220204591751099,
+          "mse_per_factor": {
+            "binder_reference": 0.0025349128991365433,
+            "cardinality": 6.139598554000258e-05,
+            "inventory": 0.024504732340574265,
+            "property_role_value": 9.542846964905038e-05,
+            "style_layout": 0.0005672289407812059,
+            "topology": 0.0001710206997813657
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 8.0,
+          "nominal_bytes_per_example": 1.0,
+          "num_latents": 8,
+          "seed": 2,
+          "serialized_bytes_per_example": 1.0,
+          "width": 64
+        }
+      ],
+      "num_latents": 8,
+      "seed0_result": {
+        "capacity": 256,
+        "cell_id": "uniform_scalar_n8_w64_s0",
+        "codec": "uniform_scalar",
+        "elapsed_seconds": 9.040697555999941,
+        "factors_over_threshold": [],
+        "max_factor_mse": 0.0167813990265131,
+        "mse_overall": 0.0036277396138757467,
+        "mse_per_factor": {
+          "binder_reference": 0.0025327010080218315,
+          "cardinality": 3.551793497535982e-06,
+          "inventory": 0.0167813990265131,
+          "property_role_value": 8.332169272762258e-06,
+          "style_layout": 0.0005159740103408694,
+          "topology": 0.0001012866705423221
+        },
+        "no_bypass_ok": true,
+        "nominal_bits": 8.0,
+        "nominal_bytes_per_example": 1.0,
+        "num_latents": 8,
+        "seed": 0,
+        "serialized_bytes_per_example": 1.0,
+        "width": 64
+      },
+      "width": 64
+    },
+    {
+      "codec": "fsq",
+      "confirmation_seeds": [
+        {
+          "capacity": 16,
+          "cell_id": "fsq_n2_w64_s1",
+          "codec": "fsq",
+          "elapsed_seconds": 13.763141428000381,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.016879428178071976,
+          "mse_overall": 0.003733778838068247,
+          "mse_per_factor": {
+            "binder_reference": 0.0028389636427164078,
+            "cardinality": 9.701809176476672e-06,
+            "inventory": 0.016879428178071976,
+            "property_role_value": 4.255690782883903e-06,
+            "style_layout": 0.0013514466118067503,
+            "topology": 0.00012536362919490784
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 4.0,
+          "nominal_bytes_per_example": 0.5,
+          "num_latents": 2,
+          "seed": 1,
+          "serialized_bytes_per_example": 0.5,
+          "width": 64
+        },
+        {
+          "capacity": 16,
+          "cell_id": "fsq_n2_w64_s2",
+          "codec": "fsq",
+          "elapsed_seconds": 14.128425552000408,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.01778896152973175,
+          "mse_overall": 0.003791101975366473,
+          "mse_per_factor": {
+            "binder_reference": 0.0024929551873356104,
+            "cardinality": 5.991460660936809e-09,
+            "inventory": 0.01778896152973175,
+            "property_role_value": 9.206787332516342e-09,
+            "style_layout": 4.083449675817974e-05,
+            "topology": 0.00010111023584613577
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 4.0,
+          "nominal_bytes_per_example": 0.5,
+          "num_latents": 2,
+          "seed": 2,
+          "serialized_bytes_per_example": 0.5,
+          "width": 64
+        }
+      ],
+      "num_latents": 2,
+      "seed0_result": {
+        "capacity": 16,
+        "cell_id": "fsq_n2_w64_s0",
+        "codec": "fsq",
+        "elapsed_seconds": 14.091350678001618,
+        "factors_over_threshold": [],
+        "max_factor_mse": 0.016526667401194572,
+        "mse_overall": 0.0036857298109680414,
+        "mse_per_factor": {
+          "binder_reference": 0.0023730602115392685,
+          "cardinality": 5.906103979214095e-07,
+          "inventory": 0.016526667401194572,
+          "property_role_value": 3.729171112354379e-06,
+          "style_layout": 0.0023966962471604347,
+          "topology": 9.812306961975992e-05
+        },
+        "no_bypass_ok": true,
+        "nominal_bits": 4.0,
+        "nominal_bytes_per_example": 0.5,
+        "num_latents": 2,
+        "seed": 0,
+        "serialized_bytes_per_example": 0.5,
+        "width": 64
+      },
+      "width": 64
+    },
+    {
+      "codec": "lfq",
+      "confirmation_seeds": [
+        {
+          "capacity": 4,
+          "cell_id": "lfq_n2_w64_s1",
+          "codec": "lfq",
+          "elapsed_seconds": 2.779265241999383,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.021921925246715546,
+          "mse_overall": 0.007265882100909948,
+          "mse_per_factor": {
+            "binder_reference": 0.021384425461292267,
+            "cardinality": 0.0005067175952717662,
+            "inventory": 0.021921925246715546,
+            "property_role_value": 0.0011836503399536014,
+            "style_layout": 0.007368192542344332,
+            "topology": 0.0008161918958649039
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 2.0,
+          "nominal_bytes_per_example": 0.25,
+          "num_latents": 2,
+          "seed": 1,
+          "serialized_bytes_per_example": 0.25,
+          "width": 64
+        },
+        {
+          "capacity": 4,
+          "cell_id": "lfq_n2_w64_s2",
+          "codec": "lfq",
+          "elapsed_seconds": 2.5639291660008894,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.021708540618419647,
+          "mse_overall": 0.0047169337049126625,
+          "mse_per_factor": {
+            "binder_reference": 0.002605816815048456,
+            "cardinality": 5.283840437186882e-05,
+            "inventory": 0.021708540618419647,
+            "property_role_value": 3.0771509045735e-05,
+            "style_layout": 0.001629438134841621,
+            "topology": 0.00011280057515250519
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 2.0,
+          "nominal_bytes_per_example": 0.25,
+          "num_latents": 2,
+          "seed": 2,
+          "serialized_bytes_per_example": 0.25,
+          "width": 64
+        }
+      ],
+      "num_latents": 2,
+      "seed0_result": {
+        "capacity": 4,
+        "cell_id": "lfq_n2_w64_s0",
+        "codec": "lfq",
+        "elapsed_seconds": 2.6979288590009673,
+        "factors_over_threshold": [],
+        "max_factor_mse": 0.02164183370769024,
+        "mse_overall": 0.004572225268930197,
+        "mse_per_factor": {
+          "binder_reference": 0.0024961160961538553,
+          "cardinality": 3.515071567150585e-10,
+          "inventory": 0.02164183370769024,
+          "property_role_value": 2.121220603612528e-07,
+          "style_layout": 0.00019345137116033584,
+          "topology": 0.00010172767360927537
+        },
+        "no_bypass_ok": true,
+        "nominal_bits": 2.0,
+        "nominal_bytes_per_example": 0.25,
+        "num_latents": 2,
+        "seed": 0,
+        "serialized_bytes_per_example": 0.25,
+        "width": 64
+      },
+      "width": 64
+    },
+    {
+      "codec": "continuous",
+      "confirmation_seeds": [
+        {
+          "capacity": 2.0,
+          "cell_id": "continuous_n2_w64_s1",
+          "codec": "continuous",
+          "elapsed_seconds": 2.8684311589968274,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.01731267012655735,
+          "mse_overall": 0.005714647937566042,
+          "mse_per_factor": {
+            "binder_reference": 0.009296928532421589,
+            "cardinality": 0.0011130465427413583,
+            "inventory": 0.01731267012655735,
+            "property_role_value": 0.0014526561135426164,
+            "style_layout": 0.0093916654586792,
+            "topology": 0.0012749473098665476
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 2.0,
+          "nominal_bytes_per_example": 0.25,
+          "num_latents": 2,
+          "seed": 1,
+          "serialized_bytes_per_example": 8,
+          "width": 64
+        },
+        {
+          "capacity": 2.0,
+          "cell_id": "continuous_n2_w64_s2",
+          "codec": "continuous",
+          "elapsed_seconds": 2.731062049002503,
+          "factors_over_threshold": [],
+          "max_factor_mse": 0.018236955627799034,
+          "mse_overall": 0.00414554588496685,
+          "mse_per_factor": {
+            "binder_reference": 0.0032785923685878515,
+            "cardinality": 0.00026843894738703966,
+            "inventory": 0.018236955627799034,
+            "property_role_value": 0.00016904361837077886,
+            "style_layout": 0.000881958520039916,
+            "topology": 0.0002100749989040196
+          },
+          "no_bypass_ok": true,
+          "nominal_bits": 2.0,
+          "nominal_bytes_per_example": 0.25,
+          "num_latents": 2,
+          "seed": 2,
+          "serialized_bytes_per_example": 8,
+          "width": 64
+        }
+      ],
+      "num_latents": 2,
+      "seed0_result": {
+        "capacity": 2.0,
+        "cell_id": "continuous_n2_w64_s0",
+        "codec": "continuous",
+        "elapsed_seconds": 2.7258616119979706,
+        "factors_over_threshold": [],
+        "max_factor_mse": 0.019307181239128113,
+        "mse_overall": 0.004935008008033037,
+        "mse_per_factor": {
+          "binder_reference": 0.002483716234564781,
+          "cardinality": 0.00019316497491672635,
+          "inventory": 0.019307181239128113,
+          "property_role_value": 0.0006807510508224368,
+          "style_layout": 0.008889226242899895,
+          "topology": 0.0006227018893696368
+        },
+        "no_bypass_ok": true,
+        "nominal_bits": 2.0,
+        "nominal_bytes_per_example": 0.25,
+        "num_latents": 2,
+        "seed": 0,
+        "serialized_bytes_per_example": 8,
+        "width": 64
+      },
+      "width": 64
+    }
+  ],
+  "run_id": "39f72f63795c7673",
+  "threshold": 0.05,
+  "timestamp": "2026-07-25T16:34:15.312943+00:00",
+  "version": "cap2-06-v1"
+}

@@ -6,13 +6,15 @@ from pathlib import Path
 import pytest
 
 from slm_training.data.locked_eval_manifest import build_locked_manifest, write_locked_manifest
+from slm_training.data.locked_eval_manifest import complexity_stratum, record_complexity
 from slm_training.data.locked_eval_manifest import measure_stratified_legal_entropy
 from slm_training.data.locked_eval_manifest import (
     canonical_manifest_path,
     load_locked_manifest_payload,
     verify_locked_manifest_digest,
 )
-from slm_training.dsl.schema import load_jsonl
+from slm_training.dsl.schema import ExampleRecord, load_jsonl
+from slm_training.models.tokenizer import tokenize_text
 
 
 def test_locked_manifest_is_partitioned_and_immutable(tmp_path: Path) -> None:
@@ -50,6 +52,28 @@ def test_stratified_legal_entropy_uses_exact_compiler_sets(tmp_path: Path) -> No
     assert report["authority"] == "gold_compiler_decisions"
     assert report["records"]
     assert all(row["max_legal_action_count"] >= 2 for row in report["records"])
+
+
+def test_record_complexity_uses_ast_and_references_not_lexical_length() -> None:
+    short = ExampleRecord(
+        id="short",
+        prompt="short",
+        openui='root = TextContent(":x")',
+        placeholders=[":x"],
+    )
+    long = ExampleRecord(
+        id="long",
+        prompt="long",
+        openui=(
+            'root = TextContent(":this.is.a.much.longer.placeholder.reference.'
+            'with.many.lexical.fragments")'
+        ),
+        placeholders=[":this.is.a.much.longer.placeholder.reference.with.many.lexical.fragments"],
+    )
+
+    assert len(tokenize_text(long.openui)) > len(tokenize_text(short.openui))
+    assert record_complexity(long) == record_complexity(short)
+    assert complexity_stratum(long) == complexity_stratum(short)
 
 
 def test_canonical_manifest_path_is_the_committed_locked_manifest() -> None:

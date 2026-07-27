@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from scripts.repo_policy import validate_repository
+from scripts.verify_agent_surfaces import OBLIGATIONS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +19,11 @@ sys.path.insert(0, str(ROOT / "src"))
 from slm_training.levers import CHANGED_TEST_WORKERS  # noqa: E402
 
 
+# Editing any instruction surface re-certifies the whole parity matrix; the
+# laws only stay identical across harnesses if a one-sided edit is caught.
+AGENT_SURFACE_FILES = frozenset(
+    relative for obligation in OBLIGATIONS for relative in obligation.surfaces()
+) | {"scripts/verify_agent_surfaces.py"}
 GLOBAL_TEST_FILES = {
     "pyproject.toml",
     "pytest.ini",
@@ -128,7 +134,14 @@ SUITES_BY_PREFIX = (
     ),
     (
         "src/slm_training/models/",
-        ("tests/test_models", "tests/test_harnesses/model_build"),
+        (
+            "tests/test_models",
+            "tests/test_harnesses/model_build",
+            # The tokenizer layout is a checkpoint-bound contract and the
+            # tokenizers live under models/; keep its pin selected from here
+            # even though the regression file sits with the DSL suites.
+            "tests/test_dsl/test_tokenizer_grammar_invariants.py",
+        ),
     ),
     (
         "src/slm_training/resources/versions.json",
@@ -188,7 +201,8 @@ def select_tests(paths: list[str]) -> list[str]:
             # bounded Python-test budget on an unrelated full suite.
             continue
         if path.startswith("tests/") and path.endswith(".py"):
-            targets.add(path)
+            if (ROOT / path).is_file():
+                targets.add(path)
             continue
         if path == "src/slm_training/harnesses/model_build/ship_gates.py":
             targets.add("tests/test_harnesses/model_build/test_eval_gates.py")
@@ -217,7 +231,9 @@ def select_tests(paths: list[str]) -> list[str]:
 def select_changed_tests(paths: list[str]) -> list[str]:
     """Prefer explicit regression files for latency-bounded local hooks."""
     changed = {
-        path for path in paths if path.startswith("tests/") and path.endswith(".py")
+        path
+        for path in paths
+        if path.startswith("tests/") and path.endswith(".py") and (ROOT / path).is_file()
     }
     return sorted(changed) if changed else select_tests(paths)
 
@@ -241,6 +257,11 @@ def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = 
         stamp_command.append("--staged")
     if _run(stamp_command):
         return 1
+    # Cheap, no imports beyond stdlib: every configured harness must still
+    # carry every repository law. Only re-checked when a surface changed.
+    if any(path in AGENT_SURFACE_FILES for path in paths):
+        if _run([sys.executable, "-m", "scripts.verify_agent_surfaces"]):
+            return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
     python_paths = [path for path in paths if path.endswith(".py") and (ROOT / path).is_file()]
     print(f"changed-check: {len(paths)} file(s), pytest targets: {', '.join(tests) or 'none'}")

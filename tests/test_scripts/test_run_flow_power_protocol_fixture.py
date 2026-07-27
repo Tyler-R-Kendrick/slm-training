@@ -30,6 +30,14 @@ def test_plan_only_writes_manifest(tmp_path) -> None:
     assert "manifest" in data
 
 
+def test_locked_plan_writes_the_immutable_five_by_two_protocol(tmp_path) -> None:
+    assert main(["--mode", "locked-plan", "--output-dir", str(tmp_path)]) == 0
+    data = json.loads((tmp_path / "slm287_locked_power_protocol_report.json").read_text())
+    assert data["claim_class"] == "diagnostic"
+    assert data["protocol"]["seeds"] == [0, 1, 2, 3, 4]
+    assert len(data["protocol"]["backends"]) == 2
+
+
 def test_fixture_writes_design_docs(tmp_path) -> None:
     assert (
         main(

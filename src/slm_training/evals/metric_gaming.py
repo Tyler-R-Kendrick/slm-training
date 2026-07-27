@@ -20,7 +20,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import GenerationRequest, project_template_markers
+from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.meaningful_program import (
@@ -75,6 +76,26 @@ class MetricGamingCase:
     gold_openui: str | None = None
     transform: str = ""
     notes: str = ""
+
+    def __post_init__(self) -> None:
+        surfaces = (self.gold_openui or "", self.pred_openui, self.prompt)
+        markers = tuple(
+            dict.fromkeys(
+                marker
+                for surface in surfaces
+                for marker in extract_placeholders(surface)
+            )
+        )
+        object.__setattr__(
+            self, "pred_openui", project_template_markers(self.pred_openui, markers)
+        )
+        object.__setattr__(self, "prompt", project_template_markers(self.prompt, markers))
+        if self.gold_openui is not None:
+            object.__setattr__(
+                self,
+                "gold_openui",
+                project_template_markers(self.gold_openui, markers),
+            )
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -175,7 +196,8 @@ def _request(
     prompt: str,
     slot_contract: tuple[str, ...] = (),
 ) -> GenerationRequest:
-    return GenerationRequest(prompt=prompt, slot_contract=slot_contract)
+    canonical = tuple(f":slot_{index}" for index in range(len(slot_contract)))
+    return GenerationRequest(prompt=prompt, slot_contract=canonical)
 
 
 def _ensure_valid(openui: str) -> bool:
@@ -234,7 +256,7 @@ def _archetypes() -> list[dict[str, Any]]:
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = Slider(":settings.caption", "continuous", 0, 100)\n'
+                's = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n'
             ),
             "slot_contract": (":settings.caption",),
         },
@@ -242,31 +264,29 @@ def _archetypes() -> list[dict[str, Any]]:
             "id": "switch",
             "prompt": (
                 "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc using name :settings.name. "
-                "Placeholders: :settings.caption :settings.desc :settings.name"
+                "and description :settings.desc. "
+                "Placeholders: :settings.caption :settings.desc"
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", ":settings.name")\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", "$0")\n'
             ),
             "slot_contract": (
                 ":settings.caption",
                 ":settings.desc",
-                ":settings.name",
             ),
         },
         {
             "id": "tabs",
             "prompt": (
-                "Build tabs with a tab item whose value is :tab.value, trigger is :tab.trigger "
-                "and content is :tab.content. "
-                "Placeholders: :tab.value :tab.trigger :tab.content"
+                "Build tabs with a tab trigger :tab.trigger and content :tab.content. "
+                "Placeholders: :tab.trigger :tab.content"
             ),
             "positive": (
                 'root = Tabs([tab1])\n'
-                'tab1 = TabItem(":tab.value", ":tab.trigger", [TextContent(":tab.content")])\n'
+                'tab1 = TabItem("$0", ":tab.trigger", [TextContent(":tab.content")])\n'
             ),
-            "slot_contract": (":tab.value", ":tab.trigger", ":tab.content"),
+            "slot_contract": (":tab.trigger", ":tab.content"),
         },
         {
             "id": "button",
@@ -356,14 +376,14 @@ def build_minimal_valid_trap_cases(seed: int = 0) -> list[MetricGamingCase]:
             "card": 'root = Card([TextContent(":card.title")])\n',
             "slider": 'root = Stack([TextContent(":settings.caption")])\n',
             "switch": 'root = Stack([TextContent(":settings.caption")])\n',
-            "tabs": 'root = Tabs([TabItem("tab1", ":tab.trigger", [])])\n',
+            "tabs": 'root = Tabs([TabItem("$0", ":tab.trigger", [])])\n',
             "button": 'root = Stack([TextContent(":btn.action")])\n',
             "callout": 'root = Callout("info", ":callout.title", ":callout.title")\n',
             "image_block": 'root = Stack([TextContent(":img.alt")])\n',
         }[base_id]
         partial_reasons = {
             "slider": ("required_component_missing",),
-            "button": ("placeholder_semantic_role_mismatch",),
+            "button": ("required_component_missing",),
         }.get(base_id, ("required_placeholder_missing",))
         cases.append(
             MetricGamingCase(
@@ -384,7 +404,7 @@ def build_minimal_valid_trap_cases(seed: int = 0) -> list[MetricGamingCase]:
         type_swap = {
             "card": 'root = Stack([Button(":card.title")])\n',
             "slider": 'root = Card([TextContent(":settings.caption")])\n',
-            "switch": 'root = Slider(":settings.caption", "continuous", 0, 100)\n',
+            "switch": 'root = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n',
             "tabs": 'root = Stack([Button(":tab.trigger")])\n',
             "button": 'root = TextContent(":btn.action")\n',
             "callout": 'root = Card([TextContent(":callout.title")])\n',
@@ -456,7 +476,7 @@ def build_rare_component_omission_cases(seed: int = 0) -> list[MetricGamingCase]
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = Slider(":settings.caption", "continuous", 0, 100)\n'
+                's = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n'
             ),
             "slots": (":settings.caption",),
         },
@@ -467,7 +487,7 @@ def build_rare_component_omission_cases(seed: int = 0) -> list[MetricGamingCase]
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", "$0")\n'
             ),
             "slots": (":settings.caption", ":settings.desc"),
         },
@@ -477,11 +497,11 @@ def build_rare_component_omission_cases(seed: int = 0) -> list[MetricGamingCase]
                 "Placeholders: :form.email :form.submit_text"
             ),
             "positive": (
-                'root = Form("contact", buttons, [email])\n'
+                'root = Form("$0", buttons, [email])\n'
                 'buttons = Buttons([submit])\n'
                 'submit = Button(":form.submit_text")\n'
                 'email = FormControl(":form.email_label", input)\n'
-                'input = Input(":form.email")\n'
+                'input = Input("$1", ":form.email")\n'
             ),
             "slots": (":form.email", ":form.submit_text", ":form.email_label"),
         },
@@ -750,7 +770,7 @@ def build_canary_right_role_wrong_binding_cases(seed: int = 0) -> list[MetricGam
             ),
             pred_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":other.desc", "notifications")\n'
+                's = SwitchItem(":settings.caption", ":other.desc", "$0")\n'
             ),
             request=_request(
                 "Build a switch item for notifications with caption :settings.caption "
@@ -761,7 +781,7 @@ def build_canary_right_role_wrong_binding_cases(seed: int = 0) -> list[MetricGam
             expected_reason_substrings=("unexpected_placeholder_identity",),
             gold_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", "$0")\n'
             ),
             transform="bind_description_to_out_of_inventory_slot",
             notes="SwitchItem description binds an out-of-inventory slot.",
@@ -866,10 +886,10 @@ def build_canary_right_inventory_wrong_hierarchy_cases(seed: int = 0) -> list[Me
                 "Placeholders: :form.email :form.submit_text :form.email_label"
             ),
             pred_openui=(
-                'root = Form("contact", buttons, [email])\n'
+                'root = Form("$0", buttons, [email])\n'
                 'buttons = Buttons([submit])\n'
                 'submit = Button(":form.submit_text")\n'
-                'email = Input(":form.email")\n'
+                'email = Input("$1", ":form.email")\n'
             ),
             request=_request(
                 "Build a form with email input and submit button. "
@@ -879,11 +899,11 @@ def build_canary_right_inventory_wrong_hierarchy_cases(seed: int = 0) -> list[Me
             expected_verdict=False,
             expected_reason_substrings=("schema_value_role_mismatch:Form.fields",),
             gold_openui=(
-                'root = Form("contact", buttons, [email])\n'
+                'root = Form("$0", buttons, [email])\n'
                 'buttons = Buttons([submit])\n'
                 'submit = Button(":form.submit_text")\n'
                 'email = FormControl(":form.email_label", input)\n'
-                'input = Input(":form.email")\n'
+                'input = Input("$1", ":form.email")\n'
             ),
             transform="input_outside_form_control",
             notes="Input is directly under Form instead of wrapped in FormControl.",
@@ -960,7 +980,7 @@ def build_canary_render_semantics_mismatch_cases(seed: int = 0) -> list[MetricGa
             ),
             expected_verdict=False,
             expected_reason_substrings=("prompt_component_missing",),
-            gold_openui='root = Stack([s])\ns = Slider(":settings.caption", "continuous", 0, 100)\n',
+            gold_openui='root = Stack([s])\ns = Slider("$0", "continuous", 0, 100, 1, [50], ":settings.caption")\n',
             transform="slider_replaced_by_button",
             notes="Button replaces the requested Slider component.",
         )
@@ -1038,10 +1058,10 @@ def build_canary_ast_similar_missing_component_cases(seed: int = 0) -> list[Metr
                 "Placeholders: :form.email :form.submit_text :form.email_label"
             ),
             pred_openui=(
-                'root = Form("contact", buttons, [email])\n'
+                'root = Form("$0", buttons, [email])\n'
                 'buttons = Buttons([])\n'
                 'email = FormControl(":form.email_label", input)\n'
-                'input = Input(":form.email")\n'
+                'input = Input("$1", ":form.email")\n'
             ),
             request=_request(
                 "Build a form with email input and submit button. "
@@ -1051,11 +1071,11 @@ def build_canary_ast_similar_missing_component_cases(seed: int = 0) -> list[Metr
             expected_verdict=False,
             expected_reason_substrings=("required_placeholder_missing",),
             gold_openui=(
-                'root = Form("contact", buttons, [email])\n'
+                'root = Form("$0", buttons, [email])\n'
                 'buttons = Buttons([submit])\n'
                 'submit = Button(":form.submit_text")\n'
                 'email = FormControl(":form.email_label", input)\n'
-                'input = Input(":form.email")\n'
+                'input = Input("$1", ":form.email")\n'
             ),
             transform="omit_submit_button",
             notes="Form keeps email input but the submit Buttons list is empty.",

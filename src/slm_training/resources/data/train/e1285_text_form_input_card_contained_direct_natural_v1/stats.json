@@ -1,0 +1,320 @@
+{
+  "version": "e1285_text_form_input_card_contained_direct_natural_v1",
+  "profile": "strict",
+  "source": "programspec",
+  "derive_from": null,
+  "seed_path": null,
+  "rico_path": null,
+  "rico_hf_split": null,
+  "seed_count": 20,
+  "collected_count": 20,
+  "verifier_rejected": 0,
+  "verifier_rejected_samples": [],
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 0,
+  "quality_rejected_samples": [],
+  "record_count": 7,
+  "error_count": 0,
+  "errors": [],
+  "rejected_total": 13,
+  "rejected_path": "outputs/data/train/e1285_text_form_input_card_contained_direct_natural_v1/rejected.jsonl",
+  "quality_report_path": "outputs/data/train/e1285_text_form_input_card_contained_direct_natural_v1/quality_report.json",
+  "synthesis_feedback_path": "outputs/data/train/e1285_text_form_input_card_contained_direct_natural_v1/synthesis_feedback.json",
+  "synthesis_recommendations": 1,
+  "synthesizer": "none",
+  "documentize_expressions": false,
+  "target_kinds": null,
+  "min_quality_score": 0.55,
+  "min_verification_tier": "Bronze",
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "prompt_slot_contract": false,
+  "prompt_component_contract": false,
+  "prompt_component_contract_mode": "counts",
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 20,
+    "changed": 20,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 88,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 36,
+      "flatten_opportunities": 44
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 0,
+      "misses": 36
+    }
+  },
+  "structure_reserved_rejected": 0,
+  "structure_reserved_rejected_samples": [],
+  "max_records_per_parent": 6,
+  "parent_cap_dropped": 0,
+  "parent_cap_dropped_samples": [],
+  "fuzzy_dedup": true,
+  "fuzzy_dropped": 5,
+  "fuzzy_dropped_samples": [
+    {
+      "id": "program_4c19812cce034576",
+      "duplicate_of": "program_31273dda01fe85db",
+      "source_family": "programspec_generated",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_7266f10576c1ca7a",
+      "duplicate_of": "program_6510ea6cd7ae679a",
+      "source_family": "programspec_generated",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_89ed70b9f7359bf0",
+      "duplicate_of": "program_6510ea6cd7ae679a",
+      "source_family": "programspec_generated",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_c1c65a68e93ce268",
+      "duplicate_of": "program_a0e2b81527494adc",
+      "source_family": "programspec_generated",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_bc48c9f072329def",
+      "duplicate_of": "program_babfb5ea400cdb8b",
+      "source_family": "programspec_generated",
+      "reason": "fuzzy_minhash"
+    }
+  ],
+  "semantic_cluster_cap": 8,
+  "semantic_dropped": 0,
+  "semantic_dropped_samples": [],
+  "semantic_dedup": true,
+  "semantic_dedup_engine": "lexical-tfidf",
+  "semantic_cosine_dropped": 6,
+  "semantic_cosine_dropped_samples": [
+    {
+      "id": "program_8cdb3dc29f8d642d",
+      "duplicate_of": "program_6510ea6cd7ae679a",
+      "similarity": 0.9669,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_a0e2b81527494adc",
+      "duplicate_of": "program_6510ea6cd7ae679a",
+      "similarity": 0.9669,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_babfb5ea400cdb8b",
+      "duplicate_of": "program_502dd3e2220cd879",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_c0cd3d65304408ae",
+      "duplicate_of": "program_31273dda01fe85db",
+      "similarity": 0.9708,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_c124f9d286bf7c6a",
+      "duplicate_of": "program_9b667d70b7d35810",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_ecb360de7970d01e",
+      "duplicate_of": "program_e67ba497f3c471bc",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    }
+  ],
+  "ngram_decontam": true,
+  "decontam_flagged": 0,
+  "decontam_flagged_samples": [],
+  "dedup_against": [],
+  "cross_corpus_dropped": 0,
+  "cross_corpus_dropped_samples": [],
+  "difficulty_from": null,
+  "difficulty_scored": 0,
+  "difficulty_dropped": 0,
+  "difficulty_dropped_samples": [],
+  "producer_inputs": {
+    "programspec_path": "outputs/data/programspec/e1285_text_form_input_card_contained.jsonl",
+    "programspec_count": 0,
+    "programspec_seed": 0,
+    "language_contract": true,
+    "documentize_expressions": false,
+    "target_kinds": null,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": true,
+    "repairs_per_program": 0,
+    "edit_derivatives": false,
+    "scope_derivatives": false,
+    "design_md_contrastive": false,
+    "scope_corpus": false,
+    "scope_kinds": [
+      "document",
+      "statement",
+      "expression",
+      "lexical"
+    ],
+    "scope_identity_per_scope": 3,
+    "scope_canonical_pairs_per_scope": 3,
+    "scoped_repairs_per_scope": 2,
+    "typed_lexical_per_program": 4
+  },
+  "preference_pairs": 0,
+  "preference_pairs_path": null,
+  "mixture": {
+    "manifest": {
+      "mixture_id": "e1285_text_form_input_card_contained_direct_natural_v1-base",
+      "weights": {
+        "abstraction_ladder": 0.047430830039525695,
+        "awwwards_real": 0.0316205533596838,
+        "corruption_repair": 0.047430830039525695,
+        "diffusion_corruption": 0.0158102766798419,
+        "edit_trajectory": 0.047430830039525695,
+        "frontier_described": 0.00790513833992095,
+        "frontier_product": 0.00790513833992095,
+        "frontier_semantic": 0.00790513833992095,
+        "frontier_simplified": 0.00790513833992095,
+        "frontier_user": 0.00790513833992095,
+        "gold_correction": 0.011857707509881424,
+        "human_curated": 0.0632411067193676,
+        "human_feedback": 0.047430830039525695,
+        "language_contract": 0.0632411067193676,
+        "layout_augment": 0.019762845849802375,
+        "lexical_typed_map": 0.0158102766798419,
+        "programspec_generated": 0.09486166007905139,
+        "prompt_paraphrase": 0.023715415019762848,
+        "renderer_visual": 0.03952569169960475,
+        "rico_real": 0.09486166007905139,
+        "scope_canonical_document": 0.023715415019762848,
+        "scope_canonical_expression": 0.023715415019762848,
+        "scope_canonical_lexical": 0.023715415019762848,
+        "scope_canonical_statement": 0.023715415019762848,
+        "scope_contract": 0.0158102766798419,
+        "scope_identity_document": 0.0158102766798419,
+        "scope_identity_expression": 0.0158102766798419,
+        "scope_identity_lexical": 0.0158102766798419,
+        "scope_identity_statement": 0.0158102766798419,
+        "scope_repair_expression": 0.0158102766798419,
+        "scope_repair_lexical": 0.0158102766798419,
+        "scope_repair_statement": 0.0158102766798419,
+        "self_distilled_repair": 0.0158102766798419,
+        "self_distilled_success": 0.0158102766798419,
+        "stress_adversarial": 0.019762845849802375,
+        "web_distilled": 0.023715415019762848
+      },
+      "task_weights": {
+        "generation": 0.16666666666666666,
+        "identity_echo": 0.16666666666666666,
+        "noop_adversarial": 0.16666666666666666,
+        "patch_edit": 0.16666666666666666,
+        "repair_completion_inpaint": 0.16666666666666666,
+        "state_behavior": 0.16666666666666666
+      },
+      "notes": "P12 deterministic build; P11-owned weights.",
+      "version": 2
+    },
+    "hash": "b7c765214cae9e507424fabc3f314fcece3c7175717a5aa55a303b8b035d47f9",
+    "diagnostics": {
+      "records": 7,
+      "family_counts": {
+        "programspec_generated": 7
+      },
+      "task_counts": {
+        "generation": 7
+      },
+      "task_group_counts": {
+        "generation": 7
+      },
+      "unclassified_tasks": 0,
+      "unique_program_families": 7,
+      "unique_structural_families": 7,
+      "observed_component_counts": {
+        "Buttons": 7,
+        "Card": 7,
+        "Form": 7,
+        "Input": 7,
+        "Stack": 14,
+        "TextContent": 7
+      },
+      "configured_but_absent_families": [
+        "abstraction_ladder",
+        "awwwards_real",
+        "corruption_repair",
+        "diffusion_corruption",
+        "edit_trajectory",
+        "frontier_described",
+        "frontier_product",
+        "frontier_semantic",
+        "frontier_simplified",
+        "frontier_user",
+        "gold_correction",
+        "human_curated",
+        "human_feedback",
+        "language_contract",
+        "layout_augment",
+        "lexical_typed_map",
+        "prompt_paraphrase",
+        "renderer_visual",
+        "rico_real",
+        "scope_canonical_document",
+        "scope_canonical_expression",
+        "scope_canonical_lexical",
+        "scope_canonical_statement",
+        "scope_contract",
+        "scope_identity_document",
+        "scope_identity_expression",
+        "scope_identity_lexical",
+        "scope_identity_statement",
+        "scope_repair_expression",
+        "scope_repair_lexical",
+        "scope_repair_statement",
+        "self_distilled_repair",
+        "self_distilled_success",
+        "stress_adversarial",
+        "web_distilled"
+      ],
+      "present_but_unweighted_families": []
+    }
+  },
+  "mean_quality_score": 1.0,
+  "placeholder_vocab_size": 1,
+  "with_design_md": 7,
+  "component_histogram": {
+    "Buttons": 7,
+    "Card": 7,
+    "Form": 7,
+    "Input": 7,
+    "Stack": 14,
+    "TextContent": 7
+  },
+  "built_at": "2026-07-24T07:21:23.268636+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v32"
+    },
+    "stamped_at": "2026-07-24T07:21:23.291980+00:00"
+  }
+}

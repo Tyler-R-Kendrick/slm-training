@@ -99,7 +99,9 @@ def test_exact_or_compiler_preserves_representation_per_codec() -> None:
     assert ok is False and "coerce" in reason
 
 
-def test_checkpoint_declared_applies_no_overrides() -> None:
+def test_checkpoint_declared_applies_mandatory_safety_floor() -> None:
     spec = get_decode_path("checkpoint_declared")
-    assert spec.runtime_override_fields() == ()
-    assert spec.resolve_config_overrides("choice") == {}
+    overrides = spec.resolve_config_overrides("choice")
+    assert overrides["grammar_constrained"] is True
+    assert overrides["allow_unconstrained_fallback"] is False
+    assert overrides["grammar_finalize_validate"] is True

@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E805-E809",
+  "run_id": "e809-opaque-context-v3-heldout-n5-r1",
+  "date_utc": "2026-07-22",
+  "description": "Invalid output-contract-v3 baseline that persisted caller-authored marker names",
+  "invalidated_by": "output_contract_v4",
+  "invalidation_reason": "template-marker conversion belongs to train/test harness canonicalization, not the learned model",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "data": {
+    "version": "e805_opaque_markers_v3_r1",
+    "roots": 126,
+    "candidates": 674,
+    "admitted": 372,
+    "rejected": 302,
+    "mean_quality_score": 0.9903,
+    "records_templatized": 148,
+    "literals_templatized": 223,
+    "sanitization_fallbacks": 0,
+    "semantic_label_lines": 0,
+    "decontamination_drops": 15,
+    "content_fingerprint": "918ea2fa5e3b9ffc9df3c17b6f03a664e142307ef52ceca8c5fe90fc976c2ea8",
+    "synthesis_feedback_candidates": 13
+  },
+  "training": {
+    "run_id": "e808-opaque-context-v3-scratch120-r1",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps_requested": 120,
+    "steps_completed": 33,
+    "stopped_on": "wall_time_budget",
+    "elapsed_wall_seconds": 100.1738,
+    "max_wall_minutes": 1.5833333333333333,
+    "checkpoint": "outputs/runs/e808-opaque-context-v3-scratch120-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "3b089229163357803ac4a3159a596a15137e325136f8add11c9875babd5fbae5",
+    "output_contract_version": 3,
+    "symbol_anonymization": true,
+    "prohibited_semantic_levers_enabled": 0,
+    "checkpoint_sync": false,
+    "checkpoint_sync_reason": "local scratch diagnostic"
+  },
+  "invalid_runs": [
+    {
+      "run_id": "e806-opaque-markers-v3-scratch120-r1",
+      "reason": "command interrupted at step 27 before checkpoint and summary finalization"
+    },
+    {
+      "run_id": "e806-opaque-markers-v3-scratch120-r2",
+      "reason": "training context and scratch tokenizer still consumed raw marker spellings"
+    },
+    {
+      "run_id": "e807-opaque-markers-v3-heldout-n5-r1",
+      "reason": "evaluation used the invalid E806 r2 checkpoint"
+    }
+  ],
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "parse_rate": 0.2,
+      "meaningful_program_v1_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.03333333333333333,
+      "placeholder_validity": 0.1,
+      "structural_similarity": 0.029339999999999998,
+      "component_type_recall": 0.06666666666666667,
+      "reward_score": 0.13140000000000002,
+      "latency_ms_p50": 12002.03,
+      "latency_ms_p95": 13905.16,
+      "fallback_count": 1,
+      "decode_timeout_count": 4
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "five-record diagnostic subset; semantic meaning and component recall are zero"
+  },
+  "decision": {
+    "retain": "reserved harness finalization budget only",
+    "reject": "the corpus, checkpoint, evaluation, promotion, sync, deployment, and ship claims",
+    "next": "use the E810-E821 output-contract-v4 canonical data harness"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ca5d17cf0359d202857878db1281847023c31d1e",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v18",
+      "harness.train_data": "v12",
+      "harness.model_build.data": "v2",
+      "harness.model_build.train": "v21",
+      "harness.model_build.eval": "v46",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v226"
+    },
+    "stamped_at": "2026-07-22T15:30:03.240302+00:00"
+  }
+}

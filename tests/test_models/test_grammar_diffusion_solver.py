@@ -23,7 +23,7 @@ from slm_training.models.grammar_diffusion import (
     GrammarDiffusionModel,
 )
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
+HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":slot_0")\nhero_body = TextContent(":slot_1")\nhero = Card([hero_title, hero_body])'
 
 _TOPOLOGY_SOLVER_DEFAULTS = {
     "topology_verified_solver": False,
@@ -46,7 +46,7 @@ def _model(**config_overrides) -> GrammarDiffusionModel:
             prompt="Hero",
             openui=HERO,
             split="train",
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         ),
     ]
     config = GrammarDiffusionConfig(
@@ -108,7 +108,7 @@ def test_topology_solver_config_round_trips_and_old_checkpoints_default() -> Non
 
 def _request() -> GenerationRequest:
     return GenerationRequest(
-        prompt="Hero", slot_contract=":hero.title :hero.body".split()
+        prompt="Hero", slot_contract=(":slot_0", ":slot_1")
     )
 
 

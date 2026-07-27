@@ -1,0 +1,545 @@
+{
+  "schema_version": 1,
+  "version": "e826_target_slots_only_v4",
+  "profile": "strict",
+  "built_at": "2026-07-22T16:33:31.280273+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "corruption_repair": {
+      "admitted": 24,
+      "rejected": 40,
+      "by_stage": {
+        "decontamination": 1,
+        "dedup": 17,
+        "exposure": 22
+      },
+      "by_reason": {
+        "max_records_per_parent": 22,
+        "semantic_cosine": 17,
+        "test_fixture_structure": 1
+      },
+      "candidates": 64,
+      "yield": 0.375
+    },
+    "edit_trajectory": {
+      "admitted": 136,
+      "rejected": 56,
+      "by_stage": {
+        "decontamination": 3,
+        "dedup": 49,
+        "exposure": 2,
+        "verification": 2
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 21,
+        "semantic_cosine": 17,
+        "fuzzy_minhash": 11,
+        "test_fixture_structure": 3,
+        "quarantine": 2,
+        "max_records_per_parent": 2
+      },
+      "candidates": 192,
+      "yield": 0.7083
+    },
+    "frontier_described": {
+      "admitted": 2,
+      "rejected": 1,
+      "by_stage": {
+        "exposure": 1
+      },
+      "by_reason": {
+        "max_records_per_parent": 1
+      },
+      "candidates": 3,
+      "yield": 0.6667
+    },
+    "human_curated": {
+      "admitted": 16,
+      "rejected": 1,
+      "by_stage": {
+        "decontamination": 1
+      },
+      "by_reason": {
+        "test_fixture_structure": 1
+      },
+      "candidates": 17,
+      "yield": 0.9412
+    },
+    "language_contract": {
+      "admitted": 62,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 62,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 69,
+      "rejected": 23,
+      "by_stage": {
+        "decontamination": 3,
+        "dedup": 20
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 13,
+        "semantic_cosine": 4,
+        "ngram_overlap": 3,
+        "fuzzy_minhash": 3
+      },
+      "candidates": 92,
+      "yield": 0.75
+    },
+    "programspec_generated": {
+      "admitted": 12,
+      "rejected": 1,
+      "by_stage": {
+        "dedup": 1
+      },
+      "by_reason": {
+        "fuzzy_minhash": 1
+      },
+      "candidates": 13,
+      "yield": 0.9231
+    },
+    "prompt_paraphrase": {
+      "admitted": 18,
+      "rejected": 174,
+      "by_stage": {
+        "decontamination": 18,
+        "dedup": 68,
+        "exposure": 88
+      },
+      "by_reason": {
+        "max_records_per_parent": 88,
+        "exact_pair_duplicate": 33,
+        "fuzzy_minhash": 28,
+        "ngram_overlap": 15,
+        "semantic_cosine": 7,
+        "test_fixture_structure": 3
+      },
+      "candidates": 192,
+      "yield": 0.0938
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    },
+    "rico_real": {
+      "admitted": 9,
+      "rejected": 23,
+      "by_stage": {
+        "decontamination": 7,
+        "dedup": 16
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 11,
+        "ngram_overlap": 7,
+        "semantic_cosine": 4,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 32,
+      "yield": 0.2812
+    },
+    "web_distilled": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    }
+  },
+  "synthesizers": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "corruption_repair": {
+      "admitted": 24,
+      "rejected": 40,
+      "by_stage": {
+        "decontamination": 1,
+        "dedup": 17,
+        "exposure": 22
+      },
+      "by_reason": {
+        "max_records_per_parent": 22,
+        "semantic_cosine": 17,
+        "test_fixture_structure": 1
+      },
+      "candidates": 64,
+      "yield": 0.375
+    },
+    "frontier_described": {
+      "admitted": 2,
+      "rejected": 1,
+      "by_stage": {
+        "exposure": 1
+      },
+      "by_reason": {
+        "max_records_per_parent": 1
+      },
+      "candidates": 3,
+      "yield": 0.6667
+    },
+    "layout_augment": {
+      "admitted": 69,
+      "rejected": 23,
+      "by_stage": {
+        "decontamination": 3,
+        "dedup": 20
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 13,
+        "semantic_cosine": 4,
+        "ngram_overlap": 3,
+        "fuzzy_minhash": 3
+      },
+      "candidates": 92,
+      "yield": 0.75
+    },
+    "template": {
+      "admitted": 18,
+      "rejected": 174,
+      "by_stage": {
+        "decontamination": 18,
+        "dedup": 68,
+        "exposure": 88
+      },
+      "by_reason": {
+        "max_records_per_parent": 88,
+        "exact_pair_duplicate": 33,
+        "fuzzy_minhash": 28,
+        "ngram_overlap": 15,
+        "semantic_cosine": 7,
+        "test_fixture_structure": 3
+      },
+      "candidates": 192,
+      "yield": 0.0938
+    }
+  },
+  "warnings": [
+    {
+      "code": "eval_overlap_flagged",
+      "value": 25,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "corruption_repair",
+      "evidence": {
+        "decontamination_drops": 1
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "corruption_repair",
+      "evidence": {
+        "dup_share": 0.6094,
+        "candidates": 64
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "edit_trajectory",
+      "evidence": {
+        "decontamination_drops": 3
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "human_curated",
+      "evidence": {
+        "decontamination_drops": 1
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "layout_augment",
+      "evidence": {
+        "decontamination_drops": 3
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "prompt_paraphrase",
+      "evidence": {
+        "decontamination_drops": 18
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "prompt_paraphrase",
+      "evidence": {
+        "dup_share": 0.8125,
+        "candidates": 192
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "rico_real",
+      "evidence": {
+        "decontamination_drops": 7
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "rico_real",
+      "evidence": {
+        "dup_share": 0.5,
+        "candidates": 32
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "corruption_repair",
+      "evidence": {
+        "decontamination_drops": 1
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "corruption_repair",
+      "evidence": {
+        "dup_share": 0.6094,
+        "candidates": 64
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "layout_augment",
+      "evidence": {
+        "decontamination_drops": 3
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "template",
+      "evidence": {
+        "decontamination_drops": 18
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "template",
+      "evidence": {
+        "dup_share": 0.8125,
+        "candidates": 192
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "family:corruption_repair inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 1}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:corruption_repair raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e826_target_slots_only_v4: {'dup_share': 0.6094, 'candidates': 64}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    },
+    {
+      "hypothesis": "family:edit_trajectory inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 3}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "family:human_curated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 1}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "family:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 3}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "family:prompt_paraphrase inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 18}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:prompt_paraphrase raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e826_target_slots_only_v4: {'dup_share': 0.8125, 'candidates': 192}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    },
+    {
+      "hypothesis": "family:rico_real inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 7}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:rico_real raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e826_target_slots_only_v4: {'dup_share': 0.5, 'candidates': 32}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:corruption_repair inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 1}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:corruption_repair raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e826_target_slots_only_v4: {'dup_share': 0.6094, 'candidates': 64}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 3}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:template inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e826_target_slots_only_v4: {'decontamination_drops': 18}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:template raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e826_target_slots_only_v4: {'dup_share': 0.8125, 'candidates': 192}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ca5d17cf0359d202857878db1281847023c31d1e",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v14"
+    },
+    "stamped_at": "2026-07-22T16:33:31.303065+00:00"
+  }
+}

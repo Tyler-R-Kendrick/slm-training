@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E860-E863",
+  "date_utc": "2026-07-22",
+  "run_class": "scratch_matrix",
+  "run_id": "e862-root-arity1-smoke-n3-r1",
+  "local_compute": true,
+  "failed_attempt": {"run_id": "e860-root-arity-warmstart120-r1", "evidence_eligible": false, "reason": "lexer compiler mode omitted; capability validator rejected before model construction"},
+  "train": {"run_id": "e861-root-arity-warmstart120-r1", "device": "cpu", "context_backend": "scratch", "steps": 120, "elapsed_wall_seconds": 20.319860732008237, "max_wall_minutes": 1.5833333333333333, "last_loss": 7.554704189300537, "initialized_from": "e852-e826-typed-supplement-scratch600-r1", "initialized_weight_rms_drift": 0.0036421404739310453, "root_reference_arity_loss_weight": 1.0, "checkpoint_sha256": "5eebfaddc49590ecd8773e93c822448bd7ed671c6e73e8616c4b6de2879df8e2", "checkpoint_sync": false},
+  "matched_runs": [
+    {"run_id": "e862-root-arity1-smoke-n3-r1", "root_reference_arity_decode_weight": 1.0, "smoke": {"n": 3, "parse_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.6666666666666666, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.5, "structural_similarity": 0.48500000000000004, "component_type_recall": 0.6666666666666666, "reward_score": 0.911, "latency_ms_p50": 3480.44, "latency_ms_p95": 4314.79, "decode_timeout_count": 0, "fallback_count": 0}},
+    {"run_id": "e863-root-arity0-smoke-n3-r1", "root_reference_arity_decode_weight": 0.0, "smoke": {"n": 3, "parse_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.6666666666666666, "placeholder_fidelity": 0.9166666666666666, "placeholder_validity": 0.5499999999999999, "structural_similarity": 0.47526666666666667, "component_type_recall": 0.6666666666666666, "reward_score": 0.9359999999999999, "latency_ms_p50": 2970.79, "latency_ms_p95": 3691.67, "decode_timeout_count": 0, "fallback_count": 0}}
+  ],
+  "suites": {"smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.6666666666666666, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.5, "structural_similarity": 0.48500000000000004, "component_type_recall": 0.6666666666666666, "reward_score": 0.911, "latency_ms_p50": 3480.44, "latency_ms_p95": 4314.79, "decode_timeout_count": 0, "fallback_count": 0}},
+  "agentv": {"format": "AgentEvals JSONL", "sdk": "@agentv/core", "total": 1, "passed": 0, "failed": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": {"evaluated": false, "pass": false, "reason": "smoke regressed and AgentV failed"},
+  "decision": {"retain": "E851/E852 scratch baseline", "reject": "E861 checkpoint and root-arity continuation arm", "next": "avoid unfrozen continuation; test a structural objective without perturbing the learned generator"},
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "f6c393df6b0bff7a6b7a32edea9fdbf4cfd25aa6", "code_dirty": true, "components": {"config.levers": "v23", "harness.model_build.train": "v21", "harness.model_build.eval": "v49", "evals.meaningful_program": "2.13.0", "evals.scoring": "v14", "model.twotower": "v234"}}
+}

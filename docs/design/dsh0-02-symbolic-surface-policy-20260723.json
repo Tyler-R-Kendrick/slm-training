@@ -35,11 +35,11 @@
     },
     {
       "path": "tests/test_dsl/test_language_contract.py",
-      "sha256": "0ecad9354ec87b463fa5200af517dbd6a1e4c873a1ac9c9bf1fa839639430f11"
+      "sha256": "6ead8ef6a462fe1a27510bd54410fe59e4d7236ee0890ff89da989f9a80cd416"
     },
     {
       "path": "src/slm_training/dsl/pack.py",
-      "sha256": "53dddad7b5a1e228e9ec14ee19df920c623e67843c0302d47beb1a9e0fac4b0e"
+      "sha256": "082770d348e3ffb8099ab5339c40e3f8e14edfd599db1078b90ac2b8f4554c3c"
     },
     {
       "path": "src/slm_training/data/contract.py",

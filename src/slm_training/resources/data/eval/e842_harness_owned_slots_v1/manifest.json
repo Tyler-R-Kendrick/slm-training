@@ -1,0 +1,57 @@
+{
+  "version": "e842_harness_owned_slots_v1",
+  "kind": "test_data",
+  "source": "both",
+  "suites": {
+    "smoke": "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1/suites/smoke/records.jsonl",
+    "held_out": "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1/suites/held_out/records.jsonl",
+    "adversarial": "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1/suites/adversarial/records.jsonl",
+    "ood": "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1/suites/ood/records.jsonl",
+    "rico_held": "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1/suites/rico_held/records.jsonl"
+  },
+  "stats": "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1/stats.json",
+  "ids": [
+    "smoke_hero_01",
+    "smoke_button_01",
+    "smoke_callout_01",
+    "held_out_form_01",
+    "held_out_dual_card_01",
+    "held_out_input_01",
+    "held_out_tabs_01",
+    "held_out_settings_01",
+    "adv_empty_prompt_01",
+    "adv_dual_card_01",
+    "adv_deep_nest_01",
+    "adv_many_buttons_01",
+    "ood_dashboard_01",
+    "ood_gallery_01",
+    "ood_modal_01",
+    "ood_auth_01",
+    "rico_eval_test_20",
+    "rico_eval_test_25",
+    "rico_eval_test_34",
+    "rico_eval_test_42",
+    "rico_eval_test_58",
+    "rico_eval_test_60",
+    "rico_eval_test_77"
+  ],
+  "suite_counts": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 7
+  },
+  "content_fingerprint": "15504fb524154e995ff902d2303beaaf14c6d6752efe5f145eddc0996c0dc84b",
+  "train_manifest": "src/slm_training/resources/data/train/e826_target_slots_only_v4/manifest.json",
+  "built_at": "2026-07-22T18:17:06.594289+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6e307c08e2edfb6ace3ec757ffafd8a67a4abc03",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v9"
+    },
+    "stamped_at": "2026-07-22T18:17:06.622356+00:00"
+  }
+}

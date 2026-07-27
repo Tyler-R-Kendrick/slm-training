@@ -151,6 +151,25 @@ class CapsuleGraph:
         )
 
 
+@dataclass(frozen=True)
+class UnresolvedReference:
+    """One reference occurrence with no defining binder in this program."""
+
+    node_id: str
+    name: str
+    ast_path: tuple[str | int, ...]
+
+
+@dataclass(frozen=True)
+class _NodeEdgeWalk:
+    """Shared node/edge walk result, before capsule/SCC derivation."""
+
+    root_id: str
+    nodes: tuple[ScopeNode, ...]
+    edges: tuple[ScopeEdge, ...]
+    unresolved: tuple[UnresolvedReference, ...]
+
+
 def derive_capsule_graph(spec: ProgramSpec) -> CapsuleGraph:
     """Build a dependency-closed verification-capsule graph from a ProgramSpec.
 
@@ -159,6 +178,52 @@ def derive_capsule_graph(spec: ProgramSpec) -> CapsuleGraph:
     the synthetic root. External slot/template inputs become EXTERNAL edges to
     the root interface node. Reference edges follow binder definitions; forward
     references (uses with no defining statement) raise ValueError.
+    """
+    walk = derive_node_edge_walk(spec, raise_on_unresolved=True)
+
+    sccs = _tarjan_sccs({n.node_id: n for n in walk.nodes}, walk.edges)
+
+    capsules: list[VerificationCapsule] = []
+    nodes_by_id = {n.node_id: n for n in walk.nodes}
+    for index, component in enumerate(sccs):
+        node_ids = tuple(sorted(component))
+        entry = node_ids[0]
+        external = sorted(
+            {
+                dep
+                for nid in node_ids
+                for dep in nodes_by_id[nid].external_dependencies
+            }
+        )
+        capsules.append(
+            VerificationCapsule(
+                capsule_id=f"{spec.id}:capsule:{index}",
+                node_ids=node_ids,
+                entry_node_id=entry,
+                external_dependencies=tuple(external),
+            )
+        )
+
+    return CapsuleGraph(
+        root_id=walk.root_id,
+        nodes=walk.nodes,
+        edges=walk.edges,
+        capsules=tuple(capsules),
+        spec_id=spec.id,
+        version=CapsuleGraph.VERSION,
+    )
+
+
+def derive_node_edge_walk(
+    spec: ProgramSpec, *, raise_on_unresolved: bool
+) -> _NodeEdgeWalk:
+    """Walk ``spec.ast`` into scope nodes and directed reference edges.
+
+    Shared by :func:`derive_capsule_graph` (``raise_on_unresolved=True``,
+    forward/undefined references are a hard failure) and
+    :func:`slm_training.data.progspec.binder_graph.derive_binder_graph`
+    (``raise_on_unresolved=False``, they are collected as
+    :class:`UnresolvedReference` data instead).
     """
     contracts = derive_scope_contracts(spec)
     root_id = f"{spec.id}:root"
@@ -222,6 +287,7 @@ def derive_capsule_graph(spec: ProgramSpec) -> CapsuleGraph:
         )
 
     edges: list[ScopeEdge] = []
+    unresolved: list[UnresolvedReference] = []
     external_by_node: dict[str, set[str]] = {node_id: set() for node_id in nodes}
 
     def _current_node(path: tuple[str | int, ...]) -> str:
@@ -262,9 +328,15 @@ def derive_capsule_graph(spec: ProgramSpec) -> CapsuleGraph:
                                     role=ref_name,
                                 )
                             )
-                    else:
+                    elif raise_on_unresolved:
                         raise ValueError(
                             f"forward reference or undefined binder {ref_name!r} in {spec.id}"
+                        )
+                    else:
+                        unresolved.append(
+                            UnresolvedReference(
+                                node_id=current_id, name=ref_name, ast_path=path
+                            )
                         )
             for key, child in value.items():
                 _walk(child, (*path, str(key)))
@@ -312,37 +384,12 @@ def derive_capsule_graph(spec: ProgramSpec) -> CapsuleGraph:
 
     node_list = tuple(sorted(nodes.values(), key=lambda n: n.node_id))
     edge_list = tuple(sorted(edges, key=lambda e: (e.source, e.target, e.kind.value, e.role)))
+    unresolved_list = tuple(
+        sorted(unresolved, key=lambda u: (u.node_id, u.name, u.ast_path))
+    )
 
-    # Compute SCCs over statement nodes using reference edges.
-    sccs = _tarjan_sccs({n.node_id: n for n in node_list}, edge_list)
-
-    capsules: list[VerificationCapsule] = []
-    for index, component in enumerate(sccs):
-        node_ids = tuple(sorted(component))
-        entry = node_ids[0]
-        external = sorted(
-            {
-                dep
-                for nid in node_ids
-                for dep in nodes[nid].external_dependencies
-            }
-        )
-        capsules.append(
-            VerificationCapsule(
-                capsule_id=f"{spec.id}:capsule:{index}",
-                node_ids=node_ids,
-                entry_node_id=entry,
-                external_dependencies=tuple(external),
-            )
-        )
-
-    return CapsuleGraph(
-        root_id=root_id,
-        nodes=node_list,
-        edges=edge_list,
-        capsules=tuple(capsules),
-        spec_id=spec.id,
-        version=CapsuleGraph.VERSION,
+    return _NodeEdgeWalk(
+        root_id=root_id, nodes=node_list, edges=edge_list, unresolved=unresolved_list
     )
 
 

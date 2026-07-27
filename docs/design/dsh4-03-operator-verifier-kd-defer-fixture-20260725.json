@@ -1,0 +1,420 @@
+{
+  "claim_class": "wiring",
+  "depends_on": "SLM-387 (DSH4-02) and SLM-386 (DSH4-01)",
+  "disposition": "fixture_wiring",
+  "honest_verdict": "no_go_defer",
+  "issue_slug": "DSH4-03",
+  "linear_issue": "SLM-388",
+  "manifest_id": "manifest-dsh4-03-fixture-0",
+  "note": "Wiring-only fixture reusing DSH4-02's exact five-candidate operator fixture and its unmodified SyntheticDescriptorTeacherV1. Five matched arms were built (hard accepted-set, teacher argmax, offline conditional KD, verifier-ranking+KD, +DEFER) against the nondistilled current-scorer baseline. Teacher-only arms (teacher_argmax, offline_conditional_kd) changed 100% of eligible decisions but were wrong 28/30 times versus 2/30 correct -- a direct decision-level confirmation of DSH4-02's finding that this synthetic teacher carries no real signal. verifier_ranking_kd's target converged to the same top-1 pick as the current-scorer baseline on every eligible decision (0/30 changed) and was therefore correctly REJECTED as prediction-identical rather than credited with any metric. The DEFER arm deferred on 100% of eligible decisions (KD-target top1/top2 margin never cleared the declared 0.2 threshold on this fixture), falling back to raw deterministic compiler order, which itself does not beat the current-scorer baseline (2/30 correct vs 28/30 wrong). No arm cleared every acceptance gate. Per the SLM-388 stop rule: retain the teacher as an evaluation/data tool only.",
+  "recipe": {
+    "added_module": "src/slm_training/harnesses/distill/operator_verifier_kd_defer.py",
+    "added_script": "scripts/run_dsh4_03_operator_verifier_kd_defer_fixture.py",
+    "backend": "none (pure-python harness, no torch model trained or loaded)",
+    "device": "cpu",
+    "fixture_operator_id": "openui.dsh4_02_fixture",
+    "gold_weights": [
+      0.1,
+      0.15,
+      0.5,
+      0.15,
+      0.1
+    ],
+    "held_out_seeds": [
+      0,
+      1,
+      2
+    ],
+    "honesty_mode": "fixture_wiring_only; synthetic non-learned teacher reused unchanged from DSH4-02",
+    "n_bootstrap": 2000,
+    "n_candidates": 5,
+    "n_eval_states": 30,
+    "n_held_out_states_per_seed": 30,
+    "n_verifier_training_states": 30,
+    "pack_id": "openui",
+    "reused_contracts": [
+      "OperatorDecisionStateTraceV1 (DSH4-01)",
+      "RankingV1 / OperatorTeacherAdapter / SyntheticDescriptorTeacherV1 (DSH4-02)",
+      "CompilerOrderBaselineV1 / CurrentScorerBaselineV1 / FrequencyBaselineV1 / build_frequency_table (DSH4-02)",
+      "accepted_set_mass / expected_calibration_error / spearman_correlation (DSH4-02)",
+      "wilson_interval / bootstrap_paired_ci (SLM-183 power_protocol)"
+    ]
+  },
+  "run_class": "fixture_demo",
+  "run_id": "dsh4-03-20260725-fixture",
+  "schema_version": 1,
+  "status": "wiring_only",
+  "stop_rule_triggered": true,
+  "suites": {
+    "fixture": {
+      "arms": {
+        "hard_accepted_set": {
+          "arm_go": false,
+          "calibration_ece": 0.24,
+          "cap2_proxy_improves_all_seeds": true,
+          "cap2_proxy_vs_baseline": [
+            {
+              "ci_high": 0.46119627016418163,
+              "ci_low": 0.1518603798306082,
+              "improves": true,
+              "mean_diff": 0.3071070247671124,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 0
+            },
+            {
+              "ci_high": 0.42993005802874457,
+              "ci_low": 0.1213672155491212,
+              "improves": true,
+              "mean_diff": 0.27571392506318537,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 1
+            },
+            {
+              "ci_high": 0.37004097177181267,
+              "ci_low": 0.0612908299108357,
+              "improves": true,
+              "mean_diff": 0.21548678257693848,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 2
+            }
+          ],
+          "decision_change_vs_baseline": {
+            "correct_exceeds_wrong": false,
+            "correct_vs_wrong_estimate": null,
+            "meets_change_threshold": false,
+            "n_changed": 0,
+            "n_correct_changes": 0,
+            "n_eligible": 30,
+            "n_wrong_changes": 0,
+            "pct_changed_estimate": 0.0,
+            "prediction_identical_rejected": true
+          },
+          "decision_change_vs_hard_accepted_set": null,
+          "reasons": [
+            "hard_accepted_set is the reference control arm the Decision asks other arms to beat; it is never itself gated"
+          ],
+          "structural": {
+            "arm": "hard_accepted_set",
+            "defer_count": 0,
+            "defer_rate": null,
+            "defer_reasons": {},
+            "n_illegal_action_checked": 30,
+            "n_singleton_or_empty_checked": 0,
+            "no_illegal_action_introduced": true,
+            "schema": "operator_verifier_kd_defer_structural_report/v1",
+            "singleton_forced_bypass_preserved": true
+          },
+          "verifier_regret_correlation": 0.25
+        },
+        "offline_conditional_kd": {
+          "arm_go": false,
+          "calibration_ece": 0.061337235907671,
+          "cap2_proxy_improves_all_seeds": false,
+          "cap2_proxy_vs_baseline": [
+            {
+              "ci_high": -0.015196487032475043,
+              "ci_low": -0.046533024657484295,
+              "improves": false,
+              "mean_diff": -0.03142583990139808,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 0
+            },
+            {
+              "ci_high": -0.010859223678939257,
+              "ci_low": -0.044794409051748064,
+              "improves": false,
+              "mean_diff": -0.028115597401468212,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 1
+            },
+            {
+              "ci_high": -0.005992771481891982,
+              "ci_low": -0.03840117182223039,
+              "improves": false,
+              "mean_diff": -0.022251663557314783,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 2
+            }
+          ],
+          "decision_change_vs_baseline": {
+            "correct_exceeds_wrong": false,
+            "correct_vs_wrong_estimate": 0.06666666666666667,
+            "meets_change_threshold": true,
+            "n_changed": 30,
+            "n_correct_changes": 2,
+            "n_eligible": 30,
+            "n_wrong_changes": 28,
+            "pct_changed_estimate": 1.0,
+            "prediction_identical_rejected": false
+          },
+          "decision_change_vs_hard_accepted_set": {
+            "correct_exceeds_wrong": false,
+            "n_changed": 30,
+            "n_correct_changes": 2,
+            "n_wrong_changes": 28
+          },
+          "reasons": [
+            "correct changes (2) do not exceed wrong changes (28)",
+            "held-out CAP2-proxy accepted-set-mass improvement over the nondistilled baseline was not significant on every seed"
+          ],
+          "structural": {
+            "arm": "offline_conditional_kd",
+            "defer_count": 0,
+            "defer_rate": null,
+            "defer_reasons": {},
+            "n_illegal_action_checked": 30,
+            "n_singleton_or_empty_checked": 0,
+            "no_illegal_action_introduced": true,
+            "schema": "operator_verifier_kd_defer_structural_report/v1",
+            "singleton_forced_bypass_preserved": true
+          },
+          "verifier_regret_correlation": -0.1532064692570853
+        },
+        "teacher_argmax": {
+          "arm_go": false,
+          "calibration_ece": 0.37333333333333335,
+          "cap2_proxy_improves_all_seeds": false,
+          "cap2_proxy_vs_baseline": [
+            {
+              "ci_high": 0.047547154712952566,
+              "ci_low": -0.20430140199892696,
+              "improves": false,
+              "mean_diff": -0.09289297523288759,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 0
+            },
+            {
+              "ci_high": 0.09251547732318528,
+              "ci_low": -0.18984635152196985,
+              "improves": false,
+              "mean_diff": -0.057619408270148,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 1
+            },
+            {
+              "ci_high": 0.055462154926509626,
+              "ci_low": -0.19586438259256478,
+              "improves": false,
+              "mean_diff": -0.08451321742306153,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 2
+            }
+          ],
+          "decision_change_vs_baseline": {
+            "correct_exceeds_wrong": false,
+            "correct_vs_wrong_estimate": 0.06666666666666667,
+            "meets_change_threshold": true,
+            "n_changed": 30,
+            "n_correct_changes": 2,
+            "n_eligible": 30,
+            "n_wrong_changes": 28,
+            "pct_changed_estimate": 1.0,
+            "prediction_identical_rejected": false
+          },
+          "decision_change_vs_hard_accepted_set": {
+            "correct_exceeds_wrong": false,
+            "n_changed": 30,
+            "n_correct_changes": 2,
+            "n_wrong_changes": 28
+          },
+          "reasons": [
+            "correct changes (2) do not exceed wrong changes (28)",
+            "held-out CAP2-proxy accepted-set-mass improvement over the nondistilled baseline was not significant on every seed"
+          ],
+          "structural": {
+            "arm": "teacher_argmax",
+            "defer_count": 0,
+            "defer_rate": null,
+            "defer_reasons": {},
+            "n_illegal_action_checked": 30,
+            "n_singleton_or_empty_checked": 0,
+            "no_illegal_action_introduced": true,
+            "schema": "operator_verifier_kd_defer_structural_report/v1",
+            "singleton_forced_bypass_preserved": true
+          },
+          "verifier_regret_correlation": -0.16666666666666666
+        },
+        "verifier_ranking_kd": {
+          "arm_go": false,
+          "calibration_ece": 0.06204735516668122,
+          "cap2_proxy_improves_all_seeds": false,
+          "cap2_proxy_vs_baseline": [
+            {
+              "ci_high": -0.002711130483266914,
+              "ci_low": -0.013300583400373628,
+              "improves": false,
+              "mean_diff": -0.008151694786559138,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 0
+            },
+            {
+              "ci_high": -0.0022924301957007185,
+              "ci_low": -0.014568951129360684,
+              "improves": false,
+              "mean_diff": -0.008395312090643509,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 1
+            },
+            {
+              "ci_high": -0.00014643824630650027,
+              "ci_low": -0.011326995264000746,
+              "improves": false,
+              "mean_diff": -0.005787272574181601,
+              "n_paired": 30,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 2
+            }
+          ],
+          "decision_change_vs_baseline": {
+            "correct_exceeds_wrong": false,
+            "correct_vs_wrong_estimate": null,
+            "meets_change_threshold": false,
+            "n_changed": 0,
+            "n_correct_changes": 0,
+            "n_eligible": 30,
+            "n_wrong_changes": 0,
+            "pct_changed_estimate": 0.0,
+            "prediction_identical_rejected": true
+          },
+          "decision_change_vs_hard_accepted_set": {
+            "correct_exceeds_wrong": false,
+            "n_changed": 0,
+            "n_correct_changes": 0,
+            "n_wrong_changes": 0
+          },
+          "reasons": [
+            "rejected: top-1 predictions identical to the nondistilled baseline on >=99% of eligible decisions (no causal decision change)",
+            "change rate 0.0 below the 0.05 threshold",
+            "correct changes (0) do not exceed wrong changes (0)",
+            "held-out CAP2-proxy accepted-set-mass improvement over the nondistilled baseline was not significant on every seed"
+          ],
+          "structural": {
+            "arm": "verifier_ranking_kd",
+            "defer_count": 0,
+            "defer_rate": null,
+            "defer_reasons": {},
+            "n_illegal_action_checked": 30,
+            "n_singleton_or_empty_checked": 0,
+            "no_illegal_action_introduced": true,
+            "schema": "operator_verifier_kd_defer_structural_report/v1",
+            "singleton_forced_bypass_preserved": true
+          },
+          "verifier_regret_correlation": 0.11785113019775793
+        },
+        "verifier_ranking_kd_defer": {
+          "arm_go": false,
+          "calibration_ece": null,
+          "cap2_proxy_improves_all_seeds": false,
+          "cap2_proxy_vs_baseline": [
+            {
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "improves": false,
+              "mean_diff": 0.0,
+              "n_paired": 0,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 0
+            },
+            {
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "improves": false,
+              "mean_diff": 0.0,
+              "n_paired": 0,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 1
+            },
+            {
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "improves": false,
+              "mean_diff": 0.0,
+              "n_paired": 0,
+              "schema": "operator_verifier_kd_defer_cap2_proxy_seed/v1",
+              "seed": 2
+            }
+          ],
+          "decision_change_vs_baseline": {
+            "correct_exceeds_wrong": false,
+            "correct_vs_wrong_estimate": 0.06666666666666667,
+            "meets_change_threshold": true,
+            "n_changed": 30,
+            "n_correct_changes": 2,
+            "n_eligible": 30,
+            "n_wrong_changes": 28,
+            "pct_changed_estimate": 1.0,
+            "prediction_identical_rejected": false
+          },
+          "decision_change_vs_hard_accepted_set": {
+            "correct_exceeds_wrong": false,
+            "n_changed": 30,
+            "n_correct_changes": 2,
+            "n_wrong_changes": 28
+          },
+          "reasons": [
+            "correct changes (2) do not exceed wrong changes (28)",
+            "held-out CAP2-proxy accepted-set-mass improvement over the nondistilled baseline was not significant on every seed"
+          ],
+          "structural": {
+            "arm": "verifier_ranking_kd_defer",
+            "defer_count": 30,
+            "defer_rate": 1.0,
+            "defer_reasons": {
+              "kd_target_margin_below_threshold(margin=0.0479,threshold=0.2)": 30
+            },
+            "n_illegal_action_checked": 30,
+            "n_singleton_or_empty_checked": 0,
+            "no_illegal_action_introduced": true,
+            "schema": "operator_verifier_kd_defer_structural_report/v1",
+            "singleton_forced_bypass_preserved": true
+          },
+          "verifier_regret_correlation": null
+        }
+      },
+      "change_threshold": 0.05,
+      "held_out_seeds": [
+        0,
+        1,
+        2
+      ],
+      "n_eval_traces": 30,
+      "n_held_out_traces_per_seed": {
+        "0": 30,
+        "1": 30,
+        "2": 30
+      },
+      "n_verifier_training_traces": 30,
+      "nondistilled_baseline_source_id": "baseline:current_scorer",
+      "stop_rule": {
+        "go": false,
+        "passing_arms": [],
+        "reasons": [
+          "neither verifier_ranking_kd nor verifier_ranking_kd_defer cleared every acceptance gate; per the SLM-388 stop rule, retain the teacher as an evaluation/data tool only"
+        ],
+        "recommendation": "no_go_defer",
+        "schema": "operator_verifier_kd_defer_stop_rule/v1"
+      },
+      "teacher_source_id": "teacher:synthetic_descriptor_v1"
+    }
+  },
+  "version_stamp": {
+    "code_commit": "cf9b4dd85019b4c8e48505e033f327946d656e00",
+    "code_dirty": true,
+    "components": {
+      "harness.distill": "v5"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T15:55:14.889553+00:00"
+  }
+}

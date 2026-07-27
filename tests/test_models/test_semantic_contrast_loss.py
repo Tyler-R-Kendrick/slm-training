@@ -1,0 +1,129 @@
+"""SLM-292 regression coverage for the default-off semantic contrast objective."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+torch = pytest.importorskip("torch")
+
+from slm_training.dsl.schema import ExampleRecord
+from slm_training.models.semantic_contrast_loss import (
+    load_semantic_contrast_pairs,
+    pairwise_margin_loss,
+    semantic_contrast_metadata,
+)
+from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+
+POSITIVE = 'root = Stack([cta])\ncta = Button(":cta.label")'
+NEGATIVE = 'root = Stack([copy])\ncopy = TextContent(":cta.label")'
+
+
+def _pair_row(*, negative_role: str = "negative") -> dict:
+    positive = ExampleRecord("positive", "Build a CTA", POSITIVE, split="train")
+    negative = ExampleRecord("negative", "Build a CTA", NEGATIVE, split="train")
+    source = "source-1"
+    return {
+        "pair_id": "pair-1",
+        "admitted": True,
+        "family": "binding",
+        "transform_id": "binding_swap_symbol",
+        "source_program_id": source,
+        "positive": {"role": "positive", "record": positive.to_dict(), "source_program_id": source},
+        "negative": {"role": negative_role, "record": negative.to_dict(), "source_program_id": source},
+    }
+
+
+def test_margin_zero_when_positive_score_clears_margin() -> None:
+    result = pairwise_margin_loss(
+        torch.tensor([3.0]), torch.tensor([1.0]), margin=1.0
+    )
+    assert float(result.loss) == 0.0
+    assert float(result.score_distance) == 2.0
+
+
+def test_margin_penalizes_inverted_pair() -> None:
+    result = pairwise_margin_loss(
+        torch.tensor([1.0]), torch.tensor([3.0]), margin=1.0
+    )
+    assert float(result.loss) == 3.0
+    assert float(result.violation_rate) == 1.0
+
+
+def test_pair_loader_rejects_malformed_roles(tmp_path: Path) -> None:
+    path = tmp_path / "pairs.jsonl"
+    path.write_text(json.dumps(_pair_row(negative_role="positive")) + "\n")
+    with pytest.raises(ValueError, match="pair roles"):
+        load_semantic_contrast_pairs(path)
+
+
+def test_pair_loader_marks_complete_pair_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "pairs.jsonl"
+    path.write_text(json.dumps(_pair_row()) + "\n")
+    pair = load_semantic_contrast_pairs(path)[0]
+    assert semantic_contrast_metadata(pair.positive) == {
+        "pair_id": "pair-1",
+        "family": "binding",
+        "transform_id": "binding_swap_symbol",
+        "source_program_id": "source-1",
+        "role": "positive",
+    }
+    assert semantic_contrast_metadata(pair.negative)["role"] == "negative"
+
+
+def _model(records: list[ExampleRecord], **kwargs) -> TwoTowerModel:
+    return TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            **kwargs,
+        ),
+    )
+
+
+def test_disabled_objective_is_exact_legacy_loss(tmp_path: Path) -> None:
+    raw = _pair_row()
+    positive = ExampleRecord.from_dict(raw["positive"]["record"])
+    negative = ExampleRecord.from_dict(raw["negative"]["record"])
+    annotated = load_semantic_contrast_pairs(_write_pair(tmp_path=tmp_path, row=raw))[0]
+    baseline = _model([positive, negative])
+    disabled = _model([annotated.positive, annotated.negative], semantic_contrast_loss_weight=0.0)
+    rng_state = baseline._rng.getstate()
+    torch.manual_seed(41)
+    expected = baseline.training_loss([positive, negative])
+    baseline._rng.setstate(rng_state)
+    disabled._rng.setstate(rng_state)
+    torch.manual_seed(41)
+    actual = disabled.training_loss([annotated.positive, annotated.negative])
+    assert torch.equal(expected, actual)
+    assert disabled.last_training_metrics["semantic_contrast_loss"] == 0.0
+    assert disabled.last_training_metrics["semantic_contrast_pairs"] == 0
+
+
+def _write_pair(*, tmp_path: Path, row: dict) -> Path:
+    path = tmp_path / "pairs.jsonl"
+    path.write_text(json.dumps(row) + "\n")
+    return path
+
+
+def test_enabled_objective_logs_complete_pair_metrics(tmp_path: Path) -> None:
+    pair = load_semantic_contrast_pairs(_write_pair(tmp_path=tmp_path, row=_pair_row()))[0]
+    model = _model(
+        [pair.positive, pair.negative],
+        semantic_contrast_loss_weight=0.5,
+        semantic_contrast_margin=1.0,
+    )
+    loss = model.training_loss([pair.positive, pair.negative])
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["semantic_contrast_loss_weight"] == 0.5
+    assert metrics["semantic_contrast_pairs"] == 1
+    assert metrics["semantic_contrast_family_sides"] == {"binding": 2}
+    assert "semantic_contrast_positive_nll" in metrics
+    assert "semantic_contrast_negative_nll" in metrics

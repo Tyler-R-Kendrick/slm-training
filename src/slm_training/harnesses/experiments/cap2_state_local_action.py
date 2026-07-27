@@ -203,7 +203,7 @@ def _oracle_output(
         return out
 
     if isinstance(head, TernaryECOCHead):
-        entry = head._get_entry(legal)
+        entry = head.entry_for(legal)
         cw = entry.codeword_for(correct)
         assert cw is not None
         m = len(cw)

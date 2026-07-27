@@ -1,8 +1,10 @@
 # Grammar leakage audit
 
-SLM-284 adds an evaluation-only four-arm audit for a fixed checkpoint and
-fixed request set. The primary quality metric is binding-aware meaningful
-program v2; syntax parse is reported separately and is never a ship proxy.
+The audit compares deterministic constrained decoders for a fixed checkpoint
+and request set. Binding-aware meaningful program v2 remains the primary
+quality metric; syntax parse is separate and is never a ship proxy. Raw model
+logits are retained only as constraint-shadow telemetry and are never emitted
+as an unconstrained program.
 
 ## Arms and evidence
 
@@ -11,37 +13,45 @@ same evaluator, checkpoint, corpus selection, and configured seed:
 
 | Arm | Decode policy | Purpose |
 | --- | --- | --- |
-| `raw` | grammar constraint disabled | Unconstrained baseline |
-| `constrained` | grammar constraint enabled | Measure grammar effect |
-| `repaired` | constrained plus LTR repair | Isolate repair effect |
-| `uniform_at_unforced` | constrained; deterministic seeded uniform legal choice when more than one legal compiler path exists | Control for forced singleton decisions |
+| `constrained_native` | mandatory constrained deterministic decode, native representation | Safe baseline |
+| `constrained_compiler` | mandatory constrained compiler-tree decode | Compare exact forest ranking and speculative prefills |
 
 Each scorecard retains meaningful-v2, parse, placeholder/binder-reference F1,
 structural similarity, gates, per-record semantic-factor and complexity slices,
-and raw-arm deltas. The bounded compiler decision trace records position, legal
+and baseline deltas. The bounded compiler decision trace records position, legal
 set size, raw top-1, legal membership, selected token, override, and legal
 probability mass. The legacy causal trace primitive separately preserves the
 same decision facts for direct replay probes.
 
-The control is statelessly derived from the configured seed, prefix, and legal
-candidate paths. It therefore changes no singleton decision and does not
-advance global RNG state. It is presently exercised by compiler LTR paths;
-other decoder families report their normal scorecards rather than pretending
-they received a uniform control.
+Complete singleton legal sets bypass inference and therefore do not fabricate a
+raw-logit observation. Ambiguous decisions may record the model's raw winner,
+but selection remains inside the exact legal domain. Unsafe
+`grammar_constrained=False`, unconstrained fallback, sampling, and
+uniform-at-unforced model-build flags are rejected.
 
 ## 2026-07-24 local diagnostic attempt
 
 The timestamped record
 [`iter-slm284-grammar-leakage-fixture-20260724.json`](iter-slm284-grammar-leakage-fixture-20260724.json)
-records the local-only attempt. It intentionally ran one smoke example and no
+records the historical pre-policy local-only attempt. Its four named arms are
+retained as attempted provenance, but the raw and uniform emitted arms are now
+superseded and cannot be rerun through the production evaluator. It
+intentionally ran one smoke example and no
 training corpus. No four-arm scorecard completed: older local checkpoints were
 rejected by the symbol-only/v2 contract, and the available v2 scratch
 checkpoint was interrupted by the repository run cap before it emitted an
 audit artifact. This is negative operational evidence only, not a model or
 ship result. It did not relax a contract, gate, or corpus restriction.
 
-The implementation-level regression suite passed (67 focused tests), including
-the four-arm evaluator wiring, seeded uniform/singleton trace invariants,
-raw/legal audit summary, and optional feature-flag preservation. A completed
+The current implementation-level suite covers the safe two-decoder evaluator,
+singleton inference bypass, shadow-only raw diagnostics, and optional
+feature-flag preservation. A completed
 local campaign must replace this entry with its full per-arm JSON and AgentV
 bundle before any promotion or quality claim.
+
+The committed SLM-287 locked-power artifacts also predate this policy and keep
+their original raw/constrained/repaired labels as immutable historical
+provenance. The live SLM-287 runner now requests only
+`constrained_native`/`constrained_compiler`; that changes its locked campaign
+digest, so a fresh preregistered execution is required before comparing new
+rows with the historical tables.

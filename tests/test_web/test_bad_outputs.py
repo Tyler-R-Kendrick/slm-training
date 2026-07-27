@@ -203,6 +203,12 @@ def test_prompt_inventory_is_visible_to_decode_and_persisted(tmp_path: Path) -> 
         "mode": "compiler_tree",
         "slot_contract": "prompt_or_design_inventory",
         "template_fill_decode": False,
+        # Decode invariant I6: every persisted attempt records whether it was
+        # constrained, so a diagnostic control sample can never later be
+        # mistaken for a certified serving generation.
+        "grammar_constrained": True,
+        "diagnostic_control": False,
+        "certifiable": True,
     }
 
 

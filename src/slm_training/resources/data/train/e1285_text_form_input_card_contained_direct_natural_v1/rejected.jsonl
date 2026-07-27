@@ -1,0 +1,13 @@
+{"detail": {"duplicate_of": "program_31273dda01fe85db", "source_family": "programspec_generated"}, "id": "program_4c19812cce034576", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"source_family": "programspec_generated"}, "id": "program_5c907895a97c8ed9", "reason": "exact_pair_duplicate", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_6510ea6cd7ae679a", "source_family": "programspec_generated"}, "id": "program_7266f10576c1ca7a", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_6510ea6cd7ae679a", "source_family": "programspec_generated"}, "id": "program_89ed70b9f7359bf0", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_6510ea6cd7ae679a", "engine": "lexical-tfidf", "similarity": 0.9669, "source_family": "programspec_generated"}, "id": "program_8cdb3dc29f8d642d", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_6510ea6cd7ae679a", "engine": "lexical-tfidf", "similarity": 0.9669, "source_family": "programspec_generated"}, "id": "program_a0e2b81527494adc", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_502dd3e2220cd879", "engine": "lexical-tfidf", "similarity": 1.0, "source_family": "programspec_generated"}, "id": "program_babfb5ea400cdb8b", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_babfb5ea400cdb8b", "source_family": "programspec_generated"}, "id": "program_bc48c9f072329def", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_31273dda01fe85db", "engine": "lexical-tfidf", "similarity": 0.9708, "source_family": "programspec_generated"}, "id": "program_c0cd3d65304408ae", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_9b667d70b7d35810", "engine": "lexical-tfidf", "similarity": 1.0, "source_family": "programspec_generated"}, "id": "program_c124f9d286bf7c6a", "reason": "semantic_cosine", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_a0e2b81527494adc", "source_family": "programspec_generated"}, "id": "program_c1c65a68e93ce268", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"source_family": "programspec_generated"}, "id": "program_e3e0b4c1f9722977", "reason": "exact_pair_duplicate", "stage": "dedup"}
+{"detail": {"duplicate_of": "program_e67ba497f3c471bc", "engine": "lexical-tfidf", "similarity": 1.0, "source_family": "programspec_generated"}, "id": "program_ecb360de7970d01e", "reason": "semantic_cosine", "stage": "dedup"}
