@@ -26,6 +26,13 @@ policy/control heads, the four-baseline comparison, held-out benefit
 measurement, or turn-depth/context-view ablations -- all of that remains
 exactly as unattempted as before this slice.
 
+**Update (sixth slice, below):** the turn-depth/context-view *structural*
+ablation dimension and a bounded, fixture-scale matched context-view
+comparison are now wired -- see "Sixth slice" for exactly what that does and
+does not close. Real SFT/preference training against the DSH3-selected
+policy/control heads, a powered/real corpus, and CAP0/CAP1/CAP2 retention
+measurement remain unattempted.
+
 ## What this PR delivers
 
 * `src/slm_training/dsl/operators/replay_preference.py`:
@@ -293,6 +300,271 @@ training/evaluation work enumerated above.
   snapshot is untouched, staying immutable point-in-time evidence from
   before this slice landed.
 
+## Sixth slice (2026-07-27)
+
+This slice closes the "turn-depth and context-view ablations" gap
+`OperatorEventMemoryReportV1`'s own docstring named, and wires the issue's
+"Compare current state only, state plus recent semantic receipts, state
+plus retrieved relevant events, complete transcript plus state, and
+existing last-three-text-history baseline" and "Train matched
+SFT/preference variants ... event and state IDs are join/evidence keys,
+never semantic embeddings" bullets -- at bounded, fixture-scale, honestly
+reduced from the full issue.
+
+### What was built
+
+* `src/slm_training/dsl/operators/replay_preference_context_views.py`
+  (new; `dsl.operators.replay_preference_context_views` v1). Pure, no-torch
+  module defining:
+  * `ContextView` -- the five context-view input representations the
+    issue's own bullet names: `CURRENT_STATE_ONLY` (no history receipt is
+    ever visible), `STATE_PLUS_RECENT_RECEIPTS` (the last `turn_depth`
+    receipts in the trace's own chronological turn order -- may cross
+    branch boundaries), `STATE_PLUS_RETRIEVED_EVENTS` (the last
+    `turn_depth` receipts on the single-branch **ancestry** path that
+    causally produced the decision state, walked via `parent_state_id` --
+    distinct from recency, since it reflects the DAG's fixed structural
+    lineage rather than chronological turn order), `FULL_TRACE_PLUS_STATE`
+    (every receipt before the decision; `turn_depth` saturates), and
+    `LAST_THREE_TEXT_HISTORY` (a fixed 3-receipt window with state ids
+    stripped -- only the structural `action_kind` token survives, so this
+    view can never reconstruct exact state by construction, directly
+    satisfying the issue's adversarial control "text history cannot
+    reconstruct a different state than the DAG").
+  * `TURN_DEPTHS = (1, 2, 4, 8, 16)` -- the issue's own matrix.
+  * `OperatorTurnReceiptV1` / `receipts_from_trace` / `state_lookup_from_trace`
+    -- opaque join-key receipts (`action_kind` + the two state ids) built
+    directly from a trace's own recorded turns; never transcript text,
+    never a semantic embedding of any id.
+  * `build_context_view_window` -- the core window builder. Disambiguates
+    *which* occurrence of a possibly-revisited decision state a call is
+    about via the row's own `chosen_output_state_id` (see "Bug fixed during
+    this slice" below), not `input_state_id` alone.
+  * `OperatorEventMemoryAblationReportV1` / `build_ablation_report` -- the
+    **structural** (not yet trained) turn-depth x context-view grid: for
+    every row and every `(view, turn_depth)` cell, how many history
+    receipts that combination exposes and the most recently visible
+    `action_kind`. This is the literal dimension `OperatorEventMemoryReportV1`'s
+    docstring flagged as missing; `OperatorEventMemoryReportV1` itself is
+    intentionally left unchanged (still row-counts-only) -- the ablation
+    grid is a separate, sibling report built from it, matching this
+    task's own "extend ... or add a sibling report type" instruction.
+* `src/slm_training/harnesses/preference/replay_preference_context_view_variants.py`
+  (new; `harness.preference.replay_preference_context_view_variants` v1).
+  The bounded, fixture-scale training/comparison harness:
+  * `synthesize_bounded_session_corpus()` -- a small, deterministic,
+    **synthetic** corpus (never real user telemetry) of 8 conversation
+    "sessions," each its own `group_id`: five `rollback_chain_<K>` sessions
+    (`K` in `TURN_DEPTHS`, each `K` novel edits then a full `K`-undo
+    rollback then one redo, giving genuine, real turn-depth variation for
+    `EDIT_THEN_UNDO`/`PARTIAL_ROLLBACK`/`UNDO_THEN_REDO`), one
+    `checkout_and_fork` session (`CHECKOUT_ANOTHER_STATE` +
+    `FORK_THEN_CHOOSE_ONE_BRANCH`), one `pronoun_focus` session
+    (`PRONOUN_FOCUS_FOLLOWUP`), and one `merge_success` session
+    (`MERGE_SUCCESS`) -- all seven named relations appear at least once.
+    States are built from a strictly-monotonic counter operator (never a
+    small content-cycle) specifically so a chain of any length never
+    collides with an earlier state's digest.
+  * Splits sessions train/held-out via `split_for_group` (the same
+    stable-hash mechanism `local_decisions.py` already uses for the same
+    purpose) -- every row in one session shares that session's split, per
+    the issue's adversarial control "conversation variants stay in one
+    split." A real run: 8 sessions, 6 train / 2 held-out (`rollback_chain_1`,
+    `checkout_and_fork`), 40 rows total.
+  * `_features` -- exactly two structural features per candidate action:
+    `history_repeat_score` (fraction of the visible window's receipts whose
+    `action_kind` matches the candidate's own) and `is_history_control`
+    (whether the candidate is a control action at all, computable from the
+    decision state alone with zero history -- so `CURRENT_STATE_ONLY` is
+    not information-free). Both are join-key/structural counts, never
+    transcript text, never a semantic embedding.
+  * `_train_pairwise_linear_scorer` -- full-batch gradient descent on
+    pairwise logistic loss, two weights, no bias (bias cancels in a
+    chosen-minus-rejected margin over the same window). This is
+    deliberately **not** a DSH3 policy/control head or checkpoint -- wiring
+    a real trained head against this corpus is out of scope for this slice.
+  * `train_replay_preference_context_view_variants` -- trains and evaluates
+    one scorer per `(view, turn_depth)` cell (25 cells), reporting pairwise
+    chosen>rejected accuracy (overall and by semantic relation), a narrow
+    pairwise-calibration proxy (mean Brier error against the always-1
+    "chosen wins" label), corpus-composition rate (`undo_family_rate`), and
+    an honest `held_out_benefit` verdict. Fails closed (raises) if either
+    split is empty, and enforces `slm_training.levers.MAX_HARNESS_WALL_SECONDS`
+    even though a real run completes in well under a second.
+* `src/slm_training/evals/ambiguous_operator_followups.py` (new). Assembles
+  the disposition: runs the comparison, builds the ablation grid per
+  session, and packages `OUT_OF_SCOPE_METRICS` -- explicit, non-deletable
+  notes for every issue-named metric this slice does not measure.
+* `scripts/run_replay_preference_context_view_ablation.py` (new). CLI entry
+  printing the disposition as JSON; used to produce the real numbers below.
+* `tests/test_harnesses/preference/test_operator_history_pairs.py` (new, 16
+  tests) and `tests/test_evals/test_ambiguous_operator_followups.py` (new,
+  9 tests) -- the two test files the issue's own "Tests" section names as
+  not yet existing.
+* `src/slm_training/dsl/operators/__init__.py` -- re-exports the new
+  module's public symbols, matching every prior slice's convention
+  (`no-bump:` note on `dsl.operators.contracts`, which claims the
+  directory-level path).
+* `src/slm_training/evals/advanced_operator_disposition.py` -- corrected the
+  now-stale `EVENT_MEMORY` claim's `dimension_reasons` (previously "No
+  turn-depth or context-view ablation exists"), via a `no-bump:` note on
+  `evals.advanced_operator_disposition` (no disposition logic or schema
+  changed; the already-published
+  `docs/design/dsh5-12-advanced-operator-disposition-20260727-local/`
+  snapshot stays untouched, immutable point-in-time evidence).
+
+### Bug fixed during this slice: revisited-decision-state disambiguation
+
+While validating the corpus against real `rollback_chain` traces, the
+initial `_decision_position` implementation (match the first receipt whose
+`input_state_id` equals the decision state) was found to silently pick the
+**wrong** occurrence whenever a state is later revisited -- which every
+rollback chain does by construction (a state is first visited going forward
+during the edit chain, then revisited going backward during the rollback).
+`PARTIAL_ROLLBACK` rows' `state_plus_recent_receipts` windows were computed
+against the *forward* occurrence instead of the *actual* decision turn,
+silently reporting "operator" as the most-recent kind for every depth
+instead of the correct "undo." Fixed by disambiguating on the row's own
+recorded `chosen_output_state_id` in addition to `input_state_id` -- every
+one of the seven named patterns derives `chosen_output_state_id` from a
+real recorded turn's own `output_state_id`, so the exact `(input, output)`
+edge always identifies the one turn a row is actually about. The ancestry
+walk (`STATE_PLUS_RETRIEVED_EVENTS`) had the same class of bug (keyed by
+output state alone, which collides when a state is later reproduced by an
+undo/redo) and is now keyed by the exact `(parent_state_id, state)` edge,
+which always resolves to the state's original creating turn regardless of
+how many times it is later revisited.
+`test_recent_receipts_most_recent_kind_reflects_the_immediately_prior_undo`
+and `test_retrieved_events_is_ancestry_not_recency` are regression tests for
+this fix.
+
+### What was measured (real run, `python -m scripts.run_replay_preference_context_view_ablation`)
+
+* **Corpus:** 8 sessions (6 train / 2 held-out), 40 rows total, all 7 named
+  relations present. `undo_family_rate` (descriptive corpus composition,
+  not a benefit claim): 0.9 -- i.e. 90% of rows are
+  `edit_then_undo`/`undo_then_redo`/`partial_rollback`, reflecting the
+  `rollback_chain` sessions' design (deep chains deliberately generate many
+  `PARTIAL_ROLLBACK` rows to exercise the turn-depth axis).
+* **Held-out pairwise preference accuracy: 1.0 for every one of the 25
+  `(view, turn_depth)` cells**, including the `current_state_only` baseline.
+  This is an honest **ceiling effect**, not evidence of benefit: the
+  held-out split (`rollback_chain_1` + `checkout_and_fork`, 4 pairs) is
+  small enough that `is_history_control` alone -- available with *zero*
+  history, from the decision state alone -- already perfectly separates
+  chosen from rejected in every held-out row. `held_out_benefit.verdict` is
+  therefore honestly reported as **`no_benefit_fixture_scale`**
+  (`baseline_accuracy=1.0`, `best_accuracy=1.0` at
+  `state_plus_recent_receipts`/depth 1 -- tied with baseline, not exceeding
+  it), per the acceptance criteria's own explicit permission to record an
+  honest no-benefit result. The mean pairwise-calibration error (a Brier
+  proxy, not a CAP-gated calibration measurement) is small and
+  view-dependent (e.g. `0.00011` for `current_state_only` vs `0.00059` for
+  `state_plus_recent_receipts` at depth 1, narrowing toward `0.00007` by
+  depth 16), reflecting the trained weights' own confidence, not accuracy.
+* **The structural ablation grid itself is genuinely informative** even
+  though held-out accuracy ceilings: on a real `rollback_chain_8` trace, the
+  `state_plus_recent_receipts` view's visible-receipt count for
+  `PARTIAL_ROLLBACK` rows grows exactly as expected with `turn_depth`
+  (1, 2, 4, 8, capping at the available history, e.g. 9-15 depending on
+  rollback position for `turn_depth=16`), and its most-recent visible
+  `action_kind` is consistently `"undo"` -- while the SAME rows'
+  `state_plus_retrieved_events` (ancestry) view instead shows the *forward
+  edit chain* (`action_kind="operator"`), a real, structurally distinct
+  signal from recency. This is the concrete demonstration that the two
+  views are not interchangeable, even though this slice's tiny held-out
+  corpus cannot yet show one out-predicting the other.
+* **Correction/undo rate:** the 0.9 `undo_family_rate` above; not
+  independently cross-validated against a held-out distribution (the corpus
+  is too small to split further).
+* **Trace replay:** inherited, not independently re-measured this slice --
+  `extract_replay_preference_rows`/`extract_merge_preference_row` are
+  unchanged, and their own acceptance-criterion tests already prove every
+  relation replays; this slice adds direct spot-check tests
+  (`test_a_rollback_chain_row_replays_independently_to_its_recorded_output_state`
+  in both new test files) confirming the *synthetic* corpus's own rows
+  independently replay too, using the same pattern.
+* **Unintended mutations:** structurally zero by construction -- the
+  scorer only calls `_score()` over already-extracted legal candidates and
+  never calls `OperatorLibraryV1.apply`.
+
+### Explicitly out of scope (unchanged from, or newly identified by, this slice)
+
+* Real SFT/preference training against the DSH3-selected policy/control
+  heads (`TypedOperatorPolicyScorer`) -- the trained "variant" here is a
+  two-parameter linear pairwise scorer, never a neural policy head or
+  checkpoint. No model, checkpoint, or promotion is created by this slice.
+* A powered or real (non-synthetic) corpus -- 40 rows across 8 sessions is
+  wiring evidence, not a statistically powered held-out-benefit study.
+* Real action/operator/argument accuracy against a trained policy -- only a
+  pairwise ranking-accuracy proxy over two structural features is measured.
+* CAP0/CAP1/CAP2 retention -- requires the full CAP-gated eval suite
+  (`src/slm_training/evals/cap2_operator.py` and friends) integrated with a
+  trained policy checkpoint; genuinely out of scope for a diagnostic linear
+  scorer.
+* Turn-depth padding for `CHECKOUT_ANOTHER_STATE`, `FORK_THEN_CHOOSE_ONE_BRANCH`,
+  `MERGE_SUCCESS`, and `PRONOUN_FOCUS_FOLLOWUP` -- each gets exactly one
+  synthetic session with no padded prior history; extending
+  `sequence_merge.py`'s N-step machinery or a longer fork/checkout ladder to
+  give these depth variation too is left for a future slice.
+* `dsl.operators.replay_preference` itself (the row-extraction module) is
+  **unchanged** this slice -- still v6, still 7 of 7 named patterns,
+  `OperatorEventMemoryReportV1` still row-counts-only by design (the
+  ablation grid lives in the new sibling module instead).
+
+No causal, calibration, or promotion claim is made. No checkpoint or model
+card update applies -- this slice creates no checkpoint.
+
+## Review fixes (sixth slice)
+
+CodeRabbit review on the PR surfaced four real issues, fixed here rather than
+argued past:
+
+* **NaN baseline could silently produce a "no benefit" verdict.** If the
+  `current_state_only` baseline cell had zero held-out pairs,
+  `pairwise_preference_accuracy` was `float("nan")`, and every
+  `accuracy > baseline_accuracy` comparison against a NaN is `False` --
+  producing a spurious, unearned `no_benefit_fixture_scale` verdict instead
+  of failing closed. `train_replay_preference_context_view_variants` now
+  raises `ValueError` when the baseline cell is unmeasured *or* NaN.
+* **The `held_out_benefit_statistical_power` scope note hardcoded "8
+  sessions."** `evaluate_ambiguous_operator_followups` accepts an arbitrary
+  caller-supplied corpus (a test passes exactly two sessions), so a fixed
+  "8 sessions" string was simply false for any other corpus size. The note
+  is now derived per-call from `comparison.row_count` /
+  `comparison.session_count`.
+* **`docs/design/dsh5-10-replay-preference-rows.md` (this file) was missing
+  from `harness.preference.replay_preference_context_view_variants`'s
+  registered `paths`** in `versions.json`, leaving the experiment narrative
+  outside that component's version/no-bump tracking contract. Added.
+* **Two tests accepted every possible `held_out_benefit` verdict**,
+  including `no_non_baseline_held_out_data` (the "we could not measure
+  anything" outcome), which made a real corpus/split regression on the
+  default full synthetic corpus indistinguishable from a genuine
+  fixture-scale result. Both tests now assert the narrower
+  `{benefit_observed_fixture_scale, no_benefit_fixture_scale}` set for that
+  corpus; the excluded verdict remains a legitimate code path for a
+  caller-supplied corpus too small to have non-baseline held-out data.
+
+Also applied, both trivial and uncontroversial: an unchecked `int()` parse
+in the counter fixture operator now raises `OperatorRejectedError` instead
+of a bare `ValueError` on malformed input; the per-iteration `_pairs`
+closure in the comparison loop is now a module-level `_view_depth_pairs`
+function taking `view`/`depth` as explicit arguments instead of capturing
+loop variables; and the unused `TURN_DEPTH_IS_BOUNDING` constant was
+deleted.
+
+Not applied, with reasons: prefixing the doc's own reproducibility commands
+with `rtk` was skipped -- these blocks are exact, copy-pasteable
+reproduction commands (the convention every prior slice in this file
+follows), and `rtk` is a token-compression wrapper for an agent's own shell
+usage, not part of the documented commands themselves. Promoting the test
+modules' shared private fixture helpers (`_provenance`,
+`_rollback_chain_trace`, `_bump`, `_counter_pack_and_root`, `_sha`,
+`_table`) to a public/shared `conftest.py` API was also skipped as a
+non-functional structural refactor left for a future slice, not a
+correctness or honesty defect.
+
 ## Sixth slice (v7)
 
 * Added `preference_pair_from_replay_row` and `preference_pairs_from_trace`
@@ -377,6 +649,19 @@ training/evaluation work enumerated above.
   `operators/__init__.py`.
 
 ## Reproducibility
+
+```bash
+NODE_OPTIONS= pytest -q tests/test_dsl/test_operator_conversation.py tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_evals/test_ambiguous_operator_followups.py tests/test_dsl/test_replay_preference.py
+python -m scripts.run_replay_preference_context_view_ablation
+python -m scripts.verify_version_stamps --check --base origin/main
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+ruff check src/slm_training/dsl/operators/replay_preference_context_views.py src/slm_training/harnesses/preference/replay_preference_context_view_variants.py src/slm_training/evals/ambiguous_operator_followups.py scripts/run_replay_preference_context_view_ablation.py tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_evals/test_ambiguous_operator_followups.py src/slm_training/dsl/operators/__init__.py src/slm_training/evals/advanced_operator_disposition.py
+```
+
+Result (this PR, same fresh `.venv` -- Python 3.12, `pip install -e ".[dev,grammar]"`, plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge`, run with `NODE_OPTIONS=` cleared for the same reason as the fifth slice): `tests/test_dsl/test_operator_conversation.py` + the two new test files: `39 passed`; `tests/test_dsl/test_replay_preference.py`: `17 passed` (56 total across the issue's own "Tests" command). `ruff check`: clean on every touched/created file. `python -m scripts.verify_version_stamps --check --base origin/main`: `ok (10 changed file(s), 4 component(s) touched)`. `python -m scripts.repo_policy`: `ok (tracked + untracked)`. `python -m scripts.verify_decode_invariants`: clean. The ablation script's real output: 8 sessions (6 train / 2 held-out), 40 rows, `undo_family_rate=0.9`, `held_out_benefit={"verdict": "no_benefit_fixture_scale", "baseline_accuracy": 1.0, "best_view": "state_plus_recent_receipts", "best_turn_depth": 1, "best_accuracy": 1.0, ...}` -- all 25 `(view, turn_depth)` cells report `pairwise_preference_accuracy=1.0` (the ceiling effect explained above).
+
+## Reproducibility (fifth slice)
 
 ```bash
 NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
