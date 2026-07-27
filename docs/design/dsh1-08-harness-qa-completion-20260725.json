@@ -1,0 +1,72 @@
+{
+  "schema_version": "dsh1-08-harness-qa-completion/v1",
+  "issue": "SLM-360",
+  "project": "DSH1 — CAP0 Grammar-Complete Symbolic Synthesis",
+  "milestone": "M3 — Symbolic QA views and legal partials",
+  "recorded_at": "2026-07-25",
+  "kind": "wiring / unit-tested contract",
+  "claim": "No decode-path integration, corpus build, training run, eval, benchmark, checkpoint, or ship claim. This records a capped/diagnostic-marked IDENTITY producer wrapper, a verified document-level COMPLETE_SUFFIX accepted-completion-set generator scored through the existing accepted_outputs membership path, an atomic-form reuse coverage checker, and two anti-identity hard-negative generators, plus the tests that pin the DSH1-08 acceptance criteria.",
+  "added": {
+    "core": "src/slm_training/harnesses/train_data/harness_qa.py",
+    "tests": [
+      "tests/test_harnesses/train_data/test_harness_qa.py"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "criterion": "Identity rows obey the declared cap",
+      "evidence": "test_identity_rows_obey_the_declared_cap; test_cap_drops_rows_beyond_the_declared_cap_never_silently_keeps_them",
+      "status": "satisfied"
+    },
+    {
+      "criterion": "Every atomic production appears in a nonidentity task",
+      "evidence": "test_every_lexical_atomic_form_also_appears_nonidentity (checked on scope_corpus + this module's COMPLETE_SUFFIX records combined); test_coverage_violation_detected_when_a_form_is_identity_only (negative control proving the checker detects a real gap)",
+      "status": "satisfied_for_lexical_atomic_forms",
+      "note": "Coverage is checked as combined scope_corpus + COMPLETE_SUFFIX output; scope_corpus's own families alone do not close this gap for every fixture, which is exactly what COMPLETE_SUFFIX is for."
+    },
+    {
+      "criterion": "All accepted completions replay to verified terminals",
+      "evidence": "test_complete_suffix_target_replays_to_a_verified_terminal; test_peer_suffix_that_parses_but_silently_drops_content_is_rejected",
+      "status": "satisfied_for_document_level_statement_splits",
+      "note": "Covers the document-level statement-boundary COMPLETE_SUFFIX split only, not a tokenizer/CompletionForest-backed mid-expression prefix split; see Reopen conditions in the paired markdown. peer_suffixes require a byte-exact round trip, not just a non-raising parse, after a real (non-Lark-fallback) run showed an unresolved-reference peer can parse while silently losing content."
+    },
+    {
+      "criterion": "No arbitrary single-gold label is used where several completions are accepted",
+      "evidence": "accepted_completion_outputs/complete_suffix_record persist every verified accepted member via ExampleRecord.accepted_outputs; test_accepted_completion_outputs_excludes_only_the_canonical_member; test_legally_continuing_peer_suffix_is_accepted",
+      "status": "satisfied"
+    }
+  ],
+  "test_runs": [
+    {
+      "command": "ruff check src/slm_training/harnesses/train_data/harness_qa.py tests/test_harnesses/train_data/test_harness_qa.py",
+      "result": "all checks passed"
+    },
+    {
+      "command": "pytest tests/test_harnesses/train_data/test_harness_qa.py -q",
+      "result": "22 passed",
+      "note": "Run with the @openuidev/lang-core Node bridge installed and available (npm install in src/apps/openui_bridge/), not the pure-Python Lark fallback -- see the paired markdown's Verification section for why that distinction mattered here."
+    },
+    {
+      "command": "pytest tests/test_harnesses/train_data/ -q",
+      "result": "115 passed, 3 failed",
+      "note": "The 3 failures are all in test_staged_materialization.py: \"generator version mismatch for 'pack.corpus_generator': plan='v18', active='v21'\". Reproduced identically in a clean worktree of the pre-this-PR base commit 34c70de1 (active='v19' there, still mismatched against the fixture's hardcoded plan='v18') -- a stale hardcoded test fixture, pre-existing and unrelated to this change."
+    },
+    {
+      "command": "pytest tests/test_harnesses/train_data/test_scope_corpus.py -q",
+      "result": "13 passed",
+      "note": "Confirms the earlier open_string:'\"column\"' rejection seen before installing the Node bridge was purely a local-environment gap (Lark fallback lacks the real schema's enum admission), not a real code issue."
+    },
+    {
+      "command": "python -m scripts.verify_version_stamps --check --staged",
+      "result": "ok"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1ab0291d716a885c622673d8a4cb24eb3adc943a",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v21"
+    }
+  }
+}

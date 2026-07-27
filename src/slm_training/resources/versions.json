@@ -1261,6 +1261,25 @@
         }
       ]
     },
+    "dsl.solver.partial_state": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/solver/partial_state.py",
+        "src/slm_training/dsl/solver/openui_partial_state.py",
+        "tests/test_dsl/test_partial_state.py",
+        "tests/test_dsl/test_openui_partial_state.py",
+        "docs/design/dsh1-07-partial-state-classification-20260725.md",
+        "docs/design/dsh1-07-partial-state-classification-20260725.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "SLM-359 (DSH1-07): initial registration; PartialStateClassV1 (COMPLETE/FRAGMENT/PREFIX/INVALID) classifier plus the OpenUI live-fragment-parser/CompletionForest adapter. No decode-path integration, experiment, or checkpoint change."
+        }
+      ]
+    },
     "dsl.symbolic_surface": {
       "version": "v4",
       "kind": "harness",
@@ -6406,18 +6425,21 @@
       ]
     },
     "harness.experiments.slm267_programspec_coverage_scaling": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm267_programspec_coverage_scaling.py",
-        "scripts/generate_programspec_corpus.py",
         "tests/test_harnesses/experiments/test_slm267_programspec_coverage_scaling.py",
-        "tests/test_scripts/test_generate_programspec_corpus.py",
         "docs/design/programspec-coverage-scaling.md",
         "docs/design/iter-slm267-programspec-coverage-scaling-20260725.json",
         "docs/design/iter-slm267-programspec-coverage-scaling-20260725.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-25",
+          "note": "scripts/generate_programspec_corpus.py and its test moved to data.progspec.corpus_stream, which now owns the merged CLI (--mode stream/plan-only/fixture) after reconciling with the streaming-corpus PR; this component keeps only the harness module + its own test + design docs"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -8022,7 +8044,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -8032,9 +8054,16 @@
         "src/slm_training/data/mixture.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
-        "src/slm_training/resources/frontier/"
+        "src/slm_training/resources/frontier/",
+        "docs/design/dsh1-08-harness-qa-completion-20260725.md",
+        "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-25",
+          "note": "SLM-360 (DSH1-08): add capped/diagnostic-marked IDENTITY rows, verified COMPLETE_SUFFIX accepted-completion sets scored via the existing accepted_outputs membership path, atomic-form reuse coverage checking, and anti-identity hard negatives; peer_suffixes must round-trip byte-exact (not merely parse) so an unresolved-reference silently-pruned peer is never accepted"
+        },
         {
           "version": "v22",
           "date": "2026-07-26",
@@ -8843,7 +8872,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -8867,9 +8896,21 @@
         "docs/design/iter-slm279-depth-supervision-correction-20260723.json",
         "docs/design/iter-slm279-depth-supervision-correction-20260723.md",
         "docs/design/iter-slm282-recurrence-health-20260723.json",
-        "docs/design/iter-slm282-recurrence-health-20260723.md"
+        "docs/design/iter-slm282-recurrence-health-20260723.md",
+        "docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.json",
+        "docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-25",
+          "note": "no-bump: register the SLM-421 powered-rerun JSON/markdown (n=20 fresh seeds 2..21, min_pass_rate=0.5, disposition recursive_core_positive) produced by the v19 power_rule capability; no further code/behavior change"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-25",
+          "note": "add an additive, default-off Wilson-interval power rule (--seed-count/--min-pass-rate) to the SLM-282 recurrence-health screen for the LAR3 powered-rerun blocking condition (PR #853/#854/#855/#856 reopening criteria); the original fixed passed-seeds>=2/2 rule stays the exact default path (power_rule=None) and is unchanged byte-for-byte"
+        },
         {
           "version": "v18",
           "date": "2026-07-23",
@@ -9058,7 +9099,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v259",
+      "version": "v260",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9102,9 +9143,14 @@
       ],
       "history": [
         {
-          "version": "v259",
+          "version": "v260",
           "date": "2026-07-27",
           "note": "SLM-430: ModelBuildConfig gains verify_locked_manifest_digest (new default-off bool field, src/slm_training/harnesses/model_build/config.py). No model or training-loop behavior changes when unset; when set, train()'s register_promoted path supplies locked_eval_manifest.canonical_manifest_path() as locked_manifest_path to the promotion-governance calls (see harness.model_build.train v26 and harness.experiments)."
+        },
+        {
+          "version": "v259",
+          "date": "2026-07-25",
+          "note": "SLM-359: expose literal_frame_is_open and unresolved_binder_reference_pieces as public wrappers over existing private compiler_draft helpers for the DSH1-07 partial-state classifier; no change to any existing candidate/coverage/decision behavior"
         },
         {
           "version": "v258",
@@ -10663,6 +10709,24 @@
           "version": "v1",
           "date": "2026-07-25",
           "note": "initial reserved compute-ops vocabulary shared encoder<->decoder: 19 ops derived from the live local/topology/conversation registries across ast/graph/set/topology/history, reserved in the new `ops` token-id namespace above every codec range, one shared_token_ids() mapping, grammar layering assertion, content-addressed drift gate (decode invariant I13)"
+        }
+      ]
+    },
+    "data.progspec.corpus_stream": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "scripts/generate_programspec_corpus.py",
+        "tests/test_scripts/test_generate_programspec_corpus.py",
+        "docs/design/compiler-inverted-program-data.md",
+        "docs/design/iter-slm267-uniform-saturation-20260725.json",
+        "docs/design/iter-slm267-uniform-saturation-20260725.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-267 VSD2-02 uniform-policy streaming ProgramSpec corpus CLI with resumable shard state, disk-backed exact dedup, and measured candidate-grid saturation frontier. Reconciled on rebase with the parallel harness.experiments.slm267_programspec_coverage_scaling landing (PR #893): this component now owns scripts/generate_programspec_corpus.py's --mode dispatch (stream default; plan-only/fixture absorbed as subcommands) and its merged test suite"
         }
       ]
     }
