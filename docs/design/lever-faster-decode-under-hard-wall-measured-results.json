@@ -1,0 +1,250 @@
+{
+  "lever": "faster_decode_under_hard_wall",
+  "hypothesis": "Faster legal decode knobs (ltr_max, max_attempts, gen_steps) let hero complete inside 30s and raise meaningful_program_rate above hard-wall baseline 0.33.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "suite": "smoke",
+  "eval_limit": 3,
+  "recipe": {
+    "checkpoint": "outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt",
+    "train_dir": "outputs/data/train/lever_exposure12_v1",
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "seed": 47,
+    "hard_wall": true
+  },
+  "baseline_arm": "baseline_hardwall",
+  "rows": [
+    {
+      "arm": "baseline_hardwall",
+      "flags": "defaults (ltr_max~256, attempts=3, gen=8)",
+      "n_reps": 3,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_median": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 0.8888888888888888,
+      "parse_values": [
+        1.0,
+        1.0,
+        0.6666666666666666
+      ],
+      "empty_mean": 0.3333333333333333,
+      "reward_mean": 0.6895555555555556,
+      "max_lat_mean": 30984.18666666667,
+      "max_lat_values": [
+        30032.84,
+        30007.47,
+        32912.25
+      ],
+      "sum_lat_mean": 90994.39,
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output",
+        "runtime_timeout"
+      ],
+      "hero_lats": [
+        30007.02,
+        30007.47,
+        32912.25
+      ],
+      "eval_ids": [
+        "exp_lever_hardwall_seeded_rep1_exp12_seed47",
+        "exp_lever_hardwall_seeded_rep2_exp12_seed47",
+        "exp_lever_hardwall_seeded_rep3_exp12_seed47"
+      ]
+    },
+    {
+      "arm": "ltr64",
+      "flags": "--grammar-ltr-max-tokens 64",
+      "n_reps": 2,
+      "meanful_mean": 0.16666666666666666,
+      "meanful_median": 0.16666666666666666,
+      "meanful_values": [
+        0.3333333333333333,
+        0.0
+      ],
+      "parse_mean": 0.6666666666666666,
+      "parse_values": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "empty_mean": 1,
+      "reward_mean": 0.5338333333333333,
+      "max_lat_mean": 30014.075,
+      "max_lat_values": [
+        30014.09,
+        30014.06
+      ],
+      "sum_lat_mean": 90022.655,
+      "wall_ok": true,
+      "hero_outcomes": [
+        "runtime_timeout",
+        "fallback_output"
+      ],
+      "hero_lats": [
+        30003.64,
+        30006.97
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_ltr64_rep1_s47",
+        "exp_lever_hwq_ltr64_rep2_s47"
+      ]
+    },
+    {
+      "arm": "ltr32",
+      "flags": "--grammar-ltr-max-tokens 32",
+      "n_reps": 2,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_median": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 1.0,
+      "parse_values": [
+        1.0,
+        1.0
+      ],
+      "empty_mean": 0,
+      "reward_mean": 0.7653333333333334,
+      "max_lat_mean": 30057.83,
+      "max_lat_values": [
+        30102.88,
+        30012.78
+      ],
+      "sum_lat_mean": 90065.845,
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output"
+      ],
+      "hero_lats": [
+        30006.47,
+        30012.78
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_ltr32_rep1_s47",
+        "exp_lever_hwq_ltr32_rep2_s47"
+      ]
+    },
+    {
+      "arm": "att1",
+      "flags": "--max-attempts 1",
+      "n_reps": 2,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_median": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 0.8333333333333333,
+      "parse_values": [
+        1.0,
+        0.6666666666666666
+      ],
+      "empty_mean": 0.5,
+      "reward_mean": 0.6141666666666667,
+      "max_lat_mean": 30208.235,
+      "max_lat_values": [
+        30104.25,
+        30312.22
+      ],
+      "sum_lat_mean": 90271.71,
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output"
+      ],
+      "hero_lats": [
+        30015.47,
+        30004.94
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_att1_rep1_s47",
+        "exp_lever_hwq_att1_rep2_s47"
+      ]
+    },
+    {
+      "arm": "gen4",
+      "flags": "--gen-steps 4",
+      "n_reps": 2,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_median": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 0.8333333333333333,
+      "parse_values": [
+        0.6666666666666666,
+        1.0
+      ],
+      "empty_mean": 0.5,
+      "reward_mean": 0.6141666666666667,
+      "max_lat_mean": 30011.120000000003,
+      "max_lat_values": [
+        30010.4,
+        30011.84
+      ],
+      "sum_lat_mean": 90028.035,
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output"
+      ],
+      "hero_lats": [
+        30006.47,
+        30010.95
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_gen4_rep1_s47",
+        "exp_lever_hwq_gen4_rep2_s47"
+      ]
+    },
+    {
+      "arm": "ltr48_att1",
+      "flags": "--grammar-ltr-max-tokens 48 --max-attempts 1",
+      "n_reps": 2,
+      "meanful_mean": 0.3333333333333333,
+      "meanful_median": 0.3333333333333333,
+      "meanful_values": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "parse_mean": 1.0,
+      "parse_values": [
+        1.0,
+        1.0
+      ],
+      "empty_mean": 0,
+      "reward_mean": 0.7653333333333334,
+      "max_lat_mean": 30161.199999999997,
+      "max_lat_values": [
+        30207.03,
+        30115.37
+      ],
+      "sum_lat_mean": 90228.665,
+      "wall_ok": true,
+      "hero_outcomes": [
+        "fallback_output",
+        "fallback_output"
+      ],
+      "hero_lats": [
+        30207.03,
+        30016.67
+      ],
+      "eval_ids": [
+        "exp_lever_hwq_ltr48_att1_rep1_s47",
+        "exp_lever_hwq_ltr48_att1_rep2_s47"
+      ]
+    }
+  ],
+  "decision": "reject",
+  "decision_reason": "no arm beats baseline meanful_median=0.333; best was ltr32 at 0.333 vals=[0.3333333333333333, 0.3333333333333333]",
+  "captured_at": "2026-07-27T18:23:57.579912+00:00"
+}
