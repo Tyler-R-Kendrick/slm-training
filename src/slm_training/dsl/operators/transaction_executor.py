@@ -505,6 +505,8 @@ def commit_operator_transaction(
         != transaction.base_reference_table_fingerprint
         or provenance.request_id != transaction.provenance.request_id
         or provenance.pack_id != transaction.provenance.pack_id
+        or provenance.source_artifact_digest
+        != transaction.provenance.source_artifact_digest
     ):
         return _reject(
             OperatorTransactionCommitRejectionKind.STALE_TRANSACTION_BASE,

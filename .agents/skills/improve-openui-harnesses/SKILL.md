@@ -58,6 +58,19 @@ when execution occurred, the canonical JSON plus markdown record states recipe,
 suite size, result, and honest pass/fail. A self-improvement claim additionally
 needs frozen evaluation cases, held-out results, and explicit human promotion.
 
+## Parameter efficiency (harness edits may not make size free)
+
+- Parameter count is a **cost**, not a field to log. A harness that records
+  `trainable_params` and never charges it is the bug this rule exists for —
+  route size through `scaling_fit.observation_cost` / `efficiency_gain`.
+- New capacity knobs are registered in `levers.CAPACITY_SCALING_LEVERS` with
+  their baseline value and axis, the way weakening levers are registered.
+- Selection and promotion prefer the **smallest sufficient** model
+  (`promotion_engine.select_smallest_sufficient`); never rank by quality alone
+  across arms of differing size.
+- Do not duplicate a cost accessor. One switch, one place — a parallel copy is
+  how `params` came to be charged by nobody.
+
 ## Decode invariants (harness edits may not weaken them)
 
 `AGENTS.md` § Non-negotiable architecture invariants is goal law; canonical

@@ -803,6 +803,23 @@ def _validate_turn_provenance(
         raise ConversationTraceError("turn provenance source digest is stale")
 
 
+def _resolve_turn_authority(
+    pack: DslPack,
+    library: OperatorLibraryV1 | None,
+    authority_resolver: OperatorAuthorityResolver | None,
+    cursor: ConversationStateNodeV1,
+    trace: ConversationTraceV1,
+) -> tuple[DslPack, OperatorLibraryV1]:
+    if authority_resolver is None:
+        turn_pack, turn_library = pack, library
+    else:
+        turn_pack, turn_library = authority_resolver(cursor)
+    assert turn_library is not None
+    if turn_pack.pack_id != trace.pack_id:
+        raise ConversationTraceError("state authority resolver returned another pack")
+    return turn_pack, turn_library
+
+
 def replay_conversation_trace(
     *,
     pack: DslPack,
@@ -845,15 +862,9 @@ def replay_conversation_trace(
                 raise ConversationTraceError("AST edit output has wrong parent")
             if output.branch_digest != cursor.branch_digest:
                 raise ConversationTraceError("AST edit crossed branches")
-            if authority_resolver is None:
-                turn_pack, turn_library = pack, library
-            else:
-                turn_pack, turn_library = authority_resolver(cursor)
-            assert turn_library is not None
-            if turn_pack.pack_id != trace.pack_id:
-                raise ConversationTraceError(
-                    "state authority resolver returned another pack"
-                )
+            turn_pack, turn_library = _resolve_turn_authority(
+                pack, library, authority_resolver, cursor, trace
+            )
             replayed = turn_library.replay(
                 turn_pack, cursor.state, turn.application
             )
@@ -895,15 +906,9 @@ def replay_conversation_trace(
                     "trace contains a transaction commit turn but no "
                     "transaction_replayer was provided"
                 )
-            if authority_resolver is None:
-                turn_pack, turn_library = pack, library
-            else:
-                turn_pack, turn_library = authority_resolver(cursor)
-            assert turn_library is not None
-            if turn_pack.pack_id != trace.pack_id:
-                raise ConversationTraceError(
-                    "state authority resolver returned another pack"
-                )
+            turn_pack, turn_library = _resolve_turn_authority(
+                pack, library, authority_resolver, cursor, trace
+            )
             recomposed_state = transaction_replayer(
                 turn_pack, turn_library, cursor, turn.transaction
             )

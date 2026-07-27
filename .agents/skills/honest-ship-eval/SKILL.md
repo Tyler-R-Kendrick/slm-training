@@ -97,6 +97,18 @@ README “Model card (summary)” with run id, URI, suite metrics, and claim lev
 (demo / scratch matrix / production HF). Ship claims without a card+summary
 update are incomplete.
 
+## Parameter efficiency (never green a gate by growing the model)
+
+- Record **trainable parameters** beside every quality number. A metric without
+  a size is not comparable to one with a different size.
+- Growing the model to clear a bar is the size-analogue of lowering the bar.
+  Both are forbidden. Document the fail and change levers instead.
+- A candidate larger than its baseline needs `EG_params` LCB ≥ 1
+  (`efficiency_gain(..., cost_key="params")`). Unmeasured growth fails closed —
+  wall-time parity is not a size budget.
+- Readiness claims name the model size they hold at. A number produced by a
+  wider geometry never transfers to the smaller one.
+
 ## Decode invariants (never gate on unconstrained output)
 
 `AGENTS.md` § Non-negotiable architecture invariants is goal law; canonical

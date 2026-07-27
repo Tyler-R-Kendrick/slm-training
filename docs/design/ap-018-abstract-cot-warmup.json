@@ -1,0 +1,38 @@
+{
+  "corpus": {
+    "acceptance_rate": 1.0,
+    "accepted_count": 1682,
+    "binder_bucket_counts": {
+      "0": 9,
+      "1": 691,
+      "2": 596,
+      "3+": 386
+    },
+    "codebook_version": 1,
+    "corpus_fingerprint": "dd3a5bd9b3e8fea1a008654b08058fbfc97309cab640f4e2c76464de7e8164e8",
+    "eligible_count": 1682,
+    "emitted_count": 200,
+    "exclusions": [],
+    "schema": "abstract_cot_warmup/v1"
+  },
+  "date": "2026-07-25",
+  "input_path": "src/slm_training/resources/data/train/openui_verified_v1/records.jsonl",
+  "output_path": "src/slm_training/resources/data/abstract_cot/warmup_v1.jsonl",
+  "run": {
+    "checkpoint": null,
+    "device": "none",
+    "kind": "data_build",
+    "ship_claim": false,
+    "steps": 0
+  },
+  "schema": "ap018_abstract_cot_warmup_report/v1",
+  "version_stamp": {
+    "code_commit": "d7b489930cbd076e484f25f18a9f9fec2ba3bb28",
+    "code_dirty": true,
+    "components": {
+      "data.abstract_cot_warmup": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-25T16:51:05.998665+00:00"
+  }
+}
