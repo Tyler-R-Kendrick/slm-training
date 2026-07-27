@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 from dataclasses import replace
 
+import pytest
+
 from slm_training.dsl.operators import (
     ActionEffectV1,
     AstOperatorV1,
@@ -29,11 +31,14 @@ from slm_training.dsl.operators import (
     extract_replay_preference_rows,
     fork_conversation,
     merge_conversation_branches,
+    preference_pair_from_replay_row,
+    preference_pairs_from_trace,
     redo_conversation,
     serialize_operator_action,
     undo_conversation,
 )
 from slm_training.dsl.pack import get_pack
+from slm_training.harnesses.preference import PreferencePair
 from tests.test_dsl.test_operator_conversation import _append, _fixture, _provenance
 from tests.test_dsl.test_operator_merge import _Fixture as _MergeFixture
 from tests.test_dsl.test_operator_merge import _provenance as _merge_provenance
@@ -655,4 +660,237 @@ def test_pronoun_focus_followup_needs_an_established_focus() -> None:
     )
 
     assert report.rows == ()
+
+
+# --------------------------------------------------------------------------- #
+# Sixth slice (v7): OperatorReplayPreferenceRowV1 -> PreferencePair conversion.
+# --------------------------------------------------------------------------- #
+
+
+def _assert_pair_matches_row(pair, row, trace) -> None:
+    """Shared conversion assertion reused by every relation-type test below."""
+    assert isinstance(pair, PreferencePair)
+    assert pair.prompt == trace.node(row.input_state_id).state.source
+    assert pair.chosen == row.chosen_action
+    assert pair.rejected == row.rejected_action
+    assert pair.design_md is None
+    assert pair.chosen_score == 0.0
+    assert pair.rejected_score == 0.0
+    assert pair.meta == {
+        "schema": "operator_replay_preference_pair/v1",
+        "semantic_relation": row.semantic_relation.value,
+        "correction_reason": row.correction_reason,
+        "input_state_id": row.input_state_id,
+        "chosen_output_state_id": row.chosen_output_state_id,
+        "legal_set_fingerprint": row.legal_set_fingerprint,
+    }
+
+
+def test_preference_pairs_from_trace_converts_edit_then_undo_and_partial_rollback_rows() -> None:
+    pack, library, root = _fixture()
+    edited_once, _application_one = _append(pack, library, root)
+    edited_twice, _application_two = _append(pack, library, edited_once, seed=3)
+    undone_once = undo_conversation(
+        edited_twice, provenance=_provenance(edited_twice.current.state)
+    )
+    undone_twice = undo_conversation(
+        undone_once, provenance=_provenance(undone_once.current.state)
+    )
+
+    report = extract_replay_preference_rows(
+        undone_twice, pack=pack, library=library, provenance_for=_provenance
+    )
+    pairs, skipped = preference_pairs_from_trace(undone_twice, report.rows)
+
+    assert skipped == ()
+    assert len(pairs) == len(report.rows) == 2
+    for pair, row in zip(pairs, report.rows, strict=True):
+        _assert_pair_matches_row(pair, row, undone_twice)
+    relations = {row.semantic_relation for row in report.rows}
+    assert relations == {
+        ReplayPreferenceRelation.EDIT_THEN_UNDO,
+        ReplayPreferenceRelation.PARTIAL_ROLLBACK,
+    }
+
+
+def test_preference_pairs_from_trace_converts_undo_then_redo_row() -> None:
+    pack, library, root = _fixture()
+    edited, _application = _append(pack, library, root)
+    original_child_id = edited.current_state_id
+    undone = undo_conversation(edited, provenance=_provenance(edited.current.state))
+    redone = redo_conversation(
+        undone,
+        target_state_id=original_child_id,
+        provenance=_provenance(undone.current.state),
+    )
+
+    report = extract_replay_preference_rows(
+        redone, pack=pack, library=library, provenance_for=_provenance
+    )
+    pairs, skipped = preference_pairs_from_trace(redone, report.rows)
+
+    assert skipped == ()
+    row = next(
+        r
+        for r in report.rows
+        if r.semantic_relation is ReplayPreferenceRelation.UNDO_THEN_REDO
+    )
+    pair = next(
+        p
+        for p in pairs
+        if p.meta["semantic_relation"] == ReplayPreferenceRelation.UNDO_THEN_REDO.value
+    )
+    _assert_pair_matches_row(pair, row, redone)
+
+
+def test_preference_pairs_from_trace_converts_checkout_another_state_row() -> None:
+    pack, library, root = _fixture()
+    edited, _application = _append(pack, library, root)
+    checked_out = checkout_conversation_state(
+        edited,
+        target_state_id=root.root_state_id,
+        provenance=_provenance(edited.current.state),
+    )
+
+    report = extract_replay_preference_rows(
+        checked_out, pack=pack, library=library, provenance_for=_provenance
+    )
+    pairs, skipped = preference_pairs_from_trace(checked_out, report.rows)
+
+    assert skipped == ()
+    assert len(pairs) == 1
+    assert report.rows[0].semantic_relation is ReplayPreferenceRelation.CHECKOUT_ANOTHER_STATE
+    _assert_pair_matches_row(pairs[0], report.rows[0], checked_out)
+
+
+def test_preference_pairs_from_trace_converts_fork_then_choose_one_branch_row() -> None:
+    pack, library, root = _fixture()
+    edited, _application = _append(pack, library, root)
+    main_branch_state_id = edited.current_state_id
+    forked = fork_conversation(
+        edited,
+        branch_nonce_digest=_sha("fork-branch-preference-pair"),
+        reference_seed=7,
+        provenance=_provenance(edited.current.state),
+    )
+    checked_out = checkout_conversation_state(
+        forked,
+        target_state_id=main_branch_state_id,
+        provenance=_provenance(forked.current.state),
+    )
+
+    report = extract_replay_preference_rows(
+        checked_out, pack=pack, library=library, provenance_for=_provenance
+    )
+    pairs, skipped = preference_pairs_from_trace(checked_out, report.rows)
+
+    assert skipped == ()
+    assert len(pairs) == 1
+    assert (
+        report.rows[0].semantic_relation
+        is ReplayPreferenceRelation.FORK_THEN_CHOOSE_ONE_BRANCH
+    )
+    _assert_pair_matches_row(pairs[0], report.rows[0], checked_out)
+
+
+def test_preference_pairs_from_trace_converts_pronoun_focus_followup_row() -> None:
+    pack, library, trace, table_for, refs_by_index = _pronoun_focus_fixture()
+    edited_once = _append_pronoun(pack, library, trace, refs_by_index[0], table_for=table_for)
+    edited_twice = _append_pronoun(
+        pack, library, edited_once, refs_by_index[0], table_for=table_for
+    )
+
+    report = extract_replay_preference_rows(
+        edited_twice, pack=pack, library=library, provenance_for=_provenance
+    )
+    pairs, skipped = preference_pairs_from_trace(edited_twice, report.rows)
+
+    assert skipped == ()
+    assert len(pairs) == 1
+    assert report.rows[0].semantic_relation is ReplayPreferenceRelation.PRONOUN_FOCUS_FOLLOWUP
+    _assert_pair_matches_row(pairs[0], report.rows[0], edited_twice)
+
+
+def test_preference_pair_from_replay_row_converts_merge_success_row() -> None:
+    fixture = _MergeFixture()
+    left = fixture.branch(
+        name="pref_left", target_name="title", replacement=":hero.heading"
+    )
+    right = fixture.branch(
+        name="pref_right", target_name="body", replacement=":hero.copy"
+    )
+    decision = merge_conversation_branches(
+        pack=fixture.pack,
+        base=fixture.base,
+        left=left,
+        right=right,
+        authority_resolver=fixture.resolve,
+        reference_table_builder=fixture.rebuild_merged_table,
+    )
+    row = extract_merge_preference_row(
+        left=left,
+        right=right,
+        decision=decision,
+        authority_resolver=fixture.resolve,
+        provenance_for=_merge_provenance,
+    )
+    assert row is not None
+    assert row.semantic_relation is ReplayPreferenceRelation.MERGE_SUCCESS
+
+    # A MERGE_SUCCESS row's input state lives on a BranchEditV1 tip, never in
+    # a single ConversationTraceV1's own state_nodes -- there is no `trace`
+    # to resolve it from, so the source is supplied directly, exactly as the
+    # module docstring calls out.
+    pair = preference_pair_from_replay_row(
+        row, input_state_source=left.output_node.state.source
+    )
+
+    assert isinstance(pair, PreferencePair)
+    assert pair.prompt == left.output_node.state.source
+    assert pair.chosen == row.chosen_action
+    assert pair.rejected == row.rejected_action
+    assert pair.meta["semantic_relation"] == ReplayPreferenceRelation.MERGE_SUCCESS.value
+    assert pair.meta["input_state_id"] == row.input_state_id
+    assert pair.meta["chosen_output_state_id"] == row.chosen_output_state_id
+
+
+def test_preference_pairs_from_trace_skips_a_row_whose_input_state_is_foreign_to_this_trace() -> None:
+    """A row grounded in a state this trace does not have is honestly skipped.
+
+    This stands in for the real failure mode this converter must never paper
+    over: an ``OperatorReplayPreferenceRowV1`` whose exact input state is not
+    a member of the ``ConversationTraceV1`` passed to convert it (e.g. a
+    caller accidentally pairing rows extracted from one trace against a
+    different one) cannot be honestly given a prompt -- there is no real
+    state to derive one from -- so it is skipped and recorded, never
+    fabricated a placeholder prompt.
+    """
+    pack, library, root = _fixture()
+    edited, _application = _append(pack, library, root)
+    undone = undo_conversation(edited, provenance=_provenance(edited.current.state))
+    report = extract_replay_preference_rows(
+        undone, pack=pack, library=library, provenance_for=_provenance
+    )
+    row = report.rows[0]
+    foreign_row = replace(row, input_state_id="0" * 64)
+
+    pairs, skipped = preference_pairs_from_trace(undone, (foreign_row,))
+
+    assert pairs == ()
+    assert len(skipped) == 1
+    assert skipped[0]["row"] == foreign_row.to_dict()
+    assert "unknown state ID" in skipped[0]["reason"]
+
+
+def test_preference_pair_from_replay_row_refuses_to_fabricate_a_blank_prompt() -> None:
+    pack, library, root = _fixture()
+    edited, _application = _append(pack, library, root)
+    undone = undo_conversation(edited, provenance=_provenance(edited.current.state))
+    report = extract_replay_preference_rows(
+        undone, pack=pack, library=library, provenance_for=_provenance
+    )
+    row = report.rows[0]
+
+    with pytest.raises(ValueError, match="non-empty"):
+        preference_pair_from_replay_row(row, input_state_source="   ")
 

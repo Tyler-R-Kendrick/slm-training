@@ -309,6 +309,39 @@ DSH5-10 SFT/preference-training and four-baseline comparison scope, or the
 next queued `AP-007+` campaign arm) — the smoke-loop's role as a harness
 liveness check is now well covered by the batches in this file.
 
+## Joint seed x steps sweep (2026-07-27, scheduled autotrain-loop session)
+
+Acting on the note above: 6 more rows, independently run for real against
+`main` HEAD `f3adde1b` (DSH5-10 sixth slice, PR #1131, already merged),
+varying `--seed` (1, 2, 3) and `--steps` (4, 16) jointly rather than one
+knob at a time. Same fixture/model/recipe as every prior batch. Full
+per-run numbers, the combined seed x steps grid, and the honest
+result/scope notes: see
+[joint seed x steps sweep](autotrain-wf-smoke-20260727-joint-seedvar-measured-results.md).
+
+| run_id | steps | seed | stopped_on | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260727_joint_seed1_steps4` | 4 | 1 | steps | 52.60234069824219 | 3.63 |
+| `autotrain_wf_smoke_20260727_joint_seed2_steps4` | 4 | 2 | steps | 49.65409851074219 | 3.94 |
+| `autotrain_wf_smoke_20260727_joint_seed3_steps4` | 4 | 3 | steps | 64.18412017822266 | 3.57 |
+| `autotrain_wf_smoke_20260727_joint_seed1_steps16` | 16 | 1 | steps | 19.269824981689453 | 4.76 |
+| `autotrain_wf_smoke_20260727_joint_seed2_steps16` | 16 | 2 | steps | 16.698604583740234 | 5.33 |
+| `autotrain_wf_smoke_20260727_joint_seed3_steps16` | 16 | 3 | steps | 22.079015731811523 | 5.21 |
+
+Total independently verified rows across this file: **25** (all prior
+batches plus this joint sweep).
+
+**Next steps note:** single-variable and now joint seed x steps variance are
+both covered; the smoke-loop's role as a harness liveness check is
+thoroughly exhausted at this fixture size. The next scheduled iteration
+should move off this fixed fixture and pick up one of the repo's actually-
+open threads — for DSH5-10 specifically, the real next step is locating and
+wiring the `TypedOperatorPolicyScorer`
+(`src/slm_training/harnesses/experiments/typed_operator_policy.py:316`) the
+issue's own text names as the intended consumer, since PR #1131 found the
+existing `PreferencePair` composite-reward shape is a structural mismatch
+for exact-state action-token rows — or the next queued `AP-007+` campaign
+arm.
 ## Batch-size variation (2026-07-27, scheduled autotrain-loop session)
 
 Acting on the note above: this scheduled session's iteration varies
@@ -350,8 +383,8 @@ seed- and step-variation batches above. Still `fixture_or_scratch`: 1 run per
 batch size (n=1), a 101-record from-scratch fixture, no convergence or ship
 claim.
 
-Total independently verified rows across this file: **22** (all five batches
-plus the seed-variation follow-up).
+Total independently verified rows across this file: **28** (all prior batches
+plus the joint seed x steps sweep and this batch-size variation).
 
 **Next steps note (2026-07-27):** step-count, seed, and batch-size are now
 all covered as distinct single-variable checks against this fixture — the

@@ -1,0 +1,96 @@
+{
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "seed": 42,
+  "arms": {
+    "s8_t12": {
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "placeholder_fidelity": 0.0,
+      "latency_ms_p50": 12007.16
+    },
+    "s48_t12": {
+      "parse_rate": 0.3333333333333333,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.30233333333333334,
+      "decode_timeout_count": 2,
+      "empty_prediction_count": 2,
+      "placeholder_fidelity": 0.3333333333333333,
+      "latency_ms_p50": 12000.44
+    },
+    "s48_t30": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.7222222222222222,
+      "latency_ms_p50": 19192.26
+    },
+    "asap_s48_t30": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.7222222222222222,
+      "latency_ms_p50": 10306.88
+    },
+    "s36_t30": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.7222222222222222,
+      "latency_ms_p50": 12998.83,
+      "last_loss": 12.026487350463867,
+      "steps": 36,
+      "stopped_on": "steps"
+    },
+    "s36_asap_t30": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.7222222222222222,
+      "latency_ms_p50": 8994.71
+    },
+    "continue_plus24_t30": {
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "placeholder_fidelity": 0.0,
+      "latency_ms_p50": 30001.84
+    }
+  },
+  "champion": "s36_asap_t30",
+  "champion_metrics": {
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.3333333333333333,
+    "reward_score": 0.8436666666666667,
+    "decode_timeout_count": 0,
+    "empty_prediction_count": 0,
+    "placeholder_fidelity": 0.7222222222222222,
+    "latency_ms_p50": 8994.71
+  },
+  "recommended_recipe": {
+    "steps": 36,
+    "seed": 42,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true,
+    "eval_suite": "smoke",
+    "eval_limit": 3
+  },
+  "captured_at": "2026-07-27T13:47:35.784067+00:00"
+}

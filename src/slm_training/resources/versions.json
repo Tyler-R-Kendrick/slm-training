@@ -649,6 +649,11 @@
         {
           "version": "v16",
           "date": "2026-07-27",
+          "note": "no-bump: SLM-418 (DSH5-10) sixth slice re-exports preference_pair_from_replay_row and preference_pairs_from_trace from operators/__init__.py (dsl.operators.replay_preference bumped to v7); no change to contracts.py itself"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-27",
           "note": "no-bump: SLM-418 (DSH5-10) fourth slice re-exports extract_merge_preference_row from operators/__init__.py (dsl.operators.replay_preference bumped to v5); no change to contracts.py itself"
         },
         {
@@ -1091,13 +1096,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) sixth slice: add preference_pair_from_replay_row and preference_pairs_from_trace, converting an already-extracted OperatorReplayPreferenceRowV1 into this repo's existing PreferencePair shape (slm_training.harnesses.preference, the prompt/chosen/rejected schema slm preference build-pairs/train already reads and writes). prompt is the row's exact pack-authorized input-state OpenUI source (the only real context available -- ConversationTraceV1 turns carry no natural-language instruction); chosen/rejected are the row's own recorded action tokens verbatim, never a replayed alternate OpenUI rendering for the rejected side and never scored via composite_reward (which would silently manufacture a meaningless number for a non-program token). A row whose input_state_id is not a member of the given trace (e.g. a MERGE_SUCCESS row, grounded on a BranchEditV1 tip rather than any one trace's state_nodes) is skipped and recorded, never fabricated a prompt. Data-conversion wiring only -- no model, checkpoint, training run, four-baseline comparison, or held-out measurement is added; the DSH3-selected policy/control heads and ObjectiveView materializers remain untouched"
+        },
         {
           "version": "v6",
           "date": "2026-07-27",

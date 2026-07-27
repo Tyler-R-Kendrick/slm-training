@@ -165,6 +165,8 @@ from slm_training.dsl.operators.replay_preference import (
     ReplayPreferenceRelation,
     extract_merge_preference_row,
     extract_replay_preference_rows,
+    preference_pair_from_replay_row,
+    preference_pairs_from_trace,
 )
 from slm_training.dsl.operators.topology import (
     CONTRACT_SUBTREE,
@@ -457,6 +459,8 @@ __all__ = [
     "prepare_operator_action",
     "prepare_operator_transaction",
     "preference_cost",
+    "preference_pair_from_replay_row",
+    "preference_pairs_from_trace",
     "redo_conversation",
     "replay_collapsed_instruction",
     "replay_conversation_trace",
