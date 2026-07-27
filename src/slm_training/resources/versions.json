@@ -1933,7 +1933,7 @@
       ]
     },
     "harness.distill": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/__init__.py",
@@ -1957,9 +1957,19 @@
         "docs/design/dsh4-01-operator-decision-state-export-20260725.json",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.md",
         "docs/design/dsh4-02-operator-teacher-ceiling-fixture-20260725.json",
-        "docs/design/ap020-on-policy-abstract-self-distillation.md"
+        "docs/design/ap020-on-policy-abstract-self-distillation.md",
+        "src/slm_training/harnesses/distill/prompted_teacher.py",
+        "scripts/run_var3_01_real_teacher_ceiling.py",
+        "tests/test_harnesses/distill/test_prompted_teacher.py",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.md",
+        "docs/design/var3-01-real-teacher-ceiling-20260726.json"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-26",
+          "note": "SLM-429 (VAR3-01): wire PromptedTeacherV1 -- a real prompted LLM teacher (Qwen/Qwen3-4B-Instruct-2507 via OpenAI-compatible HF router, temperature=0, content-addressed response cache) -- behind the existing OperatorTeacherAdapter Protocol with NO harness change; anti-leak surface identical to the synthetic stand-in (operator_id/arity/proof_checks/semantic_id-derived identity only; never opaque ids, presentation order as authority, current_scores, or accepted ids); re-ran the unchanged DSH4-02 compare_operator_teacher_ceiling (all baselines, oracle, 8 DecisionFamily slices, 4 perturbation kinds, paired bootstrap) over the identical GOLD_WEIGHTS fixture pools, SyntheticDescriptorTeacherV1 kept as control; iter doc docs/design/var3-01-real-teacher-ceiling-20260726.{md,json}"
+        },
         {
           "version": "v7",
           "date": "2026-07-26",
@@ -1998,7 +2008,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v133",
+      "version": "v134",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2007,6 +2017,11 @@
         "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
       ],
       "history": [
+        {
+          "version": "v134",
+          "date": "2026-07-26",
+          "note": "SLM-429 (VAR3-01): wire PromptedTeacherV1 -- a real prompted LLM teacher (Qwen/Qwen3-4B-Instruct-2507 via OpenAI-compatible HF router, temperature=0, content-addressed response cache) -- behind the existing OperatorTeacherAdapter Protocol with NO harness change; anti-leak surface identical to the synthetic stand-in (operator_id/arity/proof_checks/semantic_id-derived identity only; never opaque ids, presentation order as authority, current_scores, or accepted ids); re-ran the unchanged DSH4-02 compare_operator_teacher_ceiling (all baselines, oracle, 8 DecisionFamily slices, 4 perturbation kinds, paired bootstrap) over the identical GOLD_WEIGHTS fixture pools, SyntheticDescriptorTeacherV1 kept as control; iter doc docs/design/var3-01-real-teacher-ceiling-20260726.{md,json}"
+        },
         {
           "version": "v133",
           "date": "2026-07-26",
