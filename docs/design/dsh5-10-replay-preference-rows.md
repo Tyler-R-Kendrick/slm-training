@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (third increment).
+**Status:** partial slice, in progress (fourth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -12,6 +12,12 @@ row extraction from seven verified conversation patterns, (3) matched
 SFT/preference training against four context-view baselines, and (4)
 held-out measurement of action/operator/argument/reference/branch accuracy,
 calibration, and CAP0/CAP1/CAP2 retention.
+
+This slice adds the sixth pattern, **merge-success**, plus an explicit,
+tested disposition for **merge-conflict** (the pattern's other named half):
+conflict is honestly *not* modeled as a preference row (see "Fourth slice
+(v5)" below for why). Only **pronoun/focus follow-ups** remain fully
+unattempted after this PR.
 
 ## What this PR delivers
 
@@ -93,9 +99,16 @@ calibration, and CAP0/CAP1/CAP2 retention.
 
 Per the issue's own scope, not attempted here:
 
-* **Two of seven patterns**: merge success/conflict and pronoun/focus
-  follow-ups. Merge-conflict detection in particular lives in `merge.py`,
-  not `conversation.py`/`collapse.py`, and needs its own extraction path.
+* **Pronoun/focus follow-ups** -- the one remaining named pattern. No
+  representation for ambiguous natural-language reference resolution (e.g.
+  "it"/"that one") exists anywhere in `ConversationTraceV1`,
+  `ReferenceTableV1`, or the legal-set machinery this module builds on; this
+  is new machinery, not an extraction path over an existing primitive, and
+  is left for follow-on work.
+* **Merge conflict as a preference row.** Deliberately not attempted --
+  see "Fourth slice (v5)" for the honesty argument. This is a considered
+  scope decision, not an oversight: modeling it would require inventing a
+  "what the user did instead" action the trace never recorded.
 * **SFT/preference training** against the DSH3-selected policy/control
   heads (`TypedOperatorPolicyScorer`,
   `src/slm_training/harnesses/experiments/typed_operator_policy.py:316`) or
@@ -116,11 +129,11 @@ evidence for the row-extraction primitive only.
 Unlike SLM-336 (AP-035) or SLM-419 (DSH5-11), SLM-418's own prerequisites
 (DSH3 policy/control heads, the conversation/collapse/legal-set substrate)
 are already merged and available -- there is no unmet upstream gate here.
-The remaining scope is genuinely large (two more patterns, plus training +
-held-out evaluation across a five-baseline, multi-metric matrix) and is left
-for follow-on work rather than rushed to a false "Done." The issue should
-stay open against the patterns and training/evaluation work enumerated
-above.
+The remaining scope is genuinely large (a new pronoun/focus representation,
+plus training + held-out evaluation across a five-baseline, multi-metric
+matrix) and is left for follow-on work rather than rushed to a false "Done."
+The issue should stay open against the pattern and training/evaluation work
+enumerated above.
 
 ## Review fixes (v2)
 
@@ -170,12 +183,74 @@ above.
   snapshot is untouched, staying immutable point-in-time evidence from when
   SLM-420 ran (before this and the prior SLM-418 slice landed).
 
+## Fourth slice (v5)
+
+* Added `extract_merge_preference_row`, a **standalone extraction function**
+  -- not another branch inside `extract_replay_preference_rows`'s turn-scan
+  loop -- because a merge attempt is never a recorded `ConversationTraceV1`
+  turn. `merge_conversation_branches` (`merge.py`) operates directly on a
+  shared `base` `ConversationStateNodeV1` and two independently verified
+  `BranchEditV1` edges, and a successful merge starts a **fresh**
+  continuation trace (`BranchMergeContinuationV1`, a new trace root) rather
+  than appending to either input trace. This confirms the first slice's own
+  prediction that merge-conflict detection "needs its own extraction path."
+* `ReplayPreferenceRelation.MERGE_SUCCESS` (new). One row per successful
+  merge attempt, grounded at the **left branch tip**
+  (`left.output_node.state_id`): the legal set there is enumerated with
+  `merge:<sorted-tip-pair>` (a new, order-independent canonical action
+  name -- sorted so it serializes identically regardless of which edge is
+  passed as `left` vs `right`, matching `merge_conversation_branches`'s own
+  order-invariant `decision_id`) and `checkout:<right tip>` (plus `undo`,
+  when a parent exists) offered alongside it, via the same
+  `ordinary_nonoperator_actions` mechanism every other pattern in this
+  module uses. `chosen_output_state_id` is the real
+  `decision.continuation.merged_node.state_id` -- re-running
+  `merge_conversation_branches` on the same `base`/`left`/`right`
+  independently reproduces the identical merged state, satisfying the
+  issue's replay-independence acceptance criterion exactly like every
+  other relation.
+* **Merge conflict is deliberately *not* modeled as a row.** The issue's
+  own acceptance criterion requires every row to independently replay to
+  its recorded `chosen_output_state_id`; a conflicting merge produces no
+  successor state at all, so a row would have to invent a "what the user
+  did instead" action the trace never recorded -- violating the issue's
+  own adversarial control that chosen/rejected rows share exact, evidenced
+  context. The issue's instruction to "mark rejected candidates as typed
+  illegal/conflict controls outside the ranking denominator" is honored by
+  **construction** instead: `extract_merge_preference_row` only ever adds
+  `merge:<pair>` as a legal candidate action after
+  `merge_conversation_branches` has already confirmed `decision.succeeded`,
+  so a conflicting merge can never leak into any ranking denominator in the
+  first place. `test_merge_conflict_never_yields_a_preference_row` proves
+  this directly: a same-target-field conflict (`SAME_NODE_INCOMPATIBLE_
+  EDIT`) yields `None`, not a fabricated row.
+* `authority_resolver` (the same `BranchAuthorityResolver` type
+  `merge_conversation_branches` itself takes) is resolved from
+  `left.input_node` -- the same node the merge module's own internals
+  resolve authority from -- since a `BranchEditV1` is one verified single-
+  application edge and its input-state authority governs the actions legal
+  at its output tip too.
+* `dsl.operators.replay_preference` bumped v4 -> v5 in
+  `src/slm_training/resources/versions.json`; `dsl.operators.contracts`
+  gets a `no-bump:` history entry for the new `extract_merge_preference_row`
+  re-export from `operators/__init__.py`.
+* Corrected the hardcoded SLM-418 evidence string in
+  `src/slm_training/evals/advanced_operator_disposition.py` (previously "5
+  of 7"; now "6 of 7", with the remaining-gap claim narrowed from "5 of 7
+  patterns not attempted" to "1 of 7 (pronoun/focus)" plus an explicit note
+  that merge conflict is an honest non-row scope decision) via a
+  `no-bump:` history note on `evals.advanced_operator_disposition` -- no
+  disposition logic or schema changed, and the already-published
+  `docs/design/dsh5-12-advanced-operator-disposition-20260727-local/`
+  snapshot is untouched, staying immutable point-in-time evidence from
+  before this slice landed.
+
 ## Reproducibility
 
 ```bash
-pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_conversation.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
+NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_dsl/test_operator_merge.py tests/test_dsl/test_operator_conversation.py tests/test_evals/test_advanced_operator_disposition.py tests/test_scripts/test_validate_advanced_operator_disposition.py
 ```
 
 Result (this PR, sandboxed run with `NODE_OPTIONS` cleared -- the ambient
 `--import tsx` flag is rejected by this Node 22 build, unrelated to this
-change): `40 passed`.
+change): `57 passed`.
