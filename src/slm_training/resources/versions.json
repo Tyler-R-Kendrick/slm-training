@@ -8028,7 +8028,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -8038,9 +8038,16 @@
         "src/slm_training/data/mixture.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
-        "src/slm_training/resources/frontier/"
+        "src/slm_training/resources/frontier/",
+        "docs/design/dsh1-08-harness-qa-completion-20260725.md",
+        "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-25",
+          "note": "SLM-360 (DSH1-08): add capped/diagnostic-marked IDENTITY rows, verified COMPLETE_SUFFIX accepted-completion sets scored via the existing accepted_outputs membership path, atomic-form reuse coverage checking, and anti-identity hard negatives; peer_suffixes must round-trip byte-exact (not merely parse) so an unresolved-reference silently-pruned peer is never accepted"
+        },
         {
           "version": "v22",
           "date": "2026-07-26",
