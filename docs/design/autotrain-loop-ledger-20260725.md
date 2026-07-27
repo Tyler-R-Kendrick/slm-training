@@ -171,3 +171,48 @@ row does until someone actually runs them. Whichever of these branches
 merges first should win the number range; the other(s) should renumber
 against the new `main` tip rather than silently overwrite this batch's
 results.
+
+## Verified batch #3 (2026-07-27, scheduled autotrain-loop session)
+
+5 more rows, independently run for real against `main` HEAD `e9bab2b`
+(batch #2, PR #1110, already merged), same deterministic recipe as the two
+batches above:
+
+```bash
+python -m scripts.train_model \
+  --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+  --model twotower --context-backend scratch --steps 8 \
+  --run-id <run_id> --no-sync-checkpoints --device cpu --seed 0
+```
+
+Checked (not committed — `outputs/` is gitignored) at `outputs/runs/<run_id>/`.
+`last_loss` is again identical to every prior verified row — same committed
+fixture, seed 0, 8 steps, fully deterministic. Per-iteration notes:
+[iter1018](autotrain-wf-smoke-20260727-iter1018-measured-results.md) …
+[iter1022](autotrain-wf-smoke-20260727-iter1022-measured-results.md).
+
+| run_id | ok | steps | stopped_on | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260727_iter1018` | True | 8 | steps | 32.610084533691406 | 2.73 |
+| `autotrain_wf_smoke_20260727_iter1019` | True | 8 | steps | 32.610084533691406 | 3.49 |
+| `autotrain_wf_smoke_20260727_iter1020` | True | 8 | steps | 32.610084533691406 | 2.18 |
+| `autotrain_wf_smoke_20260727_iter1021` | True | 8 | steps | 32.610084533691406 | 1.94 |
+| `autotrain_wf_smoke_20260727_iter1022` | True | 8 | steps | 32.610084533691406 | 2.10 |
+
+Total independently verified rows in this file: **16** (both prior batches
+plus this one).
+
+**Diminishing-returns note:** this fixed recipe (same fixture, same seed,
+same step count) has now independently reproduced the identical
+`last_loss=32.610084533691406` sixteen times running. That is exactly what
+determinism predicts and is worth confirming once, but a seventeenth
+identical run adds no new evidence about the harness, the model, or the
+data — it only re-confirms determinism holds. Repeating it further is
+`fixture_or_scratch` busywork, not research. The next scheduled iteration of
+this loop should vary something real (a different seed, a larger
+`--steps`, a different `--train-dir`/model, or — better — pick up one of
+the repo's actually-open threads, e.g. the two remaining DSH5-10 replay
+patterns in
+[`dsh5-10-replay-preference-rows.md`](dsh5-10-replay-preference-rows.md) or
+the next queued `AP-007+` campaign arm) rather than appending another
+identical row to this table.
