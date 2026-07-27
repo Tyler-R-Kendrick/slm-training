@@ -1,0 +1,144 @@
+{
+  "lever": "grammar_ltr_max_tokens_64_multiseed_confirm",
+  "hypothesis": "ltr_max=64 latency win on seed47 holds multi-seed without meanful regression vs default decode.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "rows": [
+    {
+      "seed": 42,
+      "default": {
+        "parse_rate": 0.6666666666666666,
+        "meaningful_program_rate": 0.3333333333333333,
+        "reward_score": 0.6246666666666667,
+        "empty_prediction_count": 1,
+        "decode_timeout_count": 1,
+        "latency_ms_p50": 26873.82,
+        "latency_ms_p95": 30002.88,
+        "max_latency_ms": 30002.88,
+        "sum_latency_ms": 74086.53,
+        "decode_outcome_counts": {
+          "model_valid": 1,
+          "model_invalid": 1,
+          "model_abstain": 0,
+          "runtime_timeout": 1,
+          "fallback_output": 0,
+          "harness_error": 0
+        }
+      },
+      "ltr64": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "reward_score": 0.9369999999999999,
+        "empty_prediction_count": 0,
+        "decode_timeout_count": 0,
+        "latency_ms_p50": 24676.03,
+        "latency_ms_p95": 29670.5,
+        "max_latency_ms": 29670.5,
+        "sum_latency_ms": 78702.15,
+        "decode_outcome_counts": {
+          "model_valid": 1,
+          "model_invalid": 2,
+          "model_abstain": 0,
+          "runtime_timeout": 0,
+          "fallback_output": 0,
+          "harness_error": 0
+        }
+      }
+    },
+    {
+      "seed": 47,
+      "default": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.6666666666666666,
+        "reward_score": 0.8523333333333333,
+        "empty_prediction_count": 0,
+        "decode_timeout_count": 0,
+        "latency_ms_p50": 30011.11,
+        "latency_ms_p95": 277005.45,
+        "max_latency_ms": 277005.45,
+        "sum_latency_ms": 337025.72000000003,
+        "decode_outcome_counts": {
+          "model_valid": 1,
+          "model_invalid": 0,
+          "model_abstain": 0,
+          "runtime_timeout": 0,
+          "fallback_output": 2,
+          "harness_error": 0
+        }
+      },
+      "ltr64": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "reward_score": 0.7653333333333334,
+        "empty_prediction_count": 0,
+        "decode_timeout_count": 0,
+        "latency_ms_p50": 30010.91,
+        "latency_ms_p95": 30017.14,
+        "max_latency_ms": 30017.14,
+        "sum_latency_ms": 90030.31,
+        "decode_outcome_counts": {
+          "model_valid": 0,
+          "model_invalid": 0,
+          "model_abstain": 0,
+          "runtime_timeout": 0,
+          "fallback_output": 3,
+          "harness_error": 0
+        }
+      }
+    },
+    {
+      "seed": 51,
+      "default": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "reward_score": 0.5379999999999999,
+        "empty_prediction_count": 0,
+        "decode_timeout_count": 0,
+        "latency_ms_p50": 30117.6,
+        "latency_ms_p95": 190463.96,
+        "max_latency_ms": 190463.96,
+        "sum_latency_ms": 250605.22,
+        "decode_outcome_counts": {
+          "model_valid": 0,
+          "model_invalid": 1,
+          "model_abstain": 0,
+          "runtime_timeout": 0,
+          "fallback_output": 2,
+          "harness_error": 0
+        }
+      },
+      "ltr64": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "reward_score": 0.463,
+        "empty_prediction_count": 0,
+        "decode_timeout_count": 0,
+        "latency_ms_p50": 30006.75,
+        "latency_ms_p95": 30006.92,
+        "max_latency_ms": 30006.92,
+        "sum_latency_ms": 84332.01999999999,
+        "decode_outcome_counts": {
+          "model_valid": 0,
+          "model_invalid": 1,
+          "model_abstain": 0,
+          "runtime_timeout": 0,
+          "fallback_output": 2,
+          "harness_error": 0
+        }
+      }
+    }
+  ],
+  "summary": {
+    "mean_meaningful_default": 0.4444444444444444,
+    "mean_meaningful_ltr64": 0.3333333333333333,
+    "mean_parse_default": 0.8888888888888888,
+    "mean_parse_ltr64": 1.0,
+    "mean_sum_latency_default": 220572.49,
+    "mean_sum_latency_ltr64": 84354.82666666666,
+    "mean_max_latency_default": 165824.09666666665,
+    "mean_max_latency_ltr64": 29898.186666666665
+  },
+  "decision": "partial_accept",
+  "decision_reason": "latency multi-seed better but meanful 0.444\u21920.333",
+  "captured_at": "2026-07-27T17:16:21.617025+00:00"
+}
