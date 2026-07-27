@@ -219,3 +219,56 @@ patterns in
 [`dsh5-10-replay-preference-rows.md`](dsh5-10-replay-preference-rows.md) or
 the next queued `AP-007+` campaign arm) rather than appending another
 identical row to this table.
+
+## Verified batch #4 (2026-07-27, scheduled autotrain-loop session)
+
+Followed the diminishing-returns note above: instead of another identical
+`--steps 8 --seed 0` rerun, this batch varies `--steps` (4, 16, 32) at
+`--seed 0`, independently run for real against `main` HEAD `226df88`
+(batch #3, PR #1114, already merged), same fixture/model as every prior
+batch:
+
+```bash
+python -m scripts.train_model \
+  --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+  --model twotower --context-backend scratch --steps <N> \
+  --run-id <run_id> --no-sync-checkpoints --device cpu --seed 0
+```
+
+Environment: fresh `.venv-smoke` (Python 3.12.3, `torch==2.5.1+cu124`,
+`pip install -e ".[torch]"`), created in this scheduled session — not
+committed (`.venv-smoke/` is gitignored). Checked (not committed —
+`outputs/` is gitignored) at `outputs/runs/<run_id>/`. Unlike every prior
+batch, `last_loss` is **not** identical across rows here by design — this is
+new information about how loss on this fixture responds to step count, not
+a redundant determinism check. Per-iteration notes:
+[steps4](autotrain-wf-smoke-20260727-steps4-seed0-measured-results.md),
+[steps16](autotrain-wf-smoke-20260727-steps16-seed0-measured-results.md),
+[steps32](autotrain-wf-smoke-20260727-steps32-seed0-measured-results.md).
+
+| run_id | ok | steps | stopped_on | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260727_steps4_seed0` | True | 4 | steps | 56.894351959228516 | 8.93 |
+| `autotrain_wf_smoke_20260727_steps16_seed0` | True | 16 | steps | 15.098441123962402 | 7.03 |
+| `autotrain_wf_smoke_20260727_steps32_seed0` | True | 32 | steps | 8.38817024230957 | 8.79 |
+
+Loss falls monotonically with more steps on this fixture (56.9 at 4 steps →
+32.6 at the already-verified 8-step baseline → 15.1 at 16 → 8.4 at 32),
+which is the expected direction and confirms `--steps` reaches real
+optimization, not a silently no-op flag — a genuinely different check than
+the seed-variation batch (#1116, still open) confirms for `--seed`. This is
+still `fixture_or_scratch`: 1 run per step count (n=1), a 101-record
+fixture, and a from-scratch `twotower` context backend, so no convergence,
+generalization, or ship claim is made.
+
+Total independently verified rows across this file: **19** (all four
+batches together).
+
+**Next steps note:** step-count and seed variation are both now covered as
+distinct single-variable checks. The next scheduled iteration should either
+extend one of these to a real sweep (multiple seeds per step count, or vice
+versa, to characterize joint variance) or, better, move off this fixed
+fixture entirely and pick up one of the repo's actually-open threads (the
+DSH5-10 SFT/preference-training and four-baseline comparison scope, or the
+next queued `AP-007+` campaign arm) — the smoke-loop's role as a harness
+liveness check is now well covered by the batches in this file.
