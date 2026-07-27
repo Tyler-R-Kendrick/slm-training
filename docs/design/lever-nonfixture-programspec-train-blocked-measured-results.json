@@ -1,0 +1,43 @@
+{
+  "lever": "non_fixture_programspec_language_contract_train",
+  "hypothesis": "Strict programspec / language_contract corpora load under train_model symbol-only contract and lift meaningful_program vs exposure12/wf_smoke on smoke n=3.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "builds": [
+    {
+      "version": "lever_programspec_v1",
+      "source": "programspec",
+      "programspec_count": 80,
+      "programspec_seed": 47,
+      "max_records_per_parent": 12,
+      "record_count": 1086,
+      "rejected_total": 1859,
+      "train_load": "FAIL",
+      "error": "symbol-only: non-canonical Harness serialization (record '*_scope')",
+      "synthesis_warnings": [
+        "high_rejection_rate",
+        "placeholder_contract_violations",
+        "sanitize_fallbacks"
+      ]
+    },
+    {
+      "version": "lever_programspec_doc_v1",
+      "source": "programspec",
+      "target_kinds": "document",
+      "record_count": 587,
+      "train_load": "FAIL",
+      "error": "still contains *_scope records; symbol-only non-canonical Harness serialization"
+    },
+    {
+      "version": "lever_langcontract_v1",
+      "source": "language_contract",
+      "record_count": 75,
+      "train_load": "FAIL",
+      "error": "role-safe: placeholder ':slot_0' in non-content property TabItem.value"
+    }
+  ],
+  "decision": "blocked",
+  "decision_reason": "Non-fixture builds complete under data gates but fail train_model load contracts (symbol-only / role-safe). Cannot measure model metrics until synthesis/serialization is fixed or train load path is reconciled.",
+  "next_lever": "improve-openui-harnesses / synthesis-feedback: make programspec outputs train-loadable (canonical Harness serialization; no illegal scope targets in document-only builds; role-safe placeholders), then re-run corpus A/B vs exposure12.",
+  "captured_at": "2026-07-27T17:20:22.706621+00:00"
+}
