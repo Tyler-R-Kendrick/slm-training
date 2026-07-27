@@ -2456,15 +2456,23 @@
       ]
     },
     "harness.experiments": {
-      "version": "v136",
+      "version": "v137",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
         "src/slm_training/harnesses/experiments/",
         "tests/test_harnesses/experiments/test_slm298_capacity_context_curriculum.py",
-        "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py"
+        "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py",
+        "scripts/resume_climb.py",
+        "scripts/run_scaling_ladder.py",
+        "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v137",
+          "date": "2026-07-27",
+          "note": "SLM-430: wire the two real promotion CLI entrypoints (scripts/resume_climb.py, scripts/run_scaling_ladder.py) with a new --verify-locked-manifest-digest flag (default off, unchanged self-consistency-only behavior). When passed, locked_eval_manifest.canonical_manifest_path() is threaded through as locked_manifest_path into load_campaign_governance/evaluate_promotion/register_promoted_checkpoint, so a real climb/ladder promotion run can opt into SLM-306's on-disk digest re-derivation instead of that check being unreachable from any real entrypoint. Follow-up to SLM-306 (docs/design/slm306-locked-manifest-digest-verification.md), which deliberately left this wiring for a later, narrower change."
+        },
         {
           "version": "v136",
           "date": "2026-07-27",
@@ -7593,13 +7601,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-07-27",
+          "note": "SLM-430: thread ModelBuildConfig.verify_locked_manifest_digest (new default-off field) through train()'s register_promoted path -- when set, load_campaign_governance/evaluate_promotion/register_promoted_checkpoint receive locked_eval_manifest.canonical_manifest_path() as locked_manifest_path instead of None, so a real promoted-checkpoint run can opt into re-deriving locked_eval_manifest_sha256 from real manifest bytes (SLM-306's opt-in check) instead of only trusting the campaign's self-reported digest string. Default behavior (no disk check) is unchanged."
+        },
         {
           "version": "v25",
           "date": "2026-07-25",
@@ -9096,7 +9109,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v259",
+      "version": "v260",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9139,6 +9152,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v260",
+          "date": "2026-07-27",
+          "note": "SLM-430: ModelBuildConfig gains verify_locked_manifest_digest (new default-off bool field, src/slm_training/harnesses/model_build/config.py). No model or training-loop behavior changes when unset; when set, train()'s register_promoted path supplies locked_eval_manifest.canonical_manifest_path() as locked_manifest_path to the promotion-governance calls (see harness.model_build.train v26 and harness.experiments)."
+        },
         {
           "version": "v259",
           "date": "2026-07-25",

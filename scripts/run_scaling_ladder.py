@@ -149,6 +149,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--campaign-result", type=Path)
     parser.add_argument("--campaign-store-root", type=Path)
     parser.add_argument("--campaign-artifact-root", type=Path)
+    parser.add_argument(
+        "--verify-locked-manifest-digest",
+        action="store_true",
+        help=(
+            "Re-derive locked_eval_manifest_sha256 from the committed "
+            "manifest's real bytes (SLM-306/SLM-430) instead of trusting the "
+            "campaign's self-reported digest alone."
+        ),
+    )
     args = parser.parse_args(argv)
 
     if args.family == "discrete-bottleneck":
@@ -281,6 +290,11 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     campaign_governance = None
+    locked_manifest_path = None
+    if args.verify_locked_manifest_digest:
+        from slm_training.data.locked_eval_manifest import canonical_manifest_path
+
+        locked_manifest_path = canonical_manifest_path()
     campaign_paths = (
         args.campaign_manifest,
         args.campaign_result,
@@ -298,6 +312,7 @@ def main(argv: list[str] | None = None) -> int:
             result_path=args.campaign_result,
             store_root=args.campaign_store_root,
             artifact_root=args.campaign_artifact_root,
+            locked_manifest_path=locked_manifest_path,
         )
 
     widths = tuple(int(x) for x in args.widths.split(",") if x.strip())
@@ -470,6 +485,7 @@ def main(argv: list[str] | None = None) -> int:
             "campaign_result": campaign_result,
             "campaign_store": campaign_store,
             "artifact_root": artifact_root,
+            "locked_manifest_path": locked_manifest_path,
         }
     promotion = evaluate_promotion(
         integrity=integrity,

@@ -156,6 +156,13 @@ class ModelBuildConfig:
     campaign_result: Path | None = None
     campaign_store_root: Path | None = None
     campaign_artifact_root: Path | None = None
+    # SLM-430: opt-in re-derivation of locked_eval_manifest_sha256 from the
+    # committed manifest's real bytes (data.locked_eval_manifest) instead of
+    # trusting the campaign's self-reported digest string alone. Off by
+    # default so existing self-consistency-only promotion runs are unchanged;
+    # set True to require locked_eval_manifest.canonical_manifest_path() to be
+    # present on disk and match before register_promoted can succeed.
+    verify_locked_manifest_digest: bool = False
     # Stub-only
     noise_rate: float = 0.0
     # Eval-driven training: run suite eval every N steps (0 disables).

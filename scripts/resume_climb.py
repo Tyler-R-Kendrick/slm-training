@@ -26,6 +26,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--campaign-store-root", type=Path)
     parser.add_argument("--campaign-artifact-root", type=Path)
     parser.add_argument(
+        "--verify-locked-manifest-digest",
+        action="store_true",
+        help=(
+            "Re-derive locked_eval_manifest_sha256 from the committed "
+            "manifest's real bytes (SLM-306/SLM-430) instead of trusting the "
+            "campaign's self-reported digest alone."
+        ),
+    )
+    parser.add_argument(
         "--skip-rl",
         action="store_true",
         help="Harvest traces only (ablation arm: no update).",
@@ -51,11 +60,18 @@ def main(argv: list[str] | None = None) -> int:
         load_campaign_governance,
     )
 
+    locked_manifest_path = None
+    if args.verify_locked_manifest_digest:
+        from slm_training.data.locked_eval_manifest import canonical_manifest_path
+
+        locked_manifest_path = canonical_manifest_path()
+
     manifest, result, campaign_store, artifact_root = load_campaign_governance(
         manifest_path=args.campaign_manifest,
         result_path=args.campaign_result,
         store_root=args.campaign_store_root,
         artifact_root=args.campaign_artifact_root,
+        locked_manifest_path=locked_manifest_path,
     )
     readiness = None
     if not args.skip_rl:
@@ -156,6 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         campaign_result=result,
         campaign_store=campaign_store,
         artifact_root=artifact_root,
+        locked_manifest_path=locked_manifest_path,
     )
     if gates.get("pass") and promotion.get("promotable"):
         register_promoted_checkpoint(
@@ -166,6 +183,7 @@ def main(argv: list[str] | None = None) -> int:
             campaign_result=result,
             campaign_store=campaign_store,
             artifact_root=artifact_root,
+            locked_manifest_path=locked_manifest_path,
             meta={"policy_sha": policy_sha, "gates": gates},
         )
 
