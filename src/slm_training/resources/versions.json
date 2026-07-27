@@ -1020,13 +1020,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) second slice: adds partial-rollback and checkout-another-state row extraction from CHECKOUT_STATE turns, classified by the exact parent-chain ancestor relationship (never transcript text); _available_history_actions now also enumerates checkout:<state> for every other trace state, mirroring control_actions.py's CHECKOUT legal-set membership. 4 of ~7 verified patterns covered; fork-then-choose-one-branch, merge success/conflict, and pronoun/focus follow-ups remain out of scope, as does SFT/preference training or held-out measurement"
+        },
         {
           "version": "v2",
           "date": "2026-07-26",

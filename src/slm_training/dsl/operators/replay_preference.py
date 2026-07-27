@@ -1,16 +1,17 @@
 """SLM-418 (DSH5-10): replay-grounded preference rows from undo/redo history.
 
-Builds versioned preference rows over one exact input state from two
-verified conversation patterns -- edit-then-undo and undo-then-redo -- where
-the chosen and rejected control-or-operator actions are checked against the
-exact legal set available at that state (``enumerate_operator_legal_set``),
-never against transcript text.
+Builds versioned preference rows over one exact input state from four
+verified conversation patterns -- edit-then-undo, undo-then-redo, partial
+rollback (a ``checkout`` to a strict ancestor), and checkout-another-state (a
+``checkout`` to a state that is not an ancestor) -- where the chosen and
+rejected control-or-operator actions are checked against the exact legal set
+available at that state (``enumerate_operator_legal_set``), never against
+transcript text.
 
-This is an honestly partial first slice of SLM-418. It does not implement:
-partial rollback, checkout-another-state, fork-then-choose-one-branch, merge
-success/conflict, or pronoun/focus follow-up patterns; it does not train an
-SFT/preference variant, measure held-out benefit, or produce turn-depth /
-context-view ablations. See
+This is an honestly partial slice of SLM-418. It does not implement:
+fork-then-choose-one-branch, merge success/conflict, or pronoun/focus
+follow-up patterns; it does not train an SFT/preference variant, measure
+held-out benefit, or produce turn-depth / context-view ablations. See
 ``docs/design/dsh5-10-replay-preference-rows.md`` for the full disposition
 and the remaining scope.
 """
@@ -40,6 +41,8 @@ ProvenanceFactory = Callable[[OperatorStateV1], ApplicationProvenanceV1]
 class ReplayPreferenceRelation(str, Enum):
     EDIT_THEN_UNDO = "edit_then_undo"
     UNDO_THEN_REDO = "undo_then_redo"
+    PARTIAL_ROLLBACK = "partial_rollback"
+    CHECKOUT_OTHER_STATE = "checkout_other_state"
 
 
 @dataclass(frozen=True)
@@ -108,9 +111,12 @@ def _available_history_actions(
 ) -> tuple[str, ...]:
     """Control actions available at ``state_id`` from the trace's own DAG.
 
-    Deliberately narrow: only ``undo`` (a parent exists) and ``redo:<child>``
-    (an already-materialized child on the current branch) are modeled here.
-    checkout/fork/copy availability is out of scope for this slice.
+    ``undo`` (a parent exists), ``redo:<child>`` (an already-materialized
+    child on the current branch), and ``checkout:<other_state>`` (any other
+    state in the trace, mirroring ``control_actions.py``'s own
+    ``ConversationControlKind.CHECKOUT`` enumeration -- every node except the
+    current one, regardless of branch or ancestor relationship) are modeled
+    here. fork/copy availability is still out of scope for this slice.
     """
     node = trace.node(state_id)
     actions: list[str] = []
@@ -122,7 +128,29 @@ def _available_history_actions(
             and other.branch_digest == node.branch_digest
         ):
             actions.append(f"redo:{other.state_id}")
+    for other in sorted(trace.state_nodes, key=lambda candidate: candidate.state_id):
+        if other.state_id != state_id:
+            actions.append(f"checkout:{other.state_id}")
     return tuple(actions)
+
+
+def _is_strict_ancestor(
+    trace: ConversationTraceV1, ancestor_state_id: str, of_state_id: str
+) -> bool:
+    """Whether ``ancestor_state_id`` lies on ``of_state_id``'s parent chain.
+
+    Walks the immutable parent chain (never transcript text) to distinguish
+    a **partial rollback** (checkout to a strict ancestor -- the same
+    direction ``undo`` moves in, just possibly more than one hop) from a
+    **checkout to another state** (any other target: a sibling, a cousin on
+    another branch, or a descendant).
+    """
+    cursor = trace.node(of_state_id).parent_state_id
+    while cursor is not None:
+        if cursor == ancestor_state_id:
+            return True
+        cursor = trace.node(cursor).parent_state_id
+    return False
 
 
 def _legal_set_at(
@@ -164,15 +192,50 @@ def extract_replay_preference_rows(
     library: OperatorLibraryV1,
     provenance_for: ProvenanceFactory,
 ) -> OperatorEventMemoryReportV1:
-    """Scan ``trace.turns`` for edit-then-undo / undo-then-redo patterns.
+    """Scan a trace for edit-then-undo, undo-then-redo, partial-rollback, and
+    checkout-another-state patterns.
 
     Each match produces one row whose chosen and rejected actions are both
     verified members of the exact legal set at the shared input state. A
     row is only emitted when an unchosen alternative actually exists in that
-    legal set -- undo/redo is never asserted preferred by default.
+    legal set -- undo/redo/checkout is never asserted preferred by default.
     """
     rows: list[OperatorReplayPreferenceRowV1] = []
     turns = trace.turns
+
+    for turn in turns:
+        if turn.operation is not ConversationOperation.CHECKOUT_STATE:
+            continue
+        decision_state_id = turn.input_state_id
+        legal_set = _legal_set_at(
+            trace,
+            pack=pack,
+            library=library,
+            state_id=decision_state_id,
+            provenance_for=provenance_for,
+        )
+        chosen = f"checkout:{turn.output_state_id}"
+        rejected = _pick_rejected(legal_set, chosen)
+        if chosen not in legal_set.all_serialized_actions or rejected is None:
+            continue
+        if _is_strict_ancestor(trace, turn.output_state_id, decision_state_id):
+            relation = ReplayPreferenceRelation.PARTIAL_ROLLBACK
+            correction_reason = "user_rolled_back_partially"
+        else:
+            relation = ReplayPreferenceRelation.CHECKOUT_OTHER_STATE
+            correction_reason = "user_checked_out_alternate_state"
+        rows.append(
+            OperatorReplayPreferenceRowV1(
+                input_state_id=decision_state_id,
+                chosen_action=chosen,
+                rejected_action=rejected,
+                chosen_output_state_id=turn.output_state_id,
+                semantic_relation=relation,
+                correction_reason=correction_reason,
+                legal_set_fingerprint=legal_set.fingerprint,
+            )
+        )
+
     for index in range(len(turns) - 1):
         current, following = turns[index], turns[index + 1]
 

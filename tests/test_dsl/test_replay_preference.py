@@ -5,11 +5,18 @@ from __future__ import annotations
 from slm_training.dsl.operators import (
     OperatorEventMemoryReportV1,
     ReplayPreferenceRelation,
+    checkout_conversation_state,
     extract_replay_preference_rows,
+    fork_conversation,
     redo_conversation,
     undo_conversation,
 )
-from tests.test_dsl.test_operator_conversation import _append, _fixture, _provenance
+from tests.test_dsl.test_operator_conversation import (
+    _append,
+    _fixture,
+    _provenance,
+    _sha,
+)
 
 
 def test_edit_then_undo_yields_one_row_grounded_in_the_legal_set() -> None:
@@ -94,6 +101,81 @@ def test_rows_replay_independently_to_their_recorded_output_state() -> None:
     replayed = undo_conversation(edited, provenance=_provenance(edited.current.state))
     assert replayed.current_state_id == row.chosen_output_state_id
     assert row.chosen_output_state_id == root.root_state_id
+
+
+def test_checkout_to_ancestor_yields_partial_rollback_row() -> None:
+    pack, library, root = _fixture()
+    first, _application = _append(pack, library, root)
+    second, _application = _append(pack, library, first, seed=3)
+
+    rolled_back = checkout_conversation_state(
+        second,
+        target_state_id=root.root_state_id,
+        provenance=_provenance(second.current.state),
+    )
+
+    report = extract_replay_preference_rows(
+        rolled_back, pack=pack, library=library, provenance_for=_provenance
+    )
+
+    relations = [row.semantic_relation for row in report.rows]
+    assert ReplayPreferenceRelation.PARTIAL_ROLLBACK in relations
+    row = next(
+        row
+        for row in report.rows
+        if row.semantic_relation is ReplayPreferenceRelation.PARTIAL_ROLLBACK
+    )
+    assert row.input_state_id == second.current_state_id
+    assert row.chosen_action == f"checkout:{root.root_state_id}"
+    assert row.chosen_output_state_id == root.root_state_id
+    assert row.correction_reason == "user_rolled_back_partially"
+    assert row.rejected_action != row.chosen_action
+
+
+def test_checkout_to_non_ancestor_yields_checkout_other_state_row() -> None:
+    """A checkout to a sibling on another branch is not a rollback."""
+    pack, library, root = _fixture()
+    first, _application = _append(pack, library, root)
+
+    back_to_root = checkout_conversation_state(
+        first,
+        target_state_id=root.root_state_id,
+        provenance=_provenance(first.current.state),
+    )
+    forked = fork_conversation(
+        back_to_root,
+        branch_nonce_digest=_sha("fork-checkout-other"),
+        reference_seed=21,
+        provenance=_provenance(back_to_root.current.state),
+    )
+
+    checked_out_to_sibling = checkout_conversation_state(
+        forked,
+        target_state_id=first.current_state_id,
+        provenance=_provenance(forked.current.state),
+    )
+
+    report = extract_replay_preference_rows(
+        checked_out_to_sibling, pack=pack, library=library, provenance_for=_provenance
+    )
+
+    relations = [row.semantic_relation for row in report.rows]
+    assert ReplayPreferenceRelation.CHECKOUT_OTHER_STATE in relations
+    row = next(
+        row
+        for row in report.rows
+        if row.semantic_relation is ReplayPreferenceRelation.CHECKOUT_OTHER_STATE
+    )
+    assert row.input_state_id == forked.current_state_id
+    assert row.chosen_action == f"checkout:{first.current_state_id}"
+    assert row.chosen_output_state_id == first.current_state_id
+    assert row.correction_reason == "user_checked_out_alternate_state"
+    assert row.rejected_action != row.chosen_action
+
+    # The earlier checkout-to-root turn in the same trace is a genuine
+    # ancestor rollback, not a "checkout other state" -- both classifications
+    # coexist in one trace without collision.
+    assert ReplayPreferenceRelation.PARTIAL_ROLLBACK in relations
 
 
 def test_report_carries_a_version_stamp() -> None:
