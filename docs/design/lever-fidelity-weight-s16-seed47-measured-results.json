@@ -1,0 +1,9 @@
+{
+  "baseline_fidw": 0.5,
+  "arms": {
+    "0.0": "ok",
+    "1.0": "rejected",
+    "1.5": "rejected"
+  },
+  "not_ship": true
+}
