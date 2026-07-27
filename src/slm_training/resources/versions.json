@@ -10761,6 +10761,11 @@
         {
           "version": "v2",
           "date": "2026-07-27",
+          "note": "no-bump: regenerated report.json on the clean committed v2 revision (2a48c968, code_dirty=false) to replace the prior dirty-worktree publication (a CodeRabbit finding); content-only refresh, verdicts/recommendation unchanged (`retain_as_compiler_utility`, 11 claims, dsh5_may_start=false), re-validated structurally_valid"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-27",
           "note": "review follow-up: drop the validator's unreachable-by-construction SUPPORTED/all-undelivered check (AdvancedOperatorClaimV1.__post_init__ already guarantees a SUPPORTED headline can't have every dimension undelivered) and clarify the remaining defense-in-depth checks are reachable only if that invariant is weakened; turn the DSH5-03 report's dead no-op schema check into a real version_stamp presence check; drop the three unused _COMMITS pins (SLM-408/411/417, which are consumed via each report's own code_commit stamp, never this table); centralize the issue->component map and component_version_stamps() (previously duplicated between the publisher script and its test) as public exports COMPONENT_BY_ISSUE/component_version_stamps on the model module; regenerate report.json/summary.md from the clean committed revision (code_dirty=false, replacing the dirty-worktree publication)"
         },
         {
