@@ -375,6 +375,7 @@ class PromotionEvalRequest(BaseModel):
     campaign_result: dict[str, Any] | None = None
     campaign_store_root: Path | None = None
     campaign_artifact_root: Path | None = None
+    verify_locked_manifest_digest: bool = False
 
 
 @observability_router.post("/promotion/evaluate")
@@ -417,8 +418,21 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
 
         manifest = ExperimentCampaignV1.model_validate(payload.campaign_manifest)
         governed_result = CampaignResultV1.model_validate(payload.campaign_result)
+        locked_manifest_path = None
+        if payload.verify_locked_manifest_digest:
+            # SLM-431: deferred import -- see the identical note on
+            # validate_result_claim's own locked_manifest_path import, this
+            # module must not import slm_training.data.locked_eval_manifest
+            # (or anything that transitively imports harnesses.experiments)
+            # at module scope.
+            from slm_training.data.locked_eval_manifest import canonical_manifest_path
+
+            locked_manifest_path = canonical_manifest_path()
         governance_failures = validate_result_claim(
-            manifest, governed_result, artifact_root=payload.campaign_artifact_root
+            manifest,
+            governed_result,
+            artifact_root=payload.campaign_artifact_root,
+            locked_manifest_path=locked_manifest_path,
         )
         if campaign_store is None or payload.campaign_artifact_root is None:
             governance_failures = (*governance_failures, "campaign_store_missing")

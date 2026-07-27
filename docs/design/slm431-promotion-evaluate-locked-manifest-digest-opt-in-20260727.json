@@ -1,0 +1,52 @@
+{
+  "schema_version": "slm431_promotion_evaluate_locked_manifest_digest_opt_in/v1",
+  "run_id": "slm431_local_promotion_evaluate_locked_manifest_digest_opt_in_20260727",
+  "status": "completed",
+  "device": "local CPU",
+  "backend": "offline committed resources only; no network, no GPU",
+  "distinct_from": "SLM-306 (docs/design/slm306-locked-manifest-digest-verification.md) built the verify_locked_manifest_digest/load_locked_manifest_payload primitive and threaded locked_manifest_path through validate_result_claim with a None default everywhere. SLM-430 (docs/design/slm430-promotion-cli-locked-manifest-digest-opt-in.md) wired an explicit, default-off opt-in into the three real training/CLI promotion entrypoints (train(), scripts/resume_climb.py, scripts/run_scaling_ladder.py), explicitly scoping itself to those three and leaving src/slm_training/web/routes.py untouched. SLM-431 closes that fourth reachable caller of validate_result_claim -- the pure-compute POST /api/promotion/evaluate endpoint that powers the live Checkpoints dashboard gate editor -- with the same additive, default-off posture.",
+  "canonical_manifest": {
+    "path": "src/slm_training/resources/data/eval/manifests/abstract_planning_locked_v1.jsonl",
+    "manifest_schema": "LockedPromotionManifestV1",
+    "recomputed_manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+    "rows": 286,
+    "note": "recomputed via load_locked_manifest_payload(canonical_manifest_path()); matches the digest SLM-306 and SLM-430 both recorded, confirming the committed manifest is still untampered"
+  },
+  "endpoint_wired": {
+    "route": "POST /api/promotion/evaluate",
+    "file": "src/slm_training/web/routes.py",
+    "handler": "promotion_evaluate",
+    "new_request_field": "PromotionEvalRequest.verify_locked_manifest_digest (default False)",
+    "flag_absent_locked_manifest_path": null,
+    "flag_present_locked_manifest_path": "canonical_manifest_path()",
+    "downstream_call": "slm_training.autoresearch.experiment_campaign.validate_result_claim"
+  },
+  "reproduction": {
+    "new_test_module": "tests/test_web/test_promotion_evaluate_locked_manifest_digest.py",
+    "command": "python -m pytest tests/test_web/test_promotion_evaluate_locked_manifest_digest.py -q",
+    "result": "3 passed",
+    "tests": [
+      "test_verify_flag_defaults_to_false_and_omits_disk_check",
+      "test_verify_flag_true_rejects_digest_not_on_disk",
+      "test_verify_flag_true_accepts_real_committed_digest"
+    ],
+    "method": "each test drives POST /api/promotion/evaluate through fastapi.testclient.TestClient with a minimal preregistered ExperimentCampaignV1 manifest and a self-consistent CampaignResultV1, checking for the presence/absence of locked_eval_manifest_digest_unverified_on_disk in checks.campaign_governance.failures",
+    "regression_command": "python -m pytest tests/test_web/test_control_plane.py -q",
+    "regression_result": "PENDING_FILL_IN"
+  },
+  "honesty": {
+    "model_or_ship_claim": false,
+    "scope": "governance/gate HTTP-endpoint-wiring audit only -- no model quality, promotion, or training result is claimed here",
+    "backward_compatibility": "verify_locked_manifest_digest defaults to False everywhere; every existing caller of POST /api/promotion/evaluate (including the live Checkpoints dashboard gate editor) that never set it keeps its prior (self-consistency-only) behavior unchanged.",
+    "still_open": "Flipping the default to always supply canonical_manifest_path() (rather than requiring the flag) remains open, exactly as SLM-306 and SLM-430 both scoped it, pending a live end-to-end promotion run to validate against -- not available in this GPU-less sandbox."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "49aef07efa6aa174de55ac139fd381cf137e647e",
+    "code_dirty": true,
+    "components": {
+      "features.openfeature": "v10"
+    },
+    "stamped_at": "2026-07-27T00:00:00+00:00"
+  }
+}
