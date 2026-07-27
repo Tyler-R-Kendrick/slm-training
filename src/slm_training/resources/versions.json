@@ -4699,6 +4699,11 @@
         {
           "version": "v1",
           "date": "2026-07-25",
+          "note": "no-bump: append the E76-E88 wired-but-undocumented V7 arms note and the allow_unconstrained_fallback fail-closed fix pointer to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-25",
           "note": "no-bump: append retired E1211 topology-dose evidence and E1213 preregistration to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -7309,12 +7314,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v7",
+      "version": "v8",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-25",
+          "note": "Fix Experiment.allow_unconstrained_fallback default from True to False so undeclared rows are fail-closed per decode invariant I6, matching ModelBuildConfig's hard rejection of the unconstrained default (no row explicitly relied on the old default); also add the missing grammar_fastpath, grammar_sample_decode, and grammar_uniform_at_unforced Experiment fields (present on ModelBuildConfig but absent here), fixing the V9/V10 strict-compiler-tree policy spread that TypeErrored on every row including the E0 baseline"
+        },
         {
           "version": "v7",
           "date": "2026-07-24",
@@ -9836,6 +9846,11 @@
           "version": "v4",
           "date": "2026-07-25",
           "note": "SLM-422 (VAR0-01): certify() gains variant_contracts via check_variant_contracts(), mirroring check_ops_vocab() -- pins slm_training.dsl.variants' registry against its live sources. No existing check's behavior changed."
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-25",
+          "note": "no-bump: fix test_verify_decode_invariants.py's sandbox fixture to also monkeypatch scripts.verify_agent_surfaces.ROOT (not just verifier.ROOT); check_agent_surfaces() imports that module directly and its _read() reads off its own module-level ROOT, so test_orphaned_agent_surface_fails was silently checking the real repo's surfaces instead of the sandbox and could never catch the regression it exists to catch. Also register the .grok/workflows/autotrain.rhai fixture file the decode.invariants obligation already requires. verify_decode_invariants.py itself is unchanged."
         },
         {
           "version": "v3",
