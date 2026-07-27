@@ -7079,6 +7079,21 @@
         }
       ]
     },
+    "harness.experiments.argument_preference": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/argument_preference.py",
+        "tests/test_harnesses/experiments/test_argument_preference.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) ninth slice: first real step onto the DSH3 typed_operator_policy.py target the disposition doc has named as the actual training target since the sixth slice, instead of the generic TwoTower pair format the sixth/seventh/eighth slices used. build_argument_preference_example renders only pronoun_focus_followup rows (the one pattern whose chosen/rejected actions are the same operator with a differing argument for the same slot -- the other six patterns are history controls or merge, none representable in OperatorPolicyInputV1.action_rows). typed_operator_argument_preference_loss is a Bradley-Terry pairwise margin over CandidateScoringHead logits (surrogate, not textbook DPO, same honesty class as scripts/train_preference.py's dpo_loss). Honest finding: the real pronoun-focus fixture's two sibling refs are feature-identical in the sanitized OperatorPolicyInputV1 view (differ only by semantic_fingerprint, which is deliberately stripped for anti-identity-leakage), so training provably cannot move the loss for that exact case -- a structural null result, not a bug, proven distinct from a synthetic fixture where candidates differ in an allowed feature (relative_position) and training does reduce the loss. No harness code outside this new module changed; typed_operator_policy.py itself is unchanged (only consumed)"
+        }
+      ]
+    },
     "harness.experiments.typed_operator_policy": {
       "version": "v11",
       "kind": "harness",
@@ -7942,7 +7957,7 @@
       ]
     },
     "harness.preference.replay_pairs": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_pairs.py",
@@ -7951,6 +7966,11 @@
         "tests/test_scripts/test_build_replay_preference_pairs.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) tenth slice: adds build_demo_partial_rollback_scenario and build_demo_fork_choose_scenario, two more standalone scratch traces mirroring test_replay_preference.py's own partial_rollback and fork_then_choose_one_branch fixtures, using the script's existing toy cycling operator (refactored the trace-building preamble into shared _new_toy_trace/_apply_cycle helpers rather than duplicating it a third time). main() now combines four sources: 7 rows (2 edit_then_undo + 1 each of undo_then_redo/checkout_another_state/partial_rollback/fork_then_choose_one_branch/merge_success), 6 render (still only undo_then_redo drops, same structural reason as before). 6 of 7 named patterns are now exercised in this demo TwoTower corpus; only pronoun_focus_followup remains absent here (covered instead on the separate typed_operator_policy argument-preference path added in the ninth slice). No change to the sixth slice's renderer itself"
+        },
         {
           "version": "v3",
           "date": "2026-07-27",
