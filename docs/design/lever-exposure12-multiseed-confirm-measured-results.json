@@ -1,0 +1,65 @@
+{
+  "lever": "exposure12_multiseed_confirm",
+  "hypothesis": "Quality lift from exposure12 (ladder admitted) is multi-seed stable on seeds 42/47/51.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "suite": "smoke",
+  "eval_limit": 3,
+  "recipe": {
+    "steps": 16,
+    "lr": 0.001,
+    "batch_size": 2,
+    "structural_bias": 1.5,
+    "train_dir": "outputs/data/train/lever_exposure12_v1",
+    "decode": "asap+t30",
+    "device": "cpu",
+    "context_backend": "scratch"
+  },
+  "rows": [
+    {
+      "seed": 42,
+      "run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed42",
+      "last_loss": 10.193429946899414,
+      "record_count": 107,
+      "parse_rate": 0.6666666666666666,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.6246666666666667,
+      "empty_prediction_count": 1,
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 26873.82
+    },
+    {
+      "seed": 47,
+      "run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47",
+      "last_loss": 7.188694000244141,
+      "record_count": 107,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "reward_score": 0.8523333333333333,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30011.11
+    },
+    {
+      "seed": 51,
+      "run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed51",
+      "last_loss": 13.885236740112305,
+      "record_count": 107,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.5379999999999999,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 30117.6
+    }
+  ],
+  "summary": {
+    "success": 2,
+    "mean_parse": 0.8888888888888888,
+    "mean_meaningful": 0.4444444444444444,
+    "mean_reward": 0.6716666666666665
+  },
+  "decision": "accept",
+  "decision_reason": "exposure12 multi-seed mean meaningful=0.444 success=2/3",
+  "captured_at": "2026-07-27T16:36:34.913384+00:00"
+}
