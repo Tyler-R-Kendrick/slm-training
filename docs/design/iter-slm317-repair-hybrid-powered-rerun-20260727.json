@@ -1,0 +1,2065 @@
+{
+  "experiment": "slm317-repair-hybrid",
+  "issue": "SLM-431",
+  "question": "Does a do-no-harm AR\u2192repair hybrid (deterministic commit rule) improve paired hard-valid outcomes over AR only without ever damaging a valid AR program?",
+  "preregistered": {
+    "min_useful_effect": 0.05,
+    "safety_rule": "invalid-over-valid count of ar_repair_improved vs ar_only on the frozen safety set (all eval examples) must be exactly 0",
+    "value_rule": "paired hard-valid improvement of ar_repair_improved over ar_only: Wilson 95% lower bound of improvements/n_paired must exceed 0.05 with zero damages",
+    "disposition_rule": "repair_positive iff safety AND value AND reachability gates pass; repair_negative iff safety fails OR the value Wilson UPPER bound is below the minimum useful effect (effect ruled out); else inconclusive",
+    "historical_deviation": "pre-SLM-305 4-action edit space is not reproducible on this branch (edit space extended in place, no legacy-subset knob); the historical arm keeps mutation_count value labels + legacy STOP-slot accounting only"
+  },
+  "arms": [
+    "ar_only",
+    "repair_only",
+    "ar_repair_historical",
+    "ar_repair_improved",
+    "oracle_commit"
+  ],
+  "promotable_arms": [
+    "ar_only",
+    "ar_repair_historical",
+    "ar_repair_improved",
+    "repair_only"
+  ],
+  "config": {
+    "n_train_decisions": 16,
+    "n_eval_decisions": 8,
+    "seeds": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "steps": 6,
+    "lr": 0.003,
+    "scorer_steps": 20,
+    "fixture_config_overrides": {
+      "d_model": 64,
+      "denoiser_layers": 2,
+      "context_layers": 1,
+      "max_chain": 3,
+      "max_search_steps": 6,
+      "beam_width": 3,
+      "expand_per_state": 3
+    },
+    "torch_num_threads": 1
+  },
+  "arm_summaries": {
+    "ar_only": {
+      "n": 40,
+      "valid_rate": 1.0,
+      "mean_hard_rank": 3.0
+    },
+    "repair_only": {
+      "n": 40,
+      "valid_rate": 0.0,
+      "mean_hard_rank": 1.0
+    },
+    "ar_repair_historical": {
+      "n": 40,
+      "valid_rate": 1.0,
+      "mean_hard_rank": 3.0
+    },
+    "ar_repair_improved": {
+      "n": 40,
+      "valid_rate": 1.0,
+      "mean_hard_rank": 3.0
+    },
+    "oracle_commit": {
+      "n": 40,
+      "valid_rate": 1.0,
+      "mean_hard_rank": 3.0
+    }
+  },
+  "paired_vs_ar_only": {
+    "repair_only": {
+      "both_valid": 0,
+      "a_valid_b_invalid": 40,
+      "a_invalid_b_valid": 0,
+      "both_invalid": 0,
+      "unpaired": 0
+    },
+    "ar_repair_historical": {
+      "both_valid": 40,
+      "a_valid_b_invalid": 0,
+      "a_invalid_b_valid": 0,
+      "both_invalid": 0,
+      "unpaired": 0
+    },
+    "ar_repair_improved": {
+      "both_valid": 40,
+      "a_valid_b_invalid": 0,
+      "a_invalid_b_valid": 0,
+      "both_invalid": 0,
+      "unpaired": 0
+    },
+    "oracle_commit": {
+      "both_valid": 40,
+      "a_valid_b_invalid": 0,
+      "a_invalid_b_valid": 0,
+      "both_invalid": 0,
+      "unpaired": 0
+    }
+  },
+  "invalid_over_valid_per_arm": {
+    "repair_only": 40,
+    "ar_repair_historical": 0,
+    "ar_repair_improved": 0,
+    "oracle_commit": 0
+  },
+  "commit_reason_counts": {
+    "ar_repair_historical": {
+      "hard_regression": 40
+    },
+    "ar_repair_improved": {
+      "hard_regression": 40
+    },
+    "oracle_commit": {
+      "oracle_no_gain": 40
+    }
+  },
+  "gates": {
+    "safety": {
+      "rule": "invalid-over-valid count of ar_repair_improved vs ar_only on the frozen safety set (all eval examples) must be exactly 0",
+      "invalid_over_valid": 0,
+      "pass": true
+    },
+    "value": {
+      "rule": "paired hard-valid improvement of ar_repair_improved over ar_only: Wilson 95% lower bound of improvements/n_paired must exceed 0.05 with zero damages",
+      "improvements": 0,
+      "n_paired": 40,
+      "wilson": {
+        "n": 40,
+        "estimate": 0.0,
+        "low": 6.938893903907228e-18,
+        "high": 0.0876216011972866,
+        "confidence_level": 0.95
+      },
+      "min_useful_effect": 0.05,
+      "pass": false
+    },
+    "reachability": {
+      "artifacts": {
+        "docs/design/iter-slm299-edit-reachability-20260724.json": true,
+        "docs/design/iter-slm299-edit-reachability-20260724.md": true,
+        "docs/design/iter-slm291-evidence-bundles-20260724.json": true,
+        "docs/design/iter-slm291-evidence-bundles-20260724.md": true
+      },
+      "pass": true
+    }
+  },
+  "wilson_damage": {
+    "n": 40,
+    "estimate": 0.0,
+    "low": 6.938893903907228e-18,
+    "high": 0.0876216011972866,
+    "confidence_level": 0.95
+  },
+  "oracle_upper_bound": {
+    "valid_rate": 1.0,
+    "sanity": true
+  },
+  "per_example_outcomes": [
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "repair_only",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_historical",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_improved",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "oracle_commit",
+      "seed": 2,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "repair_only",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_historical",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_improved",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "oracle_commit",
+      "seed": 3,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "repair_only",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_historical",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_improved",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "oracle_commit",
+      "seed": 4,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "repair_only",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_historical",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_improved",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "oracle_commit",
+      "seed": 5,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-0",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-1",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-2",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":card\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-3",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-4",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-5",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":text\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-6",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":button\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "repair_only",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")\nq0 = Query(\"tool\", {arg: $x}, {default: []}, 15)\nq1 = Query(\"tool\", {arg: $x}, {default: []}, 15)",
+      "v1_verdict": false,
+      "hard_rank": 1,
+      "commit_reason": null
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_historical",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "ar_repair_improved",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "hard_regression"
+    },
+    {
+      "record_id": "decision-7",
+      "arm_id": "oracle_commit",
+      "seed": 6,
+      "final_source": "root = Stack([n0], \"column\")\nn0 = TextContent(\":stack\")",
+      "v1_verdict": true,
+      "hard_rank": 3,
+      "commit_reason": "oracle_no_gain"
+    }
+  ],
+  "decisions_path": "outputs/slm317/commit_decisions_powered_20260727.jsonl",
+  "disposition": "repair_negative",
+  "lar3_statement": "LAR3 (learned repair integration) stays CLOSED: the powered rerun damaged valid AR programs or ruled out the preregistered minimum per-seed pass rate; the second reopening condition is not met.",
+  "wall_seconds": 158.54709373100195,
+  "honesty": "Fixture-scale wiring screen: the frozen corpus is the SLM-155 synthetic decision fixture (n eval decisions below any ship-gate prompt count), models are tiny CPU fixtures trained for a handful of steps, and no ship-gate claim is made. The commit rule is deterministic and metamorphism-invariant by construction; the screen measures the mechanism, not production quality. The historical arm's pre-SLM-305 4-action space is declared non-reproducible on this branch (see preregistered deviation). SLM-431 powered rerun: only the seed count and the value decision rule changed (per-seed pass/fail + Wilson interval, preregistered and locked before any new seed was read); the corpus, matched arms, do-no-harm commit rule, safety gate, and reachability gate are byte-identical to SLM-317. New seeds are disjoint from SLM-317's original [0, 1].",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "226df88592c6ea824ac3454cdf3e763da437fbc8",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm317_repair_hybrid": "v2",
+      "harness.experiments.slm155_factorization_comparison": "v2",
+      "harness.experiments.slm299_edit_reachability": "v9"
+    },
+    "stamped_at": "2026-07-27T06:39:35.153573+00:00"
+  },
+  "power_rerun_of": "SLM-317",
+  "power_rule": {
+    "min_pass_rate": 0.5,
+    "seed_pass_rule": "a seed passes iff ar_repair_improved shows >=1 paired improvement over ar_only (AR invalid, arm valid) with 0 damages (AR valid, arm invalid) on that seed's frozen SLM-155 eval decisions",
+    "disposition_rule": "repair_positive iff safety AND reachability gates pass AND the Wilson 95% lower bound of the per-seed pass rate clears min_pass_rate; repair_negative iff safety fails OR the Wilson UPPER bound falls below min_pass_rate (pass rate ruled out); else inconclusive_underpowered",
+    "passed_seed_count": 0,
+    "seed_count": 5,
+    "interval": {
+      "method": "wilson_score",
+      "n": 5,
+      "estimate": 0.0,
+      "low": 2.7755575615628914e-17,
+      "high": 0.43448246478317465,
+      "confidence_level": 0.95
+    }
+  },
+  "per_seed_results": [
+    {
+      "seed": 2,
+      "improvements": 0,
+      "damages": 0,
+      "paired": {
+        "both_valid": 8,
+        "a_valid_b_invalid": 0,
+        "a_invalid_b_valid": 0,
+        "both_invalid": 0,
+        "unpaired": 0
+      },
+      "pass": false
+    },
+    {
+      "seed": 3,
+      "improvements": 0,
+      "damages": 0,
+      "paired": {
+        "both_valid": 8,
+        "a_valid_b_invalid": 0,
+        "a_invalid_b_valid": 0,
+        "both_invalid": 0,
+        "unpaired": 0
+      },
+      "pass": false
+    },
+    {
+      "seed": 4,
+      "improvements": 0,
+      "damages": 0,
+      "paired": {
+        "both_valid": 8,
+        "a_valid_b_invalid": 0,
+        "a_invalid_b_valid": 0,
+        "both_invalid": 0,
+        "unpaired": 0
+      },
+      "pass": false
+    },
+    {
+      "seed": 5,
+      "improvements": 0,
+      "damages": 0,
+      "paired": {
+        "both_valid": 8,
+        "a_valid_b_invalid": 0,
+        "a_invalid_b_valid": 0,
+        "both_invalid": 0,
+        "unpaired": 0
+      },
+      "pass": false
+    },
+    {
+      "seed": 6,
+      "improvements": 0,
+      "damages": 0,
+      "paired": {
+        "both_valid": 8,
+        "a_valid_b_invalid": 0,
+        "a_invalid_b_valid": 0,
+        "both_invalid": 0,
+        "unpaired": 0
+      },
+      "pass": false
+    }
+  ]
+}

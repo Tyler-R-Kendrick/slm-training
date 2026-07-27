@@ -219,3 +219,39 @@ patterns in
 [`dsh5-10-replay-preference-rows.md`](dsh5-10-replay-preference-rows.md) or
 the next queued `AP-007+` campaign arm) rather than appending another
 identical row to this table.
+
+## Seed-variation check (2026-07-27, follow-up)
+
+Acting on the note above: this scheduled session's next iteration varies
+`--seed` instead of repeating `seed=0`, against `main` HEAD `0e54c5bd`
+(includes PR #1114 above, already merged). Same fixture and recipe
+otherwise:
+
+```bash
+python -m scripts.train_model \
+  --train-dir src/slm_training/resources/data/train/wf_smoke_v2 \
+  --model twotower --context-backend scratch --steps 8 \
+  --run-id <run_id> --no-sync-checkpoints --device cpu --seed <1|2|3>
+```
+
+Per-iteration notes:
+[seedvar1](autotrain-wf-smoke-20260727-seedvar1-measured-results.md),
+[seedvar2](autotrain-wf-smoke-20260727-seedvar2-measured-results.md),
+[seedvar3](autotrain-wf-smoke-20260727-seedvar3-measured-results.md).
+
+| run_id | ok | steps | stopped_on | seed | last_loss | wall_s |
+| --- | --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260727_seedvar1` | True | 8 | steps | 1 | 38.951087951660156 | 2.07 |
+| `autotrain_wf_smoke_20260727_seedvar2` | True | 8 | steps | 2 | 38.324520111083984 | 1.85 |
+| `autotrain_wf_smoke_20260727_seedvar3` | True | 8 | steps | 3 | 36.62077713012695 | 2.11 |
+
+**Result:** unlike the 16 identical `seed=0` reruns, these three land at
+distinct, non-identical losses (38.95 / 38.32 / 36.62), all noticeably
+higher than the `seed=0` value (32.61) reproduced everywhere above. This is
+new evidence, not a repeat: it confirms `--seed` genuinely reaches model
+initialization (the harness isn't silently ignoring it), and gives a first
+real sense of run-to-run loss variance on this fixture/step-count
+(32.6-39.0 across seeds 0-3, n=4). Still `fixture_or_scratch` — 4 seeds at 8
+steps is not enough to characterize variance rigorously, and no claim about
+the model or data is made beyond "the recipe responds to its own seed
+argument as expected."
