@@ -27,6 +27,7 @@ from slm_training.evals.advanced_operator_disposition import (
     AdvancedOperatorClaim,
     AdvancedOperatorDimension,
     build_advanced_operator_disposition,
+    component_version_stamps,
 )
 from slm_training.harness_core.versioning import build_version_stamp
 
@@ -37,26 +38,6 @@ DEFAULTS = {
     "dsh5_03_report": "docs/design/dsh5-03-bulk-operator-crossover-20260726-local/report.json",
     "dsh5_09_report": "docs/design/dsh5-09-adaptive-router-20260726-local/report.json",
 }
-
-# Issue -> the real registry component that issue's own change owns. SLM-419
-# (DSH5-11) is a repository-wide audit that touched no watched component, so
-# it gets a bare stamp (empty ``components``) rather than a fabricated owner.
-_COMPONENT_BY_ISSUE = {
-    "SLM-409": "dsl.operators.selectors",
-    "SLM-410": "dsl.operators.bulk",
-    "SLM-412": "dsl.operators.transactions",
-    "SLM-413": "dsl.operators.transaction_executor",
-    "SLM-414": "harness.experiments.operator_transaction_policy",
-    "SLM-415": "dsl.operators.sequence_merge",
-    "SLM-416": "dsl.operators.control_actions",
-    "SLM-418": "dsl.operators.replay_preference",
-}
-
-
-def _component_version_stamps() -> dict[str, dict[str, Any]]:
-    stamps = {issue: build_version_stamp(component) for issue, component in _COMPONENT_BY_ISSUE.items()}
-    stamps["SLM-419"] = build_version_stamp()
-    return stamps
 
 
 def _self_check(disposition: dict[str, Any]) -> dict[str, Any]:
@@ -193,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
     disposition = build_advanced_operator_disposition(
         **reports,
         version_stamp=stamp,
-        component_version_stamps=_component_version_stamps(),
+        component_version_stamps=component_version_stamps(),
     ).to_dict()
 
     self_check = _self_check(disposition)

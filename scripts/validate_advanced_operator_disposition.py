@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.evals.advanced_operator_disposition import (
+    ALLOWED_RECOMMENDATIONS,
     AdvancedOperatorClaim,
     AdvancedOperatorClaimV1,
     AdvancedOperatorDimension,
@@ -28,26 +29,6 @@ from slm_training.evals.advanced_operator_disposition import (
     AdvancedOperatorVerdict,
     InheritedPolicyInventoryV1,
     RetentionClaimV1,
-)
-
-_UNDELIVERED = frozenset(
-    {
-        AdvancedOperatorVerdict.UNRUN_CONDITIONAL,
-        AdvancedOperatorVerdict.UNAVAILABLE,
-        AdvancedOperatorVerdict.NEGATIVE,
-        AdvancedOperatorVerdict.INVALID,
-        AdvancedOperatorVerdict.UNSUPPORTED,
-    }
-)
-
-_ALLOWED_RECOMMENDATIONS = frozenset(
-    {
-        "retain_as_compiler_utility",
-        "continue_research",
-        "enable_default_off_experiment",
-        "eligible_for_promotion_review",
-        "reject",
-    }
 )
 
 
@@ -133,30 +114,35 @@ def validate(report: dict[str, Any]) -> list[str]:
     except (KeyError, ValueError, TypeError) as exc:
         return [f"disposition failed to reconstruct/validate: {exc}"]
 
+    # The claim-count, recommendation, and default-enable checks below are
+    # defense-in-depth: `load_disposition` above already exercises
+    # `AdvancedOperatorDispositionV1.__post_init__`, which rejects a wrong
+    # claim count, an unknown recommendation, and `advanced_path_enabled_by_default=True`
+    # before this function ever reaches them. They stay reachable only if
+    # those dataclass invariants are ever weakened; the checks further below
+    # (inherited-policy inventory, historical-disposition reference, and
+    # SUPPORTED-with-no-evidence) add genuinely new coverage today.
     if len(disposition.claims) != len(AdvancedOperatorClaim):
         violations.append(
             f"expected exactly {len(AdvancedOperatorClaim)} claims, found {len(disposition.claims)}"
         )
 
-    if disposition.recommendation not in _ALLOWED_RECOMMENDATIONS:
+    if disposition.recommendation not in ALLOWED_RECOMMENDATIONS:
         violations.append(f"recommendation {disposition.recommendation!r} is not one of the five allowed options")
 
     if disposition.advanced_path_enabled_by_default:
         violations.append("advanced_path_enabled_by_default must be False")
 
     # Acceptance: "No conditional/unrun issue is counted as delivered value."
-    # A SUPPORTED headline verdict may never be backed solely by an evidence
-    # set whose *only* dimension verdicts are all undelivered.
+    # `AdvancedOperatorClaimV1.__post_init__` (exercised by `load_disposition`
+    # above) already enforces the load-bearing half of this: a SUPPORTED
+    # headline must equal one of its own dimension verdicts, so a SUPPORTED
+    # claim can never have every dimension undelivered -- that state is
+    # unconstructable, not merely unchecked. This loop only re-asserts the
+    # other half the dataclass does not already cover: cited evidence.
     for claim in disposition.claims:
-        if claim.verdict is AdvancedOperatorVerdict.SUPPORTED:
-            if all(v in _UNDELIVERED for v in claim.dimension_verdicts.values()):
-                violations.append(
-                    f"claim {claim.claim.value!r} has a SUPPORTED headline verdict but every one of "
-                    "its own per-dimension verdicts is undelivered (unrun/unavailable/negative/"
-                    "invalid/unsupported) -- an unrun dimension is being counted as delivered value"
-                )
-            if not claim.evidence_ids:
-                violations.append(f"claim {claim.claim.value!r} is SUPPORTED with no cited evidence")
+        if claim.verdict is AdvancedOperatorVerdict.SUPPORTED and not claim.evidence_ids:
+            violations.append(f"claim {claim.claim.value!r} is SUPPORTED with no cited evidence")
 
     # Acceptance: DSH5 default-on / policy inventory only follows explicit
     # authorization from the inherited (DSH3-33/SLM-408) disposition.

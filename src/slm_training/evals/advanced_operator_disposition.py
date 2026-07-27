@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Mapping
 
+from slm_training.harness_core.versioning import build_version_stamp
+
 
 class AdvancedOperatorClaim(str, Enum):
     """The eleven advanced-operator abstractions DSH5-12 must verdict."""
@@ -62,7 +64,7 @@ class AdvancedOperatorDimension(str, Enum):
 
 _ALL_DIMENSIONS = frozenset(AdvancedOperatorDimension)
 
-_ALLOWED_RECOMMENDATIONS = frozenset(
+ALLOWED_RECOMMENDATIONS = frozenset(
     {
         "retain_as_compiler_utility",
         "continue_research",
@@ -288,7 +290,7 @@ class AdvancedOperatorDispositionV1:
             raise ValueError("a retention claim references unknown evidence")
         if self.advanced_path_enabled_by_default:
             raise ValueError("no advanced path may be enabled by default from this disposition alone")
-        if self.recommendation not in _ALLOWED_RECOMMENDATIONS:
+        if self.recommendation not in ALLOWED_RECOMMENDATIONS:
             raise ValueError(f"unsupported recommendation: {self.recommendation!r}")
         if not self.recommendation_reason:
             raise ValueError("disposition requires a recommendation reason")
@@ -319,16 +321,13 @@ class AdvancedOperatorDispositionV1:
 # evidence -- never regenerated, mirroring cap2_operator_policy_rebase.py's
 # ``pinned_baseline`` precedent.
 _COMMITS: dict[str, str] = {
-    "SLM-408": "cce9447e9cc729f5fc21d5392512e6f216f47ce2",
     "SLM-409": "64d508d0b28d2a695f2b49cd3362865c671dfeb7",
     "SLM-410": "228d2c5d78ad8d8273c5015445aa14a4c1b0014d",
-    "SLM-411": "4db5dfbc18133aed551b581c515fc79a1bde32cc",
     "SLM-412": "3e6d1d3636966c17b60a5f4c1adffbfa2750df87",
     "SLM-413": "99e07f2efe75a692f55908771cbf1f2a4b67cf80",
     "SLM-414": "7e1fc586b53dfb3e2fc6386a2aa46c79d9baf771",
     "SLM-415": "2cd177c41bf76119b4b2a01d4047bf7b9f7d9a2c",
     "SLM-416": "b40b705b4fdb11713be233333e1a1cad3fd813c1",
-    "SLM-417": "ea937a40c2532dba81930446ce30542a0d479db4",
     "SLM-418": "78d598be52018648c92d858cccdb1b4051a981ec",
     "SLM-419": "8d04210375647bb69674b85db582df45eb7082aa",
 }
@@ -401,6 +400,31 @@ def _report_evidence(
     )
 
 
+# Issue -> the real registry component that issue's own change owns. SLM-419
+# (DSH5-11) is a repository-wide audit that touched no watched component, so
+# it gets a bare stamp (empty ``components``) rather than a fabricated owner.
+# The single owner of this mapping: both the publisher script and its test
+# import it from here rather than keeping their own copies, so a registry
+# rename in one place can't leave the other silently stale.
+COMPONENT_BY_ISSUE = {
+    "SLM-409": "dsl.operators.selectors",
+    "SLM-410": "dsl.operators.bulk",
+    "SLM-412": "dsl.operators.transactions",
+    "SLM-413": "dsl.operators.transaction_executor",
+    "SLM-414": "harness.experiments.operator_transaction_policy",
+    "SLM-415": "dsl.operators.sequence_merge",
+    "SLM-416": "dsl.operators.control_actions",
+    "SLM-418": "dsl.operators.replay_preference",
+}
+
+
+def component_version_stamps() -> dict[str, dict[str, Any]]:
+    """Real ``build_version_stamp(...)`` envelopes for every non-fixture DSH5 issue."""
+    stamps = {issue: build_version_stamp(component) for issue, component in COMPONENT_BY_ISSUE.items()}
+    stamps["SLM-419"] = build_version_stamp()
+    return stamps
+
+
 def build_advanced_operator_disposition(
     *,
     dsh3_33_report: Mapping[str, Any],
@@ -423,10 +447,13 @@ def build_advanced_operator_disposition(
     if dsh5_block["may_start"] is not False:
         raise ValueError("DSH3-33 unexpectedly authorized DSH5 -- inherited inventory must be re-audited")
 
-    if dsh5_03_report.get("schema") != "dsh5_03_bulk_operator_crossover_preflight/v1" and "disposition" not in dsh5_03_report:
-        # DSH5-03's own report shape is read defensively: this module never
-        # requires an exact schema string it did not itself mint.
-        pass
+    # DSH5-03's own report shape is read defensively: this module never
+    # requires an exact schema string it did not itself mint, but it must at
+    # least carry the version stamp `_report_evidence` binds identity to.
+    if "version_stamp" not in dsh5_03_report:
+        raise ValueError(
+            "DSH5-03 report is missing the version stamp required for evidence identity"
+        )
 
     evidence = (
         _fixture_evidence(
@@ -885,6 +912,8 @@ def build_advanced_operator_disposition(
 
 
 __all__ = [
+    "ALLOWED_RECOMMENDATIONS",
+    "COMPONENT_BY_ISSUE",
     "AdvancedOperatorClaim",
     "AdvancedOperatorClaimV1",
     "AdvancedOperatorDimension",
@@ -894,4 +923,5 @@ __all__ = [
     "InheritedPolicyInventoryV1",
     "RetentionClaimV1",
     "build_advanced_operator_disposition",
+    "component_version_stamps",
 ]
