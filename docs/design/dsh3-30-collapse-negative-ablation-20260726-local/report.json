@@ -1,0 +1,373 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/benchmark.json",
+      "indexPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/index.jsonl",
+      "runDir": "agentv-dir://agentv/dsh3-28-typed-operator-policy",
+      "timingPath": "agentv-dir://agentv/dsh3-28-typed-operator-policy/timing.json"
+    },
+    "authority": "AgentEvals assertions",
+    "criteria": {
+      "failed": 1,
+      "failures": [
+        "negative-ablation-preflight:domain_criterion"
+      ],
+      "pass": false,
+      "passed": 4,
+      "results": [
+        {
+          "actual": true,
+          "criterion_id": "legal-row-selection:domain_criterion",
+          "expected": true,
+          "id": "legal-row-selection:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "singleton-bypass:domain_criterion",
+          "expected": true,
+          "id": "singleton-bypass:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "causal-controls-or-stop-rule:domain_criterion",
+          "expected": true,
+          "id": "causal-controls-or-stop-rule:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": true,
+          "criterion_id": "controlled-partial-defer:domain_criterion",
+          "expected": true,
+          "id": "controlled-partial-defer:domain_criterion",
+          "operator": "eq",
+          "pass": true
+        },
+        {
+          "actual": false,
+          "criterion_id": "negative-ablation-preflight:domain_criterion",
+          "expected": true,
+          "id": "negative-ablation-preflight:domain_criterion",
+          "operator": "eq",
+          "pass": false
+        }
+      ],
+      "total": 5
+    },
+    "format": "AgentEvals JSONL",
+    "runner": {
+      "execution_errors": 0,
+      "name": "AgentV",
+      "sdk": "@agentv/core"
+    },
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/dsh3-28-typed-operator-policy.eval.jsonl",
+    "summary": {
+      "durationMs": 230,
+      "executionErrors": 0,
+      "failed": 1,
+      "meanScore": 0.8,
+      "passed": 4,
+      "total": 5
+    }
+  },
+  "cap2": {},
+  "controlled_partial": {},
+  "controls": {},
+  "counts": {
+    "complete_held_out_rows": 0,
+    "complete_train_rows": 2,
+    "held_out_rows": 2,
+    "train_rows": 2
+  },
+  "decision": {
+    "reason": "missing replay-verified matched negative strata: train:different_result, dev:different_result",
+    "verdict": "reject"
+  },
+  "held_out_evidence": {
+    "corpus": {
+      "collapsed_record_count": 1,
+      "collapsed_records_path": "local-scratch://held_out/operator_collapsed_records.jsonl",
+      "content_fingerprint": "dcae4cd3bfecb1a47ef4dc81ff4f2347a14362fc73f1a20b5659f798da477f5c",
+      "record_count": 10,
+      "records_path": "local-scratch://held_out/operator_records.jsonl",
+      "report_path": "local-scratch://held_out/operator_coverage.json",
+      "root_count": 1
+    },
+    "corpus_summary": {
+      "application_coverage": {
+        "emitted_illegal_targets": 0,
+        "legal_successes": 58,
+        "rejected_combinations": 3993
+      },
+      "collapse": {
+        "hard_negative_count": 1,
+        "nl_available": false,
+        "nl_unavailable_reason": "CERT_CAP1_unavailable",
+        "symbolic_only": true
+      },
+      "config": {
+        "actions_per_state": 2,
+        "max_combinations_per_operator": 512,
+        "max_roots": 1,
+        "sibling_forks": true
+      },
+      "coverage_gap_count": 12,
+      "schema": "symbolic_operator_corpus_report/v1",
+      "strata": {
+        "argument_kinds": {
+          "node": 3,
+          "node,role,value": 3,
+          "node,template": 3,
+          "none": 1
+        },
+        "kind": {
+          "next_turn": 3,
+          "sibling_fork": 1,
+          "single_turn": 6
+        },
+        "operator_family": {
+          "history.fork": 1,
+          "openui.remove_node": 3,
+          "openui.replace_node": 3,
+          "openui.set_property": 3
+        },
+        "outcome": {
+          "fork": 1,
+          "success": 9
+        },
+        "scope_complexity": {
+          "10": 7,
+          "13": 3
+        },
+        "semantic_family": {
+          "fixture": 10
+        },
+        "state_size": {
+          "10": 7,
+          "19": 3
+        },
+        "target_view": {
+          "dual": 3,
+          "history_only": 1,
+          "operator_only": 3,
+          "result_ast_only": 3
+        }
+      },
+      "version": "dsh3-28-dev",
+      "version_stamp": {
+        "code_commit": "36530cca7fb9e9d1af9f220bbff9c52896e035c9",
+        "code_dirty": true,
+        "components": {
+          "data.flow.operator_policy_corpus": "v6",
+          "evals.cap2_operator": "v2",
+          "harness.experiments.typed_operator_policy": "v11",
+          "model.operator_policy_view": "v3",
+          "model.quantization": "v7"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-26T15:54:36.972086+00:00"
+      }
+    },
+    "row_reports": [
+      {
+        "accepted_rows": 2,
+        "hard_negative_counts": {
+          "conflict": 1
+        },
+        "positive_only_rows": 1,
+        "rejected_rows": 0,
+        "rejection_counts": {},
+        "schema": "operator_policy_corpus_quality_report/v1",
+        "total_steps": 2
+      }
+    ]
+  },
+  "issue": "SLM-405",
+  "matrix": [],
+  "negative_ablation": {
+    "arms": [
+      "no_negatives",
+      "conflict_only",
+      "different_result_only",
+      "equal_mix",
+      "curriculum_mix"
+    ],
+    "examples": [
+      {
+        "evidence": {
+          "alternate_action_row": 1,
+          "alternate_operator_id": "openui.remove_node",
+          "conflict_code": "ref.missing",
+          "observed_final_state_digest": null,
+          "outcome": "conflict",
+          "schema": "operator_policy_hard_negative/v1"
+        },
+        "outcome": "conflict",
+        "row_id": "row_91add104f66eaa0f53bbdc0a",
+        "schema": "frozen_collapse_negative_example/v1",
+        "source_trace_id": "fd3d98022bfa0ffd927010612fc3705ab7f58cfa1a237f4c0451cdf81c104fae",
+        "split": "dev"
+      },
+      {
+        "evidence": {
+          "alternate_action_row": 0,
+          "alternate_operator_id": "openui.add_child",
+          "conflict_code": "ref.missing",
+          "observed_final_state_digest": null,
+          "outcome": "conflict",
+          "schema": "operator_policy_hard_negative/v1"
+        },
+        "outcome": "conflict",
+        "row_id": "row_37b0049baf008fe4c240e952",
+        "schema": "frozen_collapse_negative_example/v1",
+        "source_trace_id": "28fc38843e074995124936b7180071d5dcc835ba6ccd7f4ffc1c340576769c3d",
+        "split": "train"
+      }
+    ],
+    "positive_row_ids": {
+      "dev": [
+        "row_91add104f66eaa0f53bbdc0a",
+        "row_a6d4454334a46a6d15067dc3"
+      ],
+      "train": [
+        "row_37b0049baf008fe4c240e952",
+        "row_730aff6b82ed4661602dfe9b"
+      ]
+    },
+    "ready": false,
+    "schema": "collapse_negative_ablation_manifest/v1",
+    "stop_reason": "missing replay-verified matched negative strata: train:different_result, dev:different_result"
+  },
+  "run": {
+    "backend": "typed_operator_feature_encoder",
+    "checkpoint": null,
+    "controlled_partial": false,
+    "device": "cpu",
+    "freeze_negative_ablation": true,
+    "head_families": [
+      "local_flat"
+    ],
+    "held_out_record_id": "held_out_dual_card_01",
+    "label": "DSH3-30 collapse negative ablation",
+    "learning_rate": 0.03,
+    "max_combinations_per_operator": 512,
+    "ship_claim": false,
+    "steps": 4,
+    "timestamp": "2026-07-26T15:55:09.774808+00:00",
+    "train_record_id": "train_text_only_01"
+  },
+  "schema": "dsh3_28_typed_operator_policy_report/v1",
+  "train_evidence": {
+    "corpus": {
+      "collapsed_record_count": 1,
+      "collapsed_records_path": "local-scratch://train/operator_collapsed_records.jsonl",
+      "content_fingerprint": "fab37f00b3576fc0226b166c7a7f711b10828f7e4397a9239fbe5eef1e9648b6",
+      "record_count": 10,
+      "records_path": "local-scratch://train/operator_records.jsonl",
+      "report_path": "local-scratch://train/operator_coverage.json",
+      "root_count": 1
+    },
+    "corpus_summary": {
+      "application_coverage": {
+        "emitted_illegal_targets": 0,
+        "legal_successes": 22,
+        "rejected_combinations": 835
+      },
+      "collapse": {
+        "hard_negative_count": 1,
+        "nl_available": false,
+        "nl_unavailable_reason": "CERT_CAP1_unavailable",
+        "symbolic_only": true
+      },
+      "config": {
+        "actions_per_state": 2,
+        "max_combinations_per_operator": 512,
+        "max_roots": 2,
+        "sibling_forks": true
+      },
+      "coverage_gap_count": 12,
+      "schema": "symbolic_operator_corpus_report/v1",
+      "strata": {
+        "argument_kinds": {
+          "node,role,template": 6,
+          "node,role,template,index": 3,
+          "none": 1
+        },
+        "kind": {
+          "next_turn": 3,
+          "sibling_fork": 1,
+          "single_turn": 6
+        },
+        "operator_family": {
+          "history.fork": 1,
+          "openui.add_child": 9
+        },
+        "outcome": {
+          "fork": 1,
+          "success": 9
+        },
+        "scope_complexity": {
+          "4": 10
+        },
+        "semantic_family": {
+          "human_curated": 10
+        },
+        "state_size": {
+          "2": 7,
+          "3": 3
+        },
+        "target_view": {
+          "dual": 3,
+          "history_only": 1,
+          "operator_only": 3,
+          "result_ast_only": 3
+        }
+      },
+      "version": "dsh3-28-train",
+      "version_stamp": {
+        "code_commit": "36530cca7fb9e9d1af9f220bbff9c52896e035c9",
+        "code_dirty": true,
+        "components": {
+          "data.flow.operator_policy_corpus": "v6",
+          "evals.cap2_operator": "v2",
+          "harness.experiments.typed_operator_policy": "v11",
+          "model.operator_policy_view": "v3",
+          "model.quantization": "v7"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-26T15:54:36.972086+00:00"
+      }
+    },
+    "row_reports": [
+      {
+        "accepted_rows": 2,
+        "hard_negative_counts": {
+          "conflict": 1
+        },
+        "positive_only_rows": 1,
+        "rejected_rows": 0,
+        "rejection_counts": {},
+        "schema": "operator_policy_corpus_quality_report/v1",
+        "total_steps": 2
+      }
+    ]
+  },
+  "version_stamp": {
+    "code_commit": "36530cca7fb9e9d1af9f220bbff9c52896e035c9",
+    "code_dirty": true,
+    "components": {
+      "data.flow.operator_policy_corpus": "v6",
+      "evals.cap2_operator": "v2",
+      "harness.experiments.typed_operator_policy": "v11",
+      "model.operator_policy_view": "v3",
+      "model.quantization": "v7"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-26T15:54:36.972086+00:00"
+  }
+}

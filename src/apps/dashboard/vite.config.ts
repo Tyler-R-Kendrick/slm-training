@@ -14,7 +14,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "../../slm_training/web/static/app"),
     emptyOutDir: true,
-    sourcemap: true,
+    // No production sourcemaps: they are dead weight in the Vercel function
+    // bundle (.vercelignore strips them anyway, so don't emit them at all).
+    sourcemap: false,
     target: "es2022",
   },
 });

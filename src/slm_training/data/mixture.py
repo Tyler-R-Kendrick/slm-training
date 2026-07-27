@@ -8,9 +8,10 @@ import math
 import random
 import re
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.train_data.catalog import (
@@ -602,21 +603,20 @@ def _sample_capacity_aware(
         return []
     out: list[ExampleRecord] = []
     while len(out) < batch_size:
-        remaining = list(weighted_records)
-        # Parallel weight list popped in lockstep with `remaining`: same
-        # per-draw weight sequence (bit-exact RNG draws) without rebuilding
-        # the O(n) list on every draw.
-        remaining_weights = [weight for _, weight in remaining]
-        cycle_size = min(batch_size - len(out), len(remaining))
-        for _ in range(cycle_size):
-            index = rng.choices(
-                range(len(remaining)),
-                weights=remaining_weights,
-                k=1,
-            )[0]
-            record, _ = remaining.pop(index)
-            remaining_weights.pop(index)
-            out.append(record)
+        # Exponential keys are a weighted random permutation: selecting the
+        # smallest keys is equivalent to sequential weighted sampling without
+        # replacement, but avoids rebuilding a weighted population per draw.
+        ranked = sorted(
+            (
+                (-math.log1p(-rng.random()) / weight if weight > 0.0 else math.inf,
+                 index,
+                 record)
+                for index, (record, weight) in enumerate(weighted_records)
+            ),
+            key=lambda item: (item[0], item[1]),
+        )
+        cycle_size = min(batch_size - len(out), len(ranked))
+        out.extend(record for _, _, record in ranked[:cycle_size])
     return out
 
 
@@ -933,7 +933,6 @@ def default_base_weights() -> dict[str, float]:
         "scope_contract": 0.02,
         "prompt_paraphrase": 0.03,
         "layout_augment": 0.025,
-        "namespace_augment": 0.015,
         "stress_adversarial": 0.025,
         "self_distilled_success": 0.02,
         "self_distilled_repair": 0.02,

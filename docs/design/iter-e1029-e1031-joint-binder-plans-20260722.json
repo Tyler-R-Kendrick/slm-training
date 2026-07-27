@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1029-E1031",
+  "date": "2026-07-22",
+  "decision": "reject_joint_binder_plans",
+  "role_contract_audit": {
+    "train_data": "e937_role_safe_all_targets_v2",
+    "eval_data": "e938_role_safe_all_targets_v2",
+    "targets_checked": 1214,
+    "violations": 0,
+    "slider_email_matches": 0
+  },
+  "runs": {
+    "E1029": {
+      "status": "completed_rejected",
+      "run_id": "e1029_v268_joint_binder_plans",
+      "train_data": "e937_role_safe_all_targets_v2",
+      "steps": 450,
+      "batch_size": 4,
+      "examples": 1800,
+      "elapsed_wall_seconds": 54.82926020400191,
+      "last_loss": 7.642064094543457,
+      "binder_arity_loss_first": 4.1620306968688965,
+      "binder_arity_loss_last": 1.2475388050079346,
+      "binder_arity_accuracy_last": 0.625,
+      "binder_component_plan_loss_first": 3.5737359523773193,
+      "binder_component_plan_loss_last": 3.0195696353912354,
+      "binder_component_plan_accuracy_last": 0.0,
+      "checkpoint_sha256": "41955a281910afeb17ec60fe2b7f529d465e5d4c8810032418430ec4881b9f2f",
+      "checkpoint_sync": "disabled_scratch",
+      "initialized_from": null
+    },
+    "E1030": {
+      "status": "completed_rejected_by_held",
+      "run_id": "e1030_v268_joint_binder_plans_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 0.6666666666666666,
+      "fidelity": 1.0,
+      "structural_similarity": 0.5290666666666667,
+      "component_recall": 0.5833333333333334,
+      "reward": 0.957,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "binder_arity_applications": 15,
+      "binder_arity_choice_changes": 2,
+      "binder_component_plan_applications": 0,
+      "agentv": "0/1"
+    },
+    "E1031": {
+      "status": "completed_rejected",
+      "run_id": "e1031_v268_joint_binder_plans_held",
+      "suite": "held_out",
+      "n": 5,
+      "parse": 0.6,
+      "meaning_v1": 0.4,
+      "strict_v2": 0.4,
+      "fidelity": 0.44000000000000006,
+      "structural_similarity": 0.2395,
+      "component_recall": 0.4,
+      "reward": 0.5105999999999999,
+      "decode_timeouts": 2,
+      "fallback_count": 3,
+      "binder_arity_applications": 26,
+      "binder_arity_choice_changes": 3,
+      "binder_component_plan_applications": 0,
+      "agentv": "0/1"
+    }
+  },
+  "disposition": {
+    "checkpoint_promoted": false,
+    "checkpoint_parentable": false,
+    "checkpoint_synced": false,
+    "combination_closed": true,
+    "next_hypothesis": "target declaration actions directly instead of adding another detached classifier loss"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ebb6e91fc65574ccd51aa6e0d282adb4661aafe3",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v39",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v56",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v268"
+    }
+  }
+}

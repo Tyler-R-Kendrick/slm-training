@@ -6452,3 +6452,25 @@ because it incorrectly compared initialization hashes across different seeds.
 The latter was repaired and versioned as campaign component v2; neither failed
 attempt is accepted as evidence. Full clean evidence:
 [`iter-slm233-recursive-campaign-20260724.md`](iter-slm233-recursive-campaign-20260724.md).
+
+# SLM-298 — local capacity × context × complexity curriculum (2026-07-25)
+
+The local `d_model` 32/64 × scratch trainable/frozen × flat/AST-reference
+curriculum experiment completed 20/24 bounded locked `n=1` cells. Every
+completed constrained cell is syntax-valid but has strict meaningful-program
+rate and binder-reference F1 of 0.0. The complete d64 2×2×3 subset has zero
+ordered−flat and trainable−frozen effects (95% CIs `[0.0, 0.0]`). Four d32
+seed-2 cells repeatedly hit the derived 170-second cap and are non-evidence,
+not zero-filled. No checkpoint is promoted and no ship claim is made. Full
+recipe, data-quality feedback, raw-artifact pointers, and caveats:
+[`iter-slm298-capacity-context-curriculum-20260725.md`](iter-slm298-capacity-context-curriculum-20260725.md).
+
+## E1211-E1214 retired seed-7 topology/slot-component controls
+
+E1211's quarter-strength binder-topology loss is quality-neutral on the locked
+strict held `n=5` endpoint: it exactly matches E1182/E1200 and does not reduce
+three timeout-empty rows. Together with E1209's unit-weight regression, this
+rejects topology supervision as a seed-7 stabilizer. E1213/E1214 is preregistered
+as the remaining decode-off slot-component replication; it is local scratch only
+and cannot make a ship claim. Full recipe, AgentEvals/AgentV evidence, version
+stamp, and scorecard: [E1211-E1214 result](iter-e1211-e1214-seed7-topology-slot-component-20260725.md).

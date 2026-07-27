@@ -5,17 +5,202 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Iterable, Literal
 
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.lang_core import library_schema
-from slm_training.dsl.placeholders import extract_placeholders, merge_placeholders
-from slm_training.dsl.schema import OUTPUT_KINDS, ExampleRecord, OutputKind
+from slm_training.dsl.placeholders import (
+    PLACEHOLDER_RE,
+    extract_placeholders,
+    merge_placeholders,
+)
+from slm_training.dsl.schema import (
+    OUTPUT_KINDS,
+    ExampleRecord,
+    OutputKind,
+    OutputTarget,
+)
 
 _BINDER_RE = re.compile(r"(?m)^([a-z_][A-Za-z0-9_]*)\s*=")
 _TYPED_AUTHORITY_RE = re.compile(r"[a-z][a-z0-9_-]{0,63}")
+_TEMPLATE_SEMANTIC_LABEL_RE = re.compile(
+    r"(?im)^\s*(?:semantic|template|placeholder|marker|slot)\s+roles?\s*:"
+)
+_OPAQUE_MARKER_RE = re.compile(r":slot_(0|[1-9][0-9]*)\Z")
+_TEMPLATE_MARKER_TOKEN_RE = re.compile(rf"(?<![A-Za-z0-9_]){PLACEHOLDER_RE.pattern}")
+
+
+def _iter_nested_strings(value: Any) -> Iterable[str]:
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            yield from _iter_nested_strings(item)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            yield str(key)
+            yield from _iter_nested_strings(item)
+
+
+def _extract_template_markers(text: str) -> list[str]:
+    """Extract marker tokens without mistaking ``kind:value`` facts for slots."""
+    return list(dict.fromkeys(_TEMPLATE_MARKER_TOKEN_RE.findall(text)))
+
+
+def assert_no_template_semantic_labels(*texts: str | None) -> None:
+    """Reject explicit human-language labels attached to template markers."""
+    if any(_TEMPLATE_SEMANTIC_LABEL_RE.search(text or "") for text in texts):
+        raise ValueError(
+            "template markers are opaque; semantic role labels are prohibited"
+        )
+
+
+def is_canonical_template_marker(marker: str) -> bool:
+    """Return whether ``marker`` is one opaque harness-owned slot identity."""
+    return bool(_OPAQUE_MARKER_RE.fullmatch(marker))
+
+
+def project_template_markers(text: str | None, markers: Iterable[str]) -> str | None:
+    """Replace user-defined marker spellings with ordinal codec identities."""
+    if text is None:
+        return None
+    mapping = {marker: f":slot_{index}" for index, marker in enumerate(markers)}
+    if not mapping:
+        return text
+    pattern = re.compile(
+        "|".join(re.escape(marker) for marker in sorted(mapping, key=len, reverse=True))
+    )
+    return pattern.sub(lambda match: mapping[match.group(0)], text)
+
+
+def canonicalize_example_template_markers(record: ExampleRecord) -> ExampleRecord:
+    """Rewrite every persisted record marker to an opaque ordinal identity.
+
+    The rewrite covers structured metadata as well as model-facing strings so
+    contracts and verification evidence cannot retain a second, semantic name
+    for the same slot.
+    """
+    target_surfaces = [
+        record.openui,
+        *(target.text for target in record.accepted_outputs),
+    ]
+    surfaces = [
+        record.prompt,
+        record.design_md or "",
+        *target_surfaces,
+        *_iter_nested_strings(record.meta),
+    ]
+    target_markers = list(
+        dict.fromkeys(
+            marker
+            for surface in target_surfaces
+            for marker in _extract_template_markers(surface)
+        )
+    )
+    markers = list(
+        dict.fromkeys(
+            target_markers
+            + list(record.placeholders or ())
+            + [
+                marker
+                for surface in surfaces
+                for marker in _extract_template_markers(surface)
+            ]
+        )
+    )
+
+    def projected(text: str) -> str:
+        return project_template_markers(text, markers) or ""
+
+    def project_value(value: Any) -> Any:
+        if isinstance(value, str):
+            return projected(value)
+        if isinstance(value, list):
+            return [project_value(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(project_value(item) for item in value)
+        if isinstance(value, dict):
+            return {
+                projected(str(key)): project_value(item) for key, item in value.items()
+            }
+        return value
+
+    canonical = replace(
+        record,
+        prompt=projected(record.prompt),
+        design_md=(
+            project_template_markers(record.design_md, markers)
+            if record.design_md is not None
+            else None
+        ),
+        openui=projected(record.openui),
+        placeholders=[f":slot_{index}" for index in range(len(target_markers))],
+        meta=project_value(record.meta),
+        accepted_outputs=[
+            OutputTarget(
+                text=projected(target.text),
+                kind=target.kind,
+                category=target.category,
+            )
+            for target in record.accepted_outputs
+        ],
+    )
+    if isinstance(canonical.meta.get("semantic_contract"), dict):
+        from slm_training.data.quality import (
+            render_semantic_contract_prompt,
+            semantic_contract_for_openui,
+        )
+
+        contract = semantic_contract_for_openui(canonical.openui)
+        meta = dict(canonical.meta)
+        meta["semantic_contract"] = contract
+        canonical = replace(
+            canonical,
+            prompt=render_semantic_contract_prompt(contract),
+            meta=meta,
+        )
+    return canonical
+
+
+def assert_canonical_template_markers(record: ExampleRecord) -> None:
+    """Reject persisted train/eval records containing user-defined marker names."""
+    surfaces = [
+        record.prompt,
+        record.design_md or "",
+        record.openui,
+        *(target.text for target in record.accepted_outputs),
+        *_iter_nested_strings(record.meta),
+    ]
+    observed = list(
+        dict.fromkeys(
+            marker
+            for surface in surfaces
+            for marker in _extract_template_markers(surface)
+        )
+    )
+    declared = list(record.placeholders or ())
+    assert_canonical_template_marker_inventory([*declared, *observed])
+    if declared and declared != [f":slot_{index}" for index in range(len(declared))]:
+        raise ValueError(
+            "persisted template markers must be contiguous, declared opaque ordinals"
+        )
+
+
+def assert_canonical_template_marker_inventory(markers: Iterable[str]) -> None:
+    """Reject a marker inventory that is named or has noncontiguous ordinals."""
+    combined = list(dict.fromkeys(markers))
+    if any(not is_canonical_template_marker(marker) for marker in combined):
+        raise ValueError(
+            "persisted template markers must use opaque :slot_<ordinal> identities"
+        )
+    ordinals = sorted(int(marker.removeprefix(":slot_")) for marker in combined)
+    expected_ordinals = list(range(len(ordinals)))
+    if ordinals != expected_ordinals:
+        raise ValueError(
+            "persisted template markers must be contiguous, declared opaque ordinals"
+        )
 
 
 @dataclass(frozen=True)
@@ -45,6 +230,19 @@ class RuntimeSymbol:
             raise ValueError("external_entity surfaces must start with ':'")
         if self.role == "state" and not self.surface.startswith("$"):
             raise ValueError("state surfaces must start with '$'")
+        if self.role == "external_entity" and any(
+            (
+                self.namespace,
+                self.semantic_type,
+                self.semantic_role,
+                self.scope,
+                self.signature,
+                self.description,
+            )
+        ):
+            raise ValueError(
+                "external template markers are opaque and cannot carry semantic metadata"
+            )
         for field_name in ("semantic_type", "semantic_role"):
             value = getattr(self, field_name)
             if value is not None and not _TYPED_AUTHORITY_RE.fullmatch(value):
@@ -103,13 +301,10 @@ class GenerationRequest:
     def __post_init__(self) -> None:
         if not self.prompt.strip():
             raise ValueError("prompt must be non-empty")
+        assert_no_template_semantic_labels(self.prompt, self.design_md)
         if self.output_kind not in OUTPUT_KINDS:
             raise ValueError(f"invalid output kind {self.output_kind!r}")
-        for slot in self.slot_contract:
-            if not slot.startswith(":"):
-                raise ValueError(
-                    f"slot_contract entries must start with ':', got {slot!r}"
-                )
+        assert_canonical_template_marker_inventory(self.slot_contract)
         seen: set[str] = set()
         for symbol in self.runtime_symbols:
             if symbol.surface in seen:
@@ -441,12 +636,15 @@ def _normalize_component_signatures(openui: str) -> str:
     """Rewrite common SwitchItem / Slider fixture drift to canonical prop order."""
     lines = (openui or "").splitlines()
     out: list[str] = []
+    structural_id = 0
     for line in lines:
         if re.search(r"\bSwitchItem\s*\(", line):
-            out.append(_normalize_switchitem_line(line))
+            out.append(_normalize_switchitem_line(line, f"${structural_id}"))
+            structural_id += 1
             continue
         if re.search(r"\bSlider\s*\(", line):
-            out.append(_normalize_slider_line(line))
+            out.append(_normalize_slider_line(line, f"${structural_id}"))
+            structural_id += 1
             continue
         out.append(line)
     return "\n".join(out)
@@ -490,7 +688,7 @@ def generated_value_literal(component: str, prop: str, value: str) -> str:
     return value
 
 
-def _normalize_switchitem_line(line: str) -> str:
+def _normalize_switchitem_line(line: str, structural_id: str) -> str:
     m = re.match(r"^(\s*)(\w+)\s*=\s*SwitchItem\((.*)\)\s*$", line)
     if not m:
         return line
@@ -498,13 +696,8 @@ def _normalize_switchitem_line(line: str) -> str:
     args = _split_top_level_args(inner)
     if len(args) < 3:
         return line
-    label, description, third = args[0], args[1], args[2]
-    if third in {"true", "false"}:
-        third = json.dumps(name)
-    elif third.startswith('"') and third.endswith('"') and not third.startswith('":'):
-        pass
-    elif not third.startswith('"'):
-        third = json.dumps(third)
+    label, description = args[0], args[1]
+    third = json.dumps(structural_id)
     rest = ", ".join(args[3:]) if len(args) > 3 else ""
     body = f"{label}, {description}, {third}"
     if rest:
@@ -512,13 +705,14 @@ def _normalize_switchitem_line(line: str) -> str:
     return f"{indent}{name} = SwitchItem({body})"
 
 
-def _normalize_slider_line(line: str) -> str:
+def _normalize_slider_line(line: str, structural_id: str) -> str:
     m = re.match(r"^(\s*)(\w+)\s*=\s*Slider\((.*)\)\s*$", line)
     if not m:
         return line
     indent, name, inner = m.groups()
     args = _split_top_level_args(inner)
     if len(args) >= 7:
+        args[0] = json.dumps(structural_id)
         args[1] = generated_enum_literal("Slider", "variant", args[1])
         args[5] = generated_value_literal("Slider", "defaultValue", args[5])
         return f"{indent}{name} = Slider({', '.join(args)})"
@@ -528,7 +722,7 @@ def _normalize_slider_line(line: str) -> str:
         variant = generated_enum_literal("Slider", "variant")
         default_v = generated_value_literal("Slider", "defaultValue", default_v)
         return (
-            f'{indent}{name} = Slider("{name}", {variant}, {min_v}, {max_v}, 1, '
+            f'{indent}{name} = Slider("{structural_id}", {variant}, {min_v}, {max_v}, 1, '
             f"{default_v}, {label})"
         )
     if len(args) == 3 and args[0].startswith('":'):
@@ -536,7 +730,7 @@ def _normalize_slider_line(line: str) -> str:
         variant = generated_enum_literal("Slider", "variant")
         default_v = generated_value_literal("Slider", "defaultValue", "50")
         return (
-            f'{indent}{name} = Slider("{name}", {variant}, {min_v}, {max_v}, 1, '
+            f'{indent}{name} = Slider("{structural_id}", {variant}, {min_v}, {max_v}, 1, '
             f"{default_v}, {label})"
         )
     return line
@@ -578,6 +772,7 @@ __all__ = [
     "choice_generation_fingerprint",
     "binders_in_source",
     "canonical_slot_contract",
+    "is_canonical_template_marker",
     "load_generation_requests",
     "normalize_example_record",
 ]

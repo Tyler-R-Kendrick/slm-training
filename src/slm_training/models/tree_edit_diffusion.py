@@ -32,6 +32,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from slm_training.dsl.parser import validate, validate_output
+from slm_training.dsl.pack import get_pack
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -61,35 +62,57 @@ ACTION_REPLACE_SUBTREE = 7  # replace a canonical one-leaf container subtree's l
 ACTION_INSERT_STATEMENT = 8  # insert a canonical V0.5 state/query/mutation statement
 ACTION_REPLACE_STATEMENT = 9  # swap one canonical V0.5 statement for another
 ACTION_BIND_PLACEHOLDER = 10  # (re)bind a leaf's slot to an inventory placeholder
-N_ACTIONS = 11
+ACTION_SET_PROPERTY = 11  # replace one pack-owned property on an existing container
+N_ACTIONS = 12
 
 MAX_STMTS = 24
 MAX_SLOTS = 16
 
-# Leaf components take a single placeholder argument; containers hold a
-# child-reference list. Derived from the fixed grammar rather than hardcoded
-# beyond this split so the action space stays grammar-coupled.
-LEAF_COMPONENTS = ("TextContent", "Button", "Image", "TextInput")
-CONTAINER_COMPONENTS = ("Stack", "Card", "Form")
+@dataclass(frozen=True)
+class EditDomain:
+    """Pack-owned finite domains for the tree-edit variant."""
 
-# Canonical rest texts for containers minted by ADD_CONTAINER / INSERT_SUBTREE.
-# Fixed candidate set (indexed by ``Edit.target``) so minted containers are
-# deterministic and the reachability invariants can reason about them exactly.
-CONTAINER_RESTS: tuple[str, ...] = (', "column"', "")
+    leaf_components: tuple[str, ...]
+    container_components: tuple[str, ...]
+    container_rests: tuple[str, ...]
+    component_property_domains: dict[str, dict[str, tuple[str, ...]]]
+    statement_templates: tuple[tuple[str, str], ...]
+
+
+def edit_domain(pack_id: str = "openui") -> EditDomain:
+    """Resolve the edit alphabet from its declared pack, failing closed."""
+    pack = get_pack(pack_id)
+    rests = tuple(
+        value
+        for values in pack.component_property_domains.values()
+        for value in values.get("rest", ())
+    )
+    if not pack.leaf_components or not pack.container_components or not rests:
+        raise ValueError(f"pack {pack_id!r} does not provide a tree-edit domain")
+    return EditDomain(
+        leaf_components=tuple(pack.leaf_components),
+        container_components=tuple(pack.container_components),
+        container_rests=tuple(dict.fromkeys(rests)),
+        component_property_domains={
+            component: {
+                property_name: tuple(values)
+                for property_name, values in properties.items()
+            }
+            for component, properties in pack.component_property_domains.items()
+        },
+        statement_templates=tuple(pack.statement_templates),
+    )
+
+
+# Compatibility exports for existing default-OpenUI callers. New edit-space
+# and reachability code reads ``EditDomain`` from the declared pack instead.
+_DEFAULT_DOMAIN = edit_domain()
+LEAF_COMPONENTS = _DEFAULT_DOMAIN.leaf_components
+CONTAINER_COMPONENTS = _DEFAULT_DOMAIN.container_components
+CONTAINER_RESTS = _DEFAULT_DOMAIN.container_rests
 CONTAINER_REST = CONTAINER_RESTS[0]
-
-# V0.5 statement component names (state/query/mutation/action pack forms).
+V05_TEMPLATES = _DEFAULT_DOMAIN.statement_templates
 V05_COMPONENTS = ("Query", "Mutation", "Action", "State", "Resource")
-
-# Bounded canonical V0.5 statement templates: (component, canonical arg text).
-# Construction is canonical-AST-backed: each inserted/replaced line is built
-# from this structured spec and fragment-validated through the canonical
-# grammar (``validate_output(..., kind="statement")``) before acceptance —
-# never regex string surgery on existing program text.
-V05_TEMPLATES: tuple[tuple[str, str], ...] = (
-    ("Query", '"tool", {arg: $x}, {default: []}, 15'),
-    ("Mutation", '"tool", {arg: $x}'),
-)
 
 
 def v05_template_index(stmt: Statement) -> int | None:
@@ -109,7 +132,7 @@ def v05_template_index(stmt: Statement) -> int | None:
 _STMT_RE = re.compile(r"^(?P<name>\w+)\s*=\s*(?P<comp>\w+)\((?P<args>.*)\)\s*$")
 
 
-def _grammar_components() -> tuple[str, ...]:
+def _grammar_components(domain: EditDomain) -> tuple[str, ...]:
     """Component inventory from the fixed lexer grammar vocabulary — deterministic
     and corpus-independent, so checkpoint round-trips keep head sizes stable."""
     try:
@@ -123,7 +146,7 @@ def _grammar_components() -> tuple[str, ...]:
         )
     except Exception:  # noqa: BLE001
         comps = []
-    merged = list(dict.fromkeys([*LEAF_COMPONENTS, *CONTAINER_COMPONENTS, *comps]))
+    merged = list(dict.fromkeys([*domain.leaf_components, *domain.container_components, *comps]))
     return tuple(merged)
 
 
@@ -226,8 +249,9 @@ class Edit:
     SLM-305: ``target``/``payload`` are NEW DEFAULTED fields only, so old
     pickles and comparisons keep working. ``payload`` carries the leaf
     component index (INSERT_SUBTREE / REPLACE_SUBTREE) or the canonical V0.5
-    template index (INSERT_STATEMENT / REPLACE_STATEMENT); ``target`` is
-    reserved for secondary statement addressing.
+    template index (INSERT_STATEMENT / REPLACE_STATEMENT). ``target`` indexes
+    a pack-owned secondary domain: a container rest for the container actions,
+    or the selected property value for ``ACTION_SET_PROPERTY``.
     """
 
     action: int
@@ -246,11 +270,31 @@ class TreeEditSpace:
     the all-valid-states invariant is the point of the baseline.
     """
 
-    def __init__(self, components: tuple[str, ...] | None = None) -> None:
+    def __init__(
+        self, components: tuple[str, ...] | None = None, *, pack_id: str = "openui"
+    ) -> None:
+        self.pack_id = pack_id
+        self.domain = edit_domain(pack_id)
         if components is None:
-            components = _grammar_components()
+            components = _grammar_components(self.domain)
         self.components: tuple[str, ...] = tuple(components)
         self.comp_index = {c: i for i, c in enumerate(self.components)}
+        self.leaf_components = self.domain.leaf_components
+        self.container_components = self.domain.container_components
+        self.container_rests = self.domain.container_rests
+        self.component_property_domains = self.domain.component_property_domains
+        self.statement_templates = self.domain.statement_templates
+
+    def property_names(self, component: str) -> tuple[str, ...]:
+        """Finite pack-owned property names for ``component``."""
+        return tuple(self.component_property_domains.get(component, {}))
+
+    def property_values(self, component: str, property_index: int) -> tuple[str, ...]:
+        """Finite values for a component property, or an empty domain."""
+        names = self.property_names(component)
+        if not 0 <= property_index < len(names):
+            return ()
+        return self.component_property_domains[component][names[property_index]]
 
     def fresh_name(self, statements: list[Statement]) -> str:
         taken = {s.name for s in statements}
@@ -304,7 +348,7 @@ class TreeEditSpace:
             target = working[edit.stmt]
             new_comp = self.components[edit.comp]
             leaf_like = not target.has_list
-            if leaf_like != (new_comp in LEAF_COMPONENTS):
+            if leaf_like != (new_comp in self.leaf_components):
                 return None
             if target.comp == new_comp:
                 return None
@@ -316,7 +360,7 @@ class TreeEditSpace:
                 return None
             parent = working[edit.stmt]
             comp = self.components[edit.comp]
-            if not parent.has_list or comp not in LEAF_COMPONENTS:
+            if not parent.has_list or comp not in self.leaf_components:
                 return None
             if not inventory or not (0 <= edit.slot < len(inventory)):
                 return None
@@ -345,7 +389,7 @@ class TreeEditSpace:
                 if target.name in other.children:
                     other.children = [c for c in other.children if c != target.name]
                     referenced = True
-            if not referenced and target.comp not in V05_COMPONENTS:
+            if not referenced and target.comp not in {comp for comp, _ in self.statement_templates}:
                 # Unreferenced UI leaves stay immutable (old behavior); V0.5
                 # pack statements are unreferenced by construction and are
                 # removable (inverse of INSERT_STATEMENT).
@@ -361,16 +405,16 @@ class TreeEditSpace:
                 return None
             parent = working[edit.stmt]
             comp = self.components[edit.comp]
-            if not parent.has_list or comp not in CONTAINER_COMPONENTS:
+            if not parent.has_list or comp not in self.container_components:
                 return None
-            if not (0 <= edit.target < len(CONTAINER_RESTS)):
+            if not (0 <= edit.target < len(self.container_rests)):
                 return None
             name = self.fresh_name(working)
             parent.children.append(name)
             working.append(
                 Statement(
                     name=name, comp=comp, children=[],
-                    rest=CONTAINER_RESTS[edit.target], has_list=True,
+                    rest=self.container_rests[edit.target], has_list=True,
                 )
             )
         elif edit.action == ACTION_REMOVE_CONTAINER:
@@ -417,16 +461,16 @@ class TreeEditSpace:
                 return None
             parent = working[edit.stmt]
             root_comp = self.components[edit.comp]
-            if not parent.has_list or root_comp not in CONTAINER_COMPONENTS:
+            if not parent.has_list or root_comp not in self.container_components:
                 return None
             if not (0 <= edit.payload < len(self.components)):
                 return None
             leaf_comp = self.components[edit.payload]
-            if leaf_comp not in LEAF_COMPONENTS:
+            if leaf_comp not in self.leaf_components:
                 return None
             if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
                 return None
-            if not (0 <= edit.target < len(CONTAINER_RESTS)):
+            if not (0 <= edit.target < len(self.container_rests)):
                 return None
             placeholder = self._placeholder(inventory, edit.slot)
             cname = self.fresh_name(working)
@@ -435,7 +479,7 @@ class TreeEditSpace:
             )
             parent.children.append(cname)
             working.append(
-                Statement(cname, root_comp, [lname], CONTAINER_RESTS[edit.target], True)
+                Statement(cname, root_comp, [lname], self.container_rests[edit.target], True)
             )
             working.append(
                 Statement(
@@ -462,7 +506,7 @@ class TreeEditSpace:
             if not (0 <= edit.payload < len(self.components)):
                 return None
             leaf_comp = self.components[edit.payload]
-            if leaf_comp not in LEAF_COMPONENTS:
+            if leaf_comp not in self.leaf_components:
                 return None
             if not inventory or not (0 <= edit.slot < min(len(inventory), MAX_SLOTS)):
                 return None
@@ -477,9 +521,9 @@ class TreeEditSpace:
             # Inverse: REMOVE (pack statements are unreferenced).
             if len(working) >= MAX_STMTS:
                 return None
-            if not (0 <= edit.payload < len(V05_TEMPLATES)):
+            if not (0 <= edit.payload < len(self.statement_templates)):
                 return None
-            comp, args = V05_TEMPLATES[edit.payload]
+            comp, args = self.statement_templates[edit.payload]
             candidate = Statement(self.fresh_v05_name(working, comp), comp, [], args, False)
             try:
                 validate_output(candidate.render(), kind="statement")
@@ -496,9 +540,9 @@ class TreeEditSpace:
             target = working[edit.stmt]
             if v05_template_index(target) is None:
                 return None
-            if not (0 <= edit.payload < len(V05_TEMPLATES)):
+            if not (0 <= edit.payload < len(self.statement_templates)):
                 return None
-            comp, args = V05_TEMPLATES[edit.payload]
+            comp, args = self.statement_templates[edit.payload]
             if target.comp == comp and target.rest.strip() == args:
                 return None
             candidate = Statement(target.name, comp, [], args, False)
@@ -523,6 +567,36 @@ class TreeEditSpace:
                 return None
             placeholder = self._placeholder(inventory, edit.slot)
             target.rest = json.dumps(placeholder, ensure_ascii=False)
+        elif edit.action == ACTION_SET_PROPERTY:
+            # Rebuild a single container statement from its pack-owned property
+            # domain. ``Statement`` owns this structural representation; do not
+            # splice text or make the pack's property spellings decode authority.
+            if not (0 <= edit.stmt < len(working)):
+                return None
+            target = working[edit.stmt]
+            if not target.has_list:
+                return None
+            names = self.property_names(target.comp)
+            if not (0 <= edit.comp < len(names)):
+                return None
+            property_name = names[edit.comp]
+            values = self.property_values(target.comp, edit.comp)
+            if not (0 <= edit.target < len(values)):
+                return None
+            value = values[edit.target]
+            # The current canonical Statement schema exposes ``rest`` as its
+            # only mutable container property. A future pack property needs a
+            # corresponding structured field before this action can admit it.
+            if property_name != "rest" or value == target.rest:
+                return None
+            candidate = Statement(
+                target.name, target.comp, list(target.children), value, True
+            )
+            try:
+                validate_output(candidate.render(), kind="statement")
+            except Exception:  # noqa: BLE001
+                return None
+            working[edit.stmt] = candidate
         else:
             return None
         if pre_validate is not None and not pre_validate(working):
@@ -553,6 +627,7 @@ class TreeEditSpace:
                     ACTION_INSERT_STATEMENT,
                     ACTION_REPLACE_STATEMENT,
                     ACTION_BIND_PLACEHOLDER,
+                    ACTION_SET_PROPERTY,
                 )
             )
             if kind == ACTION_REPLACE:
@@ -795,6 +870,40 @@ class TreeEditSpace:
                     continue
                 inverse = Edit(ACTION_BIND_PLACEHOLDER, idx, slot=old_slot)
                 return mutated, inverse
+            if kind == ACTION_SET_PROPERTY:
+                # Mutation = replace an existing representable property;
+                # inverse = select its old pack-owned value again. Root is a
+                # normal candidate here because it cannot be re-minted.
+                candidates = [
+                    (i, s, property_index, values)
+                    for i, s in enumerate(statements)
+                    if s.has_list
+                    for property_index, property_name in enumerate(self.property_names(s.comp))
+                    if property_name == "rest"
+                    for values in (self.property_values(s.comp, property_index),)
+                    if s.rest in values and len(values) > 1
+                ]
+                if not candidates:
+                    continue
+                idx, stmt, property_index, values = rng.choice(candidates)
+                old_value_index = values.index(stmt.rest)
+                choices = [value_index for value_index in range(len(values)) if value_index != old_value_index]
+                mutation = Edit(
+                    ACTION_SET_PROPERTY,
+                    idx,
+                    comp=property_index,
+                    target=rng.choice(choices),
+                )
+                mutated = self.apply(statements, mutation, inventory)
+                if mutated is None:
+                    continue
+                inverse = Edit(
+                    ACTION_SET_PROPERTY,
+                    idx,
+                    comp=property_index,
+                    target=old_value_index,
+                )
+                return mutated, inverse
             # Mutation = remove a leaf; inverse = ADD it back.
             removable = [
                 i
@@ -883,7 +992,11 @@ class TreeEditPolicy(nn.Module):
     heads factorize the bounded edit and a value head scores the state."""
 
     def __init__(
-        self, vocab_size: int, cfg: TreeEditDiffusionConfig, n_components: int
+        self,
+        vocab_size: int,
+        cfg: TreeEditDiffusionConfig,
+        n_components: int,
+        n_property_values: int,
     ) -> None:
         super().__init__()
         self.embed = nn.Embedding(vocab_size, cfg.d_model)
@@ -899,6 +1012,7 @@ class TreeEditPolicy(nn.Module):
         self.stmt_head = nn.Linear(cfg.d_model, MAX_STMTS)
         self.comp_head = nn.Linear(cfg.d_model, n_components)
         self.slot_head = nn.Linear(cfg.d_model, MAX_SLOTS)
+        self.property_value_head = nn.Linear(cfg.d_model, n_property_values)
         self.value_head = nn.Linear(cfg.d_model, 1)
 
     def forward(
@@ -921,6 +1035,7 @@ class TreeEditPolicy(nn.Module):
             "stmt": self.stmt_head(pooled),
             "comp": self.comp_head(pooled),
             "slot": self.slot_head(pooled),
+            "property_value": self.property_value_head(pooled),
             "value": torch.sigmoid(self.value_head(pooled)).squeeze(-1),
         }
 
@@ -928,10 +1043,11 @@ class TreeEditPolicy(nn.Module):
 class TreeEditDiffusionModel(nn.Module):
     """Prompt-conditioned Kapur-style edit policy + value search (X22)."""
 
-    # Format 2 (SLM-305): action_head grew to N_ACTIONS=11 with the extended
-    # edit language. Format-1 checkpoints fail closed here; warm-start them
+    # Format 3 (SLM-425): action_head grew to N_ACTIONS=12 for SET_PROPERTY,
+    # and the property-value head was introduced. Earlier checkpoints fail
+    # closed here; warm-start them
     # via ``checkpoint_migrate.migrate_tree_edit_checkpoint``.
-    CHECKPOINT_FORMAT = 2
+    CHECKPOINT_FORMAT = 3
 
     def __init__(
         self,
@@ -958,7 +1074,14 @@ class TreeEditDiffusionModel(nn.Module):
             local_files_only=self.config.local_files_only,
         )
         self.policy = TreeEditPolicy(
-            tokenizer.vocab_size, self.config, len(self.space.components)
+            tokenizer.vocab_size,
+            self.config,
+            len(self.space.components),
+            max(
+                len(values)
+                for properties in self.space.component_property_domains.values()
+                for values in properties.values()
+            ),
         )
         self._rng = random.Random(self.config.seed)
         self.last_training_metrics: dict[str, float] = {}
@@ -1129,6 +1252,17 @@ class TreeEditDiffusionModel(nn.Module):
             slot_loss = F.cross_entropy(out["slot"][idx], slot_t)
             loss = loss + slot_loss
             losses["slot"] = float(slot_loss.detach().cpu())
+        property_rows = [
+            i for i, e in enumerate(targets) if e.action == ACTION_SET_PROPERTY
+        ]
+        if property_rows:
+            idx = torch.tensor(property_rows, device=device)
+            property_t = torch.tensor(
+                [targets[i].target for i in property_rows], device=device
+            )
+            property_loss = F.cross_entropy(out["property_value"][idx], property_t)
+            loss = loss + property_loss
+            losses["property_value"] = float(property_loss.detach().cpu())
         value_t = torch.tensor(values, device=device, dtype=out["value"].dtype)
         value_loss = F.mse_loss(out["value"], value_t)
         loss = loss + value_loss
@@ -1158,12 +1292,19 @@ class TreeEditDiffusionModel(nn.Module):
         return None
 
     def _enumerate_edits(
-        self, out: dict[str, torch.Tensor], row: int, n_stmts: int, n_slots: int
+        self,
+        out: dict[str, torch.Tensor],
+        row: int,
+        n_stmts: int,
+        n_slots: int,
+        *,
+        statements: list[Statement] | None = None,
     ) -> list[tuple[float, Edit]]:
         action_lp = F.log_softmax(out["action"][row], dim=-1)
         stmt_lp = F.log_softmax(out["stmt"][row][: max(n_stmts, 1)], dim=-1)
         comp_lp = F.log_softmax(out["comp"][row], dim=-1)
         slot_lp = F.log_softmax(out["slot"][row][: max(n_slots, 1)], dim=-1)
+        property_value_lp = F.log_softmax(out["property_value"][row], dim=-1)
         scored: list[tuple[float, Edit]] = [
             (float(action_lp[ACTION_STOP]), Edit(ACTION_STOP))
         ]
@@ -1245,6 +1386,29 @@ class TreeEditDiffusionModel(nn.Module):
                         Edit(ACTION_REPLACE_STATEMENT, stmt, payload=payload),
                     )
                 )
+            statement = statements[stmt] if statements is not None else None
+            if statement is not None and statement.has_list:
+                for property_index, property_name in enumerate(self.space.property_names(statement.comp)):
+                    if property_name != "rest":
+                        continue
+                    for value_index, value in enumerate(
+                        self.space.property_values(statement.comp, property_index)
+                    ):
+                        if value == statement.rest:
+                            continue
+                        scored.append(
+                            (
+                                float(action_lp[ACTION_SET_PROPERTY])
+                                + base
+                                + float(property_value_lp[value_index]),
+                                Edit(
+                                    ACTION_SET_PROPERTY,
+                                    stmt,
+                                    comp=property_index,
+                                    target=value_index,
+                                ),
+                            )
+                        )
         for payload in range(len(V05_TEMPLATES)):
             scored.append(
                 (
@@ -1286,7 +1450,7 @@ class TreeEditDiffusionModel(nn.Module):
             }
             for row, (_, statements, _) in enumerate(live):
                 candidates = self._enumerate_edits(
-                    out, row, len(statements), len(inventory)
+                    out, row, len(statements), len(inventory), statements=statements
                 )
                 expanded = 0
                 for _, edit in candidates:
@@ -1373,6 +1537,15 @@ class TreeEditDiffusionModel(nn.Module):
                 ctx_pad[index : index + 1],
                 inventory[:MAX_SLOTS],
             )
+            try:
+                program = validate(text)
+                text = (program.serialized or text).strip()
+                evidence["fallback_used"] = False
+            except Exception:  # noqa: BLE001
+                fallback = "root = Separator()"
+                program = validate(fallback)
+                text = (program.serialized or fallback).strip()
+                evidence["fallback_used"] = True
             outputs.append(text)
             self._generation_evidence.append(evidence)
         return outputs

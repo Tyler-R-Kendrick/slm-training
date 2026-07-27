@@ -1,0 +1,75 @@
+"""Tests for scripts/audit_dca_activation.py (SLM-270+)."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from scripts import audit_dca_activation
+
+
+def test_slm270_default_run_reports_blocked(tmp_path: Path) -> None:
+    out = tmp_path / "gate"
+    rc = audit_dca_activation.main(["--issue", "SLM-270", "--out", str(out)])
+    assert rc == 0
+
+    data = json.loads((out / "dca0_02_objective_surgery_gate.json").read_text())
+    assert data["verdict"] == "blocked"
+    assert data["issue"]["alias"] == "DCA0-02"
+    assert (out / "dca0_02_objective_surgery_gate.md").exists()
+
+
+def test_run_against_explicit_root(tmp_path: Path) -> None:
+    out = tmp_path / "gate_root"
+    rc = audit_dca_activation.main(
+        ["--issue", "SLM-270", "--root", ".", "--out", str(out)]
+    )
+    assert rc == 0
+    markdown = (out / "dca0_02_objective_surgery_gate.md").read_text()
+    assert "SLM-270" in markdown
+    assert "blocked" in markdown
+
+
+def test_slm271_run_reports_blocked(tmp_path: Path) -> None:
+    out = tmp_path / "gate271"
+    rc = audit_dca_activation.main(["--issue", "SLM-271", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "dca0_03_mask_curriculum_gate.json").read_text())
+    assert data["verdict"] == "blocked"
+    assert data["issue"]["alias"] == "DCA0-03"
+
+
+def test_slm272_run_reports_blocked(tmp_path: Path) -> None:
+    out = tmp_path / "gate272"
+    rc = audit_dca_activation.main(["--issue", "SLM-272", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "dca1_01_program_preference_gate.json").read_text())
+    assert data["verdict"] == "blocked"
+    assert data["issue"]["alias"] == "DCA1-01"
+
+
+def test_slm273_run_reports_blocked(tmp_path: Path) -> None:
+    out = tmp_path / "gate273"
+    rc = audit_dca_activation.main(["--issue", "SLM-273", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "dca1_02_cross_pack_transfer_gate.json").read_text())
+    assert data["verdict"] == "blocked"
+    assert data["issue"]["alias"] == "DCA1-02"
+
+
+def test_slm274_run_reports_blocked(tmp_path: Path) -> None:
+    out = tmp_path / "gate274"
+    rc = audit_dca_activation.main(["--issue", "SLM-274", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "dca2_01_block_conversion_gate.json").read_text())
+    assert data["verdict"] == "blocked"
+    assert data["issue"]["alias"] == "DCA2-01"
+
+
+def test_slm275_run_reports_blocked(tmp_path: Path) -> None:
+    out = tmp_path / "gate275"
+    rc = audit_dca_activation.main(["--issue", "SLM-275", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "dca2_02_diffusion_rl_gate.json").read_text())
+    assert data["verdict"] == "blocked"
+    assert data["issue"]["alias"] == "DCA2-02"

@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "bounded_local_current_surface_not_ship", "result": {"beneficial_heads": [], "complete_train_rows": 0, "decision": {"reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run", "verdict": "reject"}, "local_flat": {"enabled_vs_random": null, "enabled_vs_zero": null, "prediction_replay_matched": true}}}

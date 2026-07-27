@@ -1,0 +1,110 @@
+---
+description: Non-negotiable architecture invariants — constrained decoding, deterministic bypass, symbol-table speculation and scheduling, shared ops vocab, CRDT multi-turn.
+globs:
+alwaysApply: true
+---
+
+# Non-negotiable architecture invariants (goal law)
+
+This repo is **not training a natural-language LLM.** It trains a
+**grammar-constrained symbolic diffusion model** that outputs templated grammars
+(scaffolded structure + structural reasoning). Templated / natural-language
+content is deferred to a real external LLM (symbol-only output contract,
+`dsl/language_contract.py`, `OUTPUT_CONTRACT_VERSION=2`).
+
+Everything below constrains every model, harness, lever, experiment, doc, and
+agent action here — past, present, and future. Canonical expansion with file
+pointers and current status: `docs/design/decode-invariants.md`. Canonical
+agent instructions: `AGENTS.md`.
+
+## I. Constrained decoding is the product (never removable)
+
+Ids are the canonical `I*` ids from `docs/design/decode-invariants.md`. Cite
+them, never a file-local number — every agent surface uses the same ids, so
+"I13" means one thing everywhere.
+
+- **I6 — Never output invalid grammar.** Every production decode path is
+  grammar-constrained end to end. Unconstrained arms
+  (`--unconstrained-control`, HTTP `grammar_constrained=false`, eval `raw`
+  arms) are **diagnostic controls only** — never production defaults, never
+  serving paths, never shipped, certified, or gated on.
+- **I6 — Fail closed.** Production configs must not set
+  `allow_unconstrained_fallback=True`, must run finalize validation, and must
+  raise rather than return uncertified text — in every backend, ONNX included.
+  An empty legal domain is a constrained dead end, never a full-vocabulary
+  fallback. No load-bearing contract may silently widen when a dependency is
+  unavailable.
+- **I6 — No lever, experiment, or skill may weaken constrained decoding.**
+  Levers may change *how legal symbols are chosen* (ranking, speculation
+  technique, batching) — never *whether output is legal*. Weakening levers are
+  registered in `levers.CONSTRAINT_WEAKENING_LEVERS` and CI-blocked from
+  production configs.
+
+## II. Inference is the last resort
+
+- **I1 — Deterministic completion paths bypass inference** wherever a
+  deterministic answer exists. Deterministic decode proofs always outrank
+  learned, semantic, confidence, and preference scores.
+- **I2 — Forced bypass on singletons:** exactly one valid next symbol in the
+  scope-aware symbol table means commit it with **no forward and no ranking**,
+  in every decode path and every backend. Never downgrade certainty into a
+  soft preference. New decode paths ship with a `forwards_count == 0` bypass
+  test or they do not merge.
+- **I3 — Speculate from forward-calculated symbol tables:** rank the
+  already-legal domain with a deterministic scorer
+  (`dsl/grammar/fastpath/speculative_rank.py`) and commit verified multi-token
+  spans (lookahead-then-verify, arXiv:2602.00612; intersection-witness
+  completions, arXiv:2508.10111). **I5 —** the technique is a lever;
+  verification before commit is not.
+- **I4 — Symbol tables schedule compute** (`runtime/decode_schedule.py`):
+  compact ambiguous rows into minimal forwards, place prefill boundaries at
+  grammar checkpoints, route by detected device. Record the counters in
+  `DecodeStats`; utilization claims are measured, never vibes.
+
+## III. What the model is (and is not)
+
+- **I9 — Output = scaffolded grammar.** Targets carry only grammar/AST literals
+  and placeholder symbols. NL vocabulary is **optional fluff** — never
+  load-bearing, never a ship blocker.
+- **I10 — Use-case ladder, in order, no skipping:** AST-2-AST → grammar-2-AST →
+  grammar+ops-2-AST → simplified-NL-2-AST → complex-NL-2-AST. Each rung is
+  certified before the next opens; the `CERT_CAP*` gates stay.
+- **I10b — Calculator/solver enhanced with inference** — not a chat model.
+  Inference fills ambiguity; it never authors structure a solver can derive.
+
+## IV. Encoder/decoder vocabulary law
+
+- **I13 — The encoder vocabulary reserves a compute-ops vocabulary shared with
+  the decoder** — `dsl/ops_vocab.py`, derived from the live operator
+  registries, reserved in the versioned `ops` token-id namespace, exposed
+  through the one `shared_token_ids()` mapping both towers call. Grammar
+  symbols layer on top (`assert_layering`); NL sits above and is strictly
+  optional. Changing an operator changes the fingerprint and fails
+  `verify_decode_invariants` until the registry is rebuilt. e803 rejected
+  *decoder-target* op tokens only — the encoder-conditioned campaign is the
+  open rung. The output tokenizer layout is likewise a frozen,
+  checkpoint-bound contract (`resources/tokenizer_layout_registry.json`),
+  never re-derived from whichever grammar backend happens to be live.
+- **I11 — Multi-turn = CRDT event store.** Append-only, content-addressed
+  events over the conversation AST (`ConversationTraceV1`); ops include
+  copy/undo/redo. Merge must converge — conflict rejection is a documented
+  interim state, not the goal. The AST artifact materializes the entire
+  conversation history.
+- **I12 — Patch/diff outputs across turns** wherever the edit space can reach
+  the target. Full-AST output is the bootstrap mode, not the end state.
+
+## V. Goal-drift guard
+
+- **I14 — Goals are non-negotiable; approaches are disposable.** A rejected
+  experiment closes an *approach*, never a *goal*, and must file its successor
+  approach (or a dated documented waiver) in the same measured-results doc.
+  "rejected" / "unavailable" / `nl_available=False` / `reachable_fraction=0.0`
+  describe current approach state, never a reason an invariant does not apply.
+- **I7 — Every agent surface carries the law.** Each configured harness reads a
+  different instruction file. `python -m scripts.verify_agent_surfaces` owns
+  the obligation × surface matrix and certifies every repository law on every
+  surface; see `docs/design/agent-harness-parity-audit.md`.
+- **I15 — Everything is documented.** Changing an invariant means editing
+  `docs/design/decode-invariants.md`, bumping the `decode.invariants`
+  component in `resources/versions.json`, and passing
+  `python -m scripts.verify_decode_invariants` in CI.

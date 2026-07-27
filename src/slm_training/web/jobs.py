@@ -173,7 +173,6 @@ JOB_SPECS: dict[str, JobSpec] = {
             ),
             "synthesizer": Choice("quality", "template", "layout", "frontier", "none"),
             "profile": Choice("strict", "permissive"),
-            "namespace_augment": Flag(),
             "edit_derivatives": BooleanOptionalFlag(),
             "repairs_per_program": IntRange(0, 8),
             "fuzzy_dedup": Flag(),

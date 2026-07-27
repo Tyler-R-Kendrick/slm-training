@@ -96,7 +96,8 @@ def test_vercel_policy_is_generated_from_canonical_run_levers(tmp_path: Path) ->
     levers.write_text(
         "MAX_RUN_MINUTES: Final = 2\n"
         "VERCEL_FUNCTION_INCLUDE_FILES: Final = "
-        "('docs/design/**', 'docs/MODEL_CARD.md')\n",
+        "('docs/design/**', 'docs/MODEL_CARD.md')\n"
+        "VERCEL_FUNCTION_EXCLUDE_FILES: Final = ('outputs/**', 'tests/**')\n",
         encoding="utf-8",
     )
     config = tmp_path / "vercel.json"
@@ -105,14 +106,24 @@ def test_vercel_policy_is_generated_from_canonical_run_levers(tmp_path: Path) ->
         '{"maxDuration":180,"includeFiles":"old/**"}}}\n',
         encoding="utf-8",
     )
+    ignore = tmp_path / ".vercelignore"
+    ignore.write_text("manual/**\n", encoding="utf-8")
 
-    assert len(validate_vercel_run_policy(root=tmp_path)) == 2
-    assert sync_run_policy(root=tmp_path) == [config]
+    assert len(validate_vercel_run_policy(root=tmp_path)) == 4
+    assert sync_run_policy(root=tmp_path) == [config, ignore]
     assert validate_vercel_run_policy(root=tmp_path) == []
     generated = json.loads(config.read_text(encoding="utf-8"))
     function = generated["functions"]["src/slm_training/web/vercel.py"]
     assert function["maxDuration"] == 120
     assert function["includeFiles"] == "{docs/design/**,docs/MODEL_CARD.md}"
+    assert function["excludeFiles"] == "{outputs/**,tests/**}"
+    assert ignore.read_text(encoding="utf-8") == (
+        "manual/**\n\n"
+        "# BEGIN GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES\n"
+        "outputs/**\n"
+        "tests/**\n"
+        "# END GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES\n"
+    )
 
 
 def test_former_root_buckets_cannot_return() -> None:
@@ -176,4 +187,35 @@ def test_skill_discovery_entries_must_be_canonical_symlinks(tmp_path: Path) -> N
 
     discovery.rmdir()
     discovery.symlink_to("../../.agents/skills/example", target_is_directory=True)
+    assert validate_skill_mirrors(tmp_path) == []
+
+
+def test_canonical_skills_must_be_mirrored_into_every_discovery_root(
+    tmp_path: Path,
+) -> None:
+    """A canonical skill with no discovery entry is invisible to that client.
+
+    The policy used to walk only discovery -> canonical, so a newly added skill
+    could ship unseen by Claude Code and Cursor with a green check.
+    """
+    (tmp_path / ".agents/skills/example").mkdir(parents=True)
+    (tmp_path / ".agents/skills/unmirrored").mkdir(parents=True)
+    for root in (".claude/skills", ".cursor/skills"):
+        discovery = tmp_path / root
+        discovery.mkdir(parents=True)
+        (discovery / "example").symlink_to(
+            "../../.agents/skills/example", target_is_directory=True
+        )
+
+    assert sorted(validate_skill_mirrors(tmp_path)) == [
+        "unmirrored skill: .claude/skills/unmirrored is missing; "
+        "add a symlink to ../../.agents/skills/unmirrored",
+        "unmirrored skill: .cursor/skills/unmirrored is missing; "
+        "add a symlink to ../../.agents/skills/unmirrored",
+    ]
+
+    for root in (".claude/skills", ".cursor/skills"):
+        (tmp_path / root / "unmirrored").symlink_to(
+            "../../.agents/skills/unmirrored", target_is_directory=True
+        )
     assert validate_skill_mirrors(tmp_path) == []

@@ -268,6 +268,27 @@ def _transform_binding_swap_symbol(plan: SemanticPlanV1) -> TransformCandidate |
     )
 
 
+def _transform_binding_swap_symbol_reverse(plan: SemanticPlanV1) -> TransformCandidate | None:
+    """Rebind the same role to the furthest declared target (a distinct edge)."""
+    payload = _clone_plan(plan)
+    bindings = _bindings(payload)
+    symbols = _symbols(payload)
+    if not bindings or len(symbols) < 3:
+        return None
+    binding = bindings[0]
+    swapped = str(symbols[-1].get("symbol_id") or "")
+    if not swapped or swapped in (binding.get("candidate_symbols") or ()):
+        return None
+    binding["candidate_symbols"] = (swapped,)
+    return TransformCandidate(
+        transform_id="binding_swap_symbol_reverse",
+        family=ContrastFamily.BINDING,
+        severity=ContrastSeverity.SEVERE,
+        description=f"Rebound the role to the distinct declared symbol {swapped!r}.",
+        plan=_rebuild_plan(payload),
+    )
+
+
 def _transform_binding_introduce_incompatible_symbol(
     plan: SemanticPlanV1,
 ) -> TransformCandidate | None:
@@ -387,6 +408,7 @@ TRANSFORM_ORDER = (
     _transform_topology_delete_leaf,
     _transform_topology_reparent,
     _transform_binding_swap_symbol,
+    _transform_binding_swap_symbol_reverse,
     _transform_binding_introduce_incompatible_symbol,
     _transform_contract_unresolve,
     _transform_contract_archetype_mismatch,

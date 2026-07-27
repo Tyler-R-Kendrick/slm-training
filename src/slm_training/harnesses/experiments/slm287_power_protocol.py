@@ -37,7 +37,8 @@ from slm_training.versioning import build_version_stamp
 EXPERIMENT_ID = "slm287-locked-power-protocol"
 SEEDS = (0, 1, 2, 3, 4)
 BACKENDS = ("scratch_design_off", "scratch_design_on")
-VARIANTS = ("raw", "constrained", "repaired")
+VARIANTS = ("constrained_native", "constrained_compiler")
+PRIMARY_VARIANT = "constrained_native"
 RECORD_METRICS = (
     "binding_aware_meaningful_v2",
     "binder_reference_f1",
@@ -162,7 +163,10 @@ def load_locked_protocol(
             "power": {"effect_scale": "absolute_probability"},
             "prompt_source": "slm230_symbol_only.record.prompt",
             "target_source": "slm230_symbol_only.record.openui",
-            "decode": {"raw": False, "constrained": True, "repaired": True},
+            "decode": {
+                "constrained_native": True,
+                "constrained_compiler": True,
+            },
             "backends": {
                 "scratch_design_off": {
                     "context_backend": "scratch",
@@ -214,13 +218,16 @@ def build_locked_campaign(protocol: LockedPowerProtocol) -> ExperimentCampaignV1
                 description="Same seed and locked records without DESIGN.md context.",
                 kind="quality",
             ),
-            CampaignControlV1(
-                control_id="raw_decode",
-                description="Raw decode is retained beside constrained and repaired variants.",
-                kind="negative",
+                CampaignControlV1(
+                    control_id="compiler_decode_comparison",
+                    description=(
+                        "Compare native and compiler-tree decoding under the same "
+                        "mandatory constrained policy."
+                    ),
+                    kind="negative",
+                ),
             ),
-        ),
-        negative_controls=("raw_decode",),
+        negative_controls=("compiler_decode_comparison",),
         multiplicity_families=(
             MultiplicityFamilyV1(
                 family_id="locked_quality", hypothesis_ids=("meaning_v2", "binder_f1"), alpha=0.05
@@ -276,10 +283,10 @@ def validate_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) -
             raise ValueError("cell records are not the frozen locked record set")
         cell_metrics = cell.get("cell_metrics")
         if not isinstance(cell_metrics, dict) or set(cell_metrics) != set(VARIANTS):
-            raise ValueError("cell lacks raw/constrained/repaired cell metrics")
+            raise ValueError("cell lacks mandatory constrained decode cell metrics")
         for record in records.values():
             if not isinstance(record, dict) or set(record) != set(VARIANTS):
-                raise ValueError("cell lacks raw/constrained/repaired evidence")
+                raise ValueError("cell lacks mandatory constrained decode evidence")
             for values in record.values():
                 if any(
                     metric not in values or not math.isfinite(float(values[metric]))
@@ -439,8 +446,16 @@ def summarize_cells(protocol: LockedPowerProtocol, cells: list[dict[str, Any]]) 
     target_ids: list[str] = []
     for seed in SEEDS:
         for record_id in protocol.record_ids:
-            left_value = float(by_key[seed, control]["records"][record_id]["repaired"]["binding_aware_meaningful_v2"])
-            right_value = float(by_key[seed, candidate]["records"][record_id]["repaired"]["binding_aware_meaningful_v2"])
+            left_value = float(
+                by_key[seed, control]["records"][record_id][PRIMARY_VARIANT][
+                    "binding_aware_meaningful_v2"
+                ]
+            )
+            right_value = float(
+                by_key[seed, candidate]["records"][record_id][PRIMARY_VARIANT][
+                    "binding_aware_meaningful_v2"
+                ]
+            )
             left.append(left_value)
             right.append(right_value)
             differences.append(right_value - left_value)

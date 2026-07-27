@@ -11,7 +11,8 @@ compiler action directly.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import re
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal
 import zlib
@@ -119,6 +120,56 @@ def _stable_action_index(action: str, vocab_size: int) -> int:
     return (zlib.crc32(action.encode("utf-8")) & 0xFFFFFFFF) % vocab_size
 
 
+#: Reserved parameter key for the explicit unseen-action composition/UNK path
+#: (DSH3-21).  Never a legal semantic action key on its own.
+UNK_ACTION_KEY = "__unk__"
+
+#: Matches one typed-argument field of the reserved operator serialization
+#: (``dsl.operators.legal_set.serialize_operator_action``):
+#: ``"<slot_id>=<ref_kind>:<request_id>:<opaque_id>"``.  Deliberately
+#: independent of that module (no import) so this head never depends on the
+#: full operator/reference stack; only the *format* is shared.
+_OPERATOR_ARG_RE = re.compile(r"^(?P<slot>[^=]+)=(?P<kind>[a-z][a-z0-9_]*):(?P<request_id>[^:]+):(?P<opaque_id>[^:]+)$")
+
+
+def canonical_action_key(action: str) -> str:
+    """Canonical *semantic* key for an action identity string (DSH3-21).
+
+    Two goals:
+
+    * An action identity that follows the reserved operator serialization
+      (``"OPERATOR <op_id> <slot>=<kind>:<request_id>:<opaque_id> ..."``)
+      canonicalizes to ``"OPERATOR <op_id> <slot>=<kind> ..."`` -- the opaque
+      per-request ``request_id``/``opaque_id`` pair is dropped so two actions
+      that differ *only* in that opaque identity collapse onto the same
+      trainable parameter (adversarial control: opaque-ID-only changes must
+      not allocate distinct semantic parameters).
+    * Every other action identity string (the flat, already-semantic strings
+      used by every fixture harness in this repo, e.g.
+      ``"component:root:none:card"`` or ``"action:00"``) passes through
+      unchanged, so this is a no-op for existing callers.
+
+    This does not resolve a reference's semantic content (that needs a live
+    ``ReferenceTableV1``, which this head does not have) -- it only retains
+    the reference *kind*.  Two structurally different references of the same
+    kind in the same slot still collapse onto one parameter; that is a
+    documented capacity/precision limit, not a hidden generalization claim.
+    """
+    fields = action.split(" ")
+    if len(fields) < 2 or fields[0] != "OPERATOR":
+        return action
+    operator_id = fields[1]
+    canonical_parts = ["OPERATOR", operator_id]
+    for raw_field in fields[2:]:
+        match = _OPERATOR_ARG_RE.match(raw_field)
+        if match is None:
+            # Not a recognized typed-argument field -- treat the whole string
+            # as an opaque, already-semantic identity rather than guess.
+            return action
+        canonical_parts.append(f"{match.group('slot')}={match.group('kind')}")
+    return " ".join(canonical_parts)
+
+
 class GlobalMaskedHead(LocalActionHead):
     """Global output-class logits followed by an exact legal mask."""
 
@@ -178,14 +229,98 @@ class GlobalMaskedHead(LocalActionHead):
 
 
 class LocalFlatHead(LocalActionHead):
-    """Directly score the b(q) legal semantic actions."""
+    """Directly score the b(q) legal semantic actions.
+
+    Per-action embeddings live in a registered ``nn.ParameterDict`` keyed by a
+    canonical *semantic* action key (:func:`canonical_action_key`), so every
+    allocated embedding is visible to ``named_parameters()`` and any optimizer
+    built over ``self.parameters()`` (DSH3-21).
+
+    Two lifecycles:
+
+    * **Fixture / wiring mode** (default, before :meth:`materialize` is
+      called): an unseen action is lazily allocated on first sight -- this
+      exactly matches the historical (pre-DSH3-21) behavior of this head, so
+      fixture-mode numeric outputs are unchanged.
+    * **Trained mode** (after :meth:`materialize`): the action vocabulary is
+      frozen *before* an optimizer is constructed over ``self.parameters()``.
+      An action whose canonical key was not registered by ``materialize()``
+      either raises (``unseen_action_policy="error"``, the default -- fail
+      closed) or routes to a dedicated ``"__unk__"`` parameter
+      (``unseen_action_policy="unk"``, an explicit composition/UNK path). It
+      never silently allocates a new parameter that an already-constructed
+      optimizer cannot see.
+
+    This head has no generalization mechanism: capacity is O(distinct
+    semantic actions) and does not compose over unseen actions. An unbounded
+    action vocabulary needs a different head family (ternary digit/ECOC,
+    grammar-factorized); that limit is documented, not hidden (see
+    ``docs/design/iter-dsh3-21-local-action-head-trainability-20260725.md``).
+    """
 
     head_family = "local_flat"
 
-    def __init__(self, hidden_dim: int) -> None:
+    #: Bump on any incompatible change to :meth:`checkpoint_state` /
+    #: :meth:`load_checkpoint_state` payload shape.
+    CHECKPOINT_FORMAT_VERSION = 1
+
+    def __init__(
+        self,
+        hidden_dim: int,
+        *,
+        unseen_action_policy: Literal["error", "unk"] = "error",
+    ) -> None:
         super().__init__()
         self.hidden_dim = hidden_dim
         self.scorer = nn.Linear(hidden_dim, 1)
+        if unseen_action_policy not in ("error", "unk"):
+            raise ValueError(f"unknown unseen_action_policy {unseen_action_policy!r}")
+        self.unseen_action_policy = unseen_action_policy
+        # Registered (optimizer-visible) per-action embedding table, keyed by
+        # canonical semantic action key -- never opaque ref ids or list order.
+        self.action_embeddings = nn.ParameterDict()
+        self._materialized = False
+        if unseen_action_policy == "unk":
+            self.action_embeddings[UNK_ACTION_KEY] = nn.Parameter(
+                torch.randn(hidden_dim) * 0.02
+            )
+
+    @staticmethod
+    def canonical_action_key(action: str) -> str:
+        return canonical_action_key(action)
+
+    @property
+    def materialized(self) -> bool:
+        """Whether :meth:`materialize` has fixed the action vocabulary."""
+        return self._materialized
+
+    def materialize(self, action_views: Iterable[str]) -> None:
+        """Pre-register a parameter for every canonical action key.
+
+        Must be called before optimizer construction over ``self.parameters()``
+        for every action the trained head is expected to see. Idempotent and
+        deduplicating: duplicate raw action identities, or distinct action
+        identities that canonicalize to the same semantic key, register a
+        single shared parameter. After this call, unseen canonical keys follow
+        ``unseen_action_policy`` in :meth:`score` rather than lazily
+        allocating (adversarial control: late materialization cannot silently
+        remain unoptimized).
+        """
+        keys = sorted({canonical_action_key(action) for action in action_views})
+        for key in keys:
+            self._register_action_key(key)
+        self._materialized = True
+
+    def _register_action_key(self, key: str) -> None:
+        if "." in key:
+            raise ValueError(
+                f"LocalFlatHead canonical action key {key!r} contains '.', "
+                "which nn.ParameterDict cannot register as a parameter name"
+            )
+        if key not in self.action_embeddings:
+            self.action_embeddings[key] = nn.Parameter(
+                torch.randn(self.hidden_dim) * 0.02
+            )
 
     def score(
         self,
@@ -194,26 +329,99 @@ class LocalFlatHead(LocalActionHead):
         legal_actions: list[str],
     ) -> LocalActionOutput:
         # hidden [batch, hidden_dim]; produce one score per legal action.
-        # We tile hidden and score each action with a learned embedding.
-        if not hasattr(self, "action_embeddings"):
-            # Lazy per-action embeddings keyed by hash.  In a real model these
-            # would be a shared learned table indexed by action identity.
-            self.action_embeddings: dict[str, nn.Parameter] = {}
-        embeddings: list[torch.Tensor] = []
-        for action in legal_actions:
-            if action not in self.action_embeddings:
-                self.action_embeddings[action] = nn.Parameter(
-                    torch.randn(self.hidden_dim) * 0.02
+        keys = [canonical_action_key(action) for action in legal_actions]
+        seen: dict[str, str] = {}
+        for action, key in zip(legal_actions, keys):
+            if key in seen and seen[key] != action:
+                raise ValueError(
+                    "LocalFlatHead.score received duplicate canonical semantic "
+                    f"actions in one legal set: {seen[key]!r} and {action!r} "
+                    f"both canonicalize to {key!r}"
                 )
-            embeddings.append(self.action_embeddings[action])
+            seen[key] = action
+
+        embeddings: list[torch.Tensor] = []
+        unk_routed: list[str] = []
+        for action, key in zip(legal_actions, keys):
+            if key not in self.action_embeddings:
+                if self._materialized:
+                    if self.unseen_action_policy == "unk":
+                        embeddings.append(self.action_embeddings[UNK_ACTION_KEY])
+                        unk_routed.append(action)
+                        continue
+                    raise ValueError(
+                        f"LocalFlatHead: action {action!r} (canonical key "
+                        f"{key!r}) was not registered by materialize() before "
+                        "optimizer construction; late unseen-action allocation "
+                        "is disallowed under unseen_action_policy='error'."
+                    )
+                # Pre-materialize (fixture/wiring) mode: lazily allocate,
+                # matching legacy behavior for zero-step fixture parity.
+                self._register_action_key(key)
+            embeddings.append(self.action_embeddings[key])
         stacked = torch.stack(embeddings, dim=0)  # [b, hidden_dim]
         # [batch, b] = hidden @ stacked.T + scorer(hidden) broadcast
         scores = hidden @ stacked.T  # [batch, b]
+        metadata: dict[str, Any] = {"action_count": len(legal_actions)}
+        if unk_routed:
+            metadata["unk_routed_actions"] = tuple(unk_routed)
         return LocalActionOutput(
             logits=scores,
             head_family=self.head_family,
-            metadata={"action_count": len(legal_actions)},
+            metadata=metadata,
         )
+
+    def checkpoint_state(self) -> dict[str, Any]:
+        """Versioned, self-describing checkpoint payload for this head."""
+        return {
+            "format_version": self.CHECKPOINT_FORMAT_VERSION,
+            "head_family": self.head_family,
+            "hidden_dim": self.hidden_dim,
+            "unseen_action_policy": self.unseen_action_policy,
+            "action_keys": sorted(self.action_embeddings.keys()),
+            "state_dict": self.state_dict(),
+        }
+
+    def load_checkpoint_state(self, payload: Mapping[str, Any]) -> None:
+        """Fail-closed load: raises on format/registry/key/shape mismatch.
+
+        The caller's action registry (``materialize()``d vocabulary) must
+        exactly match the checkpoint's ``action_keys`` -- a partial or
+        superset/subset match is a registry mismatch, not a soft merge.
+        """
+        format_version = payload.get("format_version")
+        if format_version != self.CHECKPOINT_FORMAT_VERSION:
+            raise ValueError(
+                "LocalFlatHead checkpoint format_version mismatch: expected "
+                f"{self.CHECKPOINT_FORMAT_VERSION!r}, got {format_version!r}"
+            )
+        if payload.get("head_family") != self.head_family:
+            raise ValueError(
+                "LocalFlatHead checkpoint head_family mismatch: expected "
+                f"{self.head_family!r}, got {payload.get('head_family')!r}"
+            )
+        if payload.get("hidden_dim") != self.hidden_dim:
+            raise ValueError(
+                "LocalFlatHead checkpoint hidden_dim mismatch: expected "
+                f"{self.hidden_dim!r}, got {payload.get('hidden_dim')!r}"
+            )
+        checkpoint_keys = set(payload.get("action_keys", ()))
+        current_keys = set(self.action_embeddings.keys())
+        if checkpoint_keys != current_keys:
+            missing_here = sorted(checkpoint_keys - current_keys)
+            extra_here = sorted(current_keys - checkpoint_keys)
+            raise ValueError(
+                "LocalFlatHead checkpoint action registry mismatch: "
+                f"missing_here={missing_here} extra_here={extra_here}. "
+                "materialize() the same action vocabulary before loading."
+            )
+        state_dict = payload.get("state_dict")
+        if not isinstance(state_dict, Mapping):
+            raise ValueError("LocalFlatHead checkpoint payload missing 'state_dict'")
+        # strict=True: torch itself fails closed on any residual shape/key
+        # mismatch beyond the registry check above.
+        self.load_state_dict(state_dict, strict=True)
+        self._materialized = True
 
     def decode(
         self,
@@ -321,7 +529,8 @@ class TernaryECOCHead(LocalActionHead):
         self.max_trits = 8
         self.trit_logits = nn.Linear(hidden_dim, self.max_trits * 3)
 
-    def _get_entry(self, legal_actions: list[str]) -> ActionCodeEntry:
+    def entry_for(self, legal_actions: list[str]) -> ActionCodeEntry:
+        """Return the registered ECOC entry for this exact legal-action set."""
         if self.registry is None:
             raise ValueError("TernaryECOCHead requires a registry")
         schema = ActionSchema(
@@ -345,7 +554,7 @@ class TernaryECOCHead(LocalActionHead):
         state_context: StateContext,
         legal_actions: list[str],
     ) -> LocalActionOutput:
-        entry = self._get_entry(legal_actions)
+        entry = self.entry_for(legal_actions)
         m = len(entry.alphabet_radices)
         flat = self.trit_logits(hidden)
         batch = hidden.shape[0]
@@ -373,7 +582,7 @@ class TernaryECOCHead(LocalActionHead):
         if forced is not None:
             return forced
         assert output.trits is not None
-        entry = self._get_entry(legal_actions)
+        entry = self.entry_for(legal_actions)
         hard_trits = output.trits.argmax(dim=-1)  # [batch, m]
         codeword = tuple(int(t) for t in hard_trits[0].tolist())
         action = entry.action_for_codeword(codeword)

@@ -17,6 +17,7 @@ from slm_training.models.latent_codec import (
 )
 from slm_training.models.latent_codec_trainer import (
     LatentCodecModel,
+    audit_no_bypass,
     evaluate_latent_codec,
     train_latent_codec,
 )
@@ -181,3 +182,57 @@ def test_mixed_radix_index_conversion() -> None:
 def test_latent_codec_spec_nominal_bits() -> None:
     spec = LatentCodecSpec(name="test", levels=(2, 3, 4), nominal_bits=math.log2(24))
     assert spec.nominal_bits == pytest.approx(math.log2(24))
+
+
+def test_audit_no_bypass_true_for_trained_semantic_trace_codec() -> None:
+    torch.manual_seed(0)
+    cfg = UniformScalarCodecConfig(num_states=8, K=2, d=3, hidden_dim=8, feature_dim=5, mode="semantic_trace")
+    codec = UniformScalarCodec(cfg)
+    model = LatentCodecModel(codec, 8)
+    x = torch.randn(8, 5)
+    targets = torch.arange(8)
+    train_latent_codec(model, x, targets, steps=200, lr=2e-2)
+    assert audit_no_bypass(model, x) is True
+
+
+def test_audit_no_bypass_true_for_oracle_state_codec() -> None:
+    """Oracle-state codecs have no learned encoder; the zero-input check is skipped."""
+    cfg = UniformScalarCodecConfig(num_states=8, K=2, d=3, hidden_dim=8)
+    codec = UniformScalarCodec(cfg)
+    model = LatentCodecModel(codec, 8)
+    states = torch.arange(8, dtype=torch.long)
+    assert audit_no_bypass(model, states) is True
+
+
+def test_audit_no_bypass_detects_decoder_bypass() -> None:
+    """A decoder that leaks raw input past the codec must fail the audit."""
+    cfg = UniformScalarCodecConfig(num_states=8, K=2, d=3, hidden_dim=8, feature_dim=5, mode="semantic_trace")
+    codec = UniformScalarCodec(cfg)
+    model = LatentCodecModel(codec, 8)
+    x = torch.randn(8, 5)
+
+    def bypassed_forward(inputs: torch.Tensor, *, hard: bool = True):
+        encoding = model.codec.encode(inputs, hard=hard)
+        decoder_input = model.codec.decode_input(encoding)
+        # Bypass: the raw input leaks directly into the output alongside the
+        # legitimate codec-derived decoder input.
+        leak = inputs.sum(dim=-1, keepdim=True).expand(-1, model.num_targets)
+        return model.decoder(decoder_input) + leak, encoding.code_index
+
+    model.forward = bypassed_forward  # type: ignore[method-assign]
+    assert audit_no_bypass(model, x) is False
+
+
+def test_audit_no_bypass_detects_constant_encoder() -> None:
+    """A dead/constant encoder means the raw input never reaches the code."""
+    cfg = UniformScalarCodecConfig(num_states=8, K=2, d=3, hidden_dim=8, feature_dim=5, mode="semantic_trace")
+    codec = UniformScalarCodec(cfg)
+    with torch.no_grad():
+        codec.encoder[0].weight.zero_()  # type: ignore[index]
+        codec.encoder[0].bias.zero_()  # type: ignore[index]
+        codec.code_logits.weight.zero_()  # type: ignore[union-attr]
+        codec.code_logits.bias.zero_()  # type: ignore[union-attr]
+    model = LatentCodecModel(codec, 8)
+    x = torch.randn(8, 5)
+    assert not torch.equal(x, torch.zeros_like(x))
+    assert audit_no_bypass(model, x) is False

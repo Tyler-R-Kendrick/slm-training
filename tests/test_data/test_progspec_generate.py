@@ -21,6 +21,7 @@ from slm_training.data.progspec.generate import (
 from slm_training.data.verify import Tier, VerificationContext, verify_record
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.parser import validate
+from slm_training.dsl.placeholders import extract_placeholders
 
 SMALL_CONFIG = GeneratorConfig(
     components=("TextContent", "Button", "Separator"),
@@ -150,6 +151,170 @@ def test_partial_run_reports_uncovered_cells_and_rejects_bad_config() -> None:
         GeneratorConfig(max_depth=0)
 
 
+def test_required_component_groups_include_ordered_topology_variants() -> None:
+    config = GeneratorConfig(
+        components=("TextContent", "Form", "Input"),
+        required_components=("TextContent", "Form", "Input"),
+        max_width=3,
+    )
+    generator = ProgramGenerator(config, seed=7)
+    orders = {candidate.components for candidate in generator._candidates}
+
+    assert len(orders) == 6
+    assert all(set(config.required_components) <= set(order) for order in orders)
+
+
+def test_required_component_groups_include_configured_supersets() -> None:
+    config = GeneratorConfig(
+        components=("TextContent", "Form", "Input", "Card"),
+        required_components=("TextContent", "Form", "Input"),
+        max_width=4,
+    )
+    generator = ProgramGenerator(config, seed=7)
+
+    orders = {
+        candidate.components
+        for candidate in generator._candidates
+        if len(candidate.components) == 4
+    }
+
+    assert len(orders) == 24
+    assert all(set(config.required_components) <= set(order) for order in orders)
+
+
+def test_required_card_topology_contains_the_required_components() -> None:
+    config = GeneratorConfig(
+        components=("TextContent", "Form", "Input", "Card"),
+        required_components=("TextContent", "Form", "Input", "Card"),
+        max_width=4,
+    )
+    result = ProgramGenerator(config, seed=1284).generate(1)
+
+    openui = result.programs[0].canonical_openui
+    assert "Card([" in openui
+    assert "Card([])" not in openui
+    assert "Input(" in openui
+    assert "Form(" in openui
+
+
+def test_required_switch_topology_covers_content_and_nonempty_items() -> None:
+    config = GeneratorConfig(
+        components=("Slider", "SwitchGroup", "SwitchItem", "TextCallout"),
+        required_components=("Slider", "SwitchGroup", "SwitchItem", "TextCallout"),
+        max_width=4,
+    )
+    generator = ProgramGenerator(config, seed=1295)
+    targets = {
+        (
+            candidate.prop_target.component,
+            candidate.prop_target.prop,
+            candidate.prop_target.variant,
+        )
+        for candidate in generator._candidates
+        if candidate.prop_target is not None
+    }
+
+    assert ("SwitchGroup", "items", "nonempty") in targets
+    assert ("Slider", "label", "placeholder") in targets
+    assert ("TextCallout", "title", "placeholder") in targets
+
+    programs = generator.generate(96).programs
+    sources = [program.canonical_openui for program in programs]
+    assert all(
+        "SwitchGroup(" in source and "[switchitem" in source for source in sources
+    )
+    assert all(source.count(":gen") >= 2 for source in sources)
+    assert all(source.count(":gen") >= 3 for source in sources)
+
+
+def test_required_content_properties_force_the_direct_settings_slot_shape() -> None:
+    config = GeneratorConfig(
+        components=("SwitchItem", "Slider"),
+        required_components=("SwitchItem", "Slider"),
+        required_content_properties=(
+            ("SwitchItem", "label"),
+            ("SwitchItem", "description"),
+            ("Slider", "label"),
+        ),
+        max_width=2,
+    )
+    programs = ProgramGenerator(config, seed=1302).generate(60).programs
+
+    sources = [program.canonical_openui for program in programs]
+    assert all("SwitchGroup(" not in source for source in sources)
+    assert all('SwitchItem(":gen' in source for source in sources)
+    assert all('Slider("' in source and ":gen" in source for source in sources)
+    assert all(source.count(":gen") == 3 for source in sources)
+
+
+def test_required_form_topology_resolves_anyof_input_refs() -> None:
+    config = GeneratorConfig(
+        components=("Form", "FormControl", "Input", "Button"),
+        required_components=("Form", "FormControl", "Input", "Button"),
+        required_content_properties=(
+            ("FormControl", "label"),
+            ("Input", "placeholder"),
+            ("Button", "label"),
+        ),
+        max_width=4,
+    )
+    programs = ProgramGenerator(config, seed=1305).generate(24).programs
+
+    arities = set()
+    for program in programs:
+        source = program.canonical_openui
+        assert "Form(" in source
+        arity = source.count("FormControl(")
+        arities.add(arity)
+        assert source.count("Input(") == arity
+        assert source.count("Button(") == arity
+        assert validate(source).root
+    assert arities == {1, 2, 3}
+
+
+def test_forward_reference_patterns_pair_slot_ownership_with_slot_free_sharing() -> None:
+    config = GeneratorConfig(
+        components=("Stack", "Input", "TextContent"),
+        forward_reference_patterns=(
+            "root_distinct_slot_inputs",
+            "root_shared_slot_free_input",
+        ),
+    )
+    result = ProgramGenerator(config, seed=1421).generate_until_covered()
+
+    by_pattern = {
+        spec.facts["forward_reference_pattern"]: spec.canonical_openui
+        for spec in result.programs
+        if "forward_reference_pattern" in spec.facts
+    }
+    assert set(by_pattern) == set(config.forward_reference_patterns)
+    distinct = by_pattern["root_distinct_slot_inputs"]
+    shared = by_pattern["root_shared_slot_free_input"]
+    assert "root = Stack([input1, input2]" in distinct
+    assert len(extract_placeholders(distinct)) == 2
+    assert "root = Stack([input1, input1, textcontent2, textcontent3]" in shared
+    assert 'input1 = Input("$0", null' in shared
+    assert len(extract_placeholders(shared)) == 2
+    assert validate(distinct).root and validate(shared).root
+
+
+def test_required_content_properties_reject_enum_or_unknown_properties() -> None:
+    with pytest.raises(ValueError, match="free-form string"):
+        ProgramGenerator(
+            GeneratorConfig(
+                components=("Slider",),
+                required_content_properties=(("Slider", "variant"),),
+            )
+        )
+    with pytest.raises(ValueError, match="free-form string"):
+        ProgramGenerator(
+            GeneratorConfig(
+                components=("Slider",),
+                required_content_properties=(("Slider", "missing"),),
+            )
+        )
+
+
 def test_cli_writes_programs_and_authoritative_coverage(tmp_path) -> None:
     programs_path = tmp_path / "programs.jsonl"
     coverage_path = tmp_path / "coverage.json"
@@ -176,3 +341,28 @@ def test_cli_writes_programs_and_authoritative_coverage(tmp_path) -> None:
     )
     assert coverage["axes"]["component"]["total"] == 54
     assert coverage["verifier"] == {"failed": 0, "passed": 2}
+
+
+def test_cli_accepts_required_component_topology_inventory(tmp_path) -> None:
+    programs_path = tmp_path / "programs.jsonl"
+    coverage_path = tmp_path / "coverage.json"
+
+    assert (
+        generate_main(
+            [
+                "--count",
+                "2",
+                "--output",
+                str(programs_path),
+                "--coverage",
+                str(coverage_path),
+                "--components",
+                "TextContent,Form,Input",
+                "--required-components",
+                "TextContent,Form,Input",
+                "--max-width",
+                "3",
+            ]
+        )
+        == 0
+    )

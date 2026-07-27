@@ -1,0 +1,2 @@
+@[user]:
+{"claim": "local_exact_bulk_fixture_preflight_not_crossover_or_ship_claim", "result": {"reason": "no COMPLETE local training rows; enabled and shuffled-label arms were not run", "verdict": "reject"}}

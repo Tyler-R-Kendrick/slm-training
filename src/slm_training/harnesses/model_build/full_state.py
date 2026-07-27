@@ -94,6 +94,8 @@ def save_full_state(
     step: int,
     seen_prompt_tokens: int,
     seen_target_tokens: int,
+    seen_primary_examples: int,
+    seen_replay_examples: int,
     loop_rng: Any,
     pending_batches: list[list[Any]],
     config: Any,
@@ -121,6 +123,8 @@ def save_full_state(
         "step": int(step),
         "seen_prompt_tokens": int(seen_prompt_tokens),
         "seen_target_tokens": int(seen_target_tokens),
+        "seen_primary_examples": int(seen_primary_examples),
+        "seen_replay_examples": int(seen_replay_examples),
         "model": model_state,
         "optimizer": optimizer.state_dict() if optimizer is not None else None,
         # accel returns a stateless _NullScaler when AMP is off.

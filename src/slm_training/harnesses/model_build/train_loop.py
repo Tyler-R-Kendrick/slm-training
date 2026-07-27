@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -16,7 +17,7 @@ from pathlib import Path
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import batched, load_train_records
 from slm_training.harnesses.model_build.factory import build_model
-from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.levers import MAX_HARNESS_WALL_MINUTES
 from slm_training.runtime.telemetry import (
     CycleTelemetry,
     bind_telemetry,
@@ -66,20 +67,32 @@ def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
 
 def _strict_root_reference_identity_records(records, tokenizer) -> list:
     """Find records whose terminal root uses a nonempty strict section subset."""
-    from slm_training.models.choice_tokenizer import (
-        structural_root_reference_identity_target,
-    )
+    if hasattr(tokenizer, "bind_slot_of"):
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            root_declaration_reference_identity_target,
+        )
+
+        def identity_target(record, token_ids):
+            return root_declaration_reference_identity_target(tokenizer, token_ids)
+
+    else:
+        from slm_training.models.choice_tokenizer import (
+            structural_root_reference_identity_target,
+        )
+
+        def identity_target(record, token_ids):
+            return structural_root_reference_identity_target(
+                tokenizer,
+                token_ids,
+                slot_count=len(record.placeholders or ()),
+            )
 
     strict = []
     for record in records:
         token_ids = tokenizer.encode(
             record.openui, placeholders=list(record.placeholders or ())
         )
-        target = structural_root_reference_identity_target(
-            tokenizer,
-            token_ids,
-            slot_count=len(record.placeholders or ()),
-        )
+        target = identity_target(record, token_ids)
         if target is None:
             continue
         references, section_count = target
@@ -211,11 +224,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
     max_wall_minutes = (
-        float(MAX_RUN_MINUTES) if max_wall_minutes is None else float(max_wall_minutes)
+        float(MAX_HARNESS_WALL_MINUTES)
+        if max_wall_minutes is None
+        else float(max_wall_minutes)
     )
-    if not 0 < max_wall_minutes <= MAX_RUN_MINUTES:
+    if not 0 < max_wall_minutes <= MAX_HARNESS_WALL_MINUTES:
         raise ValueError(
-            f"max_wall_minutes must be positive and at most {MAX_RUN_MINUTES}"
+            "max_wall_minutes must be positive and at most "
+            f"{MAX_HARNESS_WALL_MINUTES}"
         )
     wall_started = time.monotonic()
     wall_deadline = wall_started + max_wall_minutes * 60
@@ -252,6 +268,26 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         raise ValueError(
             "replay sampling cannot be combined with curriculum or mixture sampling"
         )
+    contrast_weight = float(
+        getattr(config, "semantic_contrast_loss_weight", 0.0) or 0.0
+    )
+    contrast_fraction = float(
+        getattr(config, "semantic_contrast_fraction", 0.0) or 0.0
+    )
+    contrast_pairs = []
+    contrast_dir = getattr(config, "semantic_contrast_dir", None)
+    if contrast_weight > 0.0:
+        if contrast_dir is None:
+            raise ValueError("semantic_contrast_loss_weight requires semantic_contrast_dir")
+        if not 0.0 < contrast_fraction <= 1.0:
+            raise ValueError("semantic_contrast_fraction must be in (0, 1]")
+        if config.batch_size < 2:
+            raise ValueError("semantic contrast objective requires batch_size >= 2")
+        if replay_fraction:
+            raise ValueError("semantic contrast objective cannot be combined with replay")
+        from slm_training.models.semantic_contrast_loss import load_semantic_contrast_pairs
+
+        contrast_pairs = load_semantic_contrast_pairs(Path(contrast_dir))
     replay_records = []
     replay_manifest_sha: str | None = None
     if replay_fraction:
@@ -356,7 +392,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
             if plugin_config is not None and hasattr(plugin_config, field_name)
         }
-        loader(initialize_path)
+        load_kwargs = {}
+        if "preserve_tokenizers" in inspect.signature(loader).parameters:
+            load_kwargs["preserve_tokenizers"] = True
+        loader(initialize_path, **load_kwargs)
         initialized_from = str(initialize_path)
         initialized_prior_fields = list(getattr(plugin, "initialized_prior_fields", ()))
         # These priors are deterministic corpus statistics, not learned weights.
@@ -514,6 +553,23 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             task_family_pools = index_task_family_pools(records)
 
     def _batches_for_step(step: int) -> list[list]:
+        if contrast_pairs:
+            # Pair sides stay in the same batch. Negative sides are scored only
+            # by TwoTowerModel; their token CE never becomes a training target.
+            pair_count = min(
+                config.batch_size // 2,
+                max(1, round(config.batch_size * contrast_fraction / 2)),
+            )
+            primary_count = config.batch_size - (2 * pair_count)
+            windows = []
+            for _ in range(8):
+                rows = []
+                for pair in (rng.choice(contrast_pairs) for _ in range(pair_count)):
+                    rows.extend((pair.positive, pair.negative))
+                rows.extend(rng.choice(records) for _ in range(primary_count))
+                rng.shuffle(rows)
+                windows.append(rows)
+            return windows
         if replay_records:
             target = config.batch_size * 8
             replay_count = round(target * replay_fraction)
@@ -731,6 +787,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         step = int(payload.get("step") or 0)
         seen_prompt_tokens = int(payload.get("seen_prompt_tokens") or 0)
         seen_target_tokens = int(payload.get("seen_target_tokens") or 0)
+        seen_primary_examples = int(payload.get("seen_primary_examples") or 0)
+        seen_replay_examples = int(payload.get("seen_replay_examples") or 0)
         if payload.get("best_weighted_nll") is not None:
             best_weighted_nll = float(payload["best_weighted_nll"])
         if payload.get("best_ship_score") is not None:
@@ -821,6 +879,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 step=step,
                 seen_prompt_tokens=seen_prompt_tokens,
                 seen_target_tokens=seen_target_tokens,
+                seen_primary_examples=seen_primary_examples,
+                seen_replay_examples=seen_replay_examples,
                 loop_rng=rng,
                 pending_batches=pending,
                 config=config,
@@ -1001,6 +1061,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         return row
 
     stopped_on = "steps"
+    checkpoint_every_steps = int(
+        getattr(config, "checkpoint_every_steps", 0) or 0
+    )
     mode = "a" if resumed_from else "w"
     with bind_telemetry(tel), metrics_path.open(mode, encoding="utf-8") as metrics_file:
         while step < config.steps:
@@ -1088,7 +1151,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     _emit_progress(step, last_loss)
                     did_eval = _maybe_eval(step)
                     did_loss_eval = _maybe_loss_eval(step)
-                    if did_eval or did_loss_eval:
+                    if did_eval or did_loss_eval or (
+                        checkpoint_every_steps > 0
+                        and step % checkpoint_every_steps == 0
+                    ):
                         _save_full_state_now()
             else:
                 with timed("forward"):
@@ -1226,6 +1292,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 "replay": _source_loss_proxy_summary("replay"),
             },
         },
+        "semantic_contrast": {
+            "enabled": bool(contrast_pairs),
+            "path": str(contrast_dir) if contrast_pairs else None,
+            "loss_weight": contrast_weight,
+            "margin": float(getattr(config, "semantic_contrast_margin", 1.0)),
+            "fraction": contrast_fraction,
+            "pair_count": len(contrast_pairs),
+            "families": sorted({pair.family for pair in contrast_pairs}),
+        },
         "model": config.model_name,
         "device": config.device,
         "seen_prompt_tokens": seen_prompt_tokens,
@@ -1288,6 +1363,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "ltr_tail_loss_weight": getattr(config, "ltr_tail_loss_weight", 0.0),
+            "ltr_tail_tokens": getattr(config, "ltr_tail_tokens", 0),
             "compiler_alignment_loss_weight": getattr(
                 config, "compiler_alignment_loss_weight", 0.0
             ),
@@ -1371,6 +1448,24 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "binder_topology_decode_weight": getattr(
                 config, "binder_topology_decode_weight", 0.0
+            ),
+            "binder_slot_ownership_loss_weight": getattr(
+                config, "binder_slot_ownership_loss_weight", 0.0
+            ),
+            "binder_slot_ownership_decode_weight": getattr(
+                config, "binder_slot_ownership_decode_weight", 0.0
+            ),
+            "binder_slot_presence_loss_weight": getattr(
+                config, "binder_slot_presence_loss_weight", 0.0
+            ),
+            "binder_slot_presence_decode_weight": getattr(
+                config, "binder_slot_presence_decode_weight", 0.0
+            ),
+            "binder_reference_presence_loss_weight": getattr(
+                config, "binder_reference_presence_loss_weight", 0.0
+            ),
+            "binder_reference_presence_decode_weight": getattr(
+                config, "binder_reference_presence_decode_weight", 0.0
             ),
             "binder_arity_loss_weight": getattr(
                 config, "binder_arity_loss_weight", 0.0

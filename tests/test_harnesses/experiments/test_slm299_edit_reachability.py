@@ -66,6 +66,23 @@ def test_seed_identity_is_zero_edits() -> None:
     assert case.edit_lower_bound == 0
 
 
+def test_extended_space_reaches_a_real_pack_property_mutation() -> None:
+    """SLM-425 makes the root's declared empty rest reachable in one edit."""
+    target = "root = Stack([])"
+    case = analyze_reachability(SEED, target, slot_inventory=[":x"])
+    assert case.verdict is Verdict.PROVEN_REACHABLE
+    assert case.edit_lower_bound == 1
+    assert case.path == [
+        {
+            "action": "SET_PROPERTY",
+            "stmt": 0,
+            "property": "rest",
+            "rest": "",
+        }
+    ]
+
+
+
 # (b) multi-container target ----------------------------------------------
 
 def test_multi_container_target_needs_container_add() -> None:

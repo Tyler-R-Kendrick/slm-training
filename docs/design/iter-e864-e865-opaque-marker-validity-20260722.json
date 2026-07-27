@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e865-e852-v51-smoke-n3-r1",
+  "experiment_id": "E864-E865",
+  "date": "2026-07-22",
+  "decision": "retain_harness_fix_no_ship_claim",
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "structural_similarity": 0.6589,
+      "component_type_recall": 0.75,
+      "placeholder_fidelity": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "placeholder_validity": 1.0,
+      "contract_precision": 1.0,
+      "contract_recall": 1.0,
+      "reward_score": 0.949,
+      "decode_timeout_count": 0,
+      "constrained_fallback_rate": 0.0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "failed": 1
+  },
+  "checkpoint": {
+    "run_id": "e852-e826-typed-supplement-scratch600-r1",
+    "sha256": "76cd2dc28b921cd9de3efff29e2b07ebf8df453abbca31559f95368525b09819"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "evaluation_policy": "strict_compiler_tree",
+    "suite": "smoke",
+    "n": 3,
+    "diagnostic_subset": true,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "decode_timeout_seconds": 12.0,
+    "gen_steps": 8
+  },
+  "runs": [
+    {
+      "run_id": "e864-e852-v50-smoke-n3-r1",
+      "harness_version": "v50",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "structural_similarity": 0.6589,
+      "component_type_recall": 0.75,
+      "placeholder_fidelity": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "placeholder_validity": 0.6,
+      "contract_precision": 1.0,
+      "contract_recall": 1.0,
+      "reward_score": 0.949,
+      "decode_timeout_count": 0,
+      "constrained_fallback_rate": 0.0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e865-e852-v51-smoke-n3-r1",
+      "harness_version": "v51",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "structural_similarity": 0.6589,
+      "component_type_recall": 0.75,
+      "placeholder_fidelity": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "placeholder_validity": 1.0,
+      "contract_precision": 1.0,
+      "contract_recall": 1.0,
+      "reward_score": 0.949,
+      "decode_timeout_count": 0,
+      "constrained_fallback_rate": 0.0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    }
+  ],
+  "prediction_sha256": [
+    "cac88427cac4e7331096a36eb71f6f19561eca5116264030a34296e618d8680d",
+    "c192a515a598f782e76738c52491cf47a0fb57fe52e7c5732efb183a212b7187",
+    "0cc24e8a1503e93b266ee9d4713c8fdf84c3428e5765729df61f90ad295da6c0"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "53f216d57aa82e75768329768b5a07581ba673d9",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v24",
+      "harness.model_build.eval": "v51",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v234"
+    },
+    "stamped_at": "2026-07-22T19:41:54.161947+00:00"
+  }
+}

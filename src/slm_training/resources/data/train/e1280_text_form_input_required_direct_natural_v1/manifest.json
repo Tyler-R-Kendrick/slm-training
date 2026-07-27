@@ -1,0 +1,147 @@
+{
+  "version": "e1280_text_form_input_required_direct_natural_v1",
+  "kind": "train",
+  "profile": "strict",
+  "source": "programspec",
+  "records": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/stats.json",
+  "quality_report": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/quality_report.json",
+  "rejected": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/rejected.jsonl",
+  "synthesis_feedback": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/synthesis_feedback.json",
+  "record_count": 0,
+  "ids": [],
+  "split_group_ids": [],
+  "prompt_fingerprints": [],
+  "openui_fingerprints": [],
+  "structure_fingerprints": [],
+  "pair_fingerprints": [],
+  "design_md_fingerprints": [],
+  "content_fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "source_families": {
+    "families": {},
+    "total_records": 0,
+    "unique_root_parents": 0,
+    "records_per_root_parent": {
+      "max": 0,
+      "p50": 0,
+      "p95": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 0,
+      "records_per_cluster": {
+        "max": 0,
+        "p50": 0,
+        "p95": 0
+      }
+    }
+  },
+  "governance": {
+    "croissant.json": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/governance/dataset.spdx.json"
+  },
+  "mixture": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e1280_text_form_input_required_direct_natural_v1/synthesis_telemetry.jsonl",
+  "synthesis_telemetry_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "diffusion_online": {
+    "policies": [
+      "uniform",
+      "contiguous",
+      "statement",
+      "ast_subtree",
+      "reference",
+      "edit_local",
+      "disjoint",
+      "all_mask",
+      "expansion",
+      "contraction",
+      "reorder",
+      "macro_substitution"
+    ],
+    "mask_min": 0.15,
+    "mask_max": 0.85,
+    "overallocate": 8,
+    "length_buckets": [
+      32,
+      64,
+      96,
+      128,
+      192,
+      256,
+      384,
+      512
+    ],
+    "max_length": null
+  },
+  "built_at": "2026-07-24T07:07:01.691543+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v28"
+    },
+    "stamped_at": "2026-07-24T07:07:01.730875+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e1280_text_form_input_required_direct_natural_v1",
+  "immutable": true,
+  "trace_id": "16623bdd460a88b9c39ac6bde39706c4",
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "9df4bab58ffea68fed727889b8b957b0b0800f141c3c26b822130210308ee237",
+      "size": 2544
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "b56c65490780b254b004c80752eeb451265d17f1fbe0b61d37f0752a76f74ca5",
+      "size": 434
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "791d274c6aac5c0e5470e018f511af471eca5e3ad70526fc1c647e3ad75ff127",
+      "size": 1046
+    },
+    {
+      "path": "governance/records.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "e71a721c0dfeebafe8db0bc72d963201b194b9f049cf4bd573b191f17eb1ca44",
+      "size": 3723
+    },
+    {
+      "path": "quality_report.json",
+      "sha256": "159924266abfc800bd9a4e9807598d5c7908e7cc63b514f801d5e0acf9b6b44e",
+      "size": 3626
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "rejected.jsonl",
+      "sha256": "739a3c0647e15a53dd5d90fbe2133b2709e7fe1bd21309429d43a0db29515bd8",
+      "size": 146251
+    },
+    {
+      "path": "stats.json",
+      "sha256": "ddf4cac2c8a6a87893dcb9fce0738a7af43f41343592790b825068f2f28676d8",
+      "size": 10065
+    },
+    {
+      "path": "synthesis_feedback.json",
+      "sha256": "6599cd592b115c97f0da9a41cd3cc81521d8321dfdda04afed24bdbd1bae94f4",
+      "size": 1940
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    }
+  ]
+}
