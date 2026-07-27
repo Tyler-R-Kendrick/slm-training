@@ -1,0 +1,45 @@
+{
+  "cycle4": {
+    "s48_t30_champion": {
+      "parse_rate": 1.0,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.7222222222222222,
+      "structural_similarity": 0.31583333333333335,
+      "latency_ms_p50": 19192.26,
+      "n": 3
+    },
+    "asap_s48_t30": {
+      "parse_rate": 1.0,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.8436666666666667,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "placeholder_fidelity": 0.7222222222222222,
+      "structural_similarity": 0.31583333333333335,
+      "latency_ms_p50": 10306.88,
+      "n": 3
+    },
+    "continue_plus24_t30": {
+      "parse_rate": 0.0,
+      "exact_match": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.0,
+      "latency_ms_p50": 30001.84,
+      "n": 3,
+      "last_loss": 8.189298629760742,
+      "steps": 24,
+      "stopped_on": "steps",
+      "seed": 42
+    }
+  },
+  "champion": "asap_s48_t30"
+}
