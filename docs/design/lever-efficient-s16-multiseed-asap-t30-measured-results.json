@@ -1,0 +1,92 @@
+{
+  "lever": "efficient_s16_multiseed",
+  "rows": [
+    {
+      "seed": 42,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 22.590120315551758,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "decode_timeout_count": 3,
+      "latency_ms_p50": 30003.39,
+      "run_id": "exp_lever_eff_s16_seed42",
+      "eval_id": "exp_lever_eff_s16_seed42_eval_asap_t30"
+    },
+    {
+      "seed": 47,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 24.963964462280273,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "reward_score": 0.7653333333333334,
+      "empty_prediction_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 6138.15,
+      "run_id": "exp_lever_eff_s16_seed47",
+      "eval_id": "exp_lever_eff_s16_seed47_eval_asap_t30"
+    },
+    {
+      "seed": 48,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 13.237972259521484,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "decode_timeout_count": 3,
+      "latency_ms_p50": 30001.95,
+      "run_id": "exp_lever_eff_s16_seed48",
+      "eval_id": "exp_lever_eff_s16_seed48_eval_asap_t30"
+    },
+    {
+      "seed": 49,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 15.510723114013672,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "decode_timeout_count": 3,
+      "latency_ms_p50": 30014.09,
+      "run_id": "exp_lever_eff_s16_seed49",
+      "eval_id": "exp_lever_eff_s16_seed49_eval_asap_t30"
+    },
+    {
+      "seed": 50,
+      "steps": 16,
+      "stopped_on": "steps",
+      "last_loss": 15.88450813293457,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "empty_prediction_count": 3,
+      "decode_timeout_count": 3,
+      "latency_ms_p50": 30004.39,
+      "run_id": "exp_lever_eff_s16_seed50",
+      "eval_id": "exp_lever_eff_s16_seed50_eval_asap_t30"
+    }
+  ],
+  "selected": {
+    "seed": 47,
+    "steps": 16,
+    "stopped_on": "steps",
+    "last_loss": 24.963964462280273,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.3333333333333333,
+    "reward_score": 0.7653333333333334,
+    "empty_prediction_count": 0,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 6138.15,
+    "run_id": "exp_lever_eff_s16_seed47",
+    "eval_id": "exp_lever_eff_s16_seed47_eval_asap_t30"
+  },
+  "success_count": 1,
+  "not_ship": true,
+  "captured_at": "2026-07-27T14:55:53.933496+00:00"
+}
