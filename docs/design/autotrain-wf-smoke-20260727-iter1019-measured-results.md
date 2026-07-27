@@ -12,4 +12,6 @@ python -m scripts.train_model --train-dir src/slm_training/resources/data/train/
   --run-id autotrain_wf_smoke_20260727_iter1019 --no-sync-checkpoints --device cpu --seed 0
 ```
 
+Environment: fresh `.venv` (Python 3.12.3, `torch==2.5.1+cpu`, `pip install -e .`) — created and torn down in this scheduled session, not committed to the repo (`.venv/` is gitignored).
+
 `outputs/runs/autotrain_wf_smoke_20260727_iter1019/train_summary.json` (not committed; `outputs/` is gitignored).

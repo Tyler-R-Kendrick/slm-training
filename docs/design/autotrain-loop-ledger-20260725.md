@@ -185,9 +185,12 @@ python -m scripts.train_model \
   --run-id <run_id> --no-sync-checkpoints --device cpu --seed 0
 ```
 
-Checked (not committed — `outputs/` is gitignored) at `outputs/runs/<run_id>/`.
-`last_loss` is again identical to every prior verified row — same committed
-fixture, seed 0, 8 steps, fully deterministic. Per-iteration notes:
+Environment: fresh `.venv` (Python 3.12.3, `torch==2.5.1+cpu`, `pip install -e .`),
+created and torn down in this scheduled session — not committed (`.venv/` is
+gitignored). Checked (not committed — `outputs/` is gitignored) at
+`outputs/runs/<run_id>/`. `last_loss` is again identical to every prior
+verified row — same committed fixture, seed 0, 8 steps, fully deterministic.
+Per-iteration notes:
 [iter1018](autotrain-wf-smoke-20260727-iter1018-measured-results.md) …
 [iter1022](autotrain-wf-smoke-20260727-iter1022-measured-results.md).
 
