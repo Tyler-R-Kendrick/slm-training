@@ -7942,13 +7942,25 @@
       ]
     },
     "harness.preference.replay_pairs": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_pairs.py",
-        "tests/test_harnesses/preference/test_replay_pairs.py"
+        "tests/test_harnesses/preference/test_replay_pairs.py",
+        "scripts/build_replay_preference_pairs.py",
+        "tests/test_scripts/test_build_replay_preference_pairs.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) eighth slice: adds build_demo_merge_scenario, a second scratch fixture (two branches with disjoint-target edits, mirroring tests/test_dsl/test_operator_merge.py's own verified-mergeable shape) covering merge_success -- the one named pattern the original build_demo_trace could not reach, since extract_merge_preference_row never operates on a shared ConversationTraceV1. main() now combines both sources: 4 rows (3 from the trace + 1 merge), 3 render (still only undo_then_redo drops, for the structural reason documented in the seventh slice), 1 combined pairs.jsonl. No change to the sixth slice's renderer itself"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-27",
+          "note": "SLM-418 (DSH5-10) seventh slice: scripts/build_replay_preference_pairs.py builds a single small, deterministic, honestly-labeled fixture_or_scratch conversation (no real captured ConversationTraceV1 corpus exists anywhere in the repo -- confirmed this slice) exercising three of the seven named patterns, extracts rows, renders them via render_replay_preference_pairs, and writes a real pairs.jsonl. 2 of 3 rows render (undo_then_redo never does -- for any deterministic zero-argument operator, redo and reapplying the same operator at the same input state are, by definition, textually identical, so the renderer's dedup guard correctly declines it rather than emitting a self-contradictory pair). First real, on-disk pairs corpus this feature line has ever produced; still wiring/demo, no training run in this component"
+        },
         {
           "version": "v1",
           "date": "2026-07-27",
