@@ -880,6 +880,63 @@ Result (fifth slice, v6): real run in a fresh `.venv` -- Python 3.12, `pip insta
 
 Result (this PR, sixth slice, v7): same command, same freshly built `.venv` (Python 3.12) plus `NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` -- test file grew by 8 tests (7 conversion-coverage tests + 1 refusal test) in the same `tests/test_dsl/test_replay_preference.py`, no new test module needed: `69 passed`. Also verified: `ruff check` on every changed file (`src/slm_training/dsl/operators/replay_preference.py`, `src/slm_training/dsl/operators/__init__.py`, `tests/test_dsl/test_replay_preference.py`) -- `All checks passed!`; `python -m scripts.verify_version_stamps --check --base origin/main` -- `ok (vs 5f94b925a121; 4 changed file(s), 2 component(s) touched)`; `python -m scripts.repo_policy` -- `repo-policy: ok (tracked + untracked)`; `python -m scripts.verify_decode_invariants` -- exits clean (`0`).
 
+## Review fixes (seventh slice)
+
+CodeRabbit review on PR #1149 posted 5 actionable comments; 1 fixed, 1 real
+but deferred, 3 not applied:
+
+* **Missing `version_stamp` on the held-out benefit report (Major, real).**
+  `evaluate_replay_preference_held_out_benefit`'s two returned dicts
+  (`no_trained_checkpoint` early return and the final comparison) did not
+  carry `version_stamp`, unlike the sibling
+  `ReplayPreferenceCorpusBuildReportV1` report in the same slice. Fixed:
+  both now stamp with
+  `build_version_stamp("harness.preference.replay_preference_corpus")`.
+* **Deferred (real, not yet applied): `--split both` could silently clobber
+  the train corpus (Minor).** If `--train-out` and `--held-out-out` resolve
+  to the same path, the held-out write overwrites the train corpus while
+  stdout still reports two successful builds -- CodeRabbit's finding is
+  correct and the proposed `parser.error` guard is the right fix. Not landed
+  in this session: this repo's `.githooks/check-changed` pre-commit hook maps
+  any `scripts/`-prefixed change to the entire `tests/test_scripts` suite
+  (`SUITES_BY_PREFIX` in `scripts/check_changed.py`), and that suite
+  currently has pre-existing failures unrelated to this slice or this fix --
+  confirmed by stashing this slice's changes and re-running the same failing
+  tests against unmodified `HEAD` (`ad9d2f5`), where they fail identically
+  (e.g. `test_build_spectral_atlas.py`/`test_inspect_spectral.py` assert
+  stale hardcoded `harness.experiments.slm214_spectral_snapshot`/
+  `slm215_spectral_atlas` version strings against the real, already-higher
+  registered versions; `test_run_slm233_recursive_campaign.py` hits an
+  unrelated `assert_canonical_template_marker_inventory` failure on its own
+  fixture load). Fixing those is real but out of scope for a CodeRabbit
+  review-fix pass on this slice; a future session should repair
+  `tests/test_scripts`'s pre-existing breakage, then land this one-line
+  guard.
+* **Not applied: prefix reproducibility commands with `rtk` (3 comments).**
+  This is the same suggestion CodeRabbit made on this exact doc in "Review
+  fixes (sixth slice)" above, already reviewed and rejected there: `rtk` is
+  a token-compression convenience for an agent's own shell usage
+  (`AGENTS.md`'s token-efficiency stack), not part of the documented,
+  copy-pasteable reproduction commands this file's every slice has used
+  unprefixed. No new reasoning was offered this time either.
+* **Not applied: require a `docs/MODEL_CARD.md`/README update for this
+  slice's checkpoints (Major).** `docs/MODEL_CARD.md`'s own stated scope is
+  checkpoints "intended for reuse" (full train, remote train, bootstrap
+  demo, matrix champion) and explicitly labels gitignored `outputs/` rows
+  "honest local/diagnostic evidence, not frontier claims." This slice's two
+  checkpoints (`dsh5_10_seventh_slice_scratch`,
+  `dsh5_10_seventh_slice_preference`) are exactly that -- local, from-scratch
+  smoke checkpoints, never synced or promoted -- consistent with every prior
+  `autotrain-loop-ledger` smoke iteration never getting a model-card entry.
+  The doc's existing "no model-card update applies" statement is correct as
+  written.
+
+Verified after the applied fix: `pytest -q` on the seventh slice's own test
+files (31 passed), `ruff check` on the edited file (clean),
+`python -m scripts.verify_version_stamps --check --base origin/main` (ok),
+`python -m scripts.repo_policy` (ok), `python -m scripts.verify_decode_invariants`
+(exit 0).
+
 ## Reproducibility (seventh slice)
 
 ```bash

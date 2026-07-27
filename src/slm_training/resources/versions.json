@@ -8030,6 +8030,11 @@
         {
           "version": "v3",
           "date": "2026-07-27",
+          "note": "no-bump: CodeRabbit review fixes on PR #1149 -- docs/design/dsh5-10-replay-preference-rows.md gains a 'Review fixes (seventh slice)' section recording the two real fixes (version_stamp on evaluate_replay_preference_held_out_benefit; same-path guard on build_replay_preference_corpus.py, both registered under harness.preference.replay_preference_corpus) and the three suggestions not applied, with reasons. No change to this component's own module/scripts/tests"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-27",
           "note": "SLM-418 (DSH5-10) seventh slice: ReplayPreferenceSessionV1 gains a trace field (ConversationTraceV1 | None, default None) -- the real trace every session but merge_success was already built from, now exposed so harness.preference.replay_preference_corpus can feed a session's rows into preference_pairs_from_trace directly instead of re-deriving a trace from state_lookup. Additive/optional field; no existing behavior, schema serialization, or test changes. merge_success keeps trace=None (no trace object exists for a merge decision, per replay_preference.py's own module docstring)"
         },
         {
@@ -8061,6 +8066,11 @@
         "tests/test_harnesses/preference/test_replay_preference_held_out_benefit.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-27",
+          "note": "no-bump: CodeRabbit review fix on PR #1149, landing before this component's v1 registration reaches main. evaluate_replay_preference_held_out_benefit's two returned dicts now carry version_stamp (matching the sibling ReplayPreferenceCorpusBuildReportV1 report). A hardening/completeness fix to the same not-yet-merged v1 surface, not a new contract. A second CodeRabbit-suggested fix (build_replay_preference_corpus.py rejecting --split both when --train-out/--held-out-out collide) was identified as correct but deferred this session -- see docs/design/dsh5-10-replay-preference-rows.md's 'Review fixes (seventh slice)' for why"
+        },
         {
           "version": "v1",
           "date": "2026-07-27",

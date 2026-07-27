@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
+from slm_training.harness_core.versioning import build_version_stamp
 from slm_training.models.twotower import TwoTowerModel, format_context_text
 from slm_training.harnesses.preference import PreferencePair, load_pairs
 
@@ -251,6 +252,7 @@ def evaluate_replay_preference_held_out_benefit(
                 "train` run against the replay-preference train-split "
                 "pairs) for a benefit comparison"
             ),
+            "version_stamp": build_version_stamp("harness.preference.replay_preference_corpus"),
         }
     trained_model = TwoTowerModel.from_checkpoint(trained_checkpoint, device=device)
     torch.manual_seed(seed)
@@ -270,4 +272,5 @@ def evaluate_replay_preference_held_out_benefit(
             "pairs); not a powered or certified held-out-benefit claim "
             "either way -- see docs/design/dsh5-10-replay-preference-rows.md."
         ),
+        "version_stamp": build_version_stamp("harness.preference.replay_preference_corpus"),
     }
