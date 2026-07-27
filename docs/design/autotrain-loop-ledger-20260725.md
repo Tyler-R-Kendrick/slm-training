@@ -147,3 +147,17 @@ Real, artifact-backed rows run against the fix on top of current `main`
 
 | run_id | ok | steps | stopped_on | last_loss | wall_s |
 | --- | --- | --- | --- | --- | --- |
+| `autotrain_wf_smoke_20260725_iter948` | True | 8 | steps | 35.14837646484375 | 1.74 |
+| `autotrain_wf_smoke_20260725_iter949` | True | 8 | steps | 31.926565170288086 | 1.7 |
+| `autotrain_wf_smoke_20260725_iter950` | True | 8 | steps | 27.507068634033203 | 1.61 |
+| `autotrain_wf_smoke_20260725_iter951` | True | 8 | steps | 33.25327682495117 | 1.7 |
+| `autotrain_wf_smoke_20260725_iter952` | True | 8 | steps | 33.434478759765625 | 1.64 |
+| `autotrain_wf_smoke_20260725_iter953` | True | 8 | steps | 34.54191207885742 | 1.75 |
+| `autotrain_wf_smoke_20260725_iter954` | True | 8 | steps | 27.812185287475586 | 1.69 |
+| `autotrain_wf_smoke_20260725_iter955` | True | 8 | steps | 28.006357192993164 | 1.72 |
+| `autotrain_wf_smoke_20260725_iter956` | True | 8 | steps | 34.48028564453125 | 1.74 |
+| `autotrain_wf_smoke_20260725_iter957` | True | 8 | steps | 26.38458824157715 | 1.81 |
+| `autotrain_wf_smoke_20260725_iter958` | True | 8 | steps | 28.65091323852539 | 1.93 |
+
+Total genuine iterations run by this session against the fix: **12**
+(`wf_smoke_verify_check1` + `iter948`-`iter958`).
