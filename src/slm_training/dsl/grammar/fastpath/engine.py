@@ -291,6 +291,12 @@ class OpenUIIncrementalEngine:
         Uses ``InteractiveParser.copy()`` + delta-token feed when the already
         fed lexemes are unchanged. Returns ``None`` when the caller should fall
         back to a throwaway full sync (lexeme identity changed / unsynced).
+
+        Like ``_incremental_sync``, only re-lexes the unsettled tail
+        (``new_prefix[self._settle_pos:]``) instead of the whole prefix --
+        see ``_update_settle_pos`` for why tokens before that offset are
+        provably final and never need re-lexing. This is a read-only probe:
+        it never mutates ``self._settle_pos``/``self._fed_token_count``.
         """
         if self._ip is None:
             return None
@@ -298,20 +304,24 @@ class OpenUIIncrementalEngine:
             return True
         new_prefix = self._prefix + chunk
         t0 = time.perf_counter()
-        tokens = self._lex_tokens(new_prefix)
-        if tokens is None:
+        tail_start = self._settle_pos
+        tail_tokens = self._lex_tokens(new_prefix[tail_start:])
+        if tail_tokens is None:
             self._sync_ms += (time.perf_counter() - t0) * 1000.0
             return False
-        keys = self._token_keys(tokens)
+        for tok in tail_tokens:
+            tok.start_pos = (tok.start_pos or 0) + tail_start
+        prev_settled_count = max(0, self._fed_token_count - 1)
+        keys = self._fed_tokens[:prev_settled_count] + self._token_keys(tail_tokens)
         if (
-            len(tokens) < self._fed_token_count
+            len(keys) < self._fed_token_count
             or keys[: self._fed_token_count] != self._fed_tokens
         ):
             # NAME/COMPONENT gluing or boundary shrink — caller falls back.
             self._copy_probe_fallbacks += 1
             self._sync_ms += (time.perf_counter() - t0) * 1000.0
             return None
-        delta = tokens[self._fed_token_count :]
+        delta = tail_tokens[self._fed_token_count - prev_settled_count :]
         if not delta:
             # Whitespace / incomplete interior that adds no complete tokens.
             self._copy_probes += 1

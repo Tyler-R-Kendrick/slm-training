@@ -1,0 +1,139 @@
+{
+  "finding": "compiler_tree_probe_chunk_relex_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "decode-compiler-tree-incremental-sync-relex-finding.json Next steps: probe_chunk (engine.py) has the same full-relex-of-new_prefix shape as pre-fix _incremental_sync but was out of that session's scope. Measure and fix if warranted.",
+  "measured_before_fix": {
+    "realistic_session_326_char_record_probe_then_advance_140_steps": {
+      "total_chars_relexed": 27483,
+      "ideal_chars_on": 746,
+      "amplification_x": 36.8,
+      "wall_ms": 46.90,
+      "copy_probes": 114,
+      "copy_probe_fallbacks": 26
+    },
+    "scaling_sweep_wall_ms": [
+      {"chars": 326, "wall_ms": 49.038},
+      {"chars": 620, "wall_ms": 144.934},
+      {"chars": 1212, "wall_ms": 442.003},
+      {"chars": 2396, "wall_ms": 1718.191},
+      {"chars": 3580, "wall_ms": 3580.264}
+    ],
+    "interpretation": "probe_chunk called _lex_tokens(self._prefix + chunk) -- the whole current prefix plus the probed chunk -- on every call, identical shape to pre-fix _incremental_sync. Amplification (36.8x) sits between _incremental_sync's single-call (1.0x) and multi-call session (81.2x) numbers, consistent with the same root cause at a different call frequency (probe_chunk is called once per candidate continuation probed, more often than advance())."
+  },
+  "fix": {
+    "file": "src/slm_training/dsl/grammar/fastpath/engine.py",
+    "function": "probe_chunk",
+    "summary": [
+      "Replaced tokens = self._lex_tokens(new_prefix) with the same tail-relex approach _incremental_sync uses: lex only new_prefix[self._settle_pos:], offset resulting tokens' start_pos back to absolute coordinates, splice onto self._fed_tokens[:prev_settled_count] for the identity/shrink check.",
+      "delta (tokens fed into the throwaway InteractiveParser.copy()) now sliced from tail_tokens instead of the full tokens list, same index arithmetic as _incremental_sync.",
+      "Read-only contract preserved exactly: probe_chunk still never mutates self._settle_pos/self._fed_token_count/self._fed_tokens -- only reads self._settle_pos (already maintained by _full_sync/_incremental_sync)."
+    ],
+    "why_safe": "Identical safety argument to the _incremental_sync fix: openui.lark has no lookbehind, so every token before self._settle_pos is provably final regardless of what probe_chunk appends after it; any divergence (shrink, gluing, unlexable tail) falls back to None/False via the same guard the pre-fix code already had."
+  },
+  "reproduction": {
+    "method": "OpenUIIncrementalEngine exercised directly via probe_chunk()/advance(), no train/eval/checkpoint",
+    "env_setup": "same .venv-diag as decode-compiler-tree-incremental-sync-relex-finding.json (already provisioned, no reinstall needed)",
+    "session_shape": "326-char real gold record, 140 chunked advance() calls, one throwaway probe_chunk('abc') issued immediately before each advance() -- the realistic candidate-probing pattern callers use",
+    "scripts_not_committed": ["measure_probe_chunk.py", "measure_probe_chunk_scaling.py", "verify_probe_chunk_fix.py"]
+  },
+  "measured_after_fix": {
+    "realistic_session_326_char_record": {
+      "total_chars_relexed": 1934,
+      "amplification_x": 2.6,
+      "wall_ms": 28.42,
+      "speedup_x": 1.65,
+      "copy_probes": 114,
+      "copy_probe_fallbacks": 26
+    },
+    "scaling_sweep": [
+      {"chars": 326, "wall_ms_before": 49.038, "wall_ms_after": 26.940, "speedup_x": 1.82},
+      {"chars": 620, "wall_ms_before": 144.934, "wall_ms_after": 59.663, "speedup_x": 2.43},
+      {"chars": 1212, "wall_ms_before": 442.003, "wall_ms_after": 169.872, "speedup_x": 2.60},
+      {"chars": 2396, "wall_ms_before": 1718.191, "wall_ms_after": 572.462, "speedup_x": 3.00},
+      {"chars": 3580, "wall_ms_before": 3580.264, "wall_ms_after": 1117.076, "speedup_x": 3.20}
+    ],
+    "interpretation": "copy_probes/copy_probe_fallbacks counts identical before and after (114/26) -- confirms the probe's decisions are unchanged, only the lex cost dropped. Speedup grows with prefix length (O(n^2)->O(n) signature) but less steeply than _incremental_sync's standalone fix (2.6x->14.4x) because this combined benchmark mixes probe_chunk's fixed lex cost with InteractiveParser.copy()'s own row-stack-depth-dependent cost and advance()'s already-fixed lex cost."
+  },
+  "decode_invariant_check": {
+    "claim": "I6/I3: caching/perf change never becomes a legality change",
+    "result": "build_completion_forest coverage/n_paths on prefix8 (complete/2) and prefix9 (complete/12) unchanged; 4-session x 9-probe parametrized comparison shows byte-identical bool|None probe_chunk results between the tail-relex engine and an independent full-resync shadow implementation at every probe, plus explicit assertions that probe_chunk never mutates _prefix/_fed_tokens/_settle_pos (its read-only contract)",
+    "verified": true
+  },
+  "unit_test": {
+    "file": "tests/test_dsl/test_grammar_fastpath_probe_chunk_relex.py",
+    "committed": true,
+    "n_tests": 8,
+    "tests": [
+      "test_probe_chunk_matches_full_resync_shadow_across_sessions[prefix8_char_by_char]",
+      "test_probe_chunk_matches_full_resync_shadow_across_sessions[prefix9_char_by_char]",
+      "test_probe_chunk_matches_full_resync_shadow_across_sessions[full_record_word_chunked]",
+      "test_probe_chunk_matches_full_resync_shadow_across_sessions[gluing_component_name]",
+      "test_probe_chunk_relexes_near_linear_not_quadratic",
+      "test_probe_chunk_faster_than_always_full_resync_on_long_session",
+      "test_build_completion_forest_unchanged_on_finding_prefixes[root = Card([b1-2]",
+      "test_build_completion_forest_unchanged_on_finding_prefixes[root = Card([b1,-12]"
+    ],
+    "result_after_fix": "8 passed in 6.31s",
+    "result_before_fix_sanity_check": "2/8 fail (test_probe_chunk_relexes_near_linear_not_quadratic: 36.8x amplification exceeds the 8x ceiling; test_probe_chunk_faster_than_always_full_resync_on_long_session: pre-fix path is not faster than the shadow, since they run nearly identical code); the other 6 pass both before and after (they assert the invariant the fix must preserve, not the fix's existence) -- confirms the tests are not vacuous"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath_lexer_cache.py tests/test_dsl/test_grammar_fastpath_incremental_sync.py tests/test_dsl/test_grammar_fastpath_probe_chunk_relex.py",
+      "result": "27 passed"
+    },
+    {
+      "suite": "tests/test_dsl/{test_pack,test_speculative_rank,test_exact_forced_horizon,test_lattice_search,test_solver_state,test_packs,test_solver_decode}.py",
+      "result": "102 passed, 3 failed",
+      "failures_preexisting_confirmed_in_prior_session": [
+        "test_speculative_rank.py::test_committed_table_matches_its_builder",
+        "test_speculative_rank.py::test_committed_table_ranks_real_branch_points_confidently",
+        "test_packs.py::test_pack_fixture_loop_generate_train_eval"
+      ]
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath.py -k \"lexer or force or completion_forest or engine or pick_constrained\"",
+      "result": "24 passed, 1 failed, 18 deselected",
+      "failures_preexisting_confirmed_in_prior_session": [
+        "test_grammar_fastpath.py::test_completion_forest_admits_null_for_optional_string_after_slots_exhaust"
+      ]
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_lexer_smoke,test_dsl_tokenizer}.py",
+      "result": "27 passed, 1 failed, 1 deselected",
+      "failures_preexisting_confirmed_in_prior_session": [
+        "test_lexer_smoke.py::test_surface_identifier_arm_is_prohibited"
+      ]
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_grammar_hf,test_v4_levers,test_a3_coverage_remask,test_template_fill,test_v6_remask}.py",
+      "result": "30 passed, 1 failed",
+      "failures_preexisting_confirmed_in_prior_session": [
+        "test_v4_levers.py::test_generate_batch_requests_consumes_harness_slot_contract"
+      ],
+      "note": "Same failures as decode-compiler-tree-incremental-sync-relex-finding.json's regression sweep, already confirmed unrelated via git stash in that session on the same file; re-ran here only to confirm no NEW failures from this diff, not to re-litigate causes."
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "2 changed file(s), 0 component(s) touched -- fastpath/engine.py is not itself a path in any versions.json component; no bump required",
+    "repo_policy": "ok (tracked + untracked)",
+    "git_diff_check": "clean"
+  },
+  "interpretation": "Closes the last open full-relex site named in the _incremental_sync fix's Next steps. probe_chunk shared the identical bug shape but is called more frequently per decode step than _incremental_sync in the I3 recursive witness search (candidates probed before commit), so its pre-fix amplification (36.8x) sits between _incremental_sync's single-call and multi-call session numbers -- consistent with the same root cause at a different call frequency. The fix reuses the exact _settle_pos machinery the prior session introduced; no new safety argument needed.",
+  "scope_note": "No train/eval run, no checkpoint, no --ship-gates scoreboard. Not re-measured against full per-record compiler_ms telemetry or the exposure12 eval protocol (still open across all three sessions in this chain). The combined-workload scaling sweep does not isolate probe_chunk's own lex cost from InteractiveParser.copy()'s cost or advance()'s already-fixed lex cost. This closes the currently-known full-relex sites in engine.py (_incremental_sync, probe_chunk); no further systematic grep for other _lex_tokens(...) call sites with a similar shape was performed this session.",
+  "next_steps": [
+    "Re-run the PR #1171 isolated per-record eval protocol now that all three lexing-cost fixes in this chain (lexer-object cache, _incremental_sync tail-relex, probe_chunk tail-relex) are in place, to measure aggregate compiler_ms impact against the exposure12 quality-champion hero.",
+    "If InteractiveParser.copy() cost (independent of lexing) shows up as a significant remaining term once lexing is no longer the bottleneck, profile it separately -- not measured or attributed in this session."
+  ],
+  "cleanup_note": ".venv-diag and src/apps/openui_bridge/node_modules/ (both gitignored) and the session's reproduction scripts are not committed.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "bbc69b097b326a56d4a25d6568a05e32261f8c29",
+    "code_dirty": true,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: src/slm_training/dsl/grammar/fastpath/engine.py is not a registered path of any component in src/slm_training/resources/versions.json, so no bump is required for this change."
+  },
+  "captured_at": "2026-07-28T14:00:44Z"
+}
