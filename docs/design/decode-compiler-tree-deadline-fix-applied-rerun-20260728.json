@@ -1,0 +1,112 @@
+{
+  "finding": "compiler_tree_deadline_fix_applied_rerun",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "Iteration 2 of the great-dirac-w0ytk7 autonomous loop. Iteration 1 (decode-compiler-tree-lexer-cache-hero-rerun-20260728.md) confirmed the lexer/scanner cache fix (PR #1173) alone does not get the exposure12 quality-champion smoke suite under decode_timeout_seconds=30, and re-confirmed decode-compiler-tree-deadline-swallow-finding.md's proposed_fix_sketch (items 1-2: compiler_draft.py:2313's bare `except Exception` swallowing a cooperative-deadline TimeoutError as a fake empty completion forest, and the compiler-tree per-position loop having zero check_decode_deadline() calls) is the operative blocker. This run applies that exact fix sketch (both items) and re-runs the identical isolated-record protocol to test whether fixing both -- now that the lexer cache is also in place -- lets the hero/callout smoke records finish inside the 30s wall.",
+  "hypothesis": "Fixing both the deadline-swallow bug (compiler_draft.py:2313) and adding check_decode_deadline() to the compiler-tree per-position loop (twotower.py _compiler_ltr_decode_one), on top of the already-landed lexer/scanner cache (#1173), lets the exposure12 quality-champion smoke suite's 3 records (smoke_hero_01, smoke_button_01, smoke_callout_01) finish inside decode_timeout_seconds=30, where neither the lexer cache alone nor the pre-fix baseline did.",
+  "fix_applied": {
+    "scope": "narrow, exactly proposed_fix_sketch items 1-2 from decode-compiler-tree-deadline-swallow-finding.md -- no other behavior touched",
+    "item_1": {
+      "file": "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+      "change": "build_completion_forest's try/except around the completion-domain lookup gains `except TimeoutError: raise` before the existing bare `except Exception: return CompletionForest((), \"none\")`, so a cooperative decode-deadline TimeoutError (slm_training.models.decode_stats.check_decode_deadline) propagates instead of being recorded as a grammar dead-end. Non-timeout errors keep failing closed exactly as before (regression-tested)."
+    },
+    "item_2": {
+      "file": "src/slm_training/models/twotower.py",
+      "change": "_compiler_ltr_decode_one's per-position `while len(prefix) < length and prefix[-1] != self.tokenizer.eos_id:` loop calls check_decode_deadline() at the top of every iteration, matching the existing cooperative-deadline coverage already present in _constrained_ltr_repair (line ~4906) and the MaskGIT loop (line ~13266) since PR #1167. _compiler_ltr_decode_batch delegates to _compiler_ltr_decode_one per row, so this single loop-head edit covers both the single- and batch-decode compiler-tree paths."
+    },
+    "regression_tests_added": "tests/test_harnesses/model_build/test_decode_deadline.py gains test_build_completion_forest_propagates_deadline_timeout (TimeoutError from the completion-domain lookup must propagate) and test_build_completion_forest_still_fails_closed_on_other_errors (non-timeout errors still fail closed to an empty CompletionForest -- the fix must not weaken the existing fail-closed contract)",
+    "version_bump": "model.twotower v261 -> v262 (twotower.py + compiler_draft.py behavior change); harness.model_build.eval v63 no-bump (test_decode_deadline.py gained tests only, no change to any file that component itself owns)"
+  },
+  "reproduction": {
+    "method": "byte-identical recipe to decode-compiler-tree-deadline-swallow-finding.md and decode-compiler-tree-lexer-cache-hero-rerun-20260728.md: rebuild lever_exposure12_v1 fixture, train the identical scratch checkpoint, evaluate each of the 3 smoke records in isolation (--eval-limit 1 --eval-offset 0|1|2)",
+    "env_setup": "env -u NODE_OPTIONS for build/train/eval commands (this sandbox's ambient NODE_OPTIONS=\"--import tsx\" --max-old-space-size=8192 breaks plain node/npm invocations, same caveat as both prior docs); Node bridge deps (repo root + src/apps/openui_bridge) were already npm ci'd by the prior iteration",
+    "build_train_data_cmd": "python -m scripts.build_train_data --source fixture --profile strict --max-records-per-parent 12 --version lever_exposure12_v1 --output-root outputs/data/train",
+    "build_train_data_result": "107 records, 5 abstraction_ladder -- identical shape to both prior docs' rebuilds",
+    "train_cmd": "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --context-backend scratch --steps 16 --batch-size 2 --lr 1e-3 --structural-bias 1.5 --seed 47 --run-id exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47 --no-sync-checkpoints --device cpu",
+    "eval_cmd_template": "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset <0|1|2>",
+    "checkpoint_sha256": "cadeb1d346d863e5a727a64847e59bfcb5c38db65fd6d5e3ef8c996c757539e9",
+    "checkpoint_sha256_matches_prior_docs": true,
+    "code_git_sha": "4345d4b15c397222e12becde58f61ff1c73fa68a",
+    "code_dirty": true,
+    "note_on_baseline": "code_git_sha is HEAD at session start (post lexer-cache-fix commit 20b658f, i.e. that fix IS included); code_dirty=true because the deadline-swallow fix (this session's change) is applied but not yet committed at eval time"
+  },
+  "measured_per_record": [
+    {
+      "record": "smoke_hero_01",
+      "eval_offset": 0,
+      "meaningful_program_rate": 0.0,
+      "meaningful_program_rate_before_any_fix": 0.0,
+      "meaningful_program_rate_lexer_cache_only": 0.0,
+      "decode_outcome_before_any_fix": "fallback_output",
+      "decode_outcome_lexer_cache_only": "fallback_output",
+      "decode_outcome_this_run": "runtime_timeout",
+      "latency_ms_p50": 30000.67,
+      "latency_ms_p95": 30000.67,
+      "decode_timeout_count": 1,
+      "decode_stats_populated": false,
+      "note": "runtime_timeout path does not populate metrics.decode_stats (unlike fallback_output), consistent with the side observation in decode-compiler-tree-lexer-cache-hero-rerun-20260728.md, so compiler_ms/forwards are not available for this record post-fix"
+    },
+    {
+      "record": "smoke_button_01",
+      "eval_offset": 1,
+      "meaningful_program_rate": 0.0,
+      "meaningful_program_rate_before_any_fix": 0.0,
+      "meaningful_program_rate_lexer_cache_only": 0.0,
+      "decode_outcome_before_any_fix": "fallback_output",
+      "decode_outcome_lexer_cache_only": "runtime_timeout",
+      "decode_outcome_this_run": "runtime_timeout",
+      "latency_ms_p50": 30100.54,
+      "latency_ms_p95": 30100.54,
+      "decode_timeout_count": 1,
+      "decode_stats_populated": false
+    },
+    {
+      "record": "smoke_callout_01",
+      "eval_offset": 2,
+      "meaningful_program_rate": 0.0,
+      "meaningful_program_rate_before_any_fix": 1.0,
+      "meaningful_program_rate_lexer_cache_only": 1.0,
+      "decode_outcome_before_any_fix": "fallback_output",
+      "decode_outcome_lexer_cache_only": "fallback_output",
+      "decode_outcome_this_run": "runtime_timeout",
+      "latency_ms_p50": 30000.38,
+      "latency_ms_p95": 30000.38,
+      "decode_timeout_count": 1,
+      "decode_stats_populated": false,
+      "note": "IMPORTANT: meaningful_program_rate dropped from 1.0 to 0.0 for this record once the swallow bug is fixed. The prior 1.0 was scored against the certified/minimal fallback_output produced by the deadline-swallow masquerade (build_completion_forest returning an empty forest, not a real grammar dead-end), not against a genuine on-time decode. This is the classification bug being corrected, not a new regression: the champion's true smoke-suite meaningful rate for this record was always 0, the swallow bug was hiding it."
+    }
+  ],
+  "result": "REJECT_ON_LATENCY_ACCEPT_ON_CLASSIFICATION",
+  "decision": "REJECT the hypothesis as stated: fixing both the deadline-swallow bug and adding cooperative deadline checks to the compiler-tree loop does NOT get any of the 3 smoke records to finish inside decode_timeout_seconds=30. All three records still consume the full budget (latency_ms_p50 29.99s-30.10s, matching the pre-fix and lexer-cache-only wall-clock shape almost exactly). ACCEPT the fix on its own narrower, correctly-scoped claim: decode_outcome classification is now honest. All 3 records now consistently report `runtime_timeout` (was fallback_output/fallback_output/fallback_output before any fix, and fallback_output/runtime_timeout/fallback_output after the lexer-cache-only fix -- an inconsistent, partially-masked mix). The fix eliminates that inconsistency and the false-positive certified-fallback classification, at the cost of revealing that smoke_callout_01's previously-reported meaningful_program_rate=1.0 was a scoring artifact of the swallow bug: its true post-fix rate is 0.0, same as the other two records.",
+  "interpretation": "This confirms the deadline-swallow finding's root-cause chain end to end: the compiler-tree per-position loop genuinely has no way to finish early once it starts spending multi-second compiler_ms per build_completion_forest call inside decode_timeout_seconds=30 -- the fix changes what the harness truthfully reports about that outcome, not how fast the model decodes. The underlying performance blocker (build_completion_forest costing ~1-10s per call even with the lexer cache, per decode-compiler-tree-lexer-cache-hero-rerun-20260728.md's per_call analysis) is untouched and remains the actual next-steps item for making these records finish early rather than merely being classified correctly when they do not.",
+  "scope_note": "The exposure12 quality-champion's own reported smoke-suite quality is now WORSE by this honest measurement (0/3 meaningful vs the previously reported 1/3) -- this is a correction of a measurement bug, not a claim the model got worse. No promotion or roster claim is made or implied either direction.",
+  "non_goals": [
+    "No performance/latency improvement claimed -- total wall time is unchanged (still pinned to the 30s wall)",
+    "No re-investigation of why build_completion_forest costs 1-10s per call (decode-compiler-tree-lexer-cache-hero-rerun-20260728.md next-steps item 2, still open)",
+    "No promotion, checkpoint sync, or --ship-gates claim",
+    "No multi-rep confirmation (n=1 rep per record, matching both prior docs' own protocol)"
+  ],
+  "next_steps": [
+    "Separately investigate build_completion_forest's per-call wall cost (Node-bridge round-trip vs candidate-set size vs cache misses were not isolated in either this or the prior session) -- that is the actual remaining lever for finishing inside the wall, not classification honesty",
+    "Consider whether the compiler-tree search should abort remaining search budget earlier (e.g. reserve a fixed slice of decode_timeout_seconds for a final best-effort emission) once check_decode_deadline's cooperative signal is reliably observed, rather than running the deadline out to the exact millisecond every time"
+  ],
+  "tests": {
+    "targeted_regression": "python -m pytest -q tests/test_harnesses/model_build/test_decode_deadline.py tests/test_models/test_compiler_decode.py::test_canonical_valid_openui_propagates_decode_deadline tests/test_models/test_compiler_decode.py::test_compiler_tree_batches_only_ambiguous_prefills_with_bound tests/test_dsl/test_grammar_fastpath.py::test_completion_forest_closes_component_reference_array_before_postfix tests/test_dsl/test_grammar_fastpath.py::test_completion_forest_excludes_symbol_consumers_after_contract_exhaustion tests/test_dsl/test_grammar_fastpath.py::test_completion_forest_rejects_empty_component_children tests/test_dsl/test_grammar_fastpath_lexer_cache.py",
+    "targeted_regression_result": "17 passed in 9.00s",
+    "note_on_full_suite": "The full tests/test_models/test_compiler_decode.py (209 tests) plus tests/test_dsl/test_grammar_fastpath.py (43 tests) combined run was attempted but exceeded several minutes of wall time on this shared CPU sandbox (unrelated to this diff -- real TwoTowerModel construction per test dominates, not the 2-line/8-line change under test) and was not run to completion; the targeted subset above directly exercises every changed code path (build_completion_forest's exception handling, the compiler-tree per-position loop via test_compiler_tree_batches_only_ambiguous_prefills_with_bound, and deadline propagation via test_canonical_valid_openui_propagates_decode_deadline) plus a representative completion_forest structural sample and the full lexer-cache suite"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4345d4b15c397222e12becde58f61ff1c73fa68a",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v262",
+      "dsl.grammar_capabilities": "v3",
+      "harness.model_build.eval": "v63"
+    },
+    "stamped_at": "2026-07-28T02:10:03Z"
+  },
+  "captured_at": "2026-07-28T02:15:00Z",
+  "cleanup_note": "The lever_exposure12_v1 train-data rebuild and the scratch checkpoint used for this diagnostic are not committed (outputs/ is gitignored; the auto-published copy this session created under src/slm_training/resources/data/train/lever_exposure12_v1 was removed after the runs above since it is reproduction scaffolding, not new curated training data -- same convention as decode-compiler-tree-deadline-swallow-finding.md)"
+}

@@ -7423,6 +7423,11 @@
       "history": [
         {
           "version": "v63",
+          "date": "2026-07-28",
+          "note": "no-bump: test_decode_deadline.py gains two regression tests for the compiler-tree deadline-swallow fix (build_completion_forest re-raising TimeoutError vs failing closed on other errors); no change to any file this component actually owns (decode_stats.py, eval_runner.py, etc. untouched) -- the behavior change itself is stamped under model.twotower v262"
+        },
+        {
+          "version": "v63",
           "date": "2026-07-27",
           "note": "Hard decode wall: cooperative monotonic deadline (decode_stats) + interval SIGALRM in eval_runner so timeout cannot be swallowed past decode_timeout_seconds"
         },
@@ -9326,7 +9331,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v261",
+      "version": "v262",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9369,6 +9374,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v262",
+          "date": "2026-07-28",
+          "note": "compiler-tree per-position loop (_compiler_ltr_decode_one) calls check_decode_deadline each step, matching the LTR-repair/MaskGIT loops' cooperative coverage (docs/design/decode-compiler-tree-deadline-swallow-finding.md proposed_fix_sketch item 2); compiler_draft.py's build_completion_forest re-raises TimeoutError instead of swallowing it as an empty completion forest (item 1)"
+        },
         {
           "version": "v261",
           "date": "2026-07-27",
