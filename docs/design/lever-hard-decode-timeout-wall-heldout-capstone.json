@@ -1,0 +1,165 @@
+{
+  "lever": "hard_ltr_decode_timeout_wall_heldout_capstone",
+  "hypothesis": "The combined effect of this thread's 6 PRs (deadline-classification fix #1189, lexer-cache fix #1173/pre-existing, witness-search _tail hoist #1191, resolve-cache #1192, accepts()-state memoization #1195, plus the pre-existing hard SIGALRM wall from #1167/#1170) moves a ship-relevant decode outcome/quality number at held_out scale (n=5), beyond the n=1/n=3 diagnostic slices used throughout this thread.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "closes_thread": [
+    "PR #1189 decode-compiler-tree-deadline-swallow-fix",
+    "PR #1190 decode-compiler-tree-deadline-swallow-remeasure",
+    "PR #1191 decode-compiler-tree-witness-search-cost-finding",
+    "PR #1192 decode-compiler-tree-witness-search-cache-hoist",
+    "PR #1193 decode-engine-init-resolve-cache",
+    "PR #1195 decode-accepts-state-memoization"
+  ],
+  "code_commit_under_test": "639f22cf0de91714be7275c8393a176f0faf01af",
+  "checkpoint": "outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt",
+  "checkpoint_sha256": "cadeb1d346d863e5a727a64847e59bfcb5c38db65fd6d5e3ef8c996c757539e9",
+  "checkpoint_recipe": {
+    "train_data": "lever_exposure12_v1 (107 records, 5 abstraction_ladder, fixture/strict, max-records-per-parent=12)",
+    "model": "twotower",
+    "context_backend": "scratch",
+    "steps": 16,
+    "batch_size": 2,
+    "lr": 1e-3,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "checkpoint_sync": "none (--no-sync-checkpoints, scratch)"
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2",
+    "suite": "held_out",
+    "suite_n": 5,
+    "suite_ids": [
+      "held_out_form_01",
+      "held_out_dual_card_01",
+      "held_out_input_01",
+      "held_out_tabs_01",
+      "held_out_settings_01"
+    ],
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true,
+    "seed": 47,
+    "run_class": "scratch_matrix",
+    "reps": 2,
+    "shrunk_from_prior_protocol": "prior lever-hard-decode-timeout-wall protocol used 3 reps on smoke (n=3); this run shrinks to 2 reps to stay under MAX_RUN_MINUTES=3 per invocation while growing suite size from n=3 (smoke) to n=5 (held_out) -- 5 records x 30s decode-timeout-seconds hard wall = 150s worst case per rep, leaving ~20-25s margin under the 170s harness-interrupt budget; a 3rd rep or rico_held (n=34) suite would not fit one bounded invocation"
+  },
+  "measured": {
+    "rep1": {
+      "run_id": "capstone_heldout_rep1_exp12_seed47",
+      "n": 5,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "placeholder_fidelity": 0.0,
+      "empty_prediction_count": 5,
+      "decode_timeout_count": 5,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 5,
+        "fallback_output": 0,
+        "harness_error": 0
+      },
+      "latency_ms_p50": 30000.79,
+      "latency_ms_p95": 30000.95,
+      "failure_breakdown": {"parse_error": 5},
+      "evidence_class": "fixture_under_minimum_n",
+      "version_stamp": {
+        "code_commit": "639f22cf0de91714be7275c8393a176f0faf01af",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v26",
+          "harness.model_build.eval": "v63",
+          "harness.experiment_feature_flags": "v3",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v22",
+          "model.twotower": "v262"
+        }
+      }
+    },
+    "rep2": {
+      "run_id": "capstone_heldout_rep2_exp12_seed47",
+      "n": 5,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0,
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "placeholder_fidelity": 0.0,
+      "empty_prediction_count": 5,
+      "decode_timeout_count": 5,
+      "decode_outcome_counts": {
+        "model_valid": 0,
+        "model_invalid": 0,
+        "model_abstain": 0,
+        "runtime_timeout": 5,
+        "fallback_output": 0,
+        "harness_error": 0
+      },
+      "latency_ms_p50": 30000.83,
+      "latency_ms_p95": 30011.86,
+      "failure_breakdown": {"parse_error": 5},
+      "evidence_class": "fixture_under_minimum_n",
+      "version_stamp": {
+        "code_commit": "639f22cf0de91714be7275c8393a176f0faf01af",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v26",
+          "harness.model_build.eval": "v63",
+          "harness.experiment_feature_flags": "v3",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v22",
+          "model.twotower": "v262"
+        }
+      }
+    },
+    "pooled": {
+      "records": 10,
+      "meaningful": 0,
+      "parsed": 0,
+      "runtime_timeout": 10,
+      "fallback_output": 0,
+      "model_valid": 0,
+      "cross_rep_stable": true,
+      "note": "Identical decode_outcome_counts and near-identical latency_ms across both reps (both pinned at the 30s hard wall) -- stable/deterministic under this recipe, not run-to-run noise."
+    }
+  },
+  "comparison_to_prior_slices": {
+    "smoke_n3_post_all_earlier_fixes_pr1190": {
+      "meaningful_program_rate": 0.0,
+      "decode_outcome_counts": {"runtime_timeout": 3, "fallback_output": 0}
+    },
+    "held_out_n5_post_full_stack_this_run": {
+      "meaningful_program_rate": 0.0,
+      "decode_outcome_counts": {"runtime_timeout": 5, "fallback_output": 0}
+    },
+    "interpretation": "Same honest pattern at larger scale: 0/N meaningful, 100% runtime_timeout under the 30s hard wall. The stack's fixes (deadline-classification correctness, lexer cache, witness-search cache hoist, resolve cache, accepts()-state memoization measured at 1.5-1.6x speedup on isolated PREFIX8/PREFIX9 micro-benchmarks) did not change this checkpoint's real full-record decode outcome at either suite size -- every held_out record still exhausts the 30s budget before completing a compiler-tree decode."
+  },
+  "ship_gate_check": {
+    "policy": "honest-ship-eval default held_out bars",
+    "bars": {"parse": 0.40, "structural": 0.30, "component_type_recall": 0.30, "placeholder_fidelity": 0.15},
+    "actual": {"parse": 0.0, "structural": 0.0, "component_type_recall": 0.0, "placeholder_fidelity": 0.0},
+    "result": "fail_all_bars",
+    "evidence_class": "fixture_under_minimum_n (n=5 < ship minimum n=20)",
+    "verdict": "fixture_or_scratch, not ship -- as expected, this stack has never claimed readiness"
+  },
+  "decision": "REJECT (not a green light): the combined stack does not move any ship-relevant decode outcome/quality number at held_out scale. The stack's real, tested, measured wins (deadline classification honesty, ~1.5-1.6x isolated accepts() speedup) are genuine but do not reach observable effect on this checkpoint's real per-record wall-clock outcome -- every record still needs more than 30s of real compiler-tree decode end-to-end (Node-bridge round trips + witness-search fan-out dominate, not the now-cached accepts() calls).",
+  "pivot_recommendation": {
+    "decision": "pivot away from src/slm_training/dsl/grammar/fastpath/engine.py micro-optimization for the next iteration",
+    "next_lever": "training corpus / SFT scope lever: re-run scripts.build_train_data + scripts.train_model on a larger, non-exposure12 fixture split (e.g. e937_role_safe_all_targets_v2's default train dir, or a fresh strict-profile build with a higher --max-records-per-parent) and evaluate whether meaningful_program_rate on held_out moves at all with more/better training data -- since this thread proved decode-side speed fixes cannot fix a model that needs longer than the wall to search a valid completion, the next bounded, concrete lever is whether a better-trained checkpoint (not a faster decode path) can complete decode within the existing 30s wall. Concretely: `slm data build-train` a bigger bounded fixture split, then `slm sft train` a short (steps<=32, matching MAX_RUN_MINUTES budget) run on it, then re-eval the same held_out suite/seed/decode-timeout-seconds=30 recipe used here as the direct A/B baseline.",
+    "reference": "references/train-data.md and references/sft.md in .agents/skills/autotrain"
+  },
+  "validation": {
+    "verify_version_stamps": "ok (vs HEAD; 0 changed file(s), 0 component(s) touched)",
+    "repo_policy": "ok (tracked + untracked)",
+    "verify_decode_invariants": "exit 0, agent_surfaces/canonical_defaults/strict_policies/weakening_levers unchanged"
+  },
+  "scope_note": "No code changed this session -- pure eval re-run at a larger suite size than this thread's prior diagnostics. outputs/ artifacts (2 eval run dirs) are gitignored, not committed.",
+  "captured": "2026-07-28T13:20:00Z"
+}
