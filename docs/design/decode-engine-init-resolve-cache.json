@@ -1,0 +1,40 @@
+{
+  "finding": "engine_init_resolve_cache",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "is_perf_win": true,
+  "task": "PR #1192's named next lever / decode-compiler-tree-witness-search-cache-hoist.json named_next_lever: OpenUIIncrementalEngine.__init__'s per-construction Path.resolve()/os.path.realpath() cost (10,967 calls / ~5.1s combined in PR #1191's cProfile) -- cache the resolved grammar path once (module-level, keyed on the raw grammar_path string) instead of resolving inside every __init__.",
+  "call_site_confirmed": "src/slm_training/dsl/grammar/fastpath/engine.py OpenUIIncrementalEngine.__init__ called path.resolve() TWICE per construction (once feeding _load_parser's @lru_cache key, once feeding _load_lexer's) -- both calls happen before either lru_cache's key is computed, so the syscall ran unconditionally on every construction despite _load_parser/_load_lexer already being cached per resolved-path-string.",
+  "change_summary": "Added module-level @lru_cache(maxsize=8) _resolve_grammar_path(grammar_path: str) -> str, keyed on the raw (pre-resolve) path string, wrapping Path(grammar_path).resolve(). __init__ now calls it once and reuses the single resolved string for both _load_parser and _load_lexer lookups, instead of calling path.resolve() twice directly.",
+  "safety_argument": "Pure memoization of a deterministic, side-effect-free string->string mapping (grammar files are never swapped or symlink-retargeted mid-process). The cached function's key is the raw grammar_path string exactly as received by __init__ (not the resolved value), so two distinct raw strings that happen to resolve to the same real path still each get looked up correctly (both resolve to the same value, just computed twice on their first respective use -- no incorrect collapsing). No witness-search, parsing, or decode-legality code touched.",
+  "reproduction": {
+    "method": "Direct in-process construction of OpenUIIncrementalEngine() x200 in a loop, with pathlib.Path.resolve monkeypatched to a counting wrapper. Pre-fix numbers captured via `git stash` of the engine.py diff in the same process/session, post-fix numbers captured with the diff applied.",
+    "grammar": "src/slm_training/dsl/grammars/openui.lark (default grammar_path)",
+    "code_commit_base": "ef34c8a"
+  },
+  "measured_before_after": {
+    "200_engine_constructions_same_grammar_path": {
+      "before": {"path_resolve_calls": 400},
+      "after": {"path_resolve_calls": 1}
+    }
+  },
+  "answer": "Confirmed and fixed. Pre-fix, 200 OpenUIIncrementalEngine() constructions for the same grammar path triggered exactly 400 real Path.resolve() syscalls (2 per construction, matching the two call sites in __init__), reproducing the finding's per-construction resolve cost. Post-fix, the same 200 constructions trigger exactly 1 real Path.resolve() call total -- the cache absorbs every subsequent lookup. This is a genuine, measured perf win at the resolve-call-count granularity (400x reduction on this micro-benchmark), independent of the larger InteractiveParser.accepts() cost this session did not touch.",
+  "tests_added": {
+    "file": "tests/test_dsl/test_grammar_fastpath_resolve_cache.py",
+    "count": 4,
+    "sanity_checked_fail_pre_fix": true,
+    "sanity_check_method": "git stash src/slm_training/dsl/grammar/fastpath/engine.py, rerun test_resolve_call_count_drops_after_caching -- fails with the pre-fix call count (400 for 200 constructions, well over the post-fix assert calls['n'] <= 2 threshold), then git stash pop"
+  },
+  "validation": {
+    "repo_policy": "ok (tracked + untracked)",
+    "verify_version_stamps": "ok (vs HEAD; 2 changed file(s), 0 component(s) touched) -- engine.py is not a watched path in any versions.json component (confirmed by inspecting PR #1173's own commit, which also touched engine.py and also made 0 versions.json changes -- same precedent)",
+    "verify_decode_invariants": "exit 0, agent_surfaces/canonical_defaults/strict_policies/weakening_levers unchanged",
+    "ruff": "all checks passed (src/slm_training/dsl/grammar/fastpath/engine.py, tests/test_dsl/test_grammar_fastpath_resolve_cache.py)",
+    "pytest_new_suite": "4 passed in 0.32s",
+    "pytest_related_suites": "tests/test_dsl/test_grammar_fastpath_lexer_cache.py + tests/test_dsl/test_pack_witness_cache.py + tests/test_dsl/test_grammar_fastpath_resolve_cache.py: 16 passed in 32.09s"
+  },
+  "version_stamp_impact": "none -- src/slm_training/dsl/grammar/fastpath/engine.py is not registered under any component's watched paths in src/slm_training/resources/versions.json (verified by grep; also true for PR #1173's own prior change to the same file, which made zero versions.json edits)",
+  "named_next_lever": "Lark's InteractiveParser.accepts() (12.6s / 23,530 calls in PR #1191's cProfile) remains the dominant unaddressed cost. A real win needs memoizing accepts() by parser-automaton state (not token history) -- genuinely can produce cache hits since automaton state repeats across different token histories reaching the same LALR state, unlike the _tail witness-search cache's literal-history key (PR #1192's finding). This is a bigger, Lark-internals-facing change and needs its own safety proof (I3/I6: witness content and coverage must stay byte-identical) before attempting -- deferred to a future iteration via improve-openui-harnesses.",
+  "captured_at": "2026-07-28T13:45:00Z"
+}

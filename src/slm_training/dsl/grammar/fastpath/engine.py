@@ -41,6 +41,25 @@ _TERM_TO_TEXT = {
 }
 
 
+@lru_cache(maxsize=8)
+def _resolve_grammar_path(grammar_path: str) -> str:
+    """Cache ``Path(grammar_path).resolve()`` keyed on the raw path string.
+
+    ``OpenUIIncrementalEngine.__init__`` used to call ``path.resolve()``
+    twice per construction (once for ``_load_parser``, once for
+    ``_load_lexer``) *before* those functions' own ``@lru_cache`` keys were
+    computed -- so the resolve/``os.path.realpath`` syscall ran on every
+    single engine construction (10,967 calls / ~5.1s combined in PR #1191's
+    cProfile) even though the parser/lexer themselves were already cached.
+    Resolving is idempotent for a fixed raw string (grammar files are never
+    swapped mid-process), so one resolve per distinct raw ``grammar_path``
+    string is enough. See
+    docs/design/decode-compiler-tree-witness-search-cost-finding.md and
+    docs/design/decode-engine-init-resolve-cache.md.
+    """
+    return str(Path(grammar_path).resolve())
+
+
 @lru_cache(maxsize=4)
 def _load_parser(grammar_path: str) -> Lark:
     text = Path(grammar_path).read_text(encoding="utf-8")
@@ -93,8 +112,9 @@ class OpenUIIncrementalEngine:
     def __init__(self, grammar_path: Path | None = None) -> None:
         path = Path(grammar_path) if grammar_path else GRAMMARS_DIR / "openui.lark"
         self.grammar_path = path
-        self._parser = _load_parser(str(path.resolve()))
-        self._lexer = _load_lexer(str(path.resolve()))
+        resolved = _resolve_grammar_path(str(path))
+        self._parser = _load_parser(resolved)
+        self._lexer = _load_lexer(resolved)
         self._prefix = ""
         self._accepts: frozenset[str] = frozenset()
         self._ip = None
