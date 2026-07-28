@@ -46,6 +46,18 @@ DSH3-selected policy/control heads (``TypedOperatorPolicyScorer``) or the
 ``docs/design/dsh5-10-replay-preference-rows.md``'s "Sixth slice (v7)" for
 why those remain untouched and what the conversion honestly can and cannot
 do.
+
+Eighth slice (v8): :func:`legal_set_at` (previously a private
+``_legal_set_at`` helper) is now a public re-export -- the exact
+``OperatorLegalSetV1`` reconstruction this module's own extraction already
+uses at a row's ``input_state_id``. ``slm_training.harnesses.preference.
+replay_preference_typed_policy_adapter`` calls it to rebuild the DSH3-
+selected ``TypedOperatorPolicyScorer``'s ``OperatorPolicyInputV1`` boundary
+for a row, and fails closed if the reconstructed legal set's fingerprint no
+longer matches the row's own recorded ``legal_set_fingerprint``. No
+extraction, classification, or schema logic in this module changed --
+see ``docs/design/dsh5-10-replay-preference-rows.md``'s "Eighth slice" for
+what the new adapter module does and does not close.
 """
 
 from __future__ import annotations
@@ -191,7 +203,7 @@ def _available_history_actions(
     return tuple(actions)
 
 
-def _legal_set_at(
+def legal_set_at(
     trace: ConversationTraceV1,
     *,
     pack: DslPack,
@@ -272,7 +284,7 @@ def extract_replay_preference_rows(
             and following.input_state_id == current.output_state_id
         ):
             decision_state_id = current.output_state_id
-            legal_set = _legal_set_at(
+            legal_set = legal_set_at(
                 trace,
                 pack=pack,
                 library=library,
@@ -299,7 +311,7 @@ def extract_replay_preference_rows(
             and following.input_state_id == current.output_state_id
         ):
             decision_state_id = current.output_state_id
-            legal_set = _legal_set_at(
+            legal_set = legal_set_at(
                 trace,
                 pack=pack,
                 library=library,
@@ -327,7 +339,7 @@ def extract_replay_preference_rows(
             and following.input_state_id == current.output_state_id
         ):
             decision_state_id = current.output_state_id
-            legal_set = _legal_set_at(
+            legal_set = legal_set_at(
                 trace,
                 pack=pack,
                 library=library,
@@ -361,7 +373,7 @@ def extract_replay_preference_rows(
             # or the follow-up shares nothing with it: not this pattern.
             if focus_refs and (focus_refs & chosen_refs):
                 decision_state_id = following.input_state_id
-                legal_set = _legal_set_at(
+                legal_set = legal_set_at(
                     trace,
                     pack=pack,
                     library=library,
@@ -425,7 +437,7 @@ def extract_replay_preference_rows(
     for turn in turns:
         if turn.operation is not ConversationOperation.CHECKOUT_STATE:
             continue
-        legal_set = _legal_set_at(
+        legal_set = legal_set_at(
             trace,
             pack=pack,
             library=library,

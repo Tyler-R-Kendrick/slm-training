@@ -165,6 +165,7 @@ from slm_training.dsl.operators.replay_preference import (
     ReplayPreferenceRelation,
     extract_merge_preference_row,
     extract_replay_preference_rows,
+    legal_set_at,
     preference_pair_from_replay_row,
     preference_pairs_from_trace,
 )
@@ -467,6 +468,7 @@ __all__ = [
     "extract_merge_preference_row",
     "extract_replay_preference_rows",
     "fork_conversation",
+    "legal_set_at",
     "receipts_from_trace",
     "state_lookup_from_trace",
     "iter_operator_argument_tuples",

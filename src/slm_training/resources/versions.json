@@ -648,6 +648,11 @@
       "history": [
         {
           "version": "v16",
+          "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) eighth slice re-exports legal_set_at from operators/__init__.py (dsl.operators.replay_preference bumped to v8); no change to contracts.py itself"
+        },
+        {
+          "version": "v16",
           "date": "2026-07-27",
           "note": "no-bump: SLM-418 (DSH5-10) sixth slice re-exports ContextView/ContextViewWindowV1/OperatorEventMemoryAblationCellV1/OperatorEventMemoryAblationReportV1/OperatorTurnReceiptV1/TURN_DEPTHS/LAST_THREE_WINDOW/action_kind_of/build_ablation_report/build_context_view_window/receipts_from_trace/state_lookup_from_trace from operators/__init__.py (new dsl.operators.replay_preference_context_views component); no change to contracts.py itself"
         },
@@ -1107,13 +1112,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) eighth slice: rename the private _legal_set_at helper to a public legal_set_at re-export (from operators/__init__.py) -- no extraction, classification, or schema change. slm_training.harnesses.preference.replay_preference_typed_policy_adapter calls it to reconstruct the exact OperatorLegalSetV1 a row was extracted against, so it can rebuild the DSH3-selected TypedOperatorPolicyScorer's OperatorPolicyInputV1 boundary and fail closed if the row's legal_set_fingerprint no longer matches"
+        },
         {
           "version": "v7",
           "date": "2026-07-27",
@@ -8053,6 +8063,11 @@
         {
           "version": "v3",
           "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) eighth slice appends its own 'Eighth slice' and 'Reproducibility (eighth slice)' sections to docs/design/dsh5-10-replay-preference-rows.md (a shared doc this component's paths claim); no change to replay_preference_context_view_variants.py itself -- the eighth slice's own new harness.preference.replay_preference_typed_policy_adapter component covers the actual new code"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-28",
           "note": "SLM-418 (DSH5-10) seventh slice: closes the 'turn-depth padding for CHECKOUT_ANOTHER_STATE, FORK_THEN_CHOOSE_ONE_BRANCH, and PRONOUN_FOCUS_FOLLOWUP' gap the sixth slice named out of scope. _checkout_and_fork_trace and _pronoun_trace now accept a pad_length parameter (plain counter-operator bumps before the checkout/fork pair; ref-alternating warm-up edits before the focus-continuing pair, respectively), and synthesize_bounded_session_corpus builds one padded session per ROLLBACK_CHAIN_LENGTHS entry for each pattern (checkout_and_fork_<K>, pronoun_focus_<K>), growing the corpus from 8 to 16 sessions and 40 to 56 rows. MERGE_SUCCESS stays unpadded (no trace object exists for a merge decision, so there is no receipt sequence to pad -- unchanged, honestly documented). Real run: held_out_session_count drops to 2/16 (was 2/8), held-out pairs to 3 (was 4), and the prior 1.0-across-every-cell ceiling effect is now a 0.8333-across-every-cell plateau (still identical for all 25 (view, turn_depth) cells) -- held_out_benefit verdict stays no_benefit_fixture_scale. This is a genuinely different, honestly reported fixture-scale number, not evidence any context view helps; no SFT/preference training, powered corpus, or CAP retention measurement is added"
         },
         {
@@ -8069,6 +8084,22 @@
           "version": "v1",
           "date": "2026-07-27",
           "note": "SLM-418 (DSH5-10) sixth slice: initial registration. Bounded, fixture-scale matched context-view variant training over the dsl.operators.replay_preference_context_views five context-views x five turn-depths. A tiny two-feature (history_repeat_score, is_history_control) pairwise linear scorer -- deliberately NOT a DSH3 policy/control head/checkpoint -- is trained per (view, turn_depth) cell over a small deterministic synthetic session corpus (synthesize_bounded_session_corpus), split train/held-out by split_for_group so conversation variants stay in one split. Measures pairwise chosen>rejected preference accuracy (overall and by semantic relation), a narrow pairwise calibration proxy, and undo-family corpus composition; explicitly does not measure real action/operator/argument accuracy against a trained policy, unintended mutations (structurally impossible -- no apply() call is made), or CAP0/CAP1/CAP2 retention (out of scope). src/slm_training/evals/ambiguous_operator_followups.py assembles the held-out-benefit disposition (benefit_observed_fixture_scale / no_benefit_fixture_scale, never a certified claim)"
+        }
+      ]
+    },
+    "harness.preference.replay_preference_typed_policy_adapter": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/replay_preference_typed_policy_adapter.py",
+        "scripts/run_replay_preference_typed_policy_probe.py",
+        "tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) eighth slice: initial registration. Adapter converting a replay-preference row into the DSH3-selected TypedOperatorPolicyScorer's OperatorPolicyInputV1 boundary, discovered structurally: OperatorPolicyInputV1.action_rows carries no representation for control actions (undo/redo/checkout/merge, collapsed to a scalar count in ordinary_action_count), so only PRONOUN_FOCUS_FOLLOWUP rows (same-operator, differing bound argument) are representable -- the other six relations are structurally, not just currently, unrepresentable. Every representable row also has exactly one legal operator, so route_operator_policy_inference always resolves COMPLETE_SINGLETON and the repo's real decide_typed_operator_policy entry point never calls the model for these rows (deterministic/singleton-bypass invariant, correctly applied); argument_logit_margin is an explicit diagnostic-only probe of raw forward-pass logits, never a decision-path claim. Real run on the seventh slice's own pronoun_focus_<pad_length> session split (same split_for_group group ids, not a re-split): 9 representable rows of 56 total in the full corpus (8 train / 1 held-out here), held-out pairwise margin accuracy and mean margin reported honestly at n=1 held-out pair -- see docs/design/dsh5-10-replay-preference-rows.md's Eighth slice for the exact number. No control-action representation is invented; the sixth/seventh slices' two-feature linear scorer is untouched"
         }
       ]
     },

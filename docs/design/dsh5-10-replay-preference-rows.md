@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (seventh increment).
+**Status:** partial slice, in progress (eighth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -760,6 +760,213 @@ relations; `MERGE_SUCCESS` stays honestly unpadded (see below).
 
 No causal, calibration, or promotion claim is made. No checkpoint or model
 card update applies -- this slice creates no checkpoint.
+
+## Eighth slice (2026-07-28)
+
+The seventh slice's own named next lever: wire a real DSH3
+`TypedOperatorPolicyScorer` (`src/slm_training/harnesses/experiments/
+typed_operator_policy.py`) against the replay-preference corpus in place of
+the sixth/seventh slices' two-feature linear scorer, to see whether a richer
+scorer breaks the flat held-out result. This slice is a bounded increment,
+same discipline as every prior slice -- and building the adapter surfaced a
+real structural constraint that itself answers most of the question, before
+any training run.
+
+### What was built
+
+* `src/slm_training/dsl/operators/replay_preference.py`: the private
+  `_legal_set_at` helper (used internally by `extract_replay_preference_rows`
+  to reconstruct the exact `OperatorLegalSetV1` at a decision state) is now a
+  public re-export, `legal_set_at`. No extraction, classification, or schema
+  logic changed -- this is purely making an already-correct internal helper
+  reusable by a caller outside the module.
+* `src/slm_training/harnesses/preference/replay_preference_typed_policy_adapter.py`
+  (new; `harness.preference.replay_preference_typed_policy_adapter` v1):
+  * `classify_replay_row_representability` -- classifies a row as
+    representable or not using the existing closed action-kind vocabulary
+    (`replay_preference_context_views.action_kind_of`), never a new one.
+    **Finding:** `TypedOperatorPolicyScorer`'s only accepted input,
+    `OperatorPolicyInputV1` (`models/operator_policy_view.py`), builds its
+    `action_rows` **only from `OperatorLegalSetV1.entries`** -- one row per
+    *operator declaration*. Control actions (`"undo"`, `"redo:<state>"`,
+    `"checkout:<state>"`, `"merge:<pair>"`) live in
+    `OperatorLegalSetV1.ordinary_nonoperator_actions`, a bare tuple of
+    strings collapsed into a single scalar (`ordinary_action_count`) --
+    `OperatorPolicyInputV1` carries **no row, slot, or candidate for any
+    control action at all**. Six of the seven replay-preference relations
+    (`EDIT_THEN_UNDO`, `UNDO_THEN_REDO`, `PARTIAL_ROLLBACK`,
+    `CHECKOUT_ANOTHER_STATE`, `FORK_THEN_CHOOSE_ONE_BRANCH`,
+    `MERGE_SUCCESS`) have a chosen and/or rejected action that is a control
+    token -- these rows are **structurally unrepresentable** as
+    `TypedOperatorPolicyScorer` input, not merely unwired yet. Only
+    `PRONOUN_FOCUS_FOLLOWUP` rows are representable: both actions are
+    serialized operator actions (`"OPERATOR <id> ..."`) for the *same*
+    operator (`extract_replay_preference_rows` draws both from one
+    `OperatorLegalEntryV1.legal_actions`), differing only in which argument
+    is bound to which slot.
+  * `adapt_replay_row_to_typed_policy_input` -- for a representable row,
+    reconstructs the exact `OperatorLegalSetV1` the row was extracted
+    against via `legal_set_at`, fails closed (`OperatorPolicyViewError`) if
+    its fingerprint no longer matches the row's own recorded
+    `legal_set_fingerprint`, builds `OperatorPolicyInputV1` via the
+    DSH3-owned `build_operator_policy_input` (no shadow input builder), and
+    resolves the row's chosen/rejected bound arguments to the exact
+    reference rows `OperatorPolicyInputV1` assigned them.
+  * `argument_logit_margin` -- a diagnostic-only probe of
+    `scorer.forward()`'s raw argument logits. **Second finding:** every
+    representable row's decision state has exactly one legal operator (the
+    fixture registers a single operator), so
+    `route_operator_policy_inference` always resolves `COMPLETE_SINGLETON`,
+    and `decide_typed_operator_policy` -- the repo's actual DSH3 decision
+    entry point -- returns `selected_argument_rows=()` and **never calls the
+    model** for a `COMPLETE_SINGLETON` route. This is the repository's own
+    non-negotiable "deterministic/singleton bypass outranks any learned
+    score" invariant, correctly applied here -- not a bug to route around.
+    `argument_logit_margin` therefore measures only whether the trained head
+    *could* discriminate chosen from rejected, explicitly never a claim
+    about what the real gated inference path would output.
+  * `build_representability_report` / `synthesize_pronoun_focus_sessions` /
+    `evaluate_typed_policy_argument_probe` -- the representability count
+    over a full corpus, a session builder retaining `trace`/`pack`/`library`
+    (`ReplayPreferenceSessionV1` in the sixth/seventh-slice harness discards
+    them after extraction; reusing the seventh slice's own `_pronoun_trace`
+    and `ROLLBACK_CHAIN_LENGTHS` directly -- the same private-helper-import
+    convention this repo's own test suite already uses -- keeps the
+    `pronoun_focus_<pad_length>` `split_for_group` split byte-identical to
+    the one the seventh slice's full 16-session corpus assigned, not a
+    re-split), and the end-to-end train/probe/report harness.
+* `scripts/run_replay_preference_typed_policy_probe.py` (new). CLI entry
+  printing the probe report as JSON.
+* `tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py`
+  (new, 9 tests): representability classification for all seven relations
+  against real fixture rows, the full-corpus representability count (9 of
+  56), correct action/argument-row construction, the stale-fingerprint
+  fail-closed path, the structural-invariance finding below (regression-
+  tested directly against real embeddings, not just the trained scorer's
+  output), a real zero-progress training run, and the real end-to-end probe
+  report.
+
+### What was measured (real run, `python -m scripts.run_replay_preference_typed_policy_probe`)
+
+* **Representability:** of the seventh slice's full 56-row corpus, exactly
+  **9 rows (16%) are representable** -- all and only `PRONOUN_FOCUS_FOLLOWUP`
+  rows. The other 47 rows, spanning all six other relations, are
+  structurally unrepresentable (control-action candidates). This is not a
+  training-data-size limitation; it is a fixed property of
+  `OperatorPolicyInputV1`'s schema.
+* **The representable subset's train/held-out split is the seventh slice's
+  own `pronoun_focus_<pad_length>` session split, unchanged:** 8 train rows
+  (`pronoun_focus_2/4/8/16`), 1 held-out row (`pronoun_focus_1`).
+* **Real, reproducible finding: the argument-logit margin is exactly `0.0`
+  for every representable row -- train and held-out, before and after
+  training, across independent random seeds.** Direct inspection confirms
+  why: the two candidate reference rows a `PRONOUN_FOCUS_FOLLOWUP` row
+  chooses between are structurally identical under
+  `OperatorFeatureEncoder` (same `ref_kind` (`VALUE`), same `value_type`,
+  no parent, identical `compiler_facts`) -- they differ only in an opaque
+  identity the encoder is deliberately built to never encode (permutation-
+  equivariant reference embeddings, per `OperatorPolicyInputV1`'s own
+  contract). `torch.allclose(ref_embeddings[chosen_row],
+  ref_embeddings[rejected_row])` is `True` for every representable row, at
+  every tested seed, **before any training occurs** -- so the candidate-
+  scoring head necessarily produces identical logits for both candidates
+  regardless of weights. A real training run over the 8-row train split
+  confirms this is not merely small-sample noise: `train_typed_operator_policy`'s
+  own loss history is **exactly unchanged across every one of 200 steps**
+  (`0.34657...` at step 0 and step 199, to full float precision) -- the
+  gradient is exactly zero, not small. `pairwise_margin_accuracy` on the
+  n=1 held-out pair is therefore `0.5` (an exact tie, the harness's own
+  documented credit for `margin == 0`), and `mean_margin` is `0.0`.
+* **Honest interpretation: this is a real, different flatness than the
+  sixth/seventh slices', not a repeat of the same finding under a new
+  scorer.** The two-feature linear scorer's flat 0.8333-everywhere result
+  (seventh slice) was attributed to a history-independent feature
+  dominating a small held-out split -- a *training-signal* limitation that a
+  larger corpus or better features could plausibly fix. `TypedOperatorPolicyScorer`'s
+  flatness on this fixture is a **representational-collapse ceiling**: the
+  DSH3-selected head's typed feature space has no field for "which
+  reference was touched by the immediately preceding turn" (the entire
+  content of `PRONOUN_FOCUS_FOLLOWUP`'s own preference signal --
+  `_touched_refs` in `replay_preference.py`), and `OperatorPolicyInputV1` is
+  a current-decision-state-only view with no context/history dimension at
+  all (unlike the sixth slice's five `ContextView`s, which this scorer does
+  not consume). No amount of training data or steps can change this for the
+  *current* fixture and scorer, because the two candidates are provably
+  indistinguishable in the model's own input space -- not merely tied by an
+  undertrained coincidence. **This directly answers the eighth slice's own
+  question honestly: `TypedOperatorPolicyScorer` does not break the flat
+  comparison, but it also does not fail for the same reason as the linear
+  scorer -- it fails structurally, for a reason specific to what this
+  particular head's typed contract can see.**
+* **Honesty tier: unchanged from every prior slice --
+  `no_benefit_fixture_scale` / `wiring`.** No causal, calibration, or
+  promotion claim is made. This is diagnostic-probe evidence over 9 rows (1
+  held out), never a certified decision-path result -- see
+  `argument_logit_margin`'s own gating note, reproduced verbatim in every
+  report this module emits.
+
+### Explicitly out of scope (unchanged from, or newly confirmed by, this slice)
+
+* Inventing a control-action representation inside or beside
+  `OperatorPolicyInputV1` so the six unrepresentable relations could be
+  scored too -- that is a DSH3-owned contract change (widening
+  `OperatorPolicyInputV1`'s own schema), genuinely out of scope for an
+  adapter slice that must not shadow or fork the DSH3-selected input
+  boundary.
+* Calling `decide_typed_operator_policy` or claiming any result about the
+  repo's actual gated inference path -- every number this slice reports is
+  an explicit diagnostic probe of raw forward-pass logits, clearly labeled
+  as such in both the code and every emitted report.
+* Extending `OperatorFeatureEncoder` to carry a "recently touched reference"
+  signal so it *could* discriminate this fixture's candidates -- that is a
+  DSH3-owned model-architecture change (widening what the encoder is allowed
+  to see), not an adapter change, and would need its own review against the
+  encoder's own permutation-equivariance contract.
+* The sixth/seventh slices' two-feature linear scorer, `dsl.operators.
+  replay_preference_context_views`, and the context-view/turn-depth ablation
+  grid are all unchanged this slice.
+* Real SFT/preference training, a powered/real corpus, real action/operator/
+  argument accuracy against a certified checkpoint, and CAP0/CAP1/CAP2
+  retention remain unattempted, as in every prior slice.
+
+No causal, calibration, or promotion claim is made. No checkpoint or model
+card update applies -- this slice creates no checkpoint.
+
+### Named next lever
+
+Two independent, real levers this slice's own finding opens, neither
+attempted here: (1) extend `OperatorPolicyInputV1`/`OperatorFeatureEncoder`
+(a DSH3-owned change) with a bounded "recently touched reference" signal, so
+the argument head has *any* input feature capable of representing
+`PRONOUN_FOCUS_FOLLOWUP`'s own preference signal, then re-run this exact
+probe to see whether that unlocks a genuine, non-zero margin; or (2) invent
+and review a control-action representation for `OperatorPolicyInputV1` so
+the other six relations (84% of the corpus) become representable at all.
+Either is a real, separately-scoped ninth slice, not a partial version of
+this one.
+
+## Reproducibility (eighth slice)
+
+```bash
+NODE_OPTIONS= pytest -q tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_evals/test_ambiguous_operator_followups.py tests/test_dsl/test_replay_preference.py
+NODE_OPTIONS= python -m scripts.run_replay_preference_typed_policy_probe
+python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-plq7iu
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+ruff check src/slm_training/dsl/operators/replay_preference.py src/slm_training/dsl/operators/__init__.py src/slm_training/harnesses/preference/replay_preference_typed_policy_adapter.py scripts/run_replay_preference_typed_policy_probe.py tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py
+```
+
+Result (this PR, eighth slice, v1/v8): same freshly built `.venv` (Python
+3.12), `NODE_OPTIONS=` cleared for the OpenUI bridge's Node 22
+`--import tsx` incompatibility (same reason as every prior slice): `64
+passed`. `ruff check`: clean on every touched/created file. `python -m
+scripts.verify_version_stamps --check --base origin/claude/great-dirac-plq7iu`:
+`ok (6 changed file(s), 3 component(s) touched)`. `python -m scripts.repo_policy`:
+`ok (tracked + untracked)`. `python -m scripts.verify_decode_invariants`:
+clean (exit 0). The probe script's real output: 9 of 56 rows representable
+(all `PRONOUN_FOCUS_FOLLOWUP`), 8 train / 1 held-out,
+`pairwise_margin_accuracy=0.5`, `mean_margin=0.0` -- the structural-collapse
+tie described above, not the sixth/seventh slices' training-signal tie.
 
 ## Reproducibility (seventh slice)
 
