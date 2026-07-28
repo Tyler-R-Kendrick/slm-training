@@ -41,6 +41,21 @@ _TERM_TO_TEXT = {
 }
 
 
+@lru_cache(maxsize=8)
+def _resolve_grammar_path(raw_path: str) -> str:
+    """Cache the resolved (absolute, symlink-free) grammar path.
+
+    ``Path.resolve()`` is a real syscall (``os.path.realpath``); every
+    ``OpenUIIncrementalEngine.__init__`` used to pay it twice (once for
+    ``_load_parser``, once for ``_load_lexer``) even though the raw path is
+    one of a handful of constants across a process's lifetime. See
+    docs/design/decode-compiler-tree-witness-search-cost-finding.md
+    (~2.9s + ~2.2s cumulative ``resolve``/``realpath`` cost across 10,967
+    ``__init__`` calls in one profiled decode record).
+    """
+    return str(Path(raw_path).resolve())
+
+
 @lru_cache(maxsize=4)
 def _load_parser(grammar_path: str) -> Lark:
     text = Path(grammar_path).read_text(encoding="utf-8")
@@ -93,8 +108,9 @@ class OpenUIIncrementalEngine:
     def __init__(self, grammar_path: Path | None = None) -> None:
         path = Path(grammar_path) if grammar_path else GRAMMARS_DIR / "openui.lark"
         self.grammar_path = path
-        self._parser = _load_parser(str(path.resolve()))
-        self._lexer = _load_lexer(str(path.resolve()))
+        resolved = _resolve_grammar_path(str(path))
+        self._parser = _load_parser(resolved)
+        self._lexer = _load_lexer(resolved)
         self._prefix = ""
         self._accepts: frozenset[str] = frozenset()
         self._ip = None

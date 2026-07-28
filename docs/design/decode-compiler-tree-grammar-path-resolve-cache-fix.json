@@ -1,0 +1,103 @@
+{
+  "finding": "compiler_tree_grammar_path_resolve_cache_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "PR #1191's proposed_fix_sketch item 2: cache the resolved grammar path (module-level, keyed on the raw grammar_path string) instead of calling Path(...).resolve() inside every OpenUIIncrementalEngine.__init__ (10,967 calls / ~2.9s Path.resolve + ~2.2s os.path.realpath cumulative in that finding's one profiled decode record). Also empirically tested proposed_fix_sketch item 1 (share the _tail lru_cache across top-level candidates within one _openui_completion_domain call) before deciding whether to apply it.",
+  "item_1_tested_and_rejected": {
+    "hypothesis": "Sharing the per-candidate _tail lru_cache across all top-level candidates at one decode position lets a later candidate reuse an earlier one's proven (current, room) witness state instead of re-exploring it, cutting _build_openui_completion_forest call count.",
+    "method": "Implemented the hoist exactly as sketched (nodes_left reset per-candidate for fairness, _tail's lru_cache defined once per _openui_completion_domain call), then A/B measured _build_openui_completion_forest call count before vs after via git stash, same process, monkeypatched counter, on 6 real multi-candidate prefixes including the exact PREFIX9 (root = Card([b1,) from PR #1173's own regression test.",
+    "measured": [
+      {"prefix": "root =", "n_candidates": 27, "calls_before": 271, "calls_after": 271},
+      {"prefix": "root = Card([b1", "n_candidates": 2, "calls_before": 23, "calls_after": 23},
+      {"prefix": "root = Card([b1,", "n_candidates": 12, "calls_before": 171, "calls_after": 171},
+      {"prefix": "(bos only)", "n_candidates": 2, "calls_before": 10, "calls_after": 10},
+      {"prefix": "root = Stack([b1, b2", "n_candidates": 2, "calls_before": 29, "calls_after": 29},
+      {"prefix": "root = Stack([b1, b2,", "n_candidates": 12, "calls_before": 518, "calls_after": 518}
+    ],
+    "result": "zero call-count reduction on every prefix tested, witness content byte-identical before/after in all cases",
+    "why": "Different top-level candidates' token_ids diverge at the very first token by construction (initial.paths enumerates distinct actions at the same position), so their (current, room) recursive-search states never coincide within one _openui_completion_domain call -- there is nothing for a shared cache to hit. The safety property from the sketch ('sharing can only ever give a free win, never fewer real chances') held, but the win itself was empirically absent for the OpenUI grammar's actual candidate structure.",
+    "decision": "Reverted this half of the sketch (git checkout -- pack.py) rather than ship a no-benefit complexity addition; documented as a negative result so a future iteration does not re-attempt the identical hypothesis without new evidence."
+  },
+  "item_2_applied": {
+    "change": {
+      "file": "src/slm_training/dsl/grammar/fastpath/engine.py",
+      "summary": [
+        "New _resolve_grammar_path(raw_path: str) -> str, @lru_cache(maxsize=8): returns str(Path(raw_path).resolve()), computed once per distinct raw path string.",
+        "OpenUIIncrementalEngine.__init__ now calls _resolve_grammar_path(str(path)) once and reuses the result for both _load_parser(resolved) and _load_lexer(resolved), instead of calling path.resolve() twice per init (once per callee)."
+      ],
+      "why_safe": "Path.resolve() is a pure, deterministic function of the raw path string within one process (no cwd/symlink change expected mid-run); _load_parser/_load_lexer's own @lru_cache is keyed on the resolved string exactly as before, so caching the resolve step cannot change which Lark/BasicLexer object either callee returns -- verified directly (test_equivalent_raw_paths_share_the_same_cached_parser_and_lexer)."
+    },
+    "reproduction": {
+      "method": "targeted micro-benchmark reproducing the finding's own profiled __init__ call count (10,967), same precedent as PR #1173's build_completion_forest before/after (not a full train/eval/checkpoint run)",
+      "script_not_committed": "bench_resolve.py (session scratchpad): times N=10967 OpenUIIncrementalEngine() constructions against the cached _resolve_grammar_path path, vs. an inlined reproduction of the exact pre-fix __init__ body (path.resolve() called directly, no cache) in the same process",
+      "reps": 4
+    },
+    "measured_before_after": [
+      {"rep": 1, "before_s": 0.7979, "after_s": 0.1465, "speedup_x": 5.45, "saved_s": 0.6514},
+      {"rep": 2, "before_s": 0.8759, "after_s": 0.1575, "speedup_x": 5.56, "saved_s": 0.7184},
+      {"rep": 3, "before_s": 0.7760, "after_s": 0.1457, "speedup_x": 5.33, "saved_s": 0.6303},
+      {"rep": 4, "before_s": 0.9013, "after_s": 0.1675, "speedup_x": 5.38, "saved_s": 0.7338}
+    ],
+    "interpretation": "Consistent 5.3x-5.6x speedup on OpenUIIncrementalEngine.__init__ itself (~0.63s-0.73s saved per 10,967 inits). Smaller in absolute terms than the finding's ~3.26s cumulative cProfile figure (which also includes the LALR-parser-frontend and other __init__-adjacent costs beyond the two explicit path.resolve() calls this fix targets), but a real, repeatable, isolated measurement of the specific syscall this fix eliminates -- roughly 2% of the ~29-34s total wall-clock budget of the finding's profiled records. Modest, not transformative: the dominant costs identified by the finding (Lark InteractiveParser.accepts(), 12.6s/23,530 calls) remain untouched by this change."
+  },
+  "decode_invariant_check": {
+    "claim": "I6/I3: a pure path-resolution caching change must never alter coverage/n_paths, and must still resolve to the identical cached Lark/BasicLexer objects regardless of how the caller spells an equivalent path.",
+    "result": "build_completion_forest on PREFIX9 (root = Card([b1,) still returns coverage=complete, n_paths=12 (matches PR #1173's own regression test expectation); default-vs-explicit-resolved-path engines share identical _parser/_lexer object identity.",
+    "verified": true
+  },
+  "unit_test": {
+    "file": "tests/test_dsl/test_grammar_fastpath_path_resolve_cache.py",
+    "committed": true,
+    "n_tests": 4,
+    "tests": [
+      "test_resolve_grammar_path_is_cached",
+      "test_path_resolve_called_at_most_once_across_many_inits",
+      "test_equivalent_raw_paths_share_the_same_cached_parser_and_lexer",
+      "test_build_completion_forest_unchanged_after_path_cache_fix"
+    ],
+    "result_after_fix": "4 passed in 6.03s"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_dsl/{test_grammar_fastpath_lexer_cache,test_grammar_fastpath_deadline,test_grammar_fastpath_path_resolve_cache}.py",
+      "result": "13 passed"
+    },
+    {
+      "suite": "tests/test_dsl/test_pack.py (deselect test_end_to_end_fixture_run_through_pack_interface: torch model-build test exceeds the 3-minute run cap)",
+      "result": "16 passed, 2 failed",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_pack.py::test_openui_oracle_accepts_source_and_fails_closed",
+        "test_pack.py::test_verify_stack_verdicts_unchanged"
+      ],
+      "note": "both reproduce identically with engine.py reverted to HEAD (git stash); an environment/fixture gap (VerificationReport tier=QUARANTINE) unrelated to this change, which touches only engine.py's path-resolution caching"
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath.py (unfiltered, 26 tests, torch CPU forward passes)",
+      "result": "19 passed, 0 failed, killed at 170s run cap before completion (remaining tests not evidence per the hard-run-cap law); a targeted 3-test subset (test_engine_force_equal_after_name, test_lexer_root_round_trips_and_is_first_token_legal, test_grammar_state_uses_surface_text_for_lexer_ids) passed in 2.51s in isolation",
+      "note": "same run-cap constraint PR #1173 hit on this identical file; no failures observed in either the partial full-file run or the isolated subset"
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "ok (vs HEAD; 2 changed file(s), 0 component(s) touched) -- fastpath/engine.py is not itself a path in any versions.json component, matching PR #1173's identical precedent; the new test file is untracked-added, not a watched path either",
+    "repo_policy": "ok (tracked + untracked)",
+    "verify_decode_invariants": "exit 0, agent_surfaces/canonical_defaults/strict_policies/weakening_levers unchanged"
+  },
+  "interpretation": "Closes PR #1191's proposed_fix_sketch item 2 with a measured, modest (~2% of total record wall-clock) win, and closes item 1 with a documented negative result instead of an unverified assumption. Neither change touches the finding's dominant identified cost (Lark's InteractiveParser.accepts(), 12.6s/23,530 calls per profiled record) -- that remains the next lever, and per the finding's own scope note is 'Lark-internals-facing' and out of scope for a quick sketch.",
+  "scope_note": "No train/eval run, no checkpoint, no --ship-gates scoreboard -- harness-internal correctness+perf fix with unit-test coverage, not a readiness claim. Not re-measured against the full per-record compiler_ms telemetry or the exposure12 eval protocol from PR #1189/#1190/#1191 (that full checkpoint/eval reproduction was judged out of scope for this iteration; PR #1173's own precedent used the same isolated-micro-benchmark methodology instead of a full pipeline rerun for this exact class of caching fix).",
+  "next_steps": [
+    "Item 3 from PR #1191's proposed_fix_sketch (not attempted here, flagged there as Lark-internals-facing and larger in scope): investigate whether Lark's InteractiveParser.accepts() can be memoized per parser-automaton state -- this is the dominant identified cost (12.6s/23,530 calls, ~43% of the profiled record's wall-clock) and neither this fix nor the reverted item 1 touches it.",
+    "Re-run PR #1191's exact reproduction protocol (offsets 0/1/2, exposure12/s16/seed47 recipe) with both this fix and the lexer-cache fix (#1173) in tree to get an honest full-record compiler_ms delta, once the checkpoint/train-data build commands for that recipe are pinned down (this session could not locate the exact slm data build-train invocation used to produce lever_exposure12_v1 in prior sessions' outputs/ trees).",
+    "Do not re-attempt sketch item 1 (shared _tail cache across top-level candidates) without new evidence that a real decode record's candidate set actually produces convergent (current, room) states -- this session's 6-prefix sweep found none."
+  ],
+  "cleanup_note": "bench_resolve.py (session scratchpad, reproduction scaffolding, not a reusable harness tool) is not committed. No outputs/ artifacts were created this session.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "819a15e0d78c29b855ef9d8218f16801692f45aa",
+    "code_dirty": true,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: src/slm_training/dsl/grammar/fastpath/engine.py is not a registered path of any component in src/slm_training/resources/versions.json (identical precedent to PR #1173), so no bump is required for this change."
+  },
+  "captured_at": "2026-07-28T13:10:00Z"
+}
