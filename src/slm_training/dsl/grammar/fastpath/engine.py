@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import time
+from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from lark import Lark, UnexpectedCharacters, UnexpectedToken
 from lark.exceptions import UnexpectedEOF
 from lark.lexer import BasicLexer, LexerThread
+from lark.parsers.lalr_interactive_parser import InteractiveParser
 
 from slm_training.dsl.grammar.backends.types import GRAMMARS_DIR
 
@@ -58,6 +61,76 @@ def _resolve_grammar_path(grammar_path: str) -> str:
     docs/design/decode-engine-init-resolve-cache.md.
     """
     return str(Path(grammar_path).resolve())
+
+
+_ACCEPTS_CACHE_MAXSIZE = 4096
+# Keyed on (parse_table object identity, tuple(state_stack)) -> frozenset of
+# accepted terminal names. See docs/design/decode-accepts-state-memoization.md
+# for the soundness argument: `InteractiveParser.accepts()` is a pure,
+# side-effect-free function of the *entire* LALR `state_stack` (not just its
+# top -- `ParserState.feed_token`'s reduce chain pops frames and re-checks
+# the lookahead token against the state *below* the one popped, so two
+# different left-contexts that happen to share only the top-of-stack state
+# can legally diverge) plus the (immutable, per-grammar) parse table it
+# belongs to. `value_stack` contents and lexer position play no role --
+# `accepts()` explicitly strips callbacks and builds probe tokens from the
+# bare `Token` class, never from live lexer state.
+#
+# `state_stack` entries are plain ints (`IntParseTable`, the default LALR
+# table type) and the parse-table object is reused unchanged across every
+# `InteractiveParser.copy()` derived from one `Lark.parse_interactive()`
+# call (`ParserState.copy()` never copies `parse_conf`), so keying on the
+# table object's identity is stable for as long as that object is reachable.
+# Using the object itself (not `id()`) as part of the key -- rather than a
+# bare `id()` -- avoids the classic id-reuse hazard: a dict key holds a
+# strong reference, so a stale id can never be reassigned to an unrelated
+# parse table while a cache entry for it still exists.
+_accepts_cache: "dict[tuple[Any, tuple[int, ...]], frozenset[str]]" = {}
+_accepts_cache_order: "OrderedDict[tuple[Any, tuple[int, ...]], None]" = OrderedDict()
+_accepts_cache_hits = 0
+_accepts_cache_misses = 0
+
+
+def _cached_ip_accepts(ip: InteractiveParser) -> frozenset[str]:
+    """Memoized ``InteractiveParser.accepts()``.
+
+    Same accepted-terminal set as calling ``ip.accepts()`` directly, but a
+    repeat of the same (parse table, full ``state_stack``) pair -- which
+    genuinely recurs across different token histories that land on the same
+    LALR automaton configuration -- is served from cache instead of re-doing
+    Lark's per-terminal shift/reduce probe (the dominant witness-search cost;
+    see docs/design/decode-compiler-tree-witness-search-cost-finding.md).
+    """
+    global _accepts_cache_hits, _accepts_cache_misses
+    parser_state = ip.parser_state
+    key = (parser_state.parse_conf.parse_table, tuple(parser_state.state_stack))
+    cached = _accepts_cache.get(key)
+    if cached is not None:
+        _accepts_cache_hits += 1
+        _accepts_cache_order.move_to_end(key)
+        return cached
+    _accepts_cache_misses += 1
+    result = frozenset(ip.accepts())
+    _accepts_cache[key] = result
+    _accepts_cache_order[key] = None
+    if len(_accepts_cache_order) > _ACCEPTS_CACHE_MAXSIZE:
+        oldest, _ = _accepts_cache_order.popitem(last=False)
+        _accepts_cache.pop(oldest, None)
+    return result
+
+
+def _accepts_cache_clear() -> None:
+    """Test/measurement hook: reset the memoization cache and its counters."""
+    global _accepts_cache_hits, _accepts_cache_misses
+    _accepts_cache.clear()
+    _accepts_cache_order.clear()
+    _accepts_cache_hits = 0
+    _accepts_cache_misses = 0
+
+
+def accepts_cache_info() -> tuple[int, int, int]:
+    """``(hits, misses, currsize)`` -- test/measurement hook."""
+    return (_accepts_cache_hits, _accepts_cache_misses, len(_accepts_cache))
 
 
 @lru_cache(maxsize=4)
@@ -135,7 +208,7 @@ class OpenUIIncrementalEngine:
         self._fed_token_count = 0
         self._fed_tokens = []
         try:
-            self._accepts = frozenset(str(x) for x in self._ip.accepts())
+            self._accepts = frozenset(str(x) for x in _cached_ip_accepts(self._ip))
         except Exception:
             self._accepts = frozenset()
 
@@ -170,7 +243,7 @@ class OpenUIIncrementalEngine:
             self._accepts = frozenset()
             return
         try:
-            self._accepts = frozenset(str(x) for x in self._ip.accepts())
+            self._accepts = frozenset(str(x) for x in _cached_ip_accepts(self._ip))
         except Exception:
             self._accepts = frozenset()
 

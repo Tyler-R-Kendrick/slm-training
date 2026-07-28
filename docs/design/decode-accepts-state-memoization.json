@@ -1,0 +1,58 @@
+{
+  "finding": "accepts_state_memoization",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "is_perf_win": true,
+  "task": "PR #1193's named next lever / decode-engine-init-resolve-cache.json named_next_lever: memoize Lark's InteractiveParser.accepts() by parser-automaton state rather than token history, with an I3/I6 safety proof, since automaton state genuinely repeats across different token histories reaching the same LALR state (unlike the _tail witness-search cache's literal-history key, PR #1192's 0-hit finding).",
+  "lark_internals_investigated": {
+    "files_read": [
+      ".venv/lib/python3.12/site-packages/lark/parsers/lalr_interactive_parser.py",
+      ".venv/lib/python3.12/site-packages/lark/parsers/lalr_parser_state.py",
+      ".venv/lib/python3.12/site-packages/lark/parsers/lalr_analysis.py",
+      ".venv/lib/python3.12/site-packages/lark/lexer.py"
+    ],
+    "lark_version": "1.3.1",
+    "purity_confirmed": "accepts() copies the parser, strips callbacks, and probes with Token instances built from the bare Token class (LexerThread._Token = Token) -- no lexer/position state read; value-stack contents never inspected (only len). accepts() is a pure function of (parse_table, state_stack).",
+    "top_of_stack_only_key_is_unsound": "ParserState.feed_token's reduce action pops `size` frames off state_stack and re-checks the SAME lookahead token against the state now exposed BELOW the popped frames -- that state is part of the left context, not determined by the top state alone. Two different histories sharing only the top-of-stack state can expose different states below after a reduce and legally disagree on accepts()'s outcome. Proven concretely by a synthetic 2-branch grammar (test_top_of_stack_alone_is_not_a_sound_key).",
+    "sound_key_identified": "tuple(state_stack) (ints, IntParseTable is the default LALR table type) plus the parse_table object itself (not id(), to avoid id-reuse after eviction/GC) -- ParserState.copy() never copies parse_conf, so every InteractiveParser.copy() from one Lark.parse_interactive() call shares the identical parse_table reference."
+  },
+  "change_summary": "Added a module-level cache in src/slm_training/dsl/grammar/fastpath/engine.py: _cached_ip_accepts(ip), keyed on (ip.parser_state.parse_conf.parse_table, tuple(ip.parser_state.state_stack)) -> frozenset[str], LRU-bounded at 4096 entries. _refresh_accepts() (used by both reset() and every _sync) now calls it instead of self._ip.accepts() directly. accepts_cache_info()/_accepts_cache_clear() are test/measurement hooks.",
+  "safety_argument": "Pure memoization of a provably pure function (accepts() depends only on state_stack + the immutable per-grammar parse_table). Keying on the table object (not id()) avoids id-reuse hazard since the dict key holds a strong reference. test_cached_accepts_byte_identical_to_uncached_on_real_prefixes proves byte-identical output across 6 growing real prefixes; test_top_of_stack_alone_is_not_a_sound_key documents why the (rejected) simpler top-only key would be unsound; test_build_completion_forest_unchanged_with_accepts_cache / test_completion_domain_unchanged_with_accepts_cache reconfirm PREFIX8/PREFIX9 n_paths/coverage/candidate-count are unchanged.",
+  "reproduction": {
+    "method": "Direct in-process calls to _openui_completion_domain on PREFIX8 ('root = Card([b1') and PREFIX9 ('root = Card([b1,') -- same prefixes as PR #1171/#1172/#1191/#1192 -- with the accepts cache live vs monkeypatched to call ip.accepts() directly (uncached baseline). Both paths warmed once first so _load_parser/_load_lexer/regex caches are equally hot before timing.",
+    "grammar": "src/slm_training/dsl/grammars/openui.lark (default grammar_path)",
+    "code_commit_base": "00b0096"
+  },
+  "measured_before_after": {
+    "real_accepts_calls_prefix8": {"before": 1073, "after_misses": 29, "cache_hits": 1044, "hit_rate": 0.973},
+    "real_accepts_calls_prefix9": {"before": 16082, "after_misses": 327, "cache_hits": 15755, "hit_rate": 0.980},
+    "wall_time_median_of_5_reps_prefix8_s": {"cached": 0.3109, "uncached": 0.4863, "speedup": 1.56},
+    "wall_time_median_of_5_reps_prefix9_s": {"cached": 4.3382, "uncached": 7.0381, "speedup": 1.62},
+    "cprofile_prefix9_total_s": {"cached": 14.234, "uncached": 23.279, "wall_reduction_pct": 38.9},
+    "cprofile_note": "InteractiveParser.accepts() dropped out of the top-20-by-cumulative-time entries post-fix (pre-fix: 4th highest, 9.08s cumulative / 16,215 calls). Remaining cost is genuine lexing (_lex_tokens/lex/next_token, ~4.5s) and the witness search's own recursive fan-out (_tail/_tail_from), not Lark's accept-probe.",
+    "sync_call_counts_unchanged": {"prefix8": 1073, "prefix9": 16082, "note": "matches PR #1192's baseline exactly -- this fix reduces work inside each accepts() call, not the number of _sync/witness-search calls"}
+  },
+  "tests_added": {
+    "file": "tests/test_dsl/test_grammar_fastpath_accepts_cache.py",
+    "count": 8,
+    "includes": [
+      "byte-identical cached vs uncached accepts() output across 6 growing real prefixes",
+      "structural cache-hit proof (repeated state_stack across independent engine instances)",
+      "synthetic-grammar proof that top-of-stack-only keying is unsound (motivates the full-state_stack key)",
+      "build_completion_forest / _openui_completion_domain n_paths/coverage/candidate-count unchanged on PREFIX8/PREFIX9",
+      "honest hit-rate/wall-time measurement (prints, no hard-coded ratio assertion)"
+    ]
+  },
+  "validation": {
+    "repo_policy": "ok (tracked + untracked)",
+    "verify_version_stamps": "ok (vs HEAD; 2 changed file(s), 0 component(s) touched) -- engine.py is not a watched path in any versions.json component, same precedent as PR #1173/#1193's own edits to this file",
+    "verify_decode_invariants": "exit 0, agent_surfaces/canonical_defaults/strict_policies/weakening_levers unchanged",
+    "ruff": "all checks passed (src/slm_training/dsl/grammar/fastpath/engine.py, tests/test_dsl/test_grammar_fastpath_accepts_cache.py)",
+    "pytest_new_suite": "8 passed in 17.85s",
+    "pytest_related_suites": "tests/test_dsl/test_grammar_fastpath_accepts_cache.py + test_grammar_fastpath_lexer_cache.py + test_pack_witness_cache.py + test_grammar_fastpath_resolve_cache.py: 24 passed in 36.30s"
+  },
+  "version_stamp_impact": "none -- src/slm_training/dsl/grammar/fastpath/engine.py is not registered under any component's watched paths in src/slm_training/resources/versions.json (same precedent as PR #1173 and PR #1193, both of which touched this exact file with zero versions.json changes)",
+  "named_next_lever": "With accepts() no longer dominant (dropped out of cProfile's top-20 cumulative-time entries), the remaining PREFIX9 witness-search cost splits between real lexing (_lex_tokens/Lark.lex, ~4.5s of 14.2s profiled) and the recursive _tail/_tail_from fan-out's own overhead (including the Node DSL bridge round trip inside _generated_ast_is_complete, 2.14s/171 calls -- a larger fraction here than PR #1191's full-record profile found, worth re-checking at full-record scale with this fix live). If neither materializes into a safety-proven win in a future bounded iteration, pivot the loop to a different phase of the pipeline (training-data build, SFT, or an experiment matrix) rather than a fourth consecutive decode-microcost session on this same file.",
+  "captured_at": "2026-07-28T15:10:00Z"
+}
