@@ -1,0 +1,115 @@
+{
+  "finding": "compiler_tree_witness_search_cost_post_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "PR #1190's next-step #1: root-cause why compiler_ms is still pinned at ~30s post-fix (deadline-swallow fix PR #1189 + lexer-cache fix PR #1173 both in tree) -- compare compiler_prefill_batches / candidate-set size against pre-fix numbers to isolate whether this checkpoint's compiler-tree search genuinely needs >30s per record independent of lexer cost, or whether the lexer-cache benefit is concentrated on cache hits this record's decode path doesn't exercise.",
+  "instrumentation_gap_found": {
+    "description": "metrics['decode_stats'] in eval_runner.py is only populated when decode_stats_rows is non-empty; post-fix, a propagating deadline TimeoutError skips the normal decode_stats_rows.append(stats) path, and nothing in the codebase attaches a decode_stats attribute to the raised exception for eval_runner.py's own getattr(exc, 'decode_stats', None) recovery attempt to find. Verified: PR #1190's own eval.json/eval_smoke.json outputs (outputs/runs/eval_off{0,1,2}_postfix/, still on disk) contain zero occurrences of the string 'decode_stats'.",
+    "implication": "PR #1190's 'compiler_ms stays pinned at ~30.0-30.5s (unchanged from pre-fix)' claim was an inference from latency_ms alone, not a direct post-fix compiler_ms measurement.",
+    "fix_used_this_session": "Monkeypatched decode_stats.collect_decode_stats (scratchpad script, not committed) to capture the live DecodeStats bucket's as_dict() unconditionally on exit (exception or not). No production code changed."
+  },
+  "reproduction": {
+    "checkpoint_provenance": "Reused checkpoint/train-data already on disk from PR #1190's session (outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47, outputs/data/train/lever_exposure12_v1) -- same recipe/seed as the finding this follows up on.",
+    "code_commit": "fec8c087965cdd4189b03fcda6856ae076ad23ae",
+    "components_present": {
+      "model.twotower": "v262",
+      "dsl.grammar_capabilities": "v3",
+      "harness.model_build.eval": "v63"
+    },
+    "commands": [
+      "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset {0,1,2}",
+      "invoked in-process (scripts.evaluate_model.main(argv)) with decode_stats.collect_decode_stats monkeypatched to capture bucket.as_dict() on any exit",
+      "cProfile of the identical offset-0 record's real decode path (no synthetic prefix)"
+    ],
+    "scratchpad_scripts_not_committed": [
+      "diag_deadline_stats.py",
+      "diag_deadline_profile.py"
+    ]
+  },
+  "measured_before_after": {
+    "before_source": "decode-compiler-tree-deadline-swallow-finding.json (pre-fix)",
+    "after_source": "this session",
+    "records": [
+      {
+        "record": "smoke_hero_01",
+        "offset": 0,
+        "before": {"compiler_prefill_batches": 3, "compiler_ms": 29209.7, "ms_per_call": 9736.57},
+        "after": {
+          "compiler_prefill_batches": 8,
+          "compiler_ms": 29154.103540000506,
+          "ms_per_call": 3644.26,
+          "total_ms": 30000.242298999638,
+          "forwards_count": 8,
+          "tokens_emitted": 13,
+          "compiler_candidates": 63,
+          "constrained_dead_ends": 0,
+          "ms_per_call_speedup_x": 2.67
+        }
+      },
+      {
+        "record": "smoke_button_01",
+        "offset": 1,
+        "before": {"compiler_prefill_batches": 4, "compiler_ms": 29378.1, "ms_per_call": 7344.53},
+        "after": {
+          "compiler_prefill_batches": 43,
+          "compiler_ms": 28460.609470002964,
+          "ms_per_call": 661.87,
+          "total_ms": 30000.05664399987,
+          "forwards_count": 43,
+          "tokens_emitted": 76,
+          "compiler_candidates": 134,
+          "constrained_dead_ends": 0,
+          "ms_per_call_speedup_x": 11.10
+        }
+      },
+      {
+        "record": "smoke_callout_01",
+        "offset": 2,
+        "before": {"compiler_prefill_batches": 4, "compiler_ms": 29186.4, "ms_per_call": 7296.60},
+        "after": {
+          "compiler_prefill_batches": 8,
+          "compiler_ms": 29112.938824999674,
+          "ms_per_call": 3639.12,
+          "total_ms": 30000.341094000305,
+          "forwards_count": 8,
+          "tokens_emitted": 13,
+          "compiler_candidates": 62,
+          "constrained_dead_ends": 0,
+          "ms_per_call_speedup_x": 2.00
+        }
+      }
+    ]
+  },
+  "cprofile_offset0": {
+    "wall_s_profiled": 34.069,
+    "function_calls": 43603521,
+    "build_completion_forest_calls": 3,
+    "build_completion_forest_cumulative_s": 28.866,
+    "tail_from_calls": 31,
+    "tail_calls": 7386,
+    "tail_cumulative_s": 28.801,
+    "engine_sync_calls": 23532,
+    "engine_sync_cumulative_s": 18.443,
+    "interactive_parser_accepts_calls": 23530,
+    "interactive_parser_accepts_cumulative_s": 12.625,
+    "lex_tokens_calls": 34222,
+    "lex_tokens_cumulative_s": 5.511,
+    "build_scanner_calls": 2,
+    "build_scanner_cumulative_s": 0.007,
+    "engine_init_calls": 10967,
+    "engine_init_cumulative_s": 3.263,
+    "node_bridge_invoke_calls": 307,
+    "node_bridge_invoke_cumulative_s": 0.545,
+    "interpretation": "_build_scanner called only 2x total -- lexer cache confirmed hit on this real decode path, not the pre-fix pathology. Dominant cost shifted to InteractiveParser.accepts() (Lark-internal state-copy-and-probe, 23530 calls / 12.6s) plus the per-candidate un-shared _tail lru_cache's call-count fan-out (7386 recursive _tail calls from only 31 top-level _tail_from calls). Node bridge remains cheap (307 calls, 0.545s), matching PR #1172."
+  },
+  "answer": "This checkpoint's compiler-tree search genuinely needs well beyond 30s per record, independent of lexer cost. The lexer-cache fix is real and is being exercised on this exact decode path (build_scanner calls near-zero) -- it cut per-call compiler_ms by 2.0x-11.1x. But removing the lexer-rebuild tax exposed the next cost layer (Lark's accepts() probe + un-shared per-candidate witness-search memoization), so total wall-clock stayed pinned at ~30s: fewer ms per call, but 2x-11x more calls now complete (13-76 tokens emitted, zero dead-ends post-fix vs 7-8 tokens and 1/1 dead-end pre-fix), because genuine previously-masked decode progress now happens instead of an early swallowed-timeout dead-end.",
+  "proposed_fix_sketch_not_applied": [
+    "Hoist the @lru_cache-wrapped _tail closure (pack.py:402) out of the per-candidate loop in _openui_completion_domain (pack.py:430-451) so all top-level candidates for one decode position share one witness cache; needs a test confirming nodes_left fairness semantics and witness content are unchanged.",
+    "Cache the resolved grammar path once (module-level) instead of calling Path(...).resolve() inside every OpenUIIncrementalEngine.__init__ (10,967 calls / ~5.1s combined resolve+realpath this record).",
+    "Investigate memoizing Lark's InteractiveParser.accepts() per parser-automaton state (larger, Lark-internals-facing change)."
+  ],
+  "version_stamp_impact": "none -- 0 files changed, 0 components touched (verify_version_stamps --check: ok)",
+  "named_next_lever": "Apply proposed-fix-sketch item 1 (share the _tail memoization cache across top-level candidates within one decode position) via improve-openui-harnesses with a unit test proving witness content/nodes_left fairness unchanged, then re-run this protocol to measure the compiler_ms/_sync-call-count delta. Secondary: re-run the seeded multi-rep lever-hard-decode-timeout-wall protocol on a non-smoke-scale checkpoint (PR #1190's still-open next-step #2).",
+  "captured_at": "2026-07-28T12:16:00Z"
+}
