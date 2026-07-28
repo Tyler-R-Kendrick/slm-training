@@ -232,8 +232,10 @@ def _conflicting_example(fixture: _Fixture, row_id: str) -> OperatorTransactionP
     )
 
 
-def _scorer(examples, head_family: str = "independent_set") -> TypedOperatorPolicyScorer:
-    torch.manual_seed(11)
+def _scorer(
+    examples, head_family: str = "independent_set", *, seed: int = 11
+) -> TypedOperatorPolicyScorer:
+    torch.manual_seed(seed)
     views = [example.policy_input for example in examples]
     from slm_training.models.operator_feature_encoder import OperatorFeatureVocabularyV1
 
@@ -270,7 +272,17 @@ def test_shuffled_conflict_belief_never_commits_a_real_conflict() -> None:
     (nonzero ``conflict_attempts``) but can never make it into a commit."""
     fixture = _Fixture()
     example = _conflicting_example(fixture, "row-conflict")
-    scorer = _scorer([example])
+    # This scorer is randomly initialized and never trained, so *which* pair
+    # it ranks first is init noise, not a property. The seed is pinned here
+    # only to establish this test's precondition -- that the corrupted belief
+    # actually ranks an infeasible pair first, so there is wasted search to
+    # observe. The safety assertions below (never deferred into a commit,
+    # never the genuinely conflicting pair, commit really succeeds) hold at
+    # every seed; only the final `conflict_attempts >= 1` observation needs
+    # the precondition. Pinned separately from `_scorer`'s default so a
+    # parameter-shape change anywhere in the encoder cannot silently turn
+    # this into a vacuous pass.
+    scorer = _scorer([example], seed=0)
     # Deliberately claim the genuinely conflicting pair (0, 1) is fine, and
     # invent conflicts that do not really exist — this is exactly the
     # `shuffled_conflict_graph` control's corrupted ranking belief.

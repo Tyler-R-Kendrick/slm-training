@@ -47,6 +47,7 @@ from slm_training.models.operator_policy_view import (
     ReferenceModelViewV1,
     build_operator_policy_input,
     operator_policy_input_from_dict,
+    tag_recently_touched_rows,
     validate_no_forbidden_fields,
 )
 
@@ -392,6 +393,168 @@ def test_stale_reference_table_cannot_produce_a_view() -> None:
     with pytest.raises(OperatorPolicyViewError) as excinfo:
         build_operator_policy_input(other_table, legal_set, harness.library)
     assert excinfo.value.code == "policy_view.stale_reference_table"
+
+
+# --------------------------------------------------------------------------- #
+# recently_touched: the SLM-418 ninth slice's bounded history bit.
+# --------------------------------------------------------------------------- #
+_NODE_FOCUS_SEMANTIC = _sha("node-focus")
+
+
+def _mixed_descriptors() -> tuple[ReferenceDescriptorV1, ...]:
+    """Two content-identical VALUE rows plus one distinguishable NODE row."""
+    return (
+        _value_descriptor(0),
+        _value_descriptor(1),
+        ReferenceDescriptorV1(
+            ref_kind=RefKind.NODE,
+            semantic_fingerprint=_NODE_FOCUS_SEMANTIC,
+            value_type="openui.node",
+        ),
+    )
+
+
+def _mixed_table(harness: _Harness, *, seed: int) -> ReferenceTableV1:
+    return build_reference_table(
+        request_id="request-1",
+        state_digest=harness.state.state_digest,
+        branch_digest=_sha("branch"),
+        descriptors=_mixed_descriptors(),
+        seed=seed,
+    )
+
+
+def test_recently_touched_defaults_off_and_round_trips() -> None:
+    harness = _Harness(allowed_indices=frozenset({1, 3}))
+    table = harness.table(count=4, seed=7)
+    _, view = harness.view(table)
+
+    assert all(not row.recently_touched for row in view.reference_rows)
+    payload = view.to_dict()
+    assert all(row["recently_touched"] is False for row in payload["reference_rows"])
+    assert operator_policy_input_from_dict(payload).to_dict() == payload
+
+    tagged = tag_recently_touched_rows(view, (2,))
+    assert [row.recently_touched for row in tagged.reference_rows] == [
+        False,
+        False,
+        True,
+        False,
+    ]
+    tagged_payload = tagged.to_dict()
+    assert sum(row["recently_touched"] for row in tagged_payload["reference_rows"]) == 1
+    assert tagged_payload != payload
+    assert operator_policy_input_from_dict(tagged_payload).to_dict() == tagged_payload
+    # It is not, and must never become, a forbidden identity field.
+    validate_no_forbidden_fields(tagged_payload)
+
+
+def test_recently_touched_defaults_off_for_payloads_persisted_before_it_existed() -> None:
+    harness = _Harness(allowed_indices=frozenset({1, 3}))
+    table = harness.table(count=4, seed=7)
+    _, view = harness.view(table)
+
+    legacy = view.to_dict()
+    for row in legacy["reference_rows"]:
+        del row["recently_touched"]
+    rehydrated = operator_policy_input_from_dict(legacy)
+    assert all(not row.recently_touched for row in rehydrated.reference_rows)
+
+
+def test_recently_touched_travels_with_content_not_row_order() -> None:
+    """The permutation-equivariance regression for the new field.
+
+    Two views built from opaque-ID/row-order permutations of the same table,
+    with the *same content* tagged, must serialize identically; tagging a
+    *different* reference must not. Without ``recently_touched`` in
+    ``canonical_row_maps``'s sort key the first assertion fails, because two
+    otherwise identical rows would keep build-time order.
+    """
+    harness = _Harness(allowed_indices=frozenset({0, 1}))
+    table = _mixed_table(harness, seed=7)
+    permuted = table.permuted(seed=99)
+    assert tuple(entry.ref.opaque_id for entry in permuted.entries) != tuple(
+        entry.ref.opaque_id for entry in table.entries
+    )
+
+    def tagged(source: ReferenceTableV1, semantic: str) -> dict:
+        _, view = harness.view(source)
+        row = next(
+            index
+            for index, entry in enumerate(source.entries)
+            if entry.descriptor.semantic_fingerprint == semantic
+        )
+        return tag_recently_touched_rows(view, (row,)).to_dict()
+
+    value_semantic = _value_descriptor(0).semantic_fingerprint
+    assert tagged(table, _NODE_FOCUS_SEMANTIC) == tagged(permuted, _NODE_FOCUS_SEMANTIC)
+    assert tagged(table, value_semantic) == tagged(permuted, value_semantic)
+    assert tagged(table, _NODE_FOCUS_SEMANTIC) != tagged(permuted, value_semantic)
+
+    _, untagged_view = harness.view(table)
+    assert untagged_view.to_dict() != tagged(table, _NODE_FOCUS_SEMANTIC)
+
+
+def test_two_content_identical_rows_stay_canonically_ordered_when_one_is_tagged() -> None:
+    """The exact case the field exists for: rows differing only in this bit.
+
+    The two VALUE rows are indistinguishable in every other allowed field, so
+    only ``recently_touched`` can separate them -- and the canonical payload
+    must still be independent of which build-time row happened to carry it.
+    """
+    harness = _Harness(allowed_indices=frozenset({0, 1}))
+    table = _mixed_table(harness, seed=13)
+    permuted = table.permuted(seed=5)
+
+    def tagged(source: ReferenceTableV1, semantic: str) -> dict:
+        _, view = harness.view(source)
+        row = next(
+            index
+            for index, entry in enumerate(source.entries)
+            if entry.descriptor.semantic_fingerprint == semantic
+        )
+        return tag_recently_touched_rows(view, (row,)).to_dict()
+
+    first = _value_descriptor(0).semantic_fingerprint
+    second = _value_descriptor(1).semantic_fingerprint
+    # Content-identical rows: tagging either one is the same sanitized fact.
+    assert tagged(table, first) == tagged(table, second)
+    assert tagged(table, first) == tagged(permuted, second)
+
+
+def test_tag_recently_touched_rows_fails_closed() -> None:
+    harness = _Harness(allowed_indices=frozenset({1, 3}))
+    table = harness.table(count=4, seed=7)
+    _, view = harness.view(table)
+
+    with pytest.raises(OperatorPolicyViewError) as unknown:
+        tag_recently_touched_rows(view, (4,))
+    assert unknown.value.code == "policy_view.unknown_reference_row"
+
+    with pytest.raises(OperatorPolicyViewError) as negative:
+        tag_recently_touched_rows(view, (-1,))
+    assert negative.value.code == "policy_view.unknown_reference_row"
+
+    with pytest.raises(OperatorPolicyViewError) as duplicate:
+        tag_recently_touched_rows(view, (1, 1))
+    assert duplicate.value.code == "policy_view.duplicate_reference_row"
+
+    # An empty tag set is a legitimate answer (no preceding edit), not an error.
+    assert tag_recently_touched_rows(view, ()) is view
+
+
+def test_recently_touched_must_be_a_bool() -> None:
+    with pytest.raises(ValueError):
+        ReferenceModelViewV1(
+            row=0,
+            ref_kind=RefKind.VALUE,
+            value_type="openui.string",
+            compiler_facts=(CompilerFact.VALUE_VISIBLE,),
+            has_parent=False,
+            parent_row=None,
+            relative_position=None,
+            recently_touched=1,  # type: ignore[arg-type]
+        )
 
 
 def test_view_never_carries_a_forbidden_field(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -229,6 +229,15 @@ class OperatorFeatureEncoder(nn.Module):
     No arm ever consumes a ``semantic_fingerprint``, opaque ID, or proof/
     application hash — none of those fields exist on
     ``ReferenceModelViewV1``/``OperatorActionViewV1`` to begin with.
+
+    ``ReferenceModelViewV1.recently_touched`` (SLM-418 ninth slice) is read
+    by **both** the ``TYPED`` and the ``HASH_SCALAR`` arms — as one more
+    column of ``reference_position`` and of the hashed scalar row
+    respectively, exactly how ``has_parent`` is already handled in each. It
+    is deliberately not a typed-only field: the DSH3-23 arms are matched on
+    *which fields are visible* and differ only in *how they are encoded*, so
+    giving the typed arm a field the hash control cannot see would confound
+    the very comparison this module exists to run.
     """
 
     def __init__(
@@ -246,7 +255,7 @@ class OperatorFeatureEncoder(nn.Module):
         self.n_identity_buckets = n_identity_buckets
 
         if arm is FeatureArm.HASH_SCALAR:
-            self.reference_projection = nn.Linear(6, dim)
+            self.reference_projection = nn.Linear(7, dim)
             self.action_projection = nn.Linear(4, dim)
         else:
             self.ref_kind_embedding = nn.Embedding(len(vocabulary.ref_kinds) + 1, dim)
@@ -256,7 +265,7 @@ class OperatorFeatureEncoder(nn.Module):
             self.compiler_fact_embedding = nn.Embedding(
                 len(vocabulary.compiler_facts) + 1, dim
             )
-            self.reference_position = nn.Linear(4, dim)
+            self.reference_position = nn.Linear(5, dim)
             self.reference_projection = nn.Linear(dim * 3, dim)
 
             self.operator_embedding = nn.Embedding(len(vocabulary.operator_ids) + 1, dim)
@@ -287,6 +296,7 @@ class OperatorFeatureEncoder(nn.Module):
                         (row.relative_position or 0) / _POSITION_NORMALIZER,
                         float(row.selector_cardinality or 0) / _POSITION_NORMALIZER,
                         float(row.selector_max_fanout or 0) / _POSITION_NORMALIZER,
+                        _stable_scalar(row.recently_touched),
                     ]
                 )
             return self.reference_projection(torch.tensor(rows, dtype=torch.float32))
@@ -320,6 +330,7 @@ class OperatorFeatureEncoder(nn.Module):
                     (row.relative_position or 0) / _POSITION_NORMALIZER,
                     float(row.selector_cardinality or 0) / _POSITION_NORMALIZER,
                     float(row.selector_max_fanout or 0) / _POSITION_NORMALIZER,
+                    float(row.recently_touched),
                 ]
                 for row in view.reference_rows
             ],

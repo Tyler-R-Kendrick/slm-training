@@ -58,6 +58,18 @@ longer matches the row's own recorded ``legal_set_fingerprint``. No
 extraction, classification, or schema logic in this module changed --
 see ``docs/design/dsh5-10-replay-preference-rows.md``'s "Eighth slice" for
 what the new adapter module does and does not close.
+
+Ninth slice (v9): :func:`refs_touched_by_preceding_turn` -- a read-only
+accessor exposing this module's existing ``_touched_refs`` focus notion by
+*decision state* rather than by application. The eighth slice found that
+``OperatorFeatureEncoder`` had no field able to represent
+``PRONOUN_FOCUS_FOLLOWUP``'s own preference signal ("which reference did the
+immediately preceding turn touch"), so the ninth slice adds
+``ReferenceModelViewV1.recently_touched`` and needs one authoritative source
+for that bit. Exposing the accessor here keeps focus defined exactly once,
+in the module that owns it, instead of letting the adapter grow a second
+copy that could diverge. Again: no extraction, classification, or schema
+logic in this module changed -- see the disposition doc's "Ninth slice".
 """
 
 from __future__ import annotations
@@ -246,6 +258,43 @@ def _touched_refs(application: OperatorApplicationV1) -> frozenset:
     DAG.
     """
     return frozenset(argument.value for argument in application.arguments)
+
+
+def refs_touched_by_preceding_turn(
+    trace: ConversationTraceV1, state_id: str
+) -> frozenset:
+    """The opaque refs the turn that *produced* ``state_id`` bound as arguments.
+
+    This is :func:`_touched_refs` -- this module's one and only notion of
+    "focus" -- addressed by decision state instead of by application, so a
+    caller outside this module can ask "what did the immediately preceding
+    turn touch?" without reimplementing focus (which would be a second,
+    divergeable definition of the same concept).
+
+    Returns an empty set when nothing in ``trace`` produced ``state_id``
+    (e.g. the root state), or when the producing turn is not an ``AST_EDIT``
+    with a verified application (``UNDO``/``REDO``/``CHECKOUT_STATE``/
+    ``FORK`` turns bind no operator arguments). Never raises for an unknown
+    state: absence of a preceding edit is a real, ordinary answer here, not
+    an integrity failure.
+
+    Strictly a *history* read: the returned refs come from an application
+    that was already verified and recorded before ``state_id`` existed, so
+    nothing about a later choice made *from* ``state_id`` can enter it. It
+    changes no classification -- ``extract_replay_preference_rows``'s
+    pronoun-focus branch keeps using ``_touched_refs`` on the exact turn
+    pair it already scans.
+    """
+    for turn in trace.turns:
+        if turn.output_state_id != state_id:
+            continue
+        if (
+            turn.operation is not ConversationOperation.AST_EDIT
+            or turn.application is None
+        ):
+            return frozenset()
+        return _touched_refs(turn.application)
+    return frozenset()
 
 
 def _action_refs(action: LegalOperatorActionV1) -> frozenset:

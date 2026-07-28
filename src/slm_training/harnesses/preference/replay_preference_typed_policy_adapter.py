@@ -85,13 +85,40 @@ contract change, genuinely out of scope here); it does not call
 result; and it does not compare against or replace the sixth/seventh
 slices' two-feature linear scorer, which stays as-is.
 
-See ``docs/design/dsh5-10-replay-preference-rows.md``'s "Eighth slice" for
-the real measured numbers.
+Ninth slice (v2): the eighth slice's own named lever (1). The flatness above
+was diagnosed as a *representational* ceiling -- ``OperatorFeatureEncoder``
+had no field capable of expressing "which reference did the immediately
+preceding turn touch," which is the entire content of
+``PRONOUN_FOCUS_FOLLOWUP``'s preference signal. That field now exists
+(``ReferenceModelViewV1.recently_touched``, tagged post hoc via
+``tag_recently_touched_rows``), and this adapter populates it from
+``dsl.operators.replay_preference.refs_touched_by_preceding_turn`` -- the
+module-owned ``_touched_refs`` focus notion, addressed by decision state.
+
+Two honesty constraints this slice is bound by, both reported as data rather
+than asserted in prose:
+
+* The flag is a strictly **pre-decision history fact**: it reads the already
+  recorded ``OperatorApplicationV1.arguments`` of the turn that *produced*
+  the decision state. Nothing about the choice being scored enters it.
+* On *this fixture* it is nevertheless **definitionally aligned with the
+  label**: ``extract_replay_preference_rows``'s pronoun-focus branch emits a
+  row only when the chosen action's refs intersect the focus set and the
+  rejected action's refs do not. So a non-zero margin here demonstrates that
+  the boundary and encoder *can represent and learn* this relation --
+  it is not, and must never be reported as, evidence that the feature
+  generalizes to unseen preference structure. :func:`evaluate_typed_policy_argument_probe`
+  emits the exact chosen/rejected tag counts (``recently_touched_diagnostics``)
+  and a verbatim ``recently_touched_note`` so a reader cannot lose this.
+
+See ``docs/design/dsh5-10-replay-preference-rows.md``'s "Eighth slice" and
+"Ninth slice" for the real measured numbers.
 """
 
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 
@@ -102,6 +129,7 @@ from slm_training.dsl.operators import (
     action_kind_of,
     deserialize_operator_action,
     legal_set_at,
+    refs_touched_by_preceding_turn,
 )
 from slm_training.dsl.operators.replay_preference import ProvenanceFactory
 from slm_training.harness_core.versioning import build_version_stamp
@@ -121,6 +149,7 @@ from slm_training.models.operator_policy_view import (
     OperatorPolicyInputV1,
     OperatorPolicyViewError,
     build_operator_policy_input,
+    tag_recently_touched_rows,
 )
 
 __all__ = [
@@ -179,6 +208,7 @@ class TypedPolicyAdapterResultV1:
     accepted_action_row: int | None
     accepted_argument_rows: tuple[tuple[str, int], ...]
     rejected_argument_rows: tuple[tuple[str, int], ...]
+    recently_touched_rows: tuple[int, ...] = ()
 
     def to_typed_example(self, row_id: str) -> TypedOperatorPolicyExampleV1:
         if self.policy_input is None or self.accepted_action_row is None:
@@ -235,6 +265,24 @@ def adapt_replay_row_to_typed_policy_input(
         for reference_row, entry in enumerate(table_entries)
     }
 
+    # Ninth slice: attach the bounded history bit the eighth slice found
+    # missing. ``refs_touched_by_preceding_turn`` reads the exact
+    # ``OperatorApplicationV1.arguments`` of the already-recorded turn that
+    # *produced* this decision state -- strictly pre-decision, never the
+    # outcome of the choice being scored. The opaque refs are resolved
+    # through the same ``row_by_ref`` map the accepted/rejected arguments use
+    # and then discarded: only row numbers cross into the sanitized view, and
+    # only as a boolean. A touched ref that is no longer in this state's
+    # reference table is simply not tagged (no row exists to carry it).
+    recently_touched_rows = tuple(
+        sorted(
+            row_by_ref[(ref.KIND, ref.opaque_id)]
+            for ref in refs_touched_by_preceding_turn(trace, row.input_state_id)
+            if (ref.KIND, ref.opaque_id) in row_by_ref
+        )
+    )
+    policy_input = tag_recently_touched_rows(policy_input, recently_touched_rows)
+
     chosen_operator_id, chosen_arguments = deserialize_operator_action(row.chosen_action)
     _, rejected_arguments = deserialize_operator_action(row.rejected_action)
 
@@ -265,6 +313,7 @@ def adapt_replay_row_to_typed_policy_input(
         accepted_action_row=action_row,
         accepted_argument_rows=accepted_argument_rows,
         rejected_argument_rows=rejected_argument_rows,
+        recently_touched_rows=recently_touched_rows,
     )
 
 
@@ -409,6 +458,8 @@ class TypedPolicyArgumentProbeReportV1:
     held_out_pair_count: int
     pairwise_margin_accuracy: float
     mean_margin: float
+    recently_touched_diagnostics: dict
+    recently_touched_note: str
     gating_note: str
     version_stamp: dict
     schema: str = "typed_policy_argument_probe_report/v1"
@@ -421,6 +472,8 @@ class TypedPolicyArgumentProbeReportV1:
             "held_out_pair_count": self.held_out_pair_count,
             "pairwise_margin_accuracy": self.pairwise_margin_accuracy,
             "mean_margin": self.mean_margin,
+            "recently_touched_diagnostics": dict(self.recently_touched_diagnostics),
+            "recently_touched_note": self.recently_touched_note,
             "gating_note": self.gating_note,
             "version_stamp": self.version_stamp,
         }
@@ -436,6 +489,50 @@ _GATING_NOTE = (
     "discriminate chosen from rejected in a raw forward pass, never what "
     "the gated inference path would output."
 )
+
+_RECENTLY_TOUCHED_NOTE = (
+    "ReferenceModelViewV1.recently_touched is a strictly pre-decision "
+    "history bit (the refs the already-recorded turn that produced this "
+    "decision state bound as arguments), never an outcome or an identity. "
+    "On this fixture it is nevertheless definitionally aligned with the "
+    "label: extract_replay_preference_rows emits a PRONOUN_FOCUS_FOLLOWUP "
+    "row only when the chosen action's refs intersect that focus set and "
+    "the rejected action's refs do not. A non-zero margin therefore shows "
+    "this boundary and encoder can represent and learn the relation; it is "
+    "never evidence that the feature generalizes to unseen preference "
+    "structure, and no such claim is made."
+)
+
+
+def _recently_touched_diagnostics(
+    results: Sequence[TypedPolicyAdapterResultV1],
+) -> dict[str, int]:
+    """Count how the history tag actually landed, per representable row.
+
+    Reported rather than asserted: ``chosen_rows_tagged`` vs
+    ``rejected_rows_tagged`` is the exact measurement of the
+    label-alignment caveat in :data:`_RECENTLY_TOUCHED_NOTE`.
+    """
+    chosen_tagged = 0
+    rejected_tagged = 0
+    tagged_rows = 0
+    for result in results:
+        tagged = set(result.recently_touched_rows)
+        tagged_rows += len(tagged)
+        chosen_tagged += sum(
+            1 for _, reference_row in result.accepted_argument_rows
+            if reference_row in tagged
+        )
+        rejected_tagged += sum(
+            1 for _, reference_row in result.rejected_argument_rows
+            if reference_row in tagged
+        )
+    return {
+        "representable_rows": len(results),
+        "tagged_reference_rows": tagged_rows,
+        "chosen_rows_tagged": chosen_tagged,
+        "rejected_rows_tagged": rejected_tagged,
+    }
 
 
 def evaluate_typed_policy_argument_probe(
@@ -519,6 +616,10 @@ def evaluate_typed_policy_argument_probe(
         held_out_pair_count=len(held_out_results),
         pairwise_margin_accuracy=correct / len(held_out_results),
         mean_margin=margin_sum / len(held_out_results),
+        recently_touched_diagnostics=_recently_touched_diagnostics(
+            (*train_results, *held_out_results)
+        ),
+        recently_touched_note=_RECENTLY_TOUCHED_NOTE,
         gating_note=_GATING_NOTE,
         version_stamp=build_version_stamp(
             "harness.preference.replay_preference_typed_policy_adapter"

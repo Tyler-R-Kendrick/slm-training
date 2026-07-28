@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 import torch
 
 from slm_training.models.operator_feature_encoder import (
     FeatureArm,
+    FixtureOperatorDecisionV1,
     OperatorFeatureVocabularyV1,
     OperatorFeatureEncoder,
     make_fixture_operator_decisions,
@@ -15,6 +18,7 @@ from slm_training.models.operator_feature_encoder import (
     run_matched_arms_fixture,
     train_fixture_arm,
 )
+from slm_training.models.operator_policy_view import tag_recently_touched_rows
 
 
 def test_fixture_decisions_distinguish_gold_by_content_not_position() -> None:
@@ -90,6 +94,75 @@ def test_identity_bucket_arm_is_not_guaranteed_permutation_invariant() -> None:
     gold_original = encoder.encode_reference_rows(decision.view)[decision.gold_row]
     gold_permuted = encoder.encode_reference_rows(permuted.view)[permuted.gold_row]
     assert not torch.allclose(gold_original, gold_permuted)
+
+
+# --------------------------------------------------------------------------- #
+# recently_touched (SLM-418 ninth slice): a real content field both arms read.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("arm", [FeatureArm.TYPED, FeatureArm.HASH_SCALAR])
+def test_recently_touched_changes_the_reference_embedding_in_every_arm(arm) -> None:
+    """Both matched arms must actually consume the field.
+
+    The DSH3-23 arms differ only in *how* fields are encoded, never in which
+    fields are visible — a typed-only field would confound the comparison.
+    """
+    decision = make_fixture_operator_decisions(1, seed=11, n_candidates=4)[0]
+    tagged = replace(
+        decision, view=tag_recently_touched_rows(decision.view, (decision.gold_row,))
+    )
+    vocabulary = OperatorFeatureVocabularyV1.from_inputs([decision.view])
+    torch.manual_seed(0)
+    encoder = OperatorFeatureEncoder(vocabulary, dim=6, arm=arm)
+
+    plain = encoder.encode_reference_rows(decision.view)
+    marked = encoder.encode_reference_rows(tagged.view)
+    assert not torch.allclose(plain[decision.gold_row], marked[decision.gold_row])
+    for row in range(len(decision.view.reference_rows)):
+        if row != decision.gold_row:
+            assert torch.allclose(plain[row], marked[row])
+
+
+@pytest.mark.parametrize("arm", [FeatureArm.TYPED, FeatureArm.HASH_SCALAR])
+def test_recently_touched_stays_permutation_invariant(arm) -> None:
+    """The regression the field's whole admissibility rests on.
+
+    Under a row-order/opaque-ID permutation that preserves all content, the
+    tagged row's embedding must be unchanged (it travels with its row, not
+    with its index) — and must stay distinct from an untagged row that is
+    otherwise identical in every allowed field.
+    """
+    plain = make_fixture_operator_decisions(1, seed=13, n_candidates=5)[0]
+    # Tag a *non-gold* row, so the tagged row and its siblings are identical
+    # in every other allowed field ("openui.string", no parent, same facts) --
+    # only this bit can separate them, which is exactly the situation the
+    # field was added for.
+    focus_row = next(row for row in range(5) if row != plain.gold_row)
+    sibling_row = next(
+        row for row in range(5) if row not in (plain.gold_row, focus_row)
+    )
+    decision = FixtureOperatorDecisionV1(
+        view=tag_recently_touched_rows(plain.view, (focus_row,)),
+        gold_row=plain.gold_row,
+    )
+    permuted = permute_fixture_decision(decision, seed=77)
+    permuted_focus = next(
+        row.row for row in permuted.view.reference_rows if row.recently_touched
+    )
+    assert permuted_focus != focus_row, "fixture did not actually move the tagged row"
+    assert sum(row.recently_touched for row in permuted.view.reference_rows) == 1
+    # The sanitized canonical payload is identical under the permutation.
+    assert decision.view.to_dict() == permuted.view.to_dict()
+
+    vocabulary = OperatorFeatureVocabularyV1.from_inputs([decision.view])
+    torch.manual_seed(0)
+    encoder = OperatorFeatureEncoder(vocabulary, dim=6, arm=arm)
+
+    original = encoder.encode_reference_rows(decision.view)
+    reshuffled = encoder.encode_reference_rows(permuted.view)
+    assert torch.allclose(original[focus_row], reshuffled[permuted_focus], atol=1e-6)
+    # ...and the bit is real signal: an otherwise-identical untagged sibling
+    # does not collapse onto it.
+    assert not torch.allclose(original[focus_row], original[sibling_row])
 
 
 def test_row_identity_bucket_wraps_and_validates() -> None:

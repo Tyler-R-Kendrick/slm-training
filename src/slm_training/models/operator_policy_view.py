@@ -12,12 +12,19 @@ freshness check and never re-derived from a stale table.
 This module does not execute operators, does not change the runtime evidence
 schemas in ``dsl/operators/``, and does not train anything: it is a read-only
 projection consumed by future DSH3 M6/M7 learned-policy work.
+
+One field, ``ReferenceModelViewV1.recently_touched``, is not derivable from
+the decision-state snapshot at all: it is a bounded *history* bit a
+history-owning caller attaches afterwards with
+:func:`tag_recently_touched_rows`. See that dataclass's docstring for the
+three properties (content-only, permutation-equivariant, strictly
+pre-decision) that make it admissible at this boundary.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
+from dataclasses import dataclass, replace
+from typing import Any, Iterable, Mapping
 
 from slm_training.dsl.operators import (
     BindingPhase,
@@ -45,6 +52,7 @@ __all__ = [
     "ReferenceModelViewV1",
     "build_operator_policy_input",
     "operator_policy_input_from_dict",
+    "tag_recently_touched_rows",
     "validate_no_forbidden_fields",
 ]
 
@@ -138,6 +146,29 @@ class ReferenceModelViewV1:
     parent is not itself a resolvable reference in this table) — never the
     raw ``parent_fingerprint`` hash. No semantic, opaque, or request-local
     identity is a field here.
+
+    ``recently_touched`` is a **history** bit, not an identity and not an
+    outcome: ``True`` means some caller-supplied, already-recorded prior
+    event bound *this* reference. It is never derived by
+    :func:`build_operator_policy_input` (which sees one fresh decision-state
+    snapshot and has no notion of "before"); a caller that owns real history
+    tags it post hoc with :func:`tag_recently_touched_rows`. Three properties
+    are load-bearing and are what makes this field admissible at all:
+
+    * It is a **boolean over content**, never an opaque ID, semantic
+      fingerprint, or any :data:`FORBIDDEN_FIELD_NAMES` entry — a tagger
+      resolves rows through the same reference table
+      :func:`build_operator_policy_input` used, then discards the identity.
+    * It **travels with its row**, so it stays permutation-equivariant: it is
+      part of this row's own content, and is part of
+      :meth:`OperatorPolicyInputV1.canonical_row_maps`'s sort key, so two
+      views built from opaque-ID/row-order permutations of the same table
+      (with the same references tagged) still serialize identically.
+    * It must be derivable **strictly from events preceding the decision**.
+      A caller that tags rows using the outcome of the choice being scored
+      would turn this into label leakage; nothing in this module can detect
+      that, so it is a contract on the caller, stated here and re-stated at
+      :func:`tag_recently_touched_rows`.
     """
 
     row: int
@@ -150,11 +181,14 @@ class ReferenceModelViewV1:
     selector_kind: SelectorKind | None = None
     selector_cardinality: int | None = None
     selector_max_fanout: int | None = None
+    recently_touched: bool = False
     schema: str = "operator_reference_model_view/v1"
 
     def __post_init__(self) -> None:
         if self.row < 0:
             raise ValueError("row must be non-negative")
+        if not isinstance(self.recently_touched, bool):
+            raise ValueError("recently_touched must be a bool")
         if self.parent_row is not None and not self.has_parent:
             raise ValueError("parent_row requires has_parent")
         if self.parent_row is not None and self.parent_row < 0:
@@ -203,6 +237,7 @@ class ReferenceModelViewV1:
             ),
             "selector_cardinality": self.selector_cardinality,
             "selector_max_fanout": self.selector_max_fanout,
+            "recently_touched": self.recently_touched,
         }
 
 
@@ -336,6 +371,13 @@ class OperatorPolicyInputV1:
                 "" if view.selector_kind is None else view.selector_kind.value,
                 view.selector_cardinality if view.selector_cardinality is not None else -1,
                 view.selector_max_fanout if view.selector_max_fanout is not None else -1,
+                # Load-bearing: two rows identical in every other allowed
+                # field but differing in this history bit must still get a
+                # deterministic canonical order, or ``to_dict`` would leak
+                # build-time row order for exactly the case this field was
+                # added to represent. Appended last so views with no tagged
+                # row keep their existing canonical order byte-for-byte.
+                view.recently_touched,
             )
 
         canonical_references = sorted(
@@ -444,6 +486,9 @@ def operator_policy_input_from_dict(value: Mapping[str, Any]) -> OperatorPolicyI
                     if row.get("selector_max_fanout") is None
                     else int(row["selector_max_fanout"])
                 ),
+                # Absent on payloads persisted before this field existed;
+                # the conservative default is the one that adds no signal.
+                recently_touched=bool(row.get("recently_touched", False)),
             )
             for row in value["reference_rows"]
         )
@@ -589,4 +634,49 @@ def build_operator_policy_input(
         action_rows=action_rows,
         ordinary_action_count=len(legal_set.ordinary_nonoperator_actions),
         coverage=legal_set.coverage,
+    )
+
+
+def tag_recently_touched_rows(
+    view: OperatorPolicyInputV1, rows: Iterable[int]
+) -> OperatorPolicyInputV1:
+    """Return ``view`` with ``rows`` marked ``recently_touched``.
+
+    A deliberately post-hoc step rather than a parameter on
+    :func:`build_operator_policy_input`: that function is the general-purpose
+    projection of exactly one fresh ``(ReferenceTableV1, OperatorLegalSetV1)``
+    snapshot and has no notion of a preceding event, so threading a history
+    concept through its signature would give every caller a field only a
+    history-owning caller can fill. The caller that *does* own history (it
+    already resolves its own rows through the same reference table this view
+    was built from) tags afterwards.
+
+    Fails closed (``policy_view.unknown_reference_row``) on any row outside
+    this view, and (``policy_view.duplicate_reference_row``) on a repeated
+    row, so a caller that resolved rows against a *different* table cannot
+    silently tag the wrong reference.
+
+    Contract on the caller, unenforceable here and therefore stated
+    explicitly: ``rows`` must be derived only from events that precede the
+    decision this view represents. Tagging rows using the outcome of the
+    choice being scored is label leakage, not a history feature.
+    """
+    tagged: set[int] = set()
+    for value in rows:
+        row = int(value)
+        if row < 0 or row >= len(view.reference_rows):
+            raise OperatorPolicyViewError("policy_view.unknown_reference_row")
+        if row in tagged:
+            raise OperatorPolicyViewError("policy_view.duplicate_reference_row")
+        tagged.add(row)
+    if not tagged:
+        return view
+    return replace(
+        view,
+        reference_rows=tuple(
+            replace(reference, recently_touched=True)
+            if reference.row in tagged
+            else reference
+            for reference in view.reference_rows
+        ),
     )

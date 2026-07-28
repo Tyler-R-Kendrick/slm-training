@@ -649,6 +649,11 @@
         {
           "version": "v16",
           "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) ninth slice re-exports refs_touched_by_preceding_turn from operators/__init__.py (dsl.operators.replay_preference bumped to v9); no change to contracts.py itself"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-28",
           "note": "no-bump: SLM-418 (DSH5-10) eighth slice re-exports legal_set_at from operators/__init__.py (dsl.operators.replay_preference bumped to v8); no change to contracts.py itself"
         },
         {
@@ -1112,13 +1117,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) ninth slice: add refs_touched_by_preceding_turn, a read-only accessor exposing this module's existing _touched_refs focus notion addressed by decision state (the refs bound by the already-recorded turn that produced a given state) instead of by application, and re-export it from operators/__init__.py. Total, never raising: a state no turn produced, or one produced by a non-AST_EDIT turn, has no preceding edit and answers with an empty set. Exists so slm_training.models.operator_policy_view's new ReferenceModelViewV1.recently_touched history bit has exactly one authoritative source instead of the adapter growing a second, divergeable copy of 'focus'. No extraction, classification, or schema logic changed -- extract_replay_preference_rows's pronoun-focus branch still calls _touched_refs on the exact turn pair it already scans, and every relation classifies exactly as before"
+        },
         {
           "version": "v8",
           "date": "2026-07-28",
@@ -3972,6 +3982,11 @@
         "docs/design/dsh5-06-operator-transaction-policy.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) ninth slice widens the sanitized reference row by one field (model.operator_feature_encoder v3), which changes the encoder's parameter count and therefore torch's init RNG stream. test_shuffled_conflict_belief_never_commits_a_real_conflict's untrained, randomly-initialized scorer consequently stopped ranking an infeasible pair first at the shared seed 11, making its final 'wasted search happened' observation vacuous. Fixed by pinning that one test's own scorer seed (0) with an explicit comment that this establishes the test's precondition only -- every safety assertion in it (never deferred into a commit, never the genuinely conflicting pair, the commit really succeeds) was and remains unconditional and unweakened, and holds at every seed. No change to operator_transaction_policy.py"
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
@@ -8063,6 +8078,11 @@
         {
           "version": "v3",
           "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) ninth slice appends its own 'Ninth slice' and 'Reproducibility (ninth slice)' sections to docs/design/dsh5-10-replay-preference-rows.md (a shared doc this component's paths claim); no change to replay_preference_context_view_variants.py itself -- harness.preference.replay_preference_typed_policy_adapter (v2), model.operator_policy_view (v5), model.operator_feature_encoder (v3), and dsl.operators.replay_preference (v9) cover the actual code"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-28",
           "note": "no-bump: SLM-418 (DSH5-10) eighth slice appends its own 'Eighth slice' and 'Reproducibility (eighth slice)' sections to docs/design/dsh5-10-replay-preference-rows.md (a shared doc this component's paths claim); no change to replay_preference_context_view_variants.py itself -- the eighth slice's own new harness.preference.replay_preference_typed_policy_adapter component covers the actual new code"
         },
         {
@@ -8088,7 +8108,7 @@
       ]
     },
     "harness.preference.replay_preference_typed_policy_adapter": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_preference_typed_policy_adapter.py",
@@ -8096,6 +8116,11 @@
         "tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) ninth slice: take the eighth slice's own named lever (1). adapt_replay_row_to_typed_policy_input now populates the new ReferenceModelViewV1.recently_touched bit (model.operator_policy_view v5) from dsl.operators.replay_preference.refs_touched_by_preceding_turn (v9) -- the refs the already-recorded turn that produced the decision state bound, resolved through the same row_by_ref map the accepted/rejected arguments already use, then reduced to row numbers and a boolean. TypedPolicyAdapterResultV1 gains recently_touched_rows and TypedPolicyArgumentProbeReportV1 gains recently_touched_diagnostics + a verbatim recently_touched_note. Real re-run of the identical eighth-slice probe: the eighth slice's exact structural zero is gone (candidate embeddings no longer torch.allclose at any seed; train loss 0.3304 -> 0.0 instead of unchanged; held-out pairwise margin accuracy 1.0 and mean margin +63.91 at seed 0, positive at every seed tried). Honesty tier is unchanged at wiring / diagnostic-probe-only: the held-out split is n=1, argument_logit_margin still deliberately bypasses decide_typed_operator_policy (COMPLETE_SINGLETON always wins there -- the deterministic/singleton-bypass invariant), and on this fixture the new bit is definitionally aligned with the label by extract_replay_preference_rows's own pronoun-focus predicate, so a positive margin is a representability/learnability result and never a generalization one. That caveat is measured (chosen_rows_tagged 9 / rejected_rows_tagged 0 over 9 representable rows) and emitted in every report, not left in prose"
+        },
         {
           "version": "v1",
           "date": "2026-07-28",
@@ -8992,7 +9017,7 @@
       ]
     },
     "model.operator_feature_encoder": {
-      "version": "v2",
+      "version": "v3",
       "kind": "model",
       "paths": [
         "src/slm_training/models/operator_feature_encoder.py",
@@ -9002,6 +9027,11 @@
         "docs/design/dsh3-23-operator-feature-encoder.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) ninth slice: consume ReferenceModelViewV1.recently_touched (model.operator_policy_view v5). Read by BOTH the TYPED arm (a fifth reference_position column, exactly how has_parent is already handled) and the HASH_SCALAR control arm (a seventh _stable_scalar column, likewise): the DSH3-23 arms are matched on which fields are visible and differ only in how they are encoded, so a typed-only field would confound the very comparison this module exists to run. Widens reference_projection 6->7 (hash) and reference_position 4->5 (typed), which changes each arm's parameter count and therefore its init RNG stream; the DSH3-23 matched-arm fixture was re-run on this change and is unchanged in every metric that carries a claim (top1_recall/ndcg/accepted_set_mass 1.0 for all three arms, TYPED and HASH_SCALAR permutation-invariant, TYPED_IDENTITY_BUCKET not, disposition wiring_underpowered). docs/design/dsh3-23-operator-feature-encoder.json is deliberately not regenerated: it is a point-in-time snapshot stamped at this component's v1 and was already not regenerated at v2, and rewriting another ticket's published evidence from a DSH5-10 slice would be worse than leaving it stamped"
+        },
         {
           "version": "v2",
           "date": "2026-07-26",
@@ -9049,7 +9079,7 @@
       ]
     },
     "model.operator_policy_view": {
-      "version": "v4",
+      "version": "v5",
       "kind": "model",
       "paths": [
         "src/slm_training/models/operator_policy_view.py",
@@ -9057,6 +9087,11 @@
         "docs/design/dsh3-22-operator-policy-view.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) ninth slice: add ReferenceModelViewV1.recently_touched, a bounded per-row history bit, plus tag_recently_touched_rows. Motivated by the eighth slice's measured finding that this boundary carries no field able to express 'which reference did the immediately preceding turn touch' -- the entire content of PRONOUN_FOCUS_FOLLOWUP's preference signal -- so the two candidates of every such row were provably identical model inputs. The bit is a boolean over content (a tagger resolves rows through the same reference table build_operator_policy_input used, then discards the identity: no opaque id, semantic fingerprint, or FORBIDDEN_FIELD_NAMES entry crosses), it is part of canonical_row_maps's sort key so two views built from opaque-ID/row-order permutations of the same table with the same references tagged still serialize identically (load-bearing: without it two otherwise-identical rows would keep build-time order), and it defaults to False both on construction and when rehydrating payloads persisted before the field existed. It is deliberately NOT a parameter of build_operator_policy_input, which projects exactly one fresh decision-state snapshot and has no notion of 'before'; a history-owning caller tags post hoc and fails closed on an unknown (policy_view.unknown_reference_row) or repeated (policy_view.duplicate_reference_row) row. The 'strictly pre-decision' requirement is a documented contract on that caller, unenforceable here"
+        },
         {
           "version": "v4",
           "date": "2026-07-26",

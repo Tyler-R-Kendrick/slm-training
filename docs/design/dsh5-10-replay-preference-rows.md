@@ -945,6 +945,319 @@ the other six relations (84% of the corpus) become representable at all.
 Either is a real, separately-scoped ninth slice, not a partial version of
 this one.
 
+## Ninth slice (2026-07-28)
+
+The eighth slice's own named lever **(1)**, and only that one: extend
+`OperatorPolicyInputV1`/`OperatorFeatureEncoder` with a bounded "recently
+touched reference" signal, then re-run the *exact* eighth-slice probe to see
+whether that unlocks a genuine non-zero margin. Lever (2) (inventing a
+control-action representation so the other six relations become
+representable) is deliberately untouched -- the eighth slice's own note that
+"either is a real, separately-scoped ninth slice, not a partial version of
+this one" is treated as binding.
+
+### What was built
+
+* `src/slm_training/models/operator_policy_view.py` (`model.operator_policy_view`
+  v4 -> v5): `ReferenceModelViewV1.recently_touched: bool = False`, plus
+  `tag_recently_touched_rows(view, rows)`.
+  * **It is not a parameter of `build_operator_policy_input`.** That
+    function is the general-purpose projection of exactly one fresh
+    `(ReferenceTableV1, OperatorLegalSetV1)` snapshot and has no notion of
+    "before"; widening its signature would hand every caller a field only a
+    history-owning caller can fill. The caller that *does* own history --
+    which already resolves its own rows through the same reference table the
+    view was built from -- tags post hoc. `tag_recently_touched_rows` fails
+    closed on an out-of-range row (`policy_view.unknown_reference_row`) or a
+    repeated one (`policy_view.duplicate_reference_row`), and returns the
+    input view unchanged for an empty tag set (no preceding edit is an
+    ordinary answer, not an error).
+  * **Why it is admissible at the DSH3-22 boundary**, stated as three
+    checkable properties rather than an assurance: (a) it is a boolean over
+    *content* -- the tagger resolves opaque refs to row numbers through the
+    same map the view used and then discards them, so no opaque id, semantic
+    fingerprint, or `FORBIDDEN_FIELD_NAMES` entry crosses; (b) it is part of
+    `canonical_row_maps`'s sort key, so two views built from opaque-ID /
+    row-order permutations of the same table with the same references tagged
+    still serialize byte-identically -- **load-bearing, and regression-tested
+    by mutation**: deleting that one sort-key term makes
+    `test_recently_touched_travels_with_content_not_row_order` and
+    `test_two_content_identical_rows_stay_canonically_ordered_when_one_is_tagged`
+    fail, because two otherwise-identical rows would otherwise keep
+    build-time order; (c) it must be derivable strictly from events
+    preceding the decision. (c) is a *contract on the caller* that this
+    module cannot enforce and therefore states explicitly, in the dataclass
+    docstring and again at the tagger.
+  * Persisted payloads written before the field existed rehydrate with
+    `recently_touched=False` (the default that adds no signal), so
+    `operator_policy_input_from_dict` did not become a breaking change for
+    the corpora that already store canonical views.
+* `src/slm_training/models/operator_feature_encoder.py`
+  (`model.operator_feature_encoder` v2 -> v3): the new field is consumed by
+  **both** the `TYPED` arm (a fifth `reference_position` column, exactly how
+  `has_parent` is already handled) and the `HASH_SCALAR` legacy control (a
+  seventh `_stable_scalar` column, likewise). **Judgement call, stated
+  because the brief asked for one:** it would have been simpler to skip the
+  legacy arm, but the DSH3-23 arms are matched on *which fields are visible*
+  and differ only in *how they are encoded* -- giving the typed arm a field
+  the hash control cannot see would confound the exact comparison that
+  module exists to run, and would have turned a later "typed beats hash"
+  reading into an artifact of field access. Cost: both arms' parameter
+  counts change, so their init RNG streams change (see "What was measured").
+* `src/slm_training/dsl/operators/replay_preference.py`
+  (`dsl.operators.replay_preference` v8 -> v9): `refs_touched_by_preceding_turn(trace,
+  state_id)` -- a read-only accessor exposing this module's existing
+  `_touched_refs` focus notion addressed by *decision state* instead of by
+  application. Total, never raising: a state no turn produced, or one
+  produced by a non-`AST_EDIT` turn, answers with an empty set. It exists so
+  "focus" stays defined exactly once, in the module that owns it, instead of
+  the adapter growing a second copy that could diverge. **No extraction,
+  classification, or schema logic changed** -- `extract_replay_preference_rows`'s
+  pronoun-focus branch still calls `_touched_refs` on the exact turn pair it
+  already scans, and every relation classifies exactly as before (the
+  seventh slice's 56-row corpus and its per-relation counts are unchanged).
+* `src/slm_training/harnesses/preference/replay_preference_typed_policy_adapter.py`
+  (`harness.preference.replay_preference_typed_policy_adapter` v1 -> v2):
+  `adapt_replay_row_to_typed_policy_input` now tags the view.
+  `TypedPolicyAdapterResultV1` gains `recently_touched_rows`;
+  `TypedPolicyArgumentProbeReportV1` gains `recently_touched_diagnostics`
+  and a verbatim `recently_touched_note`, so the caveat below is emitted as
+  data in every report rather than living only in prose here.
+* `tests/`: 12 new test functions (17 new collected cases) across
+  `tests/test_models/test_operator_policy_view.py` (default-off, canonical
+  round-trip, legacy-payload rehydration, the two permutation-equivariance
+  regressions above, fail-closed paths, bool validation),
+  `tests/test_models/test_operator_feature_encoder.py` (both arms actually
+  consume the field; the tagged row's real embedding is unchanged under
+  `permute_fixture_decision` and stays distinct from an otherwise-identical
+  untagged sibling), and
+  `tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py`
+  (what the tag actually tags, untagged-when-no-preceding-edit, a
+  permutation-equivariance regression on *real* adapter output with real
+  `TypedOperatorPolicyScorer` embeddings, the re-run of both eighth-slice
+  findings, and the new probe report). The three eighth-slice tests that
+  asserted the old flat result were rewritten to assert the new one, not
+  deleted.
+* One test outside this ticket needed repair, recorded here rather than
+  quietly fixed:
+  `tests/test_harnesses/experiments/test_operator_transaction_policy.py::
+  test_shuffled_conflict_belief_never_commits_a_real_conflict`. Its scorer is
+  randomly initialized and never trained, so which pair it ranks first is
+  init noise; the encoder's parameter-count change moved the RNG stream and
+  its final "wasted search happened" observation (`conflict_attempts >= 1`)
+  went vacuous at the shared seed. Fixed by pinning that one test's own
+  scorer seed with an explicit comment. **Every safety assertion in it
+  (never deferred into a commit, never the genuinely conflicting pair, the
+  commit really succeeds) was and remains unconditional and unweakened, and
+  holds at every seed** -- only the precondition was re-established.
+
+### What was measured (real run, `python -m scripts.run_replay_preference_typed_policy_probe`)
+
+Same corpus, same split, same script, same seed as the eighth slice -- the
+only change is the new field.
+
+* **The eighth slice's structural zero is gone, and gone for exactly the
+  reason it was diagnosed.** `torch.allclose(ref_embeddings[chosen_row],
+  ref_embeddings[rejected_row])` was `True` for every representable row at
+  every seed before any training; it is now `False` at every seed tested.
+  The untrained margin is a small, seed-dependent, **either-signed** number
+  (`+0.065925` at seed 0, `-0.025141` at seed 1, `+0.012328` at seed 2) --
+  i.e. the field bought *representability*, not a free correct answer at
+  initialization, which is what an honest fix should look like.
+* **The gradient is no longer exactly zero.** The eighth slice's real
+  training run had loss exactly unchanged across all 200 steps
+  (`0.34657...` at step 0 and step 199, to full float precision). The same
+  run over the same 8 train rows now descends: `0.3303639590740204` at step
+  0, first below `1e-6` at **step 8**, `0.0` at step 199. (Step 0 differs
+  from the eighth slice's `0.34657...` because the widened encoder shifts
+  torch's init RNG stream -- the load-bearing change is that the sequence
+  moves at all, not the starting value.)
+* **Held-out probe (n=1 pair, `pronoun_focus_1`, the seventh slice's own
+  `split_for_group` assignment -- not a re-split):**
+  `pairwise_margin_accuracy` **0.5 -> 1.0**, `mean_margin` **0.0 ->
+  +63.911468505859375** at seed 0. Positive and accuracy 1.0 at every seed
+  tried (seed 1: `+57.330474853515625`; seed 2: `+60.43476104736328`;
+  seed 7: `+65.02633666992188`). The *sign* is the result; the magnitude is
+  an unregularized logit difference on 8 training rows and carries no
+  claim.
+* **Representability is unchanged, as it must be:** 9 of the full corpus's
+  56 rows, all and only `PRONOUN_FOCUS_FOLLOWUP`, 8 train / 1 held out. This
+  slice did not make any of the six control-action relations representable
+  and did not try to.
+* **The tautology risk, measured rather than argued.**
+  `recently_touched_diagnostics` over all 9 representable rows:
+  `tagged_reference_rows=9`, `chosen_rows_tagged=9`,
+  `rejected_rows_tagged=0`. The flag is `True` on the chosen candidate and
+  `False` on the rejected candidate in **every** row. That is not leakage
+  from the outcome -- the bit reads the arguments of an application that was
+  verified and recorded *before* the decision state existed, and
+  `refs_touched_by_preceding_turn` cannot see the choice being scored -- but
+  it *is* definitional alignment: `extract_replay_preference_rows`'s
+  pronoun-focus predicate emits a row only when the chosen action's refs
+  intersect the focus set and the selected rejected sibling's refs do not.
+  So the two facts are the same fact by construction of the relation.
+* **Honest interpretation: this is a real positive representability result
+  and explicitly not a generalization result.** What the run shows is that
+  the DSH3-22 boundary and the DSH3-23 encoder *can* carry and learn
+  `PRONOUN_FOCUS_FOLLOWUP`'s own preference signal once a field exists for
+  it -- the eighth slice's "representational-collapse ceiling" was a real,
+  correctly-diagnosed, and now-removed ceiling, not a mislabelled
+  training-signal problem. What it does **not** show, and what no run on
+  this fixture could show, is that the feature helps on preference structure
+  it was not defined from: with `chosen_rows_tagged=9` /
+  `rejected_rows_tagged=0`, a linear read of one bit is a sufficient
+  solution, so the measured margin is bounded above by "the model learned
+  the extraction rule." A corpus where focus continuation is *sometimes* the
+  wrong answer -- which this fixture, by the relation's own definition, does
+  not contain -- is the only thing that could separate the two readings.
+* **Honesty tier: `wiring` / diagnostic-probe-only, unchanged from every
+  prior slice.** The `no_benefit_fixture_scale` verdict language belongs to
+  the sixth/seventh slices' `held_out_benefit` harness, which this slice
+  does not run and did not change; for *this* probe the eighth slice's tier
+  applies unchanged and is not upgraded by a positive number, because: the
+  held-out split is **n=1 pair**; `argument_logit_margin` still deliberately
+  bypasses `decide_typed_operator_policy`, which for every one of these rows
+  resolves `COMPLETE_SINGLETON` and never calls the model at all (the
+  repository's deterministic/singleton-bypass invariant, correctly applied
+  -- so this number is not, and is never reported as, a decision-path
+  result); and the label alignment above caps what the number can mean. No
+  causal, calibration, promotion, or ship claim is made, and no gate was
+  changed to accommodate this result.
+* **Collateral check, run rather than assumed:** widening both arms changed
+  the DSH3-23 matched-arm fixture's parameter counts (hash 97 -> 121, typed
+  841 -> 897, identity-bucket 969 -> 1025 -- measured against the committed
+  snapshot, which is stamped at that component's **v1** and was already not
+  regenerated at v2). Re-running `run_matched_arms_fixture()` on this change
+  leaves every metric that carries a claim unchanged: `top1_recall`, `ndcg`,
+  and `accepted_set_mass` all `1.0` for typed and identity-bucket,
+  `top1_recall`/`ndcg` `1.0` and `accepted_set_mass` `0.99966` for
+  hash-scalar; `TYPED` and `HASH_SCALAR` permutation-invariant (20/20),
+  `TYPED_IDENTITY_BUCKET` not (3/20), disposition still
+  `wiring_underpowered`. `docs/design/dsh3-23-operator-feature-encoder.json`
+  is deliberately **not** regenerated here: it is another ticket's published
+  point-in-time evidence, and rewriting it from a DSH5-10 slice would be
+  worse than leaving it stamped at the version it was produced under.
+
+### Explicitly out of scope (unchanged from, or newly confirmed by, this slice)
+
+* Lever (2) -- inventing and reviewing a control-action representation for
+  `OperatorPolicyInputV1` so the other six relations (47 of 56 rows) become
+  representable at all. Untouched, exactly as the eighth slice scoped it.
+* Calling `decide_typed_operator_policy`, or any claim about the repo's
+  actual gated inference path. Every number above is a raw forward-pass
+  probe, labelled as such in the code and in every emitted report.
+* Any change to `extract_replay_preference_rows`'s extraction or
+  classification logic, or to the seventh slice's corpus/splits. Frozen, per
+  every prior slice's own discipline.
+* The sixth/seventh slices' two-feature linear scorer,
+  `dsl.operators.replay_preference_context_views`, and the
+  context-view/turn-depth ablation grid: all unchanged and not re-run.
+* Real SFT/preference training, a powered or real corpus, real
+  action/operator/argument accuracy against a certified checkpoint, and
+  CAP0/CAP1/CAP2 retention: still unattempted, as in every prior slice.
+* A `PreferencePair` conversion, model, checkpoint, promotion, or model-card
+  update: none apply -- this slice creates no checkpoint.
+
+No causal, calibration, or promotion claim is made. No checkpoint or model
+card update applies -- this slice creates no checkpoint.
+
+### Named next lever
+
+The single question this slice's own finding opens, and cannot answer with
+this corpus: **does `recently_touched` do anything when continuing the focus
+is not the right answer?** Every representable row here has the chosen
+candidate tagged and the rejected untagged, by the relation's own
+definition, so "learned the feature" and "learned the extraction rule" are
+indistinguishable. A real tenth slice would extend the *corpus*, not the
+schema: add rows where the user demonstrably switched to an untouched
+reference (the fifth slice deliberately left that case unrowed rather than
+asserting it a correction -- see `dsl.operators.replay_preference` v6's own
+note), so `recently_touched` becomes a genuinely predictive-but-fallible
+feature and the margin measures discrimination instead of a tautology. That
+requires re-opening an extraction decision three slices have deliberately
+frozen, and is therefore a separately-scoped ticket, not an increment on
+this one. Lever (2) from the eighth slice (control-action representation)
+also remains open and untouched.
+
+## Reproducibility (ninth slice)
+
+```bash
+# (1) the issue's own test command, plus the two model test files this slice touches
+NODE_OPTIONS= pytest -q tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_evals/test_ambiguous_operator_followups.py tests/test_dsl/test_replay_preference.py tests/test_models/test_operator_policy_view.py tests/test_models/test_operator_feature_encoder.py
+# (2) every other test file that imports the two changed model modules,
+#     enumerated by grep rather than by running the whole suite
+NODE_OPTIONS= pytest -q tests/test_harnesses/experiments/test_typed_operator_policy.py tests/test_harnesses/experiments/test_turn_disposition_training.py tests/test_harnesses/experiments/test_operator_transaction_policy.py tests/test_data/flow/test_operator_policy_corpus.py tests/test_models/test_operator_permutation_consistency.py tests/test_models/test_operator_policy_objective.py tests/test_scripts/test_run_slm433_04_turn_disposition_real_corpus.py
+# (3) the indirect consumers (evals/bulk_operator_matrix, evals/operator_systems_benchmark,
+#     harnesses/experiments/operator_router)
+NODE_OPTIONS= pytest -q tests/test_evals/test_bulk_operator_matrix.py tests/test_evals/test_operator_systems_benchmark.py tests/test_harnesses/experiments/test_operator_router.py
+NODE_OPTIONS= python -m scripts.run_replay_preference_typed_policy_probe
+python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-tp8k3n
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+ruff check
+```
+
+Result (this PR, ninth slice): same `.venv` (Python 3.12), plus
+`NODE_OPTIONS= npm ci` in `src/apps/openui_bridge` (the pack's static/schema
+oracle is required to build the pronoun fixture at all; the ambient
+`--import tsx` `NODE_OPTIONS` is rejected by this Node 22 build, same reason
+as every prior slice). **(1) `132 passed`, (2) `45 passed`, (3) `18 passed`
+-- 195 across 16 files.** `ruff check` (whole repo): `All checks passed!`.
+`python -m scripts.verify_version_stamps --check --base
+origin/claude/great-dirac-tp8k3n`: `ok (vs 5d0b624394e8; 11 changed file(s),
+7 component(s) touched)`. `python -m scripts.repo_policy`: `ok (tracked +
+untracked)`. `python -m scripts.verify_decode_invariants`: clean (exit 0).
+
+**Not claimed:** a full `pytest tests/test_models tests/test_harnesses/
+experiments` sweep was started and did not complete in this environment, so
+no result from it is reported. The affected-surface coverage above is by
+construction (grep for every importer of the two changed model modules, then
+their own consumers), not by exhaustive run -- that is how the one
+out-of-ticket RNG-sensitivity break in
+`test_operator_transaction_policy.py` was found and fixed. A repo-wide run
+still belongs to CI.
+
+The probe script's real output, verbatim (`gating_note` and
+`recently_touched_note` elided for length -- both are asserted verbatim by
+`test_evaluate_typed_policy_argument_probe_reports_the_real_result`):
+
+```json
+{
+  "held_out_pair_count": 1,
+  "mean_margin": 63.911468505859375,
+  "pairwise_margin_accuracy": 1.0,
+  "recently_touched_diagnostics": {
+    "chosen_rows_tagged": 9,
+    "rejected_rows_tagged": 0,
+    "representable_rows": 9,
+    "tagged_reference_rows": 9
+  },
+  "representability": {
+    "counts_by_relation": {
+      "pronoun_focus_followup": {"representable_argument_choice": 9}
+    },
+    "counts_by_representability": {"representable_argument_choice": 9},
+    "schema": "typed_policy_representability_report/v1",
+    "total_rows": 9
+  },
+  "schema": "typed_policy_argument_probe_report/v1",
+  "train_example_count": 8,
+  "version_stamp": {
+    "code_commit": "5d0b624394e85ad4b36ac5c4a85807bb9a6905ed",
+    "code_dirty": true,
+    "components": {
+      "harness.preference.replay_preference_typed_policy_adapter": "v2"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-28T14:54:57.837758+00:00"
+  }
+}
+```
+
+(`code_dirty: true` / a pre-commit `code_commit` is expected: the report is
+produced by the working tree it documents, the same way the eighth slice's
+and DSH3-23's own snapshots were.)
+
 ## Reproducibility (eighth slice)
 
 ```bash
