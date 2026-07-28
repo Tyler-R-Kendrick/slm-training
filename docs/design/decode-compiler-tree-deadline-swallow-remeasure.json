@@ -1,0 +1,75 @@
+{
+  "finding": "compiler_tree_deadline_swallow_remeasure",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "Re-run decode-compiler-tree-deadline-swallow-finding.md's exact isolated per-record eval protocol (evaluate_model --eval-limit 1 --eval-offset {0,1,2} on a freshly-trained exposure12 quality-champion checkpoint, decode-timeout-seconds=30) now that both PR #1189's deadline-swallow fix (model.twotower v262) and PR #1173's lexer-cache fix (dsl.grammar_fastpath_lexer_cache) are in place, to see whether decode_outcome reclassifies from fallback_output/empty_completion_forest to a correctly-classified runtime_timeout (if genuinely out of budget) or a real on-time completion (if the swallow was masking otherwise-fast decode). This is the finding's own proposed_fix_sketch item 3 and PR #1189's named next lever.",
+  "reproduction": {
+    "checkpoint_provenance": "Not on disk (outputs/ is gitignored, fresh checkout) -- rebuilt from scratch, same recipe/seed as the finding.",
+    "commands": [
+      "python -m scripts.build_train_data --source fixture --profile strict --max-records-per-parent 12 --version lever_exposure12_v1 --output-root outputs/data/train",
+      "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --context-backend scratch --steps 16 --batch-size 2 --lr 1e-3 --structural-bias 1.5 --seed 47 --run-id exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47 --no-sync-checkpoints --device cpu",
+      "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset {0,1,2}"
+    ],
+    "record_count_check": "build_train_data produced 107 records / 5 abstraction_ladder, matching the finding exactly -- confirms this is the same corpus, not a drifted rebuild.",
+    "env_setup": [
+      "Existing repo .venv (python3.12.3) reused -- already had torch/lark/pydantic/fastapi/httpx installed, no rebuild needed.",
+      "NODE_OPTIONS= npm ci at repo root -- required for AgentV publish inside evaluate_model (not needed by PR #1189's unit-test-only session; this eval session hits publish_model_evaluation -> AgentV SDK, which failed closed with 'AgentV SDK is unavailable' until npm ci ran).",
+      "src/apps/openui_bridge/node_modules already present from a prior session; reused as-is."
+    ],
+    "sandbox_note": "NODE_OPTIONS is cleared only because this sandbox's ambient NODE_OPTIONS=\"--import tsx\" --max-old-space-size=8192 is malformed for a plain `node` invocation -- same caveat as the finding and fix docs, unrelated to this measurement.",
+    "checkpoint_and_data_cleanup": "outputs/data/train/lever_exposure12_v1, outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47, and the three outputs/runs/eval_off{0,1,2}_postfix eval dirs are all under gitignored outputs/, not committed. The auto-published copy under src/slm_training/resources/data/train/lever_exposure12_v1 was removed after the runs above (reproduction scaffolding, not new curated training data) -- same precedent as the finding doc."
+  },
+  "measured_before_after": {
+    "before_source": "decode-compiler-tree-deadline-swallow-finding.md (pre-fix, commit ba0134c-era)",
+    "after_source": "this session, code_commit 0d1d4f59b9b0acd4db2e79df47112fdd7f2faa96 (PR #1189 deadline-swallow fix + PR #1173 lexer-cache fix both present; model.twotower v262)",
+    "records": [
+      {
+        "record": "smoke_hero_01",
+        "offset": 0,
+        "before": {"decode_outcome": "fallback_output", "meaningful_program_v1": 0.0, "total_ms": 30006.5, "compiler_ms": 29209.7, "compiler_ms_pct": 97.3},
+        "after": {"decode_outcome": "runtime_timeout", "stop_reason": "decode_timeout", "fallback_used": false, "meaningful_program_v1": false, "latency_ms": 30001.05}
+      },
+      {
+        "record": "smoke_button_01",
+        "offset": 1,
+        "before": {"decode_outcome": "fallback_output", "meaningful_program_v1": 0.0, "total_ms": 30006.5, "compiler_ms": 29378.1, "compiler_ms_pct": 97.9},
+        "after": {"decode_outcome": "runtime_timeout", "stop_reason": "decode_timeout", "fallback_used": false, "meaningful_program_v1": false, "latency_ms": 30130.77}
+      },
+      {
+        "record": "smoke_callout_01",
+        "offset": 2,
+        "before": {"decode_outcome": "fallback_output", "meaningful_program_v1": 1.0, "total_ms": 30010.2, "compiler_ms": 29186.4, "compiler_ms_pct": 97.3},
+        "after": {"decode_outcome": "runtime_timeout", "stop_reason": "decode_timeout", "fallback_used": false, "meaningful_program_v1": false, "latency_ms": 30533.34}
+      }
+    ],
+    "aggregate": {
+      "before_decode_outcome_counts": {"fallback_output": 3, "runtime_timeout": 0},
+      "after_decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 3, "fallback_output": 0, "harness_error": 0},
+      "before_meaningful_program_rate_pooled": 0.3333,
+      "after_meaningful_program_rate_pooled": 0.0
+    }
+  },
+  "interpretation": "All 3 records reclassify cleanly from fallback_output to runtime_timeout with the fix in place -- the deadline-swallow fix works exactly as designed: build_completion_forest's TimeoutError now propagates through the compiler-tree loop's check_decode_deadline() instead of being masked as an empty completion forest and certified-fallback'd. This is the 'genuinely out of budget' branch of the finding's own falsification test, not the 'swallow was masking otherwise-fast decode' branch: latency stayed pinned at ~30.0-30.5s (essentially unchanged from the pre-fix total_ms of ~30.0s), so decode is still genuinely blowing the 30s wall on all 3 records -- the fix corrected classification, not speed. A second-order finding: honest classification is strictly worse on meaningful_program_rate for this checkpoint (0.33 pooled before -> 0.0 after), because smoke_callout_01 (offset 2) previously scored meaningful_program_v1=1.0 under the mislabeled fallback_output path -- that 'meaningful' completion was an artifact of the swallowed-timeout certified-fallback content, not a genuine on-time decode. The fix trades an inflated meaningful_program_rate for an honest one; this is the correct trade (I3/decode-invariants: never certify unconstrained-fallback content as ship evidence) but means this checkpoint's true on-time compiler-tree completion rate on this suite is 0/3, not 1/3.",
+  "gate_status": "Full AgentV smoke ship-gates run on each n=1 offset: all fail (smoke:insufficient_n n=1 < 20, smoke:meaningful_program_rate 0 < 0.66, smoke:decode_timeout_count 1 != 0, plus 5 more). This is expected and correct for an n=1 diagnostic slice -- not a ship claim, no gate was weakened to pass it.",
+  "scope_note": "This is a diagnostic re-measurement only: no ship-gates scoreboard claim, no checkpoint promotion, no MODEL_CARD update (checkpoint is scratch/16-step, --no-sync-checkpoints). No harness code was changed this session -- version-stamp check confirms 0 changed files / 0 components touched vs HEAD.",
+  "next_steps": [
+    "Root-cause why compiler_ms is still pinned at ~30s post-fix (both the deadline-swallow fix and the lexer-cache fix are in place, yet wall time is unchanged) -- likely candidates: this 16-step/scratch checkpoint's compiler-tree search genuinely needs >30s per record regardless of lexer cost, or the lexer-cache fix's benefit is concentrated in repeated-grammar-state cache hits that this record's decode path does not exercise. Compare compiler_prefill_batches / compiler_lattice_recurrences between this run and the finding's pre-fix numbers to isolate.",
+    "Re-run the seeded multi-rep lever-hard-decode-timeout-wall protocol on a fuller (non-smoke-scale) checkpoint to see whether the honest 0/3 meaningful rate observed here is specific to this 16-step scratch checkpoint or persists at exposure12's originally-reported quality-champion training recipe.",
+    "Investigate the compiler-tree search cost itself (finding's original next-step #2, never done): whether the ~29-30s sink is Node-bridge round-trip latency, candidate-set size, or cache misses, since neither fix applied so far reduced the actual wall-clock spend for this checkpoint."
+  ],
+  "cleanup_note": "outputs/ artifacts from this session (train data, checkpoint, 3 eval run dirs) are gitignored, not committed. src/slm_training/resources/data/train/lever_exposure12_v1 auto-publish copy removed after use.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0d1d4f59b9b0acd4db2e79df47112fdd7f2faa96",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v63",
+      "harness.model_build.train": "v26",
+      "harness.train_data": "v23",
+      "model.twotower": "v262",
+      "evals.meaningful_program": "2.13.0"
+    }
+  },
+  "captured_at": "2026-07-28T12:02:49Z"
+}
