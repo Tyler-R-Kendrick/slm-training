@@ -1,0 +1,109 @@
+{
+  "finding": "compiler_tree_probe_chunk_realistic_chunk_size",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "Close PR #1176's open next-step: re-measure probe_chunk's suffix-anchor fix using realistic tokenizer-piece chunk sizes (via token_surface_piece), matching compiler_draft.py's real build_completion_forest call site, instead of the synthetic single-character chunks PR #1176's own benchmark used.",
+  "change": {
+    "file": "tests/test_dsl/test_grammar_fastpath_probe_chunk_realistic_chunk_size.py",
+    "summary": [
+      "New test module only -- no production code changed. engine.py's suffix-anchor fixes (PRs #1173, #1174, #1176) are unmodified.",
+      "Encodes the same LONG_PROGRAM text PRs #1174/#1176 used (one literal adjusted: Slider's first arg is the placeholder \":slot_level\" instead of the free-form \"$level\", which DSLNativeTokenizer.encode rejects) through the real DSLNativeTokenizer.",
+      "Reproduces build_completion_forest's exact per-candidate loop shape: skips LIT_STR/LIT_NUM/LIT_END marker tokens (the real call site treats these as literal-frame markers and never probes them directly), computes token_surface_piece for every other token.",
+      "Drives probe_chunk/advance/set_prefix over the resulting 152-chunk realistic stream (avg 2.47 chars/chunk, max 12) and compares chars_lexed + wall time + I3/I6 equivalence against the same forced-full-relex oracle technique (_probe_delta_from_anchor monkeypatched to always return None) PRs #1174/#1176 used."
+    ],
+    "why_safe": "Measurement-only; no engine.py change, so no new safety argument is needed beyond the ones PRs #1173/#1174/#1176 already established (maximal-munch suffix-anchor correctness, unchanged)."
+  },
+  "reproduction": {
+    "method": "self-contained before/after via a monkeypatched _probe_delta_from_anchor that always returns None (forcing full-prefix relex on every probe), identical technique to PRs #1174/#1176; a swap-in of engine.py at pre-fix commit 20b658f (via git show, restored after) used separately to confirm the new unit tests are not vacuous",
+    "env_setup": [
+      "uv venv .venv --python 3.12",
+      "uv pip install --python .venv/bin/python -e \".[dev]\""
+    ],
+    "long_program": "Same 10-line, multi-statement valid OpenUI DSL program as PRs #1174/#1176's LONG_PROGRAM, with Slider's first argument changed from the free-form literal \"$level\" to the placeholder \":slot_level\" so DSLNativeTokenizer.encode accepts it.",
+    "drive_pattern": "Exact per-candidate loop shape from compiler_draft.py's build_completion_forest: skip LIT_STR/LIT_NUM/LIT_END marker tokens, probe each remaining token's token_surface_piece against the currently-synced prefix without committing, then commit via advance() on a truthy probe or set_prefix() on a None (fallback) probe.",
+    "call_kwargs": {},
+    "scripts_not_committed": "none -- measurement used inline python -c invocations against the committed test module's own helpers (LONG_PROGRAM, _realistic_chunks, _drive_realistic_chunks, _CharCountingEngine, _disabled_anchor), not a separate scratch script"
+  },
+  "measured_realistic_chunk_drive": {
+    "n_chunks": 152,
+    "avg_chunk_len_chars": 2.47,
+    "max_chunk_len_chars": 12,
+    "before_forced_full_relex": {"chars_lexed": 29539, "wall_s_median_of_5": 0.0929},
+    "after_suffix_anchor": {"chars_lexed": 4054, "wall_s_median_of_5": 0.0594},
+    "chars_lexed_reduction_x": 7.29,
+    "wall_time_speedup_x": 1.56,
+    "probe_result_mismatches_across_152_steps": 0
+  },
+  "comparison_to_pr_1176_char_by_char_drive": {
+    "pr_1176_n_chunks": 543,
+    "pr_1176_chars_lexed_reduction_x": 1.98,
+    "pr_1176_wall_time_speedup_x": 1.50,
+    "this_session_chars_lexed_reduction_x": 7.29,
+    "this_session_wall_time_speedup_x": 1.56
+  },
+  "interpretation": "Answers PR #1176's open question: at the real call site's realistic chunk granularity, the chars-lexed reduction is far larger (7.29x vs 1.98x) than the char-by-char synthetic drive suggested -- fewer, larger probe calls widen (not narrow) the gap between the full-relex baseline (which re-lexes the entire growing prefix every call) and the suffix-anchor path (anchored to one boundary token regardless of chunk size). Wall-time speedup barely moves (1.56x vs 1.50x) because InteractiveParser.copy()'s fixed per-call cost is a larger fraction of each call's total time with fewer (152 vs 543) calls, diluting the much larger lex-work reduction's relative wall-time benefit.",
+  "unit_tests": {
+    "file": "tests/test_dsl/test_grammar_fastpath_probe_chunk_realistic_chunk_size.py",
+    "count": 4,
+    "names": [
+      "test_realistic_chunks_are_multi_character_not_single_character",
+      "test_realistic_chunks_relex_fewer_characters_than_full_relex_baseline",
+      "test_realistic_chunk_probe_matches_forced_full_relex_at_every_step",
+      "test_realistic_chunk_speedup_floor_on_long_program"
+    ],
+    "non_vacuous_check": "swapped engine.py to pre-fix commit 20b658f (git show 20b658f:...engine.py, restored after); 3 of 4 fail with AttributeError: type object 'OpenUIIncrementalEngine' has no attribute '_probe_delta_from_anchor' (the 4th, a chunk-shape sanity check, is fix-independent by design and passes either way, matching PR #1176's own file's convention)"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath_probe_chunk_realistic_chunk_size.py",
+      "result": "4 passed"
+    },
+    {
+      "suite": "tests/test_dsl/{test_grammar_fastpath_probe_chunk_suffix_lex,test_grammar_fastpath_incremental_lex,test_grammar_fastpath_lexer_cache}.py",
+      "result": "22 passed, unaffected"
+    },
+    {
+      "suite": "tests/test_dsl/{test_pack,test_packs}.py",
+      "result": "20 passed, 6 failed",
+      "failures_preexisting_confirmed_via_prior_sessions": [
+        "test_pack.py::test_openui_oracle_accepts_source_and_fails_closed",
+        "test_pack.py::test_verify_stack_verdicts_unchanged",
+        "test_pack.py::test_end_to_end_fixture_run_through_pack_interface",
+        "test_packs.py::test_pack_contract_invariants[openui]",
+        "test_packs.py::test_openui_pack_placeholder_policy",
+        "test_packs.py::test_pack_fixture_loop_generate_train_eval"
+      ],
+      "note": "All 6 fail identically with ValueError: generated ProgramSpec failed F2 at G2, same as PRs #1174/#1176 documented; unrelated to this change (no production code touched)."
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath.py -k \"not train_fuse_and_cache_smoke and not cactus_kernel_sketch and not semantic_guards_run_before_singleton_bypass\"",
+      "result": "39 passed, 1 failed, 3 deselected",
+      "failures_preexisting_confirmed_via_prior_sessions": [
+        "test_grammar_fastpath.py::test_completion_forest_admits_null_for_optional_string_after_slots_exhaust"
+      ],
+      "note": "Same build_completion_forest() enforce_schema_component_types signature-drift failure PRs #1174/#1176 documented, unrelated to this change."
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "1 changed file(s), 0 component(s) touched -- test-only addition, no versions.json-registered component path touched",
+    "repo_policy": "ok (tracked + untracked)",
+    "git_diff_check": "clean"
+  },
+  "scope_note": "No production code change -- engine.py's suffix-anchor fixes (#1173/#1174/#1176) are unmodified; this is a measurement against the code as it stands. Does not touch the shared growing-boundary-token gap (still open, PR #1176 next step 2). Not re-measured against full per-record compiler_ms telemetry or the exposure12 quality-champion eval protocol (still open, carried forward). LONG_PROGRAM's realistic chunk stream is a single straight-line drive (one candidate), not build_completion_forest's actual multi-candidate fan-out -- the per-call chunk-size finding should transfer but the aggregate multi-candidate wall-clock benefit is unmeasured.",
+  "next_steps": [
+    "Measure the aggregate benefit across build_completion_forest's actual multi-candidate fan-out (many short-lived branches, most rejected within 1-2 probes) rather than this session's single straight-line candidate.",
+    "Close the shared growing-boundary-token gap for both probe_chunk and _incremental_sync via the InteractiveParser checkpoint/rollback approach PR #1174's next_steps already scoped -- still open.",
+    "Re-measure against the full per-record compiler_ms telemetry / the exposure12 quality-champion eval protocol now that the lexer-object cache (#1173), _incremental_sync suffix-lex (#1174), and the probe_chunk suffix-lex fix (#1176) are all in place -- still open."
+  ],
+  "cleanup_note": ".venv (gitignored) created for this session is not committed; no scratch diagnostic scripts were written -- measurement used inline python -c invocations against the committed test module's own helpers.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2fd4726937acca9f1936092ab8be3c36743f2ce4",
+    "code_dirty": true,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: this session only adds a test file, no src/ path registered in src/slm_training/resources/versions.json is touched, so no component bump is required."
+  },
+  "captured_at": "2026-07-28T00:00:00Z"
+}
