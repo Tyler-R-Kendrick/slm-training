@@ -7314,6 +7314,23 @@
         }
       ]
     },
+    "harness.experiments.var2_02_ops_vocab_history_widening": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_var2_02_ops_vocab_history_widening.py",
+        "tests/test_scripts/test_run_var2_02_ops_vocab_history_widening.py",
+        "docs/design/var2-02-ops-vocab-history-widening-20260728.json",
+        "docs/design/var2-02-ops-vocab-history-widening-20260728.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-28",
+          "note": "VAR2-02: follow-on to VAR2-01's named next step ('widening the corpus to topology/history operators, or accepting the narrower scope'). Builds one real ConversationTraceV1 (conversation.py's own API: self-COPY_STATE, a real legal AST_EDIT, UNDO, REDO, CHECKOUT_STATE, FORK) and re-runs VAR2-01's adequacy-audit/wiring-probe shape against it, scoped to only the history half of the gap (4 of VAR2-01's 6 unused_ops: conversation.undo/redo/checkout_state/copy_state). Topology-operator widening (openui.wrap_node/reorder_children/etc.) and conversation.ast_edit/transaction_commit (structurally unreachable per VAR2-01) stay explicitly out of scope. Claim classes measurement + wiring only; no production behavior change."
+        }
+      ]
+    },
     "harness.flags": {
       "version": "v1",
       "kind": "harness",
