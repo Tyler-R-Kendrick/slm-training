@@ -1,0 +1,100 @@
+{
+    "finding": "compiler_tree_completion_forest_aggregate_benefit",
+    "honesty_mode": "fixture_or_scratch",
+    "not_ship": true,
+    "is_fix": false,
+    "task": "Close PR #1177's open next-step 1: measure the aggregate wall-clock/lex-work benefit of the probe_chunk (#1176) and _incremental_sync (#1174) suffix-anchor fixes across build_completion_forest's actual multi-candidate fan-out (many short-lived OpenUIIncrementalEngine branches, most rejected within 1-2 probes), instead of PR #1177's single straight-line-candidate LONG_PROGRAM drive.",
+    "change": {
+        "file": "tests/test_dsl/test_grammar_fastpath_completion_forest_aggregate_benefit.py",
+        "summary": [
+            "New test module only -- no production code changed. engine.py's suffix-anchor fixes (PRs #1173, #1174, #1176) are unmodified.",
+            "Drives the real build_completion_forest entry point on PRs #1171/#1174/#1176's PREFIX8/PREFIX9 fixtures via pack.py's remaining_tokens-bounded path -- the same path that actually exercises pack.py's recursive _tail_from multi-candidate search, not a hand-rolled single-candidate drive.",
+            "Installs a per-engine-construction counter (OpenUIIncrementalEngine.__init__) and a _lex_tokens char counter, comparing the real suffix-anchor fixes against a forced 'before' oracle with both _incremental_sync and _probe_delta_from_anchor disabled (identical monkeypatch technique to PRs #1174/#1176/#1177).",
+            "Confirms the fan-out premise directly: PREFIX8 constructs 508 branch engines per call, PREFIX9 constructs 7,661."
+        ],
+        "why_safe": "Measurement-only; no engine.py change, so no new safety argument is needed beyond the ones PRs #1173/#1174/#1176 already established (maximal-munch suffix-anchor correctness, unchanged)."
+    },
+    "reproduction": {
+        "method": "self-contained before/after via monkeypatched _incremental_sync (forced full-prefix relex) and _probe_delta_from_anchor (forced None), identical technique to PRs #1174/#1176/#1177; a swap-in of engine.py at pre-fix commit 20b658f (via git show, restored after) used separately to confirm the new unit tests are not vacuous",
+        "env_setup": [
+            "python3.12 -m venv .venv-diag",
+            ".venv-diag/bin/pip install -e . --no-deps",
+            ".venv-diag/bin/pip install lark pytest numpy pydantic PyYAML ruff"
+        ],
+        "prefixes": "Exact PREFIX8 (\"root = Card([b1\") / PREFIX9 (\"root = Card([b1,\") fixtures from PR #1171's dead_end_trace, reused throughout this finding chain.",
+        "call_path": "build_completion_forest(tokenizer, prefix_ids, remaining_tokens=24, max_path_tokens=8, min_content=0) -- routes through pack.py's CompletionDomainRequestV1 handling, which calls _build_openui_completion_forest both for the initial forest and recursively (lru_cache-bounded, nodes_left=16) inside _tail_from's witness search. This is the real multi-candidate call site, unlike PR #1177's hand-driven single-candidate chunk stream.",
+        "scripts_not_committed": "none -- measurement used inline python -c invocations against ad hoc copies of the committed test module's helpers, then verified against the committed module directly via pytest"
+    },
+    "measured": {
+        "prefix8": {
+            "n_paths": 2,
+            "engines_created": 508,
+            "before_forced_full_relex_chars_lexed": 65230,
+            "after_suffix_anchor_chars_lexed": 27102,
+            "chars_lexed_reduction_x": 2.41
+        },
+        "prefix9": {
+            "n_paths": 12,
+            "engines_created": 7661,
+            "before_forced_full_relex_chars_lexed": 1014590,
+            "after_suffix_anchor_chars_lexed": 416458,
+            "chars_lexed_reduction_x": 2.44,
+            "lex_calls_both_variants": 23546,
+            "wall_s_3reps_after": [4.840, 4.865, 5.014],
+            "wall_s_3reps_before": [5.651, 5.724, 5.800],
+            "wall_time_speedup_x_median": 1.15
+        },
+        "coverage_and_n_paths_match_before_vs_after": true
+    },
+    "comparison_to_pr_1177_single_candidate_drive": {
+        "pr_1177_chars_lexed_reduction_x": 7.29,
+        "pr_1177_wall_time_speedup_x": 1.56,
+        "this_session_aggregate_chars_lexed_reduction_x": "2.41-2.44",
+        "this_session_aggregate_wall_time_speedup_x": 1.15
+    },
+    "interpretation": "Answers PR #1177's open question directly: the aggregate benefit across build_completion_forest's real multi-candidate fan-out is real and reproducible (chars_lexed ~2.4x, wall time ~1.15x on both PREFIX8 and PREFIX9), but far smaller than the 7.29x/1.56x measured on a single straight-line candidate. Root cause: build_completion_forest's per-candidate loop constructs a brand-new OpenUIIncrementalEngine for every candidate token (compiler_draft.py's `branch = OpenUIIncrementalEngine(engine.grammar_path)`), so every branch starts anchor-less (`_fed_last_token_start is None`) -- its first probe_chunk/_incremental_sync call cannot take the suffix-anchor fast path regardless of the fix, by construction. With 7,661 branches averaging ~3.07 lex calls each before rejection (23,546 total lex calls / 7,661 engines), most of a branch's short life is spent on calls that get, at best, one or two suffix-anchored calls after its first anchor-less one -- diluting the fix's per-call chars-lexed win from ~7.29x down to ~2.4x in aggregate, and diluting InteractiveParser.copy()'s already-fixed per-call overhead (unaffected by either fix) down to a ~1.15x aggregate wall-time gain.",
+    "unit_tests": {
+        "file": "tests/test_dsl/test_grammar_fastpath_completion_forest_aggregate_benefit.py",
+        "count": 7,
+        "names": [
+            "test_multi_candidate_fan_out_creates_many_branch_engines[prefix8]",
+            "test_multi_candidate_fan_out_creates_many_branch_engines[prefix9]",
+            "test_build_completion_forest_result_unchanged_with_both_fixes_disabled[prefix8]",
+            "test_build_completion_forest_result_unchanged_with_both_fixes_disabled[prefix9]",
+            "test_aggregate_chars_lexed_reduced_but_far_below_single_candidate_ratio[prefix8]",
+            "test_aggregate_chars_lexed_reduced_but_far_below_single_candidate_ratio[prefix9]",
+            "test_aggregate_wall_time_speedup_floor_on_prefix9"
+        ],
+        "run": ".venv-diag/bin/python -m pytest tests/test_dsl/test_grammar_fastpath_completion_forest_aggregate_benefit.py -v",
+        "result": "7 passed in 43.74s",
+        "non_vacuous_check": "Swapped engine.py to pre-fix commit 20b658f (via git show, restored after): 1 failed + 6 errored, all with AttributeError: type object 'OpenUIIncrementalEngine' has no attribute '_probe_delta_from_anchor' -- proving the tests exercise the real fix, not a tautology."
+    },
+    "regression_sweep": [
+        {
+            "suite": "tests/test_dsl/test_grammar_fastpath_completion_forest_aggregate_benefit.py tests/test_dsl/test_grammar_fastpath_incremental_lex.py tests/test_dsl/test_grammar_fastpath_lexer_cache.py tests/test_dsl/test_grammar_fastpath_probe_chunk_realistic_chunk_size.py tests/test_dsl/test_grammar_fastpath_probe_chunk_suffix_lex.py",
+            "result": "29 passed in 63.18s",
+            "note": "All prior suffix-anchor-fix suites unaffected by this measurement-only addition."
+        }
+    ],
+    "static_checks": {
+        "ruff_check_changed_files": "clean",
+        "verify_version_stamps_check": "1 changed file(s), 0 component(s) touched -- test-only addition, no versions.json-registered component path touched",
+        "repo_policy": "ok (tracked + untracked)",
+        "verify_decode_invariants": "clean"
+    },
+    "scope_note": "No production code change -- engine.py's suffix-anchor fixes (#1173/#1174/#1176) are unmodified; this is a measurement against the code as it stands. Does not touch the shared growing-boundary-token gap (still open, PR #1176 next step 2 / PR #1177 next step 2). Not re-measured against full per-record compiler_ms telemetry or the exposure12 quality-champion eval protocol (still open, carried forward -- and per PR #1178/#1182's independent findings, likely dominated by a different cost: candidate count and deadline-swallow behavior, not chars_lexed). Measured on _build_openui_completion_forest's own PREFIX8/PREFIX9 fixtures at remaining_tokens=24, not the exposure12 quality-champion smoke suite's actual prefixes/token budgets -- the aggregate ratio may differ at that scale.",
+    "next_steps": [
+        "Consider whether an anchor could be seeded across sibling branches that share a common prefix (e.g. cloning a parent branch's _fed_last_token_start/_fed_tokens state before the per-candidate divergence point) instead of constructing every candidate's OpenUIIncrementalEngine from scratch -- would need a correctness argument for why a cloned anchor stays valid across the divergent suffix, not attempted here.",
+        "Close the shared growing-boundary-token gap for both probe_chunk and _incremental_sync via the InteractiveParser checkpoint/rollback approach PR #1174's next_steps already scoped -- still open, carried forward.",
+        "Re-measure against the full per-record compiler_ms telemetry / the exposure12 quality-champion eval protocol -- still open, carried forward across this entire chain; PR #1178's independent finding (compiler_ms stays deadline-bounded even with the lexer-cache fix, more candidates explored not faster completion) suggests the exposure12 scale may see even less benefit than either this session's ~2.4x/~1.15x aggregate figures or PR #1177's ~7.29x/~1.56x single-candidate figures, since candidate count there is dominated by a fixed decode-timeout wall rather than by how fast this fix runs to completion."
+    ],
+    "cleanup_note": ".venv-diag (gitignored) created for this session is not committed; no scratch diagnostic scripts were committed -- ad hoc python -c invocations used during measurement, final numbers reproduced via the committed pytest module directly.",
+    "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "b87c050f6b7b17157654beabbdf523d098067235",
+        "code_dirty": true,
+        "components": {},
+        "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: this session only adds a test file, no src/ path registered in src/slm_training/resources/versions.json is touched, so no component bump is required."
+    },
+    "captured_at": "2026-07-28T00:00:00Z"
+}
