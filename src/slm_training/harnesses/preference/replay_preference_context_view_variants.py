@@ -230,10 +230,20 @@ def _rollback_chain_trace(
     return trace, pack, library
 
 
-def _checkout_and_fork_trace() -> tuple[ConversationTraceV1, object, OperatorLibraryV1]:
-    """One ``CHECKOUT_ANOTHER_STATE`` row and one ``FORK_THEN_CHOOSE_ONE_BRANCH`` row."""
+def _checkout_and_fork_trace(
+    pad_length: int = 3,
+) -> tuple[ConversationTraceV1, object, OperatorLibraryV1]:
+    """One ``CHECKOUT_ANOTHER_STATE`` row and one ``FORK_THEN_CHOOSE_ONE_BRANCH`` row.
+
+    ``pad_length`` novel edits precede the checkout/fork pair, giving the
+    ``STATE_PLUS_RECENT_RECEIPTS``/``STATE_PLUS_RETRIEVED_EVENTS`` windows
+    real turn-depth variation to expose at the decision point -- the padding
+    is plain zero-argument counter-operator edits (the same fixture the
+    rollback-chain sessions use), so it never changes which two relations
+    this trace produces, only how much prior history is visible before them.
+    """
     pack, library, root_state = _counter_pack_and_root()
-    branch = branch_fingerprint(root_state.state_digest, _sha("checkout-fork"))
+    branch = branch_fingerprint(root_state.state_digest, _sha(f"checkout-fork-{pad_length}"))
     root_table = _table(root_state, branch, seed=1)
     trace = create_conversation_trace(
         pack=pack,
@@ -241,7 +251,7 @@ def _checkout_and_fork_trace() -> tuple[ConversationTraceV1, object, OperatorLib
         root_reference_table=root_table,
         provenance=_provenance(root_state),
     )
-    for step in range(3):
+    for step in range(pad_length):
         trace = _bump(pack, library, trace, seed=step + 2)
     tip_id = trace.current_state_id
     trace = checkout_conversation_state(
@@ -264,8 +274,20 @@ _PRONOUN_SOURCE = 'root = TextContent(":hero.title")'
 _PRONOUN_TARGETS = {0: ":hero.target_a", 1: ":hero.target_b"}
 
 
-def _pronoun_trace() -> tuple[ConversationTraceV1, object, OperatorLibraryV1]:
-    """One ``PRONOUN_FOCUS_FOLLOWUP`` row: two edits continuing the same ref."""
+def _pronoun_trace(
+    pad_length: int = 0,
+) -> tuple[ConversationTraceV1, object, OperatorLibraryV1]:
+    """One ``PRONOUN_FOCUS_FOLLOWUP`` row: two edits continuing the same ref.
+
+    ``pad_length`` warm-up edits precede the focus-continuing pair, alternating
+    between the two refs (starting with ref 1) so consecutive warm-up turns
+    never share a touched ref and cannot themselves spuriously satisfy the
+    focus-overlap condition -- only the final ``(ref 0, ref 0)`` pair this
+    trace always ends on is guaranteed to classify as
+    ``PRONOUN_FOCUS_FOLLOWUP``. This gives the turn-depth ablation genuine
+    prior history to expose at that decision point, mirroring the
+    rollback-chain sessions' own padding.
+    """
     base_pack = get_pack("openui")
     root_state = OperatorStateV1.from_source(base_pack, _PRONOUN_SOURCE)
     descriptors = tuple(
@@ -276,7 +298,7 @@ def _pronoun_trace() -> tuple[ConversationTraceV1, object, OperatorLibraryV1]:
         )
         for index in (0, 1)
     )
-    branch = branch_fingerprint(root_state.state_digest, _sha("pronoun-branch"))
+    branch = branch_fingerprint(root_state.state_digest, _sha(f"pronoun-branch-{pad_length}"))
 
     def table_for(state: OperatorStateV1):
         return build_reference_table(
@@ -329,6 +351,8 @@ def _pronoun_trace() -> tuple[ConversationTraceV1, object, OperatorLibraryV1]:
             output_reference_table=table_for(result.state),
         )
 
+    for step in range(pad_length):
+        trace = apply_edit(trace, ref_by_index[1 - (step % 2)])
     trace = apply_edit(trace, ref_by_index[0])
     trace = apply_edit(trace, ref_by_index[0])
     return trace, pack, library
@@ -485,13 +509,16 @@ def synthesize_bounded_session_corpus() -> tuple[ReplayPreferenceSessionV1, ...]
 
     Fixture-scale wiring evidence only -- never real user telemetry. Turn-
     depth variation is real (and load-bearing) for the rollback-chain
-    sessions (``EDIT_THEN_UNDO``/``PARTIAL_ROLLBACK``/``UNDO_THEN_REDO``);
-    ``CHECKOUT_ANOTHER_STATE``, ``FORK_THEN_CHOOSE_ONE_BRANCH``,
-    ``MERGE_SUCCESS``, and ``PRONOUN_FOCUS_FOLLOWUP`` each get exactly one
-    session with no padded history -- honestly documented as carrying no
-    turn-depth variation for this slice (padding those without inventing an
-    N-step merge/branch scenario beyond this repo's existing sequence-merge
-    scope was judged out of scope).
+    sessions (``EDIT_THEN_UNDO``/``PARTIAL_ROLLBACK``/``UNDO_THEN_REDO``) and,
+    as of this slice, for ``CHECKOUT_ANOTHER_STATE``/``FORK_THEN_CHOOSE_ONE_
+    BRANCH`` (one padded session per ``ROLLBACK_CHAIN_LENGTHS`` entry, via
+    ``_checkout_and_fork_trace(pad_length=...)``) and ``PRONOUN_FOCUS_
+    FOLLOWUP`` (same ladder, via ``_pronoun_trace(pad_length=...)``).
+    ``MERGE_SUCCESS`` still gets exactly one unpadded session -- honestly
+    documented as carrying no turn-depth variation, since no trace object
+    exists for a merge decision at all (see ``_merge_session`` and
+    ``replay_preference.py``'s own module docstring), so there is no receipt
+    sequence to pad in the first place.
     """
     sessions: list[ReplayPreferenceSessionV1] = []
 
@@ -509,33 +536,37 @@ def synthesize_bounded_session_corpus() -> tuple[ReplayPreferenceSessionV1, ...]
             )
         )
 
-    checkout_fork_trace, cf_pack, cf_library = _checkout_and_fork_trace()
-    checkout_fork_report = extract_replay_preference_rows(
-        checkout_fork_trace, pack=cf_pack, library=cf_library, provenance_for=_provenance
-    )
-    sessions.append(
-        ReplayPreferenceSessionV1(
-            group_id="checkout_and_fork",
-            split=split_for_group("checkout_and_fork"),
-            report=checkout_fork_report,
-            state_lookup=state_lookup_from_trace(checkout_fork_trace),
-            receipts=receipts_from_trace(checkout_fork_trace),
+    for pad_length in ROLLBACK_CHAIN_LENGTHS:
+        checkout_fork_trace, cf_pack, cf_library = _checkout_and_fork_trace(pad_length=pad_length)
+        checkout_fork_report = extract_replay_preference_rows(
+            checkout_fork_trace, pack=cf_pack, library=cf_library, provenance_for=_provenance
         )
-    )
+        group_id = f"checkout_and_fork_{pad_length}"
+        sessions.append(
+            ReplayPreferenceSessionV1(
+                group_id=group_id,
+                split=split_for_group(group_id),
+                report=checkout_fork_report,
+                state_lookup=state_lookup_from_trace(checkout_fork_trace),
+                receipts=receipts_from_trace(checkout_fork_trace),
+            )
+        )
 
-    pronoun_trace, pn_pack, pn_library = _pronoun_trace()
-    pronoun_report = extract_replay_preference_rows(
-        pronoun_trace, pack=pn_pack, library=pn_library, provenance_for=_provenance
-    )
-    sessions.append(
-        ReplayPreferenceSessionV1(
-            group_id="pronoun_focus",
-            split=split_for_group("pronoun_focus"),
-            report=pronoun_report,
-            state_lookup=state_lookup_from_trace(pronoun_trace),
-            receipts=receipts_from_trace(pronoun_trace),
+    for pad_length in ROLLBACK_CHAIN_LENGTHS:
+        pronoun_trace, pn_pack, pn_library = _pronoun_trace(pad_length=pad_length)
+        pronoun_report = extract_replay_preference_rows(
+            pronoun_trace, pack=pn_pack, library=pn_library, provenance_for=_provenance
         )
-    )
+        group_id = f"pronoun_focus_{pad_length}"
+        sessions.append(
+            ReplayPreferenceSessionV1(
+                group_id=group_id,
+                split=split_for_group(group_id),
+                report=pronoun_report,
+                state_lookup=state_lookup_from_trace(pronoun_trace),
+                receipts=receipts_from_trace(pronoun_trace),
+            )
+        )
 
     merge_row, left, right = _merge_session()
     merge_report = OperatorEventMemoryReportV1(

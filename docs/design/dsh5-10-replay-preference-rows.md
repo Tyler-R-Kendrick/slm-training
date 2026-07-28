@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (sixth increment).
+**Status:** partial slice, in progress (seventh increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -647,6 +647,141 @@ correctness or honesty defect.
   `src/slm_training/resources/versions.json`; `dsl.operators.contracts`
   gets a `no-bump:` history entry for the two new re-exports from
   `operators/__init__.py`.
+
+## Seventh slice (2026-07-28)
+
+Closes the sixth slice's own explicitly-named gap: "Turn-depth padding for
+`CHECKOUT_ANOTHER_STATE`, `FORK_THEN_CHOOSE_ONE_BRANCH`, `MERGE_SUCCESS`, and
+`PRONOUN_FOCUS_FOLLOWUP` -- each gets exactly one synthetic session with no
+padded prior history." This slice closes it for three of the four named
+relations; `MERGE_SUCCESS` stays honestly unpadded (see below).
+
+### What was built
+
+* `_checkout_and_fork_trace` (`replay_preference_context_view_variants.py`)
+  gained a `pad_length` parameter: `pad_length` plain counter-operator bump
+  turns now precede the checkout/fork pair, giving
+  `STATE_PLUS_RECENT_RECEIPTS`/`STATE_PLUS_RETRIEVED_EVENTS` real prior
+  history to expose at the `CHECKOUT_ANOTHER_STATE` and
+  `FORK_THEN_CHOOSE_ONE_BRANCH` decision points without changing which two
+  relations the trace produces.
+* `_pronoun_trace` gained the same `pad_length` parameter: `pad_length`
+  warm-up edits precede the focus-continuing pair, alternating between the
+  two refs starting with ref 1, so consecutive warm-up turns never share a
+  touched ref and cannot themselves spuriously satisfy the focus-overlap
+  condition on their own (though a warm-up edit landing on ref 0 immediately
+  before the final pair can, and honestly does, sometimes emit one extra,
+  shallower-depth `PRONOUN_FOCUS_FOLLOWUP` row too -- not a bug, just more
+  real data).
+* `synthesize_bounded_session_corpus` now builds one padded
+  `checkout_and_fork_<K>` and one padded `pronoun_focus_<K>` session per
+  `ROLLBACK_CHAIN_LENGTHS` entry (`K` in `1/2/4/8/16`), mirroring the
+  existing rollback-chain ladder, instead of one unpadded session each.
+  `MERGE_SUCCESS` (`_merge_session`) is unchanged and stays the corpus's one
+  unpadded relation: no `ConversationTraceV1` object exists for a merge
+  decision at all (a successful merge starts a fresh continuation, per the
+  fourth slice), so there is no receipt sequence to pad in the first place --
+  this is a structural fact, not a scope choice deferred for later.
+* No extraction, scoring, or context-view logic changed. `dsl.operators.
+  replay_preference` and `dsl.operators.replay_preference_context_views` are
+  both untouched this slice (still v7 / v1 respectively).
+* `harness.preference.replay_preference_context_view_variants` bumped
+  v2 -> v3 in `src/slm_training/resources/versions.json`.
+
+### What was measured (real run, `python -m scripts.run_replay_preference_context_view_ablation`)
+
+* **Corpus:** grew from 8 sessions / 40 rows (sixth slice) to **16 sessions /
+  56 rows** (14 train / 2 held-out, vs the sixth slice's 6 train / 2
+  held-out) -- all 7 named relations still present at least once.
+  `undo_family_rate` dropped from 0.9 to **0.643**, purely a corpus-mix
+  effect of adding 10 more non-undo-family sessions, not a claim about
+  real-world conversation composition.
+* **Held-out pairwise preference accuracy is now 0.8333 for every one of the
+  25 `(view, turn_depth)` cells**, still perfectly uniform across every
+  view/depth combination -- the sixth slice's ceiling effect (accuracy
+  exactly 1.0 everywhere) is now a **plateau below the ceiling**
+  (accuracy exactly 0.8333 everywhere), a genuinely different number, not a
+  reproduction of the old one. `held_out_pair_count` is 3 (down from 4): the
+  stable-hash split (`split_for_group`) put only 2 of the corpus's 16
+  distinct session groups in `held_out` this time
+  (`rollback_chain_1`, `checkout_and_fork_1` -- exact identities differ from
+  the sixth slice's `rollback_chain_1` + `checkout_and_fork` because
+  `checkout_and_fork` is now 5 distinctly-keyed sessions, each hashing
+  independently). One held-out `PRONOUN_FOCUS_FOLLOWUP` pair ties exactly
+  (`accuracy_by_relation.pronoun_focus_followup == 0.5`) because its
+  `is_history_control` feature is identical (both candidates are operator
+  actions) and `history_repeat_score` also ties at that cell, so the margin
+  is exactly zero regardless of context view or depth -- the other two
+  held-out pairs (`edit_then_undo`, `undo_then_redo`) score perfectly.
+  `held_out_benefit.verdict` stays **`no_benefit_fixture_scale`**
+  (`baseline_accuracy=0.8333`, `best_accuracy=0.8333`, tied not exceeding).
+* **Honest interpretation: this is still a no-differentiation result, not a
+  confirmation of the sixth slice's ceiling-effect explanation.** The
+  sixth slice attributed its 1.0-everywhere result to "the held-out split is
+  small enough that `is_history_control` alone already perfectly separates
+  chosen from rejected." This slice's padding grew the corpus 40%, changed
+  which sessions land in the tiny held-out split, and produced a *different*
+  uniform number (0.8333, not 1.0) -- consistent with the same underlying
+  mechanism (the two-feature scorer's decision is dominated by a
+  history-independent feature, so context-view and turn-depth still make
+  exactly zero difference to any cell) rather than the specific value 1.0
+  being load-bearing. The padding did not, and structurally cannot with only
+  two features and this corpus size, break the tie between context views.
+* **The structural ablation grid still shows genuine, real depth variation**
+  for the newly-padded relations, the same way it already did for
+  `PARTIAL_ROLLBACK`: a padded `checkout_and_fork_8` session's
+  `state_plus_recent_receipts` view exposes visibly more receipts at
+  `turn_depth=8` than `checkout_and_fork_1` does at the same depth, and the
+  `state_plus_retrieved_events` (ancestry) view for the checkout/fork pair
+  continues to differ structurally from recency, exactly as documented in
+  the sixth slice -- this dimension was never in question; only the trained
+  comparison's ability to exploit it was being tested here, and still isn't
+  shown at this corpus size.
+* **Falsification note:** this slice was a real test of whether widening
+  the corpus and adding depth variation to three more relations would break
+  the sixth slice's flat, undifferentiated comparison. It did not -- the
+  comparison is still flat, just at a different accuracy value. That is
+  evidence *against* "the ceiling effect was just a held-out-size artifact
+  that padding would fix," and evidence *for* "a two-feature linear scorer
+  genuinely cannot discriminate context views on this corpus regardless of
+  size in this range." A real DSH3 policy/control head or a substantially
+  larger corpus remain the two levers that could still change this.
+
+### Explicitly out of scope (unchanged from, or newly confirmed by, this slice)
+
+* Everything the sixth slice already listed as out of scope (real DSH3
+  policy/control head training, a powered/real corpus, real
+  action/operator/argument accuracy, CAP0/CAP1/CAP2 retention) is unchanged
+  and still unattempted.
+* `MERGE_SUCCESS` turn-depth padding remains structurally out of scope, not
+  deferred -- see "What was built" above.
+* No `PreferencePair` conversion, model, checkpoint, or promotion is added by
+  this slice.
+
+No causal, calibration, or promotion claim is made. No checkpoint or model
+card update applies -- this slice creates no checkpoint.
+
+## Reproducibility (seventh slice)
+
+```bash
+NODE_OPTIONS= pytest -q tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_evals/test_ambiguous_operator_followups.py tests/test_dsl/test_replay_preference.py
+python -m scripts.run_replay_preference_context_view_ablation
+python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-vzzm2w
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+ruff check src/slm_training/harnesses/preference/replay_preference_context_view_variants.py src/slm_training/resources/versions.json
+```
+
+Result (this PR, seventh slice, v3): same freshly built `.venv` (Python
+3.12): `50 passed`. `ruff check`: clean on every touched file.
+`python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-vzzm2w`:
+`ok (2 changed file(s), 1 component(s) touched)`. `python -m scripts.repo_policy`:
+`ok (tracked + untracked)`. `python -m scripts.verify_decode_invariants`: clean
+(exit 0). The ablation script's real output: 16 sessions (14 train / 2
+held-out), 56 rows, `undo_family_rate=0.643`,
+`held_out_benefit={"verdict": "no_benefit_fixture_scale", "baseline_accuracy": 0.8333, "best_view": "state_plus_recent_receipts", "best_turn_depth": 1, "best_accuracy": 0.8333, ...}`
+-- all 25 `(view, turn_depth)` cells report `pairwise_preference_accuracy=0.8333`
+(a new, honestly different flat plateau -- see "What was measured" above).
 
 ## Reproducibility
 

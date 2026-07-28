@@ -8039,7 +8039,7 @@
       ]
     },
     "harness.preference.replay_preference_context_view_variants": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_preference_context_view_variants.py",
@@ -8050,6 +8050,11 @@
         "docs/design/dsh5-10-replay-preference-rows.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) seventh slice: closes the 'turn-depth padding for CHECKOUT_ANOTHER_STATE, FORK_THEN_CHOOSE_ONE_BRANCH, and PRONOUN_FOCUS_FOLLOWUP' gap the sixth slice named out of scope. _checkout_and_fork_trace and _pronoun_trace now accept a pad_length parameter (plain counter-operator bumps before the checkout/fork pair; ref-alternating warm-up edits before the focus-continuing pair, respectively), and synthesize_bounded_session_corpus builds one padded session per ROLLBACK_CHAIN_LENGTHS entry for each pattern (checkout_and_fork_<K>, pronoun_focus_<K>), growing the corpus from 8 to 16 sessions and 40 to 56 rows. MERGE_SUCCESS stays unpadded (no trace object exists for a merge decision, so there is no receipt sequence to pad -- unchanged, honestly documented). Real run: held_out_session_count drops to 2/16 (was 2/8), held-out pairs to 3 (was 4), and the prior 1.0-across-every-cell ceiling effect is now a 0.8333-across-every-cell plateau (still identical for all 25 (view, turn_depth) cells) -- held_out_benefit verdict stays no_benefit_fixture_scale. This is a genuinely different, honestly reported fixture-scale number, not evidence any context view helps; no SFT/preference training, powered corpus, or CAP retention measurement is added"
+        },
         {
           "version": "v2",
           "date": "2026-07-27",
