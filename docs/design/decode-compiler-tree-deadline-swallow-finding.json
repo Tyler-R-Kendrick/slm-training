@@ -125,7 +125,7 @@
     "After landing, re-run this same isolated per-record diagnostic (or the seeded multi-rep eval from lever-hard-decode-timeout-wall) to check whether decode_outcome shifts to a correctly-classified runtime_timeout (if genuinely out of budget) or to a real on-time completion (if the swallow was masking otherwise-fast decode)."
   ],
   "next_steps": [
-    "Fix per proposed_fix_sketch via improve-openui-harnesses (bump dsl.grammar_capabilities and model.twotower in versions.json).",
+    "DONE -- see decode-compiler-tree-deadline-swallow-fix.json: fixed per proposed_fix_sketch via improve-openui-harnesses (bumped model.twotower v261 -> v262; compiler_draft.py is already a model.twotower-watched path so dsl.grammar_capabilities did not separately need a bump).",
     "Separately investigate why each build_completion_forest call costs roughly 7-10s of wall time on average (29.2-29.4s compiler_ms across only 3-4 compiler_prefill_batches per record) -- Node-bridge round-trip cost vs. candidate-set size vs. cache misses were not isolated in this session.",
     "Re-run the champion multi-rep seeded eval (lever-hard-decode-timeout-wall's exact protocol) after the fix to see whether hero meaningful_program_rate recovers without needing a 160s+ unwalled run."
   ],

@@ -179,8 +179,12 @@ the compiler-tree path specifically) rather than being patched blind here.
 
 ## Next steps
 
-1. Fix per the sketch above via `improve-openui-harnesses` (bumps
-   `dsl.grammar_capabilities` and `model.twotower` in `versions.json`).
+1. **Done** — see
+   [`decode-compiler-tree-deadline-swallow-fix.md`](decode-compiler-tree-deadline-swallow-fix.md):
+   fixed per the sketch above via `improve-openui-harnesses` (bumped
+   `model.twotower` v261 → v262 in `versions.json`; `compiler_draft.py` is
+   already one of that component's watched paths, so `dsl.grammar_capabilities`
+   itself did not need a bump).
 2. Separately investigate why each `build_completion_forest` call costs
    roughly 7-10s of wall time on average (29.2-29.4s `compiler_ms` across
    only 3-4 `compiler_prefill_batches` per record) — Node-bridge round-trip

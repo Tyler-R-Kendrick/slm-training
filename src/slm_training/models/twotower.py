@@ -10327,6 +10327,14 @@ class TwoTowerModel(nn.Module):
         )
         after_bottom = False
         while len(prefix) < length and prefix[-1] != self.tokenizer.eos_id:
+            # Hard wall: cooperative deadline set by eval_runner (or callers).
+            # build_completion_forest's own TimeoutError now propagates (see
+            # docs/design/decode-compiler-tree-deadline-swallow-finding.md),
+            # but check here too so a deadline that expires between calls is
+            # still caught, matching the LTR-repair/MaskGIT loops' coverage.
+            from slm_training.models.decode_stats import check_decode_deadline
+
+            check_decode_deadline()
             state.remaining_tokens = length - len(prefix)
             if stats is not None and search_mode != "greedy":
                 stats.compiler_lattice_recurrences += 1

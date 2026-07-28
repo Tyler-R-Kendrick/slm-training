@@ -1,0 +1,76 @@
+{
+  "finding": "compiler_tree_deadline_swallow_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "Apply proposed_fix_sketch items 1 and 2 from decode-compiler-tree-deadline-swallow-finding.json: stop build_completion_forest from swallowing a cooperative decode-deadline TimeoutError as a fake empty-completion-forest grammar dead-end, and add check_decode_deadline() coverage to the compiler-tree per-position loop, matching model.twotower v261's LTR-repair/MaskGIT coverage.",
+  "change": {
+    "files": [
+      "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+      "src/slm_training/models/twotower.py"
+    ],
+    "summary": [
+      "compiler_draft.py:build_completion_forest -- added `except TimeoutError: raise` before the pre-existing bare `except Exception: return CompletionForest((), \"none\")` around the GrammarCapabilityAdapterV1.completion_domain(request) call, so a cooperative-deadline TimeoutError (including one arriving from the eval harness's SIGALRM-style interval) propagates instead of being recorded as constrained_dead_ends with reason=empty_completion_forest.",
+      "twotower.py:_compiler_ltr_decode_one -- added a check_decode_deadline() call at the top of the per-position `while len(prefix) < length and prefix[-1] != eos_id:` loop (the same call/comment pattern already used by the LTR-repair loop at line ~4906 and the MaskGIT loop at line ~13266), so a deadline that expires between build_completion_forest calls -- not just inside one -- is still caught. _compiler_ltr_decode_batch calls _compiler_ltr_decode_one once per row, so both call sites are covered by the one loop edit."
+    ],
+    "why_safe": "Both edits are purely about *when* an already-armed deadline raises, never about what the grammar considers legal: I6 (constrained legality) and I3 (deterministic decode) are untouched -- no candidate set, ranking, or bypass logic changes. The new TimeoutError re-raise only fires when a deadline was explicitly armed by set_decode_deadline (a caller opt-in); when unarmed, check_decode_deadline() is a no-op and completion_domain's non-timeout exceptions still fall through to the pre-existing fail-closed empty-forest path unchanged (regression-tested explicitly)."
+  },
+  "reproduction": {
+    "method": "unit tests only this session; no train/eval run, no checkpoint, no --ship-gates scoreboard",
+    "env_setup": [
+      "python3.12 -m venv .venv-fix",
+      ".venv-fix/bin/pip install --quiet -e \".[dev,torch]\""
+    ]
+  },
+  "unit_test": {
+    "file": "tests/test_models/test_compiler_tree_deadline.py",
+    "committed": true,
+    "tests": [
+      "test_build_completion_forest_propagates_deadline_timeout",
+      "test_build_completion_forest_still_fails_closed_on_other_errors",
+      "test_compiler_ltr_decode_one_checks_deadline_each_step"
+    ],
+    "result_after_fix": "3 passed in 1.96s (isolated new test file, kept separate from tests/test_models/test_compiler_decode.py which carries 36 pre-existing, unrelated failures -- see version_stamp/repository-organization note below on why)",
+    "sanity_checked_non_vacuous": "git stash of only the two production files (compiler_draft.py, twotower.py) confirmed 2 of the 3 new tests fail pre-fix (DID NOT RAISE TimeoutError); the third (still-fails-closed-on-other-errors) passes both before and after by design -- it asserts the invariant the fix must preserve, not the fix itself"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_harnesses/model_build/test_decode_deadline.py tests/test_harnesses/model_build/test_twotower.py -k \"compiler or deadline\"",
+      "result": "4 passed, 61 deselected"
+    },
+    {
+      "suite": "tests/test_models/test_compiler_decode.py -k completion_forest",
+      "result": "15 passed, 12 failed, 196 deselected",
+      "failures_preexisting_confirmed_via_git_stash": "all 12 fail identically pre-fix with TypeError: build_completion_forest() got an unexpected keyword argument 'enforce_schema_component_types' -- the same pre-existing build_completion_forest() signature-drift failure PR #1177/#1178 already documented, unrelated to this session's diff (which adds no/changes no parameters)"
+    },
+    {
+      "suite": "tests/test_models/test_compiler_decode.py (full file, unmodified this session)",
+      "result": "36 failed, 187 passed",
+      "failures_preexisting_confirmed_via_git_stash": "identical 36 failures and count (184 passed pre-fix on this branch's HEAD, +3 for this fix's tests would have made 187 -- confirmed by running the full file before staging any change to it) -- unrelated to this diff. New regression tests were deliberately placed in a separate new file (tests/test_models/test_compiler_tree_deadline.py) instead of appended to this one, since the local pre-commit hook (.githooks/pre-commit -> scripts/check_changed.py --changed-tests-only) runs the *entire* changed test file with no pre-existing-failure baseline, and this file's 36 pre-existing failures would otherwise block every future commit that touches it"
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "6 changed file(s), 1 component(s) touched -- model.twotower v261 -> v262 (its watched paths already list both src/slm_training/models/twotower.py and src/slm_training/dsl/grammar/fastpath/compiler_draft.py)",
+    "repo_policy": "ok (tracked + untracked)",
+    "verify_decode_invariants": "clean",
+    "git_diff_check": "clean"
+  },
+  "interpretation": "Closes decode-compiler-tree-deadline-swallow-finding.md's proposed_fix_sketch items 1-2, the blocker four independent findings (PR #1171, #1173-hero-rerun, #1178, #1182) converged on as load-bearing for the exposure12 quality-champion hero's decode_outcome=fallback_output pattern under decode_timeout_seconds=30. A deadline expiry inside the Node DSL bridge round-trip (or in the gap between compiler-tree calls) now surfaces as decode_outcome=runtime_timeout instead of being misclassified as constrained_dead_ends/empty_completion_forest.",
+  "scope_note": "Not re-run against the exposure12 hero/isolated-per-record eval protocol this session (proposed_fix_sketch item 3) -- that needs a fresh checkpoint rebuild plus the AgentV/Node DSL bridge (npm ci) and 3x MAX_RUN_MINUTES-bounded eval runs, out of scope for this harness-only change. Left as next_steps for a follow-up scheduled iteration, matching how PR #1173's lexer-cache fix and PR #1178's rerun were split across sessions.",
+  "next_steps": [
+    "Re-run the exact isolated per-record exposure12 protocol from decode-compiler-tree-deadline-swallow-finding.md / PR #1178 / PR #1182 against this fix to check whether decode_outcome correctly reclassifies as runtime_timeout (if genuinely out of budget) or shifts to an on-time completion (if the swallow was masking otherwise-fast decode).",
+    "Separately investigate why each build_completion_forest call costs roughly 7-10s of wall time on average even post lexer-cache fix (per-call compiler_ms dropped 5.6x-8.3x in PR #1178 but the decode loop spends the recovered budget on more search inside the same fixed wall) -- Node-bridge round-trip cost vs. candidate-set size vs. cache misses remain unisolated."
+  ],
+  "cleanup_note": ".venv-fix created for this session is not committed (gitignored).",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v262"
+    },
+    "note": "python -m scripts.verify_version_stamps --check reports 1 component touched (model.twotower v261 -> v262); see docs/design/version-stamp-contract.md."
+  },
+  "captured_at": "2026-07-28T05:35:00Z"
+}

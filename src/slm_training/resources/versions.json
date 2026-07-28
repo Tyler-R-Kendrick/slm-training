@@ -9326,7 +9326,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v261",
+      "version": "v262",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9369,6 +9369,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v262",
+          "date": "2026-07-28",
+          "note": "fix decode-compiler-tree-deadline-swallow-finding.md: build_completion_forest (compiler_draft.py) re-raises TimeoutError instead of swallowing it as an empty completion forest, and the compiler-tree per-position loop in _compiler_ltr_decode_one now also calls check_decode_deadline each step, matching v261's LTR-repair/MaskGIT coverage"
+        },
         {
           "version": "v261",
           "date": "2026-07-27",
