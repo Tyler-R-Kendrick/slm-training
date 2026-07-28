@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (eighth increment).
+**Status:** partial slice, in progress (ninth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -944,6 +944,193 @@ and review a control-action representation for `OperatorPolicyInputV1` so
 the other six relations (84% of the corpus) become representable at all.
 Either is a real, separately-scoped ninth slice, not a partial version of
 this one.
+
+## Ninth slice (2026-07-28)
+
+The eighth slice's own named next lever offered two options: (A) extend
+`OperatorPolicyInputV1`/`OperatorFeatureEncoder` with a "recently touched
+reference" signal, or (B) invent a control-action representation so the
+other six relations become representable. Both, read literally, mean
+widening the frozen, DSH3-22-owned `OperatorPolicyInputV1`/
+`OperatorActionViewV1`/`ReferenceModelViewV1` dataclasses in
+`operator_policy_view.py`. This repo already has a dedicated design note on
+exactly that question --
+`docs/design/dsh5-10-policy-scorer-adapter-gap-20260727.md` -- and it
+recommends *against* doing so unilaterally: extending the schema "needs its
+own version-stamped design and test pass before any training code touches
+it ... should be a follow-on decision made with the DSH3/DSH5 policy-head
+owners, not decided unilaterally by one autonomous ... session extending an
+existing frozen dataclass's invariants." DSH3-22's own doc
+(`docs/design/dsh3-22-operator-policy-view.md`) separately lists
+`ordinary_action_count` being "a bare count, not a per-token feature" as a
+**deliberate** scope decision, not an oversight.
+
+This slice therefore takes the adapter-gap doc's own recommended safer
+path instead of either literal option: design "B" from that doc -- "a
+separate scorer/head for the history-control decision space, distinct from
+`TypedOperatorPolicyScorer`." `OperatorPolicyInputV1`,
+`OperatorActionViewV1`, `ReferenceModelViewV1`, and `OperatorFeatureEncoder`
+are all **byte-for-byte untouched** by this slice; no DSH3-owned file is
+edited.
+
+### What was built
+
+* `src/slm_training/harnesses/preference/replay_preference_history_control_policy.py`
+  (new; `harness.preference.replay_preference_history_control_policy` v1):
+  * `HistoryControlActionViewV1` / `HistoryControlPolicyInputV1` -- a wholly
+    new, additive sibling dataclass pair, never a subclass, monkeypatch, or
+    fork of `operator_policy_view.py`. One row per
+    `OperatorLegalSetV1.ordinary_nonoperator_actions` entry -- the exact
+    tuple `OperatorPolicyInputV1` itself collapses into
+    `ordinary_action_count` -- carrying only `control_kind`
+    (`action_kind_of`'s existing closed vocabulary: `undo`/`redo`/
+    `checkout`/`merge`). The opaque state id embedded in a token (e.g.
+    `checkout:<state>`'s `<state>`) is never carried into any field --
+    reusing DSH3-22's allowlist-not-identity discipline by construction, not
+    by copying its code; `validate_no_forbidden_fields` (imported, not
+    duplicated) is run against this view's own `to_dict()` too.
+  * `classify_replay_row_history_control_representability` -- a token-only
+    classification (no trace access) into `NOT_REPRESENTABLE_OPERATOR_CHOSEN`
+    (the chosen action is itself an operator action -- `PRONOUN_FOCUS_
+    FOLLOWUP`'s domain, already handled by the eighth slice's adapter, out
+    of scope here), `CHOSEN_CONTROL_REJECTED_OPERATOR` (chosen is a control
+    token, but rejected is a cross-domain operator token -- a real, narrower
+    representability than a full pairwise comparison), or `BOTH_CONTROL`
+    (a genuine same-domain pair).
+  * `adapt_replay_row_to_history_control_policy_input` -- for a row grounded
+    in a real `ConversationTraceV1`, reconstructs the exact
+    `OperatorLegalSetV1` via the eighth slice's own public `legal_set_at`,
+    fails closed (`OperatorPolicyViewError`) on a stale
+    `legal_set_fingerprint`, and resolves chosen/rejected tokens to control-
+    row indices. Reports `NOT_REPRESENTABLE_FOREIGN_STATE` (never raises)
+    when `row.input_state_id` is not a member of the given trace's own state
+    nodes -- the `MERGE_SUCCESS` case, grounded on a `BranchEditV1` tip
+    rather than any trace, mirroring `preference_pairs_from_trace`'s
+    honest-skip convention for the same class of row.
+  * `build_history_control_representability_report` /
+    `synthesize_history_control_sessions` /
+    `evaluate_history_control_representability` -- the corpus-level
+    disposition. `synthesize_history_control_sessions` covers
+    `rollback_chain_<K>` and `checkout_and_fork_<K>` (the five trace-
+    grounded, non-pronoun relations); `merge_success` is excluded (no trace
+    to retain) and exercised directly in tests instead, and `pronoun_focus_
+    <K>` is excluded (every row is `NOT_REPRESENTABLE_OPERATOR_CHOSEN` by
+    construction).
+* `scripts/run_replay_preference_history_control_probe.py` (new). CLI entry
+  printing the probe report as JSON.
+* `tests/test_harnesses/preference/test_replay_preference_history_control_policy.py`
+  (new, 15 tests): token classification for all seven relations against
+  real fixture rows, the full-corpus representability report, real
+  control-row construction (and that it never carries an opaque state id),
+  the `MERGE_SUCCESS` foreign-state path against a real `_merge_session()`
+  row, the stale-fingerprint fail-closed path, and the real end-to-end
+  probe report.
+
+### What was measured (real run, `python -m scripts.run_replay_preference_history_control_probe`)
+
+* **Representability genuinely widens.** Over the seventh slice's full
+  56-row corpus, the `chosen_action` of all 47 non-`PRONOUN_FOCUS_FOLLOWUP`
+  rows classifies as a control token (up from 0 representable-as-control
+  before this slice -- the eighth slice's `TypedOperatorPolicyScorer`
+  adapter could represent none of them, only `PRONOUN_FOCUS_FOLLOWUP`'s 9
+  rows). Of these 47, the 46 grounded in a real `ConversationTraceV1`
+  (`EDIT_THEN_UNDO`, `UNDO_THEN_REDO`, `PARTIAL_ROLLBACK`,
+  `CHECKOUT_ANOTHER_STATE`, `FORK_THEN_CHOOSE_ONE_BRANCH`) actually build a
+  valid `HistoryControlPolicyInputV1` row when adapted; the one
+  `MERGE_SUCCESS` row reports `NOT_REPRESENTABLE_FOREIGN_STATE`, honestly,
+  not silently dropped.
+* **Real, reproducible finding: the pairing goal is still blocked, for a
+  new, independently verified structural reason.** `same_domain_pair_count`
+  is **0** over the real 46-row trace-grounded subset;
+  `cross_domain_pair_count` is **46**.  `_pick_rejected`
+  (`replay_preference.py`) draws the rejected candidate from the *full*
+  legal set (operator and control actions together), sorted
+  lexicographically; every decision state in this fixture has at least one
+  legal operator, and a serialized operator token always starts with the
+  literal `"OPERATOR "` -- capital `O` (ASCII 79) sorts before every
+  control-token prefix (`checkout:`, `redo:`, `undo`, all lowercase, ASCII
+  99+). So the rejected candidate is *always* the operator action in this
+  corpus, never a control one -- verified directly over every one of the 46
+  rows, not assumed or sampled.
+* **Honest interpretation: this is a genuinely different, and more precise,
+  finding than the eighth slice's.** The eighth slice found six relations
+  *structurally unrepresentable at all* against `TypedOperatorPolicyScorer`.
+  This slice shows that a purpose-built sibling view *can* represent the
+  chosen side of those same six relations (five of them concretely, by
+  actual construction; `MERGE_SUCCESS` in principle by token classification,
+  blocked separately by trace-grounding) -- representability was never the
+  full story. What remains genuinely blocked is *pairwise* representability:
+  no trained comparison is possible here because this fixture's own
+  `_pick_rejected` never offers a same-domain alternative to compare
+  against. This is a corpus/extraction-policy fact, not a view-schema
+  limit -- a different kind of gap than the eighth slice's, and it points at
+  a different, named fix (see below), not at `OperatorPolicyInputV1` again.
+* **Honesty tier: `no_benefit_fixture_scale` / `wiring`**, same tier as
+  every prior slice. No pairwise scorer is trained (there is nothing to
+  train on); no causal, calibration, or promotion claim is made.
+
+### Explicitly out of scope (unchanged from, or newly confirmed by, this slice)
+
+* Training a scorer over `HistoryControlPolicyInputV1.control_rows` -- zero
+  same-domain pairs exist in this corpus to train on.
+* Changing `_pick_rejected`'s candidate-selection policy in
+  `replay_preference.py` (e.g. preferring a same-domain alternative when one
+  exists in the legal set) -- that is a row-extraction change, its own
+  separately-scoped slice bumping `dsl.operators.replay_preference`, not a
+  model-input-contract change; `dsl.operators.replay_preference` is
+  untouched this slice (still v8).
+* `OperatorPolicyInputV1`, `OperatorActionViewV1`, `ReferenceModelViewV1`,
+  and `OperatorFeatureEncoder` (`operator_policy_view.py`,
+  `operator_feature_encoder.py`) -- all byte-for-byte unchanged.
+* A joint operator-and-control policy (design "A" from the adapter-gap doc)
+  -- two independent, unmerged heads remain, exactly as that doc's
+  recommendation described.
+* The sixth/seventh slices' two-feature linear scorer and the eighth
+  slice's `TypedOperatorPolicyScorer` adapter are both unchanged this slice.
+
+No causal, calibration, or promotion claim is made. No checkpoint or model
+card update applies -- this slice creates no checkpoint.
+
+### Named next lever
+
+The real, concrete fix this slice's own finding points at: change
+`_pick_rejected` (`replay_preference.py`) to prefer a same-domain
+alternative when the legal set actually offers one (falling back to the
+current any-domain choice only when no same-domain alternative exists),
+then re-run `evaluate_history_control_representability` to see whether
+`same_domain_pair_count` moves off zero and, if so, whether a trained
+pairwise scorer over `HistoryControlPolicyInputV1.control_rows` shows any
+real discrimination. This is a row-extraction-policy change (bumping
+`dsl.operators.replay_preference`), not a model-input-contract change, and
+is a real, separately-scoped tenth slice, not a partial version of this one.
+
+## Reproducibility (ninth slice)
+
+```bash
+NODE_OPTIONS= pytest -q tests/test_harnesses/preference/test_replay_preference_history_control_policy.py tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_evals/test_ambiguous_operator_followups.py tests/test_dsl/test_replay_preference.py tests/test_models/test_operator_policy_view.py
+NODE_OPTIONS= python -m scripts.run_replay_preference_history_control_probe
+python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-tp8k3n
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+ruff check src/slm_training/harnesses/preference/replay_preference_history_control_policy.py scripts/run_replay_preference_history_control_probe.py tests/test_harnesses/preference/test_replay_preference_history_control_policy.py
+```
+
+Result (this PR, ninth slice, v1): same freshly built `.venv` (Python 3.12),
+`NODE_OPTIONS=` cleared for the OpenUI bridge's Node 22 `--import tsx`
+incompatibility (same reason as every prior slice): `154 passed` across the
+listed files (a pre-existing, unrelated flaky failure in
+`tests/test_harnesses/experiments/test_operator_transaction_policy.py::test_shuffled_conflict_belief_never_commits_a_real_conflict`
+was independently confirmed present on the unmodified base commit too, via
+`git stash` -- not introduced by this slice, not part of the file set this
+slice's own reproducibility command runs). `ruff check`: clean on every
+touched/created file. `python -m scripts.verify_version_stamps --check
+--base origin/claude/great-dirac-tp8k3n`: `ok (4 changed file(s), 1
+component(s) touched)`. `python -m scripts.repo_policy`: `ok (tracked +
+untracked)`. `python -m scripts.verify_decode_invariants`: clean (exit 0).
+The probe script's real output: 46 rows representable-and-trace-grounded
+(all five non-`PRONOUN_FOCUS_FOLLOWUP`, non-`MERGE_SUCCESS` relations),
+`same_domain_pair_count=0`, `cross_domain_pair_count=46`, `verdict=
+"no_same_domain_pairs_fixture_scale"`.
 
 ## Reproducibility (eighth slice)
 

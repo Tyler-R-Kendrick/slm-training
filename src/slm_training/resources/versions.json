@@ -8063,6 +8063,11 @@
         {
           "version": "v3",
           "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) ninth slice appends its own 'Ninth slice' and 'Reproducibility (ninth slice)' sections to docs/design/dsh5-10-replay-preference-rows.md (a shared doc this component's paths claim), and updates the top 'Status' line to 'ninth increment'; no change to replay_preference_context_view_variants.py itself -- the ninth slice's own new harness.preference.replay_preference_history_control_policy component covers the actual new code"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-28",
           "note": "no-bump: SLM-418 (DSH5-10) eighth slice appends its own 'Eighth slice' and 'Reproducibility (eighth slice)' sections to docs/design/dsh5-10-replay-preference-rows.md (a shared doc this component's paths claim); no change to replay_preference_context_view_variants.py itself -- the eighth slice's own new harness.preference.replay_preference_typed_policy_adapter component covers the actual new code"
         },
         {
@@ -8100,6 +8105,22 @@
           "version": "v1",
           "date": "2026-07-28",
           "note": "SLM-418 (DSH5-10) eighth slice: initial registration. Adapter converting a replay-preference row into the DSH3-selected TypedOperatorPolicyScorer's OperatorPolicyInputV1 boundary, discovered structurally: OperatorPolicyInputV1.action_rows carries no representation for control actions (undo/redo/checkout/merge, collapsed to a scalar count in ordinary_action_count), so only PRONOUN_FOCUS_FOLLOWUP rows (same-operator, differing bound argument) are representable -- the other six relations are structurally, not just currently, unrepresentable. Every representable row also has exactly one legal operator, so route_operator_policy_inference always resolves COMPLETE_SINGLETON and the repo's real decide_typed_operator_policy entry point never calls the model for these rows (deterministic/singleton-bypass invariant, correctly applied); argument_logit_margin is an explicit diagnostic-only probe of raw forward-pass logits, never a decision-path claim. Real run on the seventh slice's own pronoun_focus_<pad_length> session split (same split_for_group group ids, not a re-split): 9 representable rows of 56 total in the full corpus (8 train / 1 held-out here), held-out pairwise margin accuracy and mean margin reported honestly at n=1 held-out pair -- see docs/design/dsh5-10-replay-preference-rows.md's Eighth slice for the exact number. No control-action representation is invented; the sixth/seventh slices' two-feature linear scorer is untouched"
+        }
+      ]
+    },
+    "harness.preference.replay_preference_history_control_policy": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/replay_preference_history_control_policy.py",
+        "scripts/run_replay_preference_history_control_probe.py",
+        "tests/test_harnesses/preference/test_replay_preference_history_control_policy.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) ninth slice: initial registration. Per docs/design/dsh5-10-policy-scorer-adapter-gap-20260727.md's own recommended safer design ('B': a separate scorer/head for the history-control decision space, distinct from TypedOperatorPolicyScorer), builds HistoryControlPolicyInputV1 as a wholly new, additive sibling dataclass in this harness module -- never a change to the DSH3-22-owned OperatorPolicyInputV1/OperatorActionViewV1/ReferenceModelViewV1 schema in operator_policy_view.py, which stays byte-for-byte untouched. One row per OperatorLegalSetV1.ordinary_nonoperator_actions entry, carrying only its control_kind (undo/redo/checkout/merge); the opaque state id inside a token is never carried into any field. Real result on the seventh slice's own 56-row synthetic corpus: the chosen side of all 47 non-PRONOUN_FOCUS_FOLLOWUP rows now builds a valid control-domain row (up from 0 representable before this slice), but a second, independently verified structural fact blocks pairwise training: _pick_rejected (replay_preference.py) draws the rejected candidate from the full legal set sorted lexicographically, and a serialized operator token ('OPERATOR ...') always sorts before every control-token prefix when at least one operator is legal (always true in this fixture) -- so same_domain_pair_count == 0 over the real corpus, verified empirically. No same-domain pairwise scorer is trained; _pick_rejected's candidate-selection policy in replay_preference.py is unchanged (that would be a row-extraction slice, not a model-input-contract one). See docs/design/dsh5-10-replay-preference-rows.md's Ninth slice for the full disposition"
         }
       ]
     },
