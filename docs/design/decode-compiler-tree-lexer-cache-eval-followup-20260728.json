@@ -1,0 +1,146 @@
+{
+  "finding": "compiler_tree_lexer_cache_fix_does_not_clear_decode_timeout_wall",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "is_null_result": true,
+  "task": "Execute PR #1173's own 'Next steps' item 1: re-run PR #1171's isolated per-record eval protocol now that the lexer/scanner cache fix (PR #1173, model.twotower / dsl.grammar_capabilities not bumped, engine.py not a watched path) is merged, to see whether compiler_ms drops enough in aggregate for the exposure12 quality-champion hero to finish inside decode_timeout_seconds=30 without the deadline-swallow fix sketched (not applied) in PR #1171.",
+  "predecessor_docs": [
+    "docs/design/decode-compiler-tree-deadline-swallow-finding.md (PR #1171, finding)",
+    "docs/design/decode-compiler-tree-lexer-rebuild-cost-finding.md (PR #1172, finding)",
+    "docs/design/decode-compiler-tree-lexer-cache-fix.md (PR #1173, fix, merged into main prior to this session)"
+  ],
+  "reproduction": {
+    "environment": "fresh checkout, .venv-diag (Python 3.12, pip install -e . plus pytest/pytest-asyncio/ruff/torch cpu wheel via --extra-index-url https://download.pytorch.org/whl/cpu), npm ci in repo root (AgentV SDK, required for agentv publish step in evaluate_model) and in src/apps/openui_bridge (DSL bridge / lang_core.parse) with NODE_OPTIONS unset (ambient '--import tsx --max-old-space-size=8192' is invalid for a plain node invocation in this sandbox, same environment note as PR #1172/#1173)",
+    "train_data_build": "python -m scripts.build_train_data --source fixture --profile strict --max-records-per-parent 12 --version lever_exposure12_v1 --output-root outputs/data/train",
+    "train_data_check": {
+      "record_count": 107,
+      "abstraction_ladder_records": 5,
+      "matches_prior_doc": "matches PR #1171's own rebuild exactly (107 records, 5 abstraction_ladder)"
+    },
+    "train_command": "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --context-backend scratch --steps 16 --batch-size 2 --lr 1e-3 --structural-bias 1.5 --seed 47 --run-id exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47 --no-sync-checkpoints --device cpu",
+    "train_wall_s": "within the run cap; command completed without hitting MAX_RUN_MINUTES=3",
+    "eval_command_template": "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset {0,1,2}",
+    "isolation": "each smoke record run alone (--eval-limit 1 --eval-offset N), n=1 rep per record, identical protocol to PR #1171 -- no new instrumentation, same decode_stats fields",
+    "eval_wall_s_per_offset": [36.456, 36.287, 36.247]
+  },
+  "baseline_pre_fix_pr1171": [
+    {
+      "record_id": "smoke_hero_01",
+      "eval_offset": 0,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome": "fallback_output",
+      "total_ms_sum": 30006.543,
+      "compiler_ms_sum": 29209.748,
+      "compiler_ms_share_pct": 97.3,
+      "forwards_count_sum": 3.0,
+      "tokens_emitted_sum": 7.0,
+      "denoiser_ms_sum": 0.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0
+    },
+    {
+      "record_id": "smoke_button_01",
+      "eval_offset": 1,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome": "fallback_output",
+      "total_ms_sum": 30006.47,
+      "compiler_ms_sum": 29378.141,
+      "compiler_ms_share_pct": 97.9,
+      "forwards_count_sum": 4.0,
+      "tokens_emitted_sum": 8.0,
+      "denoiser_ms_sum": 0.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0
+    },
+    {
+      "record_id": "smoke_callout_01",
+      "eval_offset": 2,
+      "meaningful_program_rate": 1.0,
+      "decode_outcome": "fallback_output",
+      "total_ms_sum": 30010.186,
+      "compiler_ms_sum": 29186.439,
+      "compiler_ms_share_pct": 97.3,
+      "forwards_count_sum": 4.0,
+      "tokens_emitted_sum": 8.0,
+      "denoiser_ms_sum": 0.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0
+    }
+  ],
+  "after_lexer_cache_fix_this_session": [
+    {
+      "eval_offset": 0,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome": "fallback_output",
+      "total_ms_sum": 30004.534,
+      "compiler_ms_sum": 29257.833,
+      "compiler_ms_share_pct": 97.5,
+      "forwards_count_sum": 17.0,
+      "tokens_emitted_sum": 25.0,
+      "denoiser_ms_sum": 0.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0,
+      "compiler_prefill_batches_sum": 17.0,
+      "dead_end_trace": {
+        "phase": "compiler_tree",
+        "reason": "empty_completion_forest",
+        "position": 26,
+        "prefix_text": "root = Card([b1, TextContent(\":slot_2\"), CardHeader(\":slot_1\"), TextContent(\":slot_0\", \"large\"),"
+      }
+    },
+    {
+      "eval_offset": 1,
+      "meaningful_program_rate": 0.0,
+      "decode_outcome": "runtime_timeout",
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 30000.52,
+      "decode_stats_present": false,
+      "note": "decode_stats aggregate is entirely absent from metrics for this record -- unlike the baseline (which recorded compiler_ms/dead_end_trace for every record), the deadline TimeoutError this time was NOT swallowed as an empty completion forest inside build_completion_forest's bare except; it propagated up through eval_runner's own except TimeoutError handler (src/slm_training/harnesses/model_build/eval_runner.py:1160-1167), which has no DecodeStats attached to the exception in this run, so zero compiler_ms/forwards_count/dead_end telemetry was captured for this specific record this specific run."
+    },
+    {
+      "eval_offset": 2,
+      "meaningful_program_rate": 1.0,
+      "decode_outcome": "fallback_output",
+      "total_ms_sum": 30004.275,
+      "compiler_ms_sum": 29059.419,
+      "compiler_ms_share_pct": 96.9,
+      "forwards_count_sum": 30.0,
+      "tokens_emitted_sum": 51.0,
+      "denoiser_ms_sum": 0.0,
+      "constrained_dead_ends_sum": 1.0,
+      "certified_fallbacks_sum": 1.0,
+      "compiler_prefill_batches_sum": 30.0,
+      "dead_end_trace": {
+        "phase": "compiler_tree",
+        "reason": "empty_completion_forest",
+        "position": 52,
+        "prefix_text": "root = Card([b1, TextContent(\":slot_2\"), CardHeader(\":slot_1\"), TextContent(\":slot_0\", \"large\"), Separator(\"vertical\"), Separator(\"vertical\"), Separator(\"vertical\", false), Separator(\"vertical\", false), Separator("
+      }
+    }
+  ],
+  "comparison_summary": {
+    "decode_outcome_changed": "yes for offset 1 only (fallback_output -> runtime_timeout); offsets 0 and 2 unchanged (still fallback_output)",
+    "compiler_ms_share_pct_changed": "no, materially unchanged in aggregate: 97.3/97.9/97.3 (before) vs 97.5/n-a/96.9 (after) -- still ~97% of the 30s budget spent in compiler_ms on both records where decode_stats was captured",
+    "forwards_count_and_compiler_prefill_batches_increased": "yes, substantially: offset 0 went 3 -> 17 (5.7x), offset 2 went 4 -> 30 (7.5x) -- consistent with each individual build_completion_forest call being faster post-fix (more calls now fit in the same ~29s window), but NOT enough headroom to finish the decode before the 30s wall",
+    "hero_finishes_inside_30s_wall_without_deadline_fix": "no -- all three records still hit ~30000ms total_ms / latency_ms_p50, same as baseline; the lexer-cache win (PR #1173) does not reach far enough on its own to clear decode_timeout_seconds=30 for this checkpoint/suite",
+    "verdict": "null result: the lexer-cache fix measurably increases the number of build_completion_forest calls that fit inside the 30s budget (proportional per-call speedup, matching the ~2-2.1x micro-benchmark from PR #1173 combined with deeper per-call amortization), but it does not reduce the aggregate compiler_ms share or the wall-clock outcome. The deadline-swallow fix sketched in PR #1171 (not applied this session, per instructions) is still needed on its own merits; if anything, offset 1's shift from fallback_output to runtime_timeout this run is a data point (n=1, not a trend) that the swallow can already sometimes fail to trigger even pre-fix-for-that-bug, consistent with PR #1171's own note that 1/3 historical reps landed as a 'clean' runtime_timeout."
+  },
+  "caveats": [
+    "n=1 rep per record, same standing as both predecessor findings -- not a multi-rep confirm.",
+    "decode_outcome classification for a record that grazes the 30s wall is a timing race between the SIGALRM re-fire and whichever call happens to be in flight; offset 1 landing as runtime_timeout this run rather than fallback_output (as in the baseline) is plausible normal run-to-run timing variance and was not re-run to check reproducibility, per the isolated-diagnostic protocol and to respect MAX_RUN_MINUTES discipline (no retry-in-a-loop).",
+    "This is fixture-scale (n=3 smoke suite), not a full scoreboard -- not ship regardless of outcome."
+  ],
+  "version_stamps": {
+    "harness_files_touched": [],
+    "verify_version_stamps_check": "python -m scripts.verify_version_stamps --check -> version-stamps: ok (0 component(s) touched)",
+    "note": "measurement-only session; no engine.py / compiler_draft.py / twotower.py edits, matching the task's explicit no-harness-code-changes rule"
+  },
+  "next_steps": [
+    "The deadline-swallow fix sketched in PR #1171 (except TimeoutError: raise in compiler_draft.py:2313 before the bare except Exception, plus check_decode_deadline() calls in the compiler-tree per-position loops in twotower.py) is now HIGHER priority relative to further lexer-layer micro-optimization: the lexer cache alone does not clear the wall, so correctly classifying (or actually preventing) the timeout is the more direct lever on decode_outcome for this checkpoint/suite.",
+    "Apply PR #1173's own still-open item 2 (make _incremental_sync genuinely incremental at the lex layer, only lexing newly-appended text) as a second-order perf lever -- may buy more calls-per-budget but, per this session's null result, is unlikely by itself to clear the 30s wall either.",
+    "Any actual fix work belongs to improve-openui-harnesses, not a measurement-only iteration; this doc only reports what was measured."
+  ],
+  "cleanup_note": "The lever_exposure12_v1 train-data build and the scratch checkpoint used for this rerun are not committed (outputs/ is gitignored; the auto-published copy under src/slm_training/resources/data/train/lever_exposure12_v1 was removed after the runs above, same as PR #1171/#1172's cleanup convention). .venv-diag and both node_modules/ trees (repo root and src/apps/openui_bridge) are gitignored and were also removed.",
+  "captured_at": "2026-07-28T08:38:59Z"
+}
