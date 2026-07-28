@@ -1,0 +1,95 @@
+{
+  "lever": "mix_loadable_v2_larger_corpus_short_sft_vs_capstone_heldout_baseline",
+  "hypothesis": "A larger (231 vs 107 record) loadable-mix corpus + a short SFT (steps<=32) raises meaningful_program_rate vs the capstone held_out baseline (0/5 meaningful, 5/5 runtime_timeout per rep) under the identical held_out/seed47/decode-timeout=30/fixed_asap recipe.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "task_source": "docs/design/lever-hard-decode-timeout-wall-heldout-capstone.md#named-next-lever-for-the-next-iteration",
+  "corpus": {
+    "version": "lever_mix_loadable_v2",
+    "record_count": 231,
+    "components": {
+      "lever_exposure12_v1": 107,
+      "lever_programspec_doc_v2_loadable_filtered": 124,
+      "lever_programspec_doc_v2_raw_admitted": 128,
+      "lever_programspec_doc_v2_rejected_by_loadable_filter": 2,
+      "duplicate_ids_dropped_vs_exposure12": 2
+    },
+    "build_command": "python -m scripts.build_train_data --source programspec --target-kinds document --programspec-count 12 --programspec-seed 47 --version lever_programspec_doc_v2 --output-root outputs/data/train --no-publish",
+    "filter": "assert_no_template_semantic_labels+assert_canonical_template_markers+assert_symbol_only_output+assert_role_safe_output (TwoTower.from_records) + harness_dsl canonical-serialization check (load_train_records)",
+    "multiplier_vs_exposure12": 2.159
+  },
+  "sft_recipe": {
+    "train_dir": "outputs/data/train/lever_mix_loadable_v2",
+    "model": "twotower",
+    "context_backend": "scratch",
+    "steps": 32,
+    "steps_done": 32,
+    "stopped_on": "steps",
+    "batch_size": 2,
+    "lr": 0.001,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "device": "cpu",
+    "asap_decode": true,
+    "run_id": "exp_lever_mix_loadable_v2_s32_lr1e3_bs2_sb15_seed47",
+    "no_sync_checkpoints": true,
+    "last_loss": 11.378924369812012,
+    "baseline_exposure12_last_loss_s16": 7.189,
+    "capacity_lever": false,
+    "capacity_note": "default twotower dims unchanged from exposure12 baseline; pure data lever, no size flags changed (goal invariant VI)"
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2",
+    "suite": "held_out",
+    "n": 5,
+    "reps": 1,
+    "seed": 47,
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true,
+    "run_class": "scratch_matrix",
+    "run_id": "mix_v2_s32_heldout_rep1_seed47",
+    "shrunk_from": "capstone protocol used n=5/2 reps; this run uses n=5/1 rep to fit the corpus-build + SFT + eval sequence inside per-invocation MAX_RUN_MINUTES budgets",
+    "code_commit": "b31f26815eb4f05b25eabe8e65a1943ff870bb1a",
+    "checkpoint_sha256": "5fd8a9238af9bfd6f8110eb263ddc01cdcb180da379863bec2f7d47c9ef4f9d8"
+  },
+  "baseline": {
+    "source": "docs/design/lever-hard-decode-timeout-wall-heldout-capstone.md",
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "decode_outcome_counts": {"runtime_timeout": 5, "fallback_output": 0, "model_valid": 0},
+    "reps": 2,
+    "n": 5
+  },
+  "treatment": {
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 0.2,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "placeholder_fidelity": 0.2,
+    "reward_score": 0.1874,
+    "decode_outcome_counts": {"model_valid": 0, "model_invalid": 1, "model_abstain": 0, "runtime_timeout": 4, "fallback_output": 0, "harness_error": 0},
+    "failure_breakdown": {"parse_error": 4, "low_component_recall": 1},
+    "n": 5,
+    "reps": 1
+  },
+  "ship_gate_check": {
+    "held_out:insufficient_n": {"bar": 20, "actual": 5, "pass": false},
+    "held_out:meaningful_program_rate": {"bar": 0.40, "actual": 0.0, "pass": false},
+    "held_out:structural_similarity": {"bar": 0.30, "actual": 0.0, "pass": false},
+    "held_out:component_type_recall": {"bar": 0.30, "actual": 0.0, "pass": false},
+    "held_out:placeholder_fidelity": {"bar": 0.15, "actual": 0.2, "pass": true},
+    "held_out:decode_timeout_count": {"bar": 0, "actual": 4, "pass": false}
+  },
+  "decision": "reject",
+  "decision_reason": "larger loadable-mix corpus (231 vs 107 records) + short SFT (steps=32 vs 16) does not lift meaningful_program_rate vs capstone held_out baseline (0.0 -> 0.0); parse_rate ticks up 0.0->0.2 from one record finishing decode inside the wall (model_invalid, not meaningful) but the ship-relevant number is unchanged",
+  "next_lever": "genuinely longer SFT (hundreds of steps via multi-invocation/resume), curriculum/mixture reweighting, or revisiting the 30s decode-timeout wall itself as the bottleneck (algorithmic compiler-tree change or honestly re-validated longer timeout) -- both decode-speed and corpus-size/short-SFT levers have now been eliminated at held_out scale",
+  "validation": {
+    "repo_policy": "ok",
+    "verify_version_stamps": "ok, 0 components touched (no harness/metric/gate/matrix file changed)",
+    "verify_decode_invariants": "ok"
+  },
+  "captured_at": "2026-07-28T13:31:00Z"
+}
