@@ -1,0 +1,114 @@
+{
+  "lever": "decode_timeout_wall_extension_single_record_probe",
+  "hypothesis": "If the 30s hard decode-timeout wall is merely miscalibrated (\"almost enough\"), extending it to 60s/90s on an isolated held_out record should surface a real completion (decode_outcome flips off runtime_timeout) at some point within bounded extra budget. If the compiler-tree witness search is genuinely unbounded/stuck on this checkpoint+grammar, decode_outcome stays runtime_timeout regardless of how far the wall is pushed.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "diagnostic_only": true,
+  "scope": "Isolated per-record evals (--eval-limit 1) at progressively longer --decode-timeout-seconds. Production default DEFAULT_DECODE_TIMEOUT_SECONDS (src/slm_training/levers.py) is untouched; no ship gate changed.",
+  "code_commit_under_test": "d2786342dfa8fac090b7656f6476cbf78cefcb29",
+  "checkpoint": "outputs/runs/chain_lever_mix_v2_s256_lr1e3_bs2_sb15_seed47/checkpoints/last.pt",
+  "checkpoint_sha256": "9341ca71de0fd4a39a4936fabe5feb91fef43cf5d2167b501ec5fb6d487deb01",
+  "checkpoint_provenance": "PR #1198's 256-step chained-resume SFT checkpoint (lever_mix_loadable_v2 corpus, twotower/scratch, lr=1e-3, bs=2, structural_bias=1.5, seed=47) -- reused unchanged from disk, already the most-trained checkpoint in this thread; no rebuild needed this iteration.",
+  "eval_recipe_shared": {
+    "test_dir": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2",
+    "suite": "held_out",
+    "grammar_constrained": true,
+    "seed": 47,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "run_class": "scratch_matrix"
+  },
+  "trials": [
+    {
+      "run_id": "diag_wall30_off0_s256_seed47",
+      "record_id": "held_out_form_01",
+      "eval_offset": 0,
+      "eval_limit": 1,
+      "decode_timeout_seconds": 30,
+      "wall_clock_command_seconds": 38.5,
+      "n": 1,
+      "decode_outcome_counts": {"runtime_timeout": 1},
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 30000.42,
+      "latency_ms_p95": 30000.42,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "failure_breakdown": {"parse_error": 1},
+      "note": "baseline confirm -- matches capstone doc's per-record pattern"
+    },
+    {
+      "run_id": "diag_wall60_off0_s256_seed47",
+      "record_id": "held_out_form_01",
+      "eval_offset": 0,
+      "eval_limit": 1,
+      "decode_timeout_seconds": 60,
+      "wall_clock_command_seconds": 68.8,
+      "n": 1,
+      "decode_outcome_counts": {"runtime_timeout": 1},
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 60100.48,
+      "latency_ms_p95": 60100.48,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "failure_breakdown": {"parse_error": 1},
+      "note": "still runtime_timeout, latency pinned exactly at the new wall -- no early completion"
+    },
+    {
+      "run_id": "diag_wall90_off0_s256_seed47",
+      "record_id": "held_out_form_01",
+      "eval_offset": 0,
+      "eval_limit": 1,
+      "decode_timeout_seconds": 90,
+      "wall_clock_command_seconds": 103.3,
+      "n": 1,
+      "decode_outcome_counts": {"runtime_timeout": 1},
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 90201.21,
+      "latency_ms_p95": 90201.21,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "failure_breakdown": {"parse_error": 1},
+      "note": "3x baseline wall, still runtime_timeout, still pinned exactly at the wall -- 3 consecutive points show zero trend toward completion"
+    },
+    {
+      "run_id": "diag_wall60_off1_s256_seed47",
+      "record_id": "held_out_dual_card_01",
+      "eval_offset": 1,
+      "eval_limit": 1,
+      "decode_timeout_seconds": 60,
+      "wall_clock_command_seconds": 68.9,
+      "n": 1,
+      "decode_outcome_counts": {"runtime_timeout": 1},
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 60000.49,
+      "latency_ms_p95": 60000.49,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "failure_breakdown": {"parse_error": 1},
+      "note": "second, independent record at 60s -- same pinned-at-wall pattern; not record-specific"
+    }
+  ],
+  "pattern": {
+    "description": "Across 4 trials spanning 2 distinct held_out records and 3 distinct decode-timeout-seconds values (30/60/90), every single trial ends in decode_outcome=runtime_timeout with latency_ms pinned almost exactly at the configured wall (offset by ~0-200ms of teardown, never less). There is no partial progress signal: no trial produced model_valid, model_invalid, fallback_output, or any latency meaningfully short of the wall. Tripling the wall (30s->90s) on the same record produced the identical outcome with the identical shape (pinned latency), not a shrinking gap toward completion.",
+    "interpretation": "nowhere_close",
+    "verdict": "The compiler-tree witness search for these held_out records does not exhibit convergent behavior as wall-clock budget grows within the tested range. This is evidence of a genuinely unbounded/stuck search for this checkpoint+grammar combination on these records, not a timeout that is merely a little short. A defensible eval-config change (e.g. bumping the production default to 60s or 90s) would require seeing decode outcomes start flipping to real completions as the wall grows; that was not observed at any tested point."
+  },
+  "budget_constraint_note": "MAX_RUN_MINUTES=3 (170s harness-interrupt budget) bounds each invocation. Each trial here was --eval-limit 1 (single record) so even the 90s trial fit in ~103s wall-clock, leaving margin. A full 5-record held_out suite at 90s/record (450s worst case) would blow the cap in one invocation, which is why this diagnostic used isolated single-record probes as instructed rather than a full-suite longer-wall run.",
+  "ship_gate_check": {
+    "policy": "honest-ship-eval default held_out bars",
+    "applicable": false,
+    "reason": "n=1 per trial, diagnostic isolation slices -- not a scoreboard claim; no --ship-gates flag used"
+  },
+  "decision": "INCONCLUSIVE-TOWARD-NOWHERE-CLOSE: within the tested budget (30/60/90s, 2 records), the 30s wall shows no sign of being merely miscalibrated. Every trial pins exactly at whatever wall is configured, with zero partial-progress or near-miss signal. This is the stronger, more serious finding named in the task: evidence for a genuinely unbounded/stuck compiler-tree witness search on this checkpoint+grammar, not a wall that just needs a modest honest bump.",
+  "pivot_recommendation": {
+    "decision": "Close the great-dirac decode/training investigation thread (PRs #1189-#1198 plus this probe). Three independent lever families -- decode-plumbing micro-optimizations, corpus-size/short-SFT, step-count via chained-resume SFT, and now wall-clock-budget itself -- have all been tried against the same held_out baseline and none moves meaningful_program_rate off 0.0 or shows convergent decode-completion behavior.",
+    "next_lever_same_thread_if_resumed": "An algorithmic bound on the compiler-tree witness search itself (e.g. a search-depth/node-budget cap that fails fast to a diagnosable state instead of running unbounded until SIGALRM) would need actual profiling of where the search spends its unbounded time on a held_out record -- this is harness-code work (improve-openui-harnesses), not another eval-recipe lever, and is out of scope for this diagnostic iteration.",
+    "next_lever_different_pipeline_phase": "Recommend the loop pivot away from this checkpoint/grammar/decode-latency investigation entirely for the next iteration and pick a different pipeline phase with fresh, untested surface area -- e.g. preference/surrogate-DPO (Phase B), an annotations-export cycle, or an experiment matrix unrelated to compiler-tree decode (references/preference.md, references/annotations.md, references/experiments.md in .agents/skills/autotrain)."
+  },
+  "validation": {
+    "verify_version_stamps": "ok (vs HEAD; 0 changed file(s), 0 component(s) touched)",
+    "repo_policy": "ok (tracked + untracked)",
+    "verify_decode_invariants": "exit 0, agent_surfaces/canonical_defaults/strict_policies/weakening_levers unchanged"
+  },
+  "scope_note": "No harness/metric/gate/matrix source file changed this session -- 4 evaluate_model CLI invocations against an existing checkpoint, each a separate bounded Bash call. outputs/runs/diag_wall{30,60,90}_off0_s256_seed47/ and outputs/runs/diag_wall60_off1_s256_seed47/ are gitignored, not committed -- this doc is the durable record. DEFAULT_DECODE_TIMEOUT_SECONDS in src/slm_training/levers.py was not modified.",
+  "captured": "2026-07-28T13:56:00Z"
+}
