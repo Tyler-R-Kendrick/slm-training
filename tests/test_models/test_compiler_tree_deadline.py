@@ -10,15 +10,12 @@ loops' existing coverage).
 
 from __future__ import annotations
 
-import time
-
 import pytest
 
 from slm_training.data.contract import canonicalize_example_template_markers
 from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
 from slm_training.dsl.grammar_capabilities import GrammarCapabilityAdapterV1
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.models.decode_stats import clear_decode_deadline, set_decode_deadline
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
@@ -82,15 +79,24 @@ def test_build_completion_forest_still_fails_closed_on_other_errors(
     assert forest.paths == ()
 
 
-def test_compiler_ltr_decode_one_checks_deadline_each_step() -> None:
+def test_compiler_ltr_decode_one_checks_deadline_each_step(monkeypatch) -> None:
+    """A deadline that expires between iterations must still be caught, not
+    just one checked once at loop entry."""
     model = _model()
     ctx, ctx_pad = model._encode_context(["card"])
-    set_decode_deadline(0.05)
-    try:
-        time.sleep(0.08)
-        with pytest.raises(TimeoutError, match="decode deadline exceeded"):
-            model._compiler_ltr_decode_one(
-                ctx, ctx_pad, 24, mode="tree", slot_contract=None
-            )
-    finally:
-        clear_decode_deadline()
+    calls = {"n": 0}
+
+    def fake_check_decode_deadline() -> None:
+        calls["n"] += 1
+        if calls["n"] >= 2:
+            raise TimeoutError("decode deadline exceeded")
+
+    monkeypatch.setattr(
+        "slm_training.models.decode_stats.check_decode_deadline",
+        fake_check_decode_deadline,
+    )
+    with pytest.raises(TimeoutError, match="decode deadline exceeded"):
+        model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+        )
+    assert calls["n"] >= 2

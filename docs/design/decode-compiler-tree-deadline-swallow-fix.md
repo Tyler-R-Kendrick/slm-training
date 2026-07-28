@@ -61,11 +61,16 @@ against it):
   monkeypatch shape but raises `ValueError`, asserting the pre-existing
   fail-closed contract (`coverage == "none"`, `paths == ()`) is unchanged for
   non-timeout exceptions.
-- `test_compiler_ltr_decode_one_checks_deadline_each_step` — arms
-  `set_decode_deadline(0.05)`, sleeps past it, then calls
-  `model._compiler_ltr_decode_one(...)` directly (same pattern as the
-  existing `test_lattice_search_rejects_unknown_mode`) and asserts
-  `TimeoutError` propagates.
+- `test_compiler_ltr_decode_one_checks_deadline_each_step` — monkeypatches
+  `decode_stats.check_decode_deadline` with a counting fake that only raises
+  on its *second* call, then calls `model._compiler_ltr_decode_one(...)`
+  directly (same call pattern as the existing
+  `test_lattice_search_rejects_unknown_mode`) and asserts `TimeoutError`
+  propagates with at least 2 calls observed — proving the loop checks the
+  deadline every iteration, not only once at loop entry (an earlier revision
+  of this test expired a real deadline before the first call, which would
+  have passed even with a single entry-time check; addressed per CodeRabbit
+  review on PR #1183).
 
 ## Checks
 
