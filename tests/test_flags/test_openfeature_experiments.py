@@ -149,6 +149,35 @@ def test_cli_lever_overrides_do_not_treat_argparse_defaults_as_explicit() -> Non
     assert cli_lever_overrides(Args(), argv=()) == {}
 
 
+def test_compiler_prefill_max_states_lever_default_matches_config_default() -> None:
+    # Diagnostic lever added for the prefill-batch-cap experiment
+    # (docs/design/lever-compiler-prefill-max-states-cap-exposure12-20260728.md):
+    # the registry default (0=auto) must equal ModelBuildConfig's own field
+    # default so an empty ruleset changes nothing (byte-identical defaults).
+    cfg = _config()
+    assert cfg.compiler_prefill_max_states == 0
+    client = FlagClient(InMemoryProvider({}))  # empty ruleset
+    cfg2, applied = apply_experiment_flags(
+        cfg,
+        client=client,
+        context=experiment_context(run_id=cfg.run_id, experiment_id="E0"),
+    )
+    assert applied == []
+    assert cfg2.compiler_prefill_max_states == 0
+
+
+def test_compiler_prefill_max_states_lever_overridable() -> None:
+    cfg = _config()
+    cfg, applied = apply_levers_from_mapping(
+        cfg,
+        {"compiler_prefill_max_states": 1},
+        experiment_id="E-prefill-cap",
+        matrix="decode_latency",
+    )
+    assert cfg.compiler_prefill_max_states == 1
+    assert any(a.flag_key == "compiler_prefill_max_states" for a in applied)
+
+
 def test_unknown_lever_rejected() -> None:
     try:
         ruleset_from_mapping({"not_a_real_lever": True})

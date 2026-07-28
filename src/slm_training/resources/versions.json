@@ -7315,7 +7315,7 @@
       ]
     },
     "harness.flags": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/flags/",
@@ -7324,6 +7324,11 @@
         "tests/test_flags/test_openfeature_experiments.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-28",
+          "note": "Register compiler_prefill_max_states as a diagnostic numeric lever (default 0=auto, matches ModelBuildConfig field default so it is inert by default) so scripts.evaluate_model --flags-json can override the compiler-tree neural prefill batch width without new CLI wiring; used for docs/design/lever-compiler-prefill-max-states-cap-exposure12-20260728.md (REJECT: no wall-clock effect)"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",

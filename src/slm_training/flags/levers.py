@@ -95,6 +95,13 @@ LEVER_FLAGS: tuple[LeverSpec, ...] = (
     ),
     _num("solver_max_nodes", 512, "Exact-closure node budget"),
     _num("decode_min_content", 0, "A4 minimum content floor (0=off, -1=auto)"),
+    _num(
+        "compiler_prefill_max_states",
+        0,
+        "Compiler-tree neural prefill batch width cap (0=auto device-aware; "
+        "diagnostic only, matches ModelBuildConfig default so it is inert "
+        "unless explicitly overridden)",
+    ),
 )
 
 LEVER_BY_KEY: dict[str, LeverSpec] = {spec.key: spec for spec in LEVER_FLAGS}

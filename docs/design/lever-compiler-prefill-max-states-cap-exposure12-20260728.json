@@ -1,0 +1,115 @@
+{
+  "finding": "compiler_prefill_max_states_cap_no_wall_clock_effect",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "Iteration 3 of the great-dirac-w0ytk7 autonomous loop. Iterations 1-2 twice-replicated that the exposure12 quality-champion smoke suite genuinely cannot finish inside decode_timeout_seconds=30 on this hardware/config even after two real fixes (lexer/scanner cache #1173; deadline-swallow fix landed as 30d8dd9). Both prior docs' own next-steps pointed at compiler_ms (build_completion_forest, the Node-bridge grammar-validation round trip) as the actual remaining cost, and decode-compiler-tree-lexer-cache-hero-rerun-20260728.md separately reported compiler_prefill_batches growing 3->17 and 4->33 across its before/after comparison. This session asks the natural next falsifiable question directly motivated by that growth: is the neural prefill-batch width itself (ModelBuildConfig.compiler_prefill_max_states, which chunks the compiler-tree's per-position child-scoring denoiser calls) now a material contributor to wall time, such that bounding it would let the hero/callout/button records finish sooner?",
+  "hypothesis": "Capping compiler_prefill_max_states to 1 (forcing one ambiguous grammar state per neural prefill batch, i.e. scripts/run_perf_matrix.py's existing C9 arm) reduces latency_ms_p50/p95 and/or changes decode_outcome away from runtime_timeout for the exposure12 champion's 3 isolated smoke records under decode_timeout_seconds=30, relative to the default auto-batched arm (max_states=0, CPU default 4).",
+  "why_no_new_decode_machinery": "compiler_prefill_max_states and compiler_prefill_token_budget already exist as ModelBuildConfig fields (twotower.py:487-488) and are already swept as a lever pair by scripts/run_perf_matrix.py's C9 (serial, max_states=1) vs C10 (auto, max_states=0) experiments -- no new decode-time code was written. The only gap was CLI/lever plumbing: scripts/evaluate_model.py has no --compiler-prefill-max-states flag and the key was not registered in src/slm_training/flags/levers.py's LEVER_BY_KEY (ruleset_from_mapping rejects unregistered keys), so scripts/evaluate_model.py --flags-json could not reach it. Fixed with a single-line lever registration (default 0, byte-identical to the existing ModelBuildConfig default, so an empty ruleset is unaffected) -- the same tiny, reversible, default-off pattern as every other entry in LEVER_FLAGS.",
+  "lever_added": {
+    "file": "src/slm_training/flags/levers.py",
+    "change": "Registered compiler_prefill_max_states as a NUMBER lever, default 0 (auto/device-aware, matches ModelBuildConfig.compiler_prefill_max_states's own default), diagnostic-only per its description string.",
+    "regression_tests_added": "tests/test_flags/test_openfeature_experiments.py gains test_compiler_prefill_max_states_lever_default_matches_config_default (empty ruleset leaves the field at its byte-identical default) and test_compiler_prefill_max_states_lever_overridable (apply_levers_from_mapping can set it to 1)",
+    "version_bump": "harness.flags v1 -> v2"
+  },
+  "reproduction": {
+    "method": "Byte-identical recipe to decode-compiler-tree-deadline-swallow-finding.md and both prior iteration docs: rebuild lever_exposure12_v1 fixture, train the identical scratch checkpoint, evaluate each of the 3 smoke records in isolation (--eval-limit 1 --eval-offset 0|1|2), once per arm.",
+    "env_setup": "env -u NODE_OPTIONS for build/train/eval commands (ambient NODE_OPTIONS=\"--import tsx\" breaks plain node/npm invocations); Node bridge deps already installed from a prior iteration.",
+    "build_train_data_cmd": "python -m scripts.build_train_data --source fixture --profile strict --max-records-per-parent 12 --version lever_exposure12_v1 --output-root outputs/data/train",
+    "train_cmd": "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --context-backend scratch --steps 16 --batch-size 2 --lr 1e-3 --structural-bias 1.5 --seed 47 --run-id exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47 --no-sync-checkpoints --device cpu",
+    "checkpoint_sha256": "cadeb1d346d863e5a727a64847e59bfcb5c38db65fd6d5e3ef8c996c757539e9",
+    "checkpoint_sha256_matches_prior_docs": true,
+    "eval_cmd_template_baseline": "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset <0|1|2>",
+    "eval_cmd_template_capped": "same as baseline plus --flags-json '{\"compiler_prefill_max_states\": 1}'",
+    "code_git_sha": "30d8dd9aa180ebb10f8b2aa8fef8a8f700c625d7",
+    "code_dirty": true,
+    "note_on_baseline": "code_git_sha is HEAD at session start (iteration 2's deadline-swallow fix, 30d8dd9, is included); code_dirty=true because this session's lever registration is applied but not yet committed at eval time"
+  },
+  "measured_per_record": [
+    {
+      "record": "smoke_hero_01",
+      "eval_offset": 0,
+      "baseline_max_states_0_auto": {
+        "decode_outcome": "runtime_timeout",
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 30000.64,
+        "latency_ms_p95": 30000.64
+      },
+      "capped_max_states_1_serial": {
+        "decode_outcome": "runtime_timeout",
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 30200.44,
+        "latency_ms_p95": 30200.44
+      },
+      "delta_latency_ms_p50": 199.8
+    },
+    {
+      "record": "smoke_button_01",
+      "eval_offset": 1,
+      "baseline_max_states_0_auto": {
+        "decode_outcome": "runtime_timeout",
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 30000.55,
+        "latency_ms_p95": 30000.55
+      },
+      "capped_max_states_1_serial": {
+        "decode_outcome": "runtime_timeout",
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 30000.41,
+        "latency_ms_p95": 30000.41
+      },
+      "delta_latency_ms_p50": -0.14
+    },
+    {
+      "record": "smoke_callout_01",
+      "eval_offset": 2,
+      "baseline_max_states_0_auto": {
+        "decode_outcome": "runtime_timeout",
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 30000.49,
+        "latency_ms_p95": 30000.49
+      },
+      "capped_max_states_1_serial": {
+        "decode_outcome": "runtime_timeout",
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 30100.39,
+        "latency_ms_p95": 30100.39
+      },
+      "delta_latency_ms_p50": 99.9
+    }
+  ],
+  "result": "REJECT",
+  "decision": "REJECT the hypothesis. Capping compiler_prefill_max_states to 1 (forcing serial, one-ambiguous-state-per-batch neural prefill scoring, run_perf_matrix.py's existing C9 arm) changes neither decode_outcome (all 6 runs across both arms report runtime_timeout) nor latency_ms_p50 in any consistent or material direction (deltas of -0.14ms, +99.9ms, +199.8ms against a 30000ms wall -- noise-scale, not a trend, and if anything the capped arm is marginally slower on 2 of 3 records). Both arms used the byte-identical cadeb1d3... checkpoint, confirming this is a same-model comparison.",
+  "interpretation": "This is exactly what the code predicts on inspection, and this run confirms it empirically rather than by argument alone: compiler_ms (the timer wrapping build_completion_forest, the ~97% wall-clock sink identified in decode-compiler-tree-deadline-swallow-finding.md) is recorded in twotower.py around the build_completion_forest call only (line ~10341); compiler_prefill_max_states instead bounds a *separate* denoiser-forward batching loop inside _select_compiler_path (twotower.py ~9797-9847), timed under trie_ms, which both prior docs' isolated-record measurements already showed was negligible (67-72ms total, versus compiler_ms's ~29200ms). Bounding a batch-width knob on a sub-1% cost cannot move a 97%-dominated wall-clock outcome. decode-compiler-tree-lexer-cache-hero-rerun-20260728.md's compiler_prefill_batches 3->17 / 4->33 growth (used to motivate this session's hypothesis) tracks the number of decode-loop iterations x per-iteration prefill chunking, not the compiler_ms sink itself -- it is a correlated symptom of more grammar-forest positions being explored, not a cost driver in its own right.",
+  "side_finding_decode_stats_unavailable_for_timeouts": "Confirms and extends decode-compiler-tree-deadline-fix-applied-rerun-20260728.md's decode_stats_populated=false observation: none of this session's 6 eval runs (all outcome=runtime_timeout post iteration-2's fix) populated metrics['decode_stats'] at all -- the key is entirely absent from the suite JSON, not merely zeroed. Root cause (read, not further modified this session): eval_runner.py's per-chunk timeout handler (line ~1161) does `stats = getattr(exc, 'decode_stats', None)` expecting the propagated TimeoutError to carry a `.decode_stats` attribute, but nothing in the codebase (check_decode_deadline's bare `raise TimeoutError(...)`, nor the SIGALRM handler's `raise TimeoutError(...)`) ever sets that attribute -- grep-confirmed zero matches for `.decode_stats =` anywhere in src/slm_training. This means the fixed-and-honest runtime_timeout classification (iteration 2's genuine win) came at the cost of losing per-record compiler_ms/compiler_prefill_batches/trie_ms telemetry for exactly the records that most need root-cause attribution. This session's REJECT verdict above is therefore based on the only telemetry still available post-fix (latency_ms_p50/p95, decode_outcome), not on a direct before/after compiler_ms comparison -- a materially weaker evidence base than iteration 1's pre-fix isolated-record diagnostic, and worth fixing before the next latency-attribution session.",
+  "scope_note": "No claim about the exposure12 champion's quality or promotion status is made or implied. No decode/architecture behavior changed for any default-configured caller -- compiler_prefill_max_states's ModelBuildConfig default (0=auto) is unchanged and the new lever registry entry's default matches it exactly, so this change is inert unless a caller explicitly passes --flags-json or OPENUI_FLAGS_JSON/PATH.",
+  "non_goals": [
+    "No performance/latency improvement claimed or found",
+    "No re-investigation of build_completion_forest's own per-call cost breakdown (Node-bridge round-trip vs candidate-set size vs cache misses -- still open from decode-compiler-tree-lexer-cache-hero-rerun-20260728.md's next-steps item 2)",
+    "No fix to the decode_stats-on-timeout gap identified above -- flagged as a side finding, not remediated this session (would need its own regression test and version bump, out of scope for a diagnostic sweep)",
+    "No promotion, checkpoint sync, or --ship-gates claim",
+    "No multi-rep confirmation (n=1 rep per record per arm, matching all three prior docs' own protocol)"
+  ],
+  "next_steps": [
+    "Fix the decode_stats-on-timeout gap (attach partial DecodeStats to the propagated TimeoutError, or read the active stats via get_active_stats() in the except-TimeoutError handler before it is cleared) so future latency-attribution sessions can compare compiler_ms/compiler_prefill_batches directly instead of only latency_ms_p50",
+    "With that telemetry restored, directly instrument build_completion_forest's own internal cost (Node-bridge round-trip time vs candidate-set size vs cache hit/miss) -- this remains the actual unexplored lever for finishing inside the 30s wall, not compiler-tree batch width",
+    "If a genuine wall-clock lever is eventually found, it should still land as a default-off diagnostic arm (matching this session's and run_perf_matrix.py's existing convention), never a default serving-behavior change, per AGENTS.md's decode invariants"
+  ],
+  "tests": {
+    "targeted_regression": "python -m pytest -q tests/test_flags/test_openfeature_experiments.py",
+    "targeted_regression_result": "10 passed in 0.15s"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "30d8dd9aa180ebb10f8b2aa8fef8a8f700c625d7",
+    "code_dirty": true,
+    "components": {
+      "harness.flags": "v2",
+      "model.twotower": "v262",
+      "harness.model_build.eval": "v63"
+    },
+    "stamped_at": "2026-07-28T02:24:00Z"
+  },
+  "captured_at": "2026-07-28T02:30:00Z",
+  "cleanup_note": "The lever_exposure12_v1 train-data rebuild and the scratch checkpoint used for this diagnostic are not committed (outputs/ is gitignored; the auto-published copy under src/slm_training/resources/data/train/lever_exposure12_v1 is removed after these runs since it is reproduction scaffolding, not new curated training data -- same convention as all three prior docs in this chain)."
+}
