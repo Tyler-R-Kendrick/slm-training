@@ -2310,6 +2310,12 @@ def build_completion_forest(
             domain = GrammarCapabilityAdapterV1(get_pack()).completion_domain(request)
             if cache is not None:
                 cache[cache_key] = domain
+    except TimeoutError:
+        # A cooperative decode-deadline TimeoutError (see
+        # decode_stats.check_decode_deadline) must propagate as a timeout,
+        # not be masqueraded as "the grammar has no legal continuation
+        # here". See decode-compiler-tree-deadline-swallow-finding.md.
+        raise
     except Exception:  # noqa: BLE001 - constrained callers fail closed below
         return CompletionForest((), "none")
     if isinstance(domain, UnsupportedCapabilityV1) or domain.status != "complete":

@@ -1,0 +1,77 @@
+{
+  "finding": "compiler_tree_deadline_swallow_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "Apply the proposed_fix_sketch from decode-compiler-tree-deadline-swallow-finding.md (PR #1171): (1) re-raise TimeoutError before the bare `except Exception` in build_completion_forest so a cooperative-deadline timeout inside completion_domain() is never masqueraded as an empty completion forest; (2) add check_decode_deadline() to the compiler-tree per-position loop in _compiler_ltr_decode_one, matching the LTR-repair and MaskGIT loops that already got this in PR #1167 (model.twotower v261).",
+  "change": {
+    "files": [
+      "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+      "src/slm_training/models/twotower.py"
+    ],
+    "summary": [
+      "compiler_draft.py build_completion_forest: added `except TimeoutError: raise` immediately before the existing `except Exception: return CompletionForest((), \"none\")` around the completion_domain() call. This matches the exact idiom already used elsewhere in twotower.py (_canonical_valid_openui, the LTR pick_constrained_token wrapper) for the same reason: a cooperative-deadline TimeoutError must propagate, not be classified as 'no legal continuation here'.",
+      "twotower.py _compiler_ltr_decode_one: added `check_decode_deadline()` at the head of the `while len(prefix) < length and prefix[-1] != self.tokenizer.eos_id:` loop (before build_completion_forest is called each position), identical in placement/comment style to the existing checks in the LTR-repair loop (~line 4906) and the MaskGIT loop (~line 13266). _compiler_ltr_decode_batch calls _compiler_ltr_decode_one per row in a plain for-loop with no try/except of its own, so this single check covers both the batch and single-row compiler-tree decode paths."
+    ],
+    "why_safe": "Both changes are additive fail-fast checks on an already-cooperative deadline mechanism (decode_stats.check_decode_deadline/set_decode_deadline); neither widens the legal completion set nor changes ranking -- when the deadline has not elapsed, check_decode_deadline() is a no-op, and the TimeoutError re-raise only changes which exception type propagates out of build_completion_forest, not the returned CompletionForest for any non-timeout code path (proven by the non-timeout ValueError regression test)."
+  },
+  "reproduction": {
+    "env_setup": [
+      "python3.12 -m venv .venv-autotrain",
+      ".venv-autotrain/bin/pip install --only-binary=:all: --index-url https://download.pytorch.org/whl/cpu \"torch>=2.2,<2.6\"",
+      ".venv-autotrain/bin/pip install --no-deps -e .",
+      ".venv-autotrain/bin/pip install \"pytest>=8,<9\" \"pytest-asyncio>=0.23,<2\" \"ruff>=0.9,<0.16\" \"numpy>=1.26,<3\" \"httpx>=0.27,<1\" \"fastapi>=0.110,<1\" \"lark>=1.1,<2\" \"openfeature-sdk>=0.10,<1\" \"pydantic>=2.7,<3\" \"PyYAML>=6,<7\"",
+      "cd src/apps/openui_bridge && NODE_OPTIONS= npm ci"
+    ],
+    "sandbox_note": "NODE_OPTIONS is cleared only because this sandbox's ambient NODE_OPTIONS=\"--import tsx\" --max-old-space-size=8192 is malformed for a plain `node` invocation; unrelated to this fix, same caveat as the lexer-cache fix doc."
+  },
+  "unit_tests": {
+    "new_file": "tests/test_dsl/test_grammar_fastpath_deadline.py",
+    "committed": true,
+    "n_tests": 3,
+    "tests": [
+      "test_build_completion_forest_propagates_deadline_timeout -- monkeypatches GrammarCapabilityAdapterV1.completion_domain to raise TimeoutError; asserts build_completion_forest re-raises it (not swallowed to an empty forest).",
+      "test_build_completion_forest_still_fails_closed_on_other_errors -- same monkeypatch shape but raises ValueError; asserts build_completion_forest still returns coverage='none', paths=() -- proves only the TimeoutError case changed behavior.",
+      "test_compiler_ltr_decode_one_checks_decode_deadline -- builds a real TwoTowerModel (compiler_decode_mode='tree'), arms a 0.01s cooperative deadline via set_decode_deadline and sleeps past it, then asserts _compiler_ltr_decode_one raises TimeoutError instead of running to completion."
+    ],
+    "result_after_fix": "3 passed in 3.01s (NODE_OPTIONS= .venv-autotrain/bin/python -m pytest -q tests/test_dsl/test_grammar_fastpath_deadline.py)",
+    "sanity_check_not_vacuous": "all 3 tests target behavior that did not exist before this change (the TimeoutError re-raise and the loop-head deadline check); the non-timeout ValueError test proves the fix is scoped to TimeoutError specifically, not a broader change to the except-Exception fallback."
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_models/test_compiler_decode.py (targeted node IDs: test_canonical_valid_openui_propagates_decode_deadline, test_compiler_singleton_bypass_requires_complete_coverage, test_compiler_tree_batches_only_ambiguous_prefills_with_bound, test_compiler_empty_forest_records_bounded_dead_end_trace)",
+      "result": "5 passed in 3.08s",
+      "note": "full unfiltered file (200+ tests, many training_loss() torch forward passes through the Node DSL bridge) exceeded the 3-minute run cap in this sandbox and was not used as evidence; ran the compiler-tree/deadline-relevant node IDs directly instead. Before installing openui_bridge node_modules, `pytest -x` on this file failed immediately with a pre-existing environment error (RuntimeError: Install bridge deps: cd .../openui_bridge && npm ci) unrelated to this change -- confirms earlier broad failures in this session were environment setup, not this fix."
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/test_decode_deadline.py tests/test_dsl/test_grammar_fastpath_lexer_cache.py",
+      "result": "10 passed in 9.63s"
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath_deadline.py -v",
+      "result": "3 passed in 3.01s"
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean (compiler_draft.py, twotower.py, test_grammar_fastpath_deadline.py)",
+    "verify_version_stamps_check": "ok (vs HEAD; 4 changed file(s), 1 component(s) touched) -- model.twotower bumped v261 -> v262 (its registered paths include both compiler_draft.py and twotower.py)",
+    "verify_decode_invariants": "exit 0, agent_surfaces/canonical_defaults/strict_policies/weakening_levers unchanged",
+    "repo_policy": "ok (tracked + untracked)"
+  },
+  "interpretation": "Closes both items of the finding's proposed_fix_sketch that touch the constrained-decode safety net (items 1 and 2; item 3, a full multi-rep isolated eval re-run of the exposure12 hero to check whether decode_outcome shifts, is explicitly deferred -- see next_steps). A deadline TimeoutError raised while build_completion_forest is waiting on the Node DSL bridge now propagates as a classified timeout (caught by eval_runner's own `except TimeoutError` at the harness boundary) instead of being recorded as constrained_dead_ends+=1 / empty_completion_forest, and the compiler-tree per-position loop now fails closed on an elapsed deadline exactly like its LTR-repair and MaskGIT siblings.",
+  "scope_note": "No train/eval run, no checkpoint, no --ship-gates scoreboard -- harness-internal correctness fix with unit-test coverage, not a readiness or latency-improvement claim. This does NOT re-measure whether the exposure12 quality-champion hero's decode_outcome shifts from fallback_output to a correctly-classified runtime_timeout (or a real on-time completion) -- that re-run (finding's proposed_fix_sketch item 3) is the next lever, not done this session.",
+  "next_steps": [
+    "Re-run the finding's exact isolated per-record eval protocol (evaluate_model --eval-limit 1 --eval-offset {0,1,2} on the exposure12 quality-champion checkpoint, decode-timeout-seconds=30) now that both fix-sketch items are applied, to see whether decode_outcome reclassifies from fallback_output/empty_completion_forest to runtime_timeout (if genuinely out of budget) or to a real on-time completion (if the swallow was masking otherwise-fast decode). This is PR #1171's own next-step #3 and is the most direct falsification test of this fix's practical effect.",
+    "Separately, PR #1173's lexer-cache fix already measured ~2-2.1x compiler_ms wall-time reduction in isolation; combining that with this deadline fix and re-running the seeded multi-rep lever-hard-decode-timeout-wall protocol would give the cleanest signal on whether the exposure12 hero now finishes inside decode_timeout_seconds=30."
+  ],
+  "cleanup_note": ".venv-autotrain (python3.12 venv) and src/apps/openui_bridge/node_modules/ created for this session are not committed (both gitignored).",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v262"
+    }
+  },
+  "captured_at": "2026-07-28T11:55:00Z"
+}
