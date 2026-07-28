@@ -104,13 +104,17 @@ against it):
 
 ## Scope / next steps
 
-Not attempted this session (`proposed_fix_sketch` item 3): re-running the
-isolated per-record `exposure12` protocol (PR #1178 / #1182) against this
-fix, to see whether `decode_outcome` correctly reclassifies as
-`runtime_timeout` or shifts to an on-time completion. That needs a fresh
-checkpoint rebuild plus the AgentV/Node DSL bridge (`npm ci`) and three
-`MAX_RUN_MINUTES`-bounded eval runs — left for a follow-up scheduled
-iteration, matching how PR #1173's lexer-cache fix and PR #1178's rerun were
-split across sessions. Also still open: why each `build_completion_forest`
-call costs ~7-10s of wall time on average even after the lexer-cache fix
-(Node-bridge round-trip vs. candidate-set size vs. cache misses unisolated).
+**Update (follow-up scheduled iteration):** `proposed_fix_sketch` item 3 —
+re-running the isolated per-record `exposure12` protocol (PR #1178 / #1182)
+against this fix — is now answered in
+[`decode-compiler-tree-deadline-swallow-fix-eval-rerun.md`](decode-compiler-tree-deadline-swallow-fix-eval-rerun.md):
+`decode_outcome` reclassifies `fallback_output` → `runtime_timeout` on all
+three smoke records as predicted, with a previously-undocumented cost —
+`smoke_callout_01`, the one record with `meaningful_program_v1_rate=1.0` in
+every prior finding in this chain, now scores `0.0` since its `TimeoutError`
+propagates before any fallback output is produced.
+
+Still open: why each `build_completion_forest` call costs ~7-10s of wall
+time on average even after the lexer-cache fix (Node-bridge round-trip vs.
+candidate-set size vs. cache misses unisolated), and whether the
+offset-2 meaningful-output regression warrants its own follow-up.

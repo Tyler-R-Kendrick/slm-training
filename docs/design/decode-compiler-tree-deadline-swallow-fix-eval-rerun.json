@@ -1,0 +1,75 @@
+{
+  "finding": "compiler_tree_deadline_swallow_fix_eval_rerun",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "Re-run the isolated per-record exposure12 eval protocol (PR #1178/#1182) against PR #1183's deadline-swallow fix, answering that fix doc's own scope/next-steps item: does decode_outcome correctly reclassify as runtime_timeout, or shift to an on-time completion?",
+  "reproduction": {
+    "code_git_sha": "90273d6a46f2dd8880a081080c2c5430a66601af",
+    "code_dirty": false,
+    "checkpoint_sha256": "cadeb1d346d863e5a727a64847e59bfcb5c38db65fd6d5e3ef8c996c757539e9",
+    "train_data_version": "lever_exposure12_v1",
+    "train_data_record_count": 107,
+    "checkpoint_run_id": "exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47",
+    "train_recipe": "steps=16 batch_size=2 lr=1e-3 structural_bias=1.5 seed=47 model=twotower context_backend=scratch device=cpu",
+    "eval_recipe": "suite=smoke grammar_constrained=true decode_timeout_seconds=30 seed=47 constraint_debt_routing_mode=fixed_asap run_class=scratch_matrix eval_limit=1",
+    "env_setup": [
+      "python3.12 -m venv .venv-diag",
+      ".venv-diag/bin/pip install --quiet -e .",
+      ".venv-diag/bin/pip install --quiet \"pytest>=8.0,<9\" \"pytest-asyncio>=0.23,<2\" \"ruff>=0.9,<0.16\"",
+      ".venv-diag/bin/pip install --quiet \"torch>=2.2,<2.6\" --index-url https://download.pytorch.org/whl/cpu",
+      "env -u NODE_OPTIONS npm ci --silent",
+      "(cd src/apps/openui_bridge && env -u NODE_OPTIONS npm ci --silent)"
+    ]
+  },
+  "measured": [
+    {
+      "record": "smoke_hero_01",
+      "eval_offset": 0,
+      "decode_outcome_before_fix": "fallback_output",
+      "decode_outcome_after_fix": "runtime_timeout",
+      "meaningful_program_v1_rate_before_fix": 0.0,
+      "meaningful_program_v1_rate_after_fix": 0.0,
+      "total_ms_before_fix": 30003.0,
+      "total_ms_after_fix": 30000.36
+    },
+    {
+      "record": "smoke_button_01",
+      "eval_offset": 1,
+      "decode_outcome_before_fix": "fallback_output",
+      "decode_outcome_after_fix": "runtime_timeout",
+      "meaningful_program_v1_rate_before_fix": 0.0,
+      "meaningful_program_v1_rate_after_fix": 0.0,
+      "total_ms_before_fix": 30003.8,
+      "total_ms_after_fix": 30000.66
+    },
+    {
+      "record": "smoke_callout_01",
+      "eval_offset": 2,
+      "decode_outcome_before_fix": "fallback_output",
+      "decode_outcome_after_fix": "runtime_timeout",
+      "meaningful_program_v1_rate_before_fix": 1.0,
+      "meaningful_program_v1_rate_after_fix": 0.0,
+      "total_ms_before_fix": 30003.7,
+      "total_ms_after_fix": 30067.37,
+      "note": "regression: the one previously-meaningful record in this 3-record smoke suite loses its parseable output once the timeout propagates immediately instead of falling through to the pre-fix fallback path"
+    }
+  ],
+  "before_fix_source": "decode-compiler-tree-lexer-fix-eval-rerun-finding.md / PR #1182 (PR #1173's lexer-cache fix applied, PR #1183's deadline-swallow fix not yet applied)",
+  "interpretation": "Confirms decode-compiler-tree-deadline-swallow-fix.md's predicted effect exactly: decode_outcome reclassifies fallback_output -> runtime_timeout on all 3 records; none shift to an on-time completion, meaning the exposure12 hero genuinely needs more compiler-tree search than fits in decode_timeout_seconds=30 at this steps=16 smoke scale (compute-bound, not a classification artifact). However this reclassification has a measured, previously-undocumented cost: smoke_callout_01 (offset 2) had meaningful_program_v1_rate=1.0 in every prior finding in this chain (#1173/#1178/#1182, before and after the lexer-cache fix) via its fallback_output path; post-fix that record's TimeoutError propagates immediately and it now scores 0.0 like the other two. The fix trades a known-wrong classification for a known-correct one, at the cost of the only previously-passing record in this 3-record smoke suite.",
+  "ship_gate_impact": "None. All 3 records already failed every smoke:* ship-gate criterion pre-fix except smoke:decode_timeout_count (already failing, decode_timeout_count=1); post-fix that criterion still fails identically (actual=1, expected=0). The suite was already categorically failing under honest-ship-eval's gates before this fix and remains so after -- no ship/no-ship determination changes.",
+  "scope_note": "n=3 records, 1 rep each -- identical scope to every prior finding in this chain. No code changed this session (measurement-only); .venv-diag and reproduction data-dir copies not committed.",
+  "next_steps": [
+    "Investigate whether the pre-fix fallback_output path for smoke_callout_01 was itself relying on the swallow bug to produce its meaningful output, or whether some other latent difference explains the loss -- decide if this regression warrants its own follow-up.",
+    "Still open, carried forward from decode-compiler-tree-deadline-swallow-fix.md's own next_steps item 2: why each build_completion_forest call costs the wall-clock it does even post lexer-cache fix (Node-bridge round-trip vs. candidate-set size vs. cache misses remain unisolated)."
+  ],
+  "cleanup_note": ".venv-diag created for this session is not committed (gitignored); reproduction copies of outputs/data/train/lever_exposure12_v1 and the checkpoint run directory are not committed.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "90273d6a46f2dd8880a081080c2c5430a66601af",
+    "code_dirty": false,
+    "components": {},
+    "note": "Measurement-only session; python -m scripts.verify_version_stamps --check reports 0 components touched (docs-only change)."
+  },
+  "captured_at": "2026-07-28T06:33:00Z"
+}
