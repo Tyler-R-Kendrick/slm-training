@@ -41,8 +41,8 @@ python3.12 -m venv .venv-diag
 .venv-diag/bin/pip install --quiet -e .
 .venv-diag/bin/pip install --quiet "pytest>=8.0,<9" "pytest-asyncio>=0.23,<2" \
   "ruff>=0.9,<0.16" "torch>=2.2,<2.6" --extra-index-url https://download.pytorch.org/whl/cpu
-npm ci --silent                              # repo root: AgentV SDK, needed by evaluate_model's publish step
-cd src/apps/openui_bridge && npm ci --silent # DSL bridge, needed for lang_core.parse
+npm ci --silent                                 # repo root: AgentV SDK, needed by evaluate_model's publish step
+(cd src/apps/openui_bridge && npm ci --silent)  # DSL bridge, needed for lang_core.parse -- subshell so cwd stays repo root
 ```
 
 (`NODE_OPTIONS` unset for all `node`/`npm` invocations — same sandbox artifact
@@ -50,12 +50,12 @@ noted in PR #1172/#1173: the ambient `--import tsx --max-old-space-size=8192`
 is invalid for a plain `node` call.)
 
 ```bash
-python -m scripts.build_train_data --source fixture --profile strict \
+.venv-diag/bin/python -m scripts.build_train_data --source fixture --profile strict \
   --max-records-per-parent 12 --version lever_exposure12_v1 \
   --output-root outputs/data/train
 # 107 records, 5 abstraction_ladder -- matches PR #1171 exactly
 
-python -m scripts.train_model \
+.venv-diag/bin/python -m scripts.train_model \
   --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 \
   --model twotower --context-backend scratch --steps 16 --batch-size 2 \
   --lr 1e-3 --structural-bias 1.5 --seed 47 \
@@ -63,16 +63,18 @@ python -m scripts.train_model \
   --no-sync-checkpoints --device cpu
 # completed well inside MAX_RUN_MINUTES=3
 
-# For each --eval-offset 0, 1, 2 (isolated, one record per run):
-python -m scripts.evaluate_model \
-  --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 \
-  --suite smoke \
-  --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 \
-  --model twotower --device cpu \
-  --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt \
-  --grammar-constrained --decode-timeout-seconds 30 --seed 47 \
-  --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix \
-  --eval-limit 1 --eval-offset <0|1|2>
+# Each offset run in isolation (one record per run), explicit not templated:
+for offset in 0 1 2; do
+  .venv-diag/bin/python -m scripts.evaluate_model \
+    --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 \
+    --suite smoke \
+    --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 \
+    --model twotower --device cpu \
+    --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt \
+    --grammar-constrained --decode-timeout-seconds 30 --seed 47 \
+    --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix \
+    --eval-limit 1 --eval-offset "$offset"
+done
 # each run: ~36.2-36.5s wall (well inside MAX_RUN_MINUTES=3 per invocation)
 ```
 
@@ -102,13 +104,18 @@ same `decode_stats` fields already in `src/slm_training/models/decode_stats.py`.
 
 ## What changed and what didn't
 
-- **`compiler_ms` did NOT drop in aggregate.** 97.3/97.9/97.3% before vs.
-  97.5/n-a/96.9% after — still ~97% of the entire 30s budget spent inside
-  `compiler_ms` on both records where `decode_stats` was captured this
-  session. The lexer-cache fix does not reduce the *share* of wall time the
-  compiler-tree path consumes.
-- **`forwards_count`/`compiler_prefill_batches` increased substantially**:
-  offset 0 went 3 → 17 (5.7x), offset 2 went 4 → 30 (7.5x). This is the
+- **`compiler_ms`'s *share* of wall time did not drop.** 97.3/97.9/97.3%
+  before vs. 97.5/n-a/96.9% after — still ~97% of the entire 30s budget spent
+  inside `compiler_ms` on both records where `decode_stats` was captured this
+  session. (The raw `compiler_ms_sum` across the two comparable records,
+  offsets 0 and 2, is 58396.187ms before vs. 58317.252ms after — a ~79ms/0.1%
+  decrease, i.e. noise-level, not a meaningful drop. The claim is about
+  *share*, not the raw sum.) The lexer-cache fix does not reduce the share of
+  wall time the compiler-tree path consumes.
+- **`forwards_count` (= `compiler_prefill_batches` in this decode mode — one
+  `build_completion_forest` call per forward step, per PR #1171's own
+  characterization) increased substantially**: offset 0 went 3 → 17 (5.7x),
+  offset 2 went 4 → 30 (7.5x). This is the
   visible fingerprint of the fix working as designed — each individual
   `build_completion_forest` call is cheaper, so more of them fit inside the
   same ~29s window before the deadline cuts in (the decoded prefix at the
@@ -168,9 +175,9 @@ fix applied, matching PR #1171's own footnote that 1 of 3 historical reps in
 No harness code was touched this session (`engine.py`, `compiler_draft.py`,
 `twotower.py` untouched, per the task's explicit measurement-only rule).
 
-```
-python -m scripts.verify_version_stamps --check
-# version-stamps: ok (0 component(s) touched)
+```console
+$ python -m scripts.verify_version_stamps --check
+version-stamps: ok (0 component(s) touched)
 ```
 
 ## Validation
@@ -180,6 +187,22 @@ python -m scripts.verify_version_stamps --check
 - `git diff --check` — clean (no whitespace errors).
 - `ruff check` on touched files — no Python files touched this session (only
   these two new docs), so this is a no-op.
+
+### AgentEvals / AgentV bundle
+
+Each `evaluate_model` invocation above ran with its default
+`publish_agentv=True` (`src/slm_training/harnesses/model_build/eval_runner.py`),
+so every run wrote its own AgentEvals JSONL + a `version_stamp`
+(`stamp_schema: version_stamp/v1`) under that run's `outputs/runs/.../agentv/`
+tree via `slm_training.evals.agentv.publish_model_evaluation`. Per this
+diagnostic thread's established convention (PR #1171/#1172/#1173/#1178/#1182),
+`outputs/` is gitignored and per-run scratch artifacts are not committed — so,
+same as those four predecessor docs, no AgentEvals/AgentV bundle is linked or
+committed here. The `verify_version_stamps --check` output above is the
+durable record that 0 watched components changed this session; the
+per-record `metrics["decode_stats"]` fields quoted in the comparison tables
+are copied directly from each run's own AgentEvals-published metrics, not
+re-derived or hand-computed.
 
 ## Next steps
 
