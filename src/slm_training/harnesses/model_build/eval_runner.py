@@ -1055,13 +1055,23 @@ def evaluate(
             with collect_decode_stats() as stats:
                 requests = _requests_for(chunk)
                 try:
-                    predictions = generate_batch_requests(
-                        requests, max_len=canvas_cap, **generation_overrides
-                    )
-                except TypeError:
-                    predictions = generate_batch_requests(
-                        requests, **generation_overrides
-                    )
+                    try:
+                        predictions = generate_batch_requests(
+                            requests, max_len=canvas_cap, **generation_overrides
+                        )
+                    except TypeError:
+                        predictions = generate_batch_requests(
+                            requests, **generation_overrides
+                        )
+                except BaseException as exc:
+                    # Attach the DecodeStats accumulated so far (compiler_ms,
+                    # compiler_prefill_batches, ...) onto a propagating
+                    # TimeoutError/exception so the except-handler below
+                    # (which reads exc.decode_stats) still gets partial
+                    # diagnostics instead of silently losing them. Mirrors
+                    # TwoTowerOpenUI.generate_with_stats's own attach-on-raise.
+                    setattr(exc, "decode_stats", stats)
+                    raise
             _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             consume = getattr(plugin, "consume_generation_evidence", None)

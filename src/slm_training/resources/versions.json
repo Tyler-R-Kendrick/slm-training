@@ -7407,7 +7407,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v63",
+      "version": "v64",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7423,9 +7423,15 @@
         "src/slm_training/runtime/telemetry/trace.py",
         "tests/test_runtime_trace.py",
         "tests/test_harnesses/model_build/test_eval_seed.py",
-        "tests/test_harnesses/model_build/test_decode_deadline.py"
+        "tests/test_harnesses/model_build/test_decode_deadline.py",
+        "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v64",
+          "date": "2026-07-28",
+          "note": "_generate_chunk_unbounded's generate_batch_requests branch now attaches the collect_decode_stats() bucket onto a propagating TimeoutError/exception (setattr(exc, 'decode_stats', stats)) before re-raising, mirroring TwoTowerOpenUI.generate_with_stats's existing attach-on-raise. Fixes a regression where runtime_timeout records lost compiler_ms/compiler_prefill_batches telemetry entirely (silent, not just zeroed) once v63's deadline-swallow fix made TimeoutError propagate for real instead of being swallowed as a fake grammar dead-end -- see docs/design/decode-compiler-tree-timeout-telemetry-restore-20260728.md"
+        },
         {
           "version": "v63",
           "date": "2026-07-28",

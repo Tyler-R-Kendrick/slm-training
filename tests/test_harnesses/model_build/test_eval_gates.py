@@ -848,6 +848,58 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
 
 
+def test_evaluate_persists_stats_when_batch_generation_times_out(
+    tmp_path: Path,
+) -> None:
+    """generate_batch_requests callers (e.g. TwoTowerOpenUI's compiler-tree
+    decode path) must also surface partial DecodeStats on a propagated
+    TimeoutError, not just the single-record generate_with_stats path above.
+
+    Regression test: eval_runner.py's collect_decode_stats() block around
+    generate_batch_requests used to let a TimeoutError propagate without
+    attaching .decode_stats, so runtime_timeout records silently lost
+    compiler_ms / compiler_prefill_batches telemetry.
+    """
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="timeout-batch-1",
+        prompt="Copy value",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class TimeoutBatchModel:
+        def generate_batch_requests(
+            self, requests: list[object], **_kwargs: object
+        ) -> list[str]:
+            from slm_training.models.decode_stats import get_active_stats
+
+            stats = get_active_stats()
+            if stats is not None:
+                stats.tokens_emitted += 7
+            raise TimeoutError("decode exceeded")
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="timeout-batch-generation",
+        model_name="twotower",
+        decode_timeout_seconds=1,
+    )
+    metrics = evaluate(config, model=TimeoutBatchModel(), publish_agentv=False)
+    assert metrics["decode_timeout_count"] == 1
+    assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
+
+
 def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"

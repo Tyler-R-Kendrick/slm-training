@@ -1,0 +1,110 @@
+{
+  "finding": "compiler_ms_remains_97pct_of_wall_after_telemetry_restore",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "Iteration 4 of the great-dirac-w0ytk7 autonomous loop. Iteration 3's side finding: since iteration 2's deadline-swallow fix (30d8dd9) made build_completion_forest genuinely raise TimeoutError on a cooperative decode-deadline instead of silently swallowing it as a fake grammar dead-end, the propagated exception no longer carries the .decode_stats attribute eval_runner.py's per-chunk timeout handler (~line 1161) expects (`stats = getattr(exc, 'decode_stats', None)`) -- so per-record compiler_ms/compiler_prefill_batches telemetry became silently absent (not zeroed, entirely missing) from the suite JSON for every runtime_timeout record. This session fixes that regression and reruns the byte-identical isolated-record protocol to see what the restored telemetry actually shows.",
+  "root_cause": "eval_runner.py's _generate_chunk_unbounded has two branches that populate decode_stats on timeout. The generate_with_stats branch (single-record path) already did `except BaseException as exc: setattr(exc, 'decode_stats', stats); raise` at the TwoTowerOpenUI.generate_with_stats call site (twotower.py:13998-14000) -- this is why the existing test_evaluate_persists_stats_when_generation_times_out test passed even pre-fix. The generate_batch_requests branch (the one actually exercised by the exposure12 champion's compiler-tree decode path, since batch_size defaults to >1 whenever generate_batch_requests is callable) had no equivalent attach-on-raise: `with collect_decode_stats() as stats: ... predictions = generate_batch_requests(...)` let any exception (including TimeoutError) propagate straight out of the with-block without ever setting exc.decode_stats, even though `stats` (the live, incrementally-mutated DecodeStats bucket) remained a valid, populated local variable at that point.",
+  "fix": {
+    "file": "src/slm_training/harnesses/model_build/eval_runner.py",
+    "function": "_generate_chunk_unbounded (generate_batch_requests branch)",
+    "change": "Wrap the generate_batch_requests call(s) in `try: ... except BaseException as exc: setattr(exc, 'decode_stats', stats); raise` inside the existing `with collect_decode_stats() as stats:` block, mirroring TwoTowerOpenUI.generate_with_stats's own attach-on-raise pattern. Purely additive: on the non-exception path, behavior and return value are unchanged.",
+    "scope": "Observability only -- no change to decode timing, deadline semantics, outcome classification, or any constrained-decoding invariant. Confirmed against AGENTS.md Non-negotiable architecture invariants before editing: this touches only which fields land in the eval suite JSON after a timeout, not any decoding/scoring/bypass/speculation/CRDT/capability-budget behavior.",
+    "regression_test_added": "tests/test_harnesses/model_build/test_eval_gates.py::test_evaluate_persists_stats_when_batch_generation_times_out (analogous to the existing generate_with_stats timeout test, but exercises the generate_batch_requests branch with a fake model that mutates get_active_stats() then raises bare TimeoutError with no .decode_stats attribute of its own)",
+    "version_bump": "harness.model_build.eval v63 -> v64"
+  },
+  "reproduction": {
+    "method": "Byte-identical recipe to all three prior docs in this chain: rebuild lever_exposure12_v1 fixture, reuse the identical cached scratch checkpoint (sha256 verified unchanged, no retraining needed), evaluate each of the 3 smoke records in isolation (--eval-limit 1 --eval-offset 0|1|2) with the telemetry fix applied.",
+    "env_setup": "env -u NODE_OPTIONS for build/eval commands (ambient NODE_OPTIONS=\"--import tsx\" breaks plain node/npm invocations); Node bridge deps already installed from a prior iteration.",
+    "build_train_data_cmd": "python -m scripts.build_train_data --source fixture --profile strict --max-records-per-parent 12 --version lever_exposure12_v1 --output-root outputs/data/train",
+    "checkpoint_reused_not_retrained": true,
+    "checkpoint_sha256": "cadeb1d346d863e5a727a64847e59bfcb5c38db65fd6d5e3ef8c996c757539e9",
+    "checkpoint_sha256_matches_all_prior_docs": true,
+    "eval_cmd_template": "python -m scripts.evaluate_model --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 --suite smoke --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 --model twotower --device cpu --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt --grammar-constrained --decode-timeout-seconds 30 --seed 47 --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix --eval-limit 1 --eval-offset <0|1|2>",
+    "code_git_sha": "7d94d66823d5168221ab54703bdea1b4eb7a4713",
+    "code_dirty": true,
+    "note_on_dirty": "code_git_sha is HEAD at session start (iteration 3's landed doc, 7d94d66); code_dirty=true because this session's eval_runner.py fix and versions.json bump were applied but not yet committed at eval-run time. The fix was live in the working tree for all three eval runs below (edited and unit-tested before the isolated-record protocol ran)."
+  },
+  "measured_per_record": [
+    {
+      "record": "smoke_hero_01",
+      "eval_offset": 0,
+      "decode_outcome": "runtime_timeout",
+      "meaningful_program_rate": 0.0,
+      "latency_ms_p50": 30100.089,
+      "decode_stats_populated": true,
+      "total_ms_sum": 30100.089,
+      "compiler_ms_sum": 29425.497,
+      "compiler_ms_pct_of_total": 97.76,
+      "trie_ms_sum": 157.356,
+      "backbone_ms_sum": 148.363,
+      "forwards_count_sum": 17,
+      "compiler_prefill_batches_sum": 17,
+      "compiler_prefill_tokens_sum": 4352
+    },
+    {
+      "record": "smoke_button_01",
+      "eval_offset": 1,
+      "decode_outcome": "runtime_timeout",
+      "meaningful_program_rate": 0.0,
+      "latency_ms_p50": 30000.108,
+      "decode_stats_populated": true,
+      "total_ms_sum": 30000.108,
+      "compiler_ms_sum": 28486.422,
+      "compiler_ms_pct_of_total": 94.95,
+      "trie_ms_sum": 905.979,
+      "backbone_ms_sum": 865.189,
+      "forwards_count_sum": 86,
+      "compiler_prefill_batches_sum": 86,
+      "compiler_prefill_tokens_sum": 22016
+    },
+    {
+      "record": "smoke_callout_01",
+      "eval_offset": 2,
+      "decode_outcome": "runtime_timeout",
+      "meaningful_program_rate": 0.0,
+      "latency_ms_p50": 30000.168,
+      "decode_stats_populated": true,
+      "total_ms_sum": 30000.168,
+      "compiler_ms_sum": 29121.048,
+      "compiler_ms_pct_of_total": 97.07,
+      "trie_ms_sum": 371.153,
+      "backbone_ms_sum": 356.106,
+      "forwards_count_sum": 31,
+      "compiler_prefill_batches_sum": 31,
+      "compiler_prefill_tokens_sum": 7936
+    }
+  ],
+  "falsifiable_question": "Does restoring decode_stats telemetry on a propagated TimeoutError reveal that compiler_ms (build_completion_forest's Node-bridge grammar-validation round trip) or something else (trie_ms's neural prefill-batch scoring, backbone_ms) is the dominant remaining cost for the exposure12 champion's 3 timed-out smoke records?",
+  "result": "ANSWERED -- compiler_ms remains completely dominant",
+  "decision": "The telemetry fix is a genuine, low-risk, mechanical observability fix (ACCEPT as a fix) and is not itself a claim about ship readiness. The falsifiable question it unblocks is answered: across all 3 isolated smoke records, compiler_ms accounts for 94.95-97.76% of total_ms, with trie_ms (neural prefill-batch scoring, the cost iteration 3's compiler_prefill_max_states cap targeted) and backbone_ms each under 3% of wall time in every record. This is fully consistent with -- not merely assumed by -- iterations 2 and 3's interpretation sections, but is now measured directly from restored per-record telemetry rather than inferred from latency deltas alone. No decode_outcome changed (all 3 records remain runtime_timeout, as expected: this is an observability fix, not a latency fix).",
+  "interpretation": "compiler_prefill_batches_sum tracks 1:1 with forwards_count_sum in every record (17/17, 86/86, 31/31) confirming iteration 3's read that this counter is a correlated symptom of decode-loop iteration count, not an independent cost driver -- each per-position build_completion_forest call is followed by exactly one prefill batch. The record with the most compiler-tree positions explored (smoke_button_01, 86 forwards) has the lowest compiler_ms percentage (94.95%) because its trie_ms/backbone_ms (905.98ms/865.19ms, both scaling with forwards_count) eat a slightly larger absolute and relative share -- but even there compiler_ms's raw 28486ms dwarfs everything else. There is no record in this sample where a non-compiler_ms cost is anywhere close to competitive. Any future latency-reduction attempt on this suite must target build_completion_forest's own per-call cost (the Node-bridge grammar-validation round trip identified but not yet root-caused in decode-compiler-tree-lexer-cache-hero-rerun-20260728.md's next-steps) -- bounding prefill batch width (iteration 3) or fixing lexer caching (iteration 1) alone cannot move a 95-98%-dominated wall.",
+  "scope_note": "No claim about the exposure12 champion's quality or promotion status. No claim that this telemetry fix changes wall-clock latency or decode_outcome for any record (it does not, by design -- it only restores diagnostic fields on an already-correct TimeoutError classification). No re-investigation of build_completion_forest's own internal cost breakdown (still open).",
+  "non_goals": [
+    "No production ship claim.",
+    "No latency improvement claimed or found.",
+    "No change to decode_timeout_seconds, deadline semantics, or outcome classification.",
+    "No GPU or real-scale training run."
+  ],
+  "next_steps": [
+    "Root-cause build_completion_forest's own per-call cost (the Node-bridge grammar-validation round trip) with the now-restored per-record telemetry as a starting instrument -- e.g. does compiler_ms scale linearly with compiler_prefill_tokens_sum (4352/22016/7936 across the 3 records) or is there a large fixed per-call overhead independent of token count?",
+    "Consider whether the Node-bridge round trip itself (subprocess spawn + JSON marshal per validate() call, per src/slm_training/dsl/lang_core.py's _invoke_once) is amortizable -- a persistent bridge process instead of one-shot subprocess.run per call would be a genuinely new architectural direction, not yet attempted in this doc chain."
+  ],
+  "tests": {
+    "targeted_regression": "python -m pytest -q tests/test_harnesses/model_build/test_eval_gates.py -k \"timeout or stats\" tests/test_harnesses/model_build/test_decode_deadline.py",
+    "targeted_regression_result": "6 passed in 2.00s (env -u NODE_OPTIONS)",
+    "note": "Full test_compiler_decode.py / test_grammar_fastpath.py suites not run (multi-minute real-model-construction cost per repo instructions); this targeted subset covers every test that exercises decode-deadline TimeoutError propagation and decode_stats attachment."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7d94d66823d5168221ab54703bdea1b4eb7a4713",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v64",
+      "model.twotower": "v262"
+    },
+    "stamped_at": "2026-07-28T02:40:00Z"
+  },
+  "captured_at": "2026-07-28T02:40:00Z",
+  "cleanup_note": "outputs/runs/telemetry_restore_offset{0,1,2}/ eval artifacts are scratch (not committed); outputs/data/train/lever_exposure12_v1 rebuild is the same reproducible fixture rebuild all four docs in this chain perform and publish to src/slm_training/resources/data/train/lever_exposure12_v1 (tracked, matches prior docs byte-for-byte per checkpoint sha)."
+}
