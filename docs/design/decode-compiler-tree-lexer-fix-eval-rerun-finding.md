@@ -28,15 +28,15 @@ python3.12 -m venv .venv-diag
 .venv-diag/bin/pip install --quiet -e .
 .venv-diag/bin/pip install --quiet "pytest>=8.0,<9" "pytest-asyncio>=0.23,<2" "ruff>=0.9,<0.16"
 .venv-diag/bin/pip install --quiet "torch>=2.2,<2.6" --index-url https://download.pytorch.org/whl/cpu
-npm ci --silent                                  # repo root -- AgentV SDK publish step
-cd src/apps/openui_bridge && npm ci --silent     # Node DSL bridge
+env -u NODE_OPTIONS npm ci --silent                                  # repo root -- AgentV SDK publish step
+(cd src/apps/openui_bridge && env -u NODE_OPTIONS npm ci --silent)   # Node DSL bridge, subshell so cwd stays at repo root
 
-python -m scripts.build_train_data --source fixture --profile strict \
+env -u NODE_OPTIONS .venv-diag/bin/python -m scripts.build_train_data --source fixture --profile strict \
   --max-records-per-parent 12 --version lever_exposure12_v1 \
   --output-root outputs/data/train
 # 107 records -- matches the original finding exactly
 
-python -m scripts.train_model \
+env -u NODE_OPTIONS .venv-diag/bin/python -m scripts.train_model \
   --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 \
   --model twotower --context-backend scratch --steps 16 --batch-size 2 \
   --lr 1e-3 --structural-bias 1.5 --seed 47 \
@@ -53,15 +53,17 @@ Each of the three smoke records evaluated in isolation, same as the
 original finding:
 
 ```bash
-python -m scripts.evaluate_model \
-  --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 \
-  --suite smoke \
-  --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 \
-  --model twotower --device cpu \
-  --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt \
-  --grammar-constrained --decode-timeout-seconds 30 --seed 47 \
-  --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix \
-  --eval-limit 1 --eval-offset <0|1|2>
+for OFFSET in 0 1 2; do
+  env -u NODE_OPTIONS .venv-diag/bin/python -m scripts.evaluate_model \
+    --test-dir src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2 \
+    --suite smoke \
+    --train-dir src/slm_training/resources/data/train/lever_exposure12_v1 \
+    --model twotower --device cpu \
+    --checkpoint outputs/runs/exp_lever_data_exposure12_s16_lr1e3_bs2_sb15_seed47/checkpoints/last.pt \
+    --grammar-constrained --decode-timeout-seconds 30 --seed 47 \
+    --constraint-debt-routing-mode fixed_asap --run-class scratch_matrix \
+    --eval-limit 1 --eval-offset "$OFFSET"
+done
 ```
 
 `code_git_sha=7bb77c9191dc1410f6b4af10670f81e27ecc43b8`, `code_dirty=false`,
@@ -75,6 +77,7 @@ runs (same checkpoint, three isolated records).
 | smoke_hero_01 (offset 0) | 0.0 → 0.0 | fallback_output → fallback_output | 30006.5 → 30003.0 | 29209.7 → 29188.7 | 3 → **29** | 7 → 46 |
 | smoke_button_01 (offset 1) | 0.0 → 0.0 | fallback_output → fallback_output | 30006.5 → 30003.8 | 29378.1 → 28347.3 | 4 → **102** | 8 → 176 |
 | smoke_callout_01 (offset 2) | 1.0 → 1.0 | fallback_output → fallback_output | 30010.2 → 30003.7 | 29186.4 → 28813.5 | 4 → **51** | 8 → 86 |
+| **sum (3 records)** | -- | -- | 90023.2 → 90010.4 (Δ -12.8, -0.01%) | **87774.2 → 86349.5 (Δ -1424.7, -1.6%)** | 11 → **182** | 23 → 308 |
 
 `dead_ends=1` and `certified_fallbacks=1` on every record, before and
 after, unchanged. Every after-run's `constrained_dead_end_traces[0]` still
@@ -93,8 +96,11 @@ speedup PR #1173 measured directly, compounding across many more steps
 before the deadline lands.
 
 **But this answers the open "next steps" question negatively.**
-`compiler_ms_sum` does *not* drop enough in aggregate: every record still
-consumes 94.5-97.3% of the 30s budget in `compiler_ms`, still lands at
+`compiler_ms_sum` does *not* drop enough in aggregate: summed across all
+three records, `compiler_ms_sum` goes from 87774.2ms before to 86349.5ms
+after (Δ -1424.7ms, -1.6%) while `total_ms_sum` barely moves (90023.2ms →
+90010.4ms, Δ -12.8ms, -0.01%) — both stay deadline-bounded. Every record
+still consumes 94.5-97.3% of the 30s budget in `compiler_ms`, still lands at
 `total_ms≈30003ms`, and still terminates in `decode_outcome=fallback_output`
 via the same `empty_completion_forest`/`compiler_tree` dead-end. Every
 `meaningful_program_v1_rate` value is byte-identical before and after
