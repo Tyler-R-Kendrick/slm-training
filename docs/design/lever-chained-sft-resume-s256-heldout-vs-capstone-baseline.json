@@ -1,0 +1,115 @@
+{
+  "lever": "chained_resume_sft_s256_vs_capstone_heldout_baseline",
+  "hypothesis": "A genuinely longer SFT (256 vs 32 steps) reached via chained --resume-from invocations on the same lever_mix_loadable_v2 corpus and hyperparameters raises meaningful_program_rate vs the capstone held_out baseline (0/5 meaningful, 5/5 runtime_timeout per rep) and vs PR #1197's 32-step intermediate under the identical held_out/seed47/decode-timeout=30/fixed_asap recipe.",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "task_source": "docs/design/lever-mix-loadable-v2-heldout-sft-vs-capstone-baseline.md#named-next-lever-for-the-next-iteration",
+  "resume_mechanism": {
+    "flag": "--resume-from",
+    "target_file": "checkpoints/last_full_state.pt",
+    "restores": ["model_weights", "optimizer_state_with_fingerprint_check", "rng_state", "absolute_step_counter"],
+    "fail_closed_checks": ["data_manifest_sha match", "mixture_hash match", "optimizer fingerprint match"],
+    "steps_flag_semantics": "absolute target step count (while step < config.steps), not an increment",
+    "harness": "src/slm_training/harnesses/model_build/train_loop.py"
+  },
+  "corpus": {
+    "version": "lever_mix_loadable_v2",
+    "record_count": 231,
+    "reused_from": "PR #1197 (already built and gitignored under outputs/data/train/, reloaded cleanly this session, no rebuild needed)",
+    "data_manifest_sha": "1e81b1eceea26701df97ca39199b0aac4f17d9c2ef63235e37c7b20b6a626238"
+  },
+  "sft_chain": {
+    "train_dir": "outputs/data/train/lever_mix_loadable_v2",
+    "model": "twotower",
+    "context_backend": "scratch",
+    "batch_size": 2,
+    "lr": 0.001,
+    "structural_bias": 1.5,
+    "seed": 47,
+    "device": "cpu",
+    "asap_decode": true,
+    "no_sync_checkpoints": true,
+    "capacity_lever": false,
+    "capacity_note": "default twotower dims unchanged from PR #1197 baseline; pure step-count lever, no size flags changed (goal invariant VI)",
+    "invocations": [
+      {"target_steps": 32, "run_id": "exp_lever_mix_loadable_v2_s32_lr1e3_bs2_sb15_seed47", "resumed_from": null, "stopped_on": "steps", "last_loss": 11.378924369812012, "elapsed_wall_seconds": 8.884419492000234, "source": "PR #1197 (reused checkpoint from prior session, still present in gitignored outputs/)"},
+      {"target_steps": 64, "run_id": "chain_lever_mix_v2_s64_lr1e3_bs2_sb15_seed47", "resumed_from": "exp_lever_mix_loadable_v2_s32_lr1e3_bs2_sb15_seed47/checkpoints/last_full_state.pt", "stopped_on": "steps", "last_loss": 7.27599573135376, "elapsed_wall_seconds": 5.570130510999661},
+      {"target_steps": 96, "run_id": "chain_lever_mix_v2_s96_lr1e3_bs2_sb15_seed47", "resumed_from": "chain_lever_mix_v2_s64_lr1e3_bs2_sb15_seed47/checkpoints/last_full_state.pt", "stopped_on": "steps", "last_loss": 5.6450514793396, "elapsed_wall_seconds": 4.795439355999406},
+      {"target_steps": 128, "run_id": "chain_lever_mix_v2_s128_lr1e3_bs2_sb15_seed47", "resumed_from": "chain_lever_mix_v2_s96_lr1e3_bs2_sb15_seed47/checkpoints/last_full_state.pt", "stopped_on": "steps", "last_loss": 4.628344535827637, "elapsed_wall_seconds": 4.852918597000098},
+      {"target_steps": 160, "run_id": "chain_lever_mix_v2_s160_lr1e3_bs2_sb15_seed47", "resumed_from": "chain_lever_mix_v2_s128_lr1e3_bs2_sb15_seed47/checkpoints/last_full_state.pt", "stopped_on": "steps", "last_loss": 6.11406135559082, "elapsed_wall_seconds": 4.8291573209999115},
+      {"target_steps": 192, "run_id": "chain_lever_mix_v2_s192_lr1e3_bs2_sb15_seed47", "resumed_from": "chain_lever_mix_v2_s160_lr1e3_bs2_sb15_seed47/checkpoints/last_full_state.pt", "stopped_on": "steps", "last_loss": 5.178750991821289, "elapsed_wall_seconds": 4.878459067999756},
+      {"target_steps": 224, "run_id": "chain_lever_mix_v2_s224_lr1e3_bs2_sb15_seed47", "resumed_from": "chain_lever_mix_v2_s192_lr1e3_bs2_sb15_seed47/checkpoints/last_full_state.pt", "stopped_on": "steps", "last_loss": 5.751675605773926, "elapsed_wall_seconds": 5.331684163000318},
+      {"target_steps": 256, "run_id": "chain_lever_mix_v2_s256_lr1e3_bs2_sb15_seed47", "resumed_from": "chain_lever_mix_v2_s224_lr1e3_bs2_sb15_seed47/checkpoints/last_full_state.pt", "stopped_on": "steps", "last_loss": 6.818783760070801, "elapsed_wall_seconds": 5.488422458000059}
+    ],
+    "total_steps_reached": 256,
+    "multiplier_vs_pr1197_baseline": 8.0
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2",
+    "suite": "held_out",
+    "n": 5,
+    "reps": 1,
+    "seed": 47,
+    "decode_timeout_seconds": 30,
+    "constraint_debt_routing_mode": "fixed_asap",
+    "grammar_constrained": true,
+    "run_class": "scratch_matrix",
+    "run_id": "chain_mix_v2_s256_heldout_rep1_seed47",
+    "shrunk_from": "capstone protocol used n=5/2 reps; this run uses n=5/1 rep, same precedent as PR #1197",
+    "code_commit": "38b607edb5454b7f890d26e5428ce318144116cc",
+    "checkpoint_sha256": "9341ca71de0fd4a39a4936fabe5feb91fef43cf5d2167b501ec5fb6d487deb01"
+  },
+  "baseline_capstone": {
+    "source": "docs/design/lever-hard-decode-timeout-wall-heldout-capstone.md",
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "decode_outcome_counts": {"runtime_timeout": 5, "fallback_output": 0, "model_valid": 0},
+    "reps": 2,
+    "n": 5
+  },
+  "baseline_pr1197_s32": {
+    "source": "docs/design/lever-mix-loadable-v2-heldout-sft-vs-capstone-baseline.json",
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 0.2,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "placeholder_fidelity": 0.2,
+    "reward_score": 0.1874,
+    "decode_outcome_counts": {"model_valid": 0, "model_invalid": 1, "model_abstain": 0, "runtime_timeout": 4, "fallback_output": 0, "harness_error": 0},
+    "n": 5,
+    "reps": 1
+  },
+  "treatment_s256": {
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "placeholder_fidelity": 0.0,
+    "reward_score": 0.0,
+    "decode_outcome_counts": {"model_valid": 0, "model_invalid": 0, "model_abstain": 0, "runtime_timeout": 5, "fallback_output": 0, "harness_error": 0},
+    "failure_breakdown": {"parse_error": 5},
+    "latency_ms_p50": 30000.59,
+    "latency_ms_p95": 30200.54,
+    "n": 5,
+    "reps": 1
+  },
+  "ship_gate_check": {
+    "held_out:insufficient_n": {"bar": 20, "actual": 5, "pass": false},
+    "held_out:meaningful_program_rate": {"bar": 0.40, "actual": 0.0, "pass": false},
+    "held_out:structural_similarity": {"bar": 0.30, "actual": 0.0, "pass": false},
+    "held_out:component_type_recall": {"bar": 0.30, "actual": 0.0, "pass": false},
+    "held_out:placeholder_fidelity": {"bar": 0.15, "actual": 0.0, "pass": false},
+    "held_out:decode_timeout_count": {"bar": 0, "actual": 5, "pass": false}
+  },
+  "decision": "reject",
+  "decision_reason": "chained-resume SFT to 256 steps (8x PR #1197's 32-step run, same corpus/hyperparameters) does not lift meaningful_program_rate vs either the capstone baseline (0.0->0.0) or PR #1197's 32-step intermediate (0.0->0.0); decode_timeout_count regresses back to 5/5 (all timed out), matching the raw capstone baseline and worse than PR #1197's 4/5",
+  "next_lever": "revisit the 30s decode-timeout wall itself as the bottleneck (algorithmic compiler-tree witness-search change or an honestly re-validated longer timeout), since both data-scale levers (corpus size and step count) are now eliminated at held_out scale; curriculum/mixture reweighting remains open but is a weaker bet given this result",
+  "validation": {
+    "repo_policy": "ok",
+    "verify_version_stamps": "ok, 0 components touched (no harness/metric/gate/matrix file changed)",
+    "verify_decode_invariants": "ok"
+  },
+  "captured_at": "2026-07-28T13:45:06Z"
+}
