@@ -447,11 +447,11 @@ thread named in
 [lever-seed-rescue-steps72-measured-results.md](lever-seed-rescue-steps72-measured-results.md)'s
 next steps: the seed=44 eval hang. Installed `py-spy`, retrained a fresh
 `seed=44, steps=72` checkpoint, and attempted 3 reproductions of the
-offset=1 hang with `py-spy` armed to capture a stack trace. **The hang did
-not reproduce** (31.2s / 31.7s wall, both landing near but not past the 30s
-decode timeout, vs. the original 170s/178s zero-stdout kills) — full
-write-up, including what this narrows (not what it fixes), in the finding
-doc's new
+offset=1 hang with `py-spy` armed to capture a stack trace, then extended to
+2 more full end-to-end runs once the AgentV Node SDK was actually installed
+(`npm ci`). **The hang did not reproduce in any of 5 attempts** (31.2s-56.7s
+wall, vs. the original 170s/178s zero-stdout kills) — full write-up,
+including what this narrows (not what it fixes), in the finding doc's new
 ["Non-reproduction attempt with `py-spy`"](decode-timeout-hang-seed44-steps72-finding.md#non-reproduction-attempt-with-py-spy-2026-07-28-scheduled-autotrain-loop-session)
 section. Still open: the `s36_seed42` cross-session discrepancy and the
 original hang itself (a non-reproduction is not a fix). Next queued

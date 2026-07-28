@@ -181,3 +181,43 @@ re-test directly.
    CPU thread-count differences across sessions).
 
 Captured: 2026-07-28T02:35:00+00:00
+
+## Follow-up: full end-to-end reproduction with the real AgentV SDK (2026-07-28, same session)
+
+The 3-attempt batch above never actually exercised the real AgentV/Node
+publish path — `_agentv_runtime` (`src/slm_training/evals/agentv.py:15`)
+raised before any Node subprocess launched, because this session's checkout
+had no `node_modules`. That is a genuine gap versus the original hang, which
+happened in a session where the publish step presumably could resolve the
+SDK. Closed the gap: ran `NODE_OPTIONS= npm ci` (root) and
+`NODE_OPTIONS= npm --prefix src/apps/openui_bridge ci` (the ambient
+`--import tsx` `NODE_OPTIONS` this sandbox sets is rejected by this Node 20
+build, same known issue noted elsewhere in this repo's docs — must be
+cleared per-command), confirmed `node_modules/@agentv/core/package.json`
+exists, then reran the offset=1 reproduction twice more.
+
+**Result: both attempts completed successfully end-to-end (`rc=0`), full
+AgentV publish included. Still no hang.**
+
+| attempt | rc | wall_s | outcome |
+| --- | --- | --- | --- |
+| 6 | 0 | 36.51 | full success incl. AgentV publish (`outputs/runs/lever_seedrescue_s72_seed44_repro/agentv/...`) |
+| 7 | 0 | 56.65 | full success incl. AgentV publish |
+
+This supersedes the weaker "fails fast so it can't be the hang source"
+argument in the batch above with a stronger one: the real Node/AgentV
+publish subprocess ran to completion twice, so it is ruled out as the hang
+source **with direct evidence**, not by absence. It also surfaces new,
+real variance this session hadn't seen yet: attempt 7 took **56.65s wall**
+for the identical command/checkpoint/record as attempt 6's 36.51s — a >20s
+swing with no code or config difference between them. That is still far
+short of the original 170s/178s kills, but it is the first sign in this
+session that wall time on this exact repro is not tightly bounded either;
+worth keeping in mind if a future session sees a kill again and wants to
+distinguish "genuinely stuck" from "unusually slow but still moving."
+
+Total non-hang reproduction attempts this session: **5** (3 above + these
+2), 0 hangs, wall times 31.17s-56.65s. The original 170s/178s zero-stdout
+kills remain unexplained and unreproduced.
+
+Captured: 2026-07-28T02:41:00+00:00
