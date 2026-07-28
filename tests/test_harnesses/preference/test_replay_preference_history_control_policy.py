@@ -1,8 +1,13 @@
-"""Tests for SLM-418 (DSH5-10) ninth slice: sibling history-control policy view.
+"""Tests for SLM-418 (DSH5-10) ninth/tenth slices: sibling history-control policy view.
 
-See ``docs/design/dsh5-10-replay-preference-rows.md``'s "Ninth slice" and
+See ``docs/design/dsh5-10-replay-preference-rows.md``'s "Ninth slice"/"Tenth
+slice" and
 ``slm_training.harnesses.preference.replay_preference_history_control_policy``'s
-module docstring for the full disposition.
+module docstring for the full disposition. The tenth slice's own
+``_pick_rejected`` same-domain-preferring change flips several of this
+module's real numbers (documented inline on each affected test), and adds
+``train_history_control_pairwise_scorer`` coverage at the bottom of this
+file.
 """
 
 from __future__ import annotations
@@ -25,6 +30,7 @@ from slm_training.harnesses.preference.replay_preference_history_control_policy 
     classify_replay_row_history_control_representability,
     evaluate_history_control_representability,
     synthesize_history_control_sessions,
+    train_history_control_pairwise_scorer,
 )
 from slm_training.models.operator_policy_view import OperatorPolicyViewError
 
@@ -78,14 +84,23 @@ def test_the_other_six_relations_chosen_side_is_a_control_token(relation) -> Non
         assert classification is not HistoryControlRowRepresentability.NOT_REPRESENTABLE_OPERATOR_CHOSEN
 
 
-def test_real_corpus_has_zero_same_domain_pairs_every_rejected_side_is_an_operator() -> None:
-    """The real, empirically verified finding this slice's docstring claims.
+def test_real_corpus_now_has_same_domain_pairs_since_the_tenth_slice() -> None:
+    """The tenth slice's own re-run of this exact finding, now flipped.
 
-    Every one of the 47 non-``PRONOUN_FOCUS_FOLLOWUP`` rows in the real
-    synthetic corpus classifies ``CHOSEN_CONTROL_REJECTED_OPERATOR``, never
-    ``BOTH_CONTROL`` -- ``_pick_rejected`` always picks the operator token
-    because it sorts first lexicographically whenever one is legal, which it
-    always is in this fixture.
+    The ninth slice's ``_pick_rejected`` always picked a cross-domain
+    operator token as ``rejected`` (a serialized operator token sorts
+    before every control-token prefix). The tenth slice changed
+    ``_pick_rejected`` to prefer a same-domain alternative when the legal
+    set actually offers one -- and every decision state in this real
+    synthetic corpus does offer one (at least a ``checkout:<state>``
+    candidate, per ``_available_history_actions``). Every one of the 47
+    non-``PRONOUN_FOCUS_FOLLOWUP`` rows now classifies ``BOTH_CONTROL``,
+    never ``CHOSEN_CONTROL_REJECTED_OPERATOR``. See
+    ``test_replay_preference.py``'s own direct ``_pick_rejected`` unit
+    tests for the underlying mechanism, and "Tenth slice" in
+    ``docs/design/dsh5-10-replay-preference-rows.md`` for why this
+    doesn't, by itself, mean the resulting pairs are a *hard* preference
+    signal -- see this file's own scorer tests below.
     """
     by_relation = _rows_by_relation()
     for relation, rows in by_relation.items():
@@ -94,7 +109,7 @@ def test_real_corpus_has_zero_same_domain_pairs_every_rejected_side_is_an_operat
         for row in rows:
             assert (
                 classify_replay_row_history_control_representability(row)
-                is HistoryControlRowRepresentability.CHOSEN_CONTROL_REJECTED_OPERATOR
+                is HistoryControlRowRepresentability.BOTH_CONTROL
             )
 
 
@@ -106,14 +121,14 @@ def test_build_history_control_representability_report_matches_the_real_full_cor
     assert report.total_rows == 56
     assert report.counts_by_representability == {
         "not_representable_operator_chosen": 9,
-        "chosen_control_rejected_cross_domain_operator": 47,
+        "representable_both_control": 47,
     }
     assert set(report.counts_by_relation["pronoun_focus_followup"]) == {
         "not_representable_operator_chosen"
     }
     for relation, counts in report.counts_by_relation.items():
         if relation != "pronoun_focus_followup":
-            assert set(counts) == {"chosen_control_rejected_cross_domain_operator"}
+            assert set(counts) == {"representable_both_control"}
 
 
 # --------------------------------------------------------------------------- #
@@ -134,17 +149,21 @@ def test_adapt_replay_row_builds_a_real_control_row_for_the_chosen_action() -> N
         provenance_for=_provenance,
     )
 
-    assert (
-        result.representability
-        is HistoryControlRowRepresentability.CHOSEN_CONTROL_REJECTED_OPERATOR
-    )
+    # Tenth slice: _pick_rejected now prefers a same-domain alternative, and
+    # this fixture always has one (at least a checkout candidate), so this
+    # row -- like every non-pronoun row in the real corpus -- is now
+    # BOTH_CONTROL, not CHOSEN_CONTROL_REJECTED_OPERATOR.
+    assert result.representability is HistoryControlRowRepresentability.BOTH_CONTROL
     assert result.policy_input is not None
     assert result.accepted_control_row is not None
     accepted_view = result.policy_input.control_rows[result.accepted_control_row]
     assert accepted_view.control_kind is ControlActionKind.UNDO
-    # The rejected action is a cross-domain operator token, so no control row
-    # represents it -- this is the real, honestly reported limit.
-    assert result.rejected_control_row is None
+    # The rejected action is now a same-domain control token too, so a
+    # control row represents it as well.
+    assert result.rejected_control_row is not None
+    rejected_view = result.policy_input.control_rows[result.rejected_control_row]
+    assert row.rejected_action.startswith("checkout:")
+    assert rejected_view.control_kind is ControlActionKind.CHECKOUT
 
 
 def test_build_history_control_policy_input_never_carries_the_opaque_state_id() -> None:
@@ -227,17 +246,78 @@ def test_adapt_replay_row_fails_closed_on_a_stale_legal_set_fingerprint() -> Non
 # --------------------------------------------------------------------------- #
 # evaluate_history_control_representability: the real end-to-end report.
 # --------------------------------------------------------------------------- #
-def test_evaluate_history_control_representability_reports_the_real_zero_pairing_result() -> None:
+def test_evaluate_history_control_representability_reports_the_real_same_domain_result() -> None:
+    """Tenth slice: this exact probe, re-run, now reports the flipped finding.
+
+    ``_pick_rejected``'s same-domain preference (this slice) means every
+    one of the 46 trace-grounded, non-pronoun, non-merge rows in the real
+    corpus now pairs a control chosen action against a control rejected
+    action -- see ``docs/design/dsh5-10-replay-preference-rows.md``'s
+    "Tenth slice" for why this genuinely moves ``same_domain_pair_count``
+    off zero without, by itself, proving a hard preference signal exists
+    (see the scorer tests below for that separate question).
+    """
     report = evaluate_history_control_representability()
 
-    assert report.same_domain_pair_count == 0
-    assert report.cross_domain_pair_count == 46
-    assert report.verdict == "no_same_domain_pairs_fixture_scale"
-    assert "always the operator action" in report.note
+    assert report.same_domain_pair_count == 46
+    assert report.cross_domain_pair_count == 0
+    assert report.verdict == "same_domain_pairs_found_fixture_scale"
+    assert "same-domain" in report.note
     assert report.representability.total_rows == 46
     assert report.representability.counts_by_representability == {
-        "chosen_control_rejected_cross_domain_operator": 46
+        "representable_both_control": 46
     }
     assert report.version_stamp["components"] == {
-        "harness.preference.replay_preference_history_control_policy": "v1"
+        "harness.preference.replay_preference_history_control_policy": "v2"
     }
+
+
+# --------------------------------------------------------------------------- #
+# Tenth slice: train_history_control_pairwise_scorer -- the stretch goal the
+# ninth slice's own "Named next lever" pointed at, now reachable.
+# --------------------------------------------------------------------------- #
+def test_train_history_control_pairwise_scorer_reports_the_real_lexicographic_artifact() -> None:
+    """The real, measured, honest result -- not forced positive.
+
+    ``same_domain_pair_count`` moved off zero, so a pairwise scorer over
+    ``HistoryControlPolicyInputV1.control_rows`` can now be trained. Its
+    held-out accuracy is real and positive (1.0 on n=2 held-out pairs), but
+    ``rejected_kind_counts`` shows the rejected side is *always* "checkout"
+    across the whole corpus -- ``_pick_rejected``'s same-domain preference
+    still breaks ties within a domain by plain lexicographic sort, and
+    "checkout:" sorts first among control prefixes whenever legal, which
+    this corpus's trace shape makes true almost everywhere. So this is
+    correctly reported as a lexicographic-tiebreak artifact, not a hard
+    preference signal -- same rigor as the eighth slice's zero-margin
+    finding, just for a positive number this time.
+    """
+    report = train_history_control_pairwise_scorer()
+
+    assert report.train_pair_count == 44
+    assert report.held_out_pair_count == 2
+    assert report.mean_margin > 0
+    assert report.pairwise_margin_accuracy == 1.0
+    assert report.rejected_kind_counts == {"checkout": 46}
+    assert report.verdict == "discrimination_is_lexicographic_tiebreak_artifact_fixture_scale"
+    assert "NOT evidence of a real hard preference signal" in report.note
+    assert report.version_stamp["components"] == {
+        "harness.preference.replay_preference_history_control_policy": "v2"
+    }
+
+
+def test_train_history_control_pairwise_scorer_weights_penalize_checkout() -> None:
+    """Direct evidence for the artifact: the trained weight on CHECKOUT is negative.
+
+    ``ControlActionKind`` order is ``(UNDO, REDO, CHECKOUT, MERGE)`` --
+    since ``checkout`` is the rejected side of every single training pair,
+    a linear pairwise scorer only needs a negative CHECKOUT weight (and
+    non-negative others) to fit the corpus, exactly what a real trained run
+    produces.
+    """
+    report = train_history_control_pairwise_scorer()
+
+    undo_weight, redo_weight, checkout_weight, merge_weight = report.weights
+    assert checkout_weight < 0
+    assert undo_weight > 0
+    assert redo_weight > 0
+    assert merge_weight == 0.0  # MERGE never appears as chosen or rejected in this corpus

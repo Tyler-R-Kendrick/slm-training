@@ -894,3 +894,117 @@ def test_preference_pair_from_replay_row_refuses_to_fabricate_a_blank_prompt() -
     with pytest.raises(ValueError, match="non-empty"):
         preference_pair_from_replay_row(row, input_state_source="   ")
 
+
+# --------------------------------------------------------------------------- #
+# Tenth slice: _pick_rejected's same-domain-preferring policy.
+#
+# The ninth slice found that, over a real 46-row corpus, _pick_rejected
+# always picked a cross-domain operator action as `rejected` (a serialized
+# operator token starts with "OPERATOR ", which sorts before every control
+# prefix), leaving zero same-domain (control-vs-control) pairs to train a
+# pairwise scorer over. This slice changes the policy to prefer a
+# same-domain alternative when the legal set actually offers one, falling
+# back to the old any-domain lexicographic-first behavior only when it
+# doesn't -- these tests cover both branches directly, against real fixtures
+# and against the private function itself.
+# --------------------------------------------------------------------------- #
+def test_edit_then_undo_now_rejects_a_same_domain_checkout_not_the_operator() -> None:
+    """The concrete real-fixture behavior flip this slice introduces.
+
+    At the edit-then-undo decision state, the legal set has exactly one
+    same-domain (control) alternative to "undo" -- checkout:<root state> --
+    plus at least one cross-domain operator action. Before this slice,
+    _pick_rejected's plain lexicographic sort over the *full* legal set
+    always picked the operator action here (see the ninth slice's own
+    documented "OPERATOR sorts before checkout:" finding). This slice's
+    same-domain preference now picks the control alternative instead.
+    """
+    pack, library, root = _fixture()
+    edited, _application = _append(pack, library, root)
+    undone = undo_conversation(edited, provenance=_provenance(edited.current.state))
+
+    report = extract_replay_preference_rows(
+        undone, pack=pack, library=library, provenance_for=_provenance
+    )
+
+    row = report.rows[0]
+    assert row.chosen_action == "undo"
+    assert row.rejected_action == f"checkout:{root.root_state_id}"
+    assert not row.rejected_action.startswith("OPERATOR ")
+
+
+def test_pick_rejected_prefers_same_domain_for_a_control_chosen_action() -> None:
+    """Direct unit coverage: a control ``chosen`` prefers a control ``rejected``.
+
+    A hand-built legal set carries one operator action (which would have
+    sorted first under the old any-domain policy: "OPERATOR " < "undo") and
+    two control actions, "checkout:<x>"/"undo". Choosing "undo" must reject
+    "checkout:<x>" (same domain), never the operator action, even though the
+    operator action is lexicographically first overall.
+    """
+    from slm_training.dsl.operators.legal_set import enumerate_operator_legal_set
+    from slm_training.dsl.operators.replay_preference import _pick_rejected
+
+    pack, library, root = _fixture()
+    state = root.current.state
+    legal_set = enumerate_operator_legal_set(
+        pack=pack,
+        library=library,
+        state=state,
+        reference_table=root.current.reference_table,
+        provenance=_provenance(state),
+        ordinary_nonoperator_actions=("checkout:some-other-state", "undo"),
+    )
+    assert legal_set.operator_actions  # a real cross-domain candidate exists too
+
+    rejected = _pick_rejected(legal_set, "undo")
+
+    assert rejected == "checkout:some-other-state"
+
+
+def test_pick_rejected_falls_back_to_any_domain_with_no_same_domain_alternative() -> None:
+    """Direct unit coverage: no same-domain alternative falls back to the old policy.
+
+    A hand-built legal set carries "undo" as the *only* control action (so
+    no same-domain alternative exists once it is chosen) plus real operator
+    actions. ``_pick_rejected`` must still return a legal alternative --
+    the lexicographic-first cross-domain candidate, this function's
+    original v2-v9 behavior -- rather than returning ``None`` and silently
+    dropping the row.
+    """
+    from slm_training.dsl.operators.legal_set import enumerate_operator_legal_set
+    from slm_training.dsl.operators.replay_preference import _pick_rejected
+
+    pack, library, root = _fixture()
+    state = root.current.state
+    legal_set = enumerate_operator_legal_set(
+        pack=pack,
+        library=library,
+        state=state,
+        reference_table=root.current.reference_table,
+        provenance=_provenance(state),
+        ordinary_nonoperator_actions=("undo",),
+    )
+    assert legal_set.operator_actions
+
+    rejected = _pick_rejected(legal_set, "undo")
+
+    assert rejected is not None
+    assert rejected != "undo"
+    assert rejected.startswith("OPERATOR ")
+
+
+def test_action_kind_of_is_re_exported_unchanged_from_context_views() -> None:
+    """``action_kind_of`` moved to this module this slice; the old import path stays live."""
+    from slm_training.dsl.operators.replay_preference import action_kind_of as moved
+    from slm_training.dsl.operators.replay_preference_context_views import (
+        action_kind_of as re_exported,
+    )
+
+    assert moved is re_exported
+    assert moved("undo") == "undo"
+    assert moved("redo:x") == "redo"
+    assert moved("checkout:x") == "checkout"
+    assert moved("merge:a:b") == "merge"
+    assert moved("OPERATOR fixture.op x=value:request-1:opaque") == "operator"
+

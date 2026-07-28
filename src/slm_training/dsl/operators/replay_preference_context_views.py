@@ -40,7 +40,10 @@ from slm_training.dsl.operators.conversation import (
     ConversationStateNodeV1,
     ConversationTraceV1,
 )
-from slm_training.dsl.operators.replay_preference import OperatorEventMemoryReportV1
+from slm_training.dsl.operators.replay_preference import (
+    OperatorEventMemoryReportV1,
+    action_kind_of,  # noqa: F401 -- re-exported unchanged for existing callers
+)
 from slm_training.harness_core.versioning import build_version_stamp
 
 #: The issue's own matrix: "1/2/4/8/16 turn depth."
@@ -89,21 +92,11 @@ _OPERATION_ACTION_KIND: dict[ConversationOperation, str] = {
 }
 
 
-def action_kind_of(serialized_action: str) -> str:
-    """Classify an opaque serialized action string into a small closed vocabulary.
-
-    A structural prefix check only -- never an interpretation of the
-    action's arguments or any transcript content. ``"undo"`` matches
-    exactly; ``"redo:"``, ``"checkout:"``, and ``"merge:"`` match the fixed
-    canonical prefixes ``replay_preference.py``/``merge.py`` already emit;
-    anything else is an operator (``AST_EDIT``) action.
-    """
-    if serialized_action == "undo":
-        return "undo"
-    for prefix, kind in (("redo:", "redo"), ("checkout:", "checkout"), ("merge:", "merge")):
-        if serialized_action.startswith(prefix):
-            return kind
-    return "operator"
+# ``action_kind_of`` moved to ``replay_preference.py`` (tenth slice), which
+# now also uses it internally for ``_pick_rejected``'s same-domain
+# preference; re-exported here unchanged so every existing import of
+# ``slm_training.dsl.operators.replay_preference_context_views.action_kind_of``
+# keeps working byte-for-byte.
 
 
 @dataclass(frozen=True)

@@ -222,17 +222,80 @@ def legal_set_at(
     )
 
 
+def action_kind_of(serialized_action: str) -> str:
+    """Classify an opaque serialized action string into a small closed vocabulary.
+
+    A structural prefix check only -- never an interpretation of the
+    action's arguments or any transcript content. ``"undo"`` matches
+    exactly; ``"redo:"``, ``"checkout:"``, and ``"merge:"`` match the fixed
+    canonical prefixes this module and ``merge.py`` already emit; anything
+    else is an operator (``AST_EDIT``) action.
+
+    Tenth slice: moved here from ``replay_preference_context_views.py``
+    (which now re-exports this exact function unchanged) so ``_pick_rejected``
+    below can reuse the same closed vocabulary every other domain-
+    classification caller in this corpus already depends on
+    (``replay_preference_history_control_policy.py``'s
+    ``classify_replay_row_history_control_representability``,
+    ``replay_preference_typed_policy_adapter.py``'s representability check)
+    instead of duplicating the prefix logic a third time.
+    """
+    if serialized_action == "undo":
+        return "undo"
+    for prefix, kind in (("redo:", "redo"), ("checkout:", "checkout"), ("merge:", "merge")):
+        if serialized_action.startswith(prefix):
+            return kind
+    return "operator"
+
+
+def _rejection_domain_of(serialized_action: str) -> str:
+    """The coarse two-way domain ``_pick_rejected`` prefers to match: "operator" or "control".
+
+    Deliberately coarser than :func:`action_kind_of`'s four-way control
+    vocabulary (``undo``/``redo``/``checkout``/``merge``) -- "domain" here
+    means the same operator-vs-control split
+    ``classify_replay_row_history_control_representability``
+    (``replay_preference_history_control_policy.py``) already uses to decide
+    ``BOTH_CONTROL`` vs ``CHOSEN_CONTROL_REJECTED_OPERATOR``, not a specific
+    control kind. A rejected ``checkout:<state>`` is exactly as same-domain
+    to a chosen ``undo`` as a rejected ``redo:<state>`` would be.
+    """
+    return "operator" if action_kind_of(serialized_action) == "operator" else "control"
+
+
 def _pick_rejected(legal_set: OperatorLegalSetV1, chosen: str) -> str | None:
     """A deterministic legal alternative to ``chosen``, or ``None`` if none exists.
 
     Drawn from the full legal set -- operator actions and available history
-    controls (``undo``/``redo:<state>``) alike -- so a row is never dropped
-    just because the only unchosen alternative happens to be a control.
+    controls (``undo``/``redo:<state>``/``checkout:<state>``/``merge:<pair>``)
+    alike -- so a row is never dropped just because the only unchosen
+    alternative happens to be a control action.
+
+    Tenth slice: prefers a same-domain alternative (operator-vs-operator, or
+    control-vs-control across any of undo/redo/checkout/merge) when the
+    legal set actually offers one, falling back to the lexicographically-
+    first any-domain candidate -- this function's original v2-v9 behavior --
+    only when no same-domain alternative exists. Ties within a domain are
+    still broken lexicographically, so this stays fully deterministic.
+
+    This is a deliberate strengthening, not merely a different tiebreak: the
+    ninth slice found ``same_domain_pair_count == 0`` over a real 46-row
+    corpus because a serialized operator token always sorts before every
+    control-token prefix, so the old lexicographic-first policy silently
+    always picked the "easy," cross-domain alternative even when a genuinely
+    harder same-domain one was legally available -- see "Tenth slice" in
+    ``docs/design/dsh5-10-replay-preference-rows.md``.
     """
     candidates = sorted(
         action for action in legal_set.all_serialized_actions if action != chosen
     )
-    return candidates[0] if candidates else None
+    if not candidates:
+        return None
+    chosen_domain = _rejection_domain_of(chosen)
+    same_domain = [
+        action for action in candidates if _rejection_domain_of(action) == chosen_domain
+    ]
+    return same_domain[0] if same_domain else candidates[0]
 
 
 def _touched_refs(application: OperatorApplicationV1) -> frozenset:

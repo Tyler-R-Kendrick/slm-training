@@ -1112,13 +1112,18 @@
       ]
     },
     "dsl.operators.replay_preference": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/replay_preference.py",
         "tests/test_dsl/test_replay_preference.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) tenth slice: _pick_rejected now prefers a same-domain alternative (operator-vs-operator, or control-vs-control across any of undo/redo/checkout/merge) when the legal set actually offers one, falling back to the old any-domain lexicographic-first candidate only when it doesn't -- fixing the ninth slice's own documented finding that a serialized operator token always sorted first, so same_domain_pair_count was always 0. Also relocates action_kind_of here from dsl.operators.replay_preference_context_views (which now re-exports it unchanged) so this new domain check can reuse the same closed vocabulary every other domain-classification caller in this corpus already depends on, instead of duplicating the prefix logic a third time. Real effect on the real 56-row synthetic corpus: all 46 trace-grounded non-pronoun rows now classify BOTH_CONTROL (was CHOSEN_CONTROL_REJECTED_OPERATOR), same_domain_pair_count moves from 0 to 46 -- but every single rejected side is 'checkout' (verified: rejected_kind_counts == {checkout: 46}), because 'checkout:' still sorts first among control prefixes whenever legal in this corpus, which is nearly always. A trained pairwise scorer over the new pairs (harness.preference.replay_preference_history_control_policy v2) shows real positive held-out margin/accuracy, but this is honestly reported as a second lexicographic-tiebreak artifact, not a hard preference signal -- see docs/design/dsh5-10-replay-preference-rows.md's Tenth slice. No downstream corpus (sixth/seventh-slice PreferencePair conversion, PR #1149's real preference-training corpus) calls _pick_rejected outside this module; regression tests cover both the same-domain-preferred path and the any-domain fallback directly"
+        },
         {
           "version": "v8",
           "date": "2026-07-28",
@@ -1168,6 +1173,11 @@
         "src/slm_training/dsl/operators/replay_preference_context_views.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) tenth slice moves action_kind_of's definition to dsl.operators.replay_preference.py (which now also uses it internally for _pick_rejected's same-domain preference) and re-exports it here unchanged -- byte-for-byte identical behavior, same public symbol, same import path for every existing caller. No API or behavior change to this module"
+        },
         {
           "version": "v1",
           "date": "2026-07-27",
@@ -8063,6 +8073,11 @@
         {
           "version": "v3",
           "date": "2026-07-28",
+          "note": "no-bump: SLM-418 (DSH5-10) tenth slice appends its own 'Tenth slice' and 'Reproducibility (tenth slice)' sections to docs/design/dsh5-10-replay-preference-rows.md (a shared doc this component's paths claim), and updates the top 'Status' line to 'tenth increment'; no change to replay_preference_context_view_variants.py itself -- the tenth slice's own dsl.operators.replay_preference v9 bump and harness.preference.replay_preference_history_control_policy v2 bump cover the actual new code"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-28",
           "note": "no-bump: SLM-418 (DSH5-10) ninth slice appends its own 'Ninth slice' and 'Reproducibility (ninth slice)' sections to docs/design/dsh5-10-replay-preference-rows.md (a shared doc this component's paths claim), and updates the top 'Status' line to 'ninth increment'; no change to replay_preference_context_view_variants.py itself -- the ninth slice's own new harness.preference.replay_preference_history_control_policy component covers the actual new code"
         },
         {
@@ -8109,7 +8124,7 @@
       ]
     },
     "harness.preference.replay_preference_history_control_policy": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/replay_preference_history_control_policy.py",
@@ -8117,6 +8132,11 @@
         "tests/test_harnesses/preference/test_replay_preference_history_control_policy.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-28",
+          "note": "SLM-418 (DSH5-10) tenth slice: re-run against the tenth slice's own dsl.operators.replay_preference v9 (_pick_rejected now prefers a same-domain alternative) -- same_domain_pair_count moves from 0 to 46 (evaluate_history_control_representability's verdict flips to same_domain_pairs_found_fixture_scale). Adds train_history_control_pairwise_scorer, a small pairwise linear scorer over the new HistoryControlPolicyInputV1.control_rows same-domain pairs (one-hot control_kind features, full-batch logistic-loss GD, same discipline as the sixth slice's two-feature scorer). Real result: held-out pairwise_margin_accuracy=1.0, mean_margin>0 (44 train / 2 held-out pairs) -- but rejected_kind_counts shows the rejected side is 'checkout' for all 46 pairs, so this is honestly reported as a second lexicographic-tiebreak artifact (checkout: still sorts first among control prefixes whenever legal in this corpus), not a hard preference signal; verdict is discrimination_is_lexicographic_tiebreak_artifact_fixture_scale, not a bare positive claim. Fails closed (ValueError) if either split has zero same-domain pairs. See docs/design/dsh5-10-replay-preference-rows.md's Tenth slice for the full disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-28",

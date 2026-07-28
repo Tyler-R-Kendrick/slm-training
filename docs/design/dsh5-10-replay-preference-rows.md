@@ -1,6 +1,6 @@
 # DSH5-10: replay-grounded preference rows from undo/redo history (SLM-418)
 
-**Status:** partial slice, in progress (ninth increment).
+**Status:** partial slice, in progress (tenth increment).
 **Claim class:** `wiring`.
 **Honest verdict:** not yet dispositioned -- this PR extends a scoped
 subset, not the full issue.
@@ -1103,6 +1103,210 @@ pairwise scorer over `HistoryControlPolicyInputV1.control_rows` shows any
 real discrimination. This is a row-extraction-policy change (bumping
 `dsl.operators.replay_preference`), not a model-input-contract change, and
 is a real, separately-scoped tenth slice, not a partial version of this one.
+
+## Tenth slice (2026-07-28)
+
+The ninth slice's own named next lever: change `_pick_rejected`
+(`replay_preference.py`) to prefer a same-domain alternative when the legal
+set actually offers one, falling back to the old any-domain choice only when
+it doesn't, then re-run `evaluate_history_control_representability` to see
+whether `same_domain_pair_count` moves off zero, and if so, train a pairwise
+scorer over `HistoryControlPolicyInputV1.control_rows` and report honestly.
+
+### What was built
+
+* `src/slm_training/dsl/operators/replay_preference.py`:
+  * `_pick_rejected` now computes a coarse two-way domain
+    (`_rejection_domain_of`: "operator" or "control", the same split
+    `classify_replay_row_history_control_representability` already uses) for
+    `chosen` and prefers the lexicographically-first candidate whose domain
+    matches, falling back to the lexicographically-first candidate of *any*
+    domain -- this function's original v2-v9 behavior -- only when no
+    same-domain alternative exists. Every call site
+    (`EDIT_THEN_UNDO`/`PARTIAL_ROLLBACK`/`UNDO_THEN_REDO`/
+    `CHECKOUT_ANOTHER_STATE`/`FORK_THEN_CHOOSE_ONE_BRANCH`/`MERGE_SUCCESS`)
+    is unchanged; only the candidate-selection policy inside `_pick_rejected`
+    itself changed. `PRONOUN_FOCUS_FOLLOWUP` never calls `_pick_rejected` (it
+    has its own sibling-candidate logic, already same-domain by
+    construction) and is untouched.
+  * `action_kind_of` moves here from `replay_preference_context_views.py`
+    (which now re-exports it unchanged, `# noqa: F401`, for every existing
+    caller) so `_pick_rejected`'s new domain check reuses the exact same
+    closed vocabulary every other domain-classification caller in this
+    corpus already depends on, instead of duplicating the prefix logic a
+    third time. This was necessary because `replay_preference_context_views.py`
+    already imports from `replay_preference.py` -- importing the other way
+    would be circular.
+  * `dsl.operators.replay_preference` bumped v8 -> v9;
+    `dsl.operators.replay_preference_context_views` gets a `no-bump:` note
+    (re-export relocation only, byte-for-byte identical behavior/API).
+* `src/slm_training/harnesses/preference/replay_preference_history_control_policy.py`
+  (`harness.preference.replay_preference_history_control_policy` v1 -> v2):
+  new `train_history_control_pairwise_scorer` -- a small pairwise linear
+  scorer over `HistoryControlPolicyInputV1.control_rows`, same discipline as
+  the sixth slice's two-feature scorer and the eighth slice's argument-margin
+  probe: full-batch gradient descent on pairwise logistic loss, one-hot
+  `control_kind` features (the *only* structural field
+  `HistoryControlActionViewV1` carries), no bias, no external ML dependency,
+  never a DSH3 head or checkpoint. Trains on the same `train`/`held_out`
+  session split `synthesize_history_control_sessions` already assigns (via
+  `split_for_group`, unchanged). Fails closed (`ValueError`) if either split
+  has zero same-domain pairs -- the same NaN-avoidance discipline the sixth
+  slice's review fixes established for the sibling context-view harness.
+  `HistoryControlScorerReportV1` also carries `rejected_kind_counts` -- a
+  real, measured diagnostic over every pair (train and held-out), computed
+  specifically so a positive accuracy can never be read, unqualified, as
+  evidence of a hard preference signal (see "What was measured" below).
+* `scripts/run_replay_preference_history_control_probe.py` -- now also runs
+  `train_history_control_pairwise_scorer` and prints its report whenever the
+  probe finds `same_domain_pair_count > 0`, alongside the existing
+  representability probe; prints `"scorer": null` when it doesn't.
+* Regression tests: `tests/test_dsl/test_replay_preference.py` gains four
+  new tests -- a real-fixture test proving the concrete
+  edit-then-undo behavior flip (`rejected_action` is now
+  `checkout:<root>`, not the operator token), a direct unit test of
+  `_pick_rejected` preferring a same-domain control alternative over a
+  lexicographically-earlier operator one, a direct unit test of the
+  any-domain fallback when no same-domain alternative exists (built via
+  `enumerate_operator_legal_set` with a single-member
+  `ordinary_nonoperator_actions`), and a test confirming `action_kind_of`'s
+  relocation preserves both import paths as the identical object.
+  `tests/test_harnesses/preference/test_replay_preference_history_control_policy.py`
+  updates its four ninth-slice tests that encoded the old
+  `same_domain_pair_count == 0` finding to the new, real, flipped numbers
+  (with docstrings explaining why), and adds two new tests directly
+  exercising `train_history_control_pairwise_scorer`'s real output,
+  including the lexicographic-artifact verdict and the negative `CHECKOUT`
+  weight that causes it.
+
+### What was measured (real run, `python -m scripts.run_replay_preference_history_control_probe`)
+
+* **`same_domain_pair_count` moved off zero, fully.** Over the real 46-row
+  trace-grounded, non-pronoun, non-merge subset of the seventh slice's own
+  56-row synthetic corpus, every row now classifies `BOTH_CONTROL`
+  (`same_domain_pair_count=46`, `cross_domain_pair_count=0` -- a complete
+  flip from the ninth slice's `0`/`46`). `verdict` is now
+  `same_domain_pairs_found_fixture_scale`.
+* **A pairwise scorer trains and shows real, positive held-out
+  discrimination: `pairwise_margin_accuracy=1.0`, `mean_margin≈4.36`** on 44
+  train / 2 held-out pairs (the same `rollback_chain_1` held-out group the
+  ninth/context-view slices' own splits already assigned).
+* **Honest interpretation -- this positive result is a second
+  lexicographic-tiebreak artifact, not a hard preference signal, and this
+  slice says so explicitly rather than reporting the bare number.**
+  `rejected_kind_counts` over every one of the 46 pairs (train and held-out
+  alike) is `{"checkout": 46}` -- the rejected side is **always** `checkout`,
+  with zero exceptions. Why: `_pick_rejected`'s same-domain preference still
+  breaks ties *within* a domain by plain lexicographic sort, and
+  `"checkout:"` sorts before every other control prefix
+  (`"merge:"`/`"redo:"`/`"undo"`) whenever a checkout candidate is legal --
+  which `_available_history_actions` makes true at nearly every decision
+  state in this corpus (a `checkout:<state>` candidate exists for every
+  *other* materialized state in the whole trace, and every trace here has
+  several). The trained scorer's weights confirm this directly: `[undo:
+  2.21, redo: 0.70, checkout: -2.91, merge: 0.0]` -- a strongly negative
+  `CHECKOUT` weight and non-negative everything else is exactly what a
+  linear scorer needs to perfectly fit "reject checkout, always," nothing
+  more. This is structurally the same class of finding as the ninth slice's
+  own -- an ASCII-sort accident, not evidence a model had to work to
+  discriminate a genuinely hard preference -- just relocated one level down
+  (from cross-domain to within-domain) instead of eliminated. The report's
+  own `verdict` field says so directly:
+  `discrimination_is_lexicographic_tiebreak_artifact_fixture_scale`, not a
+  bare `some_discrimination_fixture_scale`.
+* **Downstream-consumer impact, verified, not assumed.** `_pick_rejected` is
+  called only from within `replay_preference.py` itself (five call sites,
+  all listed above) -- grepped directly, confirmed no external caller exists
+  anywhere in `src/` or `tests/`. The sixth/seventh-slice
+  `preference_pairs_from_trace`/`preference_pair_from_replay_row`
+  `PreferencePair` conversion functions are downstream of extraction and
+  therefore *do* see the new `rejected_action` values on re-run, but no
+  test asserts an exact `rejected_action` string anywhere in this repo (only
+  `!=` / `.startswith("checkout:")`-style structural checks), and no
+  harness or script has ever written their output to a real corpus file or
+  fed it to `slm preference build-pairs`/`train` (confirmed by a repo-wide
+  grep: the only callers of those two functions are this module's own
+  tests). PR #1149's real preference-training corpus is independently
+  sourced and does not call `extract_replay_preference_rows`,
+  `_pick_rejected`, or either `PreferencePair` conversion function at all --
+  it is structurally unaffected by this slice. The full relevant pytest
+  sweep (all five files that import or exercise `_pick_rejected`'s output,
+  directly or transitively) was re-run against the changed code and is
+  `143 passed`, with only the four ninth-slice tests that literally encoded
+  the old zero-pairing numbers updated to the new real numbers -- no other
+  test anywhere needed a change.
+* **Is preferring same-domain rejection "more correct" as a default?** Yes,
+  in principle -- mixing an operator token against a control token is a
+  structurally easier discrimination (the `is_history_control` feature alone
+  already separated them, per the sixth/seventh slices' own ceiling-effect
+  finding) than a genuine same-domain comparison. But this slice's own
+  measurement shows the *specific* same-domain pairs this fixture now
+  produces are not, in fact, hard either -- they inherit a new, different
+  easy tell from the same remaining-lexicographic-tiebreak root cause. The
+  "more correct default" claim is about the *policy*, not a claim that this
+  particular fixture-scale corpus now yields informative pairs.
+
+### Explicitly out of scope (unchanged from, or newly confirmed by, this slice)
+
+* A genuinely non-lexicographic tie-break inside `_pick_rejected` (e.g.
+  rotating/hashing among same-domain candidates, or preferring diversity of
+  `control_kind` across a session) that would let the scorer's positive
+  result mean something -- not attempted here; see "Named next lever" below.
+* `OperatorPolicyInputV1`, `OperatorActionViewV1`, `ReferenceModelViewV1`,
+  and `OperatorFeatureEncoder` -- all byte-for-byte unchanged, as in every
+  prior slice.
+* Real SFT/preference training, a powered/real corpus, real
+  action/operator/argument accuracy against a certified checkpoint, and
+  CAP0/CAP1/CAP2 retention remain unattempted.
+* A joint operator-and-control policy (design "A" from the adapter-gap doc)
+  is still not attempted; two independent, unmerged heads remain.
+
+No causal, calibration, or promotion claim is made. No checkpoint or model
+card update applies -- this slice creates no checkpoint. Honesty tier:
+`wiring` / `no_benefit_fixture_scale` for the row-extraction and
+representability changes; the scorer result is real and positive but its own
+`verdict` field names it a `fixture_scale` artifact, never a benefit claim.
+
+### Named next lever
+
+The real, concrete fix this slice's own finding points at: change
+`_pick_rejected`'s within-domain tie-break to be non-lexicographic (e.g.
+deterministic-hash-based rotation among same-domain candidates, so
+`checkout`/`undo`/`redo` are not systematically favored or disfavored by
+ASCII sort order alone), then re-run `train_history_control_pairwise_scorer`
+to see whether `rejected_kind_counts` diversifies and, if it does, whether
+the trained scorer's held-out discrimination survives losing its current
+single-feature shortcut. This is a further row-extraction-policy refinement
+(bumping `dsl.operators.replay_preference` again), not a model-input-contract
+change, and is a real, separately-scoped eleventh slice, not a partial
+version of this one.
+
+## Reproducibility (tenth slice)
+
+```bash
+NODE_OPTIONS= pytest -q tests/test_dsl/test_replay_preference.py tests/test_harnesses/preference/test_operator_history_pairs.py tests/test_harnesses/preference/test_replay_preference_typed_policy_adapter.py tests/test_harnesses/preference/test_replay_preference_history_control_policy.py tests/test_evals/test_ambiguous_operator_followups.py tests/test_dsl/test_operator_conversation.py tests/test_models/test_operator_policy_view.py
+NODE_OPTIONS= python -m scripts.run_replay_preference_history_control_probe
+python -m scripts.verify_version_stamps --check --base origin/claude/great-dirac-3mu94n
+python -m scripts.repo_policy
+python -m scripts.verify_decode_invariants
+ruff check src/slm_training/dsl/operators/replay_preference.py src/slm_training/dsl/operators/replay_preference_context_views.py src/slm_training/harnesses/preference/replay_preference_history_control_policy.py scripts/run_replay_preference_history_control_probe.py tests/test_dsl/test_replay_preference.py tests/test_harnesses/preference/test_replay_preference_history_control_policy.py
+```
+
+Result (this PR, tenth slice, `dsl.operators.replay_preference` v9,
+`harness.preference.replay_preference_history_control_policy` v2): same
+freshly built `.venv` (Python 3.12), `NODE_OPTIONS=` cleared for the OpenUI
+bridge's Node 22 `--import tsx` incompatibility (same reason as every prior
+slice): `143 passed`. `ruff check`: clean on every touched/created file.
+`python -m scripts.verify_version_stamps --check --base
+origin/claude/great-dirac-3mu94n`: `ok (7 changed file(s), 3 component(s)
+touched)`. `python -m scripts.repo_policy`: `ok (tracked + untracked)`.
+`python -m scripts.verify_decode_invariants`: clean (exit 0). The probe
+script's real output: `same_domain_pair_count=46`, `cross_domain_pair_count=0`,
+`verdict="same_domain_pairs_found_fixture_scale"`; scorer:
+`train_pair_count=44`, `held_out_pair_count=2`,
+`pairwise_margin_accuracy=1.0`, `mean_margin=4.358607031092988`,
+`rejected_kind_counts={"checkout": 46}`,
+`verdict="discrimination_is_lexicographic_tiebreak_artifact_fixture_scale"`.
 
 ## Reproducibility (ninth slice)
 
