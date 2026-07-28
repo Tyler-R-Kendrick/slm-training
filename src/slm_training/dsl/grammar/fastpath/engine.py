@@ -103,6 +103,11 @@ class OpenUIIncrementalEngine:
         # Used by probe_chunk to detect NAME/COMPONENT gluing that changes
         # an already-fed lexeme's identity without growing the token count.
         self._fed_tokens: list[tuple[str, str]] = []
+        # Character offset (into ``self._prefix``) where the last fed token
+        # starts -- i.e. the boundary before which every fed token is
+        # provably final (see ``_incremental_sync``). 0 means "nothing
+        # settled yet, next sync must lex from the start."
+        self._settle_pos = 0
         self._full_syncs = 0
         self._incremental_advances = 0
         self._copy_probes = 0
@@ -114,6 +119,7 @@ class OpenUIIncrementalEngine:
         self._ip = self._parser.parse_interactive()
         self._fed_token_count = 0
         self._fed_tokens = []
+        self._settle_pos = 0
         try:
             self._accepts = frozenset(str(x) for x in self._ip.accepts())
         except Exception:
@@ -154,6 +160,28 @@ class OpenUIIncrementalEngine:
         except Exception:
             self._accepts = frozenset()
 
+    def _update_settle_pos(self, tokens: list, token_index_offset: int = 0) -> None:
+        """Record the start offset of the last fed token.
+
+        ``tokens`` covers absolute token indices
+        ``[token_index_offset, token_index_offset + len(tokens))`` and its
+        ``start_pos`` values are already in absolute prefix coordinates.
+        Every token strictly before the recorded offset is provably final: a
+        regex-based lexer with no lookbehind (verified true for
+        ``openui.lark`` -- no ``\\b``/``(?<=``/``(?<!`` patterns) decides
+        where a token ends using only characters up to that boundary, so
+        appending text after it can never retroactively change an earlier
+        token. Only the *last* fed token can still be "open" (it may have
+        stopped solely because the prefix ran out, not because a later
+        character mismatched) -- see ``_incremental_sync``.
+        """
+        if self._fed_token_count == 0:
+            self._settle_pos = 0
+            return
+        idx = self._fed_token_count - 1 - token_index_offset
+        if 0 <= idx < len(tokens):
+            self._settle_pos = tokens[idx].start_pos or 0
+
     def _full_sync(self, prefix: str) -> bool:
         """Lex+feed complete tokens from prefix; update accepts. False on hard error."""
         self._full_syncs += 1
@@ -161,6 +189,7 @@ class OpenUIIncrementalEngine:
         self._ip = self._parser.parse_interactive()
         self._fed_token_count = 0
         self._fed_tokens = []
+        self._settle_pos = 0
         tokens = self._lex_tokens(prefix)
         if tokens is None:
             self._accepts = frozenset()
@@ -176,23 +205,39 @@ class OpenUIIncrementalEngine:
             return False
         except UnexpectedEOF:
             self._fed_tokens = self._token_keys(tokens[: self._fed_token_count])
+        self._update_settle_pos(tokens)
         self._refresh_accepts()
         return True
 
     def _incremental_sync(self, prefix: str) -> bool:
-        """Extend an existing InteractiveParser when ``prefix`` grows monotonically."""
+        """Extend an existing InteractiveParser when ``prefix`` grows monotonically.
+
+        Only re-lexes the "unsettled tail" -- ``prefix[self._settle_pos:]``,
+        the still-open last fed token plus whatever text was appended since
+        -- instead of the entire ``prefix`` from scratch. Tokens before
+        ``self._settle_pos`` are provably final (see ``_update_settle_pos``)
+        and are never re-lexed, which turns the per-call lex cost from
+        O(len(prefix)) into O(len(tail)) and the whole-session cost from
+        O(n^2) into O(n) for a prefix that grows via many small ``advance``
+        calls (measured: docs/design/decode-compiler-tree-incremental-sync-relex-finding.md).
+        """
         assert self._ip is not None
-        tokens = self._lex_tokens(prefix)
-        if tokens is None:
+        tail_start = self._settle_pos
+        tail_tokens = self._lex_tokens(prefix[tail_start:])
+        if tail_tokens is None:
             return self._full_sync(prefix)
-        keys = self._token_keys(tokens)
+        for tok in tail_tokens:
+            tok.start_pos = (tok.start_pos or 0) + tail_start
+        prev_settled_count = max(0, self._fed_token_count - 1)
+        keys = self._fed_tokens[:prev_settled_count] + self._token_keys(tail_tokens)
         # Token count shrank OR an already-fed lexeme changed identity
         # (NAME/COMPONENT gluing: "Te" → "Text") — must resync.
-        if len(tokens) < self._fed_token_count or keys[: self._fed_token_count] != self._fed_tokens:
+        if len(keys) < self._fed_token_count or keys[: self._fed_token_count] != self._fed_tokens:
             return self._full_sync(prefix)
         prev_prefix = self._prefix
+        tokens_to_feed = tail_tokens[self._fed_token_count - prev_settled_count :]
         try:
-            for tok in tokens[self._fed_token_count :]:
+            for tok in tokens_to_feed:
                 self._ip.feed_token(tok)
                 self._fed_token_count += 1
             self._fed_tokens = keys[: self._fed_token_count]
@@ -204,6 +249,7 @@ class OpenUIIncrementalEngine:
             self._fed_tokens = keys[: self._fed_token_count]
         self._prefix = prefix
         self._incremental_advances += 1
+        self._update_settle_pos(tail_tokens, token_index_offset=prev_settled_count)
         self._refresh_accepts()
         return True
 

@@ -1,0 +1,154 @@
+{
+  "finding": "compiler_tree_incremental_sync_relex_fix",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "task": "PR #1173 scope note: _incremental_sync (engine.py:149) still re-lexes the entire current prefix on every call (proposed_fix_sketch item 2 from decode-compiler-tree-lexer-rebuild-cost-finding.json, not applied in PR #1173). Measure the real wall-time cost at realistic prefix lengths and apply the fix if warranted.",
+  "measured_before_fix": {
+    "short_prefixes_single_call": {
+      "prefix8": {"n_sync_calls": 1, "total_chars_relexed": 15, "ideal_chars": 15, "amplification_x": 1.0},
+      "prefix9": {"n_sync_calls": 1, "total_chars_relexed": 16, "ideal_chars": 16, "amplification_x": 1.0}
+    },
+    "realistic_session_326_char_record_140_chunked_advance_calls": {
+      "n_sync_calls": 161,
+      "total_chars_relexed": 26469,
+      "ideal_chars_on": 326,
+      "amplification_x": 81.2,
+      "sync_ms": 32.06
+    },
+    "scaling_sweep": [
+      {"chars": 326, "sync_ms": 46.786, "sync_ms_per_char2_x1e6": 440.24},
+      {"chars": 620, "sync_ms": 101.330, "sync_ms_per_char2_x1e6": 263.61},
+      {"chars": 1212, "sync_ms": 333.084, "sync_ms_per_char2_x1e6": 226.75},
+      {"chars": 2396, "sync_ms": 1166.359, "sync_ms_per_char2_x1e6": 203.17},
+      {"chars": 3580, "sync_ms": 2587.643, "sync_ms_per_char2_x1e6": 201.90}
+    ],
+    "interpretation": "near-constant sync_ms/chars^2 across a >10x length range is the signature of O(n^2) whole-session cost; root cause confirmed by reading _incremental_sync: it already tracks _fed_token_count for feeding but calls _lex_tokens(prefix) with the FULL prefix on every call before slicing, so no lexing work was ever actually saved."
+  },
+  "fix": {
+    "file": "src/slm_training/dsl/grammar/fastpath/engine.py",
+    "summary": [
+      "New self._settle_pos: int -- character offset of the start of the last fed token; every token strictly before it is provably final (openui.lark has no lookbehind/word-boundary regex assertions, verified via grep). Initialized to 0 in __init__ and reset().",
+      "New _update_settle_pos(tokens, token_index_offset=0) helper updates _settle_pos after any successful sync.",
+      "_full_sync calls _update_settle_pos(tokens) after feeding (offset 0).",
+      "_incremental_sync now lexes only prefix[self._settle_pos:] (the 'unsettled tail') instead of the whole prefix; tail token start_pos values are offset back to absolute coordinates. The existing shrink/identity-mismatch guard (NAME/COMPONENT gluing) is preserved, computed against the smaller tail_tokens list spliced onto self._fed_tokens[:prev_settled_count]; any divergence still falls back to _full_sync(prefix), same safety net as before."
+    ],
+    "why_safe": "openui.lark (75 lines) has no lookbehind/word-boundary assertions (grep -nE '\\\\b|\\(\\?<|\\(\\?!|\\(\\?=' -> no matches). Lark's BasicLexer is a stateless regex-based longest-match-with-priority scanner: a token's end boundary is decided purely from characters up to that boundary. Every token before the last fed one stopped because of a mismatching character already present in the previously-synced prefix -- appending more text cannot retroactively change that. Only the last fed token could have stopped solely because the prefix ran out, so it is the only one that can still grow. Re-lexing prefix[_settle_pos:] as a standalone substring reproduces what a full lex would give for that region since nothing before it participates in matching decisions at/after it."
+  },
+  "reproduction": {
+    "method": "OpenUIIncrementalEngine exercised directly via advance()/set_prefix(), no train/eval/checkpoint",
+    "env_setup": [
+      "python3.12 -m venv .venv-diag",
+      ".venv-diag/bin/pip install --quiet -e .",
+      ".venv-diag/bin/pip install --quiet \"pytest>=8.0,<9\" \"pytest-asyncio>=0.23,<2\" \"ruff>=0.9,<0.16\"",
+      ".venv-diag/bin/pip install --quiet \"torch>=2.2,<2.6\" --index-url https://download.pytorch.org/whl/cpu",
+      "cd src/apps/openui_bridge && env -u NODE_OPTIONS npm ci --silent"
+    ],
+    "record_source": "grep -rhoP '\"root = [^\"]{50,400}\"' src/slm_training/resources/ | sort -u -- 326-char record from a committed gold-record fixture",
+    "chunking": "re.compile(r'\\w+|\\s+|.').findall(text) -- word/whitespace/punctuation runs, same granularity as token-by-token decode",
+    "sandbox_note": "NODE_OPTIONS unset for the same reason documented in PR #1173 (ambient NODE_OPTIONS malformed for plain node invocation)",
+    "scripts_not_committed": ["measure_incremental_sync.py", "measure_incremental_scaling.py", "verify_incremental_fix.py"]
+  },
+  "measured_after_fix": {
+    "realistic_session_326_char_record": {
+      "total_chars_relexed": 920,
+      "amplification_x": 2.8,
+      "sync_ms": 14.79,
+      "speedup_x": 2.17
+    },
+    "scaling_sweep": [
+      {"chars": 326, "sync_ms_before": 46.786, "sync_ms_after": 17.845, "speedup_x": 2.62, "sync_ms_per_char_after": 0.0547},
+      {"chars": 620, "sync_ms_before": 101.330, "sync_ms_after": 31.432, "speedup_x": 3.22, "sync_ms_per_char_after": 0.0507},
+      {"chars": 1212, "sync_ms_before": 333.084, "sync_ms_after": 57.899, "speedup_x": 5.75, "sync_ms_per_char_after": 0.0478},
+      {"chars": 2396, "sync_ms_before": 1166.359, "sync_ms_after": 126.984, "speedup_x": 9.19, "sync_ms_per_char_after": 0.0530},
+      {"chars": 3580, "sync_ms_before": 2587.643, "sync_ms_after": 179.885, "speedup_x": 14.38, "sync_ms_per_char_after": 0.0502}
+    ],
+    "interpretation": "post-fix sync_ms/chars is near-constant (~0.05ms/char) across a >10x length range -- direct evidence of O(n) linear scaling replacing pre-fix O(n^2). Speedup grows with prefix length (2.6x -> 14.4x) as expected for an O(n^2)->O(n) fix."
+  },
+  "decode_invariant_check": {
+    "claim": "I6/I3: caching/perf change never becomes a legality change",
+    "result": "build_completion_forest coverage/n_paths on prefix8 (complete/2) and prefix9 (complete/12) unchanged; 7-case parametrized shadow-engine comparison (char-by-char prefix8/prefix9, chunked full record, NAME/COMPONENT gluing, number-after-comment gluing, whitespace runs, malformed-then-recovered fragment) shows byte-identical accepts()/fed_tokens/prefix at every step between the tail-relex engine and a shadow engine forced to always full-resync",
+    "verified": true
+  },
+  "unit_test": {
+    "file": "tests/test_dsl/test_grammar_fastpath_incremental_sync.py",
+    "committed": true,
+    "n_tests": 13,
+    "tests": [
+      "test_incremental_sync_matches_full_resync_across_sessions[prefix8_char_by_char]",
+      "test_incremental_sync_matches_full_resync_across_sessions[prefix9_char_by_char]",
+      "test_incremental_sync_matches_full_resync_across_sessions[full_record_word_chunked]",
+      "test_incremental_sync_matches_full_resync_across_sessions[gluing_component_name]",
+      "test_incremental_sync_matches_full_resync_across_sessions[gluing_number_after_comment]",
+      "test_incremental_sync_matches_full_resync_across_sessions[trailing_whitespace_runs]",
+      "test_incremental_sync_matches_full_resync_across_sessions[malformed_then_recover]",
+      "test_incremental_sync_relexes_near_linear_not_quadratic",
+      "test_incremental_sync_faster_than_always_full_resync_on_long_session",
+      "test_settle_pos_resets_on_reset_and_new_engine",
+      "test_build_completion_forest_unchanged_on_finding_prefixes[root = Card([b1-2]",
+      "test_build_completion_forest_unchanged_on_finding_prefixes[root = Card([b1,-12]",
+      "test_load_lexer_still_cached_per_grammar_path"
+    ],
+    "result_after_fix": "13 passed in 6.46s",
+    "result_before_fix_sanity_check": "2/13 fail (test_incremental_sync_relexes_near_linear_not_quadratic: 81.2x amplification exceeds the 8x ceiling; test_settle_pos_resets_on_reset_and_new_engine: AttributeError, _settle_pos doesn't exist pre-fix); the other 11 pass both before and after (they assert the invariant the fix must preserve, not the fix's existence) -- confirms the tests are not vacuous"
+  },
+  "regression_sweep": [
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath_lexer_cache.py tests/test_dsl/test_grammar_fastpath_incremental_sync.py",
+      "result": "19 passed"
+    },
+    {
+      "suite": "tests/test_dsl/{test_pack,test_speculative_rank,test_exact_forced_horizon,test_lattice_search,test_solver_state,test_packs,test_solver_decode}.py",
+      "result": "102 passed, 3 failed",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_speculative_rank.py::test_committed_table_matches_its_builder",
+        "test_speculative_rank.py::test_committed_table_ranks_real_branch_points_confidently",
+        "test_packs.py::test_pack_fixture_loop_generate_train_eval"
+      ]
+    },
+    {
+      "suite": "tests/test_dsl/test_grammar_fastpath.py -k \"lexer or force or completion_forest or engine or pick_constrained\"",
+      "result": "24 passed, 1 failed, 18 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_grammar_fastpath.py::test_completion_forest_admits_null_for_optional_string_after_slots_exhaust"
+      ]
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_lexer_smoke,test_dsl_tokenizer}.py",
+      "result": "27 passed, 1 failed, 1 deselected",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_lexer_smoke.py::test_surface_identifier_arm_is_prohibited"
+      ]
+    },
+    {
+      "suite": "tests/test_harnesses/model_build/{test_grammar_hf,test_v4_levers,test_a3_coverage_remask,test_template_fill,test_v6_remask}.py",
+      "result": "30 passed, 1 failed",
+      "failures_preexisting_confirmed_via_git_stash": [
+        "test_v4_levers.py::test_generate_batch_requests_consumes_harness_slot_contract"
+      ],
+      "note": "PR #1173 could not confirm this one in isolation (killed by the run cap at 150s); this session reproduced it fully in isolation in 39.64s, confirmed pre-existing and unrelated (harnesses/model_build/plugin.py prompt formatting, no code path through OpenUIIncrementalEngine)"
+    }
+  ],
+  "static_checks": {
+    "ruff_check_changed_files": "clean",
+    "verify_version_stamps_check": "2 changed file(s), 0 component(s) touched -- fastpath/engine.py is not itself a path in any versions.json component; no bump required",
+    "repo_policy": "ok (tracked + untracked)",
+    "git_diff_check": "clean"
+  },
+  "interpretation": "Closes proposed_fix_sketch item 2 from decode-compiler-tree-lexer-rebuild-cost-finding.json and the explicit open question in PR #1173's scope note. _incremental_sync re-lexed the whole prefix on every call even after PR #1173's lexer-construction cache -- only the lexer OBJECT was reused, the lexing WORK was not made incremental. This made a growing decode session's total lex cost O(n^2) (81.2x amplification on a realistic 326-char record). The fix exploits the grammar's lack of lookbehind to prove only the last fed token can still be open, reducing re-lex scope to the unsettled tail and restoring O(n) session cost, with a speedup that grows with prefix length (2.6x->14.4x across 326-3580 chars) rather than PR #1173's flat ~2x per-call constant-cost removal.",
+  "scope_note": "No train/eval run, no checkpoint, no --ship-gates scoreboard. Not re-measured against full per-record compiler_ms telemetry or the exposure12 eval protocol (still open, also left open by PR #1173). probe_chunk (engine.py) has the same full-relex shape but was out of this session's scope (task named _incremental_sync specifically). Benchmark uses one real 326-char gold record plus synthetic same-family records scaled to 3580 chars, not a multi-family statistical sweep.",
+  "next_steps": [
+    "Apply the same tail-relex treatment to probe_chunk (engine.py Q1 copy-probe path), which still re-lexes self._prefix + chunk from scratch on every call.",
+    "Re-run the PR #1171 isolated per-record eval protocol now that both PR #1173's and this session's fixes are in place, to see whether compiler_ms drops enough for the exposure12 quality-champion hero to finish inside decode_timeout_seconds=30.",
+    "Extend the scaling sweep to real (not synthetic) long DSL records once a corpus of longer gold examples exists."
+  ],
+  "cleanup_note": ".venv-diag and src/apps/openui_bridge/node_modules/ (both gitignored) and the session's reproduction scripts are not committed.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_dirty": true,
+    "components": {},
+    "note": "python -m scripts.verify_version_stamps --check reports 0 components touched: src/slm_training/dsl/grammar/fastpath/engine.py is not a registered path of any component in src/slm_training/resources/versions.json, so no bump is required for this change."
+  },
+  "captured_at": "2026-07-28T13:46:51Z"
+}
