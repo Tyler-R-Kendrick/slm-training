@@ -1,0 +1,104 @@
+{
+  "finding": "compiler_ms_is_a_pure_python_recursive_reachability_search_not_the_node_bridge",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": false,
+  "task": "Iteration 5 of the great-dirac-w0ytk7 autonomous loop. Iterations 1-4 narrowed compiler_ms (build_completion_forest's timer) to 94.95-97.76% of the exposure12 champion's hero/button/callout smoke-suite wall time, but none split what happens *inside* a single compiler_ms call. This session directly measures, for one isolated hero-record decode replay, whether a single compiler_ms call is dominated by the Node/TypeScript compiler-bridge round trip (the working hypothesis carried into this iteration from the prior doc chain) or by pure-Python compiler work.",
+  "method": {
+    "summary": "Two bounded, CPU-only measurements against a tiny scratch TwoTowerModel (d_model=32, 1 layer) built directly from smoke_hero_01's gold OpenUI source, bypassing full eval-harness/checkpoint construction to stay well inside the 3-minute wall.",
+    "measurement_1_call_split": {
+      "what": "Token-by-token replay of smoke_hero_01's gold source through the real decode call path (build_completion_forest(..., remaining_tokens=...), the exact function twotower.py's compiler-tree per-position loop calls), capped at 12 calls / 90s wall so the run always terminates and emits partial data. _generated_ast_is_complete (the one call site per build_completion_forest invocation that invokes the Node bridge, via lang_core.parse) was unwrapped from its lru_cache and timed directly per call.",
+      "calls_completed": 12,
+      "stop_reason": "max_calls",
+      "script_wall_s": 58.5,
+      "total_ms_sum": 58416.22,
+      "total_ms_mean": 4868.02,
+      "total_ms_median": 812.63,
+      "total_ms_max": 18648.35,
+      "total_ms_min": 99.54,
+      "bridge_roundtrip_ms_sum": 13.98,
+      "bridge_roundtrip_ms_mean": 1.165,
+      "bridge_roundtrip_ms_median": 0.844,
+      "bridge_roundtrip_ms_max": 3.286,
+      "bridge_share_of_total_pct": 0.02,
+      "rest_ms_sum": 58402.24,
+      "rest_share_of_total_pct": 99.98
+    },
+    "measurement_2_cprofile_one_call": {
+      "what": "cProfile of a single representative slow call (position idx=2 of the same replay, ~10.5s in measurement 1's 12-call sample, ~33.5s standalone in a fresh profiled run -- run-to-run variance itself noted, see caveats).",
+      "call_wall_ms": 33494.9,
+      "candidates_returned": 27,
+      "total_function_calls": 55765499,
+      "hot_path": [
+        {
+          "function": "slm_training/dsl/pack.py:402 _tail (recursive reachability-proof search inside _openui_completion_domain's _tail_from closure)",
+          "ncalls_total": 10244,
+          "ncalls_primitive": 32,
+          "cumtime_s": 33.45,
+          "cumtime_pct_of_call": 99.9,
+          "role": "Proves each candidate completion path in the forest can actually reach EOS within the remaining decode budget (docstring: 'prove each action reaches EOS'). Recursion is lru_cache(maxsize=64)-bounded and capped at nodes_left=16, but the lru_cache is defined *inside* _tail_from's closure, so it is fresh (empty) on every one of the 32 top-level (primitive) invocations -- no cache sharing across sibling candidate-path searches within the same build_completion_forest call."
+        },
+        {
+          "function": "engine.py _sync -> _refresh_accepts -> lark InteractiveParser.accepts()",
+          "ncalls": 32270,
+          "cumtime_s": 16.15,
+          "cumtime_pct_of_call": 48.2,
+          "role": "Each _tail recursion node builds a fresh OpenUIIncrementalEngine() (no state/engine reuse passed down -- _tail_from calls _build_openui_completion_forest without a state argument), forcing a full re-lex + re-parse from scratch, then probes reachable next-terminals via Lark's LALR accepts(), which internally copies the parser stack (731012 feed_token calls, 548517 parser-state copy() calls) to test candidates non-destructively."
+        },
+        {
+          "function": "engine.py _lex_tokens/_lex (re-lexing per _tail node)",
+          "ncalls": 47363,
+          "cumtime_s": 5.86,
+          "cumtime_pct_of_call": 17.5,
+          "role": "Re-lexes each candidate prefix from scratch per recursion node (no incremental engine reuse across _tail nodes); this is the layer iteration 1's Lark lexer/scanner cache (PR #1173) targeted -- correctly identified as inside the hot path, but a small minority of it, which is consistent with iteration 1's REJECT finding that caching it alone did not move wall-clock."
+        },
+        {
+          "function": "compiler_draft.py:1139 _generated_ast_is_complete -> lang_core.parse -> lang_core._invoke_repl (Node bridge, persistent REPL)",
+          "ncalls": 264,
+          "cumtime_s": 0.267,
+          "cumtime_pct_of_call": 0.8,
+          "role": "The Node-bridge round trip, invoked once per _build_openui_completion_forest call (including every recursive _tail node, 264 times total within this single 33.5s outer call). Confirms measurement 1's aggregate finding at the deep-recursion level too: the bridge itself is cheap and is not amortization-limited -- the persistent-REPL path (lang_core.py's _invoke_repl, already the default since before this iteration) means each of the 264 calls pays essentially zero subprocess-spawn cost (median well under 2ms)."
+        }
+      ]
+    }
+  },
+  "falsifiable_question": "Is a single compiler_ms call dominated by Node process/bridge round-trip overhead (IPC, subprocess spawn/reuse, serialization) or by actual pure-Python compiler work, and does the persistent-REPL bridge (already the default via lang_core.py's _invoke_repl) mean the Node-bridge round trip is negligible now that the Lark lexer cache (PR #1173, iteration 1) has landed?",
+  "result": "ANSWERED -- pure-Python compiler work dominates overwhelmingly; the Node bridge is negligible (well under 1% at every granularity measured)",
+  "decision": "REJECT the carried-over working hypothesis that the Node/TypeScript compiler-bridge round trip is the dominant or even a meaningfully explanatory cost inside compiler_ms. Across the 12-call aggregate replay, the bridge accounts for 0.02% of total time (13.98ms of 58416ms); inside one deep-recursion profiled call, the bridge accounts for 0.8% (0.267s of 33.5s) even though it is invoked 264 times in that single outer call. The true dominant cost is pack.py's _tail/_tail_from recursive reachability-proof search: for one build_completion_forest call, it drives 32270 fresh engine syncs (each re-lexing and re-parsing from scratch, since no engine/state is threaded through the recursion) and 32270 calls into Lark's InteractiveParser.accepts(), which is itself expensive per-call because it copies the interactive-parser state to probe candidates non-destructively.",
+  "interpretation": "This corrects, rather than confirms, the framing carried into this iteration from the prior doc chain's next-steps section (decode-compiler-tree-timeout-telemetry-restore-20260728.md: 'Consider whether the Node-bridge round trip itself ... is amortizable -- a persistent bridge process instead of one-shot subprocess.run per call would be a genuinely new architectural direction'). That persistent-REPL bridge already exists (lang_core.py's _invoke_repl, _ensure_repl, module-global _REPL_PROC, default path since before this iteration) and is not the bottleneck at all -- the framing that motivated this iteration's own task brief ('compiler_ms ... is now unambiguously the dominant, unexplained cost ... the Node/TypeScript compiler-bridge round trip per decode step') does not survive contact with per-call instrumentation. It also refines iteration 1's REJECT verdict on the Lark lexer/scanner cache (PR #1173): that cache targets exactly the _lex_tokens/_lex layer this session measured at ~17.5% of one call's cost -- real, but a minority contributor next to the _tail_from reachability search's own state-reconstruction-per-node cost (48%+ in Lark's accepts() alone), which explains why caching the lexer in isolation did not move the wall-clock outcome. The single biggest architectural fact this session surfaces: _tail_from's recursion (pack.py:392-419) calls _build_openui_completion_forest directly, per candidate node, without threading through the caller's incremental engine/state -- so every reachability-proof node pays a full relex+reparse instead of extending shared incremental parser state, and the lru_cache meant to bound repeated (current, room) pairs is scoped inside the closure and does not persist across the ~32 sibling top-level searches within one call.",
+  "scope_note": "No claim about the exposure12 champion's quality or promotion status. No decode_outcome, latency, or deadline-semantics change (no source code was edited this session -- pure instrumentation of a standalone tiny scratch model, not the eval harness). No claim that fixing _tail_from's engine reuse would close the 30s wall entirely -- only that it is now the measured, evidenced hot path, displacing the Node-bridge hypothesis this iteration was framed around.",
+  "non_goals": [
+    "No production ship claim.",
+    "No code fix attempted or landed -- the _tail_from reachability-search architecture (threading engine/state through recursive candidate-path proof search, and/or sharing its lru_cache across sibling top-level searches) is a genuine architectural change, explicitly out of scope for a bounded 3-minute-wall iteration per this iteration's own instructions.",
+    "No change to decode_timeout_seconds, deadline semantics, or outcome classification.",
+    "No GPU or real-scale training run -- tiny scratch model (d_model=32, 1 layer), CPU only.",
+    "No claim that the Node bridge is irrelevant everywhere -- only that it is not the compiler_ms bottleneck for this suite's decode-time completion-forest construction path."
+  ],
+  "next_steps": [
+    "If a future iteration wants to reduce compiler_ms, the evidenced next target is pack.py's _tail_from/_tail closure (lines 392-419): thread the caller's already-synced OpenUIIncrementalEngine/state through each recursive candidate-path node instead of constructing a fresh engine per node, and/or hoist the lru_cache above the per-call closure boundary so sibling top-level candidate searches within one build_completion_forest invocation can share proof results. Both are real architectural changes (out of scope this session) that would need their own bounded, falsifiable before/after measurement.",
+    "Consider whether _tail_from's nodes_left=16 budget and Lark's accepts()-based reachability probe could be replaced with the same lexer/parser-state-cache strategy PR #1173 already applied elsewhere, now correctly scoped to the _tail recursion's fresh-engine-per-node pattern rather than the top-level call.",
+    "Re-run measurement 1's call-split protocol against the real exposure12 checkpoint (not this session's tiny scratch model) if a future session wants a production-scale confirmation that the same 0.02%/99.98% bridge/rest split holds at full model width."
+  ],
+  "caveats": [
+    "measurement_2's standalone call (33.5s) is larger than measurement_1's same-position call inside the 12-call batch (~10.5s at idx=2) -- run-to-run variance on a shared CPU sandbox is expected and does not change the qualitative conclusion (bridge negligible, pack.py _tail dominant) since the bridge's absolute cost (0.267s) and share (0.8%) were measured directly in the same profiled run, not inferred from the other run.",
+    "This session used a tiny from-scratch TwoTowerModel (d_model=32, 1 layer, seed 0) built directly from smoke_hero_01's gold text, not the exposure12 champion checkpoint -- chosen to stay inside the 3-minute wall (loading/evaluating through the full eval harness with the champion checkpoint was iteration 4's approach and itself burns most of the 30s decode-timeout budget per record). The qualitative hot-path finding (recursive reachability search >> Node bridge) is a property of the compiler_draft.py/pack.py/engine.py code path itself, not of this particular tiny model's weights, but absolute per-call milliseconds are not directly comparable to iteration 4's champion-checkpoint numbers.",
+    "candidates_returned=27 for the profiled call is consistent with, not identical to, the counts iteration 4 saw for whole-record runs (17/86/31 forwards for hero/button/callout) -- this session profiles one isolated position, not a full record."
+  ],
+  "tests": {
+    "cmd": "env -u NODE_OPTIONS python -m pytest -q tests/test_dsl/test_grammar_capabilities.py::test_completion_domain_is_scope_local_and_witnessed tests/test_harnesses/model_build/test_decode_deadline.py tests/test_harnesses/model_build/test_eval_gates.py -k \"timeout or stats\"",
+    "result": "6 passed in 1.90s",
+    "note": "No source code changed this session (measurement/profiling only against a standalone scratch model); this subset re-confirms the completion-domain and decode-deadline/timeout-telemetry contracts touched or read during instrumentation are unaffected. Full test_compiler_decode.py / test_grammar_fastpath.py suites not run (multi-minute real-model-construction cost per repo instructions)."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "052253df8d31f56ce9e58b991ceab8a027698f1e",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v64",
+      "model.twotower": "v262"
+    },
+    "stamped_at": "2026-07-28T02:54:04Z"
+  },
+  "captured_at": "2026-07-28T02:56:00Z",
+  "cleanup_note": "Scratch measurement/profiling scripts used to produce this doc were run from a session scratchpad outside the repo (not committed -- throwaway repro, per repo instructions); no background processes or Node bridge REPL subprocesses were left running after the session (verified via ps before finishing)."
+}
