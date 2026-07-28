@@ -1050,14 +1050,20 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
         "src/slm_training/dsl/pack.py",
-        "tests/test_dsl/test_operator_registry.py"
+        "tests/test_dsl/test_operator_registry.py",
+        "tests/test_dsl/test_pack_witness_cache.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-28",
+          "note": "Hoist _openui_completion_domain's _tail lru_cache (pack.py:402) out of the per-top-level-candidate loop so it is built once per call instead of once per candidate (docs/design/decode-compiler-tree-witness-search-cache-hoist.md); byte-identical witness content/coverage and nodes_left fairness proven unchanged, but measured _sync call count is also unchanged on both benchmark prefixes (0/N cache hits before and after -- the (current, room) key never collides, so there was no redundant recomputation for a wider scope to save)."
+        },
         {
           "version": "v5",
           "date": "2026-07-26",

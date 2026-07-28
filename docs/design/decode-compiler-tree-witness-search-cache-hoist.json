@@ -1,0 +1,50 @@
+{
+  "finding": "compiler_tree_witness_search_cache_hoist",
+  "honesty_mode": "fixture_or_scratch",
+  "not_ship": true,
+  "is_fix": true,
+  "is_perf_win": false,
+  "task": "PR #1191's named next lever / decode-compiler-tree-witness-search-cost-finding.json next_steps[0]: hoist the @lru_cache-wrapped _tail closure (pack.py:402) out of the per-top-level-candidate loop in _openui_completion_domain so sibling candidates share witness-search results, with a unit test proving witness content and nodes_left fairness are unchanged, then re-measure compiler_ms/_sync-call-count.",
+  "change_summary": "Moved the @lru_cache-wrapped _tail function (and its nodes_left fairness-budget box) from being constructed fresh inside _tail_from (called once per non-EOS top-level candidate) to being constructed once per _openui_completion_domain call, before the candidate loop. _tail_from now just resets a shared _nodes_left[0]=16 counter per call and reuses the shared _tail. lru_cache maxsize changed 64 -> None (unbounded within one call's lifetime).",
+  "safety_argument": "_build_openui_completion_forest's result for a given (current, room) key depends only on request.tokenizer/slot_contract/max_path_tokens/min_content, all constant across the whole call, never candidate-specific. nodes_left gates whether the function BODY runs at all; a cache hit skips the body entirely, so widening cache scope can only ever grant a free win on an already-proven state, never cost a candidate a real chance.",
+  "reproduction": {
+    "prefixes": ["root = Card([b1", "root = Card([b1,"],
+    "prefix_source": "PR #1173's test_grammar_fastpath_lexer_cache.py PREFIX8/PREFIX9, also used in PR #1191's cProfile",
+    "grammar": "src/slm_training/dsl/grammars/openui.lark (via GRAMMARS_DIR)",
+    "tokenizer": "DSLNativeTokenizer.build()",
+    "method": "Direct in-process call to slm_training.dsl.pack._openui_completion_domain with a real CompletionDomainRequestV1 (remaining_tokens=24, max_path_tokens=8, min_content=0); pre-fix numbers captured via `git stash` of the pack.py diff in the same session/process family, post-fix numbers captured with the diff applied.",
+    "code_commit_base": "819a15e"
+  },
+  "measured_before_after": {
+    "root = Card([b1": {
+      "before": {"tail_lru_cache_objects_created": 2, "n_candidates": 2, "sync_calls": 1073},
+      "after": {"tail_lru_cache_objects_created": 1, "n_candidates": 2, "sync_calls": 1073, "tail_cache_info": {"hits": 0, "misses": 22}},
+      "candidates_byte_identical": true
+    },
+    "root = Card([b1,": {
+      "before": {"tail_lru_cache_objects_created": 14, "n_candidates": 12, "sync_calls": 16082},
+      "after": {"tail_lru_cache_objects_created": 1, "n_candidates": 12, "sync_calls": 16082, "tail_cache_info": {"hits": 0, "misses": 4419}},
+      "candidates_byte_identical": true
+    }
+  },
+  "answer": "Hoisting the _tail lru_cache out of the per-candidate loop is safe (byte-identical witness content, unchanged coverage/n_paths, preserved nodes_left fairness) and structurally verified (cache-object count collapses from 2/14 to 1/1). It does NOT reduce _sync/compiler_ms on either measured prefix: cache_info shows 0 hits both before and after (22 and 4419 misses respectively, 0 hits in both scopes) because the (current, room) key is an absolute, strictly-monotonic token-id history + remaining-budget pair that structurally cannot collide -- neither across sibling candidates nor within one candidate's own recursion. The predecessor finding's premise (sibling candidates re-explore identical grammar states) does not hold for this cache's key shape.",
+  "tests_added": {
+    "file": "tests/test_dsl/test_pack_witness_cache.py",
+    "count": 6,
+    "runtime_s": 27.4,
+    "sanity_checked_fail_pre_fix": true,
+    "sanity_check_method": "git stash src/slm_training/dsl/pack.py, rerun test_tail_cache_created_once_per_completion_domain_call -- fails with assert 2 == 1 and assert 14 == 1 (matching the before/after table), then git stash pop"
+  },
+  "validation": {
+    "repo_policy": "ok",
+    "verify_version_stamps": "ok; dsl.operators.registry v5 -> v6",
+    "verify_decode_invariants": "exit 0, agent_surfaces/canonical_defaults/strict_policies/weakening_levers unchanged",
+    "ruff": "all checks passed (src/slm_training/dsl/pack.py, tests/test_dsl/test_pack_witness_cache.py)",
+    "pytest_new_suite": "6 passed in 27.37s",
+    "pytest_related_suites": "45 passed, 1 pre-existing unrelated failure (test_pack_fixture_loop_generate_train_eval; reproduces identically without this diff)",
+    "pytest_component_owner_suite": "tests/test_dsl/test_operator_registry.py: 8 passed"
+  },
+  "version_stamp_impact": "dsl.operators.registry v5 -> v6 (src/slm_training/dsl/pack.py is a watched path)",
+  "named_next_lever": "OpenUIIncrementalEngine.__init__'s per-construction Path.resolve()/os.path.realpath() cost (10,967 calls / ~5.1s combined in PR #1191's cProfile) -- proposed-fix-sketch item 2 from decode-compiler-tree-witness-search-cost-finding.json, still unapplied: cache the resolved grammar path once (module-level, keyed on the raw grammar_path string) instead of resolving inside every __init__. Low-risk, easily testable (pure path-string memoization, no witness-search semantics). Larger/riskier alternative: memoize Lark's InteractiveParser.accepts() by parser-automaton state instead of token history (the dominant 12.6s/23,530-call cost) -- genuinely can produce cache hits since automaton state repeats across different token histories, unlike this session's key shape, but needs its own safety proof before attempting.",
+  "captured_at": "2026-07-28T13:05:00Z"
+}

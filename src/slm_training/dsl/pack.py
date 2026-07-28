@@ -389,42 +389,66 @@ def _openui_completion_domain(request: Any) -> Any:
     # A completion domain is exact only when every exposed action has an actual
     # terminal continuation inside this request's remaining decode budget.
     # The search is over the pack's own finite forest, never model logits.
+    #
+    # `_tail` memoizes proven grammar states (``(current, room) -> witness``)
+    # and is built ONCE per `_openui_completion_domain` call, shared by every
+    # top-level candidate in the loop below -- it used to be rebuilt fresh
+    # (a brand-new `lru_cache`) inside a closure created separately for each
+    # candidate's `_tail_from` call, so sibling candidates never reused each
+    # other's witness-search results even when their recursion revisited the
+    # identical grammar state
+    # (docs/design/decode-compiler-tree-witness-search-cost-finding.md).
+    # Sharing is safe here because `_build_openui_completion_forest`'s result
+    # for a given `(current, room)` pair depends only on `request.tokenizer`,
+    # `request.slot_contract`, `request.max_path_tokens`, and
+    # `request.min_content` -- every one of those is constant across the
+    # whole `_openui_completion_domain` call, never candidate-specific -- so
+    # the same `current` prefix always proves (or fails to prove) the same
+    # tail witness regardless of which top-level candidate is being explored.
+    # `nodes_left` is a *fairness* budget, not a correctness input: each
+    # top-level candidate still gets its own fresh 16 chances to explore a
+    # genuinely novel state, reset by `_tail_from` on every call. A cache hit
+    # never touches it (the `lru_cache` wrapper skips the function body
+    # entirely on a hit), so sharing the cache can only ever hand a later
+    # candidate a free win on a state an earlier candidate already proved --
+    # it can never cost a later candidate any of its own real chances.
+    _nodes_left = [0]
+
+    @lru_cache(maxsize=None)
+    def _tail(current: tuple[int, ...], room: int) -> tuple[int, ...] | None:
+        if room <= 0 or _nodes_left[0] <= 0:
+            return None
+        _nodes_left[0] -= 1
+        forest = _build_openui_completion_forest(
+            request.tokenizer,
+            list(current),
+            slot_contract=list(request.slot_contract),
+            max_path_tokens=request.max_path_tokens,
+            min_content=request.min_content,
+        )
+        if forest.coverage != "complete":
+            return None
+        for path in forest.paths:
+            tokens = tuple(int(token_id) for token_id in path.token_ids)
+            if not tokens or len(tokens) > room:
+                continue
+            if path.kind == "eos":
+                return tokens
+            suffix = _tail(current + tokens, room - len(tokens))
+            if suffix is not None:
+                return tokens + suffix
+        return None
+
     def _tail_from(
         start: tuple[int, ...], remaining: int
     ) -> tuple[int, ...] | None:
         # This is a decode-time proof, not an unbounded solver campaign.
         # Exhaustion is incomplete and refuses the position; it never becomes a
         # model-vocabulary fallback.  Each candidate receives the same bounded
-        # chance to establish a witness, so an early complex branch cannot
-        # starve a later simple one.
-        nodes_left = 16
-
-        @lru_cache(maxsize=64)
-        def _tail(current: tuple[int, ...], room: int) -> tuple[int, ...] | None:
-            nonlocal nodes_left
-            if room <= 0 or nodes_left <= 0:
-                return None
-            nodes_left -= 1
-            forest = _build_openui_completion_forest(
-                request.tokenizer,
-                list(current),
-                slot_contract=list(request.slot_contract),
-                max_path_tokens=request.max_path_tokens,
-                min_content=request.min_content,
-            )
-            if forest.coverage != "complete":
-                return None
-            for path in forest.paths:
-                tokens = tuple(int(token_id) for token_id in path.token_ids)
-                if not tokens or len(tokens) > room:
-                    continue
-                if path.kind == "eos":
-                    return tokens
-                suffix = _tail(current + tokens, room - len(tokens))
-                if suffix is not None:
-                    return tokens + suffix
-            return None
-
+        # chance (16 *novel* states -- see the module note above) to establish
+        # a witness, so an early complex branch cannot starve a later simple
+        # one.
+        _nodes_left[0] = 16
         return _tail(start, remaining)
 
     candidates: list[Any] = []
