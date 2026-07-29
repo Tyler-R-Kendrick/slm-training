@@ -403,3 +403,49 @@ two-target-cluster wiring screen; confirmation was not touched, no checkpoint
 was written, and no production/default claim is supported. AgentV passed 5/5
 with no execution errors. Full k-grid, confidence intervals, work attribution,
 and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).
+
+## Packed completion kernel (2026-07-29)
+
+Canonical runner:
+
+```bash
+PYTHONPATH=src python -m scripts.run_perf_matrix \
+  --completion-kernel-workload direct,corpus,choice,solver,decode \
+  --completion-repeats 2
+```
+
+The workloads were executed as separate CPU shards under the three-minute
+repository cap and merged into
+[completion-kernel-perf-results.json](completion-kernel-perf-results.json).
+The artifact records the measured repeat count for each shard (direct 3,
+corpus 2, choice 5, solver 3, decode 2).
+Recipe: scratch/fixture authorities, no checkpoint, no training, no eval suite,
+`honesty_mode=fixture_perf_not_ship`. The V1 reference and packed path ran in
+the same process with identical tokenizer, prefixes, slot contract, horizons,
+and output comparisons.
+
+| Workload | n | Reference | Packed | Correctness | Gate | Outcome |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| difficult warm graph/DP | 1 | 14.1658 ms | 6.3338 ms | exact 12 paths | ≥10× | **fail, 2.237×** |
+| fresh-request/cache-cleared prefixes | 3 | — | max ratio 1.156× | exact domains | ≤1.15× | **fail** |
+| choice feasibility, allowed-cache cleared | 1 | 44.7459 ms | 2.7204 ms | exact legal set | ≥3× | **pass, 16.448×** |
+| solver successors | 14 | 0.0432 ms | 1.2994 ms | all cached once | expand once | **mechanical pass; intended verdict/certificate gate unmeasured** |
+| cold compiler decode | 1 | 1,708.32 compiler ms | 1,997.61 compiler ms | identical fail-closed output | ≥5× | **fail, 0.855×** |
+
+The kernel also reported one session start, zero append-path full-prefix lexical
+bytes, and zero fresh candidate-engine allocations on the decode fixture.
+Focused tests prove complete-singleton zero-forward behavior; this bounded
+fixture used one forward before its exact authority stopped fail-closed.
+
+This is a mixed, non-promotable result. Exact parity and cold choice
+feasibility pass. The difficult graph/DP, cold-prefix regression, and
+compiler-decode speed objectives do not; the solver row proves only request
+reuse and is not the plan's verdict/certificate gate. Profiling found 827
+packed forest builds versus 830 reference builds, so the current graph does
+not converge enough to amortize the general forest builder; the cold `root =`
+result also shows that building the packed graph can cost more before reuse.
+Per I14, the successor remains open: precompile schema/semantic transitions so
+outgoing edges no longer invoke the general forest builder at every state,
+then rerun these unchanged cold fixtures and add exact solver verdict and
+certificate replay. Do not replace request-local authority with a global
+cache and do not enable `compiler_decode_mode` by default from this evidence.

@@ -123,3 +123,37 @@ completion forest reports `coverage="complete"`; a partial singleton still runs
 the neural ranker and is not counted as a certified forced span. MaskGIT's narrow
 one-hole terminal step can bypass; every step whose schedule, confidence, attention,
 survival, or remasking could depend on logits remains neural work.
+
+## Packed completion session (2026-07-29)
+
+Lexer-native decode now keeps one `CompletionSession` per decode row and shares
+the same session among batch rows only when tokenizer, runtime-symbol inventory,
+slot contract, pack/schema identity, grammar options, proof budget, and exact
+prefix match. The session interns
+parser plus semantic state, memoizes transitions/outgoing domains, replays
+positive and negative terminal-witness proofs with the original per-query node
+charges, and caches exact completed domain results. State ids are request-local
+implementation details and never enter certificates.
+
+`GrammarDecodeState.advance_token` advances the packed state beside the existing
+incremental parser. Arbitrary replacement prefixes discard the row attachment;
+lattice rollback restores an exact pooled interned engine/state when available
+and otherwise takes the legacy replay path. Append-only commits advance it.
+Complete, terminal-reachable singleton closures
+commit before compiler ranking and stop at branches, EOS, literal frames,
+incomplete coverage, deadlines, or the remaining-token budget. The solver
+expander likewise memoizes an identical `(state, hole, value)` successor, so an
+exact successor is expanded once per request.
+
+`DecodeStats` exposes the `completion_*` work counters. Non-native and
+non-kernel paths leave them zero. The private
+`_openui_completion_domain_reference` remains only for differential tests and
+the perf-matrix control; production never selects it.
+
+Correctness is pinned by prefix/corpus differential tests, replayable terminal
+witnesses, UNKNOWN/timeout poisoning tests, cache-context separation,
+zero-cost-edge rejection, request-local batch sharing, interned restore tests, and
+singleton no-forward tests. Measured fixture results and the remaining negative
+decode result are recorded in
+[completion-kernel-perf-results.json](completion-kernel-perf-results.json) and
+[the perf matrix](perf-experiment-matrix.md#packed-completion-kernel-2026-07-29).

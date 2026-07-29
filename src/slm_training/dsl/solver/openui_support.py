@@ -21,7 +21,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
+from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest
 from slm_training.dsl.grammar.fastpath.token_map import decode_prefix
 from slm_training.dsl.solver.adapters import completion_forest_state
 from slm_training.dsl.solver.state import (
@@ -38,6 +39,10 @@ from slm_training.dsl.solver.support import (
 )
 
 WELL_FORMED_PROFILE = "openui/lang-core-validate/well-formed@0.2.x"
+
+# Coverage-"none" marker for a rejected advance (identical to a fresh build's
+# dead-prefix forest: no paths, no terminals).
+_DEAD_FOREST = CompletionForest((), "none")
 
 
 class OpenUIWellFormedVerifier:
@@ -70,7 +75,16 @@ class OpenUIWellFormedVerifier:
 
 
 class OpenUIForestExpander:
-    """Bounded deterministic expander over the OpenUI choice/compiler forest."""
+    """Bounded deterministic expander over the OpenUI choice/compiler forest.
+
+    Holds one request-local packed
+    :class:`~slm_training.dsl.grammar.fastpath.completion_kernel.CompletionSession`:
+    ``_project``/``successor`` reuse interned states (advance along the chosen
+    path's token ids, then project the target state's outgoing edges) instead
+    of building a fresh forest per node with no shared state.  Certificates
+    remain payload-based (kind, token ids, versions, digests) — interned
+    state ids never leave the expander.
+    """
 
     def __init__(
         self,
@@ -88,11 +102,19 @@ class OpenUIForestExpander:
         self._bounds = bounds
         self._mpt = max(1, int(max_path_tokens))
         self._eos = int(tokenizer.eos_id)
+        self._session = CompletionSession(tokenizer, max_path_tokens=self._mpt)
         self._prefix_by_fp: dict[str, tuple[int, ...]] = {}
-        self._root = self._project(tuple(int(t) for t in prefix_ids))
+        self._sid_by_fp: dict[str, int] = {}
+        self._successors: dict[
+            tuple[str, HoleId, DomainValue], ExpandStep
+        ] = {}
+        self._root = self._project(tuple(int(t) for t in prefix_ids), None)
 
-    def _project(self, prefix: tuple[int, ...]) -> FiniteDomainState:
-        forest = build_completion_forest(self._tok, list(prefix), max_path_tokens=self._mpt)
+    def _project(
+        self, prefix: tuple[int, ...], state_id: int | None
+    ) -> FiniteDomainState:
+        sid = self._session.seed(prefix) if state_id is None else state_id
+        forest = self._session.outgoing(sid)
         state = completion_forest_state(
             prefix_ids=prefix,
             forest=forest,
@@ -101,6 +123,7 @@ class OpenUIForestExpander:
             bounds=self._bounds,
         )
         self._prefix_by_fp[state.fingerprint] = prefix
+        self._sid_by_fp[state.fingerprint] = sid
         return state
 
     # --- ProblemExpander protocol ---------------------------------------- #
@@ -127,34 +150,57 @@ class OpenUIForestExpander:
         self, state: FiniteDomainState, hole_id: HoleId, value: DomainValue
     ) -> ExpandStep:
         prefix = self._prefix_by_fp.get(state.fingerprint)
-        if prefix is None:
+        sid = self._sid_by_fp.get(state.fingerprint)
+        if prefix is None or sid is None:
             # The oracle only expands states this expander created; a miss means
             # an out-of-band state we cannot faithfully advance -> UNKNOWN.
             return ExpandStep(
                 ExpandStatus.INCOMPLETE, coverage="none", detail="unknown_state"
             )
+        cache_key = (state.fingerprint, hole_id, value)
+        cached = self._successors.get(cache_key)
+        if cached is not None:
+            return cached
+
+        def _done(step: ExpandStep) -> ExpandStep:
+            self._successors[cache_key] = step
+            return step
+
         payload = value.payload
         token_ids = tuple(int(tok) for tok in payload.get("token_ids", ()))
         kind = str(payload.get("kind", ""))
         if kind == "eos" or (len(token_ids) == 1 and token_ids[0] == self._eos):
             program = decode_prefix(self._tok, list(prefix))
-            return ExpandStep(
-                ExpandStatus.TERMINAL,
-                program=program,
-                coverage="complete",
-                detail=f"prefix_len={len(prefix)}",
+            return _done(
+                ExpandStep(
+                    ExpandStatus.TERMINAL,
+                    program=program,
+                    coverage="complete",
+                    detail=f"prefix_len={len(prefix)}",
+                )
             )
         new_prefix = prefix + token_ids
-        forest = build_completion_forest(
-            self._tok, list(new_prefix), max_path_tokens=self._mpt
+        child_sid = self._session.advance_path(sid, token_ids)
+        forest = (
+            self._session.outgoing(child_sid)
+            if child_sid is not None
+            else _DEAD_FOREST
         )
         if forest.coverage == "none":
-            return ExpandStep(ExpandStatus.DEAD, coverage="none", detail="illegal_prefix")
+            return _done(
+                ExpandStep(
+                    ExpandStatus.DEAD,
+                    coverage="none",
+                    detail="illegal_prefix",
+                )
+            )
         if not forest.paths:
-            return ExpandStep(
-                ExpandStatus.INCOMPLETE,
-                coverage=forest.coverage,
-                detail="no_enumerated_actions",
+            return _done(
+                ExpandStep(
+                    ExpandStatus.INCOMPLETE,
+                    coverage=forest.coverage,
+                    detail="no_enumerated_actions",
+                )
             )
         child = completion_forest_state(
             prefix_ids=new_prefix,
@@ -164,6 +210,11 @@ class OpenUIForestExpander:
             bounds=self._bounds,
         )
         self._prefix_by_fp[child.fingerprint] = new_prefix
-        return ExpandStep(
-            ExpandStatus.CONTINUE, next_state=child, coverage=forest.coverage
+        self._sid_by_fp[child.fingerprint] = child_sid
+        return _done(
+            ExpandStep(
+                ExpandStatus.CONTINUE,
+                next_state=child,
+                coverage=forest.coverage,
+            )
         )

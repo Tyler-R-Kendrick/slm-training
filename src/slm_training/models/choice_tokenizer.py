@@ -20,8 +20,7 @@ coverage for a stable loss space; see
 from __future__ import annotations
 
 import json
-from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
@@ -222,6 +221,150 @@ class ChoiceTokenizer:
     vocab_candidates_avoided: int = field(default=0, repr=False, compare=False)
     completion_cache_hits: int = field(default=0, repr=False, compare=False)
     completion_cache_misses: int = field(default=0, repr=False, compare=False)
+    # Process-local schema interning (canonical JSON identity -> stable int).
+    schema_intern: dict[str, int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    schema_intern_hits: int = field(default=0, repr=False, compare=False)
+    schema_intern_misses: int = field(default=0, repr=False, compare=False)
+    # Shared bounded-completion-distance memo keyed by (signature, room).
+    distance_cache: dict[tuple[object, ...], int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    distance_cache_hits: int = field(default=0, repr=False, compare=False)
+    distance_cache_misses: int = field(default=0, repr=False, compare=False)
+    # Copy-on-write instrumentation for ChoiceDecodeState.clone()/frame swaps.
+    clone_count: int = field(default=0, repr=False, compare=False)
+    frame_cow_copies: int = field(default=0, repr=False, compare=False)
+    # Minimal-token-cost estimates (valid lower bounds) backing
+    # ChoiceDecodeState._completion_lower_bound. Cached by interned schema id
+    # / component name; values computed under a cycle guard remain valid
+    # underestimates, so caching is always safe.
+    schema_cost_cache: dict[int, int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    component_cost_cache: dict[str, int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    element_cost_cache: int = field(default=0, repr=False, compare=False)
+
+    def intern_schema(self, schema: dict[str, Any]) -> int:
+        """Stable process-local id for a schema's canonical JSON identity."""
+        key = json.dumps(schema, sort_keys=True, separators=(",", ":"))
+        cached = self.schema_intern.get(key)
+        if cached is not None:
+            self.schema_intern_hits += 1
+            return cached
+        self.schema_intern_misses += 1
+        schema_id = len(self.schema_intern)
+        self.schema_intern[key] = schema_id
+        return schema_id
+
+    def schema_min_tokens(
+        self, schema: dict[str, Any], _active: frozenset[str] = frozenset()
+    ) -> int:
+        """Lower bound on tokens to produce one expression for ``schema``."""
+        if not schema:
+            return 1
+        schema_id = self.intern_schema(schema)
+        cached = self.schema_cost_cache.get(schema_id)
+        if cached is not None:
+            return cached
+        cost = self._schema_min_tokens(schema, _active)
+        self.schema_cost_cache[schema_id] = cost
+        return cost
+
+    def _schema_min_tokens(
+        self, schema: dict[str, Any], active: frozenset[str]
+    ) -> int:
+        infeasible = 1 << 20
+        if _is_direct_placeholder_schema(schema):
+            return 1
+        if "anyOf" in schema:
+            options = schema["anyOf"] or ()
+            return min(
+                (self.schema_min_tokens(dict(option), active) for option in options),
+                default=1,
+            )
+        enum_values = tuple(schema.get("enum") or ())
+        if enum_values:
+            if any(
+                f"{LIT_PREFIX}{json.dumps(value)}" in self.token_to_id
+                for value in enum_values
+            ):
+                return 1
+            # Closed enum with no in-vocab literal spelling: unreachable.
+            return infeasible
+        ref = str(schema.get("$ref") or "")
+        if ref.startswith("#/$defs/"):
+            return self.component_min_tokens(ref.rsplit("/", 1)[-1], active)
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            return min(
+                (self._schema_type_min_tokens(item, schema, active) for item in expected),
+                default=1,
+            )
+        return self._schema_type_min_tokens(expected, schema, active)
+
+    def _schema_type_min_tokens(
+        self, expected: object, schema: dict[str, Any], active: frozenset[str]
+    ) -> int:
+        infeasible = 1 << 20
+        if expected == "array":
+            return 2  # open + close (items are optional)
+        if expected == "object":
+            properties = schema.get("properties")
+            property_map = properties if isinstance(properties, dict) else {}
+            cost = 2  # open + close
+            for name in schema.get("required", ()) or ():
+                name = str(name)
+                if name in property_map:
+                    cost += 1 + self.schema_min_tokens(
+                        dict(property_map[name]), active
+                    )
+                elif f"{NAME_PREFIX}{name}" in self.token_to_id:
+                    cost += 2  # closed-pool key token + minimal value
+                else:
+                    # Required key is unspellable: can never close legally.
+                    return infeasible
+            return cost
+        # string / number / integer / boolean / null / untyped: one literal or
+        # slot token suffices (untyped accepts ``LIT:null``).
+        return 1
+
+    def component_min_tokens(
+        self, component: str, _active: frozenset[str] = frozenset()
+    ) -> int:
+        """Lower bound on tokens for a complete ``element:<component>``."""
+        cached = self.component_cost_cache.get(component)
+        if cached is not None:
+            return cached
+        if component in _active:
+            return 2  # cycle guard: open + close only (valid underestimate)
+        contract = _component_contracts().get(component)
+        if contract is None:
+            return 3
+        schemas, required_args = contract
+        active = _active | {component}
+        cost = 2  # open + close
+        for schema in schemas[:required_args]:
+            cost += self.schema_min_tokens(dict(schema), active)
+        self.component_cost_cache[component] = cost
+        return cost
+
+    def element_min_tokens(self) -> int:
+        """Cheapest complete element section, in tokens (lower bound)."""
+        if not self.element_cost_cache:
+            contracts = _component_contracts()
+            self.element_cost_cache = min(
+                (
+                    self.component_min_tokens(component)
+                    for component in contracts
+                    if f"{OPEN_PREFIX}{component}" in self.token_to_id
+                ),
+                default=3,
+            )
+        return self.element_cost_cache
 
     # --- special ids -----------------------------------------------------
 
@@ -661,6 +804,12 @@ class ChoiceTokenizer:
 
 @dataclass
 class _ChoiceFrame:
+    """Pushdown frame. Treated as persistent: ChoiceDecodeState never mutates
+    a frame in place — transitions swap in ``dataclasses.replace`` copies so a
+    shallow ``clone()`` shares untouched frames safely. (Tests may still patch
+    a freshly built frame's fields before any clone/advance; that is the one
+    sanctioned in-place write.)"""
+
     kind: str
     expr_type: str
     close: str | None = None
@@ -676,6 +825,9 @@ class _ChoiceFrame:
     seen_properties: tuple[str, ...] = ()
     active_property: str | None = None
     additional_properties: bool = True
+    # Interned identities for ``schemas`` (ChoiceTokenizer.intern_schema); the
+    # cheap stand-in for per-schema JSON text in signatures.
+    schema_ids: tuple[int, ...] = ()
 
 
 @dataclass
@@ -694,11 +846,14 @@ class ChoiceDecodeState:
     literal_is_object_key: bool = False
 
     def clone(self) -> ChoiceDecodeState:
+        """O(stack) shallow copy: frames are persistent (copy-on-write), so the
+        frame list is shared, never deep-copied."""
+        self.tokenizer.clone_count += 1
         return ChoiceDecodeState(
             tokenizer=self.tokenizer,
             slot_count=self.slot_count,
             mode=self.mode,
-            frames=deepcopy(self.frames),
+            frames=list(self.frames),
             section_types=list(self.section_types),
             current_marker=self.current_marker,
             valid_root_seen=self.valid_root_seen,
@@ -706,6 +861,11 @@ class ChoiceDecodeState:
             literal_size=self.literal_size,
             literal_is_object_key=self.literal_is_object_key,
         )
+
+    def _replace_top(self, **changes: Any) -> None:
+        """Copy-on-write transition on the top frame (never in-place)."""
+        self.tokenizer.frame_cow_copies += 1
+        self.frames[-1] = replace(self.frames[-1], **changes)
 
     def can_end(self) -> bool:
         if self.frames or self.literal_frame is not None:
@@ -783,40 +943,45 @@ class ChoiceDecodeState:
             return True
         frame = self.frames[-1]
         if frame.kind == "fixed":
-            frame.remaining -= 1
-            if frame.remaining == 0:
+            remaining = frame.remaining - 1
+            if remaining == 0:
                 self.frames.pop()
                 return self._complete_expr(frame.expr_type)
+            self._replace_top(remaining=remaining)
             return True
         elif frame.kind == "object":
             if 0 <= frame.arg_index < len(frame.schemas) and not self._schema_accepts(
                 frame.schemas[frame.arg_index], expr_type
             ):
                 return False
+            seen = frame.seen_properties
             if frame.active_property is not None:
-                frame.seen_properties = (
-                    *frame.seen_properties,
+                seen = (
+                    *seen,
                     frame.active_property,
                 )
-            frame.active_property = None
-            frame.arg_index = -1
-            frame.phase = "key"
+            self._replace_top(
+                seen_properties=seen,
+                active_property=None,
+                arg_index=-1,
+                phase="key",
+            )
             return True
         elif frame.kind == "variadic" and frame.schemas:
             item_schema = frame.schemas[0] if frame.schemas else {}
             accepted = self._schema_accepts(item_schema, expr_type)
             if accepted:
-                frame.item_count += 1
+                self._replace_top(item_count=frame.item_count + 1)
             return accepted
         elif frame.kind == "variadic":
-            frame.item_count += 1
+            self._replace_top(item_count=frame.item_count + 1)
             return True
         elif frame.kind == "component":
             if frame.arg_index >= len(frame.schemas):
                 return False
             if not self._schema_accepts(frame.schemas[frame.arg_index], expr_type):
                 return False
-            frame.arg_index += 1
+            self._replace_top(arg_index=frame.arg_index + 1)
             return True
         return True
 
@@ -844,6 +1009,9 @@ class ChoiceDecodeState:
                     schemas=schemas,
                     required_args=required_args,
                     property_names=tuple(_prop_order().get(component, ())),
+                    schema_ids=tuple(
+                        self.tokenizer.intern_schema(schema) for schema in schemas
+                    ),
                 )
             )
             return True
@@ -867,6 +1035,7 @@ class ChoiceDecodeState:
                     "array",
                     close=LIST_CLOSE,
                     schemas=(item_schema,),
+                    schema_ids=(self.tokenizer.intern_schema(item_schema),),
                 )
             )
             return True
@@ -880,14 +1049,17 @@ class ChoiceDecodeState:
                 for name in schema.get("required", ())
                 if str(name) in property_map
             )
+            prop_schemas = tuple(dict(property_map[name]) for name in property_names)
             self.frames.append(
                 _ChoiceFrame(
                     "object",
                     "object",
                     close=OBJ_CLOSE,
                     phase="key",
-                    schemas=tuple(
-                        dict(property_map[name]) for name in property_names
+                    schemas=prop_schemas,
+                    schema_ids=tuple(
+                        self.tokenizer.intern_schema(schema)
+                        for schema in prop_schemas
                     ),
                     arg_index=-1,
                     property_names=property_names,
@@ -921,7 +1093,9 @@ class ChoiceDecodeState:
                 and self.frames[-1].kind == "variadic"
                 and self.frames[-1].expr_type == "array"
             ):
-                self.frames[-1].reference_count += 1
+                self._replace_top(
+                    reference_count=self.frames[-1].reference_count + 1
+                )
             return self._complete_expr(expr_type)
         if token.startswith(SLOT_PREFIX):
             try:
@@ -971,7 +1145,7 @@ class ChoiceDecodeState:
                 self.literal_size = 0
                 self.literal_is_object_key = False
                 if object_key:
-                    self.frames[-1].phase = "value"
+                    self._replace_top(phase="value")
                 elif marker == MEMBER_STR:
                     self.frames.append(_ChoiceFrame("fixed", "other", remaining=1))
                 else:
@@ -1020,19 +1194,21 @@ class ChoiceDecodeState:
                 if name in frame.seen_properties:
                     return False
                 if name in frame.property_names:
-                    frame.arg_index = frame.property_names.index(name)
+                    arg_index = frame.property_names.index(name)
                 elif not frame.additional_properties:
                     return False
                 else:
-                    frame.arg_index = -1
-                frame.active_property = name
-                frame.phase = "value"
+                    arg_index = -1
+                self._replace_top(
+                    arg_index=arg_index,
+                    active_property=name,
+                    phase="value",
+                )
                 return True
             if token == NAME_STR:
                 if not frame.additional_properties:
                     return False
-                frame.arg_index = -1
-                frame.active_property = None
+                self._replace_top(arg_index=-1, active_property=None)
                 self.literal_frame = token
                 self.literal_size = 0
                 self.literal_is_object_key = True
@@ -1130,19 +1306,254 @@ class ChoiceDecodeState:
             self.tokenizer.completion_cache_hits += 1
             return cached
         self.tokenizer.completion_cache_misses += 1
-        probe = self.clone()
-        result = 1025
-        for count in range(1, 1025):
-            token_id = probe._completion_id()
-            if not probe.advance_id(token_id):
-                break
-            if token_id == probe.tokenizer.eos_id:
-                result = count
-                break
+        distance = self._completion_distance(1024)
+        result = distance if distance <= 1024 else 1025
         if len(self.tokenizer.completion_cache) >= 8192:
             self.tokenizer.completion_cache.clear()
         self.tokenizer.completion_cache[key] = result
         return result
+
+    def _completion_lower_bound(self) -> int:
+        """Cheap valid lower bound on the completion distance (EOS included).
+
+        Counts unavoidable tokens only: the final EOS, each open frame's close,
+        schema-derived minimal costs for still-required arguments/properties,
+        and a trailing element section when the mode's terminal predicate
+        demands one. The in-progress literal's share of pending work is
+        credited back (over-crediting only weakens the bound, never breaks
+        validity), so the result never overestimates and is safe for
+        branch-and-bound pruning.
+        """
+        if self.can_end():
+            return 1
+        tok = self.tokenizer
+        infeasible = 1 << 20
+        # Dead-end detection: a frame whose expr_type its parent can never
+        # accept (checked statically, same predicate `_complete_expr` applies
+        # at close time) makes every completion impossible.
+        for index in range(1, len(self.frames)):
+            parent = self.frames[index - 1]
+            child_type = self.frames[index].expr_type
+            if parent.kind == "component":
+                if parent.arg_index >= len(parent.schemas) or not self._schema_accepts(
+                    parent.schemas[parent.arg_index], child_type
+                ):
+                    return infeasible
+            elif parent.kind == "variadic" and parent.schemas:
+                if not self._schema_accepts(parent.schemas[0], child_type):
+                    return infeasible
+            elif parent.kind == "object":
+                if 0 <= parent.arg_index < len(parent.schemas) and not self._schema_accepts(
+                    parent.schemas[parent.arg_index], child_type
+                ):
+                    return infeasible
+        literal_active = self.literal_frame is not None
+        bound = 1  # the final EOS
+        if literal_active:
+            bound += (
+                1
+                if (self.literal_size or self.literal_frame == LIT_STR)
+                else 2
+            )
+        pending = 0
+        credit = 0
+        for frame in self.frames:
+            if frame.close is not None:
+                pending += 1
+            if frame.kind == "component":
+                for index in range(
+                    max(frame.arg_index, 0),
+                    min(frame.required_args, len(frame.schemas)),
+                ):
+                    pending += tok.schema_min_tokens(frame.schemas[index])
+            elif frame.kind == "fixed":
+                pending += max(0, frame.remaining)
+            elif frame.kind == "object":
+                for name in frame.required_properties:
+                    if name in frame.seen_properties:
+                        continue
+                    pending += 1  # the key token
+                    if name in frame.property_names:
+                        index = frame.property_names.index(name)
+                        if index < len(frame.schemas):
+                            pending += tok.schema_min_tokens(frame.schemas[index])
+                            continue
+                    pending += 1  # minimal out-of-schema value
+        if literal_active and self.frames:
+            # The literal fills one pending item whose cost was counted above;
+            # credit it back (the literal's own tokens are in ``bound``).
+            top = self.frames[-1]
+            if self.literal_is_object_key and top.kind == "object":
+                credit = 1
+            elif top.kind == "component" and 0 <= top.arg_index < min(
+                top.required_args, len(top.schemas)
+            ):
+                credit = tok.schema_min_tokens(top.schemas[top.arg_index])
+            elif top.kind == "fixed" and top.remaining > 0:
+                credit = 1
+            elif top.kind == "object" and top.active_property is not None:
+                credit = 2
+        pending = max(0, pending - credit)
+        element = tok.element_min_tokens()
+        if not self.frames:
+            # Root: the mode terminal predicate may demand a further section.
+            if self.mode == "v05":
+                if not self.valid_root_seen:
+                    pending += element
+                    if literal_active or self.current_marker is None:
+                        pending += 1  # statement marker still needed
+                elif not literal_active:
+                    pending += 1 + (1 if self.current_marker is None else 0)
+            else:
+                # Structural (or undecided): the final section must be an
+                # element; the cheapest completion is one element section.
+                pending += element
+        else:
+            root_type = self.frames[0].expr_type
+            if self.mode == "structural" and not root_type.startswith("element:"):
+                pending += element
+            elif self.mode == "v05" and not self.valid_root_seen and not (
+                self.current_marker == "r=" and root_type.startswith("element:")
+            ):
+                pending += element + 1  # marker + element section
+        return bound + pending
+
+    def _completion_distance(self, room: int) -> int:
+        """Bounded minimum completion distance in tokens, EOS included.
+
+        D(q) = 1 if ``can_end(q)`` (emit EOS), else
+        ``1 + min`` over admitted actions ``a`` of ``D(advance(q, a))``.
+        Computed with a strict budget: the room decreases on every edge so
+        cycles terminate; a node whose completion needs more than its room
+        reports ``room + 1`` (infeasible within budget). Results are memoized
+        per ``(signature, room)`` in the tokenizer's shared ``distance_cache``.
+        Each node first runs the deterministic greedy completion as an upper
+        bound; when that meets ``_completion_lower_bound`` the node is
+        provably optimal and no child is explored, otherwise children are
+        explored with branch-and-bound pruned by the same lower bound — the
+        result is always the true bounded minimum.
+        """
+        tok = self.tokenizer
+        room = int(room)
+        if self.can_end():
+            return 1 if room >= 1 else room + 1
+        root_key = (self.signature(), room)
+        cached = tok.distance_cache.get(root_key)
+        if cached is not None:
+            tok.distance_cache_hits += 1
+            return cached
+        tok.distance_cache_misses += 1
+
+        eos_id = tok.eos_id
+        # Iterative deepening-free DFS (explicit stack: completions may exceed
+        # the interpreter recursion limit). Entries:
+        # [state, room, child_states | None, next_child_index, best]
+        # ``path_signatures`` holds ancestor signatures: a minimum completion
+        # never revisits a signature (the loop could be spliced out for a
+        # strictly shorter completion), so revisiting children are skipped.
+        root = self.clone()
+        stack: list[list[object]] = [[root, room, None, 0, room + 1]]
+        path_signatures = {root.signature()}
+        value = room + 1
+        while stack:
+            entry = stack[-1]
+            state = entry[0]
+            budget = int(entry[1])
+            if entry[2] is None:
+                # Greedy completion seed; when it meets the lower bound the
+                # node is provably optimal and children are skipped entirely.
+                lower = state._completion_lower_bound()
+                best = budget + 1
+                greedy = state.clone()
+                for count in range(1, budget + 1):
+                    token_id = greedy._completion_id()
+                    if not greedy.advance_id(token_id):
+                        break
+                    if token_id == eos_id:
+                        best = count
+                        break
+                if lower > budget or best <= lower:
+                    # Infeasible within budget, or greedy met the lower bound
+                    # (provably minimal): finalize without exploring children.
+                    value = best
+                    if len(tok.distance_cache) >= 8192:
+                        tok.distance_cache.clear()
+                    tok.distance_cache[(state.signature(), budget)] = value
+                    path_signatures.discard(state.signature())
+                    stack.pop()
+                    continue
+                entry[4] = best
+                children: list[ChoiceDecodeState] = []
+                child_bounds: list[int] = []
+                for token_id in state._candidate_ids():
+                    if token_id == eos_id:
+                        continue
+                    probe = state.clone()
+                    if probe.advance_id(token_id):
+                        children.append(probe)
+                        child_bounds.append(probe._completion_lower_bound())
+                # Cheapest-bound first: the bound tightens after the first few
+                # children, and the rest are pruned by their lower bounds.
+                order = sorted(
+                    range(len(children)), key=lambda i: child_bounds[i]
+                )
+                entry[2] = (
+                    [children[i] for i in order],
+                    [child_bounds[i] for i in order],
+                )
+            children, child_bounds = entry[2]
+            index = int(entry[3])
+            best = int(entry[4])
+            if index < len(children) and best > 2:
+                child = children[index]
+                # Only a child finishing in <= best - 2 improves best; also
+                # the child gets at most budget - 1 further tokens.
+                child_budget = min(budget - 1, best - 2)
+                if (
+                    child_budget < 1
+                    or child_bounds[index] > child_budget
+                ):
+                    entry[3] = index + 1
+                    continue
+                if child.can_end():
+                    child_value = 1
+                else:
+                    child_key = (child.signature(), child_budget)
+                    if child_key[0] in path_signatures:
+                        # Loop back to an ancestor signature: never part of a
+                        # minimum completion.
+                        entry[3] = index + 1
+                        continue
+                    hit = tok.distance_cache.get(child_key)
+                    if hit is not None:
+                        tok.distance_cache_hits += 1
+                        child_value = hit
+                    else:
+                        tok.distance_cache_misses += 1
+                        path_signatures.add(child_key[0])
+                        stack.append(
+                            [child, child_budget, None, 0, child_budget + 1]
+                        )
+                        continue
+                if child_value <= child_budget and 1 + child_value < best:
+                    entry[4] = best = 1 + child_value
+                entry[3] = index + 1
+                continue
+            # Node finalized: best is its exact bounded distance.
+            value = best
+            if len(tok.distance_cache) >= 8192:
+                tok.distance_cache.clear()
+            tok.distance_cache[(state.signature(), budget)] = value
+            path_signatures.discard(state.signature())
+            stack.pop()
+        return value
+
+    def _frame_schema_ids(self, frame: _ChoiceFrame) -> tuple[int, ...]:
+        """Interned schema identities for a frame, interning on demand for
+        frames built outside the advance paths (synthetic test frames)."""
+        if frame.schema_ids or not frame.schemas:
+            return frame.schema_ids
+        return tuple(self.tokenizer.intern_schema(schema) for schema in frame.schemas)
 
     def signature(self) -> tuple[object, ...]:
         return (
@@ -1164,10 +1575,7 @@ class ChoiceDecodeState:
                     frame.seen_properties,
                     frame.active_property,
                     frame.additional_properties,
-                    tuple(
-                        json.dumps(schema, sort_keys=True, separators=(",", ":"))
-                        for schema in frame.schemas
-                    ),
+                    self._frame_schema_ids(frame),
                 )
                 for frame in self.frames
             ),
@@ -1238,6 +1646,7 @@ class ChoiceDecodeState:
         self, candidate_ids: Iterable[int], remaining_positions: int
     ) -> set[int]:
         allowed: set[int] = set()
+        budget = min(remaining_positions - 1, 1024)
         for token_id in candidate_ids:
             probe = self.clone()
             if not probe.advance_id(token_id):
@@ -1245,7 +1654,7 @@ class ChoiceDecodeState:
             completion = (
                 0
                 if token_id == self.tokenizer.eos_id
-                else probe.minimal_completion_length()
+                else probe._completion_distance(budget)
             )
             if completion <= remaining_positions - 1:
                 allowed.add(token_id)

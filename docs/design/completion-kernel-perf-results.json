@@ -1,0 +1,223 @@
+{
+  "schema_version": "completion-kernel-perf/v1",
+  "recipe": {
+    "device": "cpu",
+    "execution": "independently capped workload shards",
+    "honesty_mode": "fixture_perf_not_ship",
+    "hard_cap_minutes": 3
+  },
+  "workloads": {
+    "direct": {
+      "n": 1,
+      "prefix": "root = Card([b1,",
+      "reference_ms": 14.1658,
+      "packed_ms": 6.3338,
+      "speedup": 2.237,
+      "correct": true,
+      "gate": "warm graph/DP speedup >= 10 and exact 12-path parity",
+      "pass": false,
+      "repeats": 3,
+      "measured_at": "2026-07-29T11:58:38.973791+00:00",
+      "argv": [
+        "--completion-kernel-workload",
+        "direct",
+        "--completion-repeats",
+        "3"
+      ],
+      "host": {
+        "machine": "aarch64",
+        "python": "3.12.3"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+        "code_dirty": true,
+        "components": {
+          "matrix.perf": "v3",
+          "harness.model_build.eval": "v64",
+          "model.twotower": "v262",
+          "dsl.operators.registry": "v6"
+        },
+        "stamped_at": "2026-07-29T11:58:39.240090+00:00"
+      }
+    },
+    "corpus": {
+      "n": 7,
+      "reference_ms": 108.1814,
+      "packed_ms": 0.1124,
+      "packed_over_reference": 0.001,
+      "cold_simple_prefixes": [
+        {
+          "prefix": "",
+          "reference_ms": 13.7711,
+          "packed_ms": 12.7608,
+          "packed_over_reference": 0.927
+        },
+        {
+          "prefix": "root",
+          "reference_ms": 7.2616,
+          "packed_ms": 6.0461,
+          "packed_over_reference": 0.833
+        },
+        {
+          "prefix": "root =",
+          "reference_ms": 1371.3428,
+          "packed_ms": 1585.7819,
+          "packed_over_reference": 1.156
+        }
+      ],
+      "cold_packed_over_reference_max": 1.156,
+      "correct": true,
+      "gate": "exact parity and cold packed time <= 1.15x reference",
+      "pass": false,
+      "repeats": 2,
+      "measured_at": "2026-07-29T11:59:02.557823+00:00",
+      "argv": [
+        "--completion-kernel-workload",
+        "corpus",
+        "--completion-repeats",
+        "2"
+      ],
+      "host": {
+        "machine": "aarch64",
+        "python": "3.12.3"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+        "code_dirty": true,
+        "components": {
+          "matrix.perf": "v3",
+          "harness.model_build.eval": "v64",
+          "model.twotower": "v262",
+          "dsl.operators.registry": "v6"
+        },
+        "stamped_at": "2026-07-29T11:59:02.769242+00:00"
+      }
+    },
+    "choice": {
+      "n": 1,
+      "remaining_tokens": 12,
+      "reference_ms": 44.7459,
+      "packed_ms": 2.7204,
+      "warm_allowed_cache_ms": 0.003,
+      "speedup": 16.448,
+      "correct": true,
+      "gate": "exact parity and speedup >= 3",
+      "pass": true,
+      "repeats": 5,
+      "measured_at": "2026-07-29T11:59:15.223436+00:00",
+      "argv": [
+        "--completion-kernel-workload",
+        "choice",
+        "--completion-repeats",
+        "5"
+      ],
+      "host": {
+        "machine": "aarch64",
+        "python": "3.12.3"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+        "code_dirty": true,
+        "components": {
+          "matrix.perf": "v3",
+          "harness.model_build.eval": "v64",
+          "model.twotower": "v262",
+          "dsl.operators.registry": "v6"
+        },
+        "stamped_at": "2026-07-29T11:59:15.438007+00:00"
+      }
+    },
+    "solver": {
+      "n": 14,
+      "reference_ms": 0.0432,
+      "packed_ms": 1.2994,
+      "speedup": 0.033,
+      "reference_nonempty": true,
+      "packed_nonempty": true,
+      "cached_successors": 14,
+      "gate": "both paths complete and every identical successor expands once",
+      "pass": true,
+      "repeats": 3,
+      "measured_at": "2026-07-29T11:59:23.987783+00:00",
+      "argv": [
+        "--completion-kernel-workload",
+        "solver",
+        "--completion-repeats",
+        "3"
+      ],
+      "host": {
+        "machine": "aarch64",
+        "python": "3.12.3"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+        "code_dirty": true,
+        "components": {
+          "matrix.perf": "v3",
+          "harness.model_build.eval": "v64",
+          "model.twotower": "v262",
+          "dsl.operators.registry": "v6"
+        },
+        "stamped_at": "2026-07-29T11:59:24.224444+00:00"
+      }
+    },
+    "decode": {
+      "n": 1,
+      "device": "cpu",
+      "reference_wall_ms": 1870.2134,
+      "packed_wall_ms": 2020.2109,
+      "reference_compiler_ms": 1708.3221,
+      "packed_compiler_ms": 1997.6054,
+      "compiler_speedup": 0.855,
+      "correct": true,
+      "packed_forwards": 1,
+      "packed_completion_session_starts": 1,
+      "packed_completion_full_prefix_lex_bytes": 0,
+      "packed_completion_candidate_engine_allocations": 0,
+      "gate": "identical output and compiler_ms speedup >= 5",
+      "pass": false,
+      "repeats": 2,
+      "measured_at": "2026-07-29T11:59:40.166514+00:00",
+      "argv": [
+        "--completion-kernel-workload",
+        "decode",
+        "--completion-repeats",
+        "2"
+      ],
+      "host": {
+        "machine": "aarch64",
+        "python": "3.12.3"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+        "code_dirty": true,
+        "components": {
+          "matrix.perf": "v3",
+          "harness.model_build.eval": "v64",
+          "model.twotower": "v262",
+          "dsl.operators.registry": "v6"
+        },
+        "stamped_at": "2026-07-29T11:59:40.377207+00:00"
+      }
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_dirty": true,
+    "components": {
+      "matrix.perf": "v3",
+      "harness.model_build.eval": "v64",
+      "model.twotower": "v262",
+      "dsl.operators.registry": "v6"
+    },
+    "stamped_at": "2026-07-29T11:59:40.377395+00:00"
+  },
+  "selected_pass": false,
+  "overall_pass": false
+}

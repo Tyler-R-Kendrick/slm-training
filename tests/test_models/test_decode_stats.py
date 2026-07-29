@@ -71,6 +71,24 @@ def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
     assert summary["choice_completion_cache_misses_sum"] == 3.0
 
 
+def test_decode_stats_aggregates_completion_kernel_counts() -> None:
+    stats = DecodeStats(
+        completion_session_starts=1,
+        completion_unique_states=7,
+        completion_transition_cache_hits=4,
+        completion_forced_closure_tokens=3,
+        completion_full_prefix_lex_bytes=12,
+        completion_candidate_engine_allocations=1,
+    )
+    summary = aggregate_stats([stats])
+    assert summary["completion_session_starts_sum"] == 1.0
+    assert summary["completion_unique_states_sum"] == 7.0
+    assert summary["completion_transition_cache_hits_sum"] == 4.0
+    assert summary["completion_forced_closure_tokens_sum"] == 3.0
+    assert summary["completion_full_prefix_lex_bytes_sum"] == 12.0
+    assert summary["completion_candidate_engine_allocations_sum"] == 1.0
+
+
 def test_decode_stats_aggregates_root_reference_arity_counts() -> None:
     stats = DecodeStats(
         root_reference_arity_applications=7,

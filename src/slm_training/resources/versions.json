@@ -1050,7 +1050,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1058,6 +1058,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-29",
+          "note": "OpenUI pack completion domains use a request-local packed state graph with budget-accounted witness/result replay while retaining the private V1 differential oracle."
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
@@ -6043,6 +6048,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-29",
+          "note": "no-bump: add packed incremental grammar completion provenance and negative runtime evidence to the shared research-lineage index; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-27",
           "note": "no-bump: review follow-up tightens the SLM-420 (DSH5-12) Negative-boundary row wording in research-lineage.md so it no longer contradicts the adjacent Unrun-boundary row (set-valued selection and event memory are unrun_conditional, not unavailable); SLM-228 spectral-disposition behavior is unchanged"
         },
@@ -7402,7 +7412,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v63",
+      "version": "v64",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7421,6 +7431,11 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v64",
+          "date": "2026-07-29",
+          "note": "Add packed completion-session, state, witness, forced-closure, lexer-work, and allocation counters to DecodeStats aggregation; non-kernel paths remain zero."
+        },
         {
           "version": "v63",
           "date": "2026-07-27",
@@ -8570,12 +8585,17 @@
       ]
     },
     "matrix.perf": {
-      "version": "v2",
+      "version": "v3",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-29",
+          "note": "Add sharded completion-kernel direct, corpus, choice, solver, and decode fixture workloads with exact-parity and preregistered performance guardrails."
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -8776,6 +8796,11 @@
         "docs/design/perf-experiment-matrix.md"
       ],
       "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-29",
+          "note": "no-bump: append unrelated packed completion-kernel evidence without changing the SLM-194 candidate-proposal matrix"
+        },
         {
           "version": "ffe3-03-v1",
           "date": "2026-07-24",
@@ -9326,7 +9351,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v261",
+      "version": "v262",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9349,7 +9374,12 @@
         "src/slm_training/models/template_fill.py",
         "src/slm_training/models/semantic_contrast_loss.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+        "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
+        "src/slm_training/dsl/grammar/fastpath/engine.py",
+        "src/slm_training/dsl/grammar/fastpath/force_emit.py",
+        "src/slm_training/dsl/grammar/fastpath/semantic_state.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
+        "src/slm_training/dsl/solver/openui_support.py",
         "src/slm_training/data/quality.py",
         "src/slm_training/data/contract.py",
         "src/slm_training/models/adapters/",
@@ -9369,6 +9399,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v262",
+          "date": "2026-07-29",
+          "note": "Persist packed completion state per decode row, share identical batched hard states request-locally, direct-feed parser terminals, compress terminal-reachable singleton spans before inference, and memoize choice feasibility."
+        },
         {
           "version": "v261",
           "date": "2026-07-27",

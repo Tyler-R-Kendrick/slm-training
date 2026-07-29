@@ -217,11 +217,51 @@ class GrammarDecodeState:
     completion_domain_cache: dict[tuple[object, ...], object] = field(
         default_factory=dict
     )
+    # P3 direct-feed sync marker: the number of leading ``prefix_ids`` the
+    # engine committed via ``feed_token_id`` (DSL-native direct terminal
+    # feeds).  ``None`` means the engine is not known to be id-synced (fresh,
+    # text-route sync, or a rejected feed).  Direct feeds keep the engine's
+    # internal ``_prefix`` text grammatically equivalent but not byte-identical
+    # to ``prefix_text`` (whitespace is ``%ignore``d, framed literals commit at
+    # close), so sync checks must consult this marker instead of comparing
+    # text alone.  Cleared whenever ``sync_ids`` replaces (not extends) the
+    # prefix, so a stale marker can never vouch for different ids.
+    engine_ids_len: int | None = None
+    # Request-local packed completion state.  The pack owns the concrete
+    # session type; the grammar layer only keeps the row-local lifetime and
+    # current interned state id so consecutive decode positions reuse the
+    # same graph without introducing a global cache.
+    completion_session: object | None = None
+    completion_session_context: str = ""
+    completion_state_id: int | None = None
+    completion_stats_snapshot: dict[str, int] = field(default_factory=dict)
+    completion_session_pool: (
+        dict[tuple[str, tuple[int, ...]], tuple[object, int]] | None
+    ) = None
 
     def clear_position_memo(self) -> None:
         self.admit_memo.clear()
         self.whitespace_ok = None
         self.completion_domain_cache.clear()
+
+    def engine_in_sync(self, prefix_ids: list[int], prefix_text: str) -> bool:
+        """True when ``engine`` already represents exactly ``prefix_ids``.
+
+        Either the engine's text matches byte-for-byte (the legacy text route)
+        or the direct-feed marker vouches for this exact prefix length — the
+        marker is only ever set to ``len(prefix_ids)`` after feeding those very
+        ids and is cleared on any non-append ``sync_ids`` replacement, so
+        equal length implies equal ids.  Never widens legality: a desynced
+        engine simply takes the canonical ``set_prefix`` full sync as before.
+        """
+        eng = self.engine
+        if eng is None or getattr(eng, "_ip", None) is None:
+            return False
+        if getattr(eng, "_prefix", None) == prefix_text:
+            return True
+        return self.engine_ids_len is not None and self.engine_ids_len == len(
+            prefix_ids
+        )
 
     def sync_ids(self, tokenizer: OpenUITokenizer, prefix_ids: list[int]) -> str:
         """Update prefix_ids/text incrementally; return current prefix text."""
@@ -233,26 +273,69 @@ class GrammarDecodeState:
         if prefix_ids == self.prefix_ids:
             return self.prefix_text
         t0 = time.perf_counter()
-        if (
+        prior_ids = tuple(self.prefix_ids)
+        append_only = (
             len(prefix_ids) >= len(self.prefix_ids)
             and prefix_ids[: len(self.prefix_ids)] == self.prefix_ids
-        ):
+        )
+        if append_only:
             # Append-only growth — decode only the new suffix tokens.
             extra = prefix_ids[len(self.prefix_ids) :]
             if extra:
                 chunk = decode_prefix(tokenizer, extra)
                 self.prefix_text = self.prefix_text + chunk
             self.prefix_ids = list(prefix_ids)
+            session = self.completion_session
+            state_id = self.completion_state_id
+            if extra and session is not None and state_id is not None:
+                try:
+                    if tuple(session.prefix_ids_of(state_id)) == prior_ids:
+                        self.completion_state_id = session.advance_path(
+                            state_id, tuple(int(token_id) for token_id in extra)
+                        )
+                        if (
+                            self.completion_state_id is not None
+                            and self.completion_session_pool is not None
+                        ):
+                            self.completion_session_pool[
+                                (
+                                    self.completion_session_context,
+                                    tuple(self.prefix_ids),
+                                )
+                            ] = (session, self.completion_state_id)
+                    else:
+                        self.completion_state_id = None
+                except (TimeoutError, KeyboardInterrupt):
+                    raise
+                except Exception:  # noqa: BLE001 - stale optimization fails closed
+                    self.completion_state_id = None
         else:
             self.prefix_ids = list(prefix_ids)
             self.prefix_text = decode_prefix(tokenizer, prefix_ids) if prefix_ids else ""
+            # The engine (if any) no longer represents these ids.
+            self.engine_ids_len = None
+            self.completion_session = None
+            self.completion_session_context = ""
+            self.completion_state_id = None
+            self.completion_stats_snapshot.clear()
         self.clear_position_memo()
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
         return self.prefix_text
 
     def advance_token(self, tokenizer: OpenUITokenizer, token_id: int) -> str:
-        """Append one emitted token to the cached prefix."""
+        """Append one emitted token to the cached prefix.
+
+        DSL-native tokenizers advance the DFA engine by direct terminal feed
+        (``feed_token_id``): zero full-prefix lexing after the initial sync.
+        Anything the direct feed cannot verify (``None`` — compositional
+        tokenizers, unsupported kinds, adapter mismatch) takes the canonical
+        text route exactly as before, counted as a fallback on the engine.
+        A grammar rejection (``False``) restores the pre-feed engine state
+        exactly — the same observable state the legacy ``advance`` rejection
+        left behind (engine resynced to the pre-append prefix).
+        """
+        prior_ids = tuple(self.prefix_ids)
         self.prefix_ids.append(int(token_id))
         from slm_training.models.decode_stats import get_active_stats
 
@@ -265,14 +348,75 @@ class GrammarDecodeState:
         self.prefix_text = self.prefix_text + chunk
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
-        if self.engine is not None and chunk:
-            try:
-                self.engine.advance(chunk)  # type: ignore[union-attr]
-            except Exception:  # noqa: BLE001
+        if self.engine is not None:
+            fed: bool | None = None
+            feed = getattr(self.engine, "feed_token_id", None)
+            if callable(feed):
                 try:
-                    self.engine.set_prefix(self.prefix_text)  # type: ignore[union-attr]
-                except Exception:  # noqa: BLE001
-                    pass
+                    fed = feed(tokenizer, int(token_id))
+                except (TimeoutError, KeyboardInterrupt):
+                    raise
+                except Exception:  # noqa: BLE001 - adapter mismatch: text fallback
+                    fed = None
+            if fed is not None:
+                # Committed (or exactly restored) by the direct feed.
+                self.engine_ids_len = (
+                    len(self.prefix_ids) if fed else None
+                )
+            else:
+                if callable(feed):
+                    # Unsupported id/kind or adapter failure on a tokenizer the
+                    # engine could otherwise direct-feed: counted fallback.
+                    try:
+                        from slm_training.models.dsl_tokenizer import (
+                            is_dsl_native_tokenizer,
+                        )
+
+                        if is_dsl_native_tokenizer(tokenizer):
+                            self.engine.full_sync_fallbacks += 1  # type: ignore[union-attr]
+                    except (TimeoutError, KeyboardInterrupt):
+                        raise
+                    except Exception:  # noqa: BLE001
+                        pass
+                if chunk:
+                    try:
+                        self.engine.advance(chunk)  # type: ignore[union-attr]
+                    except (TimeoutError, KeyboardInterrupt):
+                        raise
+                    except Exception:  # noqa: BLE001
+                        try:
+                            self.engine.set_prefix(self.prefix_text)  # type: ignore[union-attr]
+                        except (TimeoutError, KeyboardInterrupt):
+                            raise
+                        except Exception:  # noqa: BLE001
+                            pass
+                # The text route leaves the engine grammar-synced with the
+                # same token stream the direct marker would vouch for.
+                self.engine_ids_len = len(self.prefix_ids)
+        session = self.completion_session
+        state_id = self.completion_state_id
+        if session is not None and state_id is not None:
+            try:
+                if tuple(session.prefix_ids_of(state_id)) == prior_ids:
+                    self.completion_state_id = session.advance(
+                        state_id, int(token_id)
+                    )
+                    if (
+                        self.completion_state_id is not None
+                        and self.completion_session_pool is not None
+                    ):
+                        self.completion_session_pool[
+                            (
+                                self.completion_session_context,
+                                tuple(self.prefix_ids),
+                            )
+                        ] = (session, self.completion_state_id)
+                else:
+                    self.completion_state_id = None
+            except (TimeoutError, KeyboardInterrupt):
+                raise
+            except Exception:  # noqa: BLE001 - stale optimization fails closed
+                self.completion_state_id = None
         self.clear_position_memo()
         return self.prefix_text
 
@@ -329,11 +473,15 @@ def force_emit_token_id(
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
     stats = get_active_stats()
     already = (
-        getattr(engine, "_prefix", None) == prefix_text
-        and getattr(engine, "_ip", None) is not None
+        state.engine_in_sync(prefix_ids, prefix_text)
+        if state is not None
+        else (
+            getattr(engine, "_prefix", None) == prefix_text
+            and getattr(engine, "_ip", None) is not None
+        )
     )
     t0 = time.perf_counter()
-    tid = force_next_token_id(engine, tokenizer, prefix_text)
+    tid = force_next_token_id(engine, tokenizer, prefix_text, assume_synced=already)
     if stats is not None and not already:
         # R2: only charge a sync when force_emit actually re-lexed.
         stats.dfa_sync_ms += (time.perf_counter() - t0) * 1000.0
@@ -413,6 +561,8 @@ def exact_forced_token_id(
                     return None
                 return next(iter(candidates))
             # Horizon-limited: fall through to the DFA proof below.
+        except (TimeoutError, KeyboardInterrupt):
+            raise
         except Exception:  # noqa: BLE001 - incomplete proof must fail closed
             return None
 
@@ -614,7 +764,13 @@ def dfa_admits_token(
     use_copy = bool(state is not None and state.use_copy_probes and eng is not None)
     if use_copy and getattr(eng, "_ip", None) is not None:
         # R2: only re-sync when the shared engine drifted from prefix_text.
-        if getattr(eng, "_prefix", None) != prefix_text:
+        # P3: a direct-fed engine is id-synced without textual equality.
+        drifted = (
+            not state.engine_in_sync(prefix_ids, prefix_text)
+            if state is not None and eng is state.engine
+            else getattr(eng, "_prefix", None) != prefix_text
+        )
+        if drifted:
             stats = get_active_stats()
             t0 = time.perf_counter()
             try:
@@ -811,14 +967,22 @@ def pick_constrained_token(
         t0 = time.perf_counter()
         try:
             # R2: skip re-sync when P1 advance_token already left the engine
-            # at this prefix_text.
-            already = getattr(engine, "_prefix", None) == prefix_text and getattr(
-                engine, "_ip", None
-            ) is not None
+            # at this prefix_text (text route) or committed these exact ids
+            # via direct terminal feeds (P3).
+            already = (
+                state.engine_in_sync(prefix_ids, prefix_text)
+                if state is not None
+                else (
+                    getattr(engine, "_prefix", None) == prefix_text
+                    and getattr(engine, "_ip", None) is not None
+                )
+            )
             if already:
                 synced = True
             else:
                 synced = bool(engine.set_prefix(prefix_text))
+        except (TimeoutError, KeyboardInterrupt):
+            raise
         except Exception:  # noqa: BLE001
             synced = False
             already = False
@@ -844,6 +1008,8 @@ def pick_constrained_token(
             exact_terminals = bool(
                 skip_exact and getattr(engine, "terminals_are_exact", lambda: False)()
             )
+        except (TimeoutError, KeyboardInterrupt):
+            raise
         except Exception:  # noqa: BLE001
             allowed = None
 
@@ -955,6 +1121,8 @@ def pick_constrained_token(
                     return False
                 compiler_candidates = set(forest.candidate_ids)
             return int(tid) in compiler_candidates
+        except (TimeoutError, KeyboardInterrupt):
+            raise
         except Exception:  # noqa: BLE001 - strict domain authority fails closed
             return domain_budget is None
 

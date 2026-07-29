@@ -1980,6 +1980,22 @@ generation are out of scope for this issue per the LOT0-01 authorization. A
 The gate verdict is `inconclusive`: it authorizes no semantic-quality,
 oracle-ceiling, or causal-latent-use claim, and no LOT1 model implementation.
 
+## Packed incremental grammar completion (2026-07-29)
+
+| | |
+| --- | --- |
+| **Papers** | *Lookahead-Then-Verify* ([arXiv:2602.00612](https://arxiv.org/abs/2602.00612)); intersection-witness completion ([arXiv:2508.10111](https://arxiv.org/abs/2508.10111)) |
+| **Fidelity** | **Adapted compiler/runtime mechanism** — request-local grammar-state interning, bounded terminal-witness reuse, and verified singleton closure; not a reproduction of either model or serving system |
+| **Code** | [`completion_kernel.py`](../../src/slm_training/dsl/grammar/fastpath/completion_kernel.py), [`semantic_state.py`](../../src/slm_training/dsl/grammar/fastpath/semantic_state.py), and [`pack.py`](../../src/slm_training/dsl/pack.py) |
+| **Evidence** | [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json) and [`perf-experiment-matrix.md`](perf-experiment-matrix.md#packed-completion-kernel-2026-07-29) |
+
+The implementation preserves pack-owned legality and treats an exhausted or
+incomplete witness proof as UNKNOWN, never as permission to prune and certify
+the remainder. Fixture parity and the cold choice row pass, but the packed
+graph/DP, cold-prefix, and compiler-decode performance gates fail. This is
+non-promotable negative runtime evidence; the successor is a request-local
+schema-precompiled semantic transition table, not a global authority cache.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

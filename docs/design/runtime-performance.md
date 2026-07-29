@@ -345,3 +345,42 @@ AdamW `aten::lerp.Scalar_out` operator to CPU, so the run is GPU-backed rather t
 pure-GPU. The checkpoint loaded and passed the CPU playground health check, but a
 real generation did not return within 120 seconds; the known-good fixture remains
 the local demo checkpoint.
+
+### Packed completion kernel (2026-07-29)
+
+The version-stamped CPU fixture is
+[completion-kernel-perf-results.json](completion-kernel-perf-results.json).
+It is compiler/runtime evidence only (`honesty_mode=fixture_perf_not_ship`);
+no checkpoint, evaluation suite, AgentV result, or ship claim was produced.
+
+- The warmed difficult `root = Card([b1,` query retained exactly 12 paths and
+  measured 14.1658 ms for the V1 reference versus 6.3338 ms for a
+  request-local graph/DP query with the final-result cache cleared (2.237×).
+  It therefore **failed** the required 10× gate; the earlier timer-floor
+  result-cache replay is not accepted as kernel evidence.
+- Seven corpus prefix domains were byte-identical. Three fresh-request simple
+  prefixes measured packed/reference ratios of 0.927×, 0.833×, and 1.156×.
+  The worst case therefore **failed** the preregistered 1.15× regression
+  ceiling despite exact parity. These are fresh-request/cache-cleared rows
+  after shared immutable schema/tokenizer warmup, not process-cold starts.
+- The choice feasibility query cleared the allowed-result cache on every
+  measurement and was identical at 44.7459 ms versus 2.7204 ms (16.448×).
+  Warm allowed-cache replay was 0.0030 ms and is recorded only as secondary
+  cache evidence.
+- All 14 identical solver successors were cached after one expansion. Warm
+  adapter lookup remained slower than the reference stateless-forest lookup
+  (1.2994 ms versus 0.0432 ms), so no solver speedup is claimed. This row does
+  not yet establish exact solver-verdict parity or certificate replay.
+- The cold 16-token compiler decode preserved output and started one packed
+  session with zero full-prefix lexical bytes and zero fresh candidate-engine
+  allocations, but `compiler_ms` regressed 1,708.32→1,997.61 ms (0.855×).
+  The bounded authority stopped fail-closed after one forward; it therefore
+  **failed** the required 5× decode-fixture gate.
+
+Decision: retain the correctness-preserving request-local kernel and its
+telemetry, but do not claim the packed decode performance objective is complete.
+The dated successor is to replace repeated general
+`_build_openui_completion_forest_impl` calls with a schema-precompiled
+semantic-state transition table, then rerun the same cold prefix and decode
+fixtures. A global authority cache is not an acceptable shortcut because
+request-local scope and liveness remain part of the proof.

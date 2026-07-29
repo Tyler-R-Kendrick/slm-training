@@ -10264,6 +10264,9 @@ class TwoTowerModel(nn.Module):
         _trajectory_id: int = 0,
         _disable_trajectory_fork: bool = False,
         _plan_row: int = 0,
+        _completion_session_pool: (
+            dict[tuple[str, tuple[int, ...]], tuple[object, int]] | None
+        ) = None,
     ) -> torch.Tensor:
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
             build_completion_forest,
@@ -10284,9 +10287,11 @@ class TwoTowerModel(nn.Module):
             )
         state_rows = self._new_grammar_states(1)
         state = state_rows[0] if state_rows else make_grammar_state()
+        state.completion_session_pool = _completion_session_pool
         prefix = list(_initial_prefix or (int(self.tokenizer.bos_id),))
         if _initial_prefix is not None:
             state = make_grammar_state()
+            state.completion_session_pool = _completion_session_pool
             for initial_token_id in prefix[1:]:
                 state.advance_token(self.tokenizer, int(initial_token_id))
         stats = get_active_stats()
@@ -10348,6 +10353,22 @@ class TwoTowerModel(nn.Module):
                 # subset before any soft ranking. Disabled by default (guard above),
                 # so the default decode path is untouched.
                 forest = self._solver_prune_forest(forest, prefix)
+            forced_closure: tuple[int, ...] = ()
+            session = getattr(state, "completion_session", None)
+            session_state_id = getattr(state, "completion_state_id", None)
+            if (
+                forest.coverage == "complete"
+                and session is not None
+                and session_state_id is not None
+            ):
+                from slm_training.dsl.pack import _record_openui_completion_stats
+
+                forced_closure, _, closure_coverage = session.forced_closure(
+                    session_state_id, length - len(prefix)
+                )
+                _record_openui_completion_stats(session, state)
+                if closure_coverage != "complete":
+                    forced_closure = ()
             # Partial coverage still contains individually grammar-admitted
             # paths. Tree/restricted modes must consume those paths; falling
             # back merely because the vocabulary is not exhaustive discards
@@ -10388,9 +10409,30 @@ class TwoTowerModel(nn.Module):
                     )
                     if restored is not None:
                         prefix, selected_path = restored
+                        prior_context = state.completion_session_context
                         state = make_grammar_state()
-                        for stable_token_id in prefix[1:]:
-                            state.advance_token(self.tokenizer, stable_token_id)
+                        state.completion_session_pool = _completion_session_pool
+                        cached_state = (
+                            _completion_session_pool.get(
+                                (prior_context, tuple(prefix))
+                            )
+                            if _completion_session_pool is not None
+                            and prior_context
+                            else None
+                        )
+                        if cached_state is not None:
+                            cached_session, cached_state_id = cached_state
+                            cached_session.restore_decode_state(
+                                cached_state_id,
+                                state,
+                                context=prior_context,
+                                pool=_completion_session_pool,
+                            )
+                        else:
+                            for stable_token_id in prefix[1:]:
+                                state.advance_token(
+                                    self.tokenizer, stable_token_id
+                                )
                         selected = (
                             tuple(selected_path.token_ids)
                             if selected_path is not None
@@ -10436,7 +10478,9 @@ class TwoTowerModel(nn.Module):
                 # certification layer emit a tagged deterministic fallback.
                 break
 
-            if mode == "forced" and len(forest.paths) > 1:
+            if forced_closure:
+                selected = forced_closure
+            elif mode == "forced" and len(forest.paths) > 1:
                 # Forced-only mode preserves the legacy full-vocabulary choice
                 # at semantic branch points while still collapsing unique spans.
                 canvas = self._compiler_canvas(prefix, length)
@@ -10468,7 +10512,7 @@ class TwoTowerModel(nn.Module):
                     plan_row=_plan_row,
                     state=state,
                 )
-            if search_mode != "greedy":
+            if search_mode != "greedy" and not forced_closure:
                 hard_signature = rank_forest(forest).signature
                 ranked = rank_forest(
                     forest,
@@ -10560,6 +10604,7 @@ class TwoTowerModel(nn.Module):
                                     _trajectory_id=trajectory_id + 1,
                                     _disable_trajectory_fork=True,
                                     _plan_row=_plan_row,
+                                    _completion_session_pool=_completion_session_pool,
                                 )
                                 text = self._decode_ids(branch)
                                 canonical = self._canonical_valid_openui(
@@ -10716,6 +10761,9 @@ class TwoTowerModel(nn.Module):
         mode: str,
     ) -> torch.Tensor:
         rows = []
+        completion_session_pool: dict[
+            tuple[str, tuple[int, ...]], tuple[object, int]
+        ] = {}
         for i in range(int(ctx.size(0))):
             contract = (
                 self._slot_contracts[i]
@@ -10732,6 +10780,7 @@ class TwoTowerModel(nn.Module):
                     mode=mode,
                     slot_contract=contract,
                     _plan_row=i,
+                    _completion_session_pool=completion_session_pool,
                 )
             )
         return torch.stack(rows)

@@ -98,6 +98,33 @@ class DecodeStats:
     choice_vocab_candidates_avoided: int = 0
     choice_completion_cache_hits: int = 0
     choice_completion_cache_misses: int = 0
+    # Request-local packed completion kernel.  These stay zero for non-native
+    # tokenizers and every decode path that does not ask the pack for a strict
+    # finite completion domain.
+    completion_session_starts: int = 0
+    completion_state_intern_hits: int = 0
+    completion_state_intern_misses: int = 0
+    completion_unique_states: int = 0
+    completion_edges_built: int = 0
+    completion_transition_cache_hits: int = 0
+    completion_transition_cache_misses: int = 0
+    completion_domain_cache_hits: int = 0
+    completion_domain_cache_misses: int = 0
+    completion_reachability_cache_hits: int = 0
+    completion_reachability_cache_misses: int = 0
+    completion_witness_cache_hits: int = 0
+    completion_witness_cache_misses: int = 0
+    completion_witness_states_expanded: int = 0
+    completion_forced_closure_hits: int = 0
+    completion_forced_closure_tokens: int = 0
+    completion_direct_terminal_feeds: int = 0
+    completion_full_sync_fallbacks: int = 0
+    completion_full_prefix_lex_bytes: int = 0
+    completion_parser_forks: int = 0
+    completion_candidate_engine_allocations: int = 0
+    completion_scope_reference_scans_avoided: int = 0
+    completion_result_cache_hits: int = 0
+    completion_result_cache_misses: int = 0
     trie_nodes: int = 0
     restricted_projections: int = 0
     full_projections: int = 0
@@ -344,6 +371,30 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "choice_vocab_candidates_avoided",
         "choice_completion_cache_hits",
         "choice_completion_cache_misses",
+        "completion_session_starts",
+        "completion_state_intern_hits",
+        "completion_state_intern_misses",
+        "completion_unique_states",
+        "completion_edges_built",
+        "completion_transition_cache_hits",
+        "completion_transition_cache_misses",
+        "completion_domain_cache_hits",
+        "completion_domain_cache_misses",
+        "completion_reachability_cache_hits",
+        "completion_reachability_cache_misses",
+        "completion_witness_cache_hits",
+        "completion_witness_cache_misses",
+        "completion_witness_states_expanded",
+        "completion_forced_closure_hits",
+        "completion_forced_closure_tokens",
+        "completion_direct_terminal_feeds",
+        "completion_full_sync_fallbacks",
+        "completion_full_prefix_lex_bytes",
+        "completion_parser_forks",
+        "completion_candidate_engine_allocations",
+        "completion_scope_reference_scans_avoided",
+        "completion_result_cache_hits",
+        "completion_result_cache_misses",
         "trie_nodes",
         "restricted_projections",
         "full_projections",
