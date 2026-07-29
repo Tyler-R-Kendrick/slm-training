@@ -6,6 +6,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -303,7 +304,21 @@ def _remove_nested_targets(targets: set[str]) -> list[str]:
 
 def _run(command: list[str]) -> int:
     print("+", " ".join(command))
-    return subprocess.run(command, cwd=ROOT, check=False).returncode
+    env = _pytest_worker_env() if command[1:4] == ["-m", "pytest", "-q"] else None
+    return subprocess.run(command, cwd=ROOT, check=False, env=env).returncode
+
+
+def _pytest_worker_env() -> dict[str, str]:
+    """Keep parallel pytest workers from oversubscribing CI CPU threads."""
+    env = os.environ.copy()
+    for variable in (
+        "OMP_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+    ):
+        env[variable] = "1"
+    return env
 
 
 def _run_changed_tests_parallel(tests: list[str]) -> int:
@@ -312,6 +327,7 @@ def _run_changed_tests_parallel(tests: list[str]) -> int:
         cwd=ROOT,
         check=False,
         capture_output=True,
+        env=_pytest_worker_env(),
         text=True,
     )
     if collected.returncode:

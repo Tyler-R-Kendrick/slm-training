@@ -174,3 +174,15 @@ def test_changed_test_shards_balance_each_source_file() -> None:
         ]
         assert max(counts) - min(counts) <= 1
     assert {node for batch in batches for node in batch} == set(nodes)
+
+
+def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
+    monkeypatch.setenv("OMP_NUM_THREADS", "16")
+    monkeypatch.setenv("OPENBLAS_NUM_THREADS", "32")
+
+    env = check_changed._pytest_worker_env()
+
+    assert env["OMP_NUM_THREADS"] == "1"
+    assert env["MKL_NUM_THREADS"] == "1"
+    assert env["OPENBLAS_NUM_THREADS"] == "1"
+    assert env["NUMEXPR_NUM_THREADS"] == "1"
