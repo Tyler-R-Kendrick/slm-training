@@ -137,6 +137,9 @@ class DslPack:
     region_splicer: Callable[..., Any] | None = None
     operator_library: OperatorLibrary | None = None
     grammar_capability_authority: GrammarCapabilityAuthorityV1 | None = None
+    # Request-independent completion authority. Scope/semantic overlays remain
+    # live and pack-owned; loaders must certify this artifact before use.
+    completion_artifact: str | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
         return tuple(f.name for f in fields(self) if getattr(self, f.name) is not None)
@@ -945,6 +948,7 @@ def _ensure_builtin_packs() -> None:
             opaque_region_extractor=_openui_opaque_region_extractor,
             fragment_parser=_openui_fragment_parser,
             grammar_capability_authority=_openui_grammar_capability_authority(),
+            completion_artifact=("resources/decode/openui_completion_v1.safetensors"),
         )
     )
     # Partial pack: toy-layout genuinely fills grammar, scope rules,

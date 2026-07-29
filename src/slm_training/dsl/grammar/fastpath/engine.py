@@ -20,6 +20,8 @@ from slm_training.dsl.grammar.fastpath.token_map import (
     token_surface_piece,
 )
 
+_STATIC_ARTIFACT_CACHE: dict[tuple[str, int, int], dict | None] = {}
+
 # Terminals that are never force-emitted alone (too broad / ignorable).
 _BROAD = frozenset(
     {
@@ -168,6 +170,8 @@ class OpenUIIncrementalEngine:
         self.full_sync_fallbacks = 0
         self.full_prefix_lex_bytes = 0
         self.parser_forks = 0
+        self.static_artifact_hits = 0
+        self.static_artifact_fallbacks = 0
         self._control_only = False
 
     @property
@@ -183,6 +187,8 @@ class OpenUIIncrementalEngine:
             "full_sync_fallbacks": self.full_sync_fallbacks,
             "full_prefix_lex_bytes": self.full_prefix_lex_bytes,
             "parser_forks": self.parser_forks,
+            "static_artifact_hits": self.static_artifact_hits,
+            "static_artifact_fallbacks": self.static_artifact_fallbacks,
         }
 
     def reset(self) -> None:
@@ -509,10 +515,39 @@ class OpenUIIncrementalEngine:
         key = id(tokenizer)
         entry = self._direct_map_cache.get(key)
         if entry is None or entry[0] is not tokenizer:
-            entry = (
-                tokenizer,
-                dsl_direct_terminal_map(tokenizer, self._parser.terminals),
-            )
+            mapping = None
+            if self.grammar_path.name == "openui.lark" and hasattr(
+                tokenizer, "token_to_id"
+            ):
+                artifact_key = (
+                    self._fingerprint,
+                    int(getattr(tokenizer, "version", 0)),
+                    hash(tuple(sorted(tokenizer.token_to_id.items()))),
+                )
+                if artifact_key not in _STATIC_ARTIFACT_CACHE:
+                    try:
+                        from slm_training.dsl.grammar.fastpath.completion_artifact import (
+                            load_checked_completion_artifact,
+                        )
+
+                        checked = load_checked_completion_artifact(
+                            tokenizer,
+                            self._parser,
+                            grammar_path=self.grammar_path,
+                        )
+                        _STATIC_ARTIFACT_CACHE[artifact_key] = checked.direct_map
+                    except (OSError, ValueError, KeyError, json.JSONDecodeError):
+                        # Exact reference construction remains the fail-closed
+                        # path for absent, stale, or corrupt artifacts.
+                        _STATIC_ARTIFACT_CACHE[artifact_key] = None
+                mapping = _STATIC_ARTIFACT_CACHE[artifact_key]
+                if mapping is None:
+                    self.static_artifact_fallbacks += 1
+                else:
+                    self.static_artifact_hits += 1
+            if mapping is None:
+                mapping = dsl_direct_terminal_map(tokenizer, self._parser.terminals)
+            entry = (tokenizer, mapping)
             self._direct_map_cache[key] = entry
         return entry[1]
 
@@ -850,6 +885,8 @@ class OpenUIIncrementalEngine:
         fork.full_sync_fallbacks = 0
         fork.full_prefix_lex_bytes = 0
         fork.parser_forks = 0
+        fork.static_artifact_hits = 0
+        fork.static_artifact_fallbacks = 0
         fork._control_only = bool(control_only)
         return fork
 

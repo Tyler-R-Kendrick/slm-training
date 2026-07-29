@@ -1,5 +1,12 @@
 # Runtime performance notes
 
+The dashboard's normative target is now distinct from the measurements below.
+Its formula, proof boundary, levers, and the reason the former floor was
+invalid are specified in
+[certified-completion-artifact-and-tps-target.md](certified-completion-artifact-and-tps-target.md).
+Observed results never calibrate that target; profile-tagged observations may
+only be compared after calculation.
+
 Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 
 ## Hotspots

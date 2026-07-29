@@ -19,6 +19,10 @@ function f(v: unknown, digits = 3): string {
 type QueryFn = (args: Record<string, unknown>) => Promise<unknown>;
 
 export const toolProvider: Record<string, QueryFn> = {
+  // ---- DSL packs ----------------------------------------------------------
+  dsl_pack: async (args) =>
+    getJSON(`/api/dsl-packs?pack=${encodeURIComponent(String(args.pack || "openui"))}`),
+
   // ---- Overview -----------------------------------------------------------
   overview_hero: async () => fetchHero(),
   overview_insights: async () => {

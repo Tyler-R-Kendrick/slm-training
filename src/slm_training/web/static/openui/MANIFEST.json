@@ -49,6 +49,28 @@
       "sha256": "5fbf77f67ca2faebf3de2184304ed200b5eedfc255f79351a46640ef568e1bd2",
       "status": "ok"
     },
+    "dsl-packs": {
+      "components": [
+        "ChipTabs",
+        "DataTable",
+        "DslPackEstimator",
+        "Grid",
+        "Hint",
+        "Note",
+        "Page",
+        "PageHead",
+        "Panel",
+        "ProvenanceBadge",
+        "Row",
+        "StatTile"
+      ],
+      "file": "dsl-packs.openui",
+      "queries": [
+        "dsl_pack"
+      ],
+      "sha256": "0bb180b46d06356bc59bcae038f86fc50a2a0e49184c3d44510df795a537f0dc",
+      "status": "ok"
+    },
     "experiments": {
       "components": [
         "ChipTabs",
