@@ -502,6 +502,11 @@ def _openui_tokenizer_authority_fingerprint(tokenizer: Any) -> str:
             {
                 "type": f"{tokenizer_type.__module__}.{tokenizer_type.__qualname__}",
                 "version": int(getattr(tokenizer, "version", 0)),
+                "pad_id": int(getattr(tokenizer, "pad_id", -1)),
+                "bos_id": int(getattr(tokenizer, "bos_id", -1)),
+                "eos_id": int(getattr(tokenizer, "eos_id", -1)),
+                "mask_id": int(getattr(tokenizer, "mask_id", -1)),
+                "unk_id": int(getattr(tokenizer, "unk_id", -1)),
                 "id_to_token": sorted(
                     (int(token_id), str(token))
                     for token_id, token in getattr(tokenizer, "id_to_token", {}).items()

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import gc
 import weakref
+from dataclasses import replace
 from functools import lru_cache
 
 import pytest
@@ -410,6 +411,19 @@ def test_special_tokens_rejected_and_eos_is_terminal_only(
     for token_id in (tok.pad_id, tok.mask_id, tok.eos_id, tok.unk_id):
         with pytest.raises(ValueError, match="special token"):
             session.seed([token_id])
+
+
+def test_tokenizer_authority_includes_special_token_ids(
+    tok: DSLNativeTokenizer,
+) -> None:
+    from slm_training.dsl.pack import _openui_tokenizer_authority_fingerprint
+
+    baseline = _openui_tokenizer_authority_fingerprint(tok)
+    for attribute in ("pad_id", "bos_id", "eos_id", "mask_id", "unk_id"):
+        token_id = int(getattr(tok, attribute))
+        token = tok.id_to_token[token_id]
+        changed = replace(tok, token_to_id={**tok.token_to_id, token: tok.vocab_size})
+        assert _openui_tokenizer_authority_fingerprint(changed) != baseline
 
 
 def test_macro_transition_updates_parser_and_semantics_identically() -> None:
