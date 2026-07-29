@@ -247,7 +247,14 @@ def hook_test_targets(paths: list[str]) -> list[str]:
     return select_changed_tests(paths)
 
 
-def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = False) -> int:
+def check(
+    paths: list[str],
+    *,
+    changed_tests_only: bool = False,
+    staged: bool = False,
+    test_shard_index: int = 0,
+    test_shard_count: int = 1,
+) -> int:
     policy_errors = validate_repository()
     if policy_errors:
         print("repo-policy: failed")
@@ -276,8 +283,12 @@ def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = 
         return 1
     if python_paths and _run([sys.executable, "-m", "py_compile", *python_paths]):
         return 1
-    if tests and changed_tests_only and len(tests) > 1:
-        if _run_changed_tests_parallel(tests):
+    if tests and changed_tests_only and (len(tests) > 1 or test_shard_count > 1):
+        if _run_changed_tests_parallel(
+            tests,
+            shard_index=test_shard_index,
+            shard_count=test_shard_count,
+        ):
             return 1
     elif tests and _run([sys.executable, "-m", "pytest", "-q", *tests]):
         return 1
@@ -321,7 +332,12 @@ def _pytest_worker_env() -> dict[str, str]:
     return env
 
 
-def _run_changed_tests_parallel(tests: list[str]) -> int:
+def _run_changed_tests_parallel(
+    tests: list[str],
+    *,
+    shard_index: int = 0,
+    shard_count: int = 1,
+) -> int:
     collected = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", *tests],
         cwd=ROOT,
@@ -335,8 +351,15 @@ def _run_changed_tests_parallel(tests: list[str]) -> int:
         print(collected.stderr, end="", file=sys.stderr)
         return collected.returncode
     nodes = [line for line in collected.stdout.splitlines() if "::" in line]
+    nodes = _shard_test_nodes(nodes, shard_count)[shard_index]
+    print(
+        f"changed-check: test shard {shard_index + 1}/{shard_count} "
+        f"owns {len(nodes)} node(s)"
+    )
+    if not nodes:
+        return 0
     if len(nodes) < 2:
-        return _run([sys.executable, "-m", "pytest", "-q", *tests])
+        return _run([sys.executable, "-m", "pytest", "-q", *nodes])
     # More batches than workers let the executor steal remaining work when
     # individual test costs differ sharply despite equal node counts.
     batch_count = min(len(nodes), CHANGED_TEST_WORKERS * 2)
@@ -382,6 +405,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="prefer explicitly changed test files; intended for latency-bounded hooks",
     )
+    parser.add_argument(
+        "--test-shard-index",
+        type=int,
+        default=0,
+        help="zero-based changed-test CI shard index",
+    )
+    parser.add_argument(
+        "--test-shard-count",
+        type=int,
+        default=1,
+        help="number of disjoint changed-test CI shards",
+    )
     parser.add_argument("--list", action="store_true", help="print selected tests without running")
     parser.add_argument(
         "--hook",
@@ -389,6 +424,10 @@ def main(argv: list[str] | None = None) -> int:
         help="emit an agent Stop-hook decision instead of regular output",
     )
     args = parser.parse_args(argv)
+    if args.test_shard_count < 1:
+        parser.error("--test-shard-count must be positive")
+    if not 0 <= args.test_shard_index < args.test_shard_count:
+        parser.error("--test-shard-index must be within --test-shard-count")
     paths = changed_files(staged=args.staged, base_ref=args.base_ref)
     if args.list:
         selected = (
@@ -410,7 +449,13 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(json.dumps({"decision": "allow"}))
         return 0
-    return check(paths, changed_tests_only=args.changed_tests_only, staged=args.staged)
+    return check(
+        paths,
+        changed_tests_only=args.changed_tests_only,
+        staged=args.staged,
+        test_shard_index=args.test_shard_index,
+        test_shard_count=args.test_shard_count,
+    )
 
 
 if __name__ == "__main__":

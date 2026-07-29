@@ -196,6 +196,42 @@ def test_parallel_runner_overdecomposes_for_work_stealing(monkeypatch) -> None:
     )
 
 
+def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
+    collected_nodes = "\n".join(
+        [
+            *(f"tests/test_slow.py::test_{index}" for index in range(9)),
+            *(f"tests/test_fast.py::test_{index}" for index in range(3)),
+        ]
+    )
+    shard_nodes = []
+
+    def fake_collect(command, **kwargs):
+        return SimpleNamespace(returncode=0, stdout=collected_nodes, stderr="")
+
+    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
+    monkeypatch.setattr(
+        check_changed,
+        "_run",
+        lambda command: shard_nodes.extend(command[4:]) or 0,
+    )
+
+    for shard_index in range(2):
+        before = set(shard_nodes)
+        assert (
+            check_changed._run_changed_tests_parallel(
+                ["tests/test_slow.py", "tests/test_fast.py"],
+                shard_index=shard_index,
+                shard_count=2,
+            )
+            == 0
+        )
+        current = set(shard_nodes) - before
+        assert len(current) == 6
+
+    assert set(shard_nodes) == set(collected_nodes.splitlines())
+    assert len(shard_nodes) == len(set(shard_nodes))
+
+
 def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
     monkeypatch.setenv("OMP_NUM_THREADS", "16")
     monkeypatch.setenv("OPENBLAS_NUM_THREADS", "32")

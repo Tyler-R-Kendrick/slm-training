@@ -11,6 +11,10 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-shard: [0, 1]
     # Dependency setup plus the changed-test fan-out can pass just after the
     # former two-minute deadline. Keep the repository-wide three-minute cap
     # while allowing Actions to report the completed test result.
@@ -86,7 +90,11 @@ jobs:
       - name: Run changed regression tests
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
+        run: |
+          python -m scripts.check_changed --changed-tests-only \
+            --base-ref "$BASE_SHA" \
+            --test-shard-index "${{ matrix.test-shard }}" \
+            --test-shard-count 2
       - name: Certify tokenizer–grammar invariants
         run: python -m scripts.verify_tokenizer_grammar_invariants
 
