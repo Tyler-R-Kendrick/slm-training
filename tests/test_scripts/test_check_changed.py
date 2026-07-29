@@ -215,18 +215,18 @@ def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
         lambda command: shard_nodes.extend(command[4:]) or 0,
     )
 
-    for shard_index in range(2):
+    for shard_index in range(4):
         before = set(shard_nodes)
         assert (
             check_changed._run_changed_tests_parallel(
                 ["tests/test_slow.py", "tests/test_fast.py"],
                 shard_index=shard_index,
-                shard_count=2,
+                shard_count=4,
             )
             == 0
         )
         current = set(shard_nodes) - before
-        assert len(current) == 6
+        assert len(current) == 3
 
     assert set(shard_nodes) == set(collected_nodes.splitlines())
     assert len(shard_nodes) == len(set(shard_nodes))
