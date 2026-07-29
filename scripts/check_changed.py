@@ -337,7 +337,10 @@ def _run_changed_tests_parallel(tests: list[str]) -> int:
     nodes = [line for line in collected.stdout.splitlines() if "::" in line]
     if len(nodes) < 2:
         return _run([sys.executable, "-m", "pytest", "-q", *tests])
-    batches = _shard_test_nodes(nodes, CHANGED_TEST_WORKERS)
+    # More batches than workers let the executor steal remaining work when
+    # individual test costs differ sharply despite equal node counts.
+    batch_count = min(len(nodes), CHANGED_TEST_WORKERS * 2)
+    batches = _shard_test_nodes(nodes, batch_count)
     commands = [
         [sys.executable, "-m", "pytest", "-q", *batch]
         for batch in batches

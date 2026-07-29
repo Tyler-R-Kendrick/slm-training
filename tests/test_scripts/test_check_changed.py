@@ -146,8 +146,8 @@ def test_changed_tests_are_collected_once_and_hash_balanced(monkeypatch) -> None
     assert check_changed._run_changed_tests_parallel(
         ["tests/test_a.py", "tests/test_b.py"]
     ) == 0
-    assert len(commands) == 2
-    assert sorted(len(command) - 4 for command in commands) == [1, 2]
+    assert len(commands) == 3
+    assert all(len(command) - 4 == 1 for command in commands)
     assert {
         node
         for command in commands
@@ -174,6 +174,26 @@ def test_changed_test_shards_balance_each_source_file() -> None:
         ]
         assert max(counts) - min(counts) <= 1
     assert {node for batch in batches for node in batch} == set(nodes)
+
+
+def test_parallel_runner_overdecomposes_for_work_stealing(monkeypatch) -> None:
+    collected_nodes = "\n".join(
+        f"tests/test_slow.py::test_{index}" for index in range(12)
+    )
+    commands = []
+
+    def fake_collect(command, **kwargs):
+        return SimpleNamespace(returncode=0, stdout=collected_nodes, stderr="")
+
+    monkeypatch.setattr(check_changed, "CHANGED_TEST_WORKERS", 2)
+    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
+    monkeypatch.setattr(check_changed, "_run", lambda command: commands.append(command) or 0)
+
+    assert check_changed._run_changed_tests_parallel(["tests/test_slow.py"]) == 0
+    assert len(commands) == 4
+    assert {node for command in commands for node in command[4:]} == set(
+        collected_nodes.splitlines()
+    )
 
 
 def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
