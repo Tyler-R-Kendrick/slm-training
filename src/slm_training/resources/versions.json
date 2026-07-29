@@ -8202,12 +8202,17 @@
       ]
     },
     "harness.solver_bench": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/solver_bench.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-29",
+          "note": "Key packed OpenUI successor reuse by request-local state and edge ids and require canonical certificate replay in the completion-kernel benchmark."
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -8590,12 +8595,17 @@
       ]
     },
     "matrix.perf": {
-      "version": "v3",
+      "version": "v4",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-29",
+          "note": "Require alternating paired samples, minimum-duration bundling, raw digest parity, stability statistics, exact solver replay, and clean homogeneous completion-kernel shard merges."
+        },
         {
           "version": "v3",
           "date": "2026-07-29",

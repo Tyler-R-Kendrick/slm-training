@@ -10,7 +10,10 @@ C-series rows compare compiler-drafted decode against the same-run C0 control.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import datetime as dt
+import enum
+import hashlib
 import json
 import platform
 import statistics
@@ -25,8 +28,173 @@ from slm_training.dsl.schema import load_jsonl
 from slm_training.models.decode_stats import DecodeStats, aggregate_stats
 from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.models.twotower import TwoTowerModel
-from slm_training.levers import DEFAULT_EVAL_DATA_DIR
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR, MAX_RUN_MINUTES
 from slm_training.versioning import build_version_stamp
+
+_COMPLETION_REQUIRED_WORKLOADS = ("direct", "corpus", "choice", "solver", "decode")
+_COMPLETION_STAMP_COMPONENTS = (
+    "matrix.perf",
+    "harness.model_build.eval",
+    "harness.solver_bench",
+    "model.twotower",
+    "dsl.operators.registry",
+    "config.levers",
+)
+_COMPLETION_MIN_SAMPLE_NS = 10_000_000
+_COMPLETION_MAX_RELATIVE_MAD = 0.15
+
+
+def _canonical_json_value(value: Any) -> Any:
+    """Return a deterministic JSON value for parity digests."""
+    if dataclasses.is_dataclass(value):
+        return _canonical_json_value(dataclasses.asdict(value))
+    if isinstance(value, enum.Enum):
+        return _canonical_json_value(value.value)
+    if isinstance(value, dict):
+        return {
+            str(key): _canonical_json_value(item)
+            for key, item in sorted(value.items(), key=lambda row: str(row[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_canonical_json_value(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        rows = [_canonical_json_value(item) for item in value]
+        return sorted(rows, key=lambda item: json.dumps(item, sort_keys=True))
+    if isinstance(value, Path):
+        return str(value)
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    return repr(value)
+
+
+def _result_digest(value: Any) -> str:
+    payload = json.dumps(
+        _canonical_json_value(value),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _median_mad(samples: list[float]) -> tuple[float, float]:
+    median = float(statistics.median(samples))
+    mad = float(statistics.median(abs(value - median) for value in samples))
+    return median, mad
+
+
+def _timed_bundle(fn, bundle_size: int) -> tuple[int, list[str], Any]:
+    values: list[Any] = []
+    started = time.perf_counter_ns()
+    for _ in range(bundle_size):
+        values.append(fn())
+    elapsed = time.perf_counter_ns() - started
+    return elapsed, [_result_digest(value) for value in values], values[-1]
+
+
+def _paired_measure(
+    reference_fn,
+    packed_fn,
+    repeats: int,
+    *,
+    min_sample_ns: int = _COMPLETION_MIN_SAMPLE_NS,
+) -> dict[str, Any]:
+    """Measure alternating paired arms and verify every invocation."""
+    reference_pilot = reference_fn()
+    packed_pilot = packed_fn()
+    if _result_digest(reference_pilot) != _result_digest(packed_pilot):
+        raise AssertionError("completion benchmark pilot parity mismatch")
+
+    bundle_size = 1
+    while True:
+        reference_ns, reference_digests, reference_value = _timed_bundle(
+            reference_fn, bundle_size
+        )
+        packed_ns, packed_digests, packed_value = _timed_bundle(
+            packed_fn, bundle_size
+        )
+        if reference_digests != packed_digests:
+            raise AssertionError("completion benchmark bundle parity mismatch")
+        if min(reference_ns, packed_ns) >= min_sample_ns:
+            break
+        bundle_size *= 2
+
+    pairs: list[dict[str, Any]] = []
+    reference_samples: list[float] = []
+    packed_samples: list[float] = []
+    pair_count = max(1, int(repeats))
+    for index in range(pair_count):
+        order = ("reference", "packed") if index % 2 == 0 else ("packed", "reference")
+        measured: dict[str, tuple[int, list[str], Any]] = {}
+        for arm in order:
+            measured[arm] = _timed_bundle(
+                reference_fn if arm == "reference" else packed_fn,
+                bundle_size,
+            )
+        reference_ns, reference_digests, reference_value = measured["reference"]
+        packed_ns, packed_digests, packed_value = measured["packed"]
+        if reference_digests != packed_digests:
+            raise AssertionError(
+                f"completion benchmark pair {index} parity mismatch"
+            )
+        reference_ns_op = reference_ns / bundle_size
+        packed_ns_op = packed_ns / bundle_size
+        reference_samples.append(reference_ns_op)
+        packed_samples.append(packed_ns_op)
+        pairs.append(
+            {
+                "index": index,
+                "order": list(order),
+                "reference_ns_per_op": round(reference_ns_op, 3),
+                "packed_ns_per_op": round(packed_ns_op, 3),
+                "packed_over_reference": round(
+                    packed_ns_op / reference_ns_op, 6
+                ),
+                "output_digest": reference_digests[-1],
+            }
+        )
+
+    reference_median, reference_mad = _median_mad(reference_samples)
+    packed_median, packed_mad = _median_mad(packed_samples)
+    reference_relative_mad = reference_mad / reference_median if reference_median else 0
+    packed_relative_mad = packed_mad / packed_median if packed_median else 0
+    unstable = max(reference_relative_mad, packed_relative_mad) > (
+        _COMPLETION_MAX_RELATIVE_MAD
+    )
+    return {
+        "pair_count": pair_count,
+        "bundle_size": bundle_size,
+        "pilot_excluded": True,
+        "minimum_sample_ns": min_sample_ns,
+        "pairs": pairs,
+        "reference": {
+            "median_ns_per_op": round(reference_median, 3),
+            "mad_ns_per_op": round(reference_mad, 3),
+            "min_ns_per_op": round(min(reference_samples), 3),
+            "max_ns_per_op": round(max(reference_samples), 3),
+            "relative_mad": round(reference_relative_mad, 6),
+        },
+        "packed": {
+            "median_ns_per_op": round(packed_median, 3),
+            "mad_ns_per_op": round(packed_mad, 3),
+            "min_ns_per_op": round(min(packed_samples), 3),
+            "max_ns_per_op": round(max(packed_samples), 3),
+            "relative_mad": round(packed_relative_mad, 6),
+        },
+        "packed_over_reference": round(packed_median / reference_median, 6),
+        "speedup": round(reference_median / packed_median, 6),
+        "unstable": unstable,
+        "output_digest": _result_digest(reference_value),
+        "reference_value": reference_value,
+        "packed_value": packed_value,
+    }
+
+
+def _measurement_evidence(measurement: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in measurement.items()
+        if key not in {"reference_value", "packed_value"}
+    }
 
 
 def _timed_ms(fn, repeats: int) -> tuple[float, Any]:
@@ -68,28 +236,41 @@ def _completion_direct_bench(repeats: int) -> dict[str, Any]:
         remaining_tokens=32,
         state=make_grammar_state(),
     )
-    reference_ms, reference = _timed_ms(
-        lambda: _openui_completion_domain_reference(reference_request), repeats
-    )
     _openui_completion_domain(packed_request)
 
     def packed_graph_query():
-        session = packed_request.state.completion_session
+        session = getattr(packed_request.state, "completion_session", None)
         if session is not None:
             session._results.clear()  # benchmark the graph/DP, not result replay
         return _openui_completion_domain(packed_request)
 
-    packed_ms, packed = _timed_ms(packed_graph_query, repeats)
-    speedup = reference_ms / packed_ms if packed_ms else None
+    measurement = _paired_measure(
+        lambda: _openui_completion_domain_reference(reference_request),
+        packed_graph_query,
+        repeats,
+    )
+    reference = measurement.pop("reference_value")
+    packed = measurement.pop("packed_value")
+    session = getattr(packed_request.state, "completion_session", None)
+    counters = session.stats() if session is not None else {}
+    correct = packed == reference and len(packed.candidates) == 12
+    work_ok = counters.get("general_forest_fallbacks", 0) == 0
     return {
         "n": 1,
         "prefix": "root = Card([b1,",
-        "reference_ms": round(reference_ms, 4),
-        "packed_ms": round(packed_ms, 4),
-        "speedup": round(speedup, 3) if speedup is not None else None,
-        "correct": packed == reference and len(packed.candidates) == 12,
-        "gate": "warm graph/DP speedup >= 10 and exact 12-path parity",
-        "pass": bool(packed == reference and len(packed.candidates) == 12 and speedup >= 10),
+        "measurement": _measurement_evidence(measurement),
+        "work_counters": counters,
+        "correct": correct,
+        "gate": (
+            "exact 12-path parity, stable paired speedup >= 10, "
+            "and zero supported-path general forest fallbacks"
+        ),
+        "pass": bool(
+            correct
+            and work_ok
+            and not measurement["unstable"]
+            and measurement["speedup"] >= 10
+        ),
     }
 
 
@@ -129,16 +310,15 @@ def _completion_corpus_bench(repeats: int) -> dict[str, Any]:
 
     packed_requests = requests()
     reference_requests = requests()
-    reference_ms, reference = _timed_ms(
+    warm = _paired_measure(
         lambda: [
             _openui_completion_domain_reference(row) for row in reference_requests
         ],
-        repeats,
-    )
-    packed_ms, packed = _timed_ms(
         lambda: [_openui_completion_domain(row) for row in packed_requests],
         repeats,
     )
+    reference = warm.pop("reference_value")
+    packed = warm.pop("packed_value")
     # Separate cold guardrail: fresh row state and no stateless forest cache.
     # Other immutable tokenizer/schema tables stay warm for both arms.
     compiler_draft._official_schema()
@@ -146,9 +326,7 @@ def _completion_corpus_bench(repeats: int) -> dict[str, Any]:
     def cold(provider, selected=texts):
         compiler_draft._STATELESS_FOREST_CACHE.clear()
         rows = requests(selected)
-        started = time.perf_counter()
-        result = [provider(row) for row in rows]
-        return (time.perf_counter() - started) * 1000.0, result
+        return [provider(row) for row in rows]
 
     # Discard one cold-row warmup per arm so immutable tokenizer/schema memo
     # population is not charged to whichever implementation happens to run
@@ -157,59 +335,38 @@ def _completion_corpus_bench(repeats: int) -> dict[str, Any]:
     cold_ratios: list[float] = []
     cold_correct = True
     for text in texts[:3]:
-        cold(_openui_completion_domain_reference, (text,))
-        cold(_openui_completion_domain, (text,))
-        cold_reference_samples: list[float] = []
-        cold_packed_samples: list[float] = []
-        cold_reference = cold_packed = []
-        for index in range(max(1, min(int(repeats), 3))):
-            order = (
-                (
-                    ("reference", _openui_completion_domain_reference),
-                    ("packed", _openui_completion_domain),
-                )
-                if index % 2 == 0
-                else (
-                    ("packed", _openui_completion_domain),
-                    ("reference", _openui_completion_domain_reference),
-                )
-            )
-            for name, provider in order:
-                elapsed, result = cold(provider, (text,))
-                if name == "reference":
-                    cold_reference_samples.append(elapsed)
-                    cold_reference = result
-                else:
-                    cold_packed_samples.append(elapsed)
-                    cold_packed = result
-        reference_cold = statistics.median(cold_reference_samples)
-        packed_cold = statistics.median(cold_packed_samples)
+        measurement = _paired_measure(
+            lambda text=text: cold(
+                _openui_completion_domain_reference, (text,)
+            ),
+            lambda text=text: cold(_openui_completion_domain, (text,)),
+            repeats,
+        )
+        cold_reference = measurement.pop("reference_value")
+        cold_packed = measurement.pop("packed_value")
         cold_correct = cold_correct and cold_packed == cold_reference
-        cold_ratios.append(packed_cold / reference_cold)
+        cold_ratios.append(measurement["packed_over_reference"])
         cold_rows.append(
             {
                 "prefix": text,
-                "reference_ms": round(reference_cold, 4),
-                "packed_ms": round(packed_cold, 4),
-                "packed_over_reference": round(
-                    packed_cold / reference_cold, 3
-                ),
+                "measurement": _measurement_evidence(measurement),
             }
         )
-    ratio = packed_ms / reference_ms if reference_ms else None
     cold_ratio = max(cold_ratios)
+    unstable = warm["unstable"] or any(
+        row["measurement"]["unstable"] for row in cold_rows
+    )
     return {
         "n": len(packed_requests),
-        "reference_ms": round(reference_ms, 4),
-        "packed_ms": round(packed_ms, 4),
-        "packed_over_reference": round(ratio, 3) if ratio is not None else None,
+        "warm_measurement": _measurement_evidence(warm),
         "cold_simple_prefixes": cold_rows,
-        "cold_packed_over_reference_max": round(cold_ratio, 3),
+        "cold_packed_over_reference_max": round(cold_ratio, 6),
         "correct": packed == reference and cold_correct,
         "gate": "exact parity and cold packed time <= 1.15x reference",
         "pass": bool(
             packed == reference
             and cold_correct
+            and not unstable
             and cold_ratio <= 1.15
         ),
     }
@@ -247,27 +404,31 @@ def _completion_choice_bench(repeats: int) -> dict[str, Any]:
     tokenizer = ChoiceTokenizer.build()
     state = ChoiceDecodeState(tokenizer, slot_count=2)
     remaining = 12
-    reference_ms, reference = _timed_ms(
-        lambda: _legacy_choice_allowed(state, remaining), repeats
-    )
     warm_cache_ms, _ = _timed_ms(lambda: state.allowed_ids(remaining), repeats)
 
     def packed_query():
         tokenizer.allowed_cache.clear()
         return state.allowed_ids(remaining)
 
-    packed_ms, packed = _timed_ms(packed_query, repeats)
-    speedup = reference_ms / packed_ms if packed_ms else None
+    measurement = _paired_measure(
+        lambda: _legacy_choice_allowed(state, remaining),
+        packed_query,
+        repeats,
+    )
+    reference = measurement.pop("reference_value")
+    packed = measurement.pop("packed_value")
     return {
         "n": 1,
         "remaining_tokens": remaining,
-        "reference_ms": round(reference_ms, 4),
-        "packed_ms": round(packed_ms, 4),
         "warm_allowed_cache_ms": round(warm_cache_ms, 4),
-        "speedup": round(speedup, 3) if speedup is not None else None,
+        "measurement": _measurement_evidence(measurement),
         "correct": packed == reference,
-        "gate": "exact parity and speedup >= 3",
-        "pass": bool(packed == reference and speedup >= 3),
+        "gate": "exact parity and stable paired speedup >= 3",
+        "pass": bool(
+            packed == reference
+            and not measurement["unstable"]
+            and measurement["speedup"] >= 3
+        ),
     }
 
 
@@ -275,8 +436,17 @@ def _completion_solver_bench(repeats: int) -> dict[str, Any]:
     from slm_training.dsl.grammar.fastpath.compiler_draft import (
         build_completion_forest,
     )
+    from slm_training.dsl.grammar.fastpath.token_map import decode_prefix
+    from slm_training.dsl.solver.adapters import completion_forest_state
     from slm_training.dsl.solver.openui_support import OpenUIForestExpander
     from slm_training.dsl.solver.state import SolverBounds
+    from slm_training.dsl.solver.support import (
+        EnumerativeSupportOracle,
+        ExpandStatus,
+        SupportQuery,
+        replay_support_certificate,
+    )
+    from slm_training.dsl.solver.openui_support import OpenUIWellFormedVerifier
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
     tokenizer = DSLNativeTokenizer.build()
@@ -301,11 +471,39 @@ def _completion_solver_bench(repeats: int) -> dict[str, Any]:
     )
     packed_root = packed_expander.root_state()
 
+    def state_payload(state):
+        if state is None:
+            return None
+        return {
+            "fingerprint": state.fingerprint,
+            "holes": [
+                {
+                    "hole_id": hole.hole_id,
+                    "values": [value.payload for value in hole.values],
+                    "metadata": hole.metadata,
+                }
+                for hole in state.holes
+            ],
+        }
+
+    def step_payload(step):
+        return {
+            "status": step.status.value,
+            "coverage": step.coverage,
+            "program_digest": (
+                _result_digest(step.program) if step.program is not None else None
+            ),
+            "next_state": state_payload(step.next_state),
+            "detail": step.detail,
+        }
+
     def packed():
         return [
-            packed_expander.successor(
-                packed_root, packed_root.holes[0].hole_id, value
-            ).status.value
+            step_payload(
+                packed_expander.successor(
+                    packed_root, packed_root.holes[0].hole_id, value
+                )
+            )
             for value in packed_root.holes[0].values
         ]
 
@@ -321,28 +519,124 @@ def _completion_solver_bench(repeats: int) -> dict[str, Any]:
         rows = []
         for value in root.holes[0].values:
             token_ids = tuple(int(t) for t in value.payload.get("token_ids", ()))
+            kind = str(value.payload.get("kind", ""))
+            if kind == "eos" or token_ids == (int(tokenizer.eos_id),):
+                rows.append(
+                    {
+                        "status": ExpandStatus.TERMINAL.value,
+                        "coverage": "complete",
+                        "program_digest": _result_digest(
+                            decode_prefix(tokenizer, list(prefix))
+                        ),
+                        "next_state": None,
+                        "detail": f"prefix_len={len(prefix)}",
+                    }
+                )
+                continue
             forest = build_completion_forest(
                 tokenizer, list(prefix + token_ids), max_path_tokens=8
             )
-            rows.append("continue" if forest.paths else forest.coverage)
+            if forest.coverage == "none":
+                rows.append(
+                    {
+                        "status": ExpandStatus.DEAD.value,
+                        "coverage": "none",
+                        "program_digest": None,
+                        "next_state": None,
+                        "detail": "illegal_prefix",
+                    }
+                )
+            elif not forest.paths:
+                rows.append(
+                    {
+                        "status": ExpandStatus.INCOMPLETE.value,
+                        "coverage": forest.coverage,
+                        "program_digest": None,
+                        "next_state": None,
+                        "detail": "no_enumerated_actions",
+                    }
+                )
+            else:
+                child = completion_forest_state(
+                    prefix_ids=prefix + token_ids,
+                    forest=forest,
+                    pack_id="openui",
+                    constraint_version="bench",
+                    bounds=bounds,
+                )
+                rows.append(
+                    {
+                        "status": ExpandStatus.CONTINUE.value,
+                        "coverage": forest.coverage,
+                        "program_digest": None,
+                        "next_state": state_payload(child),
+                        "detail": None,
+                    }
+                )
         return rows
 
-    reference_ms, reference_rows = _timed_ms(reference, repeats)
-    packed_ms, packed_rows = _timed_ms(packed, repeats)
-    speedup = reference_ms / packed_ms if packed_ms else None
+    # Populate each request-local successor once; timed packed calls are cache hits.
+    packed()
+    measurement = _paired_measure(reference, packed, repeats)
+    reference_rows = measurement.pop("reference_value")
+    packed_rows = measurement.pop("packed_value")
+
+    verifier = OpenUIWellFormedVerifier()
+    oracle = EnumerativeSupportOracle(packed_expander, verifier)
+    certificates = []
+    replay_failures = 0
+    for value in packed_root.holes[0].values:
+        query = SupportQuery(
+            state_fingerprint=packed_root.fingerprint,
+            hole_id=packed_root.holes[0].hole_id,
+            candidate=value,
+        )
+        support = oracle.check(packed_root, query)
+        replay = replay_support_certificate(
+            support.certificate,
+            state=packed_root,
+            expander=OpenUIForestExpander(
+                tokenizer,
+                prefix,
+                pack_id="openui",
+                constraint_version="bench",
+                bounds=bounds,
+            ),
+            verifier=verifier,
+        )
+        replay_failures += int(not replay.ok)
+        certificates.append(
+            {
+                "verdict": support.verdict.value,
+                "certificate_digest": support.certificate.digest,
+                "replay_ok": replay.ok,
+                "replay_violations": list(replay.violations),
+            }
+        )
+
+    correct = reference_rows == packed_rows
+    unique_successors = len(packed_root.holes[0].values)
     return {
         "n": len(reference_rows),
-        "reference_ms": round(reference_ms, 4),
-        "packed_ms": round(packed_ms, 4),
-        "speedup": round(speedup, 3) if speedup is not None else None,
+        "measurement": _measurement_evidence(measurement),
         "reference_nonempty": bool(reference_rows),
         "packed_nonempty": bool(packed_rows),
+        "correct": correct,
         "cached_successors": len(packed_expander._successors),
-        "gate": "both paths complete and every identical successor expands once",
+        "certificates": certificates,
+        "certificate_replay_failures": replay_failures,
+        "gate": (
+            "exact successor parity, replay-valid certificates, one expansion "
+            "per unique successor, and packed no slower than reference"
+        ),
         "pass": bool(
             reference_rows
             and packed_rows
-            and len(packed_expander._successors) == len(packed_root.holes[0].values)
+            and correct
+            and replay_failures == 0
+            and len(packed_expander._successors) == unique_successors
+            and not measurement["unstable"]
+            and measurement["packed_over_reference"] <= 1.0
         ),
     }
 
@@ -396,7 +690,9 @@ def _completion_decode_bench(repeats: int, device: str) -> dict[str, Any]:
     authority = pack.grammar_capability_authority
     assert authority is not None
 
-    def run(provider):
+    stats_by_arm: dict[str, list[DecodeStats]] = {"reference": [], "packed": []}
+
+    def run(provider, arm: str):
         register_pack(
             replace(
                 pack,
@@ -410,71 +706,101 @@ def _completion_decode_bench(repeats: int, device: str) -> dict[str, Any]:
                 ids = model._compiler_ltr_decode_one(
                     ctx, ctx_pad, 16, mode="tree", slot_contract=None
                 )
-            return tuple(int(v) for v in ids.tolist()), stats
+            stats_by_arm[arm].append(stats)
+            text = model._decode_ids(ids)
+            certified = model._canonical_valid_openui(text)
+            return {
+                "token_ids": tuple(int(v) for v in ids.tolist()),
+                "text": text,
+                "certified_text": certified,
+                "certified": certified is not None,
+            }
         finally:
             register_pack(pack)
 
-    samples: dict[str, list[tuple[float, tuple[int, ...], DecodeStats]]] = {
-        "reference": [],
-        "packed": [],
-    }
-    count = max(1, min(int(repeats), 3))
-    for index in range(count):
-        order = (
-            (
-                ("reference", _openui_completion_domain_reference),
-                ("packed", _openui_completion_domain),
-            )
-            if index % 2 == 0
-            else (
-                ("packed", _openui_completion_domain),
-                ("reference", _openui_completion_domain_reference),
-            )
-        )
-        for name, provider in order:
-            compiler_draft._STATELESS_FOREST_CACHE.clear()
-            started = time.perf_counter()
-            ids, stats = run(provider)
-            samples[name].append(
-                ((time.perf_counter() - started) * 1000.0, ids, stats)
-            )
-    reference_ms = statistics.median(row[0] for row in samples["reference"])
-    packed_ms = statistics.median(row[0] for row in samples["packed"])
+    def reference_run():
+        compiler_draft._STATELESS_FOREST_CACHE.clear()
+        return run(_openui_completion_domain_reference, "reference")
+
+    def packed_run():
+        compiler_draft._STATELESS_FOREST_CACHE.clear()
+        return run(_openui_completion_domain, "packed")
+
+    measurement = _paired_measure(reference_run, packed_run, repeats)
+    reference_value = measurement.pop("reference_value")
+    packed_value = measurement.pop("packed_value")
+    measured_invocations = measurement["pair_count"] * measurement["bundle_size"]
+    reference_stats = stats_by_arm["reference"][-measured_invocations:]
+    packed_stats_rows = stats_by_arm["packed"][-measured_invocations:]
     reference_compiler_ms = statistics.median(
-        row[2].compiler_ms for row in samples["reference"]
+        row.compiler_ms for row in reference_stats
     )
     packed_compiler_ms = statistics.median(
-        row[2].compiler_ms for row in samples["packed"]
+        row.compiler_ms for row in packed_stats_rows
     )
-    reference_ids = samples["reference"][-1][1]
-    packed_ids = samples["packed"][-1][1]
-    packed_stats = samples["packed"][-1][2]
+    reference_stats_last = reference_stats[-1]
+    packed_stats = packed_stats_rows[-1]
     compiler_speedup = (
         reference_compiler_ms / packed_compiler_ms
         if packed_compiler_ms
         else None
     )
+    work_counters = {
+        "completion_session_starts": packed_stats.completion_session_starts,
+        "completion_full_prefix_lex_bytes": (
+            packed_stats.completion_full_prefix_lex_bytes
+        ),
+        "completion_candidate_engine_allocations": (
+            packed_stats.completion_candidate_engine_allocations
+        ),
+        "completion_general_forest_builds": getattr(
+            packed_stats, "completion_general_forest_builds", 0
+        ),
+        "completion_value_tree_clones": getattr(
+            packed_stats, "completion_value_tree_clones", 0
+        ),
+        "completion_ast_bridge_calls": getattr(
+            packed_stats, "completion_ast_bridge_calls", 0
+        ),
+        "completion_edge_replays": getattr(
+            packed_stats, "completion_edge_replays", 0
+        ),
+    }
+    work_ok = (
+        work_counters["completion_session_starts"] == 1
+        and work_counters["completion_general_forest_builds"] == 0
+        and work_counters["completion_full_prefix_lex_bytes"] == 0
+        and work_counters["completion_candidate_engine_allocations"] == 0
+        and work_counters["completion_value_tree_clones"] == 0
+        and work_counters["completion_ast_bridge_calls"] == 0
+        and work_counters["completion_edge_replays"] == 0
+    )
+    correct = reference_value == packed_value
     return {
         "n": 1,
         "device": device,
-        "reference_wall_ms": round(reference_ms, 4),
-        "packed_wall_ms": round(packed_ms, 4),
+        "measurement": _measurement_evidence(measurement),
         "reference_compiler_ms": round(reference_compiler_ms, 4),
         "packed_compiler_ms": round(packed_compiler_ms, 4),
         "compiler_speedup": (
             round(compiler_speedup, 3) if compiler_speedup is not None else None
         ),
-        "correct": reference_ids == packed_ids,
+        "correct": correct,
+        "reference_forwards": reference_stats_last.forwards_count,
         "packed_forwards": packed_stats.forwards_count,
-        "packed_completion_session_starts": packed_stats.completion_session_starts,
-        "packed_completion_full_prefix_lex_bytes": (
-            packed_stats.completion_full_prefix_lex_bytes
+        "work_counters": work_counters,
+        "gate": (
+            "identical ids/text/certification, stable compiler_ms speedup >= 5, "
+            "no extra forwards, one session, and zero supported-path rebuild work"
         ),
-        "packed_completion_candidate_engine_allocations": (
-            packed_stats.completion_candidate_engine_allocations
+        "pass": bool(
+            correct
+            and work_ok
+            and not measurement["unstable"]
+            and compiler_speedup is not None
+            and compiler_speedup >= 5
+            and packed_stats.forwards_count <= reference_stats_last.forwards_count
         ),
-        "gate": "identical output and compiler_ms speedup >= 5",
-        "pass": bool(reference_ids == packed_ids and compiler_speedup >= 5),
     }
 
 
@@ -486,15 +812,129 @@ _COMPLETION_WORKLOADS = {
 }
 
 
+def _completion_recipe(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "device": args.device,
+        "execution": "independently capped workload shards",
+        "honesty_mode": "fixture_perf_not_ship",
+        "hard_cap_minutes": MAX_RUN_MINUTES,
+        "pair_count": args.completion_repeats,
+        "pair_order": "alternating_ab_ba",
+        "pilot": "one excluded pair",
+        "minimum_sample_ns": _COMPLETION_MIN_SAMPLE_NS,
+        "relative_mad_limit": _COMPLETION_MAX_RELATIVE_MAD,
+    }
+
+
+def _completion_fixture_digest(name: str) -> str:
+    return _result_digest(
+        {
+            "schema": "completion-kernel-perf/v1",
+            "workload": name,
+            "fixtures": {
+                "direct_prefix": "root = Card([b1,",
+                "corpus_prefixes": [
+                    "",
+                    "root",
+                    "root =",
+                    "root = Card([",
+                    "root = Card([b1",
+                    "root = Card([b1,",
+                    'root = TextContent(":slot_0")',
+                ],
+                "slot_contract": [":slot_0", ":slot_1"],
+                "remaining_tokens": {"direct": 32, "choice": 12},
+                "decode_tokens": 16,
+            },
+        }
+    )
+
+
+def _completion_row_compatibility(row: dict[str, Any]) -> dict[str, Any]:
+    stamp = row.get("version_stamp", {})
+    return {
+        "run_id": row.get("run_id"),
+        "code_commit": stamp.get("code_commit"),
+        "code_dirty": stamp.get("code_dirty"),
+        "components": stamp.get("components"),
+        "recipe": row.get("recipe"),
+        "host": row.get("host"),
+    }
+
+
+def _merge_completion_shards(args: argparse.Namespace) -> int:
+    shard_root = args.completion_shard_root / args.completion_run_id
+    rows: dict[str, dict[str, Any]] = {}
+    missing = []
+    for name in _COMPLETION_REQUIRED_WORKLOADS:
+        path = shard_root / f"{name}.json"
+        if not path.is_file():
+            missing.append(name)
+            continue
+        row = json.loads(path.read_text(encoding="utf-8"))
+        if row.get("workload") != name:
+            raise ValueError(f"{path}: workload does not match filename")
+        if row.get("fixture_manifest_digest") != _completion_fixture_digest(name):
+            raise ValueError(f"{path}: stale or mismatched fixture manifest")
+        rows[name] = row
+    if missing:
+        raise ValueError(f"completion shards missing workloads: {missing}")
+
+    first = _completion_row_compatibility(rows[_COMPLETION_REQUIRED_WORKLOADS[0]])
+    if first["run_id"] != args.completion_run_id:
+        raise ValueError("completion shard run_id does not match merge run_id")
+    if first["code_dirty"]:
+        raise ValueError("accepted completion evidence requires code_dirty=false")
+    for name, row in rows.items():
+        compatibility = _completion_row_compatibility(row)
+        if compatibility != first:
+            raise ValueError(
+                f"completion shard {name} has mixed run/commit/stamp/recipe/host"
+            )
+
+    overall_pass = all(bool(row.get("pass")) for row in rows.values())
+    board = {
+        "schema_version": "completion-kernel-perf/v1",
+        "run_id": args.completion_run_id,
+        "overall_status": "pass" if overall_pass else "fail",
+        "overall_pass": overall_pass,
+        "recipe": first["recipe"],
+        "source": {
+            "code_commit": first["code_commit"],
+            "code_dirty": first["code_dirty"],
+            "components": first["components"],
+            "host": first["host"],
+        },
+        "workloads": rows,
+        "version_stamp": rows[_COMPLETION_REQUIRED_WORKLOADS[0]][
+            "version_stamp"
+        ],
+    }
+    args.docs_out.parent.mkdir(parents=True, exist_ok=True)
+    args.docs_out.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(board, indent=2))
+    return 0 if overall_pass else 1
+
+
 def _run_completion_kernel_mode(args: argparse.Namespace) -> int:
+    if args.completion_merge:
+        return _merge_completion_shards(args)
     names = [
         name.strip().lower()
         for name in args.completion_kernel_workload.split(",")
         if name.strip()
     ]
+    if len(names) != len(set(names)):
+        raise ValueError("completion-kernel workload list contains duplicates")
     unknown = set(names) - (set(_COMPLETION_WORKLOADS) | {"decode"})
     if unknown:
         raise ValueError(f"unknown completion-kernel workloads: {sorted(unknown)}")
+    if not names:
+        raise ValueError("completion-kernel mode needs a workload or --completion-merge")
+    stamp = build_version_stamp(*_COMPLETION_STAMP_COMPONENTS)
+    recipe = _completion_recipe(args)
+    shard_root = args.completion_shard_root / args.completion_run_id
+    shard_root.mkdir(parents=True, exist_ok=True)
     results = {}
     for name in names:
         print(f"==> completion-kernel {name}")
@@ -510,45 +950,18 @@ def _run_completion_kernel_mode(args: argparse.Namespace) -> int:
             "machine": platform.machine(),
             "python": platform.python_version(),
         }
-        result["version_stamp"] = build_version_stamp(
-            "matrix.perf",
-            "harness.model_build.eval",
-            "model.twotower",
-            "dsl.operators.registry",
-        )
+        result["schema_version"] = "completion-kernel-workload/v1"
+        result["run_id"] = args.completion_run_id
+        result["workload"] = name
+        result["fixture_manifest_digest"] = _completion_fixture_digest(name)
+        result["recipe"] = recipe
+        result["version_stamp"] = stamp
         results[name] = result
-    prior: dict[str, Any] = {}
-    if args.docs_out.is_file():
-        try:
-            loaded = json.loads(args.docs_out.read_text(encoding="utf-8"))
-            if loaded.get("schema_version") == "completion-kernel-perf/v1":
-                prior = loaded
-        except (OSError, ValueError):
-            pass
-    workloads = {**prior.get("workloads", {}), **results}
-    board = {
-        **prior,
-        "schema_version": "completion-kernel-perf/v1",
-        "recipe": {
-            "device": args.device,
-            "execution": "independently capped workload shards",
-            "honesty_mode": "fixture_perf_not_ship",
-            "hard_cap_minutes": 3,
-        },
-        "selected_pass": all(row["pass"] for row in results.values()),
-        "overall_pass": all(row["pass"] for row in workloads.values()),
-        "workloads": workloads,
-        "version_stamp": build_version_stamp(
-            "matrix.perf",
-            "harness.model_build.eval",
-            "model.twotower",
-            "dsl.operators.registry",
-        ),
-    }
-    args.docs_out.parent.mkdir(parents=True, exist_ok=True)
-    args.docs_out.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(board, indent=2))
-    return 0 if board["overall_pass"] else 1
+        (shard_root / f"{name}.json").write_text(
+            json.dumps(result, indent=2) + "\n", encoding="utf-8"
+        )
+    print(json.dumps({"run_id": args.completion_run_id, "workloads": results}, indent=2))
+    return 0 if all(row["pass"] for row in results.values()) else 1
 
 
 @dataclass(frozen=True)
@@ -1149,8 +1562,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--completion-repeats",
         type=int,
-        default=3,
-        help="Measured repetitions per completion-kernel workload after one warmup.",
+        default=7,
+        help="Alternating paired samples per completion-kernel workload.",
+    )
+    parser.add_argument(
+        "--completion-run-id",
+        default="",
+        help="Shared run id for completion workload shards and their merge.",
+    )
+    parser.add_argument(
+        "--completion-shard-root",
+        type=Path,
+        default=Path("outputs/runs/completion_kernel"),
+        help="Ignored root for independently capped completion workload shards.",
+    )
+    parser.add_argument(
+        "--completion-merge",
+        action="store_true",
+        help="Merge a complete homogeneous five-workload completion run into docs.",
     )
     parser.add_argument(
         "--list",
@@ -1158,7 +1587,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Print selected experiment definitions without running them.",
     )
     args = parser.parse_args(argv)
-    if args.completion_kernel_workload:
+    if args.completion_kernel_workload or args.completion_merge:
+        if not args.completion_run_id:
+            args.completion_run_id = dt.datetime.now(dt.UTC).strftime(
+                "completion-kernel-%Y%m%dT%H%M%SZ"
+            )
         if args.docs_out == Path("docs/design/perf-matrix-results.json"):
             args.docs_out = Path(
                 "docs/design/completion-kernel-perf-results.json"
