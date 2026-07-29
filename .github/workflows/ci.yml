@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-shard: [0, 1, 2, 3]
+        test-shard: [0, 1, 2, 3, 4, 5, 6, 7]
     # Dependency setup plus the changed-test fan-out can pass just after the
     # former two-minute deadline. Keep the repository-wide three-minute cap
     # while allowing Actions to report the completed test result.
@@ -140,7 +140,7 @@ jobs:
           python -m scripts.check_changed --changed-tests-only \
             --base-ref "$BASE_SHA" \
             --test-shard-index "${{ matrix.test-shard }}" \
-            --test-shard-count 4
+            --test-shard-count 8
       - name: Certify tokenizer–grammar invariants
         run: python -m scripts.verify_tokenizer_grammar_invariants
 

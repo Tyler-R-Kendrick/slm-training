@@ -201,8 +201,8 @@ def test_parallel_runner_overdecomposes_for_work_stealing(monkeypatch) -> None:
 def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
     collected_nodes = "\n".join(
         [
-            *(f"tests/test_slow.py::test_{index}" for index in range(9)),
-            *(f"tests/test_fast.py::test_{index}" for index in range(3)),
+            *(f"tests/test_slow.py::test_{index}" for index in range(16)),
+            *(f"tests/test_fast.py::test_{index}" for index in range(8)),
         ]
     )
     shard_nodes = []
@@ -217,13 +217,13 @@ def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
         lambda command: shard_nodes.extend(command[4:]) or 0,
     )
 
-    for shard_index in range(4):
+    for shard_index in range(8):
         before = set(shard_nodes)
         assert (
             check_changed._run_changed_tests_parallel(
                 ["tests/test_slow.py", "tests/test_fast.py"],
                 shard_index=shard_index,
-                shard_count=4,
+                shard_count=8,
             )
             == 0
         )
