@@ -513,6 +513,7 @@ def main(argv: list[str] | None = None) -> int:
             ckpt,
             source=best["checkpoint"],
             promotion_result=promotion,
+            promoted_candidate_id=str(best["run_id"]),
             meta={"ladder_id": ladder.ladder_id, "track": ladder.track},
             **governance_kwargs,
         )

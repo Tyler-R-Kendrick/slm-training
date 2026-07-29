@@ -1239,6 +1239,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             campaign_store=store,
             artifact_root=artifact_root,
             locked_manifest_path=locked_manifest_path,
+            promoted_candidate_id=config.run_id,
             meta={
                 "step": step,
                 "best_weighted_nll": (
