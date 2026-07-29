@@ -407,7 +407,8 @@ and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).
 ## Packed incremental completion kernel (2026-07-29)
 
 `python -m scripts.run_perf_matrix --completion-kernel
---completion-repetitions 5` compares the private prefix-oriented V1 reference
+--completion-repetitions 5 --docs-agentv-dir
+docs/design/completion-kernel-perf-agentv-20260729` compares the private prefix-oriented V1 reference
 with the production request-local packed kernel on the same tokenizer, schema,
 budget, process, and interpreter. This is CPU fixture/scratch evidence only.
 
@@ -436,3 +437,6 @@ matched cold hard row is the negative 0.84× point above. Canonical raw samples,
 MAD/min/max, environment, work deltas, correctness digests, version stamp, and
 the two earlier non-promotable diagnostics are retained in
 [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
+The complete published AgentV bundle, including all 13 execution traces and
+transcripts, is tracked under
+[`completion-kernel-perf-agentv-20260729/`](completion-kernel-perf-agentv-20260729/).

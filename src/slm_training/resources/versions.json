@@ -8684,17 +8684,23 @@
       ]
     },
     "matrix.perf": {
-      "version": "v4",
+      "version": "v5",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
         "tests/test_scripts/test_perf_matrix.py",
         "docs/design/perf-matrix-results.json",
         "docs/design/completion-kernel-perf-results.json",
+        "docs/design/completion-kernel-perf-agentv-20260729/",
         "docs/design/perf-experiment-matrix.md",
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-29T12:03:12-05:00",
+          "note": "Persist the complete completion-kernel AgentV bundle, including execution traces and transcripts, under tracked docs with portable artifact paths."
+        },
         {
           "version": "v4",
           "date": "2026-07-29T10:05:51-05:00",

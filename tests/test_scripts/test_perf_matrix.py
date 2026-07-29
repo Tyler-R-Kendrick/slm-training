@@ -7,6 +7,7 @@ from scripts.run_perf_matrix import (
     _guardrails,
     _legacy_choice_allowed_ids,
     _payload_digest,
+    _persist_agentv_bundle,
     _prior_choice_diagnostic,
     _repo_relative_artifact_paths,
     _sample_summary,
@@ -64,6 +65,44 @@ def test_completion_result_paths_are_repo_relative(
         "runDir": "outputs/run",
         "remote": "hf://buckets/example",
     }
+
+
+def test_completion_agentv_bundle_persists_traces_with_portable_paths(
+    tmp_path,
+) -> None:
+    run_dir = tmp_path / "outputs" / "run"
+    source = run_dir / "agentv" / "run" / "suite.eval" / "case" / "outputs"
+    source.mkdir(parents=True)
+    trace = source / "trace.json"
+    trace.write_text(
+        '{"path":"' + str(run_dir.resolve()) + '/agentv/spec.jsonl"}\n',
+        encoding="utf-8",
+    )
+    transcript = source / "transcript.jsonl"
+    transcript.write_text(
+        '{"grader":"' + str(run_dir.resolve()) + '/grader.py"}\n',
+        encoding="utf-8",
+    )
+    stale = run_dir / "agentv" / "run" / "suite.eval" / "stale" / "outputs"
+    stale.mkdir(parents=True)
+    (stale / "trace.json").write_text("{}\n", encoding="utf-8")
+    (run_dir / "agentv" / "run" / "index.jsonl").write_text(
+        '{"artifact_dir":"suite.eval/case"}\n',
+        encoding="utf-8",
+    )
+
+    durable = _persist_agentv_bundle(run_dir, tmp_path / "docs" / "agentv")
+
+    assert durable["files"] == 3
+    assert durable["trace_files"] == 2
+    assert durable["includes_traces"] is True
+    assert "agentv-dir://" in (
+        tmp_path / "docs" / "agentv" / "agentv" / "run" / "suite.eval" / "case"
+        / "artifacts" / "trace.json"
+    ).read_text(encoding="utf-8")
+    assert not (
+        tmp_path / "docs" / "agentv" / "agentv" / "run" / "suite.eval" / "stale"
+    ).exists()
 
 
 def test_completion_domain_digest_covers_ordered_witnesses() -> None:

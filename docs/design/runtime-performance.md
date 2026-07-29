@@ -21,7 +21,8 @@ The canonical capped run
 python -m scripts.run_perf_matrix --completion-kernel \
   --completion-repetitions 5 \
   --out-dir outputs/runs/perf_matrix/completion_kernel_20260729 \
-  --docs-out docs/design/completion-kernel-perf-results.json
+  --docs-out docs/design/completion-kernel-perf-results.json \
+  --docs-agentv-dir docs/design/completion-kernel-perf-agentv-20260729
 ```
 
 ran on WSL2 Linux/aarch64 (Qualcomm, 12 logical CPUs), Python 3.12.3 and
@@ -29,6 +30,13 @@ Lark 1.3.1. It is `fixture_or_scratch` evidence, not a model-quality or ship
 claim. Raw samples, dispersion, correctness digests, counters, version stamp,
 and AgentV results are in
 [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
+The complete 95-file SDK bundle is tracked in
+[`completion-kernel-perf-agentv-20260729/`](completion-kernel-perf-agentv-20260729/):
+the 13 published cases each retain `trace.json` and `transcript.jsonl`, along
+with the spec, index, grading, timing, answer, and response artifacts. The
+archive normalizes AgentV's ignored per-case `outputs/` directories to
+`artifacts/` and machine-local paths to portable URIs; measurements, timestamps,
+trace IDs, and verdicts are unchanged.
 
 | Matched workload | V1 median | Packed median | V1 / packed |
 | --- | ---: | ---: | ---: |
