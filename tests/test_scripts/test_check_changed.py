@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from types import SimpleNamespace
 
 from scripts import check_changed
@@ -242,3 +244,24 @@ def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
     assert env["MKL_NUM_THREADS"] == "1"
     assert env["OPENBLAS_NUM_THREADS"] == "1"
     assert env["NUMEXPR_NUM_THREADS"] == "1"
+
+
+def test_list_mode_needs_no_installed_dependencies() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-S",
+            "-m",
+            "scripts.check_changed",
+            "--changed-tests-only",
+            "--base-ref",
+            "HEAD",
+            "--list",
+        ],
+        cwd=check_changed.ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr

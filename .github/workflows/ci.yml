@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   python:
     runs-on: ubuntu-latest
@@ -37,6 +41,26 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
+          test_targets="$(python3 -S -m scripts.check_changed \
+            --changed-tests-only --base-ref "$BASE_SHA" --list)"
+          printf 'Selected pytest targets:\n%s\n' "${test_targets:-none}"
+
+          need_torch=true
+          if [ -z "$test_targets" ] || ! printf '%s\n' "$test_targets" | grep -Ev \
+            '^(tests/test_versioning($|/)|tests/test_scripts/test_(check_changed|verify_version_stamps)\.py$)'; then
+            need_torch=false
+          fi
+          echo "NEED_TORCH=$need_torch" >> "$GITHUB_ENV"
+
+          if [ "$need_torch" = true ]; then
+            torch_wheels="$RUNNER_TEMP/torch-wheels"
+            mkdir -p "$torch_wheels"
+            python -m pip download --only-binary=:all: \
+              --index-url https://download.pytorch.org/whl/cpu \
+              --dest "$torch_wheels" "torch>=2.2,<2.6" &
+            torch_pid=$!
+          fi
+
           node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
           npm --prefix src/apps/openui_bridge ci &
           openui_pid=$!
@@ -56,15 +80,18 @@ jobs:
           fi
           echo "NEED_NODE=$need_node" >> "$GITHUB_ENV"
 
-          python -m pip install --only-binary=:all: \
-            --index-url https://download.pytorch.org/whl/cpu \
-            "torch>=2.2,<2.6"
           python -m pip install --no-deps -e .
           python -m pip install \
             "pytest>=8,<9" "pytest-asyncio>=0.23,<2" "ruff>=0.9,<0.16" \
             "numpy>=1.26,<3" "httpx>=0.27,<1" "fastapi>=0.110,<1" \
             "lark>=1.1,<2" "openfeature-sdk>=0.10,<1" "pydantic>=2.7,<3" \
             "PyYAML>=6,<7"
+
+          if [ "$need_torch" = true ]; then
+            wait "$torch_pid"
+            python -m pip install --no-index --find-links "$torch_wheels" \
+              "torch>=2.2,<2.6"
+          fi
 
           extras=
           if ! git diff --quiet "$BASE_SHA"...HEAD -- \

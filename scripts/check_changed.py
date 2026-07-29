@@ -18,7 +18,7 @@ from scripts.verify_agent_surfaces import OBLIGATIONS
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from slm_training.levers import CHANGED_TEST_WORKERS  # noqa: E402
+CHANGED_TEST_WORKERS: int | None = None
 
 
 # Editing any instruction surface re-certifies the whole parity matrix; the
@@ -338,6 +338,7 @@ def _run_changed_tests_parallel(
     shard_index: int = 0,
     shard_count: int = 1,
 ) -> int:
+    workers = _changed_test_workers()
     collected = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", *tests],
         cwd=ROOT,
@@ -362,7 +363,7 @@ def _run_changed_tests_parallel(
         return _run([sys.executable, "-m", "pytest", "-q", *nodes])
     # More batches than workers let the executor steal remaining work when
     # individual test costs differ sharply despite equal node counts.
-    batch_count = min(len(nodes), CHANGED_TEST_WORKERS * 2)
+    batch_count = min(len(nodes), workers * 2)
     batches = _shard_test_nodes(nodes, batch_count)
     commands = [
         [sys.executable, "-m", "pytest", "-q", *batch]
@@ -370,9 +371,17 @@ def _run_changed_tests_parallel(
         if batch
     ]
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=CHANGED_TEST_WORKERS
+        max_workers=workers
     ) as executor:
         return int(any(executor.map(_run, commands)))
+
+
+def _changed_test_workers() -> int:
+    if CHANGED_TEST_WORKERS is not None:
+        return CHANGED_TEST_WORKERS
+    from slm_training.levers import CHANGED_TEST_WORKERS as configured_workers
+
+    return configured_workers
 
 
 def _shard_test_nodes(nodes: list[str], workers: int) -> list[list[str]]:
