@@ -37,7 +37,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -141,10 +141,20 @@ def lint_registry(registry: dict[str, Any]) -> list[str]:
                 row.get("version") or ""
             ):
                 errors.append(f"{where}: history row has invalid version")
+            timestamp = row.get("date") or ""
             try:
-                date.fromisoformat(row.get("date") or "")
+                parsed_timestamp = datetime.fromisoformat(timestamp)
             except ValueError:
-                errors.append(f"{where}: history row has invalid date {row.get('date')!r}")
+                errors.append(
+                    f"{where}: history row has invalid date or datetime "
+                    f"{row.get('date')!r}"
+                )
+            else:
+                if "T" in timestamp and parsed_timestamp.tzinfo is None:
+                    errors.append(
+                        f"{where}: history datetime must include a timezone offset "
+                        f"{timestamp!r}"
+                    )
             if not (row.get("note") or "").strip():
                 errors.append(f"{where}: history notes must be non-empty")
     return errors

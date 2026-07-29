@@ -36,6 +36,11 @@
       "history": [
         {
           "version": "v28",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v28 history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v28",
           "date": "2026-07-29",
           "note": "Reject enabled boolean constraint-weakening levers and distinguish prohibited from unsupported compiler lever failures."
         },
@@ -1053,6 +1058,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v2 hardening history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v2",
           "date": "2026-07-29",
           "note": "Harden recursive macro handling, content-derived tokenizer authority, exhaustive oracle independence, solver-pruned forced closure, parser fallback, and persistent-session benchmark evidence."
         },
@@ -1097,6 +1107,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v8 history event; runtime behavior is unchanged."
+        },
         {
           "version": "v8",
           "date": "2026-07-29",
@@ -7477,6 +7492,11 @@
       "history": [
         {
           "version": "v65",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v65 history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v65",
           "date": "2026-07-29",
           "note": "Expose applications and choice-change counters for slot-alias uniqueness and required-slot array and root completion biases."
         },
@@ -8647,6 +8667,11 @@
       "history": [
         {
           "version": "v4",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v4 history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v4",
           "date": "2026-07-29",
           "note": "Measure warm V2 with a persistent session but without row-domain cache lookup, derive all gates from replayed observations, and record exact reproducible recipe metadata."
         },
@@ -9452,6 +9477,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v265",
+          "date": "2026-07-29T10:14:34-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v265 diagnostic-history event; runtime behavior is unchanged."
+        },
         {
           "version": "v265",
           "date": "2026-07-29",
