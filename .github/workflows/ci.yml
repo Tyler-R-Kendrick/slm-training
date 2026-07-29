@@ -55,9 +55,19 @@ jobs:
           if [ "$need_torch" = true ]; then
             torch_wheels="$RUNNER_TEMP/torch-wheels"
             mkdir -p "$torch_wheels"
-            python -m pip download --only-binary=:all: \
-              --index-url https://download.pytorch.org/whl/cpu \
-              --dest "$torch_wheels" "torch>=2.2,<2.6" &
+            download_torch() {
+              for attempt in 1 2; do
+                if timeout --signal=INT --kill-after=5s 45s \
+                  python -m pip download --only-binary=:all: \
+                    --index-url https://download.pytorch.org/whl/cpu \
+                    --dest "$torch_wheels" "torch>=2.2,<2.6"; then
+                  return 0
+                fi
+                echo "Torch wheel download attempt $attempt timed out; retrying."
+              done
+              return 1
+            }
+            download_torch &
             torch_pid=$!
           fi
 
