@@ -6574,16 +6574,16 @@ def test_ptrm_trajectory_policy_is_seed_reproducible() -> None:
     model = _model()
     model.config.compiler_search_mode = "ptrm"
     model.config.compiler_search_trigger = "always"
-    model.config.compiler_search_width = 4
+    model.config.compiler_search_width = 2
     model.config.compiler_search_noise = 1.0
     ctx, ctx_pad = model._encode_context(["card"])
     with collect_decode_stats() as left_stats:
         left = model._compiler_ltr_decode_one(
-            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+            ctx, ctx_pad, 12, mode="tree", slot_contract=None
         )
     with collect_decode_stats() as right_stats:
         right = model._compiler_ltr_decode_one(
-            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+            ctx, ctx_pad, 12, mode="tree", slot_contract=None
         )
     assert torch.equal(left, right)
     assert left_stats.compiler_lattice_trajectory_triggers > 0

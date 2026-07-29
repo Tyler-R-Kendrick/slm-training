@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import subprocess
 import sys
@@ -320,8 +321,12 @@ def _run_changed_tests_parallel(tests: list[str]) -> int:
     nodes = [line for line in collected.stdout.splitlines() if "::" in line]
     if len(nodes) < 2:
         return _run([sys.executable, "-m", "pytest", "-q", *tests])
+    shuffled = sorted(
+        nodes,
+        key=lambda node: hashlib.sha256(node.encode()).digest(),
+    )
     batches = [
-        nodes[index::CHANGED_TEST_WORKERS]
+        shuffled[index::CHANGED_TEST_WORKERS]
         for index in range(CHANGED_TEST_WORKERS)
     ]
     commands = [

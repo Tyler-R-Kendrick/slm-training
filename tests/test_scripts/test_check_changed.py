@@ -116,7 +116,7 @@ def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
     ]
 
 
-def test_changed_tests_are_collected_once_and_partitioned_by_node(monkeypatch) -> None:
+def test_changed_tests_are_collected_once_and_hash_balanced(monkeypatch) -> None:
     commands = []
 
     def fake_collect(command, **kwargs):
@@ -146,22 +146,14 @@ def test_changed_tests_are_collected_once_and_partitioned_by_node(monkeypatch) -
     assert check_changed._run_changed_tests_parallel(
         ["tests/test_a.py", "tests/test_b.py"]
     ) == 0
-    assert sorted(commands) == sorted(
-        [
-            [
-                check_changed.sys.executable,
-                "-m",
-                "pytest",
-                "-q",
-                "tests/test_a.py::test_one",
-                "tests/test_b.py::test_three",
-            ],
-            [
-                check_changed.sys.executable,
-                "-m",
-                "pytest",
-                "-q",
-                "tests/test_a.py::test_two",
-            ],
-        ]
-    )
+    assert len(commands) == 2
+    assert sorted(len(command) - 4 for command in commands) == [1, 2]
+    assert {
+        node
+        for command in commands
+        for node in command[4:]
+    } == {
+        "tests/test_a.py::test_one",
+        "tests/test_a.py::test_two",
+        "tests/test_b.py::test_three",
+    }
