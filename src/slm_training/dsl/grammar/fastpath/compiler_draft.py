@@ -15,7 +15,6 @@ from slm_training.dsl.grammar.fastpath.token_map import (
     allowed_id_set,
     apply_literal_frame,
     decode_prefix,
-    string_to_token_ids,
     token_surface_piece as _token_piece,
 )
 
@@ -174,9 +173,7 @@ def _literal_frame_is_open(tokenizer: Any, token_ids: list[int]) -> bool:
     return opened
 
 
-def literal_frame_is_open(
-    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
-) -> bool:
+def literal_frame_is_open(tokenizer: Any, token_ids: list[int] | tuple[int, ...]) -> bool:
     """Public view of :func:`_literal_frame_is_open` (DSH1-07 / SLM-359).
 
     A prefix ending inside an open ``LIT_STR``/``LIT_NUM`` frame (before its
@@ -229,7 +226,7 @@ def _grammar_terminal_kind(
     terminals: tuple[str, ...],
     state: Any | None = None,
     declaration_scope: str | None = None,
-    list_occupancy: str | None = None,
+    semantic_state: Any | None = None,
 ) -> str:
     """Classify structural choices by the active Lark terminal."""
     semantic = _semantic_kind(tokenizer, token_id)
@@ -238,18 +235,20 @@ def _grammar_terminal_kind(
     matches = [
         terminal
         for terminal in terminals
-        if token_id in (allowed_id_set(tokenizer, frozenset({terminal})) or set())
+        if token_id
+        in (allowed_id_set(tokenizer, frozenset({terminal})) or set())
     ]
     if not matches:
         return semantic
     terminal = min(matches)
     kind = f"grammar_{terminal.lower().strip('_').replace('$', 'end_')}"
     if terminal == "RSQB":
-        occupancy = (
-            list_occupancy
-            if list_occupancy is not None
-            else _active_list_occupancy(state)
-        )
+        if semantic_state is not None:
+            from slm_training.dsl.grammar.fastpath import semantic_state as _ss
+
+            occupancy = _ss.active_list_occupancy(semantic_state)
+        else:
+            occupancy = _active_list_occupancy(state)
         context = [part for part in (declaration_scope, occupancy) if part]
         if context:
             kind = "_".join((kind, *context))
@@ -473,7 +472,9 @@ def _active_declaration_scope(tokenizer: Any, prefix_ids: list[int]) -> str | No
     return "root" if active == tokenizer.bind_id(0) else "bound"
 
 
-def active_declaration_binder_id(tokenizer: Any, prefix_ids: list[int]) -> int | None:
+def active_declaration_binder_id(
+    tokenizer: Any, prefix_ids: list[int]
+) -> int | None:
     """Return the grammar-native binder for the active declaration."""
     _declarations, _references, active = _binder_scope(tokenizer, prefix_ids)
     return active
@@ -610,7 +611,8 @@ def binder_reference_arities(
         if declaration_at is None:
             continue
         references = sum(
-            token_id in bind_ids for token_id in statement[declaration_at + 2 :]
+            token_id in bind_ids
+            for token_id in statement[declaration_at + 2 :]
         )
         arities.append((statement[declaration_at], references))
     return tuple(arities)
@@ -720,9 +722,7 @@ def bound_binder_reference_counts(
         if declaration_at is None:
             return
         counts.update(
-            token_id
-            for token_id in tokens[declaration_at + 2 :]
-            if token_id in bind_ids
+            token_id for token_id in tokens[declaration_at + 2 :] if token_id in bind_ids
         )
 
     for token_id in token_ids:
@@ -904,24 +904,24 @@ def active_parent_component_ids(
         if equal_at is None:
             continue
         owner_component = next(
-            (
-                token_id
-                for token_id in statement[equal_at + 1 :]
-                if token_id in component_ids
-            ),
+            (token_id for token_id in statement[equal_at + 1 :] if token_id in component_ids),
             None,
         )
         if owner_component is None:
             continue
         references = {
-            token_id for token_id in statement[equal_at + 1 :] if token_id in bind_ids
+            token_id
+            for token_id in statement[equal_at + 1 :]
+            if token_id in bind_ids
         }
         if active in references:
             parents.add(owner_component)
     return tuple(sorted(parents))
 
 
-def semantic_component_edges(root: Any, tokenizer: Any) -> tuple[tuple[int, int], ...]:
+def semantic_component_edges(
+    root: Any, tokenizer: Any
+) -> tuple[tuple[int, int], ...]:
     """Extract parent/child component-type edges from a resolved OpenUI AST."""
     token_to_id = tokenizer.token_to_id
     edges: list[tuple[int, int]] = []
@@ -1085,10 +1085,13 @@ def _schema_requires_symbol(
             for branch in branches
         )
     all_of = [
-        branch for branch in value_schema.get("allOf") or () if isinstance(branch, dict)
+        branch
+        for branch in value_schema.get("allOf") or ()
+        if isinstance(branch, dict)
     ]
     if all_of and any(
-        _schema_requires_symbol(branch, root_schema, seen_refs) for branch in all_of
+        _schema_requires_symbol(branch, root_schema, seen_refs)
+        for branch in all_of
     ):
         return True
     properties = value_schema.get("properties") or {}
@@ -1110,7 +1113,10 @@ def _component_requires_available_content(component: str) -> bool:
         and (
             _schema_accepts_symbol(property_schema, schema)
             or bool(_schema_component_refs(property_schema, schema))
-            or (property_name == "children" and property_schema.get("type") == "array")
+            or (
+                property_name == "children"
+                and property_schema.get("type") == "array"
+            )
         )
         for property_name, property_schema in properties.items()
     )
@@ -1128,10 +1134,7 @@ def _required_child_content_group(
         child_families: set[str] = set()
         for name in definition.get("required") or ():
             property_schema = properties.get(name)
-            if (
-                not isinstance(property_schema, dict)
-                or property_schema.get("type") == "array"
-            ):
+            if not isinstance(property_schema, dict) or property_schema.get("type") == "array":
                 continue
             child_families.update(
                 child
@@ -1174,7 +1177,9 @@ def _generated_ast_is_complete(prefix_text: str) -> bool:
         return isinstance(program.root, dict) and bool(program.root)
     except (TimeoutError, KeyboardInterrupt):
         raise
-    except Exception:  # noqa: BLE001
+    except lang_core.ParseError:
+        return False
+    except RuntimeError:
         try:
             from slm_training.dsl.grammar.backends import get_backend
 
@@ -1251,17 +1256,6 @@ def _active_call(state: Any) -> tuple[str, int, int] | None:
     return None
 
 
-def _schema_property_name(
-    active: tuple[str, int, int] | None, schema: dict[str, Any]
-) -> str | None:
-    if active is None:
-        return None
-    component, index, _ = active
-    definition = (schema.get("$defs") or {}).get(component) or {}
-    names = list(definition.get("properties") or {})
-    return str(names[index]) if index < len(names) else None
-
-
 def _schema_enum_sequences(
     tokenizer: Any, state: Any, schema: dict[str, Any]
 ) -> tuple[tuple[int, ...], ...] | None:
@@ -1287,36 +1281,9 @@ def _schema_enum_sequences(
     return tuple(sorted(sequences))
 
 
-def _schema_enum_sequences_from_active(
-    tokenizer: Any,
-    active: tuple[str, int, int] | None,
-    schema: dict[str, Any],
-) -> tuple[tuple[int, ...], ...] | None:
-    """Tree-free equivalent of ``_schema_enum_sequences``."""
-    if active is None:
-        return None
-    component, index, arg_count = active
-    if arg_count > index:
-        return None
-    definition = (schema.get("$defs") or {}).get(component) or {}
-    properties = definition.get("properties") or {}
-    names = list(properties)
-    if index >= len(names):
-        return ()
-    values = (properties.get(names[index]) or {}).get("enum")
-    if not values:
-        return None
-    sequences = {
-        tuple(
-            int(token_id)
-            for token_id in tokenizer.encode(json.dumps(value), add_special=False)
-        )
-        for value in values
-    }
-    return tuple(sorted(sequence for sequence in sequences if sequence))
-
-
-def _schema_slot_type(state: Any, schema: dict[str, Any]) -> str | None:
+def _schema_slot_type(
+    state: Any, schema: dict[str, Any]
+) -> str | None:
     active = _active_call(state)
     if active is None:
         return None
@@ -1358,10 +1325,7 @@ def _completed_call_string_values(
             if name_children and str(name_children[0]) == component:
                 arg_list = children[1] if len(children) > 1 else None
                 args = list(getattr(arg_list, "children", ()) or ())
-                if (
-                    index < len(args)
-                    and str(getattr(args[index], "type", "")) == "STRING"
-                ):
+                if index < len(args) and str(getattr(args[index], "type", "")) == "STRING":
                     try:
                         decoded = json.loads(str(args[index]))
                     except (TypeError, ValueError, json.JSONDecodeError):
@@ -1413,7 +1377,9 @@ def _schema_component_accepts_components(
     )
 
 
-def _schema_array_item_components(state: Any, schema: dict[str, Any]) -> frozenset[str]:
+def _schema_array_item_components(
+    state: Any, schema: dict[str, Any]
+) -> frozenset[str]:
     """Component types admitted by the active array property."""
     active = _active_call(state)
     if active is None:
@@ -1428,7 +1394,9 @@ def _schema_array_item_components(state: Any, schema: dict[str, Any]) -> frozens
     return _schema_component_refs(items, schema)
 
 
-def _schema_slot_components(state: Any, schema: dict[str, Any]) -> frozenset[str]:
+def _schema_slot_components(
+    state: Any, schema: dict[str, Any]
+) -> frozenset[str]:
     """Component types admitted directly by the active positional property."""
     active = _active_call(state)
     if active is None:
@@ -1491,9 +1459,7 @@ def _schema_call_arity(
     if not names:
         return None
     required = set(definition.get("required") or ())
-    minimum = max(
-        (names.index(name) + 1 for name in required if name in names), default=0
-    )
+    minimum = max((names.index(name) + 1 for name in required if name in names), default=0)
     return minimum, len(names), arg_count, arg_count > index
 
 
@@ -1525,14 +1491,14 @@ def _decision_kind(
     semantic_state: Any | None = None,
 ) -> str:
     """Build a semantic decision signature from parser/schema roles."""
-    cursor = None
     if semantic_state is not None:
         from slm_training.dsl.grammar.fastpath import semantic_state as _ss
 
-        cursor = _ss.schema_cursor(semantic_state)
         active_slot = _ss.active_declaration_slot(semantic_state)
         scope = (
-            None if active_slot is None else ("root" if active_slot == 0 else "bound")
+            None
+            if active_slot is None
+            else ("root" if active_slot == 0 else "bound")
         )
     else:
         scope = _active_declaration_scope(tokenizer, prefix_ids)
@@ -1542,14 +1508,16 @@ def _decision_kind(
         terminals,
         state,
         scope,
-        None if cursor is None else cursor.active_list_occupancy,
+        semantic_state=semantic_state,
     )
     if kind == "component" and _at_declaration_value(tokenizer, prefix_ids):
         return f"component_{scope}" if scope else kind
     if kind != "bind":
         return kind
     last = prefix_ids[-1] if prefix_ids else None
-    at_statement_start = len(prefix_ids) <= 1 or tokenizer.id_to_token.get(last) == "NL"
+    at_statement_start = (
+        len(prefix_ids) <= 1 or tokenizer.id_to_token.get(last) == "NL"
+    )
     if at_statement_start:
         target_scope = "root" if token_id == tokenizer.bind_id(0) else "bound"
         return f"bind_declaration_{target_scope}"
@@ -1557,22 +1525,15 @@ def _decision_kind(
     if scope:
         parts.append(scope)
     slot = (
-        _schema_slot_name(state, schema)
-        if schema and cursor is None
-        else (
-            _schema_property_name(cursor.active_call, schema)
-            if schema and cursor is not None
-            else None
-        )
+        _ss.schema_slot_name(semantic_state, schema)
+        if schema is not None and semantic_state is not None
+        else _schema_slot_name(state, schema)
+        if schema is not None
+        else None
     )
     if slot:
         parts.append("".join(char if char.isalnum() else "_" for char in slot))
     return "_".join(parts)
-
-
-_STATELESS_FOREST_CACHE: dict[tuple[object, ...], tuple[Any, "CompletionForest"]] = {}
-_STATELESS_FOREST_CACHE_CAP = 8192
-STATELESS_FOREST_CACHE_STATS = {"hits": 0, "misses": 0}
 
 
 def _build_openui_completion_forest(
@@ -1591,64 +1552,11 @@ def _build_openui_completion_forest(
     semantic_state: Any | None = None,
     scan_counter: Any | None = None,
 ) -> CompletionForest:
-    """Memoizing front for the stateless forest build.
-
-    With ``state=None`` the build is a pure function of (tokenizer, prefix,
-    slot contract, path bounds, flags, schema identity — the impl reads the
-    live ``_official_schema()``, so its identity is part of the cache key): no row engine, no remaining-token
-    budget, no mutable decode state participates.  The EOS-witness recursion
-    in ``dsl/pack.py`` re-derives overlapping node prefixes on every decode
-    position and every record, so a process-level memo collapses that
-    structural redundancy.  A cached forest is byte-identical to a rebuild.
-
-    Stateful calls (``state`` carrying a per-row engine / decode memo) are a
-    different authority path and are NEVER served from or stored in this
-    cache — mixing the two was the exact failure mode of the earlier
-    exact-key attempt.  ``semantic_state`` calls (the packed completion
-    kernel's interned per-request authority) take the same direct route: the
-    kernel owns its own request-local domain cache.
-    """
-    if state is not None or semantic_state is not None:
-        return _build_openui_completion_forest_impl(
-            tokenizer,
-            prefix_ids,
-            state=state,
-            engine=engine,
-            slot_contract=slot_contract,
-            max_path_tokens=max_path_tokens,
-            min_content=min_content,
-            enforce_schema_component_types=enforce_schema_component_types,
-            reserved_content_slots=reserved_content_slots,
-            reserve_unresolved_content=reserve_unresolved_content,
-            explain=explain,
-            semantic_state=semantic_state,
-            scan_counter=scan_counter,
-        )
-    key = (
-        id(tokenizer),
-        tuple(int(token_id) for token_id in prefix_ids),
-        tuple(slot_contract or ()),
-        int(max_path_tokens),
-        int(min_content),
-        bool(enforce_schema_component_types),
-        int(reserved_content_slots),
-        bool(reserve_unresolved_content),
-        bool(explain),
-        # The impl reads the live ``_official_schema()``; identity is part of
-        # the authority, so it is part of the key (``_official_schema`` is
-        # ``lru_cache``d, hence identity-stable; None vs present is the
-        # distinction that matters — a forest built without lang_core must
-        # never be served once lang_core is importable).
-        id(_official_schema()),
-    )
-    entry = _STATELESS_FOREST_CACHE.get(key)
-    if entry is not None and entry[0] is tokenizer:
-        STATELESS_FOREST_CACHE_STATS["hits"] += 1
-        return entry[1]
-    STATELESS_FOREST_CACHE_STATS["misses"] += 1
-    forest = _build_openui_completion_forest_impl(
+    """Reference/analysis front; production session caching is request-local."""
+    return _build_openui_completion_forest_impl(
         tokenizer,
         prefix_ids,
+        state=state,
         engine=engine,
         slot_contract=slot_contract,
         max_path_tokens=max_path_tokens,
@@ -1657,16 +1565,12 @@ def _build_openui_completion_forest(
         reserved_content_slots=reserved_content_slots,
         reserve_unresolved_content=reserve_unresolved_content,
         explain=explain,
+        semantic_state=semantic_state,
+        scan_counter=scan_counter,
     )
-    if len(_STATELESS_FOREST_CACHE) >= _STATELESS_FOREST_CACHE_CAP:
-        _STATELESS_FOREST_CACHE.clear()
-    # The tokenizer is stored beside the forest so its ``id`` cannot be
-    # recycled by a later tokenizer while entries are cached.
-    _STATELESS_FOREST_CACHE[key] = (tokenizer, forest)
-    return forest
 
 
-def _build_openui_completion_forest_impl(
+def _build_openui_completion_forest_direct(
     tokenizer: Any,
     prefix_ids: list[int],
     *,
@@ -1681,8 +1585,6 @@ def _build_openui_completion_forest_impl(
     explain: bool = False,
     semantic_state: Any | None = None,
     scan_counter: Any | None = None,
-    recognition_snapshot: Any | None = None,
-    transition_snapshots: dict[tuple[int, ...], Any] | None = None,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
 
@@ -1730,11 +1632,13 @@ def _build_openui_completion_forest_impl(
     the order-sensitive binder inventory) are never called on the production
     path; they remain importable as ``<name>_reference`` strictly for the
     differential parity tests (``tests/test_dsl/test_semantic_state.py``).
-    The packed schema cursor also replaces Lark value-tree reads. It carries
-    the exact active call/list facts plus Lark's trailing-unreduced-RPAR lag,
-    so array position and completed-string reuse remain byte-identical without
-    retaining or walking parser values. ``scan_counter`` is an optional mutable
-    mapping; each avoided prefix rescan increments
+    Active-call/schema views, array position/emptiness, list occupancy,
+    completed call strings, and grammar-terminal occupancy are also read from
+    ``semantic_state`` on the production path.  This is required because
+    :meth:`CompletionSession.outgoing` uses a control-only engine with no
+    semantic value stack.  Only the named ``*_reference`` helpers above retain
+    prefix rescans for differential tests. ``scan_counter`` is an optional
+    mutable mapping; each avoided prefix rescan increments
     ``scan_counter["avoided"]`` (and the process-wide
     ``semantic_state.SCOPE_COUNTERS["scope_reference_scans_avoided"]``).
     """
@@ -1750,9 +1654,7 @@ def _build_openui_completion_forest_impl(
             return
         for token_id in sorted(before - candidates):
             evidence.append(
-                ConstraintEvidence(
-                    int(token_id), (int(token_id),), stage, False, reason
-                )
+                ConstraintEvidence(int(token_id), (int(token_id),), stage, False, reason)
             )
 
     def _record_one(
@@ -1818,18 +1720,13 @@ def _build_openui_completion_forest_impl(
     # though its internal text is not byte-identical to ``prefix_text`` — skip
     # the full re-lex.  ``engine_in_sync`` never widens this: any doubt falls
     # through to the canonical ``set_prefix`` below.
-    ids_synced = recognition_snapshot is not None or (
+    ids_synced = (
         state is not None
         and getattr(state, "engine", None) is engine
         and callable(getattr(state, "engine_in_sync", None))
         and bool(state.engine_in_sync(prefix_ids, prefix_text))
     )
-    if (
-        recognition_snapshot is None
-        and not ids_synced
-        and not engine.set_prefix(prefix_text)
-        and prefix_text.strip()
-    ):
+    if not ids_synced and not engine.set_prefix(prefix_text) and prefix_text.strip():
         if evidence is not None:
             summary = ConstraintEvidenceSummary("none", 0, 0, 0, ())
             return CompletionForest((), "none", (), (), summary)
@@ -1850,7 +1747,6 @@ def _build_openui_completion_forest_impl(
         fold_schema = _official_schema()
         for _tid in prefix_ids:
             sstate = _ss.advance(sstate, int(_tid), tokenizer, schema=fold_schema)
-    schema_cursor = _ss.schema_cursor(sstate)
 
     def _bump() -> None:
         _ss.SCOPE_COUNTERS["scope_reference_scans_avoided"] += 1
@@ -1923,9 +1819,7 @@ def _build_openui_completion_forest_impl(
         if source_slot is None or target_slot is None:
             # Slot-less binder token: no interned fact — scan reference.
             return _binder_reference_would_cycle(
-                source_id,
-                target_id,
-                _binder_dependencies_reference(tokenizer, prefix_ids),
+                source_id, target_id, _binder_dependencies_reference(tokenizer, prefix_ids)
             )
         return _ss.binder_would_cycle(sstate, int(source_slot), int(target_slot))
 
@@ -1933,11 +1827,75 @@ def _build_openui_completion_forest_impl(
         _bump()
         return _ss.literal_frame_is_open(sstate)
 
-    terminals = (
-        engine.recognition_terminals(recognition_snapshot)
-        if recognition_snapshot is not None
-        else engine.next_terminals()
-    )
+    def _active_call_view() -> tuple[str, int, int] | None:
+        _bump()
+        return _ss.active_call(sstate)
+
+    def _schema_slot_components_view(
+        active_schema: dict[str, Any],
+    ) -> frozenset[str]:
+        _bump()
+        return _ss.schema_slot_components(sstate, active_schema)
+
+    def _schema_slot_type_view(active_schema: dict[str, Any]) -> str | None:
+        _bump()
+        return _ss.schema_slot_type(sstate, active_schema)
+
+    def _schema_slot_name_view(active_schema: dict[str, Any]) -> str | None:
+        _bump()
+        return _ss.schema_slot_name(sstate, active_schema)
+
+    def _schema_call_arity_view(
+        active_schema: dict[str, Any],
+    ) -> tuple[int, int, int, bool] | None:
+        _bump()
+        return _ss.schema_call_arity(sstate, active_schema)
+
+    def _schema_array_item_components_view(
+        active_schema: dict[str, Any],
+    ) -> frozenset[str]:
+        _bump()
+        return _ss.schema_array_item_components(sstate, active_schema)
+
+    def _active_array_position_view() -> str | None:
+        _bump()
+        return _ss.active_array_position(sstate)
+
+    def _active_array_is_empty_view() -> bool:
+        _bump()
+        return _ss.active_array_is_empty(sstate)
+
+    def _completed_string_values_view(
+        component: str, index: int
+    ) -> frozenset[str]:
+        _bump()
+        return _ss.completed_string_values(sstate, component, index)
+
+    def _schema_enum_sequences_view(
+        active_schema: dict[str, Any],
+    ) -> tuple[tuple[int, ...], ...] | None:
+        active = _active_call_view()
+        if active is None:
+            return None
+        component, index, arg_count = active
+        if arg_count > index:
+            return None
+        definition = (active_schema.get("$defs") or {}).get(component) or {}
+        properties = definition.get("properties") or {}
+        names = list(properties)
+        if index >= len(names):
+            return ()
+        values = (properties.get(names[index]) or {}).get("enum")
+        if not values:
+            return None
+        sequences = {
+            tuple(int(token_id) for token_id in encoded)
+            for value in values
+            if (encoded := tokenizer.encode(json.dumps(value), add_special=False))
+        }
+        return tuple(sorted(sequences))
+
+    terminals = engine.next_terminals()
     candidates = allowed_id_set(tokenizer, terminals) or set()
     before_stage = _snapshot()
     if prefix_ids and tokenizer.id_to_token.get(int(prefix_ids[-1])) == "NL":
@@ -1945,10 +1903,7 @@ def _build_openui_completion_forest_impl(
         if newline_id is not None:
             candidates.discard(int(newline_id))
     _record_excluded(ConstraintStage.GRAMMAR, "grammar_newline_repeat", before_stage)
-    # Grammar acceptance comes from ``terminals``; structural completeness is
-    # carried by the incremental semantic cursor, so the supported packed path
-    # does not parse a second AST merely to decide EOS admission.
-    ast_complete = _ss.generated_ast_is_complete(sstate)
+    ast_complete = _generated_ast_is_complete(prefix_text)
     references_resolved = _references_resolved_view()
     # A4: withhold EOS while the layout has fewer than ``min_content`` components,
     # but only when the grammar still offers a non-EOS continuation (never create
@@ -1967,26 +1922,11 @@ def _build_openui_completion_forest_impl(
         # min-content floor apart from a grammar/dataflow rejection.
         eos_id = int(tokenizer.eos_id)
         if not ast_complete:
-            _record_one(
-                ConstraintStage.TERMINAL,
-                "eos_withheld_incomplete_ast",
-                eos_id,
-                admitted=False,
-            )
+            _record_one(ConstraintStage.TERMINAL, "eos_withheld_incomplete_ast", eos_id, admitted=False)
         elif not references_resolved:
-            _record_one(
-                ConstraintStage.DATAFLOW,
-                "eos_withheld_unresolved_reference",
-                eos_id,
-                admitted=False,
-            )
+            _record_one(ConstraintStage.DATAFLOW, "eos_withheld_unresolved_reference", eos_id, admitted=False)
         elif not content_met:
-            _record_one(
-                ConstraintStage.MIN_CONTENT,
-                "eos_withheld_min_content",
-                eos_id,
-                admitted=False,
-            )
+            _record_one(ConstraintStage.MIN_CONTENT, "eos_withheld_min_content", eos_id, admitted=False)
         else:
             _record_one(ConstraintStage.TERMINAL, "eos_admitted", eos_id, admitted=True)
     before_stage = _snapshot()
@@ -2013,7 +1953,7 @@ def _build_openui_completion_forest_impl(
     )
     needs_schema = (
         bool(terminals & {"COMPONENT", "STRING"})
-        or schema_cursor.active_call is not None
+        or _active_call_view() is not None
     )
     schema = _official_schema() if needs_schema else None
     before_stage = _snapshot()
@@ -2038,15 +1978,9 @@ def _build_openui_completion_forest_impl(
                     _token_piece(tokenizer, token_id), schema
                 )
             }
-    _record_excluded(
-        ConstraintStage.SCHEMA, "schema_component_not_in_library", before_stage
-    )
-    if (
-        enforce_schema_component_types
-        and schema is not None
-        and "COMPONENT" in terminals
-    ):
-        slot_components = _ss.schema_slot_components(sstate, schema)
+    _record_excluded(ConstraintStage.SCHEMA, "schema_component_not_in_library", before_stage)
+    if enforce_schema_component_types and schema is not None and "COMPONENT" in terminals:
+        slot_components = _schema_slot_components_view(schema)
         if slot_components:
             before_stage = _snapshot()
             bind_ids = set(tokenizer.kind_ids("bind"))
@@ -2119,22 +2053,20 @@ def _build_openui_completion_forest_impl(
                 before_stage,
             )
     enum_sequences = (
-        _schema_enum_sequences_from_active(tokenizer, schema_cursor.active_call, schema)
-        if schema
-        else None
+        _schema_enum_sequences_view(schema) if schema else None
     )
     before_stage = _snapshot()
     if enum_sequences is not None:
         candidates = {sequence[0] for sequence in enum_sequences if sequence}
     _record_excluded(ConstraintStage.SCHEMA, "schema_enum_restricted", before_stage)
-    schema_type = _ss.schema_slot_type(sstate, schema) if schema else None
-    schema_slot = _ss.schema_slot_name(sstate, schema) if schema else None
+    schema_type = _schema_slot_type_view(schema) if schema else None
+    schema_slot = _schema_slot_name_view(schema) if schema else None
     type_terminals = _schema_type_terminals(schema_type)
-    arity = _ss.schema_call_arity(sstate, schema) if schema else None
+    arity = _schema_call_arity_view(schema) if schema else None
     current_started = arity[3] if arity is not None else False
     nullable_slot = False
     if schema is not None and schema_slot is not None:
-        active = schema_cursor.active_call
+        active = _active_call_view()
         component = active[0] if active is not None else None
         definition = (schema.get("$defs") or {}).get(component) or {}
         nullable_slot = schema_slot not in set(definition.get("required") or ())
@@ -2161,10 +2093,7 @@ def _build_openui_completion_forest_impl(
             for binder, components in pending.items()
             if binder not in declared
             and components
-            and all(
-                _component_requires_available_content(component)
-                for component in components
-            )
+            and all(_component_requires_available_content(component) for component in components)
         )
         if available is not None and len(available) <= pending_content + max(
             0, reserved_content_slots
@@ -2224,14 +2153,10 @@ def _build_openui_completion_forest_impl(
                         candidates &= contract_ids | null_ids
                 elif schema_slot in STRUCTURAL_ID_PROPS:
                     candidates &= structural_ids | null_ids
-                    active = schema_cursor.active_call
+                    active = _active_call_view()
                     if slot_contract and active is not None:
                         component, index, _ = active
-                        reused = frozenset(
-                            value
-                            for name, arg_index, value in schema_cursor.completed_strings
-                            if name == component and arg_index == index
-                        )
+                        reused = _completed_string_values_view(component, index)
                         candidates -= {
                             int(tokenizer.token_to_id[f"STR:{value}"])
                             for value in reused
@@ -2250,17 +2175,17 @@ def _build_openui_completion_forest_impl(
             )
 
     array_item_components = (
-        _ss.schema_array_item_components(sstate, schema)
+        _schema_array_item_components_view(schema)
         if schema_type == "array" and schema is not None
         else frozenset()
     )
     active_array_position = (
-        schema_cursor.active_array_position
+        _active_array_position_view()
         if schema_type == "array" and current_started
         else None
     )
     if active_array_position is not None and schema is not None:
-        active = schema_cursor.active_call
+        active = _active_call_view()
         if active is not None:
             component, index, _arg_count = active
             definition = (schema.get("$defs") or {}).get(component) or {}
@@ -2276,12 +2201,14 @@ def _build_openui_completion_forest_impl(
                 before_stage = _snapshot()
                 if active_array_position == "item_start":
                     typed_ids = allowed_id_set(tokenizer, item_terminals) or set()
-                    close_ids = allowed_id_set(tokenizer, frozenset({"RSQB"})) or set()
+                    close_ids = allowed_id_set(
+                        tokenizer, frozenset({"RSQB"})
+                    ) or set()
                     candidates &= typed_ids | close_ids
                 else:
-                    candidates &= (
-                        allowed_id_set(tokenizer, frozenset({"COMMA", "RSQB"})) or set()
-                    )
+                    candidates &= allowed_id_set(
+                        tokenizer, frozenset({"COMMA", "RSQB"})
+                    ) or set()
                 _record_excluded(
                     ConstraintStage.SCHEMA,
                     "schema_array_item_type",
@@ -2386,7 +2313,7 @@ def _build_openui_completion_forest_impl(
             }
         if content_capacity_reached:
             candidates -= allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
-        if schema_cursor.active_array_empty and not allow_empty_capacity_close:
+        if _active_array_is_empty_view() and not allow_empty_capacity_close:
             candidates -= allowed_id_set(tokenizer, frozenset({"RSQB"})) or set()
         _record_excluded(ConstraintStage.SCHEMA, "schema_array_children", before_stage)
 
@@ -2437,14 +2364,10 @@ def _build_openui_completion_forest_impl(
             # LTR/compiler prefixes include BOS, which is not a source token.
             # Treat BOS-only as the first statement so the root binder remains
             # available to the symbolic tree.
-            at_statement_start = (
-                len(prefix_ids) <= 1 or tokenizer.id_to_token.get(last) == "NL"
-            )
+            at_statement_start = len(prefix_ids) <= 1 or tokenizer.id_to_token.get(last) == "NL"
             if at_statement_start:
                 declared = set(declarations)
-                unresolved = [
-                    token_id for token_id in references if token_id not in declared
-                ]
+                unresolved = [token_id for token_id in references if token_id not in declared]
                 used = declared | set(references)
                 next_slot = next(
                     (
@@ -2459,10 +2382,7 @@ def _build_openui_completion_forest_impl(
                 candidates.add(int(next_id))
             elif declarations:
                 declared = set(declarations)
-                reusable = declared - {
-                    int(active_declaration or -1),
-                    tokenizer.bind_id(0),
-                }
+                reusable = declared - {int(active_declaration or -1), tokenizer.bind_id(0)}
                 if active_declaration is not None:
                     reusable = {
                         token_id
@@ -2487,10 +2407,9 @@ def _build_openui_completion_forest_impl(
                 if slot_contract and _declaration_scope_view() == "root":
                     from slm_training.models.grammar import contract_allowed_token_ids
 
-                    if (
-                        contract_allowed_token_ids(tokenizer, prefix_ids, slot_contract)
-                        == set()
-                    ):
+                    if contract_allowed_token_ids(
+                        tokenizer, prefix_ids, slot_contract
+                    ) == set():
                         # Root aggregation can still close or reuse an already
                         # required binder, but cannot justify a new declaration
                         # once every visible contract slot is consumed.
@@ -2501,7 +2420,9 @@ def _build_openui_completion_forest_impl(
                 candidates -= bind_ids
             # The selected 0.2.x layout contract excludes state/effect actions.
             candidates -= state_ids | builtin_ids
-            if candidates & sym_ids and not (slot_contract and schema_type == "string"):
+            if candidates & sym_ids and not (
+                slot_contract and schema_type == "string"
+            ):
                 candidates -= sym_ids
         except (TimeoutError, KeyboardInterrupt):
             raise
@@ -2528,12 +2449,7 @@ def _build_openui_completion_forest_impl(
     }
     if evidence is not None:
         for token_id in sorted(candidates & specials):
-            _record_one(
-                ConstraintStage.GRAMMAR,
-                "special_token_excluded",
-                token_id,
-                admitted=False,
-            )
+            _record_one(ConstraintStage.GRAMMAR, "special_token_excluded", token_id, admitted=False)
     paths: list[CompletionPath] = []
     max_path_tokens = max(1, int(max_path_tokens))
     candidate_sequences = (
@@ -2553,49 +2469,16 @@ def _build_openui_completion_forest_impl(
         # below is then a same-text no-op, so the branch behaves exactly like
         # a fresh full sync.  P3: when the parent is direct-feed id-synced the
         # fork inherits that exact state, so the text sync is skipped outright.
-        branch = None if recognition_snapshot is not None else engine.copy()
-        branch_recognition = recognition_snapshot
-        if branch is not None and not ids_synced and not branch.set_prefix(prefix_text):
-            _record_one(
-                ConstraintStage.GRAMMAR,
-                "branch_prefix_rejected",
-                candidate,
-                admitted=False,
-            )
+        branch = engine.copy()
+        if not ids_synced and not branch.set_prefix(prefix_text):
+            _record_one(ConstraintStage.GRAMMAR, "branch_prefix_rejected", candidate, admitted=False)
             continue
         branch_text = prefix_text
         admitted = True
         opened_literal_frame = _literal_frame_open_view()
         crossed_literal_boundary = False
-        recognition_prefix: list[int] = []
         for token_id in sequence:
             raw = str(tokenizer.id_to_token.get(int(token_id), ""))
-            if branch_recognition is not None:
-                piece = _token_piece(tokenizer, int(token_id))
-                if raw in {"LIT_STR", "LIT_NUM", "LIT_END"}:
-                    admitted = True
-                elif sstate.literal_kind:
-                    branch_text += piece
-                    branch_recognition = engine.recognition_from_text(branch_text)
-                    admitted = branch_recognition is not None
-                else:
-                    advanced = engine.recognition_advance(
-                        branch_recognition, tokenizer, int(token_id)
-                    )
-                    admitted = advanced.status.value == "accepted"
-                    branch_recognition = advanced.snapshot if admitted else None
-                if not admitted:
-                    break
-                recognition_prefix.append(int(token_id))
-                if transition_snapshots is not None:
-                    transition_snapshots[tuple(recognition_prefix)] = branch_recognition
-                if raw in {"LIT_STR", "LIT_NUM"}:
-                    opened_literal_frame = True
-                    crossed_literal_boundary = True
-                elif raw == "LIT_END":
-                    opened_literal_frame = False
-                    crossed_literal_boundary = True
-                continue
             if raw in {"LIT_STR", "LIT_NUM"}:
                 opened_literal_frame = True
                 crossed_literal_boundary = True
@@ -2607,22 +2490,14 @@ def _build_openui_completion_forest_impl(
             piece = _token_piece(tokenizer, int(token_id))
             # Single-pass test-and-commit: same accept/reject outcome as the
             # probe_chunk + advance pair, with one lex and one delta feed.
-            assert branch is not None
             admitted = branch.advance_checked(piece)
             if not admitted:
                 break
             branch_text += piece
         # InteractiveParser accepted the edge and exposes at least one follow
         # terminal, which is the exact CFG reachability guarantee we need.
-        branch_terminals = (
-            engine.recognition_terminals(branch_recognition)
-            if branch_recognition is not None
-            else (branch.next_terminals() if branch is not None else frozenset())
-        )
-        if not admitted or not branch_terminals:
-            _record_one(
-                ConstraintStage.GRAMMAR, "branch_unreachable", candidate, admitted=False
-            )
+        if not admitted or not branch.next_terminals():
+            _record_one(ConstraintStage.GRAMMAR, "branch_unreachable", candidate, admitted=False)
             continue
         drafted = [int(token_id) for token_id in sequence]
         # The fork + per-sequence ``advance_checked`` above left ``branch``
@@ -2636,39 +2511,18 @@ def _build_openui_completion_forest_impl(
             and not crossed_literal_boundary
             and len(drafted) < max_path_tokens
         ):
-            if branch_recognition is not None:
-                forced_text = engine.recognition_deterministic_next(branch_recognition)
-                forced_ids = (
-                    string_to_token_ids(tokenizer, forced_text)
-                    if forced_text is not None
-                    else ()
-                )
-                forced = int(forced_ids[0]) if len(forced_ids) == 1 else None
-            else:
-                assert branch is not None
-                forced = force_next_token_id(
-                    branch, tokenizer, branch_text, assume_synced=branch_synced
-                )
+            forced = force_next_token_id(
+                branch, tokenizer, branch_text, assume_synced=branch_synced
+            )
             if forced is None or forced in specials:
                 break
             drafted.append(int(forced))
             piece = _token_piece(tokenizer, forced)
+            if not branch.advance_checked(piece):
+                drafted.pop()
+                break
             branch_text += piece
-            if branch_recognition is not None:
-                advanced = engine.recognition_advance(
-                    branch_recognition, tokenizer, int(forced)
-                )
-                if advanced.status.value != "accepted":
-                    break
-                branch_recognition = advanced.snapshot
-                recognition_prefix.append(int(forced))
-                if transition_snapshots is not None:
-                    transition_snapshots[tuple(recognition_prefix)] = branch_recognition
-            else:
-                assert branch is not None
-                branch_synced = bool(branch.advance_checked(piece))
-        if transition_snapshots is not None and branch_recognition is not None:
-            transition_snapshots[tuple(drafted)] = branch_recognition
+            branch_synced = True
         paths.append(
             CompletionPath(
                 tuple(drafted),
@@ -2699,6 +2553,19 @@ def _build_openui_completion_forest_impl(
     return _finalize(paths, coverage)
 
 
+def _build_openui_completion_forest_impl(
+    tokenizer: Any,
+    prefix_ids: list[int],
+    **kwargs: Any,
+) -> CompletionForest:
+    """Private test alias for the same direct production implementation."""
+    return _build_openui_completion_forest_direct(
+        tokenizer,
+        prefix_ids,
+        **kwargs,
+    )
+
+
 def build_completion_forest(
     tokenizer: Any,
     prefix_ids: list[int],
@@ -2707,6 +2574,9 @@ def build_completion_forest(
     slot_contract: list[str] | None = None,
     max_path_tokens: int = 8,
     min_content: int = 0,
+    enforce_schema_component_types: bool = False,
+    reserved_content_slots: int = 0,
+    reserve_unresolved_content: bool = False,
     remaining_tokens: int | None = None,
     runtime_symbols: tuple[Any, ...] = (),
     explain: bool = False,
@@ -2730,8 +2600,22 @@ def build_completion_forest(
             slot_contract=slot_contract,
             max_path_tokens=max_path_tokens,
             min_content=min_content,
+            enforce_schema_component_types=enforce_schema_component_types,
+            reserved_content_slots=reserved_content_slots,
+            reserve_unresolved_content=reserve_unresolved_content,
             explain=explain,
         )
+    if (
+        enforce_schema_component_types
+        or reserved_content_slots
+        or reserve_unresolved_content
+    ):
+        # These legacy experimental controls are not part of the stable
+        # CompletionDomainRequestV1 wire contract. A horizon-bearing
+        # production request must not silently discard them or bypass terminal
+        # witness certification, so it fails closed until the capability
+        # contract carries those fields explicitly.
+        return CompletionForest((), "none")
     from slm_training.dsl.grammar_capabilities import (
         CompletionDomainRequestV1,
         GrammarCapabilityAdapterV1,
@@ -2759,9 +2643,7 @@ def build_completion_forest(
         request.min_content,
         request.explain,
     )
-    cache = (
-        getattr(state, "completion_domain_cache", None) if state is not None else None
-    )
+    cache = getattr(state, "completion_domain_cache", None) if state is not None else None
     try:
         domain = cache.get(cache_key) if cache is not None else None
         if domain is None:
@@ -2773,7 +2655,7 @@ def build_completion_forest(
     except Exception:  # noqa: BLE001 - constrained callers fail closed below
         return CompletionForest((), "none")
     if isinstance(domain, UnsupportedCapabilityV1) or domain.status != "complete":
-        return CompletionForest((), "none", tuple(getattr(domain, "terminals", ())))
+        return CompletionForest((), "none", tuple(getattr(domain, "terminals", ())) )
     return CompletionForest(
         tuple(CompletionPath(item.token_ids, item.kind) for item in domain.candidates),
         "complete",
@@ -2798,12 +2680,15 @@ def gold_compiler_decisions(
         if is_choice_tokenizer(tokenizer):
             ids = tuple(int(token_id) for token_id in token_ids)
             top_level_components: list[int] = []
-            probe = ChoiceDecodeState(tokenizer, slot_count=len(slot_contract or ()))
+            probe = ChoiceDecodeState(
+                tokenizer, slot_count=len(slot_contract or ())
+            )
             probe_cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
-            while probe_cursor < len(ids) and ids[probe_cursor] not in {
-                int(tokenizer.pad_id),
-                int(tokenizer.eos_id),
-            }:
+            while (
+                probe_cursor < len(ids)
+                and ids[probe_cursor]
+                not in {int(tokenizer.pad_id), int(tokenizer.eos_id)}
+            ):
                 if (
                     _semantic_kind(tokenizer, ids[probe_cursor]) == "component"
                     and not probe.frames
@@ -2812,8 +2697,12 @@ def gold_compiler_decisions(
                 if not probe.advance_id(ids[probe_cursor]):
                     break
                 probe_cursor += 1
-            structural_root = top_level_components[-1] if top_level_components else None
-            state = ChoiceDecodeState(tokenizer, slot_count=len(slot_contract or ()))
+            structural_root = (
+                top_level_components[-1] if top_level_components else None
+            )
+            state = ChoiceDecodeState(
+                tokenizer, slot_count=len(slot_contract or ())
+            )
             stop_ids = {int(tokenizer.pad_id), int(tokenizer.eos_id)}
             cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
             decisions: list[CompilerDecision] = []
@@ -2827,7 +2716,10 @@ def gold_compiler_decisions(
                     kind = (
                         "component_root"
                         if state.current_marker == "r="
-                        or (state.mode != "v05" and cursor == structural_root)
+                        or (
+                            state.mode != "v05"
+                            and cursor == structural_root
+                        )
                         else "component_bound"
                     )
                 if len(candidates) > 1:

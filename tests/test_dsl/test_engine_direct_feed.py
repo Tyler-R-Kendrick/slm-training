@@ -10,13 +10,9 @@ direct-fed engine must expose exactly the same grammar state as a fresh
 
 from __future__ import annotations
 
-from slm_training.dsl.grammar.fastpath.engine import (
-    OpenUIIncrementalEngine,
-    RecognitionAdvanceStatus,
-)
+from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
 from slm_training.dsl.grammar.fastpath.token_map import (
     decode_prefix,
-    dsl_direct_terminal_map,
     token_surface_piece,
 )
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer, TokenKind
@@ -181,17 +177,14 @@ def test_single_token_probes_match_text_route() -> None:
 def test_literal_frame_feeds_terminal_only_at_close() -> None:
     tok = _tok()
     ids = _ids(tok, "root = Slider(0.5)")
-    opener = tok.token_to_id["LIT_NUM"]
-    closer = tok.token_to_id["LIT_END"]
     engine = OpenUIIncrementalEngine()
     engine.reset()
     for tid in ids:
         before = engine.next_terminals()
         assert engine.feed_token_id(tok, tid) is True
-        if tid == opener or engine._frame is not None and tid != closer:
+        if engine._frame is not None:
             # Opener and frame bytes advance frame state without feeding.
-            if engine._frame is not None:
-                assert engine.next_terminals() == before
+            assert engine.next_terminals() == before
     # After the closer, exactly one NUMBER terminal was fed for the frame.
     text_engine = OpenUIIncrementalEngine()
     assert text_engine.set_prefix(decode_prefix(tok, ids))
@@ -267,6 +260,16 @@ def test_macro_expansion_feeds_iteratively() -> None:
     engine.reset()
     key = engine.parser_state_key()
     assert engine.feed_token_id(tok, tok.macro_id(1)) is None
+    assert engine.parser_state_key() == key
+
+
+def test_mutually_recursive_macro_expansion_fails_closed() -> None:
+    tok = _tok()
+    tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
+    engine = OpenUIIncrementalEngine()
+    engine.reset()
+    key = engine.parser_state_key()
+    assert engine.feed_token_id(tok, tok.macro_id(0)) is None
     assert engine.parser_state_key() == key
 
 
@@ -486,140 +489,17 @@ def test_decode_state_replacement_clears_direct_sync_marker() -> None:
     assert not state.engine_in_sync(ids[5:10], state.prefix_text)
 
 
-def test_recognition_snapshot_differential_and_zero_copy_cost() -> None:
-    """Stack-only transitions exactly match committed direct-feed states."""
-    tok = _tok()
-    sources = (
-        _BYTE_FREE_SOURCES[0],
-        _BYTE_FREE_SOURCES[1],
-        "root = Slider(0.5)",
-    )
-    for src in sources:
-        engine = OpenUIIncrementalEngine()
-        engine.reset()
-        snapshot = engine.recognition_state()
-        assert snapshot is not None
-        assert snapshot.key == engine.parser_state_key()
-        for token_id in _ids(tok, src):
-            transition = engine.recognition_advance(snapshot, tok, token_id)
-            assert transition.status is RecognitionAdvanceStatus.ACCEPTED
-            assert transition.snapshot is not None
-            assert engine.feed_token_id(tok, token_id) is True
-            snapshot = transition.snapshot
-            committed = engine.recognition_state()
-            assert committed is not None
-            assert snapshot.key == committed.key == engine.parser_state_key()
-            assert snapshot.terminals == engine.next_terminals()
-        stats = engine.stats
-        assert stats["recognition_value_tree_clones"] == 0
-        assert stats["recognition_full_prefix_lex_bytes"] == 0
-
-
-def test_recognition_macro_rejection_rollback_and_end() -> None:
-    tok = _tok()
-    tok.set_macro_expansions([["Card", "(", ")"]])
-    engine = OpenUIIncrementalEngine()
-    engine.reset()
-    for token_id in _ids(tok, "root ="):
-        assert engine.feed_token_id(tok, token_id) is True
-    snapshot = engine.recognition_state()
-    assert snapshot is not None
-
-    macro_id = tok.macro_id(0)
-    macro = engine.recognition_advance(snapshot, tok, macro_id)
-    direct = engine.copy()
-    assert direct.feed_token_id(tok, macro_id) is True
-    assert macro.status is RecognitionAdvanceStatus.ACCEPTED
-    assert macro.snapshot is not None
-    assert macro.snapshot.key == direct.parser_state_key()
-
-    # An unmatched close is rejected and cannot mutate the immutable parent.
-    rpar = tok.token_to_id[")"]
-    before = snapshot
-    rejected = engine.recognition_advance(snapshot, tok, rpar)
-    assert rejected.status is RecognitionAdvanceStatus.REJECTED
-    assert rejected.snapshot is None
-    assert snapshot == before
-
-    # EOS is legal only when the grammar itself exposes $END.
-    incomplete = engine.recognition_advance(snapshot, tok, tok.eos_id)
-    assert incomplete.status is RecognitionAdvanceStatus.REJECTED
-    complete_engine = OpenUIIncrementalEngine()
-    complete_engine.reset()
-    complete = complete_engine.recognition_state()
-    assert complete is not None
-    for token_id in _ids(tok, "root = Card([])"):
-        result = complete_engine.recognition_advance(complete, tok, token_id)
-        assert result.status is RecognitionAdvanceStatus.ACCEPTED
-        assert result.snapshot is not None
-        complete = result.snapshot
-    assert "$END" in complete.terminals
-    eos = complete_engine.recognition_advance(complete, tok, tok.eos_id)
-    assert eos.status is RecognitionAdvanceStatus.ACCEPTED
-    assert eos.snapshot is complete
-
-
-def test_recognition_unsupported_junctions_fail_closed() -> None:
-    from slm_training.models.tokenizer import OpenUITokenizer
+def test_decode_state_failed_text_resync_clears_direct_sync_marker() -> None:
+    from slm_training.models.grammar import make_grammar_state
 
     tok = _tok()
-    engine = OpenUIIncrementalEngine()
-    engine.reset()
-    snapshot = engine.recognition_state()
-    assert snapshot is not None
+    state = make_grammar_state()
+    engine = state.engine
+    assert engine is not None
+    engine.feed_token_id = lambda *_args: None
+    engine.advance = lambda _chunk: (_ for _ in ()).throw(ValueError("reject"))
+    engine.set_prefix = lambda _prefix: False
 
-    # A byte outside a framed literal may glue to neighboring lexemes and
-    # therefore requires the canonical text fallback.
-    byte_id = tok.token_to_id["B:78"]
-    unsupported = engine.recognition_advance(snapshot, tok, byte_id)
-    assert unsupported.status is RecognitionAdvanceStatus.UNSUPPORTED
-    assert unsupported.snapshot is None
+    state.advance_token(tok, tok.token_to_id["Card"])
 
-    legacy = OpenUITokenizer.build(['root = TextContent(":slot_0")'])
-    unsupported = engine.recognition_advance(snapshot, legacy, legacy.bos_id)
-    assert unsupported.status is RecognitionAdvanceStatus.UNSUPPORTED
-
-    # A dirty lexical tail is not representable by a stack-only snapshot.
-    dirty = OpenUIIncrementalEngine()
-    assert dirty.set_prefix('"unterminated')
-    assert dirty.recognition_state() is None
-
-
-def test_recognition_repeated_closer_matches_canonical_rejection() -> None:
-    tok = _tok()
-    engine = OpenUIIncrementalEngine()
-    engine.reset()
-    snapshot = engine.recognition_state()
-    assert snapshot is not None
-    for token_id in _ids(tok, "root = Card([b1])"):
-        result = engine.recognition_advance(snapshot, tok, token_id)
-        assert result.status is RecognitionAdvanceStatus.ACCEPTED
-        assert result.snapshot is not None
-        snapshot = result.snapshot
-    extra = tok.token_to_id[")"]
-    result = engine.recognition_advance(snapshot, tok, extra)
-    assert result.status is RecognitionAdvanceStatus.REJECTED
-    assert snapshot.key != ()
-
-
-def test_direct_token_facts_are_layout_keyed_and_immutable() -> None:
-    tok_a = _tok()
-    tok_b = _tok()
-    engine = OpenUIIncrementalEngine()
-    facts_a = dsl_direct_terminal_map(tok_a, engine._parser.terminals)
-    facts_b = dsl_direct_terminal_map(tok_b, engine._parser.terminals)
-    assert facts_a is not None
-    assert facts_a is facts_b
-    assert facts_a.layout_key == facts_b.layout_key
-    punct_id = tok_a.token_to_id["("]
-    try:
-        facts_a.punct[punct_id] = "WRONG"  # type: ignore[index]
-    except TypeError:
-        pass
-    else:  # pragma: no cover - mappingproxy must reject mutation
-        raise AssertionError("direct token facts are mutable")
-
-    tok_extended = DSLNativeTokenizer.build(abstract_plan_slots=1)
-    facts_extended = dsl_direct_terminal_map(tok_extended, engine._parser.terminals)
-    assert facts_extended is not None
-    assert facts_extended.layout_key != facts_a.layout_key
+    assert state.engine_ids_len is None

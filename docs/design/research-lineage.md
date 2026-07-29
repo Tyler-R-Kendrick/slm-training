@@ -1984,21 +1984,19 @@ oracle-ceiling, or causal-latent-use claim, and no LOT1 model implementation.
 
 | | |
 | --- | --- |
-| **Papers** | *Lookahead-Then-Verify* ([arXiv:2602.00612](https://arxiv.org/abs/2602.00612)); intersection-witness completion ([arXiv:2508.10111](https://arxiv.org/abs/2508.10111)) |
-| **Fidelity** | **Adapted compiler/runtime mechanism** — request-local grammar-state interning, bounded terminal-witness reuse, and verified singleton closure; not a reproduction of either model or serving system |
-| **Code** | [`completion_kernel.py`](../../src/slm_training/dsl/grammar/fastpath/completion_kernel.py), [`semantic_state.py`](../../src/slm_training/dsl/grammar/fastpath/semantic_state.py), and [`pack.py`](../../src/slm_training/dsl/pack.py) |
-| **Evidence** | [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json) and [`perf-experiment-matrix.md`](perf-experiment-matrix.md#packed-completion-kernel-2026-07-29) |
+| **Papers** | *Pre³: Enabling Deterministic Pushdown Automata for Faster Structured LLM Generation* ([ACL 2025](https://aclanthology.org/2025.acl-long.551/)); *XGrammar 2* ([arXiv:2601.04426](https://arxiv.org/abs/2601.04426)); *Lookahead-then-Verify* ([arXiv:2602.00612](https://arxiv.org/abs/2602.00612)); SpecInfer ([arXiv:2305.09781](https://arxiv.org/abs/2305.09781)); ACRoBat ([MLSys 2024](https://proceedings.mlsys.org/paper_files/paper/2024/hash/096b1019463f34eb241e87cfce8dfe16-Abstract-Conference.html)) |
+| **Fidelity** | **Adapted compiler/runtime mechanism** — prefix-conditioned packed transitions, request-local reusable state, verified completion lookahead, and batching of independent ambiguous rows; not a reproduction of any cited model or serving system |
+| **Code** | [`completion_kernel.py`](../../src/slm_training/dsl/grammar/fastpath/completion_kernel.py), [`semantic_state.py`](../../src/slm_training/dsl/grammar/fastpath/semantic_state.py), [`pack.py`](../../src/slm_training/dsl/pack.py), and compiler batching in [`twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Evidence** | [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json) and [`perf-experiment-matrix.md`](perf-experiment-matrix.md#packed-incremental-completion-kernel-2026-07-29) |
 
-The implementation preserves pack-owned legality and treats an exhausted or
-incomplete witness proof as UNKNOWN, never as permission to prune and certify
-the remainder. Clean seven-pair fixture evidence passes graph/DP (383.998×),
-cold-prefix (worst packed/reference 1.064×), choice (20.756×), and exact
-certificate-replayed solver (2.343×) gates. Compiler decode remains
-non-promotable: exact output and zero rebuild work, but only 1.067× against the
-5× gate because both arms retain one neural forward. Per I14, the successor is
-exact forced-run/scope-singleton proof that can remove that forward where
-legality truly determines the branch, plus compact ambiguous-row batching;
-never a global authority cache or heuristic forced choice.
+The authority boundary is narrower than the systems analogies. Grammar and
+scope state remain row-local; only immutable exact domains and neural tensor
+work may be shared. An incomplete witness, failed transition, or depleted
+budget stays UNKNOWN, and an exact complete singleton bypasses inference.
+Pre³ supports the prefix-conditioned transition direction, XGrammar 2 the
+fine-grained reuse direction, LAVE verified future validity, and
+SpecInfer/ACRoBat the batched shared-compute shape under divergent control
+flow. Their reported speedups do not transfer.
 
 ## Honesty rules (for docs & claims)
 

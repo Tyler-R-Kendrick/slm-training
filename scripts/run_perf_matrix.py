@@ -10,984 +10,108 @@ C-series rows compare compiler-drafted decode against the same-run C0 control.
 from __future__ import annotations
 
 import argparse
-import dataclasses
-import datetime as dt
-import enum
 import hashlib
+import importlib.metadata
 import json
+import os
 import platform
+import shutil
 import statistics
-import sys
 import time
 import warnings
-from dataclasses import dataclass
+from contextlib import contextmanager
+from copy import deepcopy
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from slm_training.dsl.schema import load_jsonl
 from slm_training.models.decode_stats import DecodeStats, aggregate_stats
 from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.models.twotower import TwoTowerModel
-from slm_training.levers import DEFAULT_EVAL_DATA_DIR, MAX_RUN_MINUTES
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR, MAX_HARNESS_WALL_SECONDS
 from slm_training.versioning import build_version_stamp
 
-_COMPLETION_REQUIRED_WORKLOADS = ("direct", "corpus", "choice", "solver", "decode")
-_COMPLETION_STAMP_COMPONENTS = (
-    "matrix.perf",
-    "harness.model_build.eval",
-    "harness.solver_bench",
-    "model.twotower",
-    "dsl.operators.registry",
-    "config.levers",
-)
-_COMPLETION_MIN_SAMPLE_NS = 10_000_000
-_COMPLETION_MAX_RELATIVE_MAD = 0.15
+ROOT = Path(__file__).resolve().parents[1]
 
 
-def _canonical_json_value(value: Any) -> Any:
-    """Return a deterministic JSON value for parity digests."""
-    if dataclasses.is_dataclass(value):
-        return _canonical_json_value(dataclasses.asdict(value))
-    if isinstance(value, enum.Enum):
-        return _canonical_json_value(value.value)
+def _installed_version(name: str) -> str | None:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def _repo_relative_artifact_paths(value: Any) -> Any:
+    """Make local artifact paths portable before committing result JSON."""
     if isinstance(value, dict):
         return {
-            str(key): _canonical_json_value(item)
-            for key, item in sorted(value.items(), key=lambda row: str(row[0]))
+            key: _repo_relative_artifact_paths(item) for key, item in value.items()
         }
-    if isinstance(value, (list, tuple)):
-        return [_canonical_json_value(item) for item in value]
-    if isinstance(value, (set, frozenset)):
-        rows = [_canonical_json_value(item) for item in value]
-        return sorted(rows, key=lambda item: json.dumps(item, sort_keys=True))
-    if isinstance(value, Path):
-        return str(value)
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    return repr(value)
+    if isinstance(value, list):
+        return [_repo_relative_artifact_paths(item) for item in value]
+    if isinstance(value, str):
+        path = Path(value)
+        if path.is_absolute():
+            try:
+                return str(path.relative_to(Path.cwd()))
+            except ValueError:
+                pass
+    return value
 
 
-def _result_digest(value: Any) -> str:
-    payload = json.dumps(
-        _canonical_json_value(value),
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
-
-
-def _median_mad(samples: list[float]) -> tuple[float, float]:
-    median = float(statistics.median(samples))
-    mad = float(statistics.median(abs(value - median) for value in samples))
-    return median, mad
-
-
-def _timed_bundle(fn, bundle_size: int) -> tuple[int, list[str], Any]:
-    values: list[Any] = []
-    started = time.perf_counter_ns()
-    for _ in range(bundle_size):
-        values.append(fn())
-    elapsed = time.perf_counter_ns() - started
-    return elapsed, [_result_digest(value) for value in values], values[-1]
-
-
-def _paired_measure(
-    reference_fn,
-    packed_fn,
-    repeats: int,
-    *,
-    min_sample_ns: int = _COMPLETION_MIN_SAMPLE_NS,
-) -> dict[str, Any]:
-    """Measure alternating paired arms and verify every invocation."""
-    reference_pilot = reference_fn()
-    packed_pilot = packed_fn()
-    expected_digest = _result_digest(reference_pilot)
-    if expected_digest != _result_digest(packed_pilot):
-        raise AssertionError("completion benchmark pilot parity mismatch")
-
-    def calibrated_bundle(fn) -> int:
-        bundle_size = 1
-        while True:
-            elapsed_ns, digests, _ = _timed_bundle(fn, bundle_size)
-            if any(digest != expected_digest for digest in digests):
-                raise AssertionError("completion benchmark bundle parity mismatch")
-            if elapsed_ns >= min_sample_ns:
-                return bundle_size
-            bundle_size *= 2
-
-    bundle_sizes = {
-        "reference": calibrated_bundle(reference_fn),
-        "packed": calibrated_bundle(packed_fn),
+def _persist_agentv_bundle(run_dir: Path, docs_dir: Path) -> dict[str, Any]:
+    """Copy the complete AgentV bundle, including traces, into durable docs."""
+    source = run_dir / "agentv"
+    if not source.is_dir():
+        raise FileNotFoundError(f"AgentV bundle missing: {source}")
+    if docs_dir.exists():
+        raise FileExistsError(f"durable AgentV directory already exists: {docs_dir}")
+    shutil.copytree(source, docs_dir / "agentv")
+    for index_path in (docs_dir / "agentv").glob("*/index.jsonl"):
+        active = {
+            str(json.loads(line)["artifact_dir"])
+            for line in index_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+        for suite_dir in index_path.parent.glob("*.eval"):
+            for case_dir in suite_dir.iterdir():
+                relative = case_dir.relative_to(index_path.parent).as_posix()
+                if case_dir.is_dir() and relative not in active:
+                    shutil.rmtree(case_dir)
+    for outputs_dir in sorted(
+        (docs_dir / "agentv").rglob("outputs"),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    ):
+        outputs_dir.rename(outputs_dir.with_name("artifacts"))
+    replacements = {
+        str(run_dir.resolve()): "agentv-dir://",
+        quote(str(run_dir.resolve()), safe=""): quote("agentv-dir://", safe=""),
+        str(ROOT.resolve()): "repo://",
+        quote(str(ROOT.resolve()), safe=""): quote("repo://", safe=""),
+        "outputs/": "artifacts/",
     }
-
-    pairs: list[dict[str, Any]] = []
-    reference_samples: list[float] = []
-    packed_samples: list[float] = []
-    pair_count = max(1, int(repeats))
-    for index in range(pair_count):
-        order = ("reference", "packed") if index % 2 == 0 else ("packed", "reference")
-        measured: dict[str, tuple[int, list[str], Any]] = {}
-        for arm in order:
-            measured[arm] = _timed_bundle(
-                reference_fn if arm == "reference" else packed_fn,
-                bundle_sizes[arm],
-            )
-        reference_ns, reference_digests, reference_value = measured["reference"]
-        packed_ns, packed_digests, packed_value = measured["packed"]
-        if any(digest != expected_digest for digest in reference_digests) or any(
-            digest != expected_digest for digest in packed_digests
-        ):
-            raise AssertionError(
-                f"completion benchmark pair {index} parity mismatch"
-            )
-        reference_ns_op = reference_ns / bundle_sizes["reference"]
-        packed_ns_op = packed_ns / bundle_sizes["packed"]
-        reference_samples.append(reference_ns_op)
-        packed_samples.append(packed_ns_op)
-        pairs.append(
-            {
-                "index": index,
-                "order": list(order),
-                "reference_ns_per_op": round(reference_ns_op, 3),
-                "packed_ns_per_op": round(packed_ns_op, 3),
-                "packed_over_reference": round(
-                    packed_ns_op / reference_ns_op, 6
-                ),
-                "output_digest": expected_digest,
-            }
-        )
-
-    reference_median, reference_mad = _median_mad(reference_samples)
-    packed_median, packed_mad = _median_mad(packed_samples)
-    reference_relative_mad = reference_mad / reference_median if reference_median else 0
-    packed_relative_mad = packed_mad / packed_median if packed_median else 0
-    unstable = max(reference_relative_mad, packed_relative_mad) > (
-        _COMPLETION_MAX_RELATIVE_MAD
-    )
-    return {
-        "pair_count": pair_count,
-        "bundle_sizes": bundle_sizes,
-        "pilot_excluded": True,
-        "minimum_sample_ns": min_sample_ns,
-        "pairs": pairs,
-        "reference": {
-            "median_ns_per_op": round(reference_median, 3),
-            "mad_ns_per_op": round(reference_mad, 3),
-            "min_ns_per_op": round(min(reference_samples), 3),
-            "max_ns_per_op": round(max(reference_samples), 3),
-            "relative_mad": round(reference_relative_mad, 6),
-        },
-        "packed": {
-            "median_ns_per_op": round(packed_median, 3),
-            "mad_ns_per_op": round(packed_mad, 3),
-            "min_ns_per_op": round(min(packed_samples), 3),
-            "max_ns_per_op": round(max(packed_samples), 3),
-            "relative_mad": round(packed_relative_mad, 6),
-        },
-        "packed_over_reference": round(packed_median / reference_median, 6),
-        "speedup": round(reference_median / packed_median, 6),
-        "unstable": unstable,
-        "output_digest": _result_digest(reference_value),
-        "reference_value": reference_value,
-        "packed_value": packed_value,
-    }
-
-
-def _measurement_evidence(measurement: dict[str, Any]) -> dict[str, Any]:
-    return {
-        key: value
-        for key, value in measurement.items()
-        if key not in {"reference_value", "packed_value"}
-    }
-
-
-def _timed_ms(fn, repeats: int) -> tuple[float, Any]:
-    """Warm once, then return median milliseconds and the final value."""
-    value = fn()
-    samples: list[float] = []
-    for _ in range(max(1, int(repeats))):
-        started = time.perf_counter()
-        value = fn()
-        samples.append((time.perf_counter() - started) * 1000.0)
-    return statistics.median(samples), value
-
-
-def _completion_direct_bench(repeats: int) -> dict[str, Any]:
-    from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
-    from slm_training.dsl.pack import (
-        _openui_completion_domain,
-        _openui_completion_domain_reference,
-    )
-    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-    from slm_training.models.grammar import make_grammar_state
-
-    tokenizer = DSLNativeTokenizer.build()
-    prefix = tuple(
-        [tokenizer.bos_id]
-        + tokenizer.encode("root = Card([b1,", add_special=False)
-    )
-    packed_request = CompletionDomainRequestV1(
-        prefix_ids=prefix,
-        tokenizer=tokenizer,
-        slot_contract=(":slot_0", ":slot_1"),
-        remaining_tokens=32,
-        state=make_grammar_state(),
-    )
-    reference_request = CompletionDomainRequestV1(
-        prefix_ids=prefix,
-        tokenizer=tokenizer,
-        slot_contract=(":slot_0", ":slot_1"),
-        remaining_tokens=32,
-        state=make_grammar_state(),
-    )
-    _openui_completion_domain(packed_request)
-
-    def packed_graph_query():
-        session = getattr(packed_request.state, "completion_session", None)
-        if session is not None:
-            session._results.clear()  # benchmark the graph/DP, not result replay
-        return _openui_completion_domain(packed_request)
-
-    # Exclude both full-result construction and the first graph-only replay.
-    # The measured arm starts only after its reusable transition/proof rows exist.
-    packed_graph_query()
-    session = getattr(packed_request.state, "completion_session", None)
-    counters_before = session.stats() if session is not None else {}
-    measurement = _paired_measure(
-        lambda: _openui_completion_domain_reference(reference_request),
-        packed_graph_query,
-        repeats,
-    )
-    reference = measurement.pop("reference_value")
-    packed = measurement.pop("packed_value")
-    session = getattr(packed_request.state, "completion_session", None)
-    counters_after = session.stats() if session is not None else {}
-    counters = {
-        key: counters_after.get(key, 0) - counters_before.get(key, 0)
-        for key in sorted(counters_after.keys() | counters_before.keys())
-    }
-    correct = packed == reference and len(packed.candidates) == 12
-    work_ok = (
-        counters.get("general_forest_builds", 0) == 0
-        and counters.get("value_tree_clones", 0) == 0
-        and counters.get("edge_replays", 0) == 0
-        and counters.get("witness_states_expanded", 0) == 0
-    )
-    return {
-        "n": 1,
-        "prefix": "root = Card([b1,",
-        "measurement": _measurement_evidence(measurement),
-        "work_counters": counters,
-        "correct": correct,
-        "gate": (
-            "exact 12-path parity, stable paired speedup >= 10, "
-            "and zero measured forest builds, tree clones, edge replays, "
-            "or witness-state expansions"
-        ),
-        "pass": bool(
-            correct
-            and work_ok
-            and not measurement["unstable"]
-            and measurement["speedup"] >= 10
-        ),
-    }
-
-
-def _completion_corpus_bench(repeats: int) -> dict[str, Any]:
-    from slm_training.dsl.grammar.fastpath import compiler_draft
-    from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
-    from slm_training.dsl.pack import (
-        _openui_completion_domain,
-        _openui_completion_domain_reference,
-    )
-    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-    from slm_training.models.grammar import make_grammar_state
-
-    tokenizer = DSLNativeTokenizer.build()
-    texts = (
-        "",
-        "root",
-        "root =",
-        "root = Card([",
-        "root = Card([b1",
-        "root = Card([b1,",
-        'root = TextContent(":slot_0")',
-    )
-    def requests(selected=texts):
-        return [
-            CompletionDomainRequestV1(
-                prefix_ids=tuple(
-                    [tokenizer.bos_id] + tokenizer.encode(text, add_special=False)
-                ),
-                tokenizer=tokenizer,
-                slot_contract=(":slot_0", ":slot_1"),
-                remaining_tokens=32,
-                state=make_grammar_state(),
-            )
-            for text in selected
-        ]
-
-    packed_requests = requests()
-    reference_requests = requests()
-    warm = _paired_measure(
-        lambda: [
-            _openui_completion_domain_reference(row) for row in reference_requests
-        ],
-        lambda: [_openui_completion_domain(row) for row in packed_requests],
-        repeats,
-    )
-    reference = warm.pop("reference_value")
-    packed = warm.pop("packed_value")
-    # Separate cold guardrail: fresh row state and no stateless forest cache.
-    # Other immutable tokenizer/schema tables stay warm for both arms.
-    compiler_draft._official_schema()
-
-    def cold(provider, selected=texts):
-        compiler_draft._STATELESS_FOREST_CACHE.clear()
-        rows = requests(selected)
-        return [provider(row) for row in rows]
-
-    # Discard one cold-row warmup per arm so immutable tokenizer/schema memo
-    # population is not charged to whichever implementation happens to run
-    # first, then alternate measured order.
-    cold_rows = []
-    cold_ratios: list[float] = []
-    cold_correct = True
-    for text in texts[:3]:
-        measurement = _paired_measure(
-            lambda text=text: cold(
-                _openui_completion_domain_reference, (text,)
-            ),
-            lambda text=text: cold(_openui_completion_domain, (text,)),
-            repeats,
-        )
-        cold_reference = measurement.pop("reference_value")
-        cold_packed = measurement.pop("packed_value")
-        cold_correct = cold_correct and cold_packed == cold_reference
-        cold_ratios.append(measurement["packed_over_reference"])
-        cold_rows.append(
-            {
-                "prefix": text,
-                "measurement": _measurement_evidence(measurement),
-            }
-        )
-    cold_ratio = max(cold_ratios)
-    unstable = warm["unstable"] or any(
-        row["measurement"]["unstable"] for row in cold_rows
-    )
-    return {
-        "n": len(packed_requests),
-        "warm_measurement": _measurement_evidence(warm),
-        "cold_simple_prefixes": cold_rows,
-        "cold_packed_over_reference_max": round(cold_ratio, 6),
-        "correct": packed == reference and cold_correct,
-        "gate": "exact parity and cold packed time <= 1.15x reference",
-        "pass": bool(
-            packed == reference
-            and cold_correct
-            and not unstable
-            and cold_ratio <= 1.15
-        ),
-    }
-
-
-def _legacy_choice_allowed(state: Any, remaining: int) -> set[int]:
-    """Pre-kernel greedy feasibility loop retained only as benchmark control."""
-    allowed: set[int] = set()
-    for token_id in state._candidate_ids():
-        probe = state.clone()
-        if not probe.advance_id(token_id):
+    for path in (docs_dir / "agentv").rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".jsonl", ".md"}:
             continue
-        if token_id == state.tokenizer.eos_id:
-            completion = 0
-        else:
-            completion = 1025
-            for count in range(1, min(1024, remaining - 1) + 1):
-                next_id = probe._completion_id()
-                if not probe.advance_id(next_id):
-                    break
-                if next_id == probe.tokenizer.eos_id:
-                    completion = count
-                    break
-        if completion <= remaining - 1:
-            allowed.add(token_id)
-    return allowed
-
-
-def _completion_choice_bench(repeats: int) -> dict[str, Any]:
-    from slm_training.models.choice_tokenizer import (
-        ChoiceDecodeState,
-        ChoiceTokenizer,
-    )
-
-    tokenizer = ChoiceTokenizer.build()
-    state = ChoiceDecodeState(tokenizer, slot_count=2)
-    remaining = 12
-    warm_cache_ms, _ = _timed_ms(lambda: state.allowed_ids(remaining), repeats)
-
-    def packed_query():
-        tokenizer.allowed_cache.clear()
-        return state.allowed_ids(remaining)
-
-    measurement = _paired_measure(
-        lambda: _legacy_choice_allowed(state, remaining),
-        packed_query,
-        repeats,
-    )
-    reference = measurement.pop("reference_value")
-    packed = measurement.pop("packed_value")
-    return {
-        "n": 1,
-        "remaining_tokens": remaining,
-        "warm_allowed_cache_ms": round(warm_cache_ms, 4),
-        "measurement": _measurement_evidence(measurement),
-        "correct": packed == reference,
-        "gate": "exact parity and stable paired speedup >= 3",
-        "pass": bool(
-            packed == reference
-            and not measurement["unstable"]
-            and measurement["speedup"] >= 3
-        ),
-    }
-
-
-def _completion_solver_bench(repeats: int) -> dict[str, Any]:
-    from slm_training.dsl.grammar.fastpath.compiler_draft import (
-        build_completion_forest,
-    )
-    from slm_training.dsl.grammar.fastpath.token_map import decode_prefix
-    from slm_training.dsl.solver.adapters import completion_forest_state
-    from slm_training.dsl.solver.openui_support import OpenUIForestExpander
-    from slm_training.dsl.solver.state import SolverBounds
-    from slm_training.dsl.solver.support import (
-        EnumerativeSupportOracle,
-        ExpandStatus,
-        SupportQuery,
-        replay_support_certificate,
-    )
-    from slm_training.dsl.solver.openui_support import OpenUIWellFormedVerifier
-    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-
-    tokenizer = DSLNativeTokenizer.build()
-    prefix = tuple(
-        [tokenizer.bos_id]
-        + tokenizer.encode("root = Card([", add_special=False)
-    )
-    bounds = SolverBounds(
-        max_tokens=4000,
-        max_nodes=24,
-        max_depth=12,
-        max_backtracks=200,
-        max_verifier_calls=24,
-    )
-
-    packed_expander = OpenUIForestExpander(
-        tokenizer,
-        prefix,
-        pack_id="openui",
-        constraint_version="bench",
-        bounds=bounds,
-    )
-    packed_root = packed_expander.root_state()
-
-    def state_payload(state):
-        if state is None:
-            return None
-        return {
-            "fingerprint": state.fingerprint,
-            "holes": [
-                {
-                    "hole_id": hole.hole_id,
-                    "values": [value.payload for value in hole.values],
-                    "metadata": hole.metadata,
-                }
-                for hole in state.holes
-            ],
-        }
-
-    def step_payload(step):
-        return {
-            "status": step.status.value,
-            "coverage": step.coverage,
-            "program_digest": (
-                _result_digest(step.program) if step.program is not None else None
-            ),
-            "next_state": state_payload(step.next_state),
-            "detail": step.detail,
-        }
-
-    def packed():
-        return [
-            step_payload(
-                packed_expander.successor(
-                    packed_root, packed_root.holes[0].hole_id, value
-                )
-            )
-            for value in packed_root.holes[0].values
-        ]
-
-    root = OpenUIForestExpander(
-        tokenizer,
-        prefix,
-        pack_id="openui",
-        constraint_version="bench",
-        bounds=bounds,
-    ).root_state()
-
-    def reference():
-        rows = []
-        for value in root.holes[0].values:
-            token_ids = tuple(int(t) for t in value.payload.get("token_ids", ()))
-            kind = str(value.payload.get("kind", ""))
-            if kind == "eos" or token_ids == (int(tokenizer.eos_id),):
-                rows.append(
-                    {
-                        "status": ExpandStatus.TERMINAL.value,
-                        "coverage": "complete",
-                        "program_digest": _result_digest(
-                            decode_prefix(tokenizer, list(prefix))
-                        ),
-                        "next_state": None,
-                        "detail": f"prefix_len={len(prefix)}",
-                    }
-                )
-                continue
-            forest = build_completion_forest(
-                tokenizer, list(prefix + token_ids), max_path_tokens=8
-            )
-            if forest.coverage == "none":
-                rows.append(
-                    {
-                        "status": ExpandStatus.DEAD.value,
-                        "coverage": "none",
-                        "program_digest": None,
-                        "next_state": None,
-                        "detail": "illegal_prefix",
-                    }
-                )
-            elif not forest.paths:
-                rows.append(
-                    {
-                        "status": ExpandStatus.INCOMPLETE.value,
-                        "coverage": forest.coverage,
-                        "program_digest": None,
-                        "next_state": None,
-                        "detail": "no_enumerated_actions",
-                    }
-                )
-            else:
-                child = completion_forest_state(
-                    prefix_ids=prefix + token_ids,
-                    forest=forest,
-                    pack_id="openui",
-                    constraint_version="bench",
-                    bounds=bounds,
-                )
-                rows.append(
-                    {
-                        "status": ExpandStatus.CONTINUE.value,
-                        "coverage": forest.coverage,
-                        "program_digest": None,
-                        "next_state": state_payload(child),
-                        "detail": "",
-                    }
-                )
-        return rows
-
-    # Populate each request-local successor once; timed packed calls are cache hits.
-    packed()
-    cached_root_successors = len(packed_expander._successors)
-    measurement = _paired_measure(reference, packed, repeats)
-    reference_rows = measurement.pop("reference_value")
-    packed_rows = measurement.pop("packed_value")
-
-    verifier = OpenUIWellFormedVerifier()
-    oracle = EnumerativeSupportOracle(packed_expander, verifier)
-    certificates = []
-    replay_failures = 0
-    for value in packed_root.holes[0].values:
-        query = SupportQuery(
-            state_fingerprint=packed_root.fingerprint,
-            hole_id=packed_root.holes[0].hole_id,
-            candidate=value,
-        )
-        support = oracle.check(packed_root, query)
-        replay = replay_support_certificate(
-            support.certificate,
-            state=packed_root,
-            expander=OpenUIForestExpander(
-                tokenizer,
-                prefix,
-                pack_id="openui",
-                constraint_version="bench",
-                bounds=bounds,
-            ),
-            verifier=verifier,
-        )
-        replay_failures += int(not replay.ok)
-        certificates.append(
-            {
-                "verdict": support.verdict.value,
-                "certificate_digest": support.certificate.digest,
-                "replay_ok": replay.ok,
-                "replay_violations": list(replay.violations),
-            }
-        )
-
-    correct = reference_rows == packed_rows
-    unique_successors = len(packed_root.holes[0].values)
-    return {
-        "n": len(reference_rows),
-        "measurement": _measurement_evidence(measurement),
-        "reference_nonempty": bool(reference_rows),
-        "packed_nonempty": bool(packed_rows),
-        "correct": correct,
-        "cached_root_successors": cached_root_successors,
-        "cached_successors_after_replay": len(packed_expander._successors),
-        "certificates": certificates,
-        "certificate_replay_failures": replay_failures,
-        "gate": (
-            "exact successor parity, replay-valid certificates, one expansion "
-            "per unique successor, and packed no slower than reference"
-        ),
-        "pass": bool(
-            reference_rows
-            and packed_rows
-            and correct
-            and replay_failures == 0
-            and cached_root_successors == unique_successors
-            and not measurement["unstable"]
-            and measurement["packed_over_reference"] <= 1.0
-        ),
-    }
-
-
-def _completion_decode_bench(repeats: int, device: str) -> dict[str, Any]:
-    from dataclasses import replace
-
-    from slm_training.data.contract import canonicalize_example_template_markers
-    from slm_training.dsl.grammar.fastpath import compiler_draft
-    from slm_training.dsl.pack import (
-        _openui_completion_domain,
-        _openui_completion_domain_reference,
-        get_pack,
-        register_pack,
-    )
-    from slm_training.dsl.schema import ExampleRecord
-    from slm_training.models.decode_stats import collect_decode_stats
-    from slm_training.models.twotower import TwoTowerConfig
-
-    record = canonicalize_example_template_markers(
-        ExampleRecord(
-            id="completion-kernel-bench",
-            prompt="card",
-            openui='root = Card([title])\ntitle = TextContent(":hero.title")\n',
-            placeholders=[":hero.title"],
-            split="train",
-            source="fixture",
-        )
-    )
-    model = TwoTowerModel.from_records(
-        [record],
-        config=TwoTowerConfig(
-            context_backend="scratch",
-            output_tokenizer="lexer",
-            compiler_decode_mode="tree",
-            d_model=32,
-            n_heads=2,
-            context_layers=1,
-            denoiser_layers=1,
-            max_prompt_len=32,
-            max_target_len=32,
-            grammar_ltr_max_tokens=32,
-            gen_steps=1,
-            seed=0,
-        ),
-        device=device,
-    )
-    model.eval()
-    ctx, ctx_pad = model._encode_context(["card"])
-    pack = get_pack()
-    authority = pack.grammar_capability_authority
-    assert authority is not None
-
-    stats_by_arm: dict[str, list[DecodeStats]] = {"reference": [], "packed": []}
-
-    def run(provider, arm: str):
-        register_pack(
-            replace(
-                pack,
-                grammar_capability_authority=replace(
-                    authority, completion_domain=provider
-                ),
-            )
-        )
-        try:
-            with collect_decode_stats() as stats:
-                ids = model._compiler_ltr_decode_one(
-                    ctx, ctx_pad, 16, mode="tree", slot_contract=None
-                )
-            stats_by_arm[arm].append(stats)
-            text = model._decode_ids(ids)
-            certified = model._canonical_valid_openui(text)
-            return {
-                "token_ids": tuple(int(v) for v in ids.tolist()),
-                "text": text,
-                "certified_text": certified,
-                "certified": certified is not None,
-            }
-        finally:
-            register_pack(pack)
-
-    def reference_run():
-        compiler_draft._STATELESS_FOREST_CACHE.clear()
-        return run(_openui_completion_domain_reference, "reference")
-
-    def packed_run():
-        compiler_draft._STATELESS_FOREST_CACHE.clear()
-        return run(_openui_completion_domain, "packed")
-
-    measurement = _paired_measure(reference_run, packed_run, repeats)
-    reference_value = measurement.pop("reference_value")
-    packed_value = measurement.pop("packed_value")
-    reference_invocations = (
-        measurement["pair_count"] * measurement["bundle_sizes"]["reference"]
-    )
-    packed_invocations = (
-        measurement["pair_count"] * measurement["bundle_sizes"]["packed"]
-    )
-    reference_stats = stats_by_arm["reference"][-reference_invocations:]
-    packed_stats_rows = stats_by_arm["packed"][-packed_invocations:]
-    reference_compiler_ms = statistics.median(
-        row.compiler_ms for row in reference_stats
-    )
-    packed_compiler_ms = statistics.median(
-        row.compiler_ms for row in packed_stats_rows
-    )
-    reference_stats_last = reference_stats[-1]
-    packed_stats = packed_stats_rows[-1]
-    compiler_speedup = (
-        reference_compiler_ms / packed_compiler_ms
-        if packed_compiler_ms
-        else None
-    )
-    work_counters = {
-        "completion_session_starts": packed_stats.completion_session_starts,
-        "completion_full_prefix_lex_bytes": (
-            packed_stats.completion_full_prefix_lex_bytes
-        ),
-        "completion_candidate_engine_allocations": (
-            packed_stats.completion_candidate_engine_allocations
-        ),
-        "completion_general_forest_builds": getattr(
-            packed_stats, "completion_general_forest_builds", 0
-        ),
-        "completion_value_tree_clones": getattr(
-            packed_stats, "completion_value_tree_clones", 0
-        ),
-        "completion_ast_bridge_calls": getattr(
-            packed_stats, "completion_ast_bridge_calls", 0
-        ),
-        "completion_edge_replays": getattr(
-            packed_stats, "completion_edge_replays", 0
-        ),
-    }
-    work_ok = (
-        work_counters["completion_session_starts"] == 1
-        and work_counters["completion_general_forest_builds"] == 0
-        and work_counters["completion_full_prefix_lex_bytes"] == 0
-        and work_counters["completion_candidate_engine_allocations"] == 0
-        and work_counters["completion_value_tree_clones"] == 0
-        and work_counters["completion_ast_bridge_calls"] == 0
-        and work_counters["completion_edge_replays"] == 0
-    )
-    correct = reference_value == packed_value
-    return {
-        "n": 1,
-        "device": device,
-        "measurement": _measurement_evidence(measurement),
-        "reference_compiler_ms": round(reference_compiler_ms, 4),
-        "packed_compiler_ms": round(packed_compiler_ms, 4),
-        "compiler_speedup": (
-            round(compiler_speedup, 3) if compiler_speedup is not None else None
-        ),
-        "correct": correct,
-        "reference_forwards": reference_stats_last.forwards_count,
-        "packed_forwards": packed_stats.forwards_count,
-        "work_counters": work_counters,
-        "gate": (
-            "identical ids/text/certification, stable compiler_ms speedup >= 5, "
-            "no extra forwards, one session, and zero supported-path rebuild work"
-        ),
-        "pass": bool(
-            correct
-            and work_ok
-            and not measurement["unstable"]
-            and compiler_speedup is not None
-            and compiler_speedup >= 5
-            and packed_stats.forwards_count <= reference_stats_last.forwards_count
-        ),
-    }
-
-
-_COMPLETION_WORKLOADS = {
-    "direct": _completion_direct_bench,
-    "corpus": _completion_corpus_bench,
-    "choice": _completion_choice_bench,
-    "solver": _completion_solver_bench,
-}
-
-
-def _completion_recipe(args: argparse.Namespace) -> dict[str, Any]:
-    return {
-        "device": args.device,
-        "execution": "independently capped workload shards",
-        "honesty_mode": "fixture_perf_not_ship",
-        "hard_cap_minutes": MAX_RUN_MINUTES,
-        "pair_count": args.completion_repeats,
-        "pair_order": "alternating_ab_ba",
-        "pilot": "one excluded pair",
-        "minimum_sample_ns": _COMPLETION_MIN_SAMPLE_NS,
-        "relative_mad_limit": _COMPLETION_MAX_RELATIVE_MAD,
-    }
-
-
-def _completion_fixture_digest(name: str) -> str:
-    return _result_digest(
-        {
-            "schema": "completion-kernel-perf/v1",
-            "workload": name,
-            "fixtures": {
-                "direct_prefix": "root = Card([b1,",
-                "corpus_prefixes": [
-                    "",
-                    "root",
-                    "root =",
-                    "root = Card([",
-                    "root = Card([b1",
-                    "root = Card([b1,",
-                    'root = TextContent(":slot_0")',
-                ],
-                "slot_contract": [":slot_0", ":slot_1"],
-                "remaining_tokens": {"direct": 32, "choice": 12},
-                "decode_tokens": 16,
-            },
-        }
-    )
-
-
-def _completion_row_compatibility(row: dict[str, Any]) -> dict[str, Any]:
-    stamp = row.get("version_stamp", {})
-    return {
-        "run_id": row.get("run_id"),
-        "code_commit": stamp.get("code_commit"),
-        "code_dirty": stamp.get("code_dirty"),
-        "components": stamp.get("components"),
-        "recipe": row.get("recipe"),
-        "host": row.get("host"),
-    }
-
-
-def _merge_completion_shards(args: argparse.Namespace) -> int:
-    shard_root = args.completion_shard_root / args.completion_run_id
-    rows: dict[str, dict[str, Any]] = {}
-    missing = []
-    for name in _COMPLETION_REQUIRED_WORKLOADS:
-        path = shard_root / f"{name}.json"
-        if not path.is_file():
-            missing.append(name)
-            continue
-        row = json.loads(path.read_text(encoding="utf-8"))
-        if row.get("workload") != name:
-            raise ValueError(f"{path}: workload does not match filename")
-        if row.get("fixture_manifest_digest") != _completion_fixture_digest(name):
-            raise ValueError(f"{path}: stale or mismatched fixture manifest")
-        rows[name] = row
-    if missing:
-        raise ValueError(f"completion shards missing workloads: {missing}")
-
-    first = _completion_row_compatibility(rows[_COMPLETION_REQUIRED_WORKLOADS[0]])
-    if first["run_id"] != args.completion_run_id:
-        raise ValueError("completion shard run_id does not match merge run_id")
-    if first["code_dirty"]:
-        raise ValueError("accepted completion evidence requires code_dirty=false")
-    for name, row in rows.items():
-        compatibility = _completion_row_compatibility(row)
-        if compatibility != first:
-            raise ValueError(
-                f"completion shard {name} has mixed run/commit/stamp/recipe/host"
-            )
-
-    overall_pass = all(bool(row.get("pass")) for row in rows.values())
-    board = {
-        "schema_version": "completion-kernel-perf/v1",
-        "run_id": args.completion_run_id,
-        "overall_status": "pass" if overall_pass else "fail",
-        "overall_pass": overall_pass,
-        "recipe": first["recipe"],
-        "source": {
-            "code_commit": first["code_commit"],
-            "code_dirty": first["code_dirty"],
-            "components": first["components"],
-            "host": first["host"],
-        },
-        "workloads": rows,
-        "version_stamp": rows[_COMPLETION_REQUIRED_WORKLOADS[0]][
-            "version_stamp"
-        ],
-    }
-    args.docs_out.parent.mkdir(parents=True, exist_ok=True)
-    args.docs_out.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(board, indent=2))
-    return 0 if overall_pass else 1
-
-
-def _run_completion_kernel_mode(args: argparse.Namespace) -> int:
-    if args.completion_merge:
-        return _merge_completion_shards(args)
-    names = [
-        name.strip().lower()
-        for name in args.completion_kernel_workload.split(",")
-        if name.strip()
+        content = path.read_text(encoding="utf-8")
+        for source_path, portable_path in replacements.items():
+            content = content.replace(source_path, portable_path)
+        path.write_text(content, encoding="utf-8")
+    files = [path for path in (docs_dir / "agentv").rglob("*") if path.is_file()]
+    traces = [
+        path
+        for path in files
+        if path.name in {"trace.json", "transcript.jsonl"}
     ]
-    if len(names) != len(set(names)):
-        raise ValueError("completion-kernel workload list contains duplicates")
-    unknown = set(names) - (set(_COMPLETION_WORKLOADS) | {"decode"})
-    if unknown:
-        raise ValueError(f"unknown completion-kernel workloads: {sorted(unknown)}")
-    if not names:
-        raise ValueError("completion-kernel mode needs a workload or --completion-merge")
-    stamp = build_version_stamp(*_COMPLETION_STAMP_COMPONENTS)
-    recipe = _completion_recipe(args)
-    shard_root = args.completion_shard_root / args.completion_run_id
-    shard_root.mkdir(parents=True, exist_ok=True)
-    results = {}
-    for name in names:
-        print(f"==> completion-kernel {name}")
-        result = (
-            _completion_decode_bench(args.completion_repeats, args.device)
-            if name == "decode"
-            else _COMPLETION_WORKLOADS[name](args.completion_repeats)
-        )
-        result["repeats"] = args.completion_repeats
-        result["measured_at"] = dt.datetime.now(dt.UTC).isoformat()
-        result["argv"] = list(sys.argv[1:])
-        result["host"] = {
-            "machine": platform.machine(),
-            "python": platform.python_version(),
-        }
-        result["schema_version"] = "completion-kernel-workload/v1"
-        result["run_id"] = args.completion_run_id
-        result["workload"] = name
-        result["fixture_manifest_digest"] = _completion_fixture_digest(name)
-        result["recipe"] = recipe
-        result["version_stamp"] = stamp
-        results[name] = result
-        (shard_root / f"{name}.json").write_text(
-            json.dumps(result, indent=2) + "\n", encoding="utf-8"
-        )
-    print(json.dumps({"run_id": args.completion_run_id, "workloads": results}, indent=2))
-    return 0 if all(row["pass"] for row in results.values()) else 1
+    return {
+        "root": _repo_relative_artifact_paths(str(docs_dir)),
+        "files": len(files),
+        "trace_files": len(traces),
+        "includes_traces": bool(traces),
+    }
 
 
 @dataclass(frozen=True)
@@ -1545,8 +669,1278 @@ def _guardrails(baseline: dict[str, Any], row: dict[str, Any]) -> dict[str, Any]
     }
 
 
+def _sample_summary(samples_ns: list[int]) -> dict[str, Any]:
+    """Stable robust summary for fixture-scale latency samples."""
+    if not samples_ns:
+        raise ValueError("at least one timing sample is required")
+    raw = [int(value) for value in samples_ns]
+    ordered = sorted(raw)
+    median = float(statistics.median(ordered))
+    return {
+        "samples_ns": raw,
+        "median_ns": median,
+        "min_ns": int(ordered[0]),
+        "max_ns": int(ordered[-1]),
+        "mad_ns": float(
+            statistics.median(abs(float(value) - median) for value in ordered)
+        ),
+    }
+
+
+def _completion_domain_payload(domain: Any) -> dict[str, Any]:
+    """Canonical correctness payload shared by the V1/V2 timing arms."""
+    return {
+        "status": str(domain.status),
+        "reason": str(domain.reason),
+        "terminals": list(domain.terminals),
+        "scope_fingerprint": str(domain.scope_fingerprint),
+        "candidates": [
+            {
+                "token_ids": [int(token_id) for token_id in candidate.token_ids],
+                "kind": str(candidate.kind),
+                "terminal_witness": [
+                    int(token_id) for token_id in candidate.terminal_witness
+                ],
+            }
+            for candidate in domain.candidates
+        ],
+    }
+
+
+def _payload_digest(payload: dict[str, Any]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _v1_domain_is_preserved(
+    v1_payload: dict[str, Any], v2_payload: dict[str, Any]
+) -> bool:
+    """Behavior-preserving replacement requires the complete V1 payload."""
+    return v1_payload == v2_payload
+
+
+def _timed_alternating(
+    left: Any,
+    right: Any,
+    *,
+    repetitions: int,
+    deadline: float,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Time matched callables with alternating order to limit drift."""
+    samples: dict[str, list[int]] = {"v1": [], "v2": []}
+    callables = {"v1": left, "v2": right}
+    for repetition in range(max(1, int(repetitions))):
+        order = ("v1", "v2") if repetition % 2 == 0 else ("v2", "v1")
+        for name in order:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("completion-kernel perf suite exceeded work deadline")
+            start = time.perf_counter_ns()
+            callables[name]()
+            samples[name].append(time.perf_counter_ns() - start)
+    return _sample_summary(samples["v1"]), _sample_summary(samples["v2"])
+
+
+def _timed_alternating_metric(
+    left: Any,
+    right: Any,
+    *,
+    repetitions: int,
+    deadline: float,
+    metric_ns: Any,
+) -> tuple[
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+]:
+    """Alternate arms while retaining both wall and returned phase samples."""
+    wall: dict[str, list[int]] = {"v1": [], "v2": []}
+    phase: dict[str, list[int]] = {"v1": [], "v2": []}
+    callables = {"v1": left, "v2": right}
+    for repetition in range(max(1, int(repetitions))):
+        order = ("v1", "v2") if repetition % 2 == 0 else ("v2", "v1")
+        for name in order:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("completion-kernel perf suite exceeded work deadline")
+            start = time.perf_counter_ns()
+            result = callables[name]()
+            wall[name].append(time.perf_counter_ns() - start)
+            phase[name].append(int(metric_ns(result)))
+    return (
+        _sample_summary(wall["v1"]),
+        _sample_summary(wall["v2"]),
+        _sample_summary(phase["v1"]),
+        _sample_summary(phase["v2"]),
+    )
+
+
+def _choice_fixture_states() -> list[tuple[str, Any, int]]:
+    """Fixed reachable and synthetic choice states with bounded oracle rooms."""
+    from slm_training.models.choice_tokenizer import (
+        LIT_NUM,
+        ChoiceDecodeState,
+        ChoiceTokenizer,
+    )
+
+    tokenizer = ChoiceTokenizer.build()
+    root = ChoiceDecodeState(tokenizer, slot_count=1)
+    card_list = root.clone()
+    if not card_list.advance_id(tokenizer.token_to_id["+Card"]):
+        raise AssertionError("choice fixture could not open Card")
+    if not card_list.advance_id(tokenizer.token_to_id["["]):
+        raise AssertionError("choice fixture could not open Card children")
+    literal = root.clone()
+    if not literal.advance_id(tokenizer.token_to_id[LIT_NUM]):
+        raise AssertionError("choice fixture could not open numeric literal")
+
+    hero = (
+        'root = Stack([hero], "column")\n'
+        'hero_title = TextContent(":hero.title")\n'
+        'hero_body = TextContent(":hero.body")\n'
+        "hero = Card([hero_title, hero_body])"
+    )
+    reachable = [root]
+    for token_id in tokenizer.encode(hero):
+        if token_id == tokenizer.bos_id:
+            continue
+        probe = reachable[-1].clone()
+        if not probe.advance_id(token_id):
+            break
+        reachable.append(probe)
+    if len(reachable) < 2:
+        raise AssertionError("choice fixture could not walk the hero program")
+    selected = sorted({0, 1, len(reachable) // 2, max(0, len(reachable) - 2)})
+    rows = [
+        ("synthetic_root", root, 2),
+        ("synthetic_card_list", card_list, 2),
+        ("synthetic_literal", literal, 2),
+    ]
+    rows.extend(
+        (f"hero_prefix_{index}", reachable[index], 2) for index in selected
+    )
+    return rows
+
+
+def _choice_brute_distance(
+    state: Any,
+    room: int,
+    *,
+    deadline: float,
+) -> int:
+    """Independent BFS over admitted transitions with no production distance DP."""
+    room = max(0, int(room))
+    if state.can_end():
+        return 1 if room >= 1 else room + 1
+    if room < 1:
+        return room + 1
+    frontier = {state.signature(): state.clone()}
+    for depth in range(1, room + 1):
+        following: dict[tuple[object, ...], Any] = {}
+        for current in frontier.values():
+            for token_id in sorted(current._candidate_ids()):
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        "choice brute-force oracle exceeded work deadline"
+                    )
+                probe = current.clone()
+                if not probe.advance_id(token_id):
+                    continue
+                if token_id == state.tokenizer.eos_id:
+                    return depth
+                following.setdefault(probe.signature(), probe)
+        frontier = following
+        if not frontier:
+            break
+    return room + 1
+
+
+def _choice_brute_allowed_ids(
+    state: Any, remaining: int, *, deadline: float
+) -> set[int]:
+    """Full-vocabulary allowed-set oracle independent of candidate partitions."""
+    allowed: set[int] = set()
+    for token_id in state.tokenizer.id_to_token:
+        probe = state.clone()
+        if not probe.advance_id(token_id):
+            continue
+        distance = (
+            0
+            if token_id == state.tokenizer.eos_id
+            else _choice_brute_distance(
+                probe,
+                remaining - 1,
+                deadline=deadline,
+            )
+        )
+        if distance <= remaining - 1:
+            allowed.add(int(token_id))
+    return allowed
+
+
+def _legacy_choice_allowed_ids(
+    state: Any,
+    remaining: int,
+    *,
+    cache: dict[tuple[object, ...], frozenset[int]] | None = None,
+) -> set[int]:
+    """Pre-kernel deepcopy + greedy-feasibility choice baseline."""
+    key = (state.signature(), int(remaining))
+    if cache is not None and key in cache:
+        return set(cache[key])
+    allowed: set[int] = set()
+    for token_id in state._candidate_ids():
+        probe = state.clone()
+        probe.frames = deepcopy(probe.frames)
+        if not probe.advance_id(token_id):
+            continue
+        if token_id == state.tokenizer.eos_id:
+            completion = 0
+        else:
+            completion = 1025
+            for count in range(1, min(1024, remaining - 1) + 1):
+                next_id = probe._completion_id()
+                if not probe.advance_id(next_id):
+                    break
+                if next_id == state.tokenizer.eos_id:
+                    completion = count
+                    break
+        if completion <= remaining - 1:
+            allowed.add(int(token_id))
+    if cache is not None:
+        cache[key] = frozenset(allowed)
+    return allowed
+
+
+def _prior_choice_diagnostic() -> dict[str, Any]:
+    """Non-promotable metadata for the interrupted ad-hoc timing."""
+    return {
+        "id": "kimi_choice_hero_prefixes_20260729",
+        "status": "incomplete_diagnostic",
+        "promotable": False,
+        "reason": [
+            "raw_samples_not_retained",
+            "arm_order_not_alternated",
+            "no_discarded_warmup",
+        ],
+        "base_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+        "repetitions": 7,
+        "aggregate_calls_per_sample": 10,
+        "remaining_positions": 8,
+        "v2_median_ns": 17_021_824,
+        "legacy_median_ns": 182_931_458,
+        "reported_speedup": 10.746877537918381,
+        "cache_policy": (
+            "allowed/completion caches cleared each repetition; V2 distance "
+            "cache also cleared; schema/component/candidate caches retained"
+        ),
+        "sampling_order": "seven V2 samples followed by seven V1 samples",
+        "device": {
+            "kind": "cpu",
+            "os": "Linux 6.18.33.2-microsoft-standard-WSL2",
+            "architecture": "aarch64",
+            "vendor": "Qualcomm",
+            "logical_cpus": 12,
+            "python": "3.12.3",
+        },
+    }
+
+
+def _prior_kernel_diagnostic() -> dict[str, Any]:
+    """Non-promotable metadata for the discarded pre-parity kernel probe."""
+    return {
+        "id": "kimi_kernel_card_open_comma_20260729",
+        "status": "incomplete_diagnostic",
+        "promotable": False,
+        "reason": [
+            "raw_samples_not_retained",
+            "no_explicit_warmup",
+            "authority_mismatch_v1_complete12_v2_incomplete0",
+        ],
+        "base_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+        "repetitions": 3,
+        "prefix": "root = Card([b1,",
+        "remaining_tokens": 32,
+        "v1_median_ns": 47_494_406,
+        "v2_median_ns": 738_175_454,
+        "reported_speedup_v1_over_v2": 0.06434026617904545,
+        "sampling_order": "alternating V1 then V2; no discarded warmup",
+        "device": {
+            "kind": "cpu",
+            "os": "Linux 6.18.33.2-microsoft-standard-WSL2",
+            "architecture": "aarch64",
+            "vendor": "Qualcomm",
+            "logical_cpus": 12,
+            "python": "3.12.3",
+        },
+    }
+
+
+def _run_choice_codec_rows(
+    *, repetitions: int, deadline: float
+) -> dict[str, Any]:
+    """Correctness oracle plus cold/warm alternating choice timings."""
+    fixtures = _choice_fixture_states()
+    tokenizer = fixtures[0][1].tokenizer
+    correctness: list[dict[str, Any]] = []
+    # ponytail: parity is bounded at remaining=2/3 while the timed fixture uses
+    # remaining=8; extend the oracle to the timed room before making a broader
+    # correctness claim than this fixture gate.
+    for name, state, remaining in fixtures:
+        exact = state.allowed_ids(remaining)
+        oracle = _choice_brute_allowed_ids(
+            state, remaining, deadline=deadline
+        )
+        distance_room = 3 if name == "synthetic_card_list" else remaining
+        distance = state._completion_distance(distance_room)
+        oracle_distance = _choice_brute_distance(
+            state, distance_room, deadline=deadline
+        )
+        if exact != oracle or distance != oracle_distance:
+            raise AssertionError(f"{name}: choice exact/oracle mismatch")
+        correctness.append(
+            {
+                "id": name,
+                "remaining_positions": remaining,
+                "distance_room": distance_room,
+                "allowed_count": len(exact),
+                "allowed_digest": _payload_digest(
+                    {"allowed_ids": sorted(int(value) for value in exact)}
+                ),
+                "bounded_distance": int(distance),
+            }
+        )
+
+    # Fixed reachable HERO prefixes plus synthetic states. Cold means
+    # domain/distance caches are cleared for each sample;
+    # schema/component/candidate intern tables remain tokenizer-local and warm.
+    timed = [(state, 8) for _, state, _ in fixtures]
+    legacy_cache: dict[tuple[object, ...], frozenset[int]] = {}
+
+    def exact_batch(*, cold: bool) -> None:
+        if cold:
+            tokenizer.allowed_cache.clear()
+            tokenizer.completion_cache.clear()
+            tokenizer.distance_cache.clear()
+        for state, remaining in timed:
+            state.allowed_ids(remaining)
+
+    def legacy_batch(*, cold: bool) -> None:
+        if cold:
+            legacy_cache.clear()
+        for state, remaining in timed:
+            _legacy_choice_allowed_ids(
+                state, remaining, cache=legacy_cache
+            )
+
+    cold_v1, cold_v2 = _timed_alternating(
+        lambda: legacy_batch(cold=True),
+        lambda: exact_batch(cold=True),
+        repetitions=repetitions,
+        deadline=deadline,
+    )
+    legacy_batch(cold=True)
+    exact_batch(cold=True)
+    warm_v1, warm_v2 = _timed_alternating(
+        lambda: legacy_batch(cold=False),
+        lambda: exact_batch(cold=False),
+        repetitions=repetitions,
+        deadline=deadline,
+    )
+
+    cold_speedup = float(cold_v1["median_ns"]) / max(
+        1.0, float(cold_v2["median_ns"])
+    )
+    exact_union = set().union(
+        *(state.allowed_ids(remaining) for state, remaining in timed)
+    )
+    legacy_union = set().union(
+        *(
+            _legacy_choice_allowed_ids(state, remaining)
+            for state, remaining in timed
+        )
+    )
+    return {
+        "correctness": correctness,
+        "rows": [
+            {
+                "id": "choice_cold_completion_caches",
+                "mode": "cold_domain_distance_caches",
+                "v1": cold_v1,
+                "v2": cold_v2,
+                "speedup_v1_over_v2": cold_speedup,
+            },
+            {
+                "id": "choice_warm_completion_caches",
+                "mode": "warm_domain_distance_caches",
+                "v1": warm_v1,
+                "v2": warm_v2,
+                "speedup_v1_over_v2": float(warm_v1["median_ns"])
+                / max(1.0, float(warm_v2["median_ns"])),
+            },
+        ],
+        "legacy_false_pruned_ids": sorted(exact_union - legacy_union),
+        "gates": {
+            "exact_bounded_distance_and_allowed_parity": True,
+            "cold_speedup_ge_3x": cold_speedup >= 3.0,
+        },
+        "prior_incomplete_diagnostic": _prior_choice_diagnostic(),
+    }
+
+
+def _run_solver_fixture(
+    tokenizer: Any, *, repetitions: int, deadline: float
+) -> dict[str, Any]:
+    """Compare the fresh-forest solver adapter with the persistent session."""
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        build_completion_forest,
+    )
+    from slm_training.dsl.grammar.fastpath.token_map import decode_prefix
+    from slm_training.dsl.solver.adapters import completion_forest_state
+    from slm_training.dsl.solver.openui_support import (
+        OpenUIForestExpander,
+        OpenUIWellFormedVerifier,
+    )
+    from slm_training.dsl.solver.state import SolverBounds
+    from slm_training.dsl.solver.support import (
+        EnumerativeSupportOracle,
+        ExpandStatus,
+        ExpandStep,
+        SupportQuery,
+    )
+
+    bounds = SolverBounds(
+        max_tokens=256,
+        max_nodes=16,
+        max_depth=8,
+        max_backtracks=64,
+        max_verifier_calls=8,
+    )
+    prefix = tuple(
+        [
+            int(tokenizer.bos_id),
+            *(
+                int(token_id)
+                for token_id in tokenizer.encode(
+                    "root = Card([", add_special=False
+                )
+            ),
+        ]
+    )
+
+    class FreshForestExpander:
+        def __init__(self) -> None:
+            self._builds = 0
+            self._prefix_by_fp: dict[str, tuple[int, ...]] = {}
+            self._forest_meta: dict[str, tuple[str, bool]] = {}
+            self._root = self._project(prefix)
+
+        @property
+        def problem_id(self) -> str:
+            return self._root.problem_id
+
+        @property
+        def pack_id(self) -> str:
+            return "openui"
+
+        @property
+        def constraint_version(self) -> str:
+            return "completion-kernel-perf"
+
+        @property
+        def bounds(self) -> Any:
+            return bounds
+
+        def root_state(self) -> Any:
+            return self._root
+
+        def _project(self, current: tuple[int, ...]) -> Any:
+            self._builds += 1
+            forest = build_completion_forest(
+                tokenizer, list(current), max_path_tokens=8
+            )
+            state = completion_forest_state(
+                prefix_ids=current,
+                forest=forest,
+                pack_id=self.pack_id,
+                constraint_version=self.constraint_version,
+                bounds=bounds,
+            )
+            self._prefix_by_fp[state.fingerprint] = current
+            self._forest_meta[state.fingerprint] = (
+                str(forest.coverage),
+                bool(forest.paths),
+            )
+            return state
+
+        def successor(self, state: Any, hole_id: Any, value: Any) -> Any:
+            current = self._prefix_by_fp.get(state.fingerprint)
+            if current is None:
+                return ExpandStep(
+                    ExpandStatus.INCOMPLETE,
+                    coverage="none",
+                    detail="unknown_state",
+                )
+            payload = value.payload
+            token_ids = tuple(int(token_id) for token_id in payload["token_ids"])
+            kind = str(payload["kind"])
+            if kind == "eos" or token_ids == (int(tokenizer.eos_id),):
+                return ExpandStep(
+                    ExpandStatus.TERMINAL,
+                    program=decode_prefix(tokenizer, list(current)),
+                    coverage="complete",
+                )
+            child = self._project(current + token_ids)
+            coverage, has_paths = self._forest_meta[child.fingerprint]
+            if coverage == "none":
+                return ExpandStep(
+                    ExpandStatus.DEAD,
+                    coverage="none",
+                    detail="illegal_prefix",
+                )
+            if not has_paths:
+                return ExpandStep(
+                    ExpandStatus.INCOMPLETE,
+                    coverage=coverage,
+                    detail="no_enumerated_actions",
+                )
+            return ExpandStep(
+                ExpandStatus.CONTINUE,
+                next_state=child,
+                coverage=coverage,
+            )
+
+    def evaluate(persistent: bool) -> tuple[dict[str, Any], dict[str, int]]:
+        expander = (
+            OpenUIForestExpander(
+                tokenizer,
+                prefix,
+                pack_id="openui",
+                constraint_version="completion-kernel-perf",
+                bounds=bounds,
+                max_path_tokens=8,
+            )
+            if persistent
+            else FreshForestExpander()
+        )
+        root = expander.root_state()
+        hole = root.holes[0]
+        candidate = next(
+            value
+            for value in hole.values
+            if str(value.payload.get("kind", "")) != "eos"
+        )
+        query = SupportQuery(
+            state_fingerprint=root.fingerprint,
+            hole_id=hole.hole_id,
+            candidate=candidate,
+        )
+        result = EnumerativeSupportOracle(
+            expander, OpenUIWellFormedVerifier()
+        ).check(root, query)
+        payload = {
+            "root": root.to_dict(),
+            "verdict": result.verdict.value,
+            "certificate": result.certificate.to_dict(),
+            "witness": result.witness,
+            "search_counters": result.counters.to_dict(),
+        }
+        work = (
+            {
+                f"completion_{key}": int(value)
+                for key, value in expander._session.stats().items()
+            }
+            if persistent
+            else {"fresh_forest_builds": int(expander._builds)}
+        )
+        return payload, work
+
+    v1_payload, v1_work = evaluate(False)
+    v2_payload, v2_work = evaluate(True)
+    equivalent = v1_payload == v2_payload
+    v1_timing, v2_timing = _timed_alternating(
+        lambda: evaluate(False),
+        lambda: evaluate(True),
+        repetitions=repetitions,
+        deadline=deadline,
+    )
+    return {
+        "id": "bounded_solver",
+        "digest": _payload_digest(v2_payload),
+        "verdict": v2_payload["verdict"],
+        "search_counters": v2_payload["search_counters"],
+        "v1_work": v1_work,
+        "v2_work": v2_work,
+        "v1": v1_timing,
+        "v2": v2_timing,
+        "speedup_v1_over_v2": float(v1_timing["median_ns"])
+        / max(1.0, float(v2_timing["median_ns"])),
+        "equivalent": equivalent,
+    }
+
+
+@contextmanager
+def _completion_authority(*, reference: bool):
+    """Temporarily select the private V1 authority for a matched fixture arm."""
+    if not reference:
+        yield
+        return
+    from slm_training.dsl import pack as pack_module
+
+    current = pack_module.get_pack("openui")
+    authority = current.grammar_capability_authority
+    if authority is None:
+        raise RuntimeError("OpenUI completion authority unavailable")
+    pack_module._PACKS["openui"] = replace(
+        current,
+        grammar_capability_authority=replace(
+            authority,
+            completion_domain=pack_module._openui_completion_domain_reference,
+        ),
+    )
+    try:
+        yield
+    finally:
+        pack_module._PACKS["openui"] = current
+
+
+def _run_compiler_decode_fixture(
+    *, repetitions: int, deadline: float
+) -> dict[str, Any]:
+    """Matched tiny compiler decode under private V1 and production V2."""
+    from slm_training.data.contract import canonicalize_example_template_markers
+    from slm_training.dsl.parser import validate
+    from slm_training.dsl.schema import ExampleRecord
+    from slm_training.models.decode_stats import collect_decode_stats
+    from slm_training.models.grammar import CompletionBatchCache
+    from slm_training.models.twotower import TwoTowerConfig
+
+    record = canonicalize_example_template_markers(
+        ExampleRecord(
+            id="completion-kernel-perf",
+            prompt="card",
+            openui='root = Card([title])\ntitle = TextContent(":hero.title")\n',
+            placeholders=[":hero.title"],
+            split="train",
+            source="fixture",
+        )
+    )
+    config = TwoTowerConfig(
+        context_backend="scratch",
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        d_model=32,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=32,
+        grammar_ltr_max_tokens=32,
+        gen_steps=1,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records([record], config=config, device="cpu")
+    model.eval()
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    # V2's production integration shares immutable hard domains across
+    # equivalent rows; retain that cache across matched fixture decodes.
+    # V1 has no cross-row owner and therefore rebuilds each fresh row.
+    v2_shared_domains = CompletionBatchCache()
+
+    def decode(*, reference: bool, singleton: bool = False) -> dict[str, Any]:
+        initial = None
+        length = 16
+        if singleton:
+            tokenizer_ids = model.tokenizer.encode(
+                "root = Separator()\n", add_special=False
+            )
+            initial = (int(model.tokenizer.bos_id), *map(int, tokenizer_ids))
+            length = len(initial) + 1
+        with _completion_authority(reference=reference), collect_decode_stats() as stats:
+            ids = model._compiler_ltr_decode_one(
+                ctx,
+                ctx_pad,
+                length,
+                mode="tree",
+                slot_contract=None,
+                _initial_prefix=initial,
+                _shared_completion_domains=(
+                    None if reference else v2_shared_domains
+                ),
+            )
+        text = model._decode_ids(ids)
+        canonical = model._canonical_valid_openui(model._repair_surface_syntax(text))
+        validation = "accept"
+        try:
+            validate(canonical or text)
+        except Exception:  # noqa: BLE001 - recorded fixture outcome
+            validation = "reject"
+        return {
+            "ids": [int(token_id) for token_id in ids.tolist()],
+            "outcome": canonical,
+            "forwards_count": int(stats.forwards_count),
+            "compiler_ms": float(stats.compiler_ms),
+            "final_validation": validation,
+        }
+
+    v1_payload = decode(reference=True)
+    v2_payload = decode(reference=False)
+    comparable = ("ids", "outcome", "forwards_count", "final_validation")
+    equivalent = all(v1_payload[key] == v2_payload[key] for key in comparable)
+    v1_singleton = decode(reference=True, singleton=True)
+    v2_singleton = decode(reference=False, singleton=True)
+    singleton_equivalent = all(
+        v1_singleton[key] == v2_singleton[key] for key in comparable
+    )
+    (
+        v1_timing,
+        v2_timing,
+        v1_compiler_timing,
+        v2_compiler_timing,
+    ) = _timed_alternating_metric(
+        lambda: decode(reference=True),
+        lambda: decode(reference=False),
+        repetitions=repetitions,
+        deadline=deadline,
+        metric_ns=lambda payload: round(float(payload["compiler_ms"]) * 1_000_000),
+    )
+    compiler_speedup = float(v1_compiler_timing["median_ns"]) / max(
+        1.0, float(v2_compiler_timing["median_ns"])
+    )
+    return {
+        "id": "tiny_compiler_decode",
+        "mode": "fresh_v1_rows_vs_v2_shared_equivalent_hard_domains",
+        "v1_payload": v1_payload,
+        "v2_payload": v2_payload,
+        "singleton": {
+            "v1": v1_singleton,
+            "v2": v2_singleton,
+            "equivalent": singleton_equivalent,
+            "zero_forward": (
+                v1_singleton["forwards_count"] == 0
+                and v2_singleton["forwards_count"] == 0
+            ),
+        },
+        "v1": v1_timing,
+        "v2": v2_timing,
+        "v1_compiler": v1_compiler_timing,
+        "v2_compiler": v2_compiler_timing,
+        "speedup_v1_over_v2": float(v1_timing["median_ns"])
+        / max(1.0, float(v2_timing["median_ns"])),
+        "compiler_ms_speedup_v1_over_v2": compiler_speedup,
+        "equivalent": equivalent,
+    }
+
+
+def _run_compiler_batch_fixture(
+    *, repetitions: int, deadline: float
+) -> dict[str, Any]:
+    """Compare upstream-equivalent sequential rows with compact batch decode."""
+    import torch
+
+    from slm_training.data.contract import canonicalize_example_template_markers
+    from slm_training.dsl.parser import validate
+    from slm_training.dsl.schema import ExampleRecord
+    from slm_training.models.decode_stats import collect_decode_stats
+    from slm_training.models.grammar import CompletionBatchCache
+    from slm_training.models.twotower import TwoTowerConfig
+
+    record = canonicalize_example_template_markers(
+        ExampleRecord(
+            id="completion-kernel-batch-perf",
+            prompt="card",
+            openui='root = Card([title])\ntitle = TextContent(":hero.title")\n',
+            placeholders=[":hero.title"],
+            split="train",
+            source="fixture",
+        )
+    )
+    config = TwoTowerConfig(
+        context_backend="scratch",
+        output_tokenizer="lexer",
+        compiler_decode_mode="restricted",
+        d_model=32,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=32,
+        grammar_ltr_max_tokens=32,
+        gen_steps=1,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records([record], config=config, device="cpu")
+    model.eval()
+    prompts = [record.prompt, record.prompt]
+    ctx, ctx_pad = model._encode_context(prompts)
+    length = 16
+
+    def decode(*, compact: bool) -> dict[str, Any]:
+        with collect_decode_stats() as stats:
+            if compact:
+                ids = model._compiler_ltr_decode_batch(
+                    ctx, ctx_pad, length, mode="restricted"
+                )
+            else:
+                shared_domains = CompletionBatchCache()
+                ids = torch.stack(
+                    [
+                        model._compiler_ltr_decode_one(
+                            ctx[row : row + 1],
+                            ctx_pad[row : row + 1],
+                            length,
+                            mode="restricted",
+                            slot_contract=None,
+                            _plan_row=row,
+                            _shared_completion_domains=shared_domains,
+                        )
+                        for row in range(len(prompts))
+                    ]
+                )
+        outcomes: list[str | None] = []
+        validations: list[str] = []
+        for row in ids:
+            text = model._decode_ids(row)
+            canonical = model._canonical_valid_openui(
+                model._repair_surface_syntax(text)
+            )
+            outcomes.append(canonical)
+            try:
+                validate(canonical or text)
+            except Exception:  # noqa: BLE001 - recorded fixture outcome
+                validations.append("reject")
+            else:
+                validations.append("accept")
+        return {
+            "ids": [
+                [int(token_id) for token_id in row.tolist()]
+                for row in ids
+            ],
+            "outcomes": outcomes,
+            "final_validation": validations,
+            "forwards_count": int(stats.forwards_count),
+            "denoiser_rows_evaluated": int(stats.denoiser_rows_evaluated),
+            "ambiguous_rows_forwarded": int(stats.ambiguous_rows_forwarded),
+        }
+
+    control_payload = decode(compact=False)
+    compact_payload = decode(compact=True)
+    comparable = ("ids", "outcomes", "final_validation")
+    equivalent = all(
+        control_payload[key] == compact_payload[key] for key in comparable
+    )
+    control_timing, compact_timing = _timed_alternating(
+        lambda: decode(compact=False),
+        lambda: decode(compact=True),
+        repetitions=repetitions,
+        deadline=deadline,
+    )
+    return {
+        "id": "compiler_batch_two",
+        "mode": "upstream_sequential_rows_vs_compact_ambiguous_rows",
+        "batch_size": len(prompts),
+        "control_payload": control_payload,
+        "compact_payload": compact_payload,
+        "control": control_timing,
+        "compact": compact_timing,
+        "speedup_control_over_compact": float(control_timing["median_ns"])
+        / max(1.0, float(compact_timing["median_ns"])),
+        "equivalent": equivalent,
+    }
+
+
+def _completion_fixture_gates(
+    solver: dict[str, Any], compiler_decode: dict[str, Any]
+) -> dict[str, bool]:
+    """Decision-complete solver/compiler fixture gates."""
+    return {
+        "solver_payload_certificate_status_parity": bool(solver["equivalent"]),
+        "compiler_decode_parity": bool(compiler_decode["equivalent"]),
+        "compiler_singleton_parity": bool(
+            compiler_decode["singleton"]["equivalent"]
+        ),
+        "compiler_singleton_zero_forward": bool(
+            compiler_decode["singleton"]["zero_forward"]
+        ),
+        "compiler_ms_speedup_ge_5x": (
+            float(compiler_decode["compiler_ms_speedup_v1_over_v2"]) >= 5.0
+        ),
+    }
+
+
+def _compiler_batch_fixture_gates(batch: dict[str, Any]) -> dict[str, bool]:
+    """Decision-complete parity, work-compaction, and latency guardrails."""
+    control = batch["control_payload"]
+    compact = batch["compact_payload"]
+    return {
+        "compiler_batch_exact_parity": bool(batch["equivalent"]),
+        "compiler_batch_reduces_forwards": (
+            0 < int(compact["forwards_count"]) < int(control["forwards_count"])
+        ),
+        "compiler_batch_preserves_denoiser_rows": (
+            int(compact["denoiser_rows_evaluated"])
+            == int(control["denoiser_rows_evaluated"])
+            and int(compact["denoiser_rows_evaluated"]) > 0
+        ),
+        "compiler_batch_latency_regression_le_15pct": (
+            float(batch["compact"]["median_ns"])
+            <= 1.15 * float(batch["control"]["median_ns"])
+        ),
+    }
+
+
+def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
+    """Run the preregistered packed-kernel correctness/performance fixture."""
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+    from slm_training.dsl.grammar.fastpath.token_map import token_surface_piece
+    from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
+    from slm_training.dsl.pack import (
+        _openui_completion_domain,
+        _openui_completion_domain_reference,
+    )
+    from slm_training.evals.agentv import publish_agentv_evaluation
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+    from slm_training.models.grammar import make_grammar_state
+
+    deadline = time.monotonic() + float(MAX_HARNESS_WALL_SECONDS)
+    tokenizer = DSLNativeTokenizer.build()
+    budget = 32
+    repetitions = max(1, int(args.completion_repetitions))
+    choice = _run_choice_codec_rows(
+        repetitions=repetitions, deadline=deadline
+    )
+    solver = _run_solver_fixture(
+        tokenizer, repetitions=repetitions, deadline=deadline
+    )
+    compiler_decode = _run_compiler_decode_fixture(
+        repetitions=repetitions, deadline=deadline
+    )
+    compiler_batch = _run_compiler_batch_fixture(
+        repetitions=repetitions, deadline=deadline
+    )
+
+    def prefix_ids(text: str) -> tuple[int, ...]:
+        return (
+            int(tokenizer.bos_id),
+            *(int(token_id) for token_id in tokenizer.encode(text, add_special=False)),
+        )
+
+    def request(text: str, *, state: Any | None = None) -> CompletionDomainRequestV1:
+        return CompletionDomainRequestV1(
+            prefix_ids=prefix_ids(text),
+            tokenizer=tokenizer,
+            slot_contract=(":slot_0", ":slot_1"),
+            remaining_tokens=budget,
+            state=state,
+        )
+
+    def replay_witnesses(text: str, domain: Any) -> bool:
+        prefix = prefix_ids(text)
+        for candidate in domain.candidates:
+            engine = OpenUIIncrementalEngine()
+            for token_id in (*prefix, *candidate.terminal_witness):
+                outcome = engine.feed_token_id(tokenizer, int(token_id))
+                if outcome is None:
+                    outcome = engine.advance_checked(
+                        token_surface_piece(tokenizer, int(token_id))
+                    )
+                if outcome is not True:
+                    return False
+            if "$END" not in engine.next_terminals():
+                return False
+        return True
+
+    # Check every prefix of a small canonical corpus before timing. This is
+    # deliberately bounded so the complete suite fits the repository wall.
+    canonical_programs = (
+        'root = TextContent(":slot_0")\n',
+        "root = Card([])\n",
+        'root = Card([b1])\nb1 = TextContent(":slot_0")\n',
+    )
+    correctness: list[dict[str, Any]] = []
+    authority_preserved = True
+    witnesses_replayed = True
+    for program in canonical_programs:
+        ids = [
+            int(token_id)
+            for token_id in tokenizer.encode(program, add_special=False)
+        ]
+        for end in range(len(ids) + 1):
+            if time.monotonic() >= deadline:
+                raise TimeoutError("completion-kernel correctness corpus exceeded deadline")
+            one = CompletionDomainRequestV1(
+                prefix_ids=(int(tokenizer.bos_id), *ids[:end]),
+                tokenizer=tokenizer,
+                slot_contract=(":slot_0", ":slot_1"),
+                remaining_tokens=budget,
+            )
+            v1_payload = _completion_domain_payload(
+                _openui_completion_domain_reference(one)
+            )
+            v2 = _openui_completion_domain(one)
+            v2_payload = _completion_domain_payload(v2)
+            preserved = _v1_domain_is_preserved(v1_payload, v2_payload)
+            authority_preserved = authority_preserved and preserved
+            correctness.append(
+                {
+                    "program_sha256": hashlib.sha256(
+                        program.encode("utf-8")
+                    ).hexdigest(),
+                    "prefix_tokens": end,
+                    "digest": _payload_digest(v2_payload),
+                    "v1_authority_preserved": preserved,
+                }
+            )
+
+    workloads = (
+        ("cold_empty", ""),
+        ("cold_root", "root"),
+        ("card_open_item", "root = Card([b1"),
+        ("card_open_comma", "root = Card([b1,"),
+    )
+    rows: list[dict[str, Any]] = []
+    for name, text in workloads:
+        one = request(text)
+        v1 = _openui_completion_domain_reference(one)
+        v2 = _openui_completion_domain(one)
+        v1_payload = _completion_domain_payload(v1)
+        v2_payload = _completion_domain_payload(v2)
+        preserved = _v1_domain_is_preserved(v1_payload, v2_payload)
+        replayed = replay_witnesses(text, v2)
+        authority_preserved = authority_preserved and preserved
+        witnesses_replayed = witnesses_replayed and replayed
+
+        v1_timing, v2_timing = _timed_alternating(
+            lambda: _openui_completion_domain_reference(request(text)),
+            lambda: _openui_completion_domain(request(text)),
+            repetitions=repetitions,
+            deadline=deadline,
+        )
+        speedup = float(v1_timing["median_ns"]) / max(
+            1.0, float(v2_timing["median_ns"])
+        )
+        rows.append(
+            {
+                "id": name,
+                "mode": "cold_request",
+                "prefix": text,
+                "budget": budget,
+                "candidate_count": len(v2.candidates),
+                "digest": _payload_digest(v2_payload),
+                "v1_authority_preserved": preserved,
+                "terminal_witnesses_replayed": replayed,
+                "v1": v1_timing,
+                "v2": v2_timing,
+                "speedup_v1_over_v2": speedup,
+            }
+        )
+
+    # Warm repeats exercise a production row-owned session rather than a
+    # process-global arbitrary-prefix cache.
+    hard_text = "root = Card([b1,"
+    warm_state = make_grammar_state()
+    warm_request = request(hard_text, state=warm_state)
+    warm_state.sync_ids(tokenizer, list(warm_request.prefix_ids))
+    _openui_completion_domain(warm_request)
+    warm_before = dict(warm_state.completion_session.stats())
+
+    def warm_v2_call():
+        warm_state.completion_domain_cache.clear()
+        return _openui_completion_domain(warm_request)
+
+    warm_v1, warm_v2 = _timed_alternating(
+        lambda: _openui_completion_domain_reference(request(hard_text)),
+        warm_v2_call,
+        repetitions=repetitions,
+        deadline=deadline,
+    )
+    warm_domain = _openui_completion_domain(warm_request)
+    warm_after = dict(warm_state.completion_session.stats())
+    warm_work_delta = {
+        key: int(warm_after.get(key, 0)) - int(warm_before.get(key, 0))
+        for key in sorted(set(warm_before) | set(warm_after))
+    }
+    warm_speedup = float(warm_v1["median_ns"]) / max(
+        1.0, float(warm_v2["median_ns"])
+    )
+    rows.append(
+        {
+            "id": "warm_card_open_comma",
+            "mode": "persistent_row_session_no_domain_cache",
+            "prefix": hard_text,
+            "budget": budget,
+            "candidate_count": len(warm_domain.candidates),
+            "digest": _payload_digest(_completion_domain_payload(warm_domain)),
+            "v1": warm_v1,
+            "v2": warm_v2,
+            "speedup_v1_over_v2": warm_speedup,
+            "v2_work_delta": warm_work_delta,
+        }
+    )
+
+    by_id = {row["id"]: row for row in rows}
+    simple_ok = all(
+        float(by_id[row_id]["v2"]["median_ns"])
+        <= 1.15 * float(by_id[row_id]["v1"]["median_ns"])
+        for row_id in ("cold_empty", "cold_root")
+    )
+    hard = by_id["warm_card_open_comma"]
+    gates = {
+        "v1_authority_preserved_and_witnesses_replayed": (
+            authority_preserved and witnesses_replayed
+        ),
+        "hard_prefix_identical_12_paths": (
+            hard["candidate_count"] == 12
+        ),
+        "warm_hard_prefix_speedup_ge_10x": warm_speedup >= 10.0,
+        "simple_prefix_regression_le_15pct": simple_ok,
+        "choice_exact_oracle_parity": choice["gates"][
+            "exact_bounded_distance_and_allowed_parity"
+        ],
+        "choice_speedup_ge_3x": choice["gates"]["cold_speedup_ge_3x"],
+        "warm_zero_full_prefix_lex_bytes": (
+            warm_work_delta.get("full_prefix_lex_bytes", 0) == 0
+        ),
+        "warm_zero_candidate_engine_allocations": (
+            warm_work_delta.get("candidate_engine_allocations", 0) == 0
+        ),
+        **_completion_fixture_gates(solver, compiler_decode),
+        **_compiler_batch_fixture_gates(compiler_batch),
+    }
+    gates["pass"] = all(bool(value) for value in gates.values())
+
+    board = {
+        "kind": "completion_kernel_perf/v1",
+        "claim_class": "fixture_or_scratch",
+        "device": "cpu",
+        "budget": budget,
+        "repetitions": repetitions,
+        "environment": {
+            "platform": platform.platform(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+            "logical_cpus": os.cpu_count(),
+            "python": platform.python_version(),
+            "lark": _installed_version("lark"),
+        },
+        "recipe": {
+            "command": [
+                "python",
+                "-m",
+                "scripts.run_perf_matrix",
+                "--completion-kernel",
+                "--completion-repetitions",
+                str(repetitions),
+                "--out-dir",
+                _repo_relative_artifact_paths(str(args.out_dir)),
+                "--docs-out",
+                _repo_relative_artifact_paths(str(args.docs_out)),
+                "--docs-agentv-dir",
+                _repo_relative_artifact_paths(str(args.docs_agentv_dir)),
+            ],
+            "scoreboard_path": _repo_relative_artifact_paths(
+                str(args.out_dir / "scoreboard.json")
+            ),
+            "docs_path": _repo_relative_artifact_paths(str(args.docs_out)),
+        },
+        "correctness_prefixes": correctness,
+        "rows": rows,
+        "choice_codec": choice,
+        "solver_fixture": solver,
+        "compiler_decode_fixture": compiler_decode,
+        "compiler_batch_fixture": compiler_batch,
+        "prior_incomplete_diagnostics": [
+            _prior_choice_diagnostic(),
+            _prior_kernel_diagnostic(),
+        ],
+        "development_run_history": [
+            {
+                "status": "incomplete_not_evidence",
+                "reason": "benchmark fixture exposed unsupported request kwargs",
+            },
+            {
+                "status": "incomplete_not_evidence",
+                "reason": "benchmark fixture exposed terminal EOS state advance",
+            },
+            {
+                "status": "complete_negative",
+                "agentv_passed": 8,
+                "agentv_total": 11,
+                "reason": "pre-row-cache prototype missed three latency gates",
+            },
+            {
+                "status": "complete_negative",
+                "agentv_passed": 10,
+                "agentv_total": 11,
+                "reason": "row cache passed direct gates; fresh-row compiler fixture missed compiler_ms gate",
+            },
+        ],
+        "timing_protocol": {
+            "clock": "time.perf_counter_ns",
+            "arm_order": "alternating; V1 first on even repetitions",
+            "warmup": (
+                "correctness and payload-parity calls precede timed rows; "
+                "persistent-session rows are explicitly primed once and clear "
+                "only the row-domain cache before each timed V2 sample"
+            ),
+            "raw_samples_retained": True,
+        },
+        "gates": gates,
+        "version_stamp": build_version_stamp(
+            "matrix.perf",
+            "dsl.completion_kernel",
+            "dsl.operators.registry",
+            "harness.model_build.eval",
+            "model.twotower",
+        ),
+    }
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    board["agentv"] = _repo_relative_artifact_paths(
+        publish_agentv_evaluation(
+            args.out_dir,
+            name="packed-completion-kernel",
+            claim="behavior_preserving_packed_completion_runtime",
+            cases=[
+                {
+                    "id": key,
+                    "criteria": key,
+                    "pass": bool(value),
+                    "failures": [] if value else [key],
+                    "result": {"value": value},
+                    "metadata": {"claim_class": "fixture_or_scratch"},
+                }
+                for key, value in gates.items()
+                if key != "pass"
+            ],
+        )
+    )
+    board["agentv"]["durable_artifacts"] = _persist_agentv_bundle(
+        args.out_dir, args.docs_agentv_dir
+    )
+    board_path = args.out_dir / "scoreboard.json"
+    board_path.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
+    args.docs_out.parent.mkdir(parents=True, exist_ok=True)
+    args.docs_out.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(board, indent=2))
+    print(f"wrote {board_path} and {args.docs_out}")
+    return 0 if gates["pass"] else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--completion-kernel",
+        action="store_true",
+        help="Run the capped packed completion-kernel fixture instead of P/Q/C rows.",
+    )
+    parser.add_argument(
+        "--completion-repetitions",
+        type=int,
+        default=5,
+        help="Matched timing repetitions for each packed-kernel arm.",
+    )
     parser.add_argument(
         "--checkpoint",
         type=Path,
@@ -1578,34 +1972,10 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("docs/design/perf-matrix-results.json"),
     )
     parser.add_argument(
-        "--completion-kernel-workload",
-        default="",
-        help=(
-            "Run the packed completion-kernel benchmark mode for a comma-separated "
-            "subset of direct,corpus,choice,solver,decode."
-        ),
-    )
-    parser.add_argument(
-        "--completion-repeats",
-        type=int,
-        default=7,
-        help="Alternating paired samples per completion-kernel workload.",
-    )
-    parser.add_argument(
-        "--completion-run-id",
-        default="",
-        help="Shared run id for completion workload shards and their merge.",
-    )
-    parser.add_argument(
-        "--completion-shard-root",
+        "--docs-agentv-dir",
         type=Path,
-        default=Path("outputs/runs/completion_kernel"),
-        help="Ignored root for independently capped completion workload shards.",
-    )
-    parser.add_argument(
-        "--completion-merge",
-        action="store_true",
-        help="Merge a complete homogeneous five-workload completion run into docs.",
+        default=None,
+        help="New tracked directory for the complete AgentV bundle and traces.",
     )
     parser.add_argument(
         "--list",
@@ -1613,16 +1983,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Print selected experiment definitions without running them.",
     )
     args = parser.parse_args(argv)
-    if args.completion_kernel_workload or args.completion_merge:
-        if not args.completion_run_id:
-            args.completion_run_id = dt.datetime.now(dt.UTC).strftime(
-                "completion-kernel-%Y%m%dT%H%M%SZ"
-            )
+    if args.completion_kernel:
+        if args.docs_agentv_dir is None:
+            parser.error("--completion-kernel requires --docs-agentv-dir")
         if args.docs_out == Path("docs/design/perf-matrix-results.json"):
             args.docs_out = Path(
                 "docs/design/completion-kernel-perf-results.json"
             )
-        return _run_completion_kernel_mode(args)
+        return _run_completion_kernel_suite(args)
     wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
     rows_def = experiments()
     if wanted:

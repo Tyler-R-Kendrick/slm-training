@@ -5,9 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from copy import copy as _shallow_copy
-from dataclasses import dataclass
-from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 
@@ -64,7 +61,6 @@ def _grammar_fingerprint(path: Path) -> str:
         _GRAMMAR_FINGERPRINTS[key] = fp
     return fp
 
-
 # Lark's ``InteractiveParser.accepts()`` trial-feeds every terminal choice on
 # a fresh parser copy (milliseconds per call).  The result is a pure function
 # of the LALR state stack (plus the fixed grammar), and decode revisits the
@@ -73,35 +69,6 @@ def _grammar_fingerprint(path: Path) -> str:
 # terminal set is unchanged, so the legal-action authority is untouched.
 _ACCEPTS_MEMO: dict[tuple[str, tuple[int, ...]], frozenset[str]] = {}
 _ACCEPTS_MEMO_CAP = 16384
-
-
-class RecognitionAdvanceStatus(str, Enum):
-    """Result of a recognition-only token transition."""
-
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-    UNSUPPORTED = "unsupported"
-
-
-@dataclass(frozen=True, slots=True)
-class RecognitionSnapshot:
-    """Immutable grammar-recognition state with no Lark value trees."""
-
-    key: tuple
-    terminals: frozenset[str]
-    lexical_junction: tuple[str, tuple[str, str] | None, str | None]
-    _grammar_fingerprint: str
-    _state_stack: tuple[int, ...]
-    _frame: tuple[str, str] | None
-    _last_terminal: str | None
-
-
-@dataclass(frozen=True, slots=True)
-class RecognitionAdvance:
-    """Tri-state recognition transition; only accepted transitions have a child."""
-
-    status: RecognitionAdvanceStatus
-    snapshot: RecognitionSnapshot | None = None
 
 
 @lru_cache(maxsize=4)
@@ -189,8 +156,7 @@ class OpenUIIncrementalEngine:
         self._fingerprint = _grammar_fingerprint(path)
         # id-keyed, but the tokenizer is stored beside its verified map so
         # (a) a hit re-verifies identity and (b) the strong reference keeps
-        # the id from being recycled while the entry lives — the same
-        # liveness guard as ``compiler_draft._STATELESS_FOREST_CACHE``.
+        # the id from being recycled while the entry lives.
         self._direct_map_cache: dict[int, tuple[object, dict | None]] = {}
         self._full_syncs = 0
         self._incremental_advances = 0
@@ -202,12 +168,7 @@ class OpenUIIncrementalEngine:
         self.full_sync_fallbacks = 0
         self.full_prefix_lex_bytes = 0
         self.parser_forks = 0
-        self.recognition_snapshots = 0
-        self.recognition_advances = 0
-        self.recognition_rejections = 0
-        self.recognition_unsupported = 0
-        self.recognition_value_tree_clones = 0
-        self.recognition_full_prefix_lex_bytes = 0
+        self._control_only = False
 
     @property
     def stats(self) -> dict[str, int | float]:
@@ -222,19 +183,13 @@ class OpenUIIncrementalEngine:
             "full_sync_fallbacks": self.full_sync_fallbacks,
             "full_prefix_lex_bytes": self.full_prefix_lex_bytes,
             "parser_forks": self.parser_forks,
-            "recognition_snapshots": self.recognition_snapshots,
-            "recognition_advances": self.recognition_advances,
-            "recognition_rejections": self.recognition_rejections,
-            "recognition_unsupported": self.recognition_unsupported,
-            "recognition_value_tree_clones": self.recognition_value_tree_clones,
-            "recognition_full_prefix_lex_bytes": (
-                self.recognition_full_prefix_lex_bytes
-            ),
         }
 
     def reset(self) -> None:
         self._prefix = ""
         self._ip = self._parser.parse_interactive()
+        if self._control_only:
+            self._ip = self._ip_control_copy()
         self._fed_token_count = 0
         self._fed_tokens = []
         self._fed_lark = []
@@ -291,7 +246,7 @@ class OpenUIIncrementalEngine:
                 int(state)
                 for state in getattr(self._ip.parser_state, "state_stack", ())
             )
-            key = (self._resolved, stack)
+            key = (self._fingerprint, stack)
             cached = _ACCEPTS_MEMO.get(key)
             if cached is None:
                 cached = frozenset(str(x) for x in self._ip.accepts())
@@ -314,6 +269,8 @@ class OpenUIIncrementalEngine:
         self._frame = None  # text route owns lexical state now
         self._prefix = prefix
         self._ip = self._parser.parse_interactive()
+        if self._control_only:
+            self._ip = self._ip_control_copy()
         self._fed_token_count = 0
         self._fed_tokens = []
         tokens, trimmed = self._lex_tokens_report(prefix)
@@ -543,282 +500,7 @@ class OpenUIIncrementalEngine:
         tail = self._pending_tail()
         tail = tail if tail.strip() else ""
         frame = tuple(self._frame) if self._frame is not None else None
-        last_terminal = self._fed_tokens[-1][0] if self._fed_tokens else None
-        return (self._fingerprint, stack, tail, frame, last_terminal)
-
-    # --- recognition-only snapshots ------------------------------------
-
-    def _recognition_accepts(self, stack: tuple[int, ...]) -> frozenset[str]:
-        """Exact LALR accepts for ``stack`` without callbacks or value trees."""
-        if self._ip is None or not stack:
-            return frozenset()
-        # Keep recognition trials separate from InteractiveParser.accepts().
-        # A recognition snapshot intentionally has no value stack, so sharing
-        # its memo entry could silently replace the canonical accepts set.
-        key = (f"recognition:{self._resolved}", stack)
-        cached = _ACCEPTS_MEMO.get(key)
-        if cached is not None:
-            return cached
-        base_conf = self._ip.parser_state.parse_conf
-        conf = _shallow_copy(base_conf)
-        conf.callbacks = {}
-        state = type(self._ip.parser_state)(
-            conf,
-            self._ip.parser_state.lexer,
-            list(stack),
-            [None] * (len(stack) - 1),
-        )
-        cursor = type(self._ip)(self._ip.parser, state, self._ip.lexer_thread)
-        result = frozenset(str(terminal) for terminal in cursor.accepts())
-        if len(_ACCEPTS_MEMO) >= _ACCEPTS_MEMO_CAP:
-            _ACCEPTS_MEMO.clear()
-        _ACCEPTS_MEMO[key] = result
-        return result
-
-    def _make_recognition_snapshot(
-        self,
-        stack: tuple[int, ...],
-        frame: tuple[str, str] | None,
-        last_terminal: str | None,
-    ) -> RecognitionSnapshot:
-        junction = ("", frame, last_terminal)
-        key = (self._fingerprint, stack, "", frame, last_terminal)
-        return RecognitionSnapshot(
-            key=key,
-            terminals=self._recognition_accepts(stack),
-            lexical_junction=junction,
-            _grammar_fingerprint=self._fingerprint,
-            _state_stack=stack,
-            _frame=frame,
-            _last_terminal=last_terminal,
-        )
-
-    def recognition_state(self) -> RecognitionSnapshot | None:
-        """Return the exact tree-free recognition state, or ``None`` if dirty."""
-        if self._ip is None or self._pending_tail().strip():
-            self.recognition_unsupported += 1
-            return None
-        try:
-            stack = tuple(int(state) for state in self._ip.parser_state.state_stack)
-            last_terminal = self._fed_tokens[-1][0] if self._fed_tokens else None
-            snapshot = self._make_recognition_snapshot(
-                stack,
-                tuple(self._frame) if self._frame is not None else None,
-                last_terminal,
-            )
-        except (TimeoutError, KeyboardInterrupt):
-            raise
-        except Exception:
-            self.recognition_unsupported += 1
-            return None
-        self.recognition_snapshots += 1
-        return snapshot
-
-    def recognition_terminals(
-        self, snapshot: RecognitionSnapshot | None = None
-    ) -> frozenset[str]:
-        """Read exact terminals from an immutable recognition snapshot."""
-        state = snapshot if snapshot is not None else self.recognition_state()
-        if state is None or state._grammar_fingerprint != self._fingerprint:
-            return frozenset()
-        return state.terminals
-
-    def recognition_deterministic_next(
-        self, snapshot: RecognitionSnapshot
-    ) -> str | None:
-        """Return the exact forced structural text for a tree-free snapshot."""
-        if snapshot._grammar_fingerprint != self._fingerprint:
-            return None
-        ignorable = frozenset({"$END", "WS_INLINE", "COMMENT", "_NL"})
-        meaningful = snapshot.terminals - ignorable
-        if len(meaningful) != 1:
-            return None
-        term = next(iter(meaningful))
-        if term in _BROAD:
-            return None
-        return _TERM_TO_TEXT.get(term)
-
-    def recognition_from_text(self, prefix: str) -> RecognitionSnapshot | None:
-        """Build the exact callback-free recognition state for source text."""
-        try:
-            tokens, _trimmed = self._lex_tokens_report(prefix)
-            if tokens is None:
-                return None
-            cursor = self._parser.parse_interactive()
-            base = cursor.parser_state
-            conf = _shallow_copy(base.parse_conf)
-            conf.callbacks = {}
-            state = type(base)(
-                conf,
-                base.lexer,
-                list(base.state_stack),
-                [None] * (len(base.state_stack) - 1),
-            )
-            last_terminal = None
-            for token in tokens:
-                state.feed_token(token)
-                last_terminal = str(token.type)
-            snapshot = self._make_recognition_snapshot(
-                tuple(int(item) for item in state.state_stack),
-                None,
-                last_terminal,
-            )
-        except (TimeoutError, KeyboardInterrupt):
-            raise
-        except Exception:
-            self.recognition_unsupported += 1
-            return None
-        self.recognition_snapshots += 1
-        return snapshot
-
-    def _recognition_feed_terminal(
-        self,
-        snapshot: RecognitionSnapshot,
-        terminal: str,
-    ) -> RecognitionAdvance:
-        """Feed one verified terminal against a stack-only parser state."""
-        assert self._ip is not None
-        base_conf = self._ip.parser_state.parse_conf
-        conf = _shallow_copy(base_conf)
-        conf.callbacks = {}
-        state = type(self._ip.parser_state)(
-            conf,
-            self._ip.parser_state.lexer,
-            list(snapshot._state_stack),
-            [None] * (len(snapshot._state_stack) - 1),
-        )
-        try:
-            state.feed_token(Token(terminal, ""))
-        except UnexpectedToken:
-            return RecognitionAdvance(RecognitionAdvanceStatus.REJECTED)
-        child = self._make_recognition_snapshot(
-            tuple(int(item) for item in state.state_stack),
-            None,
-            terminal,
-        )
-        return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, child)
-
-    def _recognition_advance_impl(
-        self,
-        snapshot: RecognitionSnapshot,
-        tokenizer,
-        token_id: int,
-    ) -> RecognitionAdvance:
-        mapping = self._direct_map(tokenizer)
-        if mapping is None or snapshot._grammar_fingerprint != self._fingerprint:
-            return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-        tid = int(token_id)
-        if tid == getattr(tokenizer, "eos_id", None):
-            if "$END" in snapshot.terminals:
-                return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, snapshot)
-            return RecognitionAdvance(RecognitionAdvanceStatus.REJECTED)
-        if tid in mapping.skip_ids:
-            return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, snapshot)
-        try:
-            kind = tokenizer.kind_of(tid)
-        except (TimeoutError, KeyboardInterrupt):
-            raise
-        except Exception:
-            return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-
-        from slm_training.models.dsl_tokenizer import TokenKind
-
-        if kind is TokenKind.SPECIAL:
-            return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-
-        frame = snapshot._frame
-        if frame is not None:
-            frame_kind, body = frame
-            if tid == mapping.lit_end:
-                if frame_kind == "num":
-                    if not body or not _NUMBER_COMPLETE.fullmatch(body):
-                        return RecognitionAdvance(RecognitionAdvanceStatus.REJECTED)
-                    return self._recognition_feed_terminal(snapshot, "NUMBER")
-                return self._recognition_feed_terminal(snapshot, "STRING")
-            if kind is not TokenKind.BYTE:
-                return RecognitionAdvance(RecognitionAdvanceStatus.REJECTED)
-            raw = str(tokenizer.id_to_token.get(tid, ""))
-            try:
-                char = chr(int(raw[2:], 16)) if raw.startswith("B:") else None
-            except ValueError:
-                char = None
-            if char is None:
-                return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-            if frame_kind == "num":
-                if not _NUMBER_PREFIX.fullmatch(body + char):
-                    return RecognitionAdvance(RecognitionAdvanceStatus.REJECTED)
-            elif char in {'"', "'", "\\", "\n", "\r"}:
-                return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-            child = self._make_recognition_snapshot(
-                snapshot._state_stack,
-                (frame_kind, body + char),
-                snapshot._last_terminal,
-            )
-            return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, child)
-
-        if tid == mapping.lit_num:
-            child = self._make_recognition_snapshot(
-                snapshot._state_stack, ("num", ""), snapshot._last_terminal
-            )
-            return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, child)
-        if mapping.lit_str is not None and tid == mapping.lit_str:
-            child = self._make_recognition_snapshot(
-                snapshot._state_stack, ("str", ""), snapshot._last_terminal
-            )
-            return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, child)
-        if tid == mapping.lit_end:
-            return RecognitionAdvance(RecognitionAdvanceStatus.REJECTED)
-
-        terminal = mapping.punct.get(tid)
-        if terminal is not None:
-            if terminal == "_NL" and snapshot._last_terminal == "_NL":
-                return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, snapshot)
-            return self._recognition_feed_terminal(snapshot, terminal)
-        terminal = mapping.bool.get(tid) or mapping.null.get(tid)
-        if terminal is not None:
-            return self._recognition_feed_terminal(snapshot, terminal)
-        if tid in mapping.str_lit_ids:
-            return self._recognition_feed_terminal(snapshot, "STRING")
-        terminal = mapping.kind_terminals.get(kind)
-        if terminal is not None:
-            return self._recognition_feed_terminal(snapshot, terminal)
-        if kind is TokenKind.MACRO:
-            slot = tokenizer.macro_slot_of(tid)
-            expansions = getattr(tokenizer, "macro_expansions", ())
-            if slot is None or slot >= len(expansions):
-                return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-            child = snapshot
-            for token_name in expansions[slot]:
-                sub_id = tokenizer.token_to_id.get(token_name)
-                if sub_id is None:
-                    return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-                result = self._recognition_advance_impl(child, tokenizer, sub_id)
-                if result.status is not RecognitionAdvanceStatus.ACCEPTED:
-                    return result
-                assert result.snapshot is not None
-                child = result.snapshot
-            return RecognitionAdvance(RecognitionAdvanceStatus.ACCEPTED, child)
-        return RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-
-    def recognition_advance(
-        self,
-        snapshot: RecognitionSnapshot,
-        tokenizer,
-        token_id: int,
-    ) -> RecognitionAdvance:
-        """Advance an immutable stack-only state without lexing or tree copies."""
-        self.recognition_advances += 1
-        try:
-            result = self._recognition_advance_impl(snapshot, tokenizer, int(token_id))
-        except (TimeoutError, KeyboardInterrupt):
-            raise
-        except Exception:
-            result = RecognitionAdvance(RecognitionAdvanceStatus.UNSUPPORTED)
-        if result.status is RecognitionAdvanceStatus.REJECTED:
-            self.recognition_rejections += 1
-        elif result.status is RecognitionAdvanceStatus.UNSUPPORTED:
-            self.recognition_unsupported += 1
-        return result
+        return (self._fingerprint, stack, tail, frame)
 
     # --- direct DSL-native token-id feeds --------------------------------
 
@@ -841,7 +523,13 @@ class OpenUIIncrementalEngine:
             # Isolate the value stack: star-rule reductions alias child
             # ``children`` lists, so the feed below can mutate trees this
             # snapshot must restore exactly (see ``copy()``).
-            self._ip_with_cloned_values() if self._ip is not None else None,
+            (
+                self._ip_control_copy()
+                if self._control_only
+                else self._ip_with_cloned_values()
+            )
+            if self._ip is not None
+            else None,
             self._fed_token_count,
             list(self._fed_tokens),
             list(self._fed_lark) if self._fed_lark is not None else None,
@@ -910,7 +598,13 @@ class OpenUIIncrementalEngine:
         self.full_sync_fallbacks += 1
         return self.advance_checked(token_surface_piece(tokenizer, token_id))
 
-    def feed_token_id(self, tokenizer, token_id: int) -> bool | None:
+    def feed_token_id(
+        self,
+        tokenizer,
+        token_id: int,
+        *,
+        _macro_seen: frozenset[int] = frozenset(),
+    ) -> bool | None:
         """Feed one DSL-native token id directly as its Lark terminal.
 
         Returns ``True`` when committed (terminal fed, frame advanced, or a
@@ -993,7 +687,11 @@ class OpenUIIncrementalEngine:
         if term is not None:
             text = str(tokenizer.id_to_token.get(tid, ""))
             piece = "\n" if text == "NL" else text
-            if term == "_NL" and self._fed_tokens and self._fed_tokens[-1][0] == "_NL":
+            if (
+                term == "_NL"
+                and self._fed_tokens
+                and self._fed_tokens[-1][0] == "_NL"
+            ):
                 # The canonical lexer maximal-munches consecutive newlines
                 # into one _NL lexeme (and decode_prefix collapses them), so
                 # a second adjacent NL token is a no-op — never a second
@@ -1021,6 +719,8 @@ class OpenUIIncrementalEngine:
 
         # --- macros: feed the verified fixed expansion iteratively ---
         if kind is TokenKind.MACRO:
+            if tid in _macro_seen:
+                return None
             slot = tokenizer.macro_slot_of(tid)
             expansions = getattr(tokenizer, "macro_expansions", ())
             if slot is None or slot >= len(expansions):
@@ -1032,7 +732,11 @@ class OpenUIIncrementalEngine:
                 if sub_id is None:
                     self._restore(snap)
                     return None
-                result = self.feed_token_id(tokenizer, sub_id)
+                result = self.feed_token_id(
+                    tokenizer,
+                    sub_id,
+                    _macro_seen=_macro_seen | {tid},
+                )
                 if result is not True:
                     self._restore(snap)
                     return result
@@ -1083,7 +787,29 @@ class OpenUIIncrementalEngine:
             _shallow_copy(interactive.lexer_thread),
         )
 
-    def copy(self) -> "OpenUIIncrementalEngine":
+    def _ip_control_copy(self):
+        """Copy parser control state without syntax trees or callbacks."""
+        from copy import copy as _shallow_copy
+
+        interactive = self._ip
+        parser_state = interactive.parser_state
+        parse_conf = _shallow_copy(parser_state.parse_conf)
+        parse_conf.callbacks = {}
+        # Reductions require one stack value per shifted state, but callbacks
+        # are disabled, so immutable ``None`` placeholders are sufficient.
+        cloned_state = type(parser_state)(
+            parse_conf,
+            parser_state.lexer,
+            _shallow_copy(parser_state.state_stack),
+            [None] * len(parser_state.value_stack),
+        )
+        return type(interactive)(
+            interactive.parser,
+            cloned_state,
+            _shallow_copy(interactive.lexer_thread),
+        )
+
+    def _copy(self, *, control_only: bool) -> "OpenUIIncrementalEngine":
         """Cheap structural fork: share parser/lexer, copy parser state.
 
         The returned engine is synced to the same prefix as this one, so a
@@ -1101,10 +827,11 @@ class OpenUIIncrementalEngine:
         fork._prefix = self._prefix
         fork._accepts = self._accepts
         fork._ip = (
-            # Isolate the value stack (see ``_ip_with_cloned_values``): Lark's
-            # star-rule callback aliases child-tree ``children`` lists, so
-            # real feeds on this fork must not mutate trees the source holds.
-            self._ip_with_cloned_values() if self._ip is not None else None
+            self._ip_control_copy()
+            if control_only and self._ip is not None
+            else self._ip_with_cloned_values()
+            if self._ip is not None
+            else None
         )
         fork._fed_token_count = self._fed_token_count
         fork._fed_tokens = list(self._fed_tokens)
@@ -1123,13 +850,16 @@ class OpenUIIncrementalEngine:
         fork.full_sync_fallbacks = 0
         fork.full_prefix_lex_bytes = 0
         fork.parser_forks = 0
-        fork.recognition_snapshots = 0
-        fork.recognition_advances = 0
-        fork.recognition_rejections = 0
-        fork.recognition_unsupported = 0
-        fork.recognition_value_tree_clones = 0
-        fork.recognition_full_prefix_lex_bytes = 0
+        fork._control_only = bool(control_only)
         return fork
+
+    def copy(self) -> "OpenUIIncrementalEngine":
+        """Fork parser state, preserving its semantic/control-only mode."""
+        return self._copy(control_only=self._control_only)
+
+    def copy_control(self) -> "OpenUIIncrementalEngine":
+        """Fork only LALR control state; semantic authority lives elsewhere."""
+        return self._copy(control_only=True)
 
     def probe_chunk(self, chunk: str) -> bool | None:
         """

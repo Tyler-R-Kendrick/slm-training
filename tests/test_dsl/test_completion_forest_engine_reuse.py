@@ -33,12 +33,11 @@ def test_engine_copy_shares_position_not_parser_state() -> None:
     assert engine.set_prefix("root =")
     fork = engine.copy()
     # The fork is synced to the same prefix and sees the same accepts…
-    assert fork.next_terminals() == engine.next_terminals()
+    parent_accepts = engine.next_terminals()
+    assert fork.next_terminals() == parent_accepts
     # …but advances independently of the original.
     assert fork.advance("TextContent")
-    assert fork.next_terminals() != engine.next_terminals() or not engine.advance(
-        "TextContent"
-    )
+    assert engine.next_terminals() == parent_accepts
 
 
 def test_forked_engine_forest_equals_fresh_forest() -> None:

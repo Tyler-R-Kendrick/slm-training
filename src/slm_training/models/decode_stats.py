@@ -42,8 +42,6 @@ class DecodeStats:
     compiler_prefill_batches: int = 0
     compiler_prefill_states: int = 0
     compiler_prefill_tokens: int = 0
-    compiler_persistent_sessions: int = 0
-    compiler_batch_forwards: int = 0
     # SLM-293: inventory is a live factor bias, so causal-use controls need
     # the same eligible-position/argmax accounting as the other factor heads.
     component_inventory_applications: int = 0
@@ -71,6 +69,12 @@ class DecodeStats:
     root_reference_arity_choice_changes: int = 0
     root_reference_identity_applications: int = 0
     root_reference_identity_choice_changes: int = 0
+    slot_alias_unique_applications: int = 0
+    slot_alias_unique_choice_changes: int = 0
+    required_slot_array_completion_applications: int = 0
+    required_slot_array_completion_choice_changes: int = 0
+    required_slot_root_completion_applications: int = 0
+    required_slot_root_completion_choice_changes: int = 0
     component_edge_applications: int = 0
     component_edge_choice_changes: int = 0
     binder_component_plan_applications: int = 0
@@ -100,9 +104,18 @@ class DecodeStats:
     choice_vocab_candidates_avoided: int = 0
     choice_completion_cache_hits: int = 0
     choice_completion_cache_misses: int = 0
-    # Request-local packed completion kernel.  These stay zero for non-native
-    # tokenizers and every decode path that does not ask the pack for a strict
-    # finite completion domain.
+    choice_schema_intern_hits: int = 0
+    choice_schema_intern_misses: int = 0
+    choice_distance_cache_hits: int = 0
+    choice_distance_cache_misses: int = 0
+    choice_distance_cache_evictions: int = 0
+    choice_distance_cache_peak_entries: int = 0
+    choice_clone_count: int = 0
+    choice_frame_cow_copies: int = 0
+    # Packed grammar-completion kernel.  These counters are request-local
+    # deltas folded from CompletionSession snapshots; they must never be
+    # assigned from a cumulative snapshot or repeated domain queries would
+    # double count prior work.
     completion_session_starts: int = 0
     completion_state_intern_hits: int = 0
     completion_state_intern_misses: int = 0
@@ -114,8 +127,6 @@ class DecodeStats:
     completion_domain_cache_misses: int = 0
     completion_reachability_cache_hits: int = 0
     completion_reachability_cache_misses: int = 0
-    completion_witness_cache_hits: int = 0
-    completion_witness_cache_misses: int = 0
     completion_witness_states_expanded: int = 0
     completion_forced_closure_hits: int = 0
     completion_forced_closure_tokens: int = 0
@@ -125,16 +136,8 @@ class DecodeStats:
     completion_parser_forks: int = 0
     completion_candidate_engine_allocations: int = 0
     completion_scope_reference_scans_avoided: int = 0
-    completion_result_cache_hits: int = 0
-    completion_result_cache_misses: int = 0
-    completion_transition_rows_built: int = 0
-    completion_transition_row_lookups: int = 0
-    completion_transition_row_hits: int = 0
-    completion_transition_row_misses: int = 0
-    completion_semantic_masks_applied: int = 0
-    completion_edge_replays: int = 0
-    completion_value_tree_clones: int = 0
-    completion_ast_bridge_calls: int = 0
+    completion_shared_domain_hits: int = 0
+    completion_shared_domain_misses: int = 0
     trie_nodes: int = 0
     restricted_projections: int = 0
     full_projections: int = 0
@@ -198,9 +201,6 @@ class DecodeStats:
     solver_expanded_nodes: int = 0
     solver_verifier_calls: int = 0
     solver_certificate_replay_failures: int = 0
-    solver_successor_cache_hits: int = 0
-    solver_successor_cache_misses: int = 0
-    solver_successor_expansions: int = 0
     solver_terminal_status: str = ""
     constrained_dead_ends: int = 0
     constrained_dead_end_last_position: int = -1
@@ -285,6 +285,52 @@ def get_active_stats() -> DecodeStats | None:
     return _ACTIVE
 
 
+_COMPLETION_COUNTER_FIELDS = {
+    "session_starts": "completion_session_starts",
+    "state_intern_hits": "completion_state_intern_hits",
+    "state_intern_misses": "completion_state_intern_misses",
+    "unique_states": "completion_unique_states",
+    "edges_built": "completion_edges_built",
+    "transition_cache_hits": "completion_transition_cache_hits",
+    "transition_cache_misses": "completion_transition_cache_misses",
+    "domain_cache_hits": "completion_domain_cache_hits",
+    "domain_cache_misses": "completion_domain_cache_misses",
+    "reachability_cache_hits": "completion_reachability_cache_hits",
+    "reachability_cache_misses": "completion_reachability_cache_misses",
+    "witness_states_expanded": "completion_witness_states_expanded",
+    "forced_closure_hits": "completion_forced_closure_hits",
+    "forced_closure_tokens": "completion_forced_closure_tokens",
+    "direct_terminal_feeds": "completion_direct_terminal_feeds",
+    "full_sync_fallbacks": "completion_full_sync_fallbacks",
+    "full_prefix_lex_bytes": "completion_full_prefix_lex_bytes",
+    "parser_forks": "completion_parser_forks",
+    "candidate_engine_allocations": "completion_candidate_engine_allocations",
+    "scope_reference_scans_avoided": "completion_scope_reference_scans_avoided",
+}
+
+
+def collect_completion_session_delta(
+    session: Any,
+    previous: dict[str, int] | None = None,
+    *,
+    stats: DecodeStats | None = None,
+) -> dict[str, int]:
+    """Fold new request-local completion work into a decode collector."""
+    current = {
+        str(key): int(value)
+        for key, value in dict(session.stats()).items()
+        if isinstance(value, (int, float))
+    }
+    bucket = stats if stats is not None else get_active_stats()
+    if bucket is not None:
+        before = previous or {}
+        for counter, field_name in _COMPLETION_COUNTER_FIELDS.items():
+            delta = current.get(counter, 0) - int(before.get(counter, 0))
+            if delta > 0:
+                setattr(bucket, field_name, int(getattr(bucket, field_name)) + delta)
+    return current
+
+
 def set_active_stats(stats: DecodeStats | None) -> DecodeStats | None:
     global _ACTIVE
     prev = _ACTIVE
@@ -338,8 +384,6 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_prefill_batches",
         "compiler_prefill_states",
         "compiler_prefill_tokens",
-        "compiler_persistent_sessions",
-        "compiler_batch_forwards",
         "component_inventory_applications",
         "component_inventory_choice_changes",
         "component_plan_applications",
@@ -362,6 +406,12 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "root_reference_arity_choice_changes",
         "root_reference_identity_applications",
         "root_reference_identity_choice_changes",
+        "slot_alias_unique_applications",
+        "slot_alias_unique_choice_changes",
+        "required_slot_array_completion_applications",
+        "required_slot_array_completion_choice_changes",
+        "required_slot_root_completion_applications",
+        "required_slot_root_completion_choice_changes",
         "component_edge_applications",
         "component_edge_choice_changes",
         "binder_component_plan_applications",
@@ -386,6 +436,14 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "choice_vocab_candidates_avoided",
         "choice_completion_cache_hits",
         "choice_completion_cache_misses",
+        "choice_schema_intern_hits",
+        "choice_schema_intern_misses",
+        "choice_distance_cache_hits",
+        "choice_distance_cache_misses",
+        "choice_distance_cache_evictions",
+        "choice_distance_cache_peak_entries",
+        "choice_clone_count",
+        "choice_frame_cow_copies",
         "completion_session_starts",
         "completion_state_intern_hits",
         "completion_state_intern_misses",
@@ -397,8 +455,6 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "completion_domain_cache_misses",
         "completion_reachability_cache_hits",
         "completion_reachability_cache_misses",
-        "completion_witness_cache_hits",
-        "completion_witness_cache_misses",
         "completion_witness_states_expanded",
         "completion_forced_closure_hits",
         "completion_forced_closure_tokens",
@@ -408,16 +464,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "completion_parser_forks",
         "completion_candidate_engine_allocations",
         "completion_scope_reference_scans_avoided",
-        "completion_result_cache_hits",
-        "completion_result_cache_misses",
-        "completion_transition_rows_built",
-        "completion_transition_row_lookups",
-        "completion_transition_row_hits",
-        "completion_transition_row_misses",
-        "completion_semantic_masks_applied",
-        "completion_edge_replays",
-        "completion_value_tree_clones",
-        "completion_ast_bridge_calls",
+        "completion_shared_domain_hits",
+        "completion_shared_domain_misses",
         "trie_nodes",
         "restricted_projections",
         "full_projections",
@@ -477,9 +525,6 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "solver_expanded_nodes",
         "solver_verifier_calls",
         "solver_certificate_replay_failures",
-        "solver_successor_cache_hits",
-        "solver_successor_cache_misses",
-        "solver_successor_expansions",
     ]
     out: dict[str, Any] = {"n": len(rows)}
     # Timings always report (a 0ms phase is a measurement); feature counters
@@ -522,6 +567,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
 __all__ = [
     "DecodeStats",
     "aggregate_stats",
+    "collect_completion_session_delta",
     "collect_decode_stats",
     "get_active_stats",
     "set_active_stats",

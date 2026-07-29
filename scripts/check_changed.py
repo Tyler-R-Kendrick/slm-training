@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -16,7 +18,7 @@ from scripts.verify_agent_surfaces import OBLIGATIONS
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from slm_training.levers import CHANGED_TEST_WORKERS  # noqa: E402
+CHANGED_TEST_WORKERS: int | None = None
 
 
 # Editing any instruction surface re-certifies the whole parity matrix; the
@@ -245,7 +247,14 @@ def hook_test_targets(paths: list[str]) -> list[str]:
     return select_changed_tests(paths)
 
 
-def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = False) -> int:
+def check(
+    paths: list[str],
+    *,
+    changed_tests_only: bool = False,
+    staged: bool = False,
+    test_shard_index: int = 0,
+    test_shard_count: int = 1,
+) -> int:
     policy_errors = validate_repository()
     if policy_errors:
         print("repo-policy: failed")
@@ -274,8 +283,12 @@ def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = 
         return 1
     if python_paths and _run([sys.executable, "-m", "py_compile", *python_paths]):
         return 1
-    if tests and changed_tests_only and len(tests) > 1:
-        if _run_changed_tests_parallel(tests):
+    if tests and changed_tests_only and (len(tests) > 1 or test_shard_count > 1):
+        if _run_changed_tests_parallel(
+            tests,
+            shard_index=test_shard_index,
+            shard_count=test_shard_count,
+        ):
             return 1
     elif tests and _run([sys.executable, "-m", "pytest", "-q", *tests]):
         return 1
@@ -302,15 +315,36 @@ def _remove_nested_targets(targets: set[str]) -> list[str]:
 
 def _run(command: list[str]) -> int:
     print("+", " ".join(command))
-    return subprocess.run(command, cwd=ROOT, check=False).returncode
+    env = _pytest_worker_env() if command[1:4] == ["-m", "pytest", "-q"] else None
+    return subprocess.run(command, cwd=ROOT, check=False, env=env).returncode
 
 
-def _run_changed_tests_parallel(tests: list[str]) -> int:
+def _pytest_worker_env() -> dict[str, str]:
+    """Keep parallel pytest workers from oversubscribing CI CPU threads."""
+    env = os.environ.copy()
+    for variable in (
+        "OMP_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+    ):
+        env[variable] = "1"
+    return env
+
+
+def _run_changed_tests_parallel(
+    tests: list[str],
+    *,
+    shard_index: int = 0,
+    shard_count: int = 1,
+) -> int:
+    workers = _changed_test_workers()
     collected = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", *tests],
         cwd=ROOT,
         check=False,
         capture_output=True,
+        env=_pytest_worker_env(),
         text=True,
     )
     if collected.returncode:
@@ -318,21 +352,54 @@ def _run_changed_tests_parallel(tests: list[str]) -> int:
         print(collected.stderr, end="", file=sys.stderr)
         return collected.returncode
     nodes = [line for line in collected.stdout.splitlines() if "::" in line]
+    nodes = _shard_test_nodes(nodes, shard_count)[shard_index]
+    print(
+        f"changed-check: test shard {shard_index + 1}/{shard_count} "
+        f"owns {len(nodes)} node(s)"
+    )
+    if not nodes:
+        return 0
     if len(nodes) < 2:
-        return _run([sys.executable, "-m", "pytest", "-q", *tests])
-    batches = [
-        nodes[index::CHANGED_TEST_WORKERS]
-        for index in range(CHANGED_TEST_WORKERS)
-    ]
+        return _run([sys.executable, "-m", "pytest", "-q", *nodes])
+    # More batches than workers let the executor steal remaining work when
+    # individual test costs differ sharply despite equal node counts.
+    batch_count = min(len(nodes), workers * 2)
+    batches = _shard_test_nodes(nodes, batch_count)
     commands = [
         [sys.executable, "-m", "pytest", "-q", *batch]
         for batch in batches
         if batch
     ]
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=CHANGED_TEST_WORKERS
+        max_workers=workers
     ) as executor:
         return int(any(executor.map(_run, commands)))
+
+
+def _changed_test_workers() -> int:
+    if CHANGED_TEST_WORKERS is not None:
+        return CHANGED_TEST_WORKERS
+    from slm_training.levers import CHANGED_TEST_WORKERS as configured_workers
+
+    return configured_workers
+
+
+def _shard_test_nodes(nodes: list[str], workers: int) -> list[list[str]]:
+    """Hash-shard each test file independently so slow suites stay balanced."""
+    batches: list[list[str]] = [[] for _ in range(workers)]
+    by_file: dict[str, list[str]] = {}
+    for node in nodes:
+        by_file.setdefault(node.split("::", 1)[0], []).append(node)
+    offset = 0
+    for path in sorted(by_file):
+        group = sorted(
+            by_file[path],
+            key=lambda node: hashlib.sha256(node.encode()).digest(),
+        )
+        for index, node in enumerate(group):
+            batches[(offset + index) % workers].append(node)
+        offset = (offset + len(group)) % workers
+    return batches
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -347,6 +414,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="prefer explicitly changed test files; intended for latency-bounded hooks",
     )
+    parser.add_argument(
+        "--test-shard-index",
+        type=int,
+        default=0,
+        help="zero-based changed-test CI shard index",
+    )
+    parser.add_argument(
+        "--test-shard-count",
+        type=int,
+        default=1,
+        help="number of disjoint changed-test CI shards",
+    )
     parser.add_argument("--list", action="store_true", help="print selected tests without running")
     parser.add_argument(
         "--hook",
@@ -354,6 +433,10 @@ def main(argv: list[str] | None = None) -> int:
         help="emit an agent Stop-hook decision instead of regular output",
     )
     args = parser.parse_args(argv)
+    if args.test_shard_count < 1:
+        parser.error("--test-shard-count must be positive")
+    if not 0 <= args.test_shard_index < args.test_shard_count:
+        parser.error("--test-shard-index must be within --test-shard-count")
     paths = changed_files(staged=args.staged, base_ref=args.base_ref)
     if args.list:
         selected = (
@@ -375,7 +458,13 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(json.dumps({"decision": "allow"}))
         return 0
-    return check(paths, changed_tests_only=args.changed_tests_only, staged=args.staged)
+    return check(
+        paths,
+        changed_tests_only=args.changed_tests_only,
+        staged=args.staged,
+        test_shard_index=args.test_shard_index,
+        test_shard_count=args.test_shard_count,
+    )
 
 
 if __name__ == "__main__":

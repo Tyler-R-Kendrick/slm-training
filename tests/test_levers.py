@@ -17,6 +17,7 @@ from slm_training.levers import (
     VERCEL_FUNCTION_INCLUDE_FILES,
     MAX_RUN_SECONDS,
     TRAINED_DECODE_REQUIREMENTS,
+    lever_configuration_errors,
     lever_catalog,
     missing_lever_companions,
     untrained_decode_levers,
@@ -30,7 +31,7 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert "docs/design/*.json" in VERCEL_FUNCTION_INCLUDE_FILES
     assert "docs/design/**" not in VERCEL_FUNCTION_INCLUDE_FILES
     assert "docs/MODEL_CARD.md" in VERCEL_FUNCTION_INCLUDE_FILES
-    assert CHANGED_TEST_WORKERS > 0
+    assert CHANGED_TEST_WORKERS == 4
 
 
 def test_catalog_discovers_build_levers_and_context_differences() -> None:
@@ -106,7 +107,14 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     ]
     assert catalog["root_reference_identity_decode_weight"][
         "supported_configurations"
-    ] == [{"model_name": "twotower", "output_tokenizer": "choice"}]
+    ] == [
+        {"model_name": "twotower", "output_tokenizer": "choice"},
+        {
+            "model_name": "twotower",
+            "output_tokenizer": "lexer",
+            "compiler_decode_mode": ["restricted", "tree"],
+        },
+    ]
 
 
 def test_encoder_ops_conditioning_is_default_off_and_non_weakening() -> None:
@@ -190,8 +198,8 @@ def test_runtime_companion_dependencies_are_discoverable_and_fail_closed() -> No
     ]
 
 
-def test_semantic_role_recipe_requires_visible_slot_inventory() -> None:
-    with pytest.raises(ValueError, match="slot_contract_in_context"):
+def test_semantic_role_decode_is_prohibited() -> None:
+    with pytest.raises(ValueError, match="prohibited enabled levers"):
         ModelBuildConfig(
             train_dir=Path("outputs/data/train"),
             output_tokenizer="lexer",
@@ -202,13 +210,16 @@ def test_semantic_role_recipe_requires_visible_slot_inventory() -> None:
             semantic_role_contract_in_context=True,
         )
 
-    ModelBuildConfig(
-        train_dir=Path("outputs/data/train"),
-        output_tokenizer="lexer",
-        compiler_decode_mode="tree",
-        semantic_role_decode_weight=2.0,
-        slot_contract_in_context=True,
-        slot_contract_constrained_decode=True,
-        honest_slot_contract=True,
-        semantic_role_contract_in_context=True,
-    )
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "namespace_augment",
+        "prompt_semantic_role_contract",
+        "semantic_role_contract_in_context",
+        "semantic_role_schema_candidates",
+    ],
+)
+def test_prohibited_boolean_levers_are_rejected(field: str) -> None:
+    errors = lever_configuration_errors(SimpleNamespace(**{field: True}))
+    assert errors == (f"prohibited enabled levers: {field}",)

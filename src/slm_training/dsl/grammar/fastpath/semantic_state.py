@@ -32,13 +32,11 @@ proves prefix-by-prefix parity against them.  ScopeEnv
 (``dsl/scope_env.py``) remains the semantic authority; nothing here changes
 its serialized form or fingerprints.
 
-Storage policy: ``_ARENA`` and the tokenizer-ordinal tables are process-global
-by necessity (identical prefixes share interned states across requests) but
-bounded — ``_ARENA`` flushes at ``_ARENA_CAP`` and the strong-reference
-ordinal table flushes at ``_TOKENIZER_ORDINALS_CAP``.  Eviction only loses
-identity reuse: interned states are frozen value objects compared by
-equality, and ordinals come from a monotonic counter that is never reset or
-reused, so a recycled ordinal can never false-merge two tokenizers.
+Storage policy: production callers own a request-local :class:`SemanticArena`.
+Dropping the completion session therefore releases every prefix state at
+once.  The compatibility functions use a weak-value arena: live callers still
+receive identity convergence, but arbitrary prefixes are never retained by a
+process-global strong-reference cache.
 """
 
 from __future__ import annotations
@@ -52,8 +50,8 @@ __all__ = [
     "ArrayFrame",
     "BraceFrame",
     "CallFrame",
-    "SchemaCursor",
     "SemanticState",
+    "SemanticArena",
     "active_array_direct_references",
     "active_array_is_empty",
     "active_array_position",
@@ -80,22 +78,70 @@ __all__ = [
     "references_resolved",
     "root_is_declared",
     "schema_array_item_components",
-    "schema_cursor",
     "schema_call_arity",
     "schema_slot_components",
     "schema_slot_name",
     "schema_slot_type",
-    "generated_ast_is_complete",
     "scope_counters",
     "unresolved_slots",
     "used_sym_mask",
 ]
 
-_ARENA: dict["SemanticState", "SemanticState"] = {}
-# Full-flush bound (same discipline as ``engine._ACCEPTS_MEMO_CAP``): interned
-# states are frozen value objects, so eviction costs identity reuse only —
-# never equality, never semantics.
-_ARENA_CAP = 65536
+class SemanticArena:
+    """Request-owned interner for immutable semantic states."""
+
+    def __init__(self) -> None:
+        self._states: dict[SemanticState, SemanticState] = {}
+
+    def intern(self, state: SemanticState) -> SemanticState:
+        cached = self._states.get(state)
+        if cached is not None:
+            return cached
+        self._states[state] = state
+        return state
+
+    def clear(self) -> None:
+        self._states.clear()
+
+    def __len__(self) -> int:
+        return len(self._states)
+
+
+# Compatibility callers which do not yet own a request session still get
+# value interning while a state is live, without retaining arbitrary prefixes.
+_WEAK_ARENA: dict[int, list[weakref.ReferenceType[SemanticState]]] = {}
+
+
+def _weak_intern(state: SemanticState) -> SemanticState:
+    state_hash = hash(state)
+    bucket = _WEAK_ARENA.get(state_hash, [])
+    live: list[weakref.ReferenceType[SemanticState]] = []
+    for reference in bucket:
+        cached = reference()
+        if cached is None:
+            continue
+        live.append(reference)
+        if cached == state:
+            if len(live) != len(bucket):
+                _WEAK_ARENA[state_hash] = live
+            return cached
+
+    def _drop(
+        dead: weakref.ReferenceType[SemanticState], *, key: int = state_hash
+    ) -> None:
+        remaining = [
+            reference
+            for reference in _WEAK_ARENA.get(key, ())
+            if reference is not dead and reference() is not None
+        ]
+        if remaining:
+            _WEAK_ARENA[key] = remaining
+        else:
+            _WEAK_ARENA.pop(key, None)
+
+    live.append(weakref.ref(state, _drop))
+    _WEAK_ARENA[state_hash] = live
+    return state
 
 # Process-wide scope instrumentation (Phase 6 aggregates across modules).
 # ``scope_bitset_updates``: bitset mutations applied by ``advance`` (binder
@@ -112,7 +158,6 @@ SCOPE_COUNTERS: dict[str, int] = {
 def scope_counters() -> dict[str, int]:
     """Snapshot of the process-wide scope counters."""
     return dict(SCOPE_COUNTERS)
-
 
 # Request-local tokenizer ordinals keep states from different tokenizers from
 # ever merging while staying stable within one build.  Ordinals come from a
@@ -188,17 +233,6 @@ Frame = CallFrame | ArrayFrame | BraceFrame
 
 
 @dataclass(frozen=True)
-class SchemaCursor:
-    """Parser-parity schema facts without retaining Lark value trees."""
-
-    active_call: tuple[str, int, int] | None
-    active_array_empty: bool
-    active_array_position: str | None
-    active_list_occupancy: str | None
-    completed_strings: tuple[tuple[str, int, str], ...]
-
-
-@dataclass(frozen=True)
 class SemanticState:
     """Immutable, interned semantic summary of an OpenUI token prefix."""
 
@@ -224,31 +258,27 @@ class SemanticState:
     opaque_bind: bool = False  # a slot-less bind token was seen (conservative)
     decl_order: tuple[int, ...] = ()  # binder slots, first-declaration order
     ref_order: tuple[int, ...] = ()  # binder slots, first-reference order
-    # Lark delays reducing a trailing run of RPARs until lookahead arrives.
-    # Preserve the pre-run schema view so the tree-free cursor stays exactly
-    # aligned with the reference parser's value stack.
-    schema_lag_stack: tuple[Frame, ...] = ()
-    schema_lag_completed_str: tuple[tuple[str, int, str], ...] = ()
-    schema_lagging: bool = False
 
     def __post_init__(self) -> None:
         if len(self.edges) != len(self.reachable):
             raise ValueError("edges and reachable must have equal length")
 
 
-def _intern(state: SemanticState) -> SemanticState:
-    cached = _ARENA.get(state)
-    if cached is None:
-        if len(_ARENA) >= _ARENA_CAP:
-            _ARENA.clear()
-        _ARENA[state] = state
-        return state
-    return cached
+def _intern(
+    state: SemanticState, arena: SemanticArena | None = None
+) -> SemanticState:
+    if arena is not None:
+        return arena.intern(state)
+    return _weak_intern(state)
 
 
-def initial_state(tokenizer: Any) -> SemanticState:
+def initial_state(
+    tokenizer: Any, *, arena: SemanticArena | None = None
+) -> SemanticState:
     """Return the interned empty-prefix state bound to ``tokenizer``."""
-    return _intern(SemanticState(tokenizer_key=_tokenizer_key(tokenizer)))
+    return _intern(
+        SemanticState(tokenizer_key=_tokenizer_key(tokenizer)), arena
+    )
 
 
 def _kind_of(tokenizer: Any, token_id: int) -> str:
@@ -261,6 +291,33 @@ def _kind_of(tokenizer: Any, token_id: int) -> str:
         except Exception:  # noqa: BLE001
             return ""
     return ""
+
+
+def _expanded_macro_ids(
+    tokenizer: Any, token_id: int, seen: frozenset[int]
+) -> tuple[int, ...] | None:
+    """Resolve a macro atomically; malformed or recursive tables have no authority."""
+    tid = int(token_id)
+    if tid in seen:
+        return None
+    slot_of = getattr(tokenizer, "macro_slot_of", None)
+    slot = slot_of(tid) if callable(slot_of) else None
+    expansions = getattr(tokenizer, "macro_expansions", ())
+    if slot is None or slot >= len(expansions):
+        return None
+    resolved: list[int] = []
+    for name in expansions[slot]:
+        sub_id = getattr(tokenizer, "token_to_id", {}).get(name)
+        if sub_id is None:
+            return None
+        if _kind_of(tokenizer, int(sub_id)) == "macro":
+            nested = _expanded_macro_ids(tokenizer, int(sub_id), seen | {tid})
+            if nested is None:
+                return None
+            resolved.extend(nested)
+        else:
+            resolved.append(int(sub_id))
+    return tuple(resolved)
 
 
 def _extend(bits: tuple[int, ...], size: int) -> tuple[int, ...]:
@@ -319,7 +376,9 @@ def _intersect_requirement(
     prior = merged.get(slot)
     merged[slot] = allowed if prior is None else prior & allowed
     return tuple(
-        (s, tuple(sorted(names))) for s, names in sorted(merged.items()) if names
+        (s, tuple(sorted(names)))
+        for s, names in sorted(merged.items())
+        if names
     )
 
 
@@ -342,33 +401,6 @@ def _mark_started(stack: tuple[Frame, ...]) -> tuple[Frame, ...]:
     else:
         top = replace(top, started=True)
     return (*stack[:-1], top)
-
-
-def _finish(previous: SemanticState, current: SemanticState, raw: str) -> SemanticState:
-    """Attach the exact trailing-RPAR schema lag before interning."""
-    if raw == ")":
-        lag_stack = (
-            previous.schema_lag_stack if previous.schema_lagging else previous.stack
-        )
-        lag_completed = (
-            previous.schema_lag_completed_str
-            if previous.schema_lagging
-            else previous.completed_str
-        )
-        current = replace(
-            current,
-            schema_lag_stack=lag_stack,
-            schema_lag_completed_str=lag_completed,
-            schema_lagging=True,
-        )
-    else:
-        current = replace(
-            current,
-            schema_lag_stack=current.stack,
-            schema_lag_completed_str=current.completed_str,
-            schema_lagging=False,
-        )
-    return previous if current == previous else _intern(current)
 
 
 def _context_components(
@@ -394,11 +426,7 @@ def _context_components(
     top = stack[-1] if stack else None
     if isinstance(top, ArrayFrame) and not top.started:
         items = value.get("items") or {}
-        return (
-            _schema_component_refs(items, schema)
-            if isinstance(items, dict)
-            else frozenset()
-        )
+        return _schema_component_refs(items, schema) if isinstance(items, dict) else frozenset()
     if value.get("type") == "array":
         return frozenset()
     return _schema_component_refs(value, schema)
@@ -409,6 +437,9 @@ def advance(
     token_id: int,
     tokenizer: Any,
     schema: dict[str, Any] | None = None,
+    *,
+    arena: SemanticArena | None = None,
+    _macro_seen: frozenset[int] = frozenset(),
 ) -> SemanticState:
     """Advance ``state`` by one token; pure, interned, no-op-stable.
 
@@ -420,6 +451,21 @@ def advance(
     tid = int(token_id)
     if state.tokenizer_key != _tokenizer_key(tokenizer):
         raise ValueError("semantic state is bound to a different tokenizer")
+    if _kind_of(tokenizer, tid) == "macro":
+        expanded = _expanded_macro_ids(tokenizer, tid, _macro_seen)
+        if expanded is None:
+            return state
+        current = state
+        for sub_id in expanded:
+            current = advance(
+                current,
+                int(sub_id),
+                tokenizer,
+                schema=schema,
+                arena=arena,
+                _macro_seen=_macro_seen | {tid},
+            )
+        return current
     specials = {
         int(getattr(tokenizer, name))
         for name in ("pad_id", "bos_id", "eos_id", "mask_id", "unk_id")
@@ -463,14 +509,10 @@ def advance(
             pass
         stack = _mark_started(stack)
         new = replace(
-            state,
-            literal_body=literal_body,
-            stack=stack,
-            schema_tracked=schema_tracked,
-            decl_order=decl_order,
-            ref_order=ref_order,
+            state, literal_body=literal_body, stack=stack, schema_tracked=schema_tracked,
+            decl_order=decl_order, ref_order=ref_order,
         )
-        return _finish(state, new, raw)
+        return state if new == state else _intern(new, arena)
 
     # Resolve a pending binder: ``bind =`` is a declaration head, anything
     # else makes the pending binder a reference at its use-site.
@@ -509,7 +551,7 @@ def advance(
             decl_order=decl_order,
             ref_order=ref_order,
         )
-        return _finish(state, new, raw)
+        return state if new == state else _intern(new, arena)
 
     # ``bind = <token>``: a component token certifies the declaration type.
     if expect_decl:
@@ -521,11 +563,19 @@ def advance(
         new = replace(
             state,
             active_slot=-1,
+            referenced_mask=referenced,
+            edges=edges,
+            reachable=reachable,
+            binder_types=binder_types,
+            pending_bind=pending_bind,
+            pending_allowed=pending_allowed,
+            expect_decl_component=expect_decl,
+            requirements=requirements,
             schema_tracked=schema_tracked,
             decl_order=decl_order,
             ref_order=ref_order,
         )
-        return _finish(state, new, raw)
+        return state if new == state else _intern(new, arena)
     if raw == "(":
         stack = _mark_started(stack)
         stack = (*stack, CallFrame(component=pending_component))
@@ -669,7 +719,7 @@ def advance(
         decl_order=decl_order,
         ref_order=ref_order,
     )
-    return _finish(state, new, raw)
+    return state if new == state else _intern(new, arena)
 
 
 # ---------------------------------------------------------------------------
@@ -712,9 +762,7 @@ def reference_slots(state: SemanticState) -> frozenset[int]:
 
 def unresolved_slots(state: SemanticState) -> frozenset[int]:
     """Referenced binder slots with no declaration yet."""
-    return frozenset(
-        _bits((state.referenced_mask | _pending_bit(state)) & ~state.declared_mask)
-    )
+    return frozenset(_bits((state.referenced_mask | _pending_bit(state)) & ~state.declared_mask))
 
 
 def references_resolved(state: SemanticState) -> bool:
@@ -734,15 +782,9 @@ def root_is_declared(state: SemanticState) -> bool:
     return bool(state.declared_mask & 1)
 
 
-def binder_scope(
-    state: SemanticState,
-) -> tuple[frozenset[int], frozenset[int], int | None]:
+def binder_scope(state: SemanticState) -> tuple[frozenset[int], frozenset[int], int | None]:
     """Reference-shaped (declarations, references, active) slot triple."""
-    return (
-        declaration_slots(state),
-        reference_slots(state),
-        active_declaration_slot(state),
-    )
+    return declaration_slots(state), reference_slots(state), active_declaration_slot(state)
 
 
 def binder_component_types(state: SemanticState) -> dict[int, str]:
@@ -753,9 +795,7 @@ def binder_component_types(state: SemanticState) -> dict[int, str]:
 def dependency_edges(state: SemanticState) -> dict[int, frozenset[int]]:
     """Direct declaration → reference edges (a trailing pending binder counts
     as a reference of the active declaration, matching the prefix scan)."""
-    edges = {
-        slot: frozenset(_bits(mask)) for slot, mask in enumerate(state.edges) if mask
-    }
+    edges = {slot: frozenset(_bits(mask)) for slot, mask in enumerate(state.edges) if mask}
     for slot in _bits(state.declared_mask):
         edges.setdefault(slot, frozenset())
     if state.pending_bind >= 0 and state.active_slot >= 0:
@@ -831,7 +871,17 @@ def active_array_position(state: SemanticState) -> str | None:
     Mirrors the reference: only arrays opened *after* the innermost open
     call's LPAR count — an array beneath a nested open call is not active.
     """
-    return _array_position(state.stack)
+    above: list[Frame] = []
+    for frame in reversed(state.stack):
+        if isinstance(frame, CallFrame):
+            break
+        above.append(frame)
+    else:
+        return None
+    array = next((f for f in above if isinstance(f, ArrayFrame)), None)
+    if array is None:
+        return None
+    return "item_start" if not array.started else "item_end"
 
 
 def active_list_occupancy(state: SemanticState) -> str | None:
@@ -840,47 +890,6 @@ def active_list_occupancy(state: SemanticState) -> str | None:
     if array is None:
         return None
     return "empty" if not array.started and array.separators == 0 else "populated"
-
-
-def _array_position(stack: tuple[Frame, ...]) -> str | None:
-    above: list[Frame] = []
-    for frame in reversed(stack):
-        if isinstance(frame, CallFrame):
-            break
-        above.append(frame)
-    else:
-        return None
-    array = next((frame for frame in above if isinstance(frame, ArrayFrame)), None)
-    if array is None:
-        return None
-    return "item_start" if not array.started else "item_end"
-
-
-def schema_cursor(state: SemanticState) -> SchemaCursor:
-    """Return the exact Lark-parity schema view for this token prefix."""
-    lag_stack = state.schema_lag_stack if state.schema_lagging else state.stack
-    lag_completed = (
-        state.schema_lag_completed_str if state.schema_lagging else state.completed_str
-    )
-    return SchemaCursor(
-        active_call=active_call(state),
-        active_array_empty=active_array_is_empty(state),
-        active_array_position=_array_position(lag_stack),
-        active_list_occupancy=active_list_occupancy(state),
-        completed_strings=lag_completed,
-    )
-
-
-def generated_ast_is_complete(state: SemanticState) -> bool:
-    """Tree-free structural completeness; grammar acceptance is checked apart."""
-    return bool(
-        root_is_declared(state)
-        and not state.stack
-        and state.pending_component is None
-        and state.pending_bind < 0
-        and not state.expect_decl_component
-        and not state.literal_kind
-    )
 
 
 def emitted_component_count(state: SemanticState) -> int:
@@ -956,9 +965,7 @@ def schema_slot_type(state: SemanticState, schema: dict[str, Any]) -> str | None
     return str(value.get("type")) if value.get("type") else None
 
 
-def schema_call_arity(
-    state: SemanticState, schema: dict[str, Any]
-) -> tuple[int, int, int, bool] | None:
+def schema_call_arity(state: SemanticState, schema: dict[str, Any]) -> tuple[int, int, int, bool] | None:
     """(required, maximum, supplied, current-slot started) for the live call."""
     call = active_call(state)
     if call is None:
@@ -969,15 +976,11 @@ def schema_call_arity(
     if not names:
         return None
     required = set(definition.get("required") or ())
-    minimum = max(
-        (names.index(name) + 1 for name in required if name in names), default=0
-    )
+    minimum = max((names.index(name) + 1 for name in required if name in names), default=0)
     return minimum, len(names), arg_count, arg_count > index
 
 
-def schema_slot_components(
-    state: SemanticState, schema: dict[str, Any]
-) -> frozenset[str]:
+def schema_slot_components(state: SemanticState, schema: dict[str, Any]) -> frozenset[str]:
     """Component types admitted directly by the active positional property."""
     from slm_training.dsl.grammar.fastpath.compiler_draft import (
         _schema_component_refs,
@@ -998,9 +1001,7 @@ def schema_slot_components(
     return _schema_component_refs(value, schema)
 
 
-def schema_array_item_components(
-    state: SemanticState, schema: dict[str, Any]
-) -> frozenset[str]:
+def schema_array_item_components(state: SemanticState, schema: dict[str, Any]) -> frozenset[str]:
     """Component types admitted by the active array property's items."""
     from slm_training.dsl.grammar.fastpath.compiler_draft import (
         _schema_component_refs,

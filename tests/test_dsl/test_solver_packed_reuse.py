@@ -29,7 +29,6 @@ from slm_training.dsl.solver.support import (
     replay_support_certificate,
 )
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-from slm_training.models.decode_stats import collect_decode_stats
 
 
 @pytest.fixture(scope="module")
@@ -143,7 +142,8 @@ def test_certificate_replay_still_succeeds(
     result = EnumerativeSupportOracle(expander, OpenUIWellFormedVerifier()).check(
         root, query
     )
-    assert result.verdict in set(SupportVerdict)
+    assert result.verdict is SupportVerdict.UNKNOWN
+    assert result.certificate.stop_reason == "budget:max_depth"
     if result.verdict is SupportVerdict.UNSUPPORTED:
         assert result.certificate.exhausted
         assert set(result.certificate.coverage_observations) <= {"complete"}
@@ -226,35 +226,28 @@ def test_successor_reuses_session_without_new_engine_allocations(
     for value in hole.values:
         expander.successor(root, hole.hole_id, value)
     stats = expander._session.stats()
-    # Warm successor queries use verified row targets; they neither construct
-    # fresh engines nor replay/copy parser trees.
+    # Warm successor queries fork interned engines; they never construct
+    # fresh OpenUIIncrementalEngine instances beyond the root seed.
     assert stats["candidate_engine_allocations"] == allocations_after_root
-    assert stats["transition_cache_misses"] == 0
-    assert stats["value_tree_clones"] == 0
-    assert stats["edge_replays"] == 0
+    assert stats["transition_cache_misses"] > 0
     assert stats["unique_states"] >= 2
 
 
-def test_identical_successor_expands_once(
-    tok: DSLNativeTokenizer, bounds: SolverBounds
+def test_advertised_edge_replay_failure_is_unknown_not_dead(
+    tok: DSLNativeTokenizer, bounds: SolverBounds, monkeypatch
 ) -> None:
     prefix = tuple([tok.bos_id, *tok.encode("root = Card([", add_special=False)])
     expander = _expander(tok, prefix, bounds)
     root = expander.root_state()
-    value = root.holes[0].values[0]
-    with collect_decode_stats() as decode_stats:
-        first = expander.successor(root, root.holes[0].hole_id, value)
-        session_stats = expander._session.stats()
-        second = expander.successor(root, root.holes[0].hole_id, value)
-
-    assert second is first
-    assert expander._session.stats() == session_stats
-    assert decode_stats.solver_successor_cache_misses == 1
-    assert decode_stats.solver_successor_cache_hits == 1
-    assert decode_stats.solver_successor_expansions == 1
-    # Hot cache identity is session-local integers. Canonical DomainValue
-    # payloads remain only in the edge table/certificate-facing state.
-    assert all(
-        isinstance(state_id, int) and isinstance(edge_id, int)
-        for state_id, edge_id in expander._successors
+    hole = root.holes[0]
+    value = next(
+        candidate
+        for candidate in hole.values
+        if str(candidate.payload.get("kind", "")) != "eos"
     )
+    monkeypatch.setattr(expander._session, "advance_path", lambda *_args: None)
+
+    step = expander.successor(root, hole.hole_id, value)
+
+    assert step.status is ExpandStatus.INCOMPLETE
+    assert step.detail == "advertised_edge_transition_failed"

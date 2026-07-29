@@ -1,0 +1,185 @@
+{
+  "schema_version": "agentv.trace.v1",
+  "artifact_id": "execution-trace-1ecdf8a1bfaba4bc9e2e",
+  "created_at": "2026-07-29T15:00:16.119Z",
+  "eval": {
+    "eval_path": "agentv-dir:///agentv/packed-completion-kernel.eval.jsonl",
+    "suite": "packed-completion-kernel.eval",
+    "test_id": "warm_zero_candidate_engine_allocations",
+    "target": "custom-task",
+    "source_target": "custom-task",
+    "attempt": 0,
+    "variant": null,
+    "run_id": "packed-completion-kernel",
+    "experiment": "packed-completion-kernel"
+  },
+  "projection_identity": {
+    "schema_version": "agentv.projection_identity.v1",
+    "id": "agentv-prj-3045febf70cc268ef5773608959345be",
+    "key": "agentv.projection_identity.v1:projection_format=execution_trace|projection_version=agentv.trace.v1|run_id=packed-completion-kernel|suite=packed-completion-kernel.eval|eval_path=agentv-dir%3A%2F%2F%2Fagentv%2Fpacked-completion-kernel.eval.jsonl|test_id=warm_zero_candidate_engine_allocations|target=custom-task|source_target=custom-task|attempt=0|variant=~|envelope_id=execution-trace-1ecdf8a1bfaba4bc9e2e|trace_id=275d050f379de209204d542b86101e3b|root_span_id=8de1b21c1cb5b986",
+    "dimensions": {
+      "run_id": "packed-completion-kernel",
+      "suite": "packed-completion-kernel.eval",
+      "eval_path": "agentv-dir:///agentv/packed-completion-kernel.eval.jsonl",
+      "test_id": "warm_zero_candidate_engine_allocations",
+      "target": "custom-task",
+      "source_target": "custom-task",
+      "attempt": 0,
+      "variant": null,
+      "envelope_id": "execution-trace-1ecdf8a1bfaba4bc9e2e",
+      "trace_id": "275d050f379de209204d542b86101e3b",
+      "root_span_id": "8de1b21c1cb5b986",
+      "projection_format": "execution_trace",
+      "projection_version": "agentv.trace.v1"
+    }
+  },
+  "export_metadata": {
+    "duplicate_policy": "update"
+  },
+  "trace": {
+    "format": "otlp_openinference_spans",
+    "trace_id": "275d050f379de209204d542b86101e3b",
+    "root_span_id": "8de1b21c1cb5b986",
+    "resource": {
+      "attributes": {
+        "service.name": "agentv"
+      }
+    },
+    "scope": {
+      "name": "agentv"
+    },
+    "spans": [
+      {
+        "trace_id": "275d050f379de209204d542b86101e3b",
+        "span_id": "8de1b21c1cb5b986",
+        "parent_span_id": null,
+        "name": "invoke_agent custom-task",
+        "kind": "INTERNAL",
+        "start_time_unix_nano": "1785337215969000000",
+        "end_time_unix_nano": "1785337215969000000",
+        "status": {
+          "code": "OK"
+        },
+        "attributes": {
+          "gen_ai.operation.name": "invoke_agent",
+          "gen_ai.provider.name": "agentv",
+          "gen_ai.agent.name": "custom-task",
+          "openinference.span.kind": "AGENT",
+          "agentv.test_id": "warm_zero_candidate_engine_allocations",
+          "agentv.target": "custom-task",
+          "agentv.suite": "packed-completion-kernel.eval",
+          "agentv.eval_path": "agentv-dir:///agentv/packed-completion-kernel.eval.jsonl",
+          "agentv.run_id": "packed-completion-kernel",
+          "agentv.attempt": 0,
+          "agentv.execution_status": "ok",
+          "agentv.trace.duration_ms": 0
+        },
+        "events": [
+          {
+            "name": "agentv.transcript.message",
+            "attributes": {
+              "agentv.transcript.message.index": 0,
+              "agentv.transcript.message": {
+                "role": "user",
+                "content": "{\"claim\": \"behavior_preserving_packed_completion_runtime\", \"result\": {\"value\": true}}"
+              }
+            }
+          },
+          {
+            "name": "agentv.transcript.message",
+            "attributes": {
+              "agentv.transcript.message.index": 1,
+              "agentv.transcript.message": {
+                "role": "assistant",
+                "content": "{\"claim\": \"behavior_preserving_packed_completion_runtime\", \"result\": {\"value\": true}}"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "trace_id": "275d050f379de209204d542b86101e3b",
+        "span_id": "3593eb31aefbf9b2",
+        "parent_span_id": "8de1b21c1cb5b986",
+        "name": "chat custom-task",
+        "kind": "INTERNAL",
+        "start_time_unix_nano": "1785337215969000000",
+        "end_time_unix_nano": "1785337215969000000",
+        "status": {
+          "code": "OK"
+        },
+        "attributes": {
+          "gen_ai.operation.name": "chat",
+          "gen_ai.provider.name": "mock",
+          "gen_ai.request.model": "custom-task",
+          "gen_ai.response.model": "custom-task",
+          "openinference.span.kind": "LLM",
+          "agentv.message.index": 1,
+          "agentv.turn_index": 0,
+          "gen_ai.output.messages": "{\"claim\": \"behavior_preserving_packed_completion_runtime\", \"result\": {\"value\": true}}"
+        },
+        "events": []
+      }
+    ]
+  },
+  "source": {
+    "kind": "agentv_run",
+    "path": "index.jsonl",
+    "provider": "mock",
+    "format": "agentv_result",
+    "version": "1",
+    "metadata": {
+      "provider": "mock",
+      "target": "custom-task",
+      "eval_case_id": "warm_zero_candidate_engine_allocations"
+    }
+  },
+  "capture": {
+    "content": "full",
+    "redaction_level": "none",
+    "redacted_fields": [],
+    "policy": {
+      "tool_arguments": "metadata",
+      "tool_results": "metadata",
+      "message_text": "metadata",
+      "screenshots": "none",
+      "thinking": "none"
+    }
+  },
+  "artifacts": {
+    "trace_path": "artifacts/trace.json",
+    "answer_path": "artifacts/answer.md",
+    "response_path": "artifacts/response.md",
+    "transcript_path": "artifacts/transcript.jsonl"
+  },
+  "scores": [
+    {
+      "name": "warm_zero_candidate_engine_allocations:domain_criterion",
+      "type": "code-grader",
+      "score": 1,
+      "weight": 1,
+      "verdict": "pass",
+      "source": "code",
+      "evaluated_at": "2026-07-29T15:00:15.993Z",
+      "target_span_id": "8de1b21c1cb5b986",
+      "evidence": {
+        "span_ids": [
+          "8de1b21c1cb5b986"
+        ],
+        "assertions": [
+          {
+            "text": "warm_zero_candidate_engine_allocations:domain_criterion",
+            "passed": true,
+            "evidence": "actual=True operator=eq expected=True"
+          }
+        ],
+        "details": {
+          "criterion_id": "warm_zero_candidate_engine_allocations:domain_criterion",
+          "actual": true,
+          "operator": "eq",
+          "expected": true
+        }
+      }
+    }
+  ]
+}

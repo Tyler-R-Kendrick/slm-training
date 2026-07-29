@@ -1,4 +1,8 @@
-from slm_training.models.decode_stats import DecodeStats, aggregate_stats
+from slm_training.models.decode_stats import (
+    DecodeStats,
+    aggregate_stats,
+    collect_completion_session_delta,
+)
 from slm_training.harnesses.model_build.eval_runner import _nearest_rank
 
 
@@ -61,6 +65,12 @@ def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
         choice_vocab_candidates_avoided=1200,
         choice_completion_cache_hits=29,
         choice_completion_cache_misses=3,
+        choice_schema_intern_hits=11,
+        choice_distance_cache_hits=13,
+        choice_distance_cache_evictions=2,
+        choice_distance_cache_peak_entries=64,
+        choice_clone_count=17,
+        choice_frame_cow_copies=5,
     )
     summary = aggregate_stats([stats])
     assert summary["choice_state_cache_hits_sum"] == 7.0
@@ -69,50 +79,33 @@ def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
     assert summary["choice_vocab_candidates_avoided_sum"] == 1200.0
     assert summary["choice_completion_cache_hits_sum"] == 29.0
     assert summary["choice_completion_cache_misses_sum"] == 3.0
+    assert summary["choice_schema_intern_hits_sum"] == 11.0
+    assert summary["choice_distance_cache_hits_sum"] == 13.0
+    assert summary["choice_distance_cache_evictions_sum"] == 2.0
+    assert summary["choice_distance_cache_peak_entries_sum"] == 64.0
+    assert summary["choice_clone_count_sum"] == 17.0
+    assert summary["choice_frame_cow_copies_sum"] == 5.0
 
 
-def test_decode_stats_aggregates_completion_kernel_counts() -> None:
-    stats = DecodeStats(
-        completion_session_starts=1,
-        completion_unique_states=7,
-        completion_transition_cache_hits=4,
-        completion_forced_closure_tokens=3,
-        completion_full_prefix_lex_bytes=12,
-        completion_candidate_engine_allocations=1,
-        completion_transition_rows_built=5,
-        completion_semantic_masks_applied=9,
-        completion_edge_replays=2,
-        completion_value_tree_clones=3,
-        completion_ast_bridge_calls=4,
-    )
+def test_completion_session_snapshots_are_folded_as_deltas() -> None:
+    class Session:
+        counters = {"session_starts": 1, "unique_states": 2, "edges_built": 1}
+
+        def stats(self):
+            return dict(self.counters)
+
+    session = Session()
+    stats = DecodeStats()
+    snapshot = collect_completion_session_delta(session, stats=stats)
+    session.counters.update(unique_states=3, edges_built=4)
+    collect_completion_session_delta(session, snapshot, stats=stats)
+
+    assert stats.completion_session_starts == 1
+    assert stats.completion_unique_states == 3
+    assert stats.completion_edges_built == 4
     summary = aggregate_stats([stats])
-    assert summary["completion_session_starts_sum"] == 1.0
-    assert summary["completion_unique_states_sum"] == 7.0
-    assert summary["completion_transition_cache_hits_sum"] == 4.0
-    assert summary["completion_forced_closure_tokens_sum"] == 3.0
-    assert summary["completion_full_prefix_lex_bytes_sum"] == 12.0
-    assert summary["completion_candidate_engine_allocations_sum"] == 1.0
-    assert summary["completion_transition_rows_built_sum"] == 5.0
-    assert summary["completion_semantic_masks_applied_sum"] == 9.0
-    assert summary["completion_edge_replays_sum"] == 2.0
-    assert summary["completion_value_tree_clones_sum"] == 3.0
-    assert summary["completion_ast_bridge_calls_sum"] == 4.0
-
-
-def test_decode_stats_aggregates_compiler_batch_and_solver_successors() -> None:
-    stats = DecodeStats(
-        compiler_persistent_sessions=2,
-        compiler_batch_forwards=3,
-        solver_successor_cache_hits=7,
-        solver_successor_cache_misses=2,
-        solver_successor_expansions=2,
-    )
-    summary = aggregate_stats([stats])
-    assert summary["compiler_persistent_sessions_sum"] == 2.0
-    assert summary["compiler_batch_forwards_sum"] == 3.0
-    assert summary["solver_successor_cache_hits_sum"] == 7.0
-    assert summary["solver_successor_cache_misses_sum"] == 2.0
-    assert summary["solver_successor_expansions_sum"] == 2.0
+    assert summary["completion_unique_states_sum"] == 3.0
+    assert summary["completion_edges_built_sum"] == 4.0
 
 
 def test_decode_stats_aggregates_root_reference_arity_counts() -> None:
@@ -139,10 +132,14 @@ def test_decode_stats_aggregates_required_slot_margin_counts() -> None:
     """E627: root-cause instrumentation counters for E626's required_slot_margin_decode_weight."""
     stats = DecodeStats(
         required_slot_margin_applications=5,
+        required_slot_root_completion_applications=2,
+        required_slot_root_completion_choice_changes=1,
         required_slot_margin_choice_changes=4,
     )
     summary = aggregate_stats([stats])
     assert summary["required_slot_margin_applications_sum"] == 5.0
+    assert summary["required_slot_root_completion_applications_sum"] == 2.0
+    assert summary["required_slot_root_completion_choice_changes_sum"] == 1.0
     assert summary["required_slot_margin_choice_changes_sum"] == 4.0
 
 

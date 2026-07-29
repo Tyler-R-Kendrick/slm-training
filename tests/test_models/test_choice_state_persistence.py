@@ -10,6 +10,8 @@ the previous greedy probe behavior on reachable states.
 
 from __future__ import annotations
 
+import random
+
 import pytest
 
 from slm_training.dsl.production_codec import CLOSE, LIST_CLOSE, OBJ_CLOSE
@@ -18,6 +20,7 @@ from slm_training.models.choice_tokenizer import (
     ChoiceDecodeState,
     ChoiceTokenizer,
     _ChoiceFrame,
+    _DISTANCE_CACHE_MAX_ENTRIES,
 )
 
 HERO = (
@@ -28,7 +31,7 @@ HERO = (
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def tok() -> ChoiceTokenizer:
     return ChoiceTokenizer.build()
 
@@ -194,7 +197,7 @@ def test_clone_shares_untouched_frames(tok: ChoiceTokenizer) -> None:
 
 def test_clone_advance_matches_replay_reference(tok: ChoiceTokenizer) -> None:
     """COW transitions equal from-scratch replay semantics on random walks."""
-    rng = __import__("random").Random(20260728)
+    rng = random.Random(20260728)
     for _ in range(6):
         state = ChoiceDecodeState(tok, slot_count=2)
         history: list[int] = []
@@ -351,6 +354,41 @@ def test_allowed_ids_match_exhaustive_oracle_and_preserve_greedy_admissions(
             assert _greedy_allowed_ids(state, remaining) <= expected
 
 
+def test_exact_distance_handles_an_active_nested_expression(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok, slot_count=1)
+    assert state.advance_id(tok.token_to_id["+Card"])
+    assert state.advance_id(tok.token_to_id["["])
+
+    # The active list already fills Card's required first argument. Counting
+    # the schema again would report five tokens instead of the exact three:
+    # close list, close Card, EOS.
+    assert _brute_force_distance(state.clone(), 3) == 3
+    assert state._completion_lower_bound() == 3
+    assert state._completion_distance(3) == 3
+
+
+def test_exact_distance_corrects_legacy_greedy_false_pruning(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok, slot_count=0)
+    root_marker = tok.token_to_id["r="]
+    assert root_marker not in _greedy_allowed_ids(state, 4)
+    assert root_marker in state.allowed_ids(4)
+
+    # A four-token witness exists; the old greedy probe happened to choose a
+    # more expensive component and incorrectly removed the root marker.
+    witness = (
+        root_marker,
+        tok.token_to_id["+CardHeader"],
+        tok.token_to_id[CLOSE],
+        tok.eos_id,
+    )
+    replay = state.clone()
+    assert all(replay.advance_id(token_id) for token_id in witness)
+
+
 def test_distance_cache_counters(tok: ChoiceTokenizer) -> None:
     tok.distance_cache.clear()
     tok.distance_cache_hits = 0
@@ -365,6 +403,23 @@ def test_distance_cache_counters(tok: ChoiceTokenizer) -> None:
     state._completion_distance(8)
     assert tok.distance_cache_misses == misses
     assert tok.distance_cache_hits >= 1
+
+
+def test_distance_cache_is_bounded_and_counts_evictions(
+    tok: ChoiceTokenizer,
+) -> None:
+    tok.distance_cache.clear()
+    tok.distance_cache_evictions = 0
+    tok.distance_cache_peak_entries = 0
+    tok.distance_cache.update(
+        ((("synthetic", index), 1), 2)
+        for index in range(_DISTANCE_CACHE_MAX_ENTRIES)
+    )
+    state = ChoiceDecodeState(tok, slot_count=1)
+    assert state._completion_distance(8) <= 8
+    assert len(tok.distance_cache) == 1
+    assert tok.distance_cache_evictions == _DISTANCE_CACHE_MAX_ENTRIES
+    assert tok.distance_cache_peak_entries == 1
 
 
 def test_completion_cache_still_collapses_equivalent_states(

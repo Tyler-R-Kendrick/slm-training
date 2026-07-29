@@ -19,10 +19,9 @@ This module is Torch-free and is not invoked by decode by default.
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import Any
 
 from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
-from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest
 from slm_training.dsl.grammar.fastpath.token_map import decode_prefix
 from slm_training.dsl.solver.adapters import completion_forest_state
 from slm_training.dsl.solver.state import (
@@ -39,14 +38,6 @@ from slm_training.dsl.solver.support import (
 )
 
 WELL_FORMED_PROFILE = "openui/lang-core-validate/well-formed@0.2.x"
-
-# Coverage-"none" marker for a rejected advance (identical to a fresh build's
-# dead-prefix forest: no paths, no terminals).
-_DEAD_FOREST = CompletionForest((), "none")
-
-StateId: TypeAlias = int
-EdgeId: TypeAlias = int
-
 
 class OpenUIWellFormedVerifier:
     """Deterministic lang-core well-formedness verifier (G0-G2 surface).
@@ -108,8 +99,6 @@ class OpenUIForestExpander:
         self._session = CompletionSession(tokenizer, max_path_tokens=self._mpt)
         self._prefix_by_fp: dict[str, tuple[int, ...]] = {}
         self._sid_by_fp: dict[str, int] = {}
-        self._edge_ids: dict[tuple[StateId, HoleId, DomainValue], EdgeId] = {}
-        self._successors: dict[tuple[StateId, EdgeId], ExpandStep] = {}
         self._root = self._project(tuple(int(t) for t in prefix_ids), None)
 
     def _project(
@@ -159,66 +148,44 @@ class OpenUIForestExpander:
             return ExpandStep(
                 ExpandStatus.INCOMPLETE, coverage="none", detail="unknown_state"
             )
-        edge_key = (sid, hole_id, value)
-        edge_id = self._edge_ids.get(edge_key)
-        if edge_id is None:
-            edge_id = len(self._edge_ids)
-            self._edge_ids[edge_key] = edge_id
-        cache_key = (sid, edge_id)
-        cached = self._successors.get(cache_key)
-        if cached is not None:
-            from slm_training.models.decode_stats import get_active_stats
-
-            stats = get_active_stats()
-            if stats is not None:
-                stats.solver_successor_cache_hits += 1
-            return cached
-        from slm_training.models.decode_stats import get_active_stats
-
-        stats = get_active_stats()
-        if stats is not None:
-            stats.solver_successor_cache_misses += 1
-            stats.solver_successor_expansions += 1
-
-        def _done(step: ExpandStep) -> ExpandStep:
-            self._successors[cache_key] = step
-            return step
-
         payload = value.payload
         token_ids = tuple(int(tok) for tok in payload.get("token_ids", ()))
         kind = str(payload.get("kind", ""))
+        advertised = any(
+            domain.hole_id == hole_id and value in domain.values
+            for domain in state.holes
+        )
         if kind == "eos" or (len(token_ids) == 1 and token_ids[0] == self._eos):
             program = decode_prefix(self._tok, list(prefix))
-            return _done(
-                ExpandStep(
-                    ExpandStatus.TERMINAL,
-                    program=program,
-                    coverage="complete",
-                    detail=f"prefix_len={len(prefix)}",
-                )
+            return ExpandStep(
+                ExpandStatus.TERMINAL,
+                program=program,
+                coverage="complete",
+                detail=f"prefix_len={len(prefix)}",
             )
         new_prefix = prefix + token_ids
         child_sid = self._session.advance_path(sid, token_ids)
-        forest = (
-            self._session.outgoing(child_sid)
-            if child_sid is not None
-            else _DEAD_FOREST
-        )
-        if forest.coverage == "none":
-            return _done(
-                ExpandStep(
-                    ExpandStatus.DEAD,
-                    coverage="none",
-                    detail="illegal_prefix",
-                )
-            )
-        if not forest.paths:
-            return _done(
-                ExpandStep(
+        if child_sid is None:
+            # This edge was advertised by the exact finite domain.  A failed
+            # replay is an authority inconsistency, not proof that the branch
+            # is impossible; verified-solver law requires UNKNOWN/incomplete.
+            if advertised:
+                return ExpandStep(
                     ExpandStatus.INCOMPLETE,
-                    coverage=forest.coverage,
-                    detail="no_enumerated_actions",
+                    coverage="none",
+                    detail="advertised_edge_transition_failed",
                 )
+            return ExpandStep(
+                ExpandStatus.DEAD, coverage="none", detail="illegal_prefix"
+            )
+        forest = self._session.outgoing(child_sid)
+        if forest.coverage == "none":
+            return ExpandStep(ExpandStatus.DEAD, coverage="none", detail="illegal_prefix")
+        if not forest.paths:
+            return ExpandStep(
+                ExpandStatus.INCOMPLETE,
+                coverage=forest.coverage,
+                detail="no_enumerated_actions",
             )
         child = completion_forest_state(
             prefix_ids=new_prefix,
@@ -229,10 +196,6 @@ class OpenUIForestExpander:
         )
         self._prefix_by_fp[child.fingerprint] = new_prefix
         self._sid_by_fp[child.fingerprint] = child_sid
-        return _done(
-            ExpandStep(
-                ExpandStatus.CONTINUE,
-                next_state=child,
-                coverage=forest.coverage,
-            )
+        return ExpandStep(
+            ExpandStatus.CONTINUE, next_state=child, coverage=forest.coverage
         )

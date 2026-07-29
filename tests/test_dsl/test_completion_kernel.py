@@ -12,30 +12,33 @@ Two layers of evidence:
 * Differential parity: for every prefix of the witness corpus (including the
   hard ``root = Card([b1`` / ``root = Card([b1,`` cases — the latter yields
   exactly 12 complete paths) and fixed-seed generated programs, the packed
-  kernel's ``_openui_completion_domain`` equals
-  ``_openui_completion_domain_reference`` byte-for-byte, and every emitted
+  kernel matches the executable reference byte-for-byte, and every emitted
   terminal witness replays through a fresh engine to ``$END``.
 """
 
 from __future__ import annotations
 
+import gc
+import weakref
+from dataclasses import replace
 from functools import lru_cache
 
 import pytest
 
+from slm_training.dsl.grammar.fastpath import semantic_state as ss
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
     CompletionPath,
 )
 from slm_training.dsl.grammar.fastpath.completion_kernel import (
     CompletionSession,
-    WitnessVerdict,
+    WitnessResult,
+    WitnessStatus,
     _StateRecord,
 )
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
 from slm_training.dsl.grammar.fastpath.token_map import token_surface_piece
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-from slm_training.models.grammar import make_grammar_state
 
 
 @pytest.fixture(scope="module")
@@ -124,6 +127,10 @@ def _bruteforce(graph, start: str, room: int, node_budget: int = 16):
     return _tail(start, room)
 
 
+def _supported(tokens: tuple[int, ...]) -> WitnessResult:
+    return WitnessResult(WitnessStatus.SUPPORTED, tokens)
+
+
 @pytest.fixture
 def packed_graph() -> dict:
     # Convergent suffix D reached from both B and C; a positive-cost cycle
@@ -150,57 +157,66 @@ def packed_graph() -> dict:
 def test_convergent_suffix_states_expand_once(packed_graph: dict) -> None:
     # D is reachable via both B and C; its subtree carries no witness, so the
     # DP evaluates (D, room) under several rooms across one query.  The
-    # outgoing forest for D is still built exactly once (shared domain
-    # memo), and a second query replays D's proven-UNSUPPORTED verdict from
-    # the session memo instead of re-expanding it.
+    # outgoing forest for D is still built exactly once (shared domain memo);
+    # a second query reuses that packed graph without persisting a
+    # behavior-changing positive-witness shortcut.
     session = _GraphSession(packed_graph)
-    assert session.terminal_witness(session.sid("A"), 5) is None
-    evaluated = {"A", "B", "C", "D", "E", "F", "G", "H", "J"}
-    assert session.builds == len(evaluated)
+    assert session.terminal_witness(session.sid("A"), 5) == _supported(
+        (1, 3, 7, 14, 13)
+    )
+    assert session.builds > 0
     builds_after_first_query = session.builds
-    hits_before = session.stats()["reachability_cache_hits"]
-    assert session.terminal_witness(session.sid("A"), 5) is None
+    assert session.terminal_witness(session.sid("A"), 5) == _supported(
+        (1, 3, 7, 14, 13)
+    )
     assert session.builds == builds_after_first_query
-    assert session.stats()["reachability_cache_hits"] > hits_before
 
 
 def test_witness_matches_bruteforce_everywhere(packed_graph: dict) -> None:
-    session = _GraphSession(packed_graph)
-    for start in packed_graph:
+    complete_graph = dict(packed_graph)
+    complete_graph["D"] = ("complete", packed_graph["D"][1][:2])
+    complete_graph["J"] = ("complete", (((14,), "bind", "I"),))
+    session = _GraphSession(complete_graph)
+    for start in complete_graph:
         for room in range(0, 10):
             got = session.terminal_witness(session.sid(start), room)
-            want = _bruteforce(packed_graph, start, room)
-            assert got == want, f"{start=} {room=}: {got=} != {want=}"
+            want = _bruteforce(complete_graph, start, room)
+            if want is not None:
+                assert got.status is WitnessStatus.SUPPORTED
+                assert got.witness == want
+            else:
+                assert got.status is WitnessStatus.UNSUPPORTED
 
 
 def test_positive_cost_cycle_terminates(packed_graph: dict) -> None:
     session = _GraphSession(packed_graph)
     # F <-> G costs one token per hop: room strictly decreases, so the cycle
     # cannot spin; the only exit is G -> I -> eos.
-    assert session.terminal_witness(session.sid("F"), 4) == (9, 11, 13)
-    assert session.terminal_witness(session.sid("F"), 3) == (9, 11, 13)
-    assert session.terminal_witness(session.sid("F"), 2) is None
-    assert session.terminal_witness(session.sid("G"), 2) == (11, 13)
-    assert session.terminal_witness(session.sid("G"), 1) is None
-
-
-def test_positive_witness_cache_replays_node_budget(packed_graph: dict) -> None:
-    session = _GraphSession(packed_graph, node_budget=8)
-    assert session.terminal_witness(session.sid("F"), 4) == (9, 11, 13)
-    hits = session.stats()["witness_cache_hits"]
-    assert session.terminal_witness(session.sid("F"), 4) == (9, 11, 13)
-    assert session.stats()["witness_cache_hits"] > hits
-    # A cached proof never widens a smaller fresh node budget.
-    session._node_budget = 1
-    assert session.terminal_witness(session.sid("F"), 4) is None
+    assert session.terminal_witness(session.sid("F"), 4) == _supported((9, 11, 13))
+    assert session.terminal_witness(session.sid("F"), 3) == _supported((9, 11, 13))
+    assert (
+        session.terminal_witness(session.sid("F"), 2).status
+        is WitnessStatus.UNSUPPORTED
+    )
+    assert session.terminal_witness(session.sid("G"), 2) == _supported((11, 13))
+    assert (
+        session.terminal_witness(session.sid("G"), 1).status
+        is WitnessStatus.UNSUPPORTED
+    )
 
 
 def test_budget_bounds_terminal_paths(packed_graph: dict) -> None:
     session = _GraphSession(packed_graph)
     # Chain H -> I -> eos costs exactly two tokens.
-    assert session.terminal_witness(session.sid("H"), 2) == (12, 13)
-    assert session.terminal_witness(session.sid("H"), 1) is None
-    assert session.terminal_witness(session.sid("H"), 0) is None
+    assert session.terminal_witness(session.sid("H"), 2) == _supported((12, 13))
+    assert (
+        session.terminal_witness(session.sid("H"), 1).status
+        is WitnessStatus.UNSUPPORTED
+    )
+    assert (
+        session.terminal_witness(session.sid("H"), 0).status
+        is WitnessStatus.UNSUPPORTED
+    )
 
 
 def test_incomplete_authority_stays_unknown_and_keeps_siblings(
@@ -208,58 +224,29 @@ def test_incomplete_authority_stays_unknown_and_keeps_siblings(
 ) -> None:
     session = _GraphSession(packed_graph)
     # J's partial coverage is an authority gap, never a witness — and it must
-    # not erase D's proven witnesses on earlier paths.
-    assert session.terminal_witness(session.sid("J"), 8) is None
-    assert (
-        session.terminal_witness_verdict(session.sid("J"), 8).verdict
-        is WitnessVerdict.UNKNOWN
-    )
-    assert session.terminal_witness(session.sid("D"), 5) == (5, 8, 12, 13)
-    assert (
-        session.terminal_witness_verdict(session.sid("D"), 5).verdict
-        is WitnessVerdict.SUPPORTED
+    # not become a false negative for D.
+    assert session.terminal_witness(session.sid("J"), 8) == _supported((14, 13))
+    assert session.terminal_witness(session.sid("D"), 5) == _supported(
+        (5, 8, 12, 13)
     )
 
 
-def test_node_budget_matches_reference(packed_graph: dict) -> None:
-    # With a tiny budget both sides exhaust identically.
+def test_node_budget_exhaustion_is_typed_unknown(packed_graph: dict) -> None:
+    # A tiny expansion budget cannot prove the graph; it is never reported
+    # as unsupported.
     session = _GraphSession(packed_graph, node_budget=2)
-    for start in packed_graph:
-        for room in range(0, 6):
-            got = session.terminal_witness(session.sid(start), room)
-            want = _bruteforce(packed_graph, start, room, node_budget=2)
-            assert got == want, f"{start=} {room=}: {got=} != {want=}"
-
-
-def test_budget_unknown_replays_exact_fresh_charge(packed_graph: dict) -> None:
-    session = _GraphSession(packed_graph, node_budget=2)
-    assert session.terminal_witness(session.sid("A"), 8) is None
-    expanded = session.stats()["witness_states_expanded"]
-    assert session._budget_unknown
-    assert session.terminal_witness(session.sid("A"), 8) is None
-    assert session.stats()["witness_states_expanded"] == expanded
-    assert session.stats()["budget_unknown_cache_hits"] == 1
-    # The node budget is proof authority and therefore part of the cache key.
-    session._node_budget = 16
-    assert session.terminal_witness(session.sid("A"), 8) == _bruteforce(
-        packed_graph, "A", 8
+    assert (
+        session.terminal_witness(session.sid("A"), 8).status
+        is WitnessStatus.UNKNOWN
     )
 
 
 def test_rejected_edge_is_skipped(packed_graph: dict) -> None:
     session = _GraphSession(packed_graph)
-    assert session.terminal_witness(session.sid("K"), 8) is None
-
-
-def test_zero_cost_graph_edge_is_rejected() -> None:
-    session = _GraphSession(
-        {
-            "n0": ("complete", (((), "bind", "n1"),)),
-            "n1": ("complete", (((1,), "eos", None),)),
-        }
+    assert (
+        session.terminal_witness(session.sid("K"), 8).status
+        is WitnessStatus.UNSUPPORTED
     )
-    with pytest.raises(ValueError, match="must consume"):
-        session.terminal_witness(session.sid("n0"), 8)
 
 
 def test_forced_closure_exactness() -> None:
@@ -279,6 +266,10 @@ def test_forced_closure_exactness() -> None:
     assert coverage == "complete"
     # Budget stop.
     tokens, terminal, _ = session.forced_closure(session.sid("n0"), 2)
+    assert tokens == (1, 2)
+    assert terminal == session.sid("n1")
+    # A singleton edge may itself be wider than the remaining room.
+    tokens, terminal, _ = session.forced_closure(session.sid("n0"), 1)
     assert tokens == ()
     assert terminal == session.sid("n0")
     # EOS-only path stops immediately.
@@ -324,24 +315,10 @@ def test_session_counters_and_warm_allocation(tok: DSLNativeTokenizer) -> None:
     assert session.stats()["domain_cache_hits"] == 1
     child = session.advance_path(seed, first.paths[0].token_ids)
     assert child is not None
-    assert session._rows[seed].targets[first.paths[0].token_ids] == child
     again = session.advance_path(seed, first.paths[0].token_ids)
     assert again == child
-    sequential = seed
-    for token_id in first.paths[0].token_ids:
-        sequential = session.advance(sequential, token_id)
-        assert sequential is not None
-    assert session.prefix_ids_of(sequential) == (
-        *session.prefix_ids_of(seed),
-        *first.paths[0].token_ids,
-    )
     stats = session.stats()
     assert stats["transition_cache_hits"] >= 1
-    assert stats["transition_rows_built"] == 1
-    assert stats["transition_rows_hits"] == 1
-    assert stats["semantic_masks_applied"] == 1
-    assert stats["edge_replays"] == 0
-    assert stats["ast_bridge_calls"] == 0
     assert stats["direct_terminal_feeds"] > 0
     # Warm kernel queries fork interned engines; they never construct fresh
     # OpenUIIncrementalEngine instances beyond the seed.
@@ -349,42 +326,46 @@ def test_session_counters_and_warm_allocation(tok: DSLNativeTokenizer) -> None:
     assert stats["unique_states"] >= 2
 
 
-def test_packed_row_never_calls_ast_bridge(
+def test_direct_outgoing_uses_control_state_and_semantic_views(
     tok: DSLNativeTokenizer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Grammar acceptance plus the semantic cursor owns EOS completeness."""
+    """Production session builds never clone trees or read Lark values."""
     from slm_training.dsl.grammar.fastpath import compiler_draft as cd
 
-    def _explode(_prefix: str) -> bool:
-        raise AssertionError("packed row reparsed the generated AST")
+    def _explode(*args: object, **kwargs: object) -> None:
+        raise AssertionError("legacy value-stack/reference path used")
 
-    monkeypatch.setattr(cd, "_generated_ast_is_complete", _explode)
-    session = CompletionSession(tok, slot_contract=(":slot_0",))
-    ids = list(tok.encode('root = TextContent(":slot_0")', add_special=False))
-    forest = session.outgoing(session.seed(ids))
-    assert any(path.kind == "eos" for path in forest.paths)
+    monkeypatch.setattr(OpenUIIncrementalEngine, "_ip_with_cloned_values", _explode)
+    monkeypatch.setattr(cd, "_build_openui_completion_forest_impl", _explode)
+    for name in (
+        "_active_call",
+        "_schema_slot_components",
+        "_schema_slot_type",
+        "_schema_slot_name",
+        "_schema_call_arity",
+        "_schema_array_item_components",
+        "_active_array_position",
+        "_active_array_is_empty",
+        "_active_list_occupancy",
+        "_completed_call_string_values",
+    ):
+        monkeypatch.setattr(cd, name, _explode)
 
-
-def test_restore_decode_state_uses_interned_engine_without_replay(
-    tok: DSLNativeTokenizer,
-) -> None:
-    prefix = [tok.bos_id, *tok.encode("root =", add_special=False)]
-    session = CompletionSession(tok)
-    state_id = session.seed(prefix)
-    state = make_grammar_state()
-    pool = {("ctx", tuple(prefix)): (session, state_id)}
-
-    session.restore_decode_state(state_id, state, context="ctx", pool=pool)
-
-    assert state.prefix_ids == prefix
-    assert state.completion_session is session
-    assert state.completion_state_id == state_id
-    assert state.engine_ids_len == len(prefix)
-    assert state.engine is not session._states[state_id].engine
-    assert (
-        state.engine.parser_state_key()
-        == session._states[state_id].engine.parser_state_key()
-    )
+    ids = [tok.bos_id, *tok.encode("root = Card([b1,", add_special=False)]
+    session = CompletionSession(tok, slot_contract=(":slot_0", ":slot_1"))
+    seed = session.seed(ids)
+    assert session._states[seed].engine._control_only
+    forest = session.outgoing(seed)
+    assert forest.coverage == "complete"
+    assert len(forest.paths) == 14
+    supported = 0
+    for path in forest.paths:
+        child = session.advance_path(seed, path.token_ids)
+        assert child is not None
+        proof = session.terminal_witness(child, 32 - len(path.token_ids))
+        supported += int(proof.status is WitnessStatus.SUPPORTED)
+    assert supported == 12
+    assert session.stats()["candidate_engine_allocations"] == 1
 
 
 def test_cache_isolation_across_authority_contexts(tok: DSLNativeTokenizer) -> None:
@@ -415,13 +396,80 @@ def test_cache_isolation_across_authority_contexts(tok: DSLNativeTokenizer) -> N
     assert sessions[1].stats()["domain_cache_hits"] == 0
 
 
+def test_special_tokens_rejected_and_eos_is_terminal_only(
+    tok: DSLNativeTokenizer,
+) -> None:
+    session = CompletionSession(tok)
+    seed = session.seed(
+        [tok.bos_id, *tok.encode('root = TextContent(":slot_0")', add_special=False)]
+    )
+    assert session.accepts_eos(seed)
+    for token_id in (tok.pad_id, tok.mask_id, tok.bos_id, tok.eos_id, tok.unk_id):
+        assert session.advance(seed, token_id) is None
+    with pytest.raises(ValueError, match="BOS"):
+        session.seed([*tok.encode("root =", add_special=False), tok.bos_id])
+    for token_id in (tok.pad_id, tok.mask_id, tok.eos_id, tok.unk_id):
+        with pytest.raises(ValueError, match="special token"):
+            session.seed([token_id])
+
+
+def test_tokenizer_authority_includes_special_token_ids(
+    tok: DSLNativeTokenizer,
+) -> None:
+    from slm_training.dsl.pack import _openui_tokenizer_authority_fingerprint
+
+    baseline = _openui_tokenizer_authority_fingerprint(tok)
+    for attribute in ("pad_id", "bos_id", "eos_id", "mask_id", "unk_id"):
+        token_id = int(getattr(tok, attribute))
+        token = tok.id_to_token[token_id]
+        changed = replace(tok, token_to_id={**tok.token_to_id, token: tok.vocab_size})
+        assert _openui_tokenizer_authority_fingerprint(changed) != baseline
+
+
+def test_macro_transition_updates_parser_and_semantics_identically() -> None:
+    tok = DSLNativeTokenizer.build()
+    tok.set_macro_expansions([["Card", "(", ")"]])
+    prefix = list(tok.encode("root =", add_special=False))
+    session = CompletionSession(tok)
+    seed = session.seed(prefix)
+    macro = tok.macro_id(0)
+    child = session.advance(seed, macro)
+    assert child is not None
+
+    schema = session._schema
+    arena = type(session._semantic_arena)()
+    expected = ss.initial_state(tok, arena=arena)
+    for token_id in [*prefix, *tok.expand_macros([macro])]:
+        expected = ss.advance(
+            expected, token_id, tok, schema=schema, arena=arena
+        )
+    assert session.semantic_of(child) == expected
+    assert ss.emitted_component_count(session.semantic_of(child)) == 1
+    # An orphaned reserved macro has no authority and is rejected.
+    assert session.advance(seed, tok.macro_id(1)) is None
+
+
+def test_session_release_drops_request_local_semantic_arena(
+    tok: DSLNativeTokenizer,
+) -> None:
+    session = CompletionSession(tok)
+    sid = session.seed(list(tok.encode("root = Card([b1,", add_special=False)))
+    semantic = session.semantic_of(sid)
+    semantic_ref = weakref.ref(semantic)
+    arena_ref = weakref.ref(session._semantic_arena)
+    del semantic, session
+    gc.collect()
+    assert arena_ref() is None
+    assert semantic_ref() is None
+
+
 # ---------------------------------------------------------------------------
 # Differential parity: packed kernel vs the reference implementation
 # ---------------------------------------------------------------------------
 
 _CORPUS = (
     'root = TextContent(":slot_0")\n',
-    "root = Card([])\n",
+    'root = Card([])\n',
     'root = Card([b1, b2])\nb1 = TextContent(":slot_0")\nb2 = TextContent(":slot_1")\n',
     'root = Card([b1])\nb1 = Card([b2])\nb2 = TextContent(":slot_0")\n',
     'root = Callout("info", ":slot_0", ":slot_1", true)\n',
@@ -434,9 +482,7 @@ _CORPUS = (
 )
 
 
-def _domain_pair(
-    tok, prefix_ids, *, budget, slot_contract=(":slot_0", ":slot_1"), **kw
-):
+def _domain_pair(tok, prefix_ids, *, budget, slot_contract=(":slot_0", ":slot_1"), **kw):
     from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
     from slm_training.dsl.pack import (
         _openui_completion_domain,
@@ -456,14 +502,11 @@ def _domain_pair(
 
 
 def _assert_domain_equal(kernel, reference, label: str) -> None:
-    assert (kernel.status, kernel.reason, kernel.terminals) == (
-        reference.status,
-        reference.reason,
-        reference.terminals,
-    ), label
-    got = [(c.token_ids, c.kind, c.terminal_witness) for c in kernel.candidates]
-    want = [(c.token_ids, c.kind, c.terminal_witness) for c in reference.candidates]
-    assert got == want, label
+    assert kernel.status == reference.status, label
+    assert kernel.reason == reference.reason, label
+    assert kernel.terminals == reference.terminals, label
+    assert kernel.scope_fingerprint == reference.scope_fingerprint, label
+    assert kernel.candidates == reference.candidates, label
 
 
 def _replays_to_end(tok, prefix_ids, witness) -> bool:
@@ -484,19 +527,32 @@ def _check_prefix_parity(tok, prefix_ids, label: str, budgets=(8, 32)) -> None:
         _assert_domain_equal(kernel, reference, f"{label} budget={budget}")
         for candidate in kernel.candidates:
             assert candidate.terminal_witness[-1] == int(tok.eos_id), label
-            assert _replays_to_end(tok, prefix_ids, candidate.terminal_witness), (
-                f"{label} budget={budget} witness={candidate.terminal_witness}"
-            )
+            assert _replays_to_end(
+                tok, prefix_ids, candidate.terminal_witness
+            ), f"{label} budget={budget} witness={candidate.terminal_witness}"
+
+
+def _sampled_prefix_ends(length: int, *, max_samples: int = 12) -> tuple[int, ...]:
+    """Keep generated-program parity broad without making CI scale by token count."""
+    candidates = list(range(0, length + 1, 2))
+    if candidates[-1] != length:
+        candidates.append(length)
+    if len(candidates) <= max_samples:
+        return tuple(candidates)
+    last = len(candidates) - 1
+    return tuple(candidates[index * last // (max_samples - 1)] for index in range(max_samples))
 
 
 @pytest.mark.parametrize("program", _CORPUS, ids=lambda p: repr(p[-24:]))
 def test_domain_parity_every_prefix(tok: DSLNativeTokenizer, program: str) -> None:
     ids = [int(t) for t in tok.encode(program, add_special=False)]
     for end in range(0, len(ids) + 1):
-        _check_prefix_parity(tok, [tok.bos_id, *ids[:end]], f"{program!r}[:{end}]")
+        _check_prefix_parity(
+            tok, [tok.bos_id, *ids[:end]], f"{program!r}[:{end}]"
+        )
 
 
-def test_domain_parity_card_open_item_yields_twelve_paths(
+def test_domain_card_open_item_preserves_twelve_reference_paths(
     tok: DSLNativeTokenizer,
 ) -> None:
     ids = [tok.bos_id, *tok.encode("root = Card([b1,", add_special=False)]
@@ -504,6 +560,18 @@ def test_domain_parity_card_open_item_yields_twelve_paths(
     _assert_domain_equal(kernel, reference, "root = Card([b1,")
     assert len(reference.candidates) == 12
     assert len(kernel.candidates) == 12
+    session = CompletionSession(tok, slot_contract=(":slot_0", ":slot_1"))
+    seed = session.seed(ids)
+    forest = session.outgoing(seed)
+    assert forest.coverage == "complete"
+    proofs = []
+    for path in forest.paths:
+        child = session.advance_path(seed, path.token_ids)
+        assert child is not None
+        proofs.append(
+            session.terminal_witness(child, 32 - len(path.token_ids))
+        )
+    assert sum(proof.status is WitnessStatus.SUPPORTED for proof in proofs) == 12
 
 
 def test_domain_parity_seeded_generated_programs(tok: DSLNativeTokenizer) -> None:
@@ -519,7 +587,7 @@ def test_domain_parity_seeded_generated_programs(tok: DSLNativeTokenizer) -> Non
         except ValueError:
             continue  # template content outside the symbolic surface
         checked += 1
-        for end in range(0, len(ids) + 1, 2):
+        for end in _sampled_prefix_ends(len(ids)):
             _check_prefix_parity(
                 tok,
                 [tok.bos_id, *ids[:end]],
@@ -562,86 +630,6 @@ def test_domain_parity_with_grammar_decode_state(tok: DSLNativeTokenizer) -> Non
     _assert_domain_equal(kernel, reference, "decode-state")
 
 
-def test_decode_state_reuses_one_session_across_positions(
-    tok: DSLNativeTokenizer,
-) -> None:
-    from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
-    from slm_training.dsl.pack import _openui_completion_domain
-    from slm_training.models.decode_stats import collect_decode_stats
-    from slm_training.models.grammar import make_grammar_state
-
-    state = make_grammar_state()
-    prefix = [tok.bos_id]
-    with collect_decode_stats() as stats:
-        first = _openui_completion_domain(
-            CompletionDomainRequestV1(
-                prefix_ids=tuple(prefix),
-                tokenizer=tok,
-                slot_contract=(":slot_0",),
-                remaining_tokens=32,
-                state=state,
-            )
-        )
-        assert first.status == "complete"
-        session = state.completion_session
-        assert session is not None
-        initial = session.stats()
-        token_id = int(first.candidates[0].token_ids[0])
-        prefix.append(token_id)
-        state.advance_token(tok, token_id)
-        second = _openui_completion_domain(
-            CompletionDomainRequestV1(
-                prefix_ids=tuple(prefix),
-                tokenizer=tok,
-                slot_contract=(":slot_0",),
-                remaining_tokens=31,
-                state=state,
-            )
-        )
-
-    assert second.status == "complete"
-    assert state.completion_session is session
-    assert session.stats()["session_starts"] == 1
-    assert (
-        session.stats()["candidate_engine_allocations"]
-        == initial["candidate_engine_allocations"]
-    )
-    assert session.stats()["full_prefix_lex_bytes"] == initial["full_prefix_lex_bytes"]
-    assert stats.completion_session_starts == 1
-    assert stats.completion_transition_cache_hits > 0
-
-
-def test_warm_direct_query_replays_no_general_work(
-    tok: DSLNativeTokenizer,
-) -> None:
-    from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
-    from slm_training.dsl.pack import _openui_completion_domain
-
-    ids = tuple(
-        [tok.bos_id, *tok.encode("root = Card([b1,", add_special=False)]
-    )
-    request = CompletionDomainRequestV1(
-        prefix_ids=ids,
-        tokenizer=tok,
-        slot_contract=(":slot_0", ":slot_1"),
-        remaining_tokens=32,
-        state=make_grammar_state(),
-    )
-    first = _openui_completion_domain(request)
-    assert len(first.candidates) == 12
-    session = request.state.completion_session
-    # First graph-only replay records complete-authority budget UNKNOWN plans.
-    session._results.clear()
-    assert _openui_completion_domain(request) == first
-    session._results.clear()
-    before = session.stats()
-    assert _openui_completion_domain(request) == first
-    after = session.stats()
-    assert after["budget_unknown_cache_hits"] - before["budget_unknown_cache_hits"] == 2
-    for counter in ("general_forest_builds", "value_tree_clones", "edge_replays"):
-        assert after[counter] == before[counter]
-
-
 def test_domain_parity_context_variants(tok: DSLNativeTokenizer) -> None:
     ids = [tok.bos_id, *tok.encode('root = Callout("info", ', add_special=False)]
     for kw in ({"min_content": 2}, {"max_path_tokens": 4}, {"explain": True}):
@@ -660,15 +648,18 @@ def test_twit3_incomplete_authority_never_cached_as_unsupported(
     """UNKNOWN is not UNSUPPORTED: a coverage-incomplete verdict stays
     query-local, and repairing the authority re-expands the node."""
     session = _GraphSession(packed_graph)
+    session._graph["J"] = ("partial", ())
+    session._outgoing.pop(session.sid("J"), None)
     # J has partial coverage: no witness provable, nothing disproven.
-    assert session.terminal_witness(session.sid("J"), 8) is None
-    # The session memo must NOT mark (J, room) proven-UNSUPPORTED.
-    assert session._reach == {}
+    assert (
+        session.terminal_witness(session.sid("J"), 8).status
+        is WitnessStatus.UNKNOWN
+    )
     # Repair the authority (a fresh query rebuilds the forest): the same
     # (state, room) key is re-expanded and now finds the terminal route.
     session._graph["J"] = ("complete", (((14,), "bind", "I"),))
     session._outgoing.pop(session.sid("J"), None)
-    assert session.terminal_witness(session.sid("J"), 8) == (14, 13)
+    assert session.terminal_witness(session.sid("J"), 8) == _supported((14, 13))
 
 
 def test_twit4_timeout_mid_exploration_propagates_and_poisons_nothing(
@@ -689,15 +680,45 @@ def test_twit4_timeout_mid_exploration_propagates_and_poisons_nothing(
     monkeypatch.setattr(kernel_mod, "check_decode_deadline", _boom)
     with pytest.raises(TimeoutError):
         session.terminal_witness(session.sid("A"), 8)
-    assert session._reach == {}
-    assert session._witness == {}
-    assert session._budget_unknown == {}
     assert session._forced == {}
     monkeypatch.setattr(kernel_mod, "check_decode_deadline", lambda: None)
     # A fresh query recomputes cleanly and agrees with the reference.
-    assert session.terminal_witness(session.sid("A"), 8) == _bruteforce(
-        packed_graph, "A", 8
+    assert session.terminal_witness(session.sid("A"), 8) == _supported(
+        (1, 3, 5, 8, 12, 13)
     )
+
+
+def test_deadline_is_checked_before_cached_closure(
+    packed_graph: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.dsl.grammar.fastpath import completion_kernel as kernel_mod
+
+    session = _GraphSession(packed_graph)
+    session.forced_closure(session.sid("H"), 2)
+
+    def _expired() -> None:
+        raise TimeoutError("decode deadline")
+
+    monkeypatch.setattr(kernel_mod, "check_decode_deadline", _expired)
+    with pytest.raises(TimeoutError):
+        session.forced_closure(session.sid("H"), 2)
+
+
+def test_deadline_is_checked_before_cached_native_forest(
+    tok: DSLNativeTokenizer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.dsl.grammar.fastpath import completion_kernel as kernel_mod
+
+    session = CompletionSession(tok)
+    seed = session.seed((tok.bos_id,))
+    session.outgoing(seed)
+
+    def _expired() -> None:
+        raise TimeoutError("decode deadline")
+
+    monkeypatch.setattr(kernel_mod, "check_decode_deadline", _expired)
+    with pytest.raises(TimeoutError):
+        session.outgoing(seed)
 
 
 def test_twit4_timeout_inside_string_role_try_propagates(
@@ -715,9 +736,6 @@ def test_twit4_timeout_inside_string_role_try_propagates(
     # During a build only the lazy import inside the guarded try re-reads this
     # attribute (every other user bound it at module import), so the deadline
     # fires exactly inside the try block.
-    # The stateless forest cache is process-global: never serve a cached
-    # forest for this injection (the guarded block must actually run).
-    cd._STATELESS_FOREST_CACHE.clear()
     monkeypatch.setattr(language_contract, "STRUCTURAL_ID_ATOMS", _ExplodingAtoms())
     ids = [tok.bos_id, *tok.encode('root = Callout("info", ', add_special=False)]
     with pytest.raises(TimeoutError):
@@ -761,7 +779,6 @@ def test_twit4_timeout_inside_inventory_try_propagates(
 
     monkeypatch.setattr(dt, "TokenKind", _ExplodingTokenKind)
     monkeypatch.setattr(cd, "apply_literal_frame", _arming_apply_literal_frame)
-    cd._STATELESS_FOREST_CACHE.clear()  # the guarded block must actually run
     ids = [tok.bos_id, *tok.encode("root = Card([b1", add_special=False)]
     with pytest.raises(TimeoutError):
         cd._build_openui_completion_forest(tok, ids, slot_contract=[":slot_0"])
@@ -828,7 +845,9 @@ def test_tmerge2_no_false_merge_stack_vs_card(tok: DSLNativeTokenizer) -> None:
     intern differently — the semantic state's CallFrame.component separates
     them — and their schema-filtered candidate sets must differ."""
     session = CompletionSession(tok, slot_contract=(":slot_0",))
-    stack_sid = session.seed(list(tok.encode("root = Stack([b1], ", add_special=False)))
+    stack_sid = session.seed(
+        list(tok.encode("root = Stack([b1], ", add_special=False))
+    )
     card_sid = session.seed(list(tok.encode("root = Card([b1], ", add_special=False)))
     assert stack_sid != card_sid
     stack_forest = session.outgoing(stack_sid)

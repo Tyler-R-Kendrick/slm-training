@@ -3,22 +3,19 @@
 One :class:`CompletionSession` per completion-domain request.  It interns
 (parser-state, semantic-state) pairs so convergent suffix states are expanded
 once, shares the outgoing-edge computation (the existing
-``_build_openui_completion_forest_impl`` authority) and ONE bounded
-terminal-witness DP across every candidate and every position of the
-request, and path-compresses forced singleton chains.
+``_build_openui_completion_forest_impl`` authority), and path-compresses
+forced singleton chains.
 
 Equivalence contract (this change never widens authority):
 
 * ``outgoing`` returns exactly the forest the scan-based reference build
   returns for the same prefix — the semantic-state views substituted inside
   the impl are parity-proven in ``tests/test_dsl/test_semantic_state.py``.
-* ``terminal_witness`` keeps V1's per-candidate expansion discipline: a fresh
-  ``node_budget`` (16, matching ``dsl/pack.py``'s historical ``nodes_left``)
-  per top-level query, free repeats of an already-charged (state, room) pair
-  within one query (V1's ``lru_cache`` behavior), and first-witness-in-path-
-  order selection.  The session-wide memo stores only *budget-independent*
-  results — a ``None`` produced under a depleted node budget is recomputed
-  for a fresh query, never cached (the memo-poisoning fix).
+* ``terminal_witness`` returns a typed proof using the reference builder's
+  first-path order and per-candidate search allowance.  Each query uses a
+  bounded LRU only for states encountered during that query.  Incomplete
+  coverage and exhausted search authority are UNKNOWN, never silently
+  collapsed into UNSUPPORTED.
 * Certificates and payloads stay token-based; interned state ids are
   request-local and never escape the session.
 
@@ -29,6 +26,7 @@ it is never caught.
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -36,7 +34,7 @@ from typing import Any
 from slm_training.dsl.grammar.fastpath import semantic_state as _ss
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
-    _build_openui_completion_forest_impl,
+    _build_openui_completion_forest_direct,
     _official_schema,
 )
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
@@ -46,19 +44,40 @@ from slm_training.dsl.grammar.fastpath.token_map import (
 )
 from slm_training.models.decode_stats import check_decode_deadline
 
-__all__ = ["CompletionSession", "WitnessProof", "WitnessVerdict"]
+__all__ = [
+    "CompletionSession",
+    "WitnessResult",
+    "WitnessStatus",
+]
 
 
-class WitnessVerdict(str, Enum):
+class WitnessStatus(str, Enum):
+    """Authority status for a bounded terminal-reachability query."""
+
     SUPPORTED = "supported"
     UNSUPPORTED = "unsupported"
     UNKNOWN = "unknown"
 
 
 @dataclass(frozen=True)
-class WitnessProof:
-    witness: tuple[int, ...] | None
-    verdict: WitnessVerdict
+class WitnessResult:
+    """Typed bounded reachability result.
+
+    ``witness`` is populated only for :attr:`WitnessStatus.SUPPORTED`.
+    """
+
+    status: WitnessStatus
+    witness: tuple[int, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.status is WitnessStatus.SUPPORTED and not self.witness:
+            raise ValueError("SUPPORTED requires a non-empty witness")
+        if self.status is not WitnessStatus.SUPPORTED and self.witness:
+            raise ValueError(f"{self.status.value} cannot carry a witness")
+
+    @property
+    def supported(self) -> bool:
+        return self.status is WitnessStatus.SUPPORTED
 
 
 @dataclass
@@ -68,22 +87,6 @@ class _StateRecord:
     engine: OpenUIIncrementalEngine
     semantic: Any
     prefix_ids: tuple[int, ...]
-    recognition: Any | None = None
-
-
-@dataclass
-class _TransitionRow:
-    """One request-local static row plus lazily verified edge targets."""
-
-    forest: CompletionForest
-    targets: dict[tuple[int, ...], int | _RecognitionTarget | None]
-
-
-@dataclass(frozen=True)
-class _RecognitionTarget:
-    """A verified tree-free endpoint, materialized only when traversed."""
-
-    snapshot: Any
 
 
 class CompletionSession:
@@ -109,13 +112,8 @@ class CompletionSession:
         explain: bool = False,
         node_budget: int = 16,
     ) -> None:
-        # ``runtime_symbols`` is authority context only: it participates in
-        # the pack-level request fingerprint (``dsl/pack.py``
-        # ``_openui_domain_fingerprint``) and is intentionally NOT stored on
-        # the session — nothing in the kernel reads it, and a dead stored
-        # copy is how authority context and behavior drift apart.  Sessions
-        # are request-local and constructed per request with the symbols in
-        # scope, so the context is fixed by construction.
+        # Every hard-authority input is owned by this request-local object;
+        # no state or proof cache crosses contexts.
         self._tokenizer = tokenizer
         self._slot_contract = tuple(slot_contract or ())
         self._min_content = int(min_content)
@@ -126,30 +124,14 @@ class CompletionSession:
         self._explain = bool(explain)
         self._node_budget = max(1, int(node_budget))
         self._schema = _official_schema()
+        self._semantic_arena = _ss.SemanticArena()
+        self._runtime_symbols = tuple(runtime_symbols)
 
         self._states: list[_StateRecord] = []
         self._intern: dict[tuple[Any, Any], int] = {}
         self._transitions: dict[tuple[int, int], int | None] = {}
-        self._path_transitions: dict[tuple[int, tuple[int, ...]], int | None] = {}
         self._outgoing: dict[int, CompletionForest] = {}
-        self._rows: dict[int, _TransitionRow] = {}
-        # (state, room) -> budget-costing keys (in evaluation order) of a
-        # proven-UNSUPPORTED exploration.  Only fully explored, complete-
-        # authority None verdicts are stored (see ``terminal_witness``);
-        # UNKNOWN (incomplete authority) and budget-truncated verdicts stay
-        # query-local, and witness results are kept query-local.
-        self._reach: dict[tuple[int, int], tuple[tuple[int, int], ...]] = {}
-        self._witness: dict[
-            tuple[int, int], tuple[tuple[int, ...], tuple[tuple[int, int], ...]]
-        ] = {}
-        # Complete-authority searches that consume the fresh node budget may
-        # replay that exact charge schedule. They remain UNKNOWN (never a
-        # negative proof); incomplete-authority UNKNOWN is never cached.
-        self._budget_unknown: dict[
-            tuple[int, int, int], tuple[tuple[int, int], ...]
-        ] = {}
         self._forced: dict[tuple[int, int], tuple[tuple[int, ...], int, str]] = {}
-        self._results: dict[tuple[int, int, str], Any] = {}
         self._counters: dict[str, int] = {
             "session_starts": 1,
             "state_intern_hits": 0,
@@ -162,11 +144,7 @@ class CompletionSession:
             "domain_cache_misses": 0,
             "reachability_cache_hits": 0,
             "reachability_cache_misses": 0,
-            "witness_cache_hits": 0,
-            "witness_cache_misses": 0,
             "witness_states_expanded": 0,
-            "budget_unknown_cache_hits": 0,
-            "budget_unknown_cache_misses": 0,
             "forced_closure_hits": 0,
             "forced_closure_tokens": 0,
             "direct_terminal_feeds": 0,
@@ -175,17 +153,6 @@ class CompletionSession:
             "parser_forks": 0,
             "candidate_engine_allocations": 0,
             "scope_reference_scans_avoided": 0,
-            "result_cache_hits": 0,
-            "result_cache_misses": 0,
-            "transition_rows_built": 0,
-            "transition_rows_lookups": 0,
-            "transition_rows_hits": 0,
-            "transition_rows_misses": 0,
-            "semantic_masks_applied": 0,
-            "edge_replays": 0,
-            "value_tree_clones": 0,
-            "ast_bridge_calls": 0,
-            "general_forest_builds": 0,
         }
 
     # --- introspection ----------------------------------------------------
@@ -193,6 +160,23 @@ class CompletionSession:
     def stats(self) -> dict[str, int]:
         """Session instrumentation snapshot (request-local counters)."""
         return dict(self._counters)
+
+    def close(self) -> None:
+        """Release request-owned parser, semantic, and proof state eagerly."""
+        self._states.clear()
+        self._intern.clear()
+        self._transitions.clear()
+        self._outgoing.clear()
+        self._forced.clear()
+        self._semantic_arena.clear()
+
+    def __del__(self) -> None:
+        # Completion-domain requests are short-lived.  Eagerly sever Lark's
+        # parser/value-stack object graph rather than waiting for cyclic GC.
+        try:
+            self.close()
+        except Exception:
+            pass
 
     @property
     def unique_states(self) -> int:
@@ -202,37 +186,22 @@ class CompletionSession:
 
     def _fork(self, engine: OpenUIIncrementalEngine) -> OpenUIIncrementalEngine:
         self._counters["parser_forks"] += 1
-        self._counters["value_tree_clones"] += 1
-        return engine.copy()
+        return engine.copy_control()
 
     def _intern_state(
         self,
         engine: OpenUIIncrementalEngine,
         semantic: Any,
         prefix_ids: tuple[int, ...],
-        *,
-        recognition: Any | None = None,
     ) -> int:
-        if recognition is None:
-            recognition_state = getattr(engine, "recognition_state", None)
-            if callable(recognition_state):
-                recognition = recognition_state()
-        key = (
-            (
-                getattr(recognition, "key", None),
-                getattr(recognition, "lexical_junction", None),
-            )
-            if recognition is not None
-            else engine.parser_state_key(),
-            semantic,
-        )
+        key = (engine.parser_state_key(), semantic)
         state_id = self._intern.get(key)
         if state_id is not None:
             self._counters["state_intern_hits"] += 1
             return state_id
         state_id = len(self._states)
         self._intern[key] = state_id
-        self._states.append(_StateRecord(engine, semantic, prefix_ids, recognition))
+        self._states.append(_StateRecord(engine, semantic, prefix_ids))
         self._counters["state_intern_misses"] += 1
         self._counters["unique_states"] += 1
         return state_id
@@ -252,16 +221,36 @@ class CompletionSession:
         candidate-engine allocation).
         """
         ids = tuple(int(token_id) for token_id in prefix_ids)
-        semantic = _ss.initial_state(self._tokenizer)
+        bos_id = int(self._tokenizer.bos_id)
+        forbidden = {
+            int(self._tokenizer.pad_id),
+            int(self._tokenizer.mask_id),
+            int(self._tokenizer.eos_id),
+            int(self._tokenizer.unk_id),
+        }
+        for index, token_id in enumerate(ids):
+            if token_id in forbidden:
+                raise ValueError(
+                    f"special token {token_id} is not legal in a completion prefix"
+                )
+            if token_id == bos_id and index != 0:
+                raise ValueError("BOS is legal only at prefix position zero")
+        semantic = _ss.initial_state(
+            self._tokenizer, arena=self._semantic_arena
+        )
         for token_id in ids:
             semantic = _ss.advance(
-                semantic, token_id, self._tokenizer, schema=self._schema
+                semantic,
+                token_id,
+                self._tokenizer,
+                schema=self._schema,
+                arena=self._semantic_arena,
             )
         holder_engine = getattr(state, "engine", None) if state is not None else None
         if isinstance(holder_engine, OpenUIIncrementalEngine):
-            positioned = holder_engine
+            positioned = self._fork(holder_engine)
         elif isinstance(engine, OpenUIIncrementalEngine):
-            positioned = engine
+            positioned = self._fork(engine)
         else:
             self._counters["candidate_engine_allocations"] += 1
             positioned = OpenUIIncrementalEngine()
@@ -269,14 +258,11 @@ class CompletionSession:
             text = state.sync_ids(self._tokenizer, list(ids))
         else:
             text = decode_prefix(self._tokenizer, list(ids))
-        in_sync = bool(
-            state is not None
-            and callable(getattr(state, "engine_in_sync", None))
-            and state.engine_in_sync(list(ids), text)
-        )
-        if not in_sync:
-            positioned.set_prefix(text)
-            self._counters["full_prefix_lex_bytes"] += len(text)
+        if not positioned.set_prefix(text):
+            raise ValueError("completion prefix is rejected by the grammar")
+        if not getattr(positioned, "_control_only", False):
+            positioned = positioned.copy_control()
+        self._counters["full_prefix_lex_bytes"] += len(text)
         return self._intern_state(positioned, semantic, ids)
 
     def prefix_ids_of(self, state_id: int) -> tuple[int, ...]:
@@ -285,39 +271,20 @@ class CompletionSession:
     def semantic_of(self, state_id: int) -> Any:
         return self._states[int(state_id)].semantic
 
-    def restore_decode_state(
-        self,
-        state_id: int,
-        state: Any,
-        *,
-        context: str,
-        pool: dict[tuple[str, tuple[int, ...]], tuple[object, int]] | None,
-    ) -> None:
-        """Restore a decoder row from an interned state without prefix replay."""
-        record = self._states[int(state_id)]
-        state.engine = self._fork(record.engine)
-        state.prefix_ids = list(record.prefix_ids)
-        state.prefix_text = decode_prefix(self._tokenizer, list(record.prefix_ids))
-        state.engine_ids_len = len(record.prefix_ids)
-        state.completion_session = self
-        state.completion_session_context = str(context)
-        state.completion_state_id = int(state_id)
-        state.completion_stats_snapshot = self.stats()
-        state.completion_session_pool = pool
-        state.clear_position_memo()
+    def restore(self, state_id: int) -> int:
+        """Validate and return an immutable interned state id for rollback."""
+        sid = int(state_id)
+        if sid < 0 or sid >= len(self._states):
+            raise IndexError(f"completion state id out of range: {sid}")
+        return sid
 
-    def cached_result(self, state_id: int, room: int, fingerprint: str) -> Any | None:
-        result = self._results.get((int(state_id), int(room), str(fingerprint)))
-        self._counters[
-            "result_cache_hits" if result is not None else "result_cache_misses"
-        ] += 1
-        return result
-
-    def cache_result(
-        self, state_id: int, room: int, fingerprint: str, result: Any
-    ) -> Any:
-        self._results[(int(state_id), int(room), str(fingerprint))] = result
-        return result
+    def accepts_eos(self, state_id: int) -> bool:
+        """Whether the exact constrained domain admits EOS at ``state_id``."""
+        eos_id = int(self._tokenizer.eos_id)
+        return any(
+            path.kind == "eos" and tuple(path.token_ids) == (eos_id,)
+            for path in self.outgoing(int(state_id)).paths
+        )
 
     # --- transitions --------------------------------------------------------
 
@@ -333,55 +300,37 @@ class CompletionSession:
             self._counters["transition_cache_hits"] += 1
             return cached
         self._counters["transition_cache_misses"] += 1
-        row = self._rows.get(int(state_id))
-        targets = row.targets if row is not None else {}
-        if (int(token_id),) in targets:
-            return self.advance_path(int(state_id), (int(token_id),))
         record = self._states[int(state_id)]
-        if record.recognition is not None:
-            raw = str(self._tokenizer.id_to_token.get(int(token_id), ""))
-            if raw in {"LIT_STR", "LIT_NUM", "LIT_END"}:
-                status = "accepted"
-                child_recognition = record.recognition
-            elif getattr(record.semantic, "literal_kind", ""):
-                child_recognition = record.engine.recognition_from_text(
-                    decode_prefix(
-                        self._tokenizer,
-                        [*record.prefix_ids, int(token_id)],
-                    )
-                )
-                status = "accepted" if child_recognition is not None else "rejected"
-            else:
-                advanced = record.engine.recognition_advance(
-                    record.recognition, self._tokenizer, int(token_id)
-                )
-                status = advanced.status.value
-                child_recognition = advanced.snapshot
-            if status == "rejected":
+        tid = int(token_id)
+        if tid in {
+            int(self._tokenizer.pad_id),
+            int(self._tokenizer.mask_id),
+            int(self._tokenizer.bos_id),
+            int(self._tokenizer.eos_id),
+            int(self._tokenizer.unk_id),
+        }:
+            # EOS is a terminal certificate, not a parser transition.  Query
+            # it with accepts_eos(); every other special is always illegal.
+            self._transitions[key] = None
+            return None
+        kind_of = getattr(self._tokenizer, "kind_of", None)
+        kind = (
+            str(getattr(kind_of(tid), "value", ""))
+            if callable(kind_of)
+            else ""
+        )
+        if kind == "macro":
+            expand = getattr(self._tokenizer, "expand_macros", None)
+            expanded = list(expand([tid])) if callable(expand) else []
+            if not expanded or expanded == [tid]:
                 self._transitions[key] = None
                 return None
-            if status == "accepted" and child_recognition is not None:
-                semantic = _ss.advance(
-                    record.semantic,
-                    int(token_id),
-                    self._tokenizer,
-                    schema=self._schema,
-                )
-                child_id = self._intern_state(
-                    record.engine,
-                    semantic,
-                    record.prefix_ids + (int(token_id),),
-                    recognition=child_recognition,
-                )
-                self._transitions[key] = child_id
-                self._counters["direct_terminal_feeds"] += 1
-                return child_id
         child = self._fork(record.engine)
-        outcome = child.feed_token_id(self._tokenizer, int(token_id))
+        outcome = child.feed_token_id(self._tokenizer, tid)
         if outcome is None:
             # Ambiguous junction — canonical text route.
             self._counters["full_sync_fallbacks"] += 1
-            piece = token_surface_piece(self._tokenizer, int(token_id))
+            piece = token_surface_piece(self._tokenizer, tid)
             self._counters["full_prefix_lex_bytes"] += len(piece)
             outcome = child.advance_checked(piece)
         elif outcome:
@@ -390,10 +339,14 @@ class CompletionSession:
             self._transitions[key] = None
             return None
         semantic = _ss.advance(
-            record.semantic, int(token_id), self._tokenizer, schema=self._schema
+            record.semantic,
+            tid,
+            self._tokenizer,
+            schema=self._schema,
+            arena=self._semantic_arena,
         )
         child_id = self._intern_state(
-            child, semantic, record.prefix_ids + (int(token_id),)
+            child, semantic, record.prefix_ids + (tid,)
         )
         self._transitions[key] = child_id
         return child_id
@@ -402,49 +355,11 @@ class CompletionSession:
         self, state_id: int, token_ids: tuple[int, ...] | list[int]
     ) -> int | None:
         """Fold ``token_ids`` through :meth:`advance`; ``None`` on rejection."""
-        tokens = tuple(int(token_id) for token_id in token_ids)
-        key = (int(state_id), tokens)
-        cached = self._path_transitions.get(key, _MISSING)
-        if cached is not _MISSING:
-            self._counters["transition_cache_hits"] += 1
-            return cached
-        row = self._rows.get(int(state_id))
-        targets = row.targets if row is not None else {}
-        if targets:
-            target = targets.get(tokens, _MISSING)
-            if isinstance(target, _RecognitionTarget):
-                record = self._states[int(state_id)]
-                semantic = record.semantic
-                for token_id in tokens:
-                    semantic = _ss.advance(
-                        semantic, token_id, self._tokenizer, schema=self._schema
-                    )
-                child = self._intern_state(
-                    record.engine,
-                    semantic,
-                    record.prefix_ids + tokens,
-                    recognition=target.snapshot,
-                )
-                targets[tokens] = child
-                self._path_transitions[key] = child
-                self._counters["direct_terminal_feeds"] += len(tokens)
-                if len(tokens) == 1:
-                    self._transitions[(int(state_id), tokens[0])] = child
-                return child
-            if target is not _MISSING:
-                self._path_transitions[key] = target
-                return target
-        if row is not None:
-            self._counters["edge_replays"] += 1
         current: int | None = int(state_id)
-        for token_id in tokens:
+        for token_id in token_ids:
             if current is None:
-                break
+                return None
             current = self.advance(current, int(token_id))
-        self._path_transitions[key] = current
-        row = self._rows.get(int(state_id))
-        if row is not None:
-            row.targets[tokens] = current
         return current
 
     # --- outgoing edges ------------------------------------------------------
@@ -457,28 +372,18 @@ class CompletionSession:
         authority path byte-for-byte; such builds are never cached (same rule
         as the memoizing front).
         """
+        check_decode_deadline()
         state_id = int(state_id)
-        self._counters["transition_rows_lookups"] += 1
         if state is None:
-            row = self._rows.get(state_id)
-            if row is not None:
-                self._counters["transition_rows_hits"] += 1
+            cached = self._outgoing.get(state_id)
+            if cached is not None:
                 self._counters["domain_cache_hits"] += 1
-                return row.forest
-            self._counters["transition_rows_misses"] += 1
+                return cached
         self._counters["domain_cache_misses"] += 1
         record = self._states[state_id]
-        recognition = record.recognition
-        engine = (
-            None
-            if state is not None
-            else (
-                record.engine if recognition is not None else self._fork(record.engine)
-            )
-        )
+        engine = None if state is not None else self._fork(record.engine)
         scan_counter: dict[str, int] = {"avoided": 0}
-        transition_snapshots: dict[tuple[int, ...], Any] = {}
-        forest = _build_openui_completion_forest_impl(
+        forest = _build_openui_completion_forest_direct(
             self._tokenizer,
             list(record.prefix_ids),
             state=state,
@@ -492,268 +397,77 @@ class CompletionSession:
             explain=self._explain,
             semantic_state=record.semantic,
             scan_counter=scan_counter,
-            recognition_snapshot=recognition,
-            transition_snapshots=transition_snapshots,
         )
-        if recognition is None:
-            self._counters["general_forest_builds"] += 1
+        check_decode_deadline()
         self._counters["edges_built"] += 1
-        self._counters["semantic_masks_applied"] += 1
         self._counters["scope_reference_scans_avoided"] += scan_counter["avoided"]
         if state is None:
             self._outgoing[state_id] = forest
-            targets: dict[tuple[int, ...], int | _RecognitionTarget | None] = {
-                tokens: _RecognitionTarget(snapshot)
-                for tokens, snapshot in transition_snapshots.items()
-            }
-            self._rows[state_id] = _TransitionRow(forest, targets)
-            self._counters["transition_rows_built"] += 1
         return forest
 
     # --- bounded terminal-witness DP -----------------------------------------
 
-    def terminal_witness_proof(
-        self, state_id: int, room: int
-    ) -> tuple[tuple[int, ...] | None, bool]:
-        """Iteratively prove SUPPORTED/UNSUPPORTED; ``False`` means UNKNOWN.
+    def terminal_witness(self, state_id: int, room: int) -> WitnessResult:
+        """Return V1's first-in-path-order witness with typed uncertainty.
 
-        The explicit stack preserves the historical path order, fresh
-        per-query node budget and 64-entry LRU. Session caches are committed
-        only after the whole query returns normally, so a deadline or
-        interrupt can never leave a partial proof behind.
+        Each top-level candidate receives the historical 16-node allowance
+        and a 64-entry query-local LRU. This preserves the reference's
+        behavior-visible expansion order. Results affected by partial
+        authority or budget depletion are UNKNOWN and never enter the
+        session-wide memo.
         """
-        root_key = (int(state_id), int(room))
-        check_decode_deadline()
-        # At the top level the fresh budget has no later consumer. A cached
-        # proof whose recorded charge fits can therefore return directly;
-        # nested replays still debit every node before exploring siblings.
-        if (
-            (shared_witness := self._witness.get(root_key)) is not None
-            and len(shared_witness[1]) <= self._node_budget
-        ):
-            self._counters["witness_cache_hits"] += 1
-            return shared_witness[0], True
-        if (
-            (shared_reach := self._reach.get(root_key)) is not None
-            and len(shared_reach) <= self._node_budget
-        ):
-            self._counters["witness_cache_misses"] += 1
-            self._counters["reachability_cache_hits"] += 1
-            return None, True
-        budget_unknown_key = (*root_key, self._node_budget)
-        if budget_unknown_key in self._budget_unknown:
-            self._counters["witness_cache_misses"] += 1
-            self._counters["budget_unknown_cache_hits"] += 1
-            return None, False
-
+        sid = int(state_id)
+        rm = max(0, int(room))
         nodes_left = self._node_budget
-        budget_exhausted = False
-        incomplete_authority = False
-        query_cache: dict[tuple[int, int], tuple[tuple[int, ...] | None, bool]] = {}
-        _QUERY_CACHE_CAP = 64
-        pending_reach: dict[tuple[int, int], tuple[tuple[int, int], ...]] = {}
-        pending_witness: dict[
-            tuple[int, int], tuple[tuple[int, ...], tuple[tuple[int, int], ...]]
-        ] = {}
+        query_cache: OrderedDict[tuple[int, int], WitnessResult] = OrderedDict()
 
-        def _qget(key: tuple[int, int]) -> tuple[tuple[int, ...] | None, bool] | None:
-            value = query_cache.get(key)
-            if value is not None:
-                query_cache[key] = query_cache.pop(key)  # refresh recency
-            return value
-
-        def _qput(
-            key: tuple[int, int], value: tuple[tuple[int, ...] | None, bool]
-        ) -> None:
-            if key in query_cache:
-                query_cache.pop(key)
-            query_cache[key] = value
-            while len(query_cache) > _QUERY_CACHE_CAP:
-                query_cache.pop(next(iter(query_cache)))
-
-        def _replay(
-            key: tuple[int, int],
-            taxed_keys: tuple[tuple[int, int], ...],
-            witness: tuple[int, ...] | None,
-            *,
-            proven: bool = True,
-        ) -> tuple[tuple[int, ...] | None, bool, tuple[tuple[int, int], ...]]:
-            nonlocal budget_exhausted, nodes_left
-            charged: list[tuple[int, int]] = []
-            for taxed_key in taxed_keys:
-                if _qget(taxed_key) is not None:
-                    continue
-                if nodes_left <= 0:
-                    budget_exhausted = True
-                    _qput(key, (None, False))
-                    return None, False, tuple(charged)
+        def _eval(current: int, remaining: int) -> WitnessResult:
+            nonlocal nodes_left
+            check_decode_deadline()
+            key = (int(current), int(remaining))
+            cached = query_cache.get(key)
+            if cached is not None:
+                query_cache.move_to_end(key)
+                self._counters["reachability_cache_hits"] += 1
+                return cached
+            if remaining <= 0:
+                result = WitnessResult(WitnessStatus.UNSUPPORTED)
+            elif nodes_left <= 0:
+                result = WitnessResult(WitnessStatus.UNKNOWN)
+            else:
                 nodes_left -= 1
-                _qput(taxed_key, (None, True))
-                charged.append(taxed_key)
-            _qput(key, (witness, proven))
-            return witness, proven, tuple(charged)
-
-        @dataclass
-        class _Frame:
-            sid: int
-            rm: int
-            key: tuple[int, int]
-            paths: tuple[Any, ...]
-            index: int = 0
-            proven: bool = True
-            taxed: list[tuple[int, int]] | None = None
-            pending_tokens: tuple[int, ...] | None = None
-
-        stack: list[_Frame] = []
-        request: tuple[int, int] | None = (int(state_id), int(room))
-        result: (
-            tuple[tuple[int, ...] | None, bool, tuple[tuple[int, int], ...]] | None
-        ) = None
-
-        while request is not None or stack or result is not None:
-            if request is not None:
-                check_decode_deadline()
-                sid, rm = request
-                request = None
-                key = (sid, rm)
-                hit = _qget(key)
-                if hit is not None:
-                    result = (hit[0], hit[1], ())
-                elif rm <= 0:
-                    _qput(key, (None, True))
-                    result = (None, True, ())
-                elif nodes_left <= 0:
-                    budget_exhausted = True
-                    _qput(key, (None, False))
-                    result = (None, False, ())
-                elif (shared := self._witness.get(key)) is not None:
-                    self._counters["witness_cache_hits"] += 1
-                    result = _replay(key, shared[1], shared[0])
-                elif (shared_reach := self._reach.get(key)) is not None:
-                    self._counters["witness_cache_misses"] += 1
-                    self._counters["reachability_cache_hits"] += 1
-                    result = _replay(key, shared_reach, None)
-                elif (
-                    shared_unknown := self._budget_unknown.get(
-                        (*key, self._node_budget)
-                    )
-                ) is not None:
-                    self._counters["witness_cache_misses"] += 1
-                    self._counters["budget_unknown_cache_hits"] += 1
-                    result = _replay(key, shared_unknown, None, proven=False)
-                else:
-                    self._counters["witness_cache_misses"] += 1
-                    self._counters["budget_unknown_cache_misses"] += 1
-                    self._counters["reachability_cache_misses"] += 1
-                    self._counters["witness_states_expanded"] += 1
-                    nodes_left -= 1
-                    forest = self.outgoing(sid)
-                    if forest.coverage != "complete":
-                        incomplete_authority = True
-                        _qput(key, (None, False))
-                        result = (None, False, ())
-                    else:
-                        stack.append(
-                            _Frame(
-                                sid,
-                                rm,
-                                key,
-                                forest.paths,
-                                taxed=[key],
-                            )
-                        )
-
-            if result is not None:
-                if not stack:
-                    break
-                parent = stack[-1]
-                tokens = parent.pending_tokens
-                if tokens is None:
-                    # The result belongs to a root request whose frame was
-                    # satisfied immediately.
-                    break
-                witness, child_proven, child_taxed = result
-                result = None
-                parent.pending_tokens = None
-                assert parent.taxed is not None
-                parent.taxed.extend(child_taxed)
-                if witness is not None:
-                    combined = tokens + witness
-                    stored = tuple(parent.taxed)
-                    _qput(parent.key, (combined, True))
-                    pending_witness[parent.key] = (combined, stored)
-                    stack.pop()
-                    result = (combined, True, stored)
-                else:
-                    parent.proven = parent.proven and child_proven
-
-            if result is None and stack:
-                frame = stack[-1]
-                scheduled = False
-                while frame.index < len(frame.paths):
-                    path = frame.paths[frame.index]
-                    frame.index += 1
+                self._counters["reachability_cache_misses"] += 1
+                self._counters["witness_states_expanded"] += 1
+                forest = self.outgoing(current)
+                saw_unknown = forest.coverage != "complete"
+                result = WitnessResult(WitnessStatus.UNSUPPORTED)
+                for path in forest.paths:
                     tokens = tuple(int(token_id) for token_id in path.token_ids)
-                    if not tokens:
-                        raise ValueError("completion graph edges must consume a token")
-                    if len(tokens) > frame.rm:
+                    if not tokens or len(tokens) > remaining:
                         continue
                     if path.kind == "eos":
-                        assert frame.taxed is not None
-                        stored = tuple(frame.taxed)
-                        _qput(frame.key, (tokens, True))
-                        pending_witness[frame.key] = (tokens, stored)
-                        stack.pop()
-                        result = (tokens, True, stored)
+                        result = WitnessResult(WitnessStatus.SUPPORTED, tokens)
                         break
-                    child = self.advance_path(frame.sid, tokens)
+                    child = self.advance_path(current, tokens)
                     if child is None:
                         continue
-                    frame.pending_tokens = tokens
-                    request = (child, frame.rm - len(tokens))
-                    scheduled = True
-                    break
+                    suffix = _eval(child, remaining - len(tokens))
+                    if suffix.status is WitnessStatus.SUPPORTED:
+                        result = WitnessResult(
+                            WitnessStatus.SUPPORTED, tokens + suffix.witness
+                        )
+                        break
+                    saw_unknown |= suffix.status is WitnessStatus.UNKNOWN
                 else:
-                    assert frame.taxed is not None
-                    stored = tuple(frame.taxed)
-                    _qput(frame.key, (None, frame.proven))
-                    if frame.proven:
-                        pending_reach[frame.key] = stored
-                        result = (None, True, stored)
-                    else:
-                        result = (None, False, stored)
-                    stack.pop()
-                if scheduled:
-                    continue
+                    if saw_unknown:
+                        result = WitnessResult(WitnessStatus.UNKNOWN)
+            query_cache[key] = result
+            query_cache.move_to_end(key)
+            if len(query_cache) > 64:
+                query_cache.popitem(last=False)
+            return result
 
-        if result is None:
-            result = (None, False, ())
-        witness, proven, _ = result
-        self._reach.update(pending_reach)
-        self._witness.update(pending_witness)
-        if (
-            witness is None
-            and not proven
-            and budget_exhausted
-            and not incomplete_authority
-            and result[2]
-        ):
-            self._budget_unknown[budget_unknown_key] = result[2]
-        return witness, proven
-
-    def terminal_witness(self, state_id: int, room: int) -> tuple[int, ...] | None:
-        """First-in-path-order terminal witness within ``room`` tokens, or None."""
-        return self.terminal_witness_proof(state_id, room)[0]
-
-    def terminal_witness_verdict(self, state_id: int, room: int) -> WitnessProof:
-        """Tri-state facade: incomplete authority is UNKNOWN, never rejection."""
-        witness, proven = self.terminal_witness_proof(state_id, room)
-        verdict = (
-            WitnessVerdict.SUPPORTED
-            if witness is not None
-            else (WitnessVerdict.UNSUPPORTED if proven else WitnessVerdict.UNKNOWN)
-        )
-        return WitnessProof(witness, verdict)
+        return _eval(sid, rm)
 
     # --- forced singleton closure ---------------------------------------------
 
@@ -766,6 +480,7 @@ class CompletionSession:
         an EOS path, a literal boundary, incomplete authority, or budget.
         Returns ``(token_ids, terminal_state_id, coverage)``.
         """
+        check_decode_deadline()
         key = (int(state_id), int(room))
         cached = self._forced.get(key)
         if cached is not None:
@@ -783,7 +498,8 @@ class CompletionSession:
             path = forest.paths[0]
             if path.kind == "eos" or not path.token_ids:
                 break
-            if len(tokens) + len(path.token_ids) > int(room):
+            remaining = int(room) - len(tokens)
+            if len(path.token_ids) > remaining:
                 break
             if any(
                 str(self._tokenizer.id_to_token.get(int(token_id), ""))
@@ -794,12 +510,10 @@ class CompletionSession:
             nxt = self.advance_path(current, path.token_ids)
             if nxt is None:
                 break
-            remaining = int(room) - len(tokens) - len(path.token_ids)
-            if self.terminal_witness(nxt, remaining) is None:
-                break
             tokens.extend(int(token_id) for token_id in path.token_ids)
             current = nxt
         result = (tuple(tokens), current, coverage)
+        check_decode_deadline()
         self._forced[key] = result
         self._counters["forced_closure_tokens"] += len(tokens)
         return result

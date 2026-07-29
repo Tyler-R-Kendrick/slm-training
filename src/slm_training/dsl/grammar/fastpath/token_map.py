@@ -6,20 +6,12 @@ scan) and the V5 lexer-native ``DSLNativeTokenizer`` (exact kind metadata).
 
 from __future__ import annotations
 
-import hashlib
-import json
 import re
-from dataclasses import dataclass
-from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 from slm_training.models.tokenizer import OpenUITokenizer
 
 _DSL_ALLOWED_CACHE: dict[tuple[int, int, frozenset[str]], frozenset[int]] = {}
-_DSL_DIRECT_FACTS_CACHE: dict[
-    tuple[str, tuple[tuple[str, str, str], ...]], "DSLDirectTokenFacts"
-] = {}
-_DSL_DIRECT_FACTS_CACHE_CAP = 16
 _NUMBER_COMPLETE = re.compile(
     r"^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$"
 )
@@ -29,26 +21,6 @@ _NUMBER_PREFIX = re.compile(
     r"-?\.\d*|"
     r"-?(?:\d+(?:\.\d*)?|\.\d+)[eE][+-]?\d*)$"
 )
-
-
-@dataclass(frozen=True, slots=True)
-class DSLDirectTokenFacts:
-    """Immutable verified token facts for one frozen tokenizer layout."""
-
-    layout_key: str
-    punct: Mapping[int, str]
-    bool: Mapping[int, str]
-    null: Mapping[int, str]
-    kind_terminals: Mapping[Any, str]
-    str_lit_ids: Mapping[int, str]
-    lit_str: int | None
-    lit_num: int
-    lit_end: int
-    skip_ids: frozenset[int]
-
-    def __getitem__(self, name: str) -> Any:
-        """Compatibility for the existing direct-feed call sites."""
-        return getattr(self, name)
 
 
 def _is_dsl_native(tokenizer: Any) -> bool:
@@ -198,55 +170,36 @@ def apply_literal_frame(
     return set(candidates) - byte_ids - {int(closer)}
 
 
-def _dsl_layout_key(tokenizer: Any) -> str:
-    """Stable identity for the checkpoint-bound token-id layout."""
-    payload = {
-        "version": int(getattr(tokenizer, "version", 0)),
-        "token_to_id": sorted(
-            (str(token), int(token_id))
-            for token, token_id in tokenizer.token_to_id.items()
-        ),
-        "id_to_kind": sorted(
-            (int(token_id), str(kind))
-            for token_id, kind in tokenizer.id_to_kind.items()
-        ),
-    }
-    return hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-
-
 def dsl_direct_terminal_map(
     tokenizer: Any,
     grammar_terminals: Any,
-) -> DSLDirectTokenFacts | None:
+) -> dict[str, Any] | None:
     """Verified DSL-native token-id → Lark-terminal mapping for direct feeds.
 
-    Facts are cached process-wide by stable tokenizer-layout digest and live
-    grammar-terminal signature. Request-local symbol values and macro
-    expansions are deliberately absent. Anything unverifiable returns
-    ``None`` so callers stay on the canonical text path.
+    Derived at call time from the live tokenizer metadata and the grammar's
+    ``TerminalDef`` list (``Lark.terminals``) — never a hardcoded table. Every
+    emitted terminal name is checked against the actual grammar's terminal set;
+    anything unverifiable fails closed (returns ``None``) so the caller stays
+    on the canonical text path. The engine feeds only the terminals named here:
+    literal (string-pattern) terminals for punctuation, regex terminals for the
+    broad content kinds, and framed-literal openers/closer for ``STRING`` /
+    ``NUMBER`` bodies.
+
+    Returned dict keys:
+
+    - ``punct``: ``{token_id: terminal_name}`` for STRUCT punctuation + NL.
+    - ``bool`` / ``null``: ``{token_id: "BOOL"}`` / ``{token_id: "NULL"}``.
+    - ``kind_terminals``: ``{TokenKind: terminal_name}`` for COMPONENT,
+      BUILTIN, BIND (→ NAME), STATE (→ STATE_NAME), SYM (→ STRING).
+    - ``str_lit_ids``: ``{token_id: "STRING"}`` for fixed ``STR:*`` LIT rows.
+    - ``lit_str`` / ``lit_num`` / ``lit_end``: framed-literal opener/closer
+      ids (``lit_str`` may be ``None`` when the vocab has no ``LIT_STR`` row).
+    - ``skip_ids``: BOS/EOS/PAD/MASK ids — never fed, consumed as no-ops.
     """
     if not _is_dsl_native(tokenizer):
         return None
 
     from slm_training.models.dsl_tokenizer import TokenKind
-
-    layout_key = _dsl_layout_key(tokenizer)
-    terminal_signature = tuple(
-        sorted(
-            (
-                str(t.name),
-                str(t.pattern.type),
-                str(t.pattern.value),
-            )
-            for t in grammar_terminals
-        )
-    )
-    cache_key = (layout_key, terminal_signature)
-    cached = _DSL_DIRECT_FACTS_CACHE.get(cache_key)
-    if cached is not None:
-        return cached
 
     by_name = {t.name: t for t in grammar_terminals}
     required = {
@@ -315,24 +268,17 @@ def dsl_direct_terminal_map(
         )
         if token_id is not None
     }
-    facts = DSLDirectTokenFacts(
-        layout_key=layout_key,
-        punct=MappingProxyType(punct),
-        bool=MappingProxyType(bool_ids),
-        null=MappingProxyType({int(t2id["null"]): "NULL"}),
-        kind_terminals=MappingProxyType(kind_terminals),
-        str_lit_ids=MappingProxyType(str_lit_ids),
-        lit_str=(
-            int(value) if (value := t2id.get("LIT_STR")) is not None else None
-        ),
-        lit_num=int(lit_num),
-        lit_end=int(lit_end),
-        skip_ids=frozenset(skip_ids),
-    )
-    if len(_DSL_DIRECT_FACTS_CACHE) >= _DSL_DIRECT_FACTS_CACHE_CAP:
-        _DSL_DIRECT_FACTS_CACHE.clear()
-    _DSL_DIRECT_FACTS_CACHE[cache_key] = facts
-    return facts
+    return {
+        "punct": punct,
+        "bool": bool_ids,
+        "null": {int(t2id["null"]): "NULL"},
+        "kind_terminals": kind_terminals,
+        "str_lit_ids": str_lit_ids,
+        "lit_str": t2id.get("LIT_STR"),
+        "lit_num": int(lit_num),
+        "lit_end": int(lit_end),
+        "skip_ids": skip_ids,
+    }
 
 
 def terminal_equivalence_classes(

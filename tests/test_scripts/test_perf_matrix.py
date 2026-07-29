@@ -1,17 +1,17 @@
-import argparse
-import json
-import time
-
-import pytest
-
 from scripts.run_perf_matrix import (
-    _COMPLETION_REQUIRED_WORKLOADS,
-    _completion_fixture_digest,
-    _completion_solver_bench,
+    _choice_brute_allowed_ids,
+    _choice_brute_distance,
+    _choice_fixture_states,
+    _compiler_batch_fixture_gates,
+    _completion_domain_payload,
+    _completion_fixture_gates,
     _guardrails,
-    _median_mad,
-    _merge_completion_shards,
-    _paired_measure,
+    _legacy_choice_allowed_ids,
+    _payload_digest,
+    _persist_agentv_bundle,
+    _prior_choice_diagnostic,
+    _repo_relative_artifact_paths,
+    _sample_summary,
     experiments,
 )
 
@@ -43,123 +43,160 @@ def test_c5_c10_are_registered_without_running() -> None:
     assert rows["C10"].compiler_prefill_max_states == 0
 
 
-def test_completion_pairing_alternates_and_records_stable_stats() -> None:
-    measured = _paired_measure(lambda: {"v": 1}, lambda: {"v": 1}, 4, min_sample_ns=0)
-
-    assert [pair["order"] for pair in measured["pairs"]] == [
-        ["reference", "packed"],
-        ["packed", "reference"],
-        ["reference", "packed"],
-        ["packed", "reference"],
-    ]
-    assert measured["bundle_sizes"] == {"reference": 1, "packed": 1}
-    assert measured["pair_count"] == 4
-    assert measured["output_digest"]
-    median, mad = _median_mad([1.0, 2.0, 3.0])
-    assert median == 2.0
-    assert mad == 1.0
+def test_completion_timing_summary_is_robust_and_deterministic() -> None:
+    summary = _sample_summary([9, 1, 5, 100, 7])
+    assert summary == {
+        "samples_ns": [9, 1, 5, 100, 7],
+        "median_ns": 7.0,
+        "min_ns": 1,
+        "max_ns": 100,
+        "mad_ns": 2.0,
+    }
 
 
-def test_completion_pairing_fails_on_any_output_mismatch() -> None:
-    with pytest.raises(AssertionError, match="parity mismatch"):
-        _paired_measure(lambda: {"v": 1}, lambda: {"v": 2}, 1, min_sample_ns=0)
-
-
-def test_completion_pairing_calibrates_arm_bundles_independently() -> None:
-    def slower():
-        time.sleep(0.002)
-        return {"v": 1}
-
-    measured = _paired_measure(
-        slower,
-        lambda: {"v": 1},
-        1,
-        min_sample_ns=1_000_000,
-    )
-
-    assert measured["bundle_sizes"]["reference"] == 1
-    assert measured["bundle_sizes"]["packed"] > 1
-
-
-def test_completion_solver_gate_counts_only_warmed_root_successors() -> None:
-    result = _completion_solver_bench(1)
-
-    assert result["correct"] is True
-    assert result["cached_root_successors"] == result["n"] == 14
-    assert result["cached_successors_after_replay"] > result["cached_root_successors"]
-    assert result["certificate_replay_failures"] == 0
-    assert result["pass"] is True
-
-
-def _write_completion_shards(tmp_path, *, dirty=False, mixed_commit=False) -> argparse.Namespace:
-    run_id = "completion-test"
-    shard_root = tmp_path / "outputs"
-    run_root = shard_root / run_id
-    run_root.mkdir(parents=True)
-    for index, name in enumerate(_COMPLETION_REQUIRED_WORKLOADS):
-        commit = "b" * 40 if mixed_commit and index == 1 else "a" * 40
-        row = {
-            "schema_version": "completion-kernel-workload/v1",
-            "run_id": run_id,
-            "workload": name,
-            "fixture_manifest_digest": _completion_fixture_digest(name),
-            "recipe": {"device": "cpu", "pair_count": 7},
-            "host": {"machine": "test", "python": "3.12"},
-            "pass": name != "decode",
-            "version_stamp": {
-                "stamp_schema": "version_stamp/v1",
-                "code_commit": commit,
-                "code_dirty": dirty,
-                "components": {"matrix.perf": "v4"},
-                "stamped_at": "ignored-per-row",
-            },
-        }
-        (run_root / f"{name}.json").write_text(json.dumps(row), encoding="utf-8")
-    return argparse.Namespace(
-        completion_shard_root=shard_root,
-        completion_run_id=run_id,
-        docs_out=tmp_path / "docs.json",
-    )
-
-
-def test_completion_merge_requires_homogeneous_clean_full_run(tmp_path) -> None:
-    args = _write_completion_shards(tmp_path)
-
-    assert _merge_completion_shards(args) == 1
-    board = json.loads(args.docs_out.read_text(encoding="utf-8"))
-    assert board["overall_status"] == "fail"
-    assert board["overall_pass"] is False
-    assert set(board["workloads"]) == set(_COMPLETION_REQUIRED_WORKLOADS)
-
-
-@pytest.mark.parametrize(
-    ("dirty", "mixed_commit", "message"),
-    [
-        (True, False, "code_dirty=false"),
-        (False, True, "mixed run/commit"),
-    ],
-)
-def test_completion_merge_rejects_dirty_or_mixed_shards(
-    tmp_path, dirty: bool, mixed_commit: bool, message: str
+def test_completion_result_paths_are_repo_relative(
+    tmp_path, monkeypatch
 ) -> None:
-    args = _write_completion_shards(
-        tmp_path, dirty=dirty, mixed_commit=mixed_commit
+    monkeypatch.chdir(tmp_path)
+    payload = {
+        "runDir": str(tmp_path / "outputs" / "run"),
+        "remote": "hf://buckets/example",
+    }
+    assert _repo_relative_artifact_paths(payload) == {
+        "runDir": "outputs/run",
+        "remote": "hf://buckets/example",
+    }
+
+
+def test_completion_agentv_bundle_persists_traces_with_portable_paths(
+    tmp_path,
+) -> None:
+    run_dir = tmp_path / "outputs" / "run"
+    source = run_dir / "agentv" / "run" / "suite.eval" / "case" / "outputs"
+    source.mkdir(parents=True)
+    trace = source / "trace.json"
+    trace.write_text(
+        '{"path":"' + str(run_dir.resolve()) + '/agentv/spec.jsonl"}\n',
+        encoding="utf-8",
+    )
+    transcript = source / "transcript.jsonl"
+    transcript.write_text(
+        '{"grader":"' + str(run_dir.resolve()) + '/grader.py"}\n',
+        encoding="utf-8",
+    )
+    stale = run_dir / "agentv" / "run" / "suite.eval" / "stale" / "outputs"
+    stale.mkdir(parents=True)
+    (stale / "trace.json").write_text("{}\n", encoding="utf-8")
+    (run_dir / "agentv" / "run" / "index.jsonl").write_text(
+        '{"artifact_dir":"suite.eval/case"}\n',
+        encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match=message):
-        _merge_completion_shards(args)
+    durable = _persist_agentv_bundle(run_dir, tmp_path / "docs" / "agentv")
+
+    assert durable["files"] == 3
+    assert durable["trace_files"] == 2
+    assert durable["includes_traces"] is True
+    assert "agentv-dir://" in (
+        tmp_path / "docs" / "agentv" / "agentv" / "run" / "suite.eval" / "case"
+        / "artifacts" / "trace.json"
+    ).read_text(encoding="utf-8")
+    assert not (
+        tmp_path / "docs" / "agentv" / "agentv" / "run" / "suite.eval" / "stale"
+    ).exists()
 
 
-def test_completion_merge_rejects_missing_or_stale_shards(tmp_path) -> None:
-    args = _write_completion_shards(tmp_path)
-    (args.completion_shard_root / args.completion_run_id / "decode.json").unlink()
-    with pytest.raises(ValueError, match="missing workloads"):
-        _merge_completion_shards(args)
+def test_completion_domain_digest_covers_ordered_witnesses() -> None:
+    from slm_training.dsl.grammar_capabilities import (
+        CompletionDomainCandidateV1,
+        CompletionDomainV1,
+    )
 
-    args = _write_completion_shards(tmp_path / "stale")
-    path = args.completion_shard_root / args.completion_run_id / "direct.json"
-    row = json.loads(path.read_text(encoding="utf-8"))
-    row["fixture_manifest_digest"] = "stale"
-    path.write_text(json.dumps(row), encoding="utf-8")
-    with pytest.raises(ValueError, match="stale"):
-        _merge_completion_shards(args)
+    first = CompletionDomainV1(
+        status="complete",
+        candidates=(
+            CompletionDomainCandidateV1((3,), "bind", (3, 4, 2)),
+            CompletionDomainCandidateV1((5,), "component", (5, 6, 2)),
+        ),
+        scope_fingerprint="scope",
+        terminals=("NAME",),
+    )
+    second = CompletionDomainV1(
+        status="complete",
+        candidates=tuple(reversed(first.candidates)),
+        scope_fingerprint="scope",
+        terminals=("NAME",),
+    )
+    assert _payload_digest(_completion_domain_payload(first)) != _payload_digest(
+        _completion_domain_payload(second)
+    )
+
+
+def test_choice_exact_distance_and_allowed_sets_match_independent_oracle() -> None:
+    import time
+
+    deadline = time.monotonic() + 30.0
+    fixtures = _choice_fixture_states()
+    for _, state, remaining in fixtures[:2]:
+        assert state._completion_distance(remaining) == _choice_brute_distance(
+            state, remaining, deadline=deadline
+        )
+        assert state.allowed_ids(remaining) == _choice_brute_allowed_ids(
+            state, remaining, deadline=deadline
+        )
+
+
+def test_choice_legacy_greedy_false_prune_is_explicit() -> None:
+    _, state, _ = _choice_fixture_states()[0]
+    remaining = 4
+    root_marker = state.tokenizer.token_to_id["r="]
+    assert root_marker in state.allowed_ids(remaining)
+    assert root_marker not in _legacy_choice_allowed_ids(state, remaining)
+
+
+def test_prior_choice_timing_is_non_promotable_incomplete_metadata() -> None:
+    prior = _prior_choice_diagnostic()
+    assert prior["promotable"] is False
+    assert prior["status"] == "incomplete_diagnostic"
+    assert prior["v2_median_ns"] == 17_021_824
+    assert prior["legacy_median_ns"] == 182_931_458
+    assert "raw_samples_not_retained" in prior["reason"]
+
+
+def test_solver_and_compiler_fixture_gates_require_parity_speed_and_singleton() -> None:
+    solver = {"equivalent": True}
+    compiler = {
+        "equivalent": True,
+        "compiler_ms_speedup_v1_over_v2": 5.0,
+        "singleton": {"equivalent": True, "zero_forward": True},
+    }
+    assert all(_completion_fixture_gates(solver, compiler).values())
+
+    compiler["compiler_ms_speedup_v1_over_v2"] = 4.999
+    compiler["singleton"]["zero_forward"] = False
+    gates = _completion_fixture_gates(solver, compiler)
+    assert gates["compiler_ms_speedup_ge_5x"] is False
+    assert gates["compiler_singleton_zero_forward"] is False
+
+
+def test_compiler_batch_fixture_gates_require_parity_compaction_and_latency() -> None:
+    batch = {
+        "equivalent": True,
+        "control_payload": {
+            "forwards_count": 10,
+            "denoiser_rows_evaluated": 10,
+        },
+        "compact_payload": {
+            "forwards_count": 5,
+            "denoiser_rows_evaluated": 10,
+        },
+        "control": {"median_ns": 100},
+        "compact": {"median_ns": 114},
+    }
+    assert all(_compiler_batch_fixture_gates(batch).values())
+
+    batch["compact_payload"]["forwards_count"] = 10
+    batch["compact"]["median_ns"] = 116
+    gates = _compiler_batch_fixture_gates(batch)
+    assert gates["compiler_batch_reduces_forwards"] is False
+    assert gates["compiler_batch_latency_regression_le_15pct"] is False

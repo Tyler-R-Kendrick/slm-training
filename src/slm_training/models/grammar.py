@@ -194,6 +194,38 @@ def apply_structural_bias(
     return logits + boost.view(1, 1, -1)  # type: ignore[union-attr]
 
 
+class CompletionDomainCache(dict[tuple[object, ...], object]):
+    """A batch-shareable immutable hard-domain cache."""
+
+    def __init__(self, *, shared: bool = False) -> None:
+        super().__init__()
+        self.shared = bool(shared)
+
+    def get(self, key: tuple[object, ...], default: object = None) -> object:
+        if self.shared:
+            from slm_training.models.decode_stats import get_active_stats
+
+            stats = get_active_stats()
+            if stats is not None:
+                field = (
+                    "completion_shared_domain_hits"
+                    if key in self
+                    else "completion_shared_domain_misses"
+                )
+                setattr(stats, field, int(getattr(stats, field)) + 1)
+        return super().get(key, default)
+
+
+@dataclass
+class CompletionBatchCache:
+    """Batch-lifetime sharing for identical packed hard states."""
+
+    domains: dict[
+        tuple[tuple[object, ...], tuple[int, ...], int],
+        object,
+    ] = field(default_factory=dict)
+
+
 @dataclass
 class GrammarDecodeState:
     """Per-row persistent grammar state for LTR decode (P1)."""
@@ -215,8 +247,17 @@ class GrammarDecodeState:
     # choice.  It is part of the completion-domain cache key.
     remaining_tokens: int | None = None
     completion_domain_cache: dict[tuple[object, ...], object] = field(
-        default_factory=dict
+        default_factory=CompletionDomainCache
     )
+    # Packed completion ownership is row-local. State ids and the prefix index
+    # are immutable request-local handles, so rollback restores one handle
+    # instead of replaying the whole prefix through the parser.
+    completion_session: object | None = None
+    completion_state_id: int | None = None
+    completion_authority_key: tuple[object, ...] | None = None
+    completion_prefix_states: dict[tuple[int, ...], int] = field(default_factory=dict)
+    completion_stats_snapshot: dict[str, int] = field(default_factory=dict)
+    completion_batch_cache: CompletionBatchCache | None = None
     # P3 direct-feed sync marker: the number of leading ``prefix_ids`` the
     # engine committed via ``feed_token_id`` (DSL-native direct terminal
     # feeds).  ``None`` means the engine is not known to be id-synced (fresh,
@@ -227,22 +268,80 @@ class GrammarDecodeState:
     # text alone.  Cleared whenever ``sync_ids`` replaces (not extends) the
     # prefix, so a stale marker can never vouch for different ids.
     engine_ids_len: int | None = None
-    # Request-local packed completion state.  The pack owns the concrete
-    # session type; the grammar layer only keeps the row-local lifetime and
-    # current interned state id so consecutive decode positions reuse the
-    # same graph without introducing a global cache.
-    completion_session: object | None = None
-    completion_session_context: str = ""
-    completion_state_id: int | None = None
-    completion_stats_snapshot: dict[str, int] = field(default_factory=dict)
-    completion_session_pool: (
-        dict[tuple[str, tuple[int, ...]], tuple[object, int]] | None
-    ) = None
 
     def clear_position_memo(self) -> None:
         self.admit_memo.clear()
         self.whitespace_ok = None
-        self.completion_domain_cache.clear()
+
+    def _collect_completion_stats(self) -> None:
+        if self.completion_session is None:
+            return
+        from slm_training.models.decode_stats import collect_completion_session_delta
+
+        self.completion_stats_snapshot = collect_completion_session_delta(
+            self.completion_session,
+            self.completion_stats_snapshot,
+        )
+
+    def bind_completion_session(
+        self,
+        session: object,
+        authority_key: tuple[object, ...],
+        state_id: int,
+        prefix_ids: tuple[int, ...] | list[int],
+    ) -> None:
+        """Bind a request-local packed session at the current prefix."""
+        if session is not self.completion_session:
+            self._collect_completion_stats()
+            self.completion_stats_snapshot = {}
+            self.completion_prefix_states = {}
+        self.completion_session = session
+        self.completion_authority_key = authority_key
+        self.completion_state_id = int(state_id)
+        self.completion_prefix_states[tuple(int(token_id) for token_id in prefix_ids)] = (
+            int(state_id)
+        )
+        self._collect_completion_stats()
+
+    def _restore_completion_prefix(self, prefix_ids: list[int]) -> None:
+        session = self.completion_session
+        if session is None:
+            return
+        state_id = self.completion_prefix_states.get(tuple(prefix_ids))
+        if state_id is None:
+            self.completion_state_id = None
+            return
+        restore = getattr(session, "restore", None)
+        self.completion_state_id = (
+            int(restore(state_id)) if callable(restore) else int(state_id)
+        )
+
+    def _advance_completion_token(self, token_id: int) -> None:
+        session = self.completion_session
+        state_id = self.completion_state_id
+        if session is None or state_id is None:
+            return
+        child_id = session.advance(int(state_id), int(token_id))
+        if child_id is None:
+            raise RuntimeError(
+                "packed completion session rejected an advertised decode token "
+                f"{int(token_id)} at prefix {tuple(self.prefix_ids)}"
+            )
+        self.completion_state_id = int(child_id)
+        self.completion_prefix_states[tuple(self.prefix_ids)] = int(child_id)
+        self._collect_completion_stats()
+
+    def completion_forced_closure(
+        self, room: int
+    ) -> tuple[tuple[int, ...], int, str] | None:
+        """Return the session's exact forced run at the current row state."""
+        if self.completion_session is None or self.completion_state_id is None:
+            return None
+        result = self.completion_session.forced_closure(
+            int(self.completion_state_id), int(room)
+        )
+        self._collect_completion_stats()
+        return result
 
     def engine_in_sync(self, prefix_ids: list[int], prefix_text: str) -> bool:
         """True when ``engine`` already represents exactly ``prefix_ids``.
@@ -273,51 +372,30 @@ class GrammarDecodeState:
         if prefix_ids == self.prefix_ids:
             return self.prefix_text
         t0 = time.perf_counter()
-        prior_ids = tuple(self.prefix_ids)
-        append_only = (
+        old_prefix = list(self.prefix_ids)
+        if (
             len(prefix_ids) >= len(self.prefix_ids)
             and prefix_ids[: len(self.prefix_ids)] == self.prefix_ids
-        )
-        if append_only:
+        ):
             # Append-only growth — decode only the new suffix tokens.
             extra = prefix_ids[len(self.prefix_ids) :]
             if extra:
                 chunk = decode_prefix(tokenizer, extra)
                 self.prefix_text = self.prefix_text + chunk
             self.prefix_ids = list(prefix_ids)
-            session = self.completion_session
-            state_id = self.completion_state_id
-            if extra and session is not None and state_id is not None:
-                try:
-                    if tuple(session.prefix_ids_of(state_id)) == prior_ids:
-                        self.completion_state_id = session.advance_path(
-                            state_id, tuple(int(token_id) for token_id in extra)
-                        )
-                        if (
-                            self.completion_state_id is not None
-                            and self.completion_session_pool is not None
-                        ):
-                            self.completion_session_pool[
-                                (
-                                    self.completion_session_context,
-                                    tuple(self.prefix_ids),
-                                )
-                            ] = (session, self.completion_state_id)
-                    else:
-                        self.completion_state_id = None
-                except (TimeoutError, KeyboardInterrupt):
-                    raise
-                except Exception:  # noqa: BLE001 - stale optimization fails closed
-                    self.completion_state_id = None
+            if extra and self.completion_session is not None:
+                self.prefix_ids = old_prefix
+                for token_id in extra:
+                    self.prefix_ids.append(int(token_id))
+                    if int(token_id) != int(tokenizer.eos_id):
+                        self._advance_completion_token(int(token_id))
+                self.prefix_ids = list(prefix_ids)
         else:
             self.prefix_ids = list(prefix_ids)
             self.prefix_text = decode_prefix(tokenizer, prefix_ids) if prefix_ids else ""
             # The engine (if any) no longer represents these ids.
             self.engine_ids_len = None
-            self.completion_session = None
-            self.completion_session_context = ""
-            self.completion_state_id = None
-            self.completion_stats_snapshot.clear()
+            self._restore_completion_prefix(self.prefix_ids)
         self.clear_position_memo()
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
@@ -335,7 +413,6 @@ class GrammarDecodeState:
         exactly — the same observable state the legacy ``advance`` rejection
         left behind (engine resynced to the pre-append prefix).
         """
-        prior_ids = tuple(self.prefix_ids)
         self.prefix_ids.append(int(token_id))
         from slm_training.models.decode_stats import get_active_stats
 
@@ -379,44 +456,31 @@ class GrammarDecodeState:
                     except Exception:  # noqa: BLE001
                         pass
                 if chunk:
+                    resynced = True
                     try:
                         self.engine.advance(chunk)  # type: ignore[union-attr]
                     except (TimeoutError, KeyboardInterrupt):
                         raise
                     except Exception:  # noqa: BLE001
                         try:
-                            self.engine.set_prefix(self.prefix_text)  # type: ignore[union-attr]
+                            resynced = bool(
+                                self.engine.set_prefix(self.prefix_text)  # type: ignore[union-attr]
+                            )
                         except (TimeoutError, KeyboardInterrupt):
                             raise
                         except Exception:  # noqa: BLE001
-                            pass
+                            resynced = False
+                else:
+                    resynced = True
                 # The text route leaves the engine grammar-synced with the
                 # same token stream the direct marker would vouch for.
-                self.engine_ids_len = len(self.prefix_ids)
-        session = self.completion_session
-        state_id = self.completion_state_id
-        if session is not None and state_id is not None:
-            try:
-                if tuple(session.prefix_ids_of(state_id)) == prior_ids:
-                    self.completion_state_id = session.advance(
-                        state_id, int(token_id)
-                    )
-                    if (
-                        self.completion_state_id is not None
-                        and self.completion_session_pool is not None
-                    ):
-                        self.completion_session_pool[
-                            (
-                                self.completion_session_context,
-                                tuple(self.prefix_ids),
-                            )
-                        ] = (session, self.completion_state_id)
-                else:
-                    self.completion_state_id = None
-            except (TimeoutError, KeyboardInterrupt):
-                raise
-            except Exception:  # noqa: BLE001 - stale optimization fails closed
-                self.completion_state_id = None
+                self.engine_ids_len = (
+                    len(self.prefix_ids) if resynced else None
+                )
+        # EOS is a terminal certificate edge, not an incremental parser
+        # state. The row is complete and will not query another domain.
+        if int(token_id) != int(tokenizer.eos_id):
+            self._advance_completion_token(int(token_id))
         self.clear_position_memo()
         return self.prefix_text
 
@@ -576,6 +640,8 @@ def exact_forced_token_id(
         from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
         dfa_allowed = allowed_id_set(tokenizer, engine.next_terminals())
+    except (TimeoutError, KeyboardInterrupt):
+        raise
     except Exception:  # noqa: BLE001 - incomplete proof must fail closed
         return None
     if dfa_allowed != {forced}:
@@ -951,10 +1017,14 @@ def pick_constrained_token(
         vco = bool(verify_chosen_only) if verify_chosen_only is not None else False
         skip_exact = True
 
+    # Live decoders carry an explicit horizon on their state. Direct analysis
+    # callers do not; keep those on the immediate-frontier path instead of
+    # inventing a 64-token production budget and proving terminal reachability
+    # for every broad literal candidate.
     domain_budget = (
         remaining_tokens
         if remaining_tokens is not None
-        else getattr(state, "remaining_tokens", None) or 64
+        else getattr(state, "remaining_tokens", None)
     )
 
     contract_allowed = contract_allowed_token_ids(
@@ -1059,7 +1129,9 @@ def pick_constrained_token(
     # the broad NAME/STATE terminals exposed by the surface lexer.
     if not prefix_text.strip():
         try:
-            root_id = tokenizer.bind_id(0)
+            root_id = tokenizer.token_to_id.get("root")
+            if root_id is None:
+                root_id = tokenizer.bind_id(0)
             if 0 <= int(root_id) < int(logits_1d.numel()):
                 if stats is not None:
                     stats.root_invariant_bypass_count += 1
@@ -1118,7 +1190,11 @@ def pick_constrained_token(
                         remaining_tokens=None,
                     )
                 if forest.coverage != "complete":
-                    return False
+                    # Direct analysis callers have no terminal horizon, so a
+                    # partial compiler frontier is advisory; the DFA below
+                    # remains the exact authority. Live decoders always carry
+                    # a budget and therefore still fail closed here.
+                    return domain_budget is None
                 compiler_candidates = set(forest.candidate_ids)
             return int(tid) in compiler_candidates
         except (TimeoutError, KeyboardInterrupt):
@@ -1169,6 +1245,12 @@ def pick_constrained_token(
                 return False
         if not _compiler_admits(tid):
             return False
+        # A complete compiler forest is already an exact grammar-and-schema
+        # certificate for this prefix. Semantic, special-token, and contract
+        # guards above still run first; avoid replaying the slower broad lexer
+        # probe for a candidate the compiler has just certified.
+        if compiler_candidates is not None and tid in compiler_candidates:
+            return True
         # A singleton admission already proves lexical legality. Apply this
         # only after special-token, semantic, and contract checks above.
         if singleton_allowed == tid:

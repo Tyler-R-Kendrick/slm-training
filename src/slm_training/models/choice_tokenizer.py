@@ -119,6 +119,8 @@ DEFAULT_SYM_SLOTS = 64
 DEFAULT_REF_SLOTS = 64
 DEFAULT_STATE_SLOTS = 64
 DEFAULT_MAX_INT_LITERAL = 128
+_DISTANCE_CACHE_MAX_ENTRIES = 8192
+_INFEASIBLE_DISTANCE = 1 << 20
 
 _BINARY_OPS = ("||", "&&", "==", "!=", ">=", "<=", ">", "<", "+", "-", "*", "/", "%")
 
@@ -227,12 +229,17 @@ class ChoiceTokenizer:
     )
     schema_intern_hits: int = field(default=0, repr=False, compare=False)
     schema_intern_misses: int = field(default=0, repr=False, compare=False)
-    # Shared bounded-completion-distance memo keyed by (signature, room).
+    component_schema_ids_cache: dict[str, tuple[int, ...]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    # Shared completion lower-bound memo keyed by state signature.
     distance_cache: dict[tuple[object, ...], int] = field(
         default_factory=dict, repr=False, compare=False
     )
     distance_cache_hits: int = field(default=0, repr=False, compare=False)
     distance_cache_misses: int = field(default=0, repr=False, compare=False)
+    distance_cache_evictions: int = field(default=0, repr=False, compare=False)
+    distance_cache_peak_entries: int = field(default=0, repr=False, compare=False)
     # Copy-on-write instrumentation for ChoiceDecodeState.clone()/frame swaps.
     clone_count: int = field(default=0, repr=False, compare=False)
     frame_cow_copies: int = field(default=0, repr=False, compare=False)
@@ -240,13 +247,15 @@ class ChoiceTokenizer:
     # ChoiceDecodeState._completion_lower_bound. Cached by interned schema id
     # / component name; values computed under a cycle guard remain valid
     # underestimates, so caching is always safe.
-    schema_cost_cache: dict[int, int] = field(
+    schema_cost_cache: dict[tuple[int, bool], int] = field(
         default_factory=dict, repr=False, compare=False
     )
-    component_cost_cache: dict[str, int] = field(
+    component_cost_cache: dict[tuple[str, bool], int] = field(
         default_factory=dict, repr=False, compare=False
     )
-    element_cost_cache: int = field(default=0, repr=False, compare=False)
+    element_cost_cache: dict[bool, int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
 
     def intern_schema(self, schema: dict[str, Any]) -> int:
         """Stable process-local id for a schema's canonical JSON identity."""
@@ -261,30 +270,41 @@ class ChoiceTokenizer:
         return schema_id
 
     def schema_min_tokens(
-        self, schema: dict[str, Any], _active: frozenset[str] = frozenset()
+        self,
+        schema: dict[str, Any],
+        *,
+        has_slots: bool,
+        _active: frozenset[str] = frozenset(),
     ) -> int:
-        """Lower bound on tokens to produce one expression for ``schema``."""
+        """Valid lower bound for one expression accepted by ``schema``."""
         if not schema:
             return 1
         schema_id = self.intern_schema(schema)
-        cached = self.schema_cost_cache.get(schema_id)
-        if cached is not None:
-            return cached
-        cost = self._schema_min_tokens(schema, _active)
-        self.schema_cost_cache[schema_id] = cost
+        key = (schema_id, bool(has_slots))
+        if not _active:
+            cached = self.schema_cost_cache.get(key)
+            if cached is not None:
+                return cached
+        cost = self._schema_min_tokens(schema, has_slots, _active)
+        if not _active:
+            self.schema_cost_cache[key] = cost
         return cost
 
     def _schema_min_tokens(
-        self, schema: dict[str, Any], active: frozenset[str]
+        self, schema: dict[str, Any], has_slots: bool, active: frozenset[str]
     ) -> int:
-        infeasible = 1 << 20
         if _is_direct_placeholder_schema(schema):
-            return 1
+            return 1 if has_slots else _INFEASIBLE_DISTANCE
         if "anyOf" in schema:
             options = schema["anyOf"] or ()
             return min(
-                (self.schema_min_tokens(dict(option), active) for option in options),
-                default=1,
+                (
+                    self.schema_min_tokens(
+                        dict(option), has_slots=has_slots, _active=active
+                    )
+                    for option in options
+                ),
+                default=_INFEASIBLE_DISTANCE,
             )
         enum_values = tuple(schema.get("enum") or ())
         if enum_values:
@@ -294,22 +314,34 @@ class ChoiceTokenizer:
             ):
                 return 1
             # Closed enum with no in-vocab literal spelling: unreachable.
-            return infeasible
+            return _INFEASIBLE_DISTANCE
         ref = str(schema.get("$ref") or "")
         if ref.startswith("#/$defs/"):
-            return self.component_min_tokens(ref.rsplit("/", 1)[-1], active)
+            return self.component_min_tokens(
+                ref.rsplit("/", 1)[-1],
+                has_slots=has_slots,
+                _active=active,
+            )
         expected = schema.get("type")
         if isinstance(expected, list):
             return min(
-                (self._schema_type_min_tokens(item, schema, active) for item in expected),
-                default=1,
+                (
+                    self._schema_type_min_tokens(
+                        item, schema, has_slots, active
+                    )
+                    for item in expected
+                ),
+                default=_INFEASIBLE_DISTANCE,
             )
-        return self._schema_type_min_tokens(expected, schema, active)
+        return self._schema_type_min_tokens(expected, schema, has_slots, active)
 
     def _schema_type_min_tokens(
-        self, expected: object, schema: dict[str, Any], active: frozenset[str]
+        self,
+        expected: object,
+        schema: dict[str, Any],
+        has_slots: bool,
+        active: frozenset[str],
     ) -> int:
-        infeasible = 1 << 20
         if expected == "array":
             return 2  # open + close (items are optional)
         if expected == "object":
@@ -320,51 +352,90 @@ class ChoiceTokenizer:
                 name = str(name)
                 if name in property_map:
                     cost += 1 + self.schema_min_tokens(
-                        dict(property_map[name]), active
+                        dict(property_map[name]),
+                        has_slots=has_slots,
+                        _active=active,
                     )
                 elif f"{NAME_PREFIX}{name}" in self.token_to_id:
                     cost += 2  # closed-pool key token + minimal value
                 else:
                     # Required key is unspellable: can never close legally.
-                    return infeasible
+                    return _INFEASIBLE_DISTANCE
             return cost
         # string / number / integer / boolean / null / untyped: one literal or
         # slot token suffices (untyped accepts ``LIT:null``).
         return 1
 
     def component_min_tokens(
-        self, component: str, _active: frozenset[str] = frozenset()
+        self,
+        component: str,
+        *,
+        has_slots: bool,
+        _active: frozenset[str] = frozenset(),
     ) -> int:
-        """Lower bound on tokens for a complete ``element:<component>``."""
-        cached = self.component_cost_cache.get(component)
-        if cached is not None:
-            return cached
+        """Valid lower bound for a complete ``element:<component>``."""
+        key = (component, bool(has_slots))
+        if not _active:
+            cached = self.component_cost_cache.get(key)
+            if cached is not None:
+                return cached
         if component in _active:
-            return 2  # cycle guard: open + close only (valid underestimate)
+            return _INFEASIBLE_DISTANCE
         contract = _component_contracts().get(component)
         if contract is None:
-            return 3
+            return _INFEASIBLE_DISTANCE
         schemas, required_args = contract
         active = _active | {component}
         cost = 2  # open + close
         for schema in schemas[:required_args]:
-            cost += self.schema_min_tokens(dict(schema), active)
-        self.component_cost_cache[component] = cost
+            cost += self.schema_min_tokens(
+                dict(schema), has_slots=has_slots, _active=active
+            )
+        if not _active:
+            self.component_cost_cache[key] = cost
         return cost
 
-    def element_min_tokens(self) -> int:
-        """Cheapest complete element section, in tokens (lower bound)."""
-        if not self.element_cost_cache:
+    def element_min_tokens(self, *, has_slots: bool) -> int:
+        """Valid lower bound for any complete element section."""
+        key = bool(has_slots)
+        cached = self.element_cost_cache.get(key)
+        if cached is None:
             contracts = _component_contracts()
-            self.element_cost_cache = min(
+            cached = min(
                 (
-                    self.component_min_tokens(component)
+                    self.component_min_tokens(
+                        component, has_slots=has_slots
+                    )
                     for component in contracts
                     if f"{OPEN_PREFIX}{component}" in self.token_to_id
                 ),
-                default=3,
+                default=_INFEASIBLE_DISTANCE,
             )
-        return self.element_cost_cache
+            self.element_cost_cache[key] = cached
+        return cached
+
+    def component_schema_ids(
+        self, component: str, schemas: tuple[dict[str, Any], ...]
+    ) -> tuple[int, ...]:
+        """Intern one static component contract once."""
+        cached = self.component_schema_ids_cache.get(component)
+        if cached is None:
+            cached = tuple(self.intern_schema(schema) for schema in schemas)
+            self.component_schema_ids_cache[component] = cached
+        return cached
+
+    def cache_distance(self, key: tuple[object, ...], value: int) -> None:
+        """Store one bounded-distance result with observable bounded lifetime."""
+        if (
+            key not in self.distance_cache
+            and len(self.distance_cache) >= _DISTANCE_CACHE_MAX_ENTRIES
+        ):
+            self.distance_cache_evictions += len(self.distance_cache)
+            self.distance_cache.clear()
+        self.distance_cache[key] = int(value)
+        self.distance_cache_peak_entries = max(
+            self.distance_cache_peak_entries, len(self.distance_cache)
+        )
 
     # --- special ids -----------------------------------------------------
 
@@ -1009,8 +1080,8 @@ class ChoiceDecodeState:
                     schemas=schemas,
                     required_args=required_args,
                     property_names=tuple(_prop_order().get(component, ())),
-                    schema_ids=tuple(
-                        self.tokenizer.intern_schema(schema) for schema in schemas
+                    schema_ids=self.tokenizer.component_schema_ids(
+                        component, schemas
                     ),
                 )
             )
@@ -1314,23 +1385,14 @@ class ChoiceDecodeState:
         return result
 
     def _completion_lower_bound(self) -> int:
-        """Cheap valid lower bound on the completion distance (EOS included).
-
-        Counts unavoidable tokens only: the final EOS, each open frame's close,
-        schema-derived minimal costs for still-required arguments/properties,
-        and a trailing element section when the mode's terminal predicate
-        demands one. The in-progress literal's share of pending work is
-        credited back (over-crediting only weakens the bound, never breaks
-        validity), so the result never overestimates and is safe for
-        branch-and-bound pruning.
-        """
+        """Exact minimum completion length, including the final EOS."""
         if self.can_end():
             return 1
         tok = self.tokenizer
-        infeasible = 1 << 20
-        # Dead-end detection: a frame whose expr_type its parent can never
-        # accept (checked statically, same predicate `_complete_expr` applies
-        # at close time) makes every completion impossible.
+        has_slots = self.slot_count > 0
+
+        # A nested frame ultimately reports its expression type to its parent.
+        # If that report is impossible, no token continuation can recover.
         for index in range(1, len(self.frames)):
             parent = self.frames[index - 1]
             child_type = self.frames[index].expr_type
@@ -1338,85 +1400,125 @@ class ChoiceDecodeState:
                 if parent.arg_index >= len(parent.schemas) or not self._schema_accepts(
                     parent.schemas[parent.arg_index], child_type
                 ):
-                    return infeasible
+                    return _INFEASIBLE_DISTANCE
             elif parent.kind == "variadic" and parent.schemas:
                 if not self._schema_accepts(parent.schemas[0], child_type):
-                    return infeasible
+                    return _INFEASIBLE_DISTANCE
             elif parent.kind == "object":
-                if 0 <= parent.arg_index < len(parent.schemas) and not self._schema_accepts(
-                    parent.schemas[parent.arg_index], child_type
+                if (
+                    0 <= parent.arg_index < len(parent.schemas)
+                    and not self._schema_accepts(
+                        parent.schemas[parent.arg_index], child_type
+                    )
                 ):
-                    return infeasible
+                    return _INFEASIBLE_DISTANCE
+
         literal_active = self.literal_frame is not None
-        bound = 1  # the final EOS
+        pending = 0
         if literal_active:
-            bound += (
+            pending += (
                 1
                 if (self.literal_size or self.literal_frame == LIT_STR)
                 else 2
             )
-        pending = 0
-        credit = 0
-        for frame in self.frames:
+            if self.literal_frame == MEMBER_STR:
+                pending += 1  # member target required after the framed name
+            elif self.literal_is_object_key:
+                pending += 1  # value for the additional-property key
+
+        # Every deeper frame (or the literal at the top) is the expression
+        # currently filling one pending parent position. Count that work once:
+        # via the child/literal itself, not again through the parent schema.
+        for depth, frame in enumerate(self.frames):
+            active_expr = depth + 1 < len(self.frames) or (
+                depth + 1 == len(self.frames)
+                and literal_active
+                and not self.literal_is_object_key
+            )
             if frame.close is not None:
                 pending += 1
             if frame.kind == "component":
+                start = max(frame.arg_index + int(active_expr), 0)
                 for index in range(
-                    max(frame.arg_index, 0),
+                    start,
                     min(frame.required_args, len(frame.schemas)),
                 ):
-                    pending += tok.schema_min_tokens(frame.schemas[index])
+                    pending += tok.schema_min_tokens(
+                        frame.schemas[index], has_slots=has_slots
+                    )
             elif frame.kind == "fixed":
-                pending += max(0, frame.remaining)
+                pending += max(0, frame.remaining - int(active_expr))
             elif frame.kind == "object":
                 for name in frame.required_properties:
                     if name in frame.seen_properties:
                         continue
-                    pending += 1  # the key token
+                    is_active = name == frame.active_property
+                    if is_active and active_expr:
+                        continue
+                    if not is_active:
+                        pending += 1  # key token not consumed yet
                     if name in frame.property_names:
                         index = frame.property_names.index(name)
                         if index < len(frame.schemas):
-                            pending += tok.schema_min_tokens(frame.schemas[index])
+                            pending += tok.schema_min_tokens(
+                                frame.schemas[index], has_slots=has_slots
+                            )
                             continue
                     pending += 1  # minimal out-of-schema value
-        if literal_active and self.frames:
-            # The literal fills one pending item whose cost was counted above;
-            # credit it back (the literal's own tokens are in ``bound``).
-            top = self.frames[-1]
-            if self.literal_is_object_key and top.kind == "object":
-                credit = 1
-            elif top.kind == "component" and 0 <= top.arg_index < min(
-                top.required_args, len(top.schemas)
-            ):
-                credit = tok.schema_min_tokens(top.schemas[top.arg_index])
-            elif top.kind == "fixed" and top.remaining > 0:
-                credit = 1
-            elif top.kind == "object" and top.active_property is not None:
-                credit = 2
-        pending = max(0, pending - credit)
-        element = tok.element_min_tokens()
+
+                # An optional selected property must still receive a value.
+                if (
+                    frame.phase == "value"
+                    and frame.active_property not in frame.required_properties
+                    and not active_expr
+                ):
+                    if 0 <= frame.arg_index < len(frame.schemas):
+                        pending += tok.schema_min_tokens(
+                            frame.schemas[frame.arg_index],
+                            has_slots=has_slots,
+                        )
+                    else:
+                        pending += 1
+
+        element = tok.element_min_tokens(has_slots=has_slots)
         if not self.frames:
-            # Root: the mode terminal predicate may demand a further section.
+            if literal_active:
+                expr_type = (
+                    "string"
+                    if self.literal_frame in {LIT_STR, NAME_STR}
+                    else "number"
+                )
+                return pending + self._after_root_expr_cost(expr_type, element)
             if self.mode == "v05":
-                if not self.valid_root_seen:
-                    pending += element
-                    if literal_active or self.current_marker is None:
-                        pending += 1  # statement marker still needed
-                elif not literal_active:
-                    pending += 1 + (1 if self.current_marker is None else 0)
-            else:
-                # Structural (or undecided): the final section must be an
-                # element; the cheapest completion is one element section.
-                pending += element
-        else:
-            root_type = self.frames[0].expr_type
-            if self.mode == "structural" and not root_type.startswith("element:"):
-                pending += element
-            elif self.mode == "v05" and not self.valid_root_seen and not (
-                self.current_marker == "r=" and root_type.startswith("element:")
-            ):
-                pending += element + 1  # marker + element section
-        return bound + pending
+                if self.current_marker is not None:
+                    expr_cost = (
+                        element if self.current_marker == "r=" else 1
+                    )
+                    expr_type = (
+                        "element:minimum"
+                        if self.current_marker == "r="
+                        else "null"
+                    )
+                    return pending + expr_cost + self._after_root_expr_cost(
+                        expr_type, element
+                    )
+                return pending + (1 + element + 1)
+            # Undecided and structural modes both reach the terminal predicate
+            # most cheaply with one complete element followed by EOS.
+            return pending + element + 1
+
+        return pending + self._after_root_expr_cost(
+            self.frames[0].expr_type, element
+        )
+
+    def _after_root_expr_cost(self, expr_type: str, element_cost: int) -> int:
+        """Minimum suffix after the in-progress root expression completes."""
+        if self.mode == "v05":
+            valid_root = self.valid_root_seen or (
+                self.current_marker == "r=" and expr_type.startswith("element:")
+            )
+            return 1 if valid_root else 1 + element_cost + 1
+        return 1 if expr_type.startswith("element:") else element_cost + 1
 
     def _completion_distance(self, room: int) -> int:
         """Bounded minimum completion distance in tokens, EOS included.
@@ -1425,128 +1527,26 @@ class ChoiceDecodeState:
         ``1 + min`` over admitted actions ``a`` of ``D(advance(q, a))``.
         Computed with a strict budget: the room decreases on every edge so
         cycles terminate; a node whose completion needs more than its room
-        reports ``room + 1`` (infeasible within budget). Results are memoized
-        per ``(signature, room)`` in the tokenizer's shared ``distance_cache``.
-        Each node first runs the deterministic greedy completion as an upper
-        bound; when that meets ``_completion_lower_bound`` the node is
-        provably optimal and no child is explored, otherwise children are
-        explored with branch-and-bound pruned by the same lower bound — the
-        result is always the true bounded minimum.
+        reports ``room + 1`` (infeasible within budget). The room-independent
+        lower bound is memoized by signature in the tokenizer's shared cache.
+        Choice frames are a deterministic pushdown machine once optional
+        actions are omitted, so the exact distance is the sum of pending
+        required schema expressions, unmatched closes, and the terminal root
+        suffix. Values above the requested room collapse to ``room + 1``.
         """
         tok = self.tokenizer
-        room = int(room)
+        room = max(0, int(room))
         if self.can_end():
             return 1 if room >= 1 else room + 1
-        root_key = (self.signature(), room)
+        root_key = self.signature()
         cached = tok.distance_cache.get(root_key)
         if cached is not None:
             tok.distance_cache_hits += 1
-            return cached
+            return cached if cached <= room else room + 1
         tok.distance_cache_misses += 1
-
-        eos_id = tok.eos_id
-        # Iterative deepening-free DFS (explicit stack: completions may exceed
-        # the interpreter recursion limit). Entries:
-        # [state, room, child_states | None, next_child_index, best]
-        # ``path_signatures`` holds ancestor signatures: a minimum completion
-        # never revisits a signature (the loop could be spliced out for a
-        # strictly shorter completion), so revisiting children are skipped.
-        root = self.clone()
-        stack: list[list[object]] = [[root, room, None, 0, room + 1]]
-        path_signatures = {root.signature()}
-        value = room + 1
-        while stack:
-            entry = stack[-1]
-            state = entry[0]
-            budget = int(entry[1])
-            if entry[2] is None:
-                # Greedy completion seed; when it meets the lower bound the
-                # node is provably optimal and children are skipped entirely.
-                lower = state._completion_lower_bound()
-                best = budget + 1
-                greedy = state.clone()
-                for count in range(1, budget + 1):
-                    token_id = greedy._completion_id()
-                    if not greedy.advance_id(token_id):
-                        break
-                    if token_id == eos_id:
-                        best = count
-                        break
-                if lower > budget or best <= lower:
-                    # Infeasible within budget, or greedy met the lower bound
-                    # (provably minimal): finalize without exploring children.
-                    value = best
-                    if len(tok.distance_cache) >= 8192:
-                        tok.distance_cache.clear()
-                    tok.distance_cache[(state.signature(), budget)] = value
-                    path_signatures.discard(state.signature())
-                    stack.pop()
-                    continue
-                entry[4] = best
-                children: list[ChoiceDecodeState] = []
-                child_bounds: list[int] = []
-                for token_id in state._candidate_ids():
-                    if token_id == eos_id:
-                        continue
-                    probe = state.clone()
-                    if probe.advance_id(token_id):
-                        children.append(probe)
-                        child_bounds.append(probe._completion_lower_bound())
-                # Cheapest-bound first: the bound tightens after the first few
-                # children, and the rest are pruned by their lower bounds.
-                order = sorted(
-                    range(len(children)), key=lambda i: child_bounds[i]
-                )
-                entry[2] = (
-                    [children[i] for i in order],
-                    [child_bounds[i] for i in order],
-                )
-            children, child_bounds = entry[2]
-            index = int(entry[3])
-            best = int(entry[4])
-            if index < len(children) and best > 2:
-                child = children[index]
-                # Only a child finishing in <= best - 2 improves best; also
-                # the child gets at most budget - 1 further tokens.
-                child_budget = min(budget - 1, best - 2)
-                if (
-                    child_budget < 1
-                    or child_bounds[index] > child_budget
-                ):
-                    entry[3] = index + 1
-                    continue
-                if child.can_end():
-                    child_value = 1
-                else:
-                    child_key = (child.signature(), child_budget)
-                    if child_key[0] in path_signatures:
-                        # Loop back to an ancestor signature: never part of a
-                        # minimum completion.
-                        entry[3] = index + 1
-                        continue
-                    hit = tok.distance_cache.get(child_key)
-                    if hit is not None:
-                        tok.distance_cache_hits += 1
-                        child_value = hit
-                    else:
-                        tok.distance_cache_misses += 1
-                        path_signatures.add(child_key[0])
-                        stack.append(
-                            [child, child_budget, None, 0, child_budget + 1]
-                        )
-                        continue
-                if child_value <= child_budget and 1 + child_value < best:
-                    entry[4] = best = 1 + child_value
-                entry[3] = index + 1
-                continue
-            # Node finalized: best is its exact bounded distance.
-            value = best
-            if len(tok.distance_cache) >= 8192:
-                tok.distance_cache.clear()
-            tok.distance_cache[(state.signature(), budget)] = value
-            path_signatures.discard(state.signature())
-            stack.pop()
-        return value
+        exact = self._completion_lower_bound()
+        tok.cache_distance(root_key, exact)
+        return exact if exact <= room else room + 1
 
     def _frame_schema_ids(self, frame: _ChoiceFrame) -> tuple[int, ...]:
         """Interned schema identities for a frame, interning on demand for
@@ -1647,24 +1647,78 @@ class ChoiceDecodeState:
     ) -> set[int]:
         allowed: set[int] = set()
         budget = min(remaining_positions - 1, 1024)
-        for token_id in candidate_ids:
+        grouped: dict[tuple[str, str], list[int]] = {}
+        probes: list[int] = []
+        for raw_token_id in candidate_ids:
+            token_id = int(raw_token_id)
+            token = self.tokenizer.id_to_token.get(token_id, UNK)
+            expr_type: str | None = None
+            category = "direct"
+            if token.startswith(REF_PREFIX):
+                expr_type = self._reference_type(token)
+                category = "reference"
+            elif token.startswith(SLOT_PREFIX):
+                try:
+                    if int(token[len(SLOT_PREFIX) :]) < self.slot_count:
+                        expr_type = "placeholder"
+                except ValueError:
+                    pass
+            elif token.startswith(STATE_REF_PREFIX):
+                expr_type = "any"
+            elif token.startswith(DIR_PREFIX):
+                expr_type = "string"
+            elif token.startswith(LIT_PREFIX):
+                payload = token[len(LIT_PREFIX) :]
+                expr_type = (
+                    "string"
+                    if payload.startswith('"')
+                    else "boolean"
+                    if payload in {"true", "false"}
+                    else "null"
+                    if payload == "null"
+                    else "number"
+                )
+            if expr_type is None:
+                probes.append(token_id)
+            else:
+                grouped.setdefault((category, expr_type), []).append(token_id)
+
+        def _admitted(token_id: int) -> bool:
             probe = self.clone()
             if not probe.advance_id(token_id):
-                continue
+                return False
             completion = (
                 0
                 if token_id == self.tokenizer.eos_id
                 else probe._completion_distance(budget)
             )
-            if completion <= remaining_positions - 1:
+            return completion <= remaining_positions - 1
+
+        for token_id in probes:
+            if _admitted(token_id):
                 allowed.add(token_id)
+        for token_ids in grouped.values():
+            if _admitted(token_ids[0]):
+                allowed.update(token_ids)
         return allowed
 
     def exhaustive_allowed_ids(self, remaining_positions: int) -> set[int]:
         """Reference implementation used to prove direct candidates exact."""
-        return self._filter_allowed(
-            self.tokenizer.id_to_token, int(remaining_positions)
-        )
+        remaining_positions = int(remaining_positions)
+        budget = min(remaining_positions - 1, 1024)
+        allowed: set[int] = set()
+        for token_id in self.tokenizer.id_to_token:
+            probe = self.clone()
+            if not probe.advance_id(int(token_id)):
+                continue
+            completion = (
+                0
+                if int(token_id) == self.tokenizer.eos_id
+                else probe._completion_distance(budget)
+            )
+            if completion <= remaining_positions - 1:
+                allowed.add(int(token_id))
+        return allowed
 
     def allowed_ids(self, remaining_positions: int) -> set[int]:
         key = (self.signature(), int(remaining_positions))

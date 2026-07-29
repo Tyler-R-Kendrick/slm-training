@@ -235,7 +235,7 @@ Recipe: CPU, committed `playground_demo/last.pt`, smoke `n=2`, no training,
 same-run C0 control, official bridge healthy. The run emitted AgentEvals JSONL
 and a pinned `@agentv/core` result bundle (`total=5`, `passed=0`,
 `executionErrors=0`). Full evidence is in
-[`perf-matrix-results.json`](perf-matrix-results.json).
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
 
 | ID | mode | mean ms | p50 ms | forwards/call | forced tokens | fallbacks | parse | fidelity |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -404,54 +404,58 @@ was written, and no production/default claim is supported. AgentV passed 5/5
 with no execution errors. Full k-grid, confidence intervals, work attribution,
 and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).
 
-## Packed completion kernel (2026-07-29)
+## Packed incremental completion kernel (2026-07-29)
 
-Canonical runner:
+`python -m scripts.run_perf_matrix --completion-kernel
+--completion-repetitions 5 --docs-agentv-dir
+docs/design/completion-kernel-perf-agentv-20260729` compares the private prefix-oriented V1 reference
+with the production request-local packed kernel on the same tokenizer, schema,
+budget, process, and interpreter. This is CPU fixture/scratch evidence only.
 
-```bash
-PYTHONPATH=src python -m scripts.run_perf_matrix \
-  --completion-kernel-workload <direct|corpus|choice|solver|decode> \
-  --completion-repeats 7 \
-  --completion-run-id completion-kernel-20260729-final
-PYTHONPATH=src python -m scripts.run_perf_matrix \
-  --completion-merge \
-  --completion-run-id completion-kernel-20260729-final
-```
+The exact-V1-output gates passed, including ordered witnesses at every canonical
+prefix and exactly 12 replayable candidates for `root = Card([b1,`. The V1
+payload labels that bounded subset `complete`/`witness_pruned`; it is not a
+claim that the two omitted UNKNOWN branches were proven unreachable. Cold empty
+and `root` medians stayed within the 15% regression guard. The cold difficult
+prefix remained a negative latency point at 738.29 ms V1 versus 880.92 ms
+packed, while a primed row-owned session with the row-domain
+cache cleared before every V2 sample fell from 735.96 ms to 8.05 ms (91.44×).
+Choice-codec cold bounded-distance queries improved 21.04× with exhaustive
+parity. The bounded solver was 1.03×.
 
-The five workloads ran as separate CPU processes under the three-minute
-repository cap and were merged only after the runner verified the same clean
-commit, component versions, recipe, host, and fixture digests. The result is
-[completion-kernel-perf-results.json](completion-kernel-perf-results.json).
-Source: clean commit `adab7e4365c4fe350040d233839d58223d48e018`;
-`matrix.perf=v5`, `model.twotower=v266`; seven alternating pairs per workload,
-one excluded pilot, independently calibrated power-of-two bundles, 10 ms
-timing floor, and 15% relative-MAD ceiling. Recipe: scratch/fixture authorities,
-no checkpoint, no training, no eval suite,
-`honesty_mode=fixture_perf_not_ship`.
+The compiler fixture exercises immutable hard-domain sharing across equivalent
+V2 rows: wall median 2,389.07 ms → 82.01 ms and compiler-time median
+2,315.39 ms → 4.069 ms, with identical ids/outcome/validation/forward count.
+The singleton arm remained identical with zero forwards. This is explicitly a
+warm sharing result; the cold parity payload was 2,975.2 ms V1 versus
+2,512.9 ms packed, and no
+end-to-end production or ship factor is claimed.
 
-| Workload | n | Reference | Packed | Correctness | Gate | Outcome |
-| --- | ---: | ---: | ---: | --- | --- | --- |
-| difficult warm graph/DP | 1 | 16.9321 ms | 0.0441 ms | exact 12 paths; zero measured rebuild work | ≥10× | **pass, 383.998×** |
-| fresh-request/cache-cleared prefixes | 3 | paired per prefix | max ratio 1.064× | exact domains; stable pairs | ≤1.15× | **pass** |
-| choice feasibility, allowed-cache cleared | 1 | 41.5198 ms | 2.0004 ms | exact legal set | ≥3× | **pass, 20.756×** |
-| solver successors | 14 | 5.8882 ms | 2.5126 ms | exact payloads; 14/14 certificates replay | one root expansion each; packed ≤ reference | **pass, 2.343×** |
-| cold compiler decode | 1 | 1,612.48 compiler ms | 1,511.12 compiler ms | identical ids/text/certification; one forward each; zero rebuild work | ≥5× | **fail, 1.067×** |
+All 13 gates and AgentV criteria passed. The ≥10× criterion is named and
+scoped to persistent-session kernel work without a row-domain cache hit; the
+matched cold hard row is the negative 0.84× point above. Canonical raw samples,
+MAD/min/max, environment, work deltas, correctness digests, version stamp, and
+the two earlier non-promotable diagnostics are retained in
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
+The complete published AgentV bundle, including all 13 execution traces and
+transcripts, is tracked under
+[`completion-kernel-perf-agentv-20260729/`](completion-kernel-perf-agentv-20260729/).
 
-The direct measurement added zero general-forest builds, tree clones, edge
-replays, or witness-state expansions after its excluded warmups. The decode
-row started one request-local session and added zero full-prefix lexical bytes,
-fresh candidate engines, general-forest builds, tree clones, AST bridges, or
-edge replays. Its remaining one neural forward was identical to the reference
-and dominates the fixture, so removing parser/semantic replay did not approach
-the 5× end-to-end compiler threshold.
+### Upstream reconciliation and ambiguous-row batching preregistration
 
-Decision: **mixed and non-promotable**. Four unchanged gates now pass, including
-the previously failing graph/DP and cold-prefix rows, but the five-workload
-merge remains `overall_status=fail` because compiler decode reaches only
-1.067×. Per I14, the next approach is to profile the residual shared-forward
-latency and extend exact `common_forced_run` / scope-singleton proofs far enough
-to avoid that forward where the grammar truly determines the branch; genuine
-ambiguity must stay on the ordinary model-ranked path. Also measure compact
-ambiguous-row batching on a multi-row fixture. Do not weaken the 5× gate,
-introduce a heuristic forced choice, replace request-local authority with a
-global cache, or enable `compiler_decode_mode` by default from this evidence.
+Locked before the reconciliation rerun: commit `d6b671fd` is the implementation
+control. The candidate may only compact independent greedy compiler rows into
+shared denoiser forwards; it must retain that control's request-local
+`CompletionBatchCache`, per-row semantic/parser state, path scoring, and
+finalization. Search/trajectory modes and speculative-ranker rows keep the
+sequential path. This is a same-parameter runtime arm.
+
+The canonical completion-kernel fixture compares the control explicitly by
+calling the same per-row `_compiler_ltr_decode_one` loop used by `d6b671fd`;
+the candidate calls `_compiler_ltr_decode_batch` on the same two contexts,
+length, mode, weights, and hard-domain cache policy. Promotion requires exact
+ids/outcome/final-validation parity, fewer neural calls with the same nonzero
+`denoiser_rows_evaluated`, compact/control median latency <= 1.15, and every
+pre-existing packed-kernel gate. Failure rejects the batching candidate and
+retains the upstream implementation; no gate or model size may change after
+the outcome is visible.

@@ -86,6 +86,28 @@ def test_clean_worktree_passes(repo: Path) -> None:
     assert vvs.run_check(base_arg=None, staged=False) == 0
 
 
+def test_registry_accepts_legacy_dates_and_requires_timezone_for_datetimes(
+    repo: Path,
+) -> None:
+    legacy = _entry("v1", ["src/comp_a.py"])
+    timestamped = _entry(
+        "v1",
+        ["src/pkg/mod.py"],
+        [{"version": "v1", "date": "2026-07-29T10:05:51-05:00", "note": "event"}],
+    )
+    registry = {
+        "schema": vvs.REGISTRY_SCHEMA,
+        "components": {"harness.legacy": legacy, "harness.timestamped": timestamped},
+    }
+    assert vvs.lint_registry(registry) == []
+
+    timestamped["history"][0]["date"] = "2026-07-29T10:05:51"
+    assert any(
+        "must include a timezone offset" in error
+        for error in vvs.lint_registry(registry)
+    )
+
+
 def test_change_without_bump_fails(repo: Path, capsys: pytest.CaptureFixture) -> None:
     (repo / "src" / "comp_a.py").write_text("A = 2\n", encoding="utf-8")
     assert vvs.run_check(base_arg=None, staged=False) == 1

@@ -50,7 +50,7 @@ def model() -> TwoTowerModel:
     return result
 
 
-def _forests(model: TwoTowerModel):
+def _forests(model: TwoTowerModel) -> tuple[CompletionForest, CompletionForest]:
     eos = int(model.tokenizer.eos_id)
     component = min(int(token_id) for token_id in model.tokenizer.kind_ids("component"))
     forced = CompletionForest((CompletionPath((eos,), "eos"),), "complete")
@@ -88,13 +88,10 @@ def test_greedy_compiler_compacts_only_ambiguous_rows(
     monkeypatch.setattr(model, "_denoiser_hidden", hidden)
     ctx, ctx_pad = model._encode_context(["forced", "ambiguous"])
     with collect_decode_stats() as stats:
-        result = model._compiler_ltr_decode_batch(
-            ctx, ctx_pad, 5, mode="restricted"
-        )
+        result = model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="restricted")
 
     assert batch_sizes == [1]
     assert result[:, 1].tolist() == [model.tokenizer.eos_id] * 2
-    assert stats.compiler_batch_forwards == 1
     assert stats.ambiguous_rows_forwarded == 1
     assert stats.forwards_count == 1
 
@@ -118,17 +115,40 @@ def test_all_exact_compiler_rows_bypass_every_forward(
     model._slot_contracts = [None, None]
     ctx, ctx_pad = model._encode_context(["one", "two"])
     with collect_decode_stats() as stats:
-        result = model._compiler_ltr_decode_batch(
-            ctx, ctx_pad, 5, mode="restricted"
-        )
+        result = model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="restricted")
 
     assert result[:, 1].tolist() == [model.tokenizer.eos_id] * 2
     assert stats.forwards_count == 0
-    assert stats.compiler_batch_forwards == 0
 
 
-def test_batched_compiler_matches_sequential_rows(
+def test_batch_rows_share_cache_but_keep_distinct_decode_states(
     model: TwoTowerModel, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    forced, _ = _forests(model)
+    cache_ids: list[int] = []
+    state_ids: list[int] = []
+
+    def forest(*_args, state=None, **_kwargs):
+        cache_ids.append(id(state.completion_batch_cache))
+        state_ids.append(id(state))
+        return forced
+
+    monkeypatch.setattr(compiler_draft, "build_completion_forest", forest)
+    model._slot_contracts = [None, None]
+    ctx, ctx_pad = model._encode_context(["one", "two"])
+    model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="restricted")
+
+    assert len(set(cache_ids)) == 1
+    assert len(set(state_ids)) == 2
+
+
+@pytest.mark.parametrize("mode", ["restricted", "tree"])
+def test_batched_compiler_matches_sequential_row_scoring(
+    model: TwoTowerModel,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
 ) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 
@@ -147,10 +167,9 @@ def test_batched_compiler_matches_sequential_rows(
                 ctx[row : row + 1],
                 ctx_pad[row : row + 1],
                 5,
-                mode="restricted",
+                mode=mode,
                 slot_contract=contracts[row],
                 _plan_row=row,
-                _completion_session_pool={},
             )
             for row in range(2)
         ]
@@ -163,46 +182,64 @@ def test_batched_compiler_matches_sequential_rows(
         return original(ids, *args, **kwargs)
 
     monkeypatch.setattr(model, "_denoiser_hidden", hidden)
-    actual = model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="restricted")
+    actual = model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode=mode)
 
     assert torch.equal(actual, expected)
     assert forwards == [2]
 
 
-def test_tree_mode_compacts_ambiguous_parents_across_rows(
+def test_empty_hard_domains_fail_closed_without_forward(
     model: TwoTowerModel, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 
-    _, ambiguous = _forests(model)
+    empty = CompletionForest((), "none")
     monkeypatch.setattr(
-        compiler_draft,
-        "build_completion_forest",
-        lambda *_args, **_kwargs: ambiguous,
+        compiler_draft, "build_completion_forest", lambda *_args, **_kwargs: empty
     )
-    model._slot_contracts = [[":slot_0"], [":slot_0"]]
-    forwards: list[int] = []
-    original = model._denoiser_hidden
-
-    def hidden(ids, *args, **kwargs):
-        forwards.append(int(ids.size(0)))
-        return original(ids, *args, **kwargs)
-
-    monkeypatch.setattr(model, "_denoiser_hidden", hidden)
+    monkeypatch.setattr(
+        model,
+        "_denoiser_hidden",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("an empty legal domain must not run the model")
+        ),
+    )
+    model._slot_contracts = [None, None]
     ctx, ctx_pad = model._encode_context(["one", "two"])
-    result = model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="tree")
-
-    assert result[:, 1].tolist() == [model.tokenizer.eos_id] * 2
-    assert forwards == [2]
-
-
-def test_real_batch_owns_one_persistent_completion_session_per_row(
-    model: TwoTowerModel,
-) -> None:
-    model._slot_contracts = [[":slot_0"], [":slot_0"]]
-    ctx, ctx_pad = model._encode_context(["one", "two"])
-
     with collect_decode_stats() as stats:
-        model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="restricted")
+        result = model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="restricted")
 
-    assert stats.compiler_persistent_sessions == 2
+    assert result[:, 1:].eq(model.tokenizer.pad_id).all()
+    assert stats.constrained_dead_ends == 2
+    assert stats.compiler_fallbacks == 2
+    assert stats.forwards_count == 0
+
+
+@pytest.mark.parametrize("fallback", ["search", "speculative"])
+def test_non_greedy_authority_uses_sequential_decoder(
+    model: TwoTowerModel,
+    monkeypatch: pytest.MonkeyPatch,
+    fallback: str,
+) -> None:
+    calls: list[int] = []
+
+    def decode_one(ctx, _ctx_pad, length, **_kwargs):
+        calls.append(int(ctx.size(0)))
+        return torch.full(
+            (length,),
+            model.tokenizer.eos_id,
+            dtype=torch.long,
+            device=ctx.device,
+        )
+
+    monkeypatch.setattr(model, "_compiler_ltr_decode_one", decode_one)
+    if fallback == "search":
+        model.config.compiler_search_mode = "lattice"
+    else:
+        monkeypatch.setattr(model, "_speculative_ranker", lambda: object())
+    ctx, ctx_pad = model._encode_context(["one", "two"])
+
+    result = model._compiler_ltr_decode_batch(ctx, ctx_pad, 5, mode="restricted")
+
+    assert result.shape == (2, 5)
+    assert calls == [1, 1]

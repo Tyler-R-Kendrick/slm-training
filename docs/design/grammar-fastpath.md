@@ -27,6 +27,8 @@ Full fidelity tags and honesty rules: [research-lineage.md](research-lineage.md)
 | Module | Role |
 | --- | --- |
 | `engine.py` | `OpenUIIncrementalEngine` — Lex + feed tokens; `accepts()`; `is_deterministic_next()` |
+| `completion_kernel.py` | Request-local packed parser/semantic states, outgoing edges, bounded witnesses, and forced closures |
+| `semantic_state.py` | Immutable scope, binder, schema, slot, and literal-frame facts updated per DSL-native token |
 | `force_emit.py` | Map singleton terminal → tokenizer id; draft windows |
 | `maskgit_constrain.py` | `admit_fill` — hole probe via benign `hole` substitution |
 | `losses.py` | Cheap `force_align_loss` on gold `= ( ) [ ] ,` positions |
@@ -88,6 +90,64 @@ post-generation product policy, not a grammar rule.
 - **Train aux**: `fastpath_aux_weight` (CLI `--fastpath-aux-weight`) adds
   `force_align_loss` without walking the DFA every step.
 
+## Packed incremental completion kernel
+
+Lexer-native OpenUI completion is owned by one request-local
+`CompletionSession`. Its integer state handles intern pairs of LALR control
+state and immutable `SemanticState`; the handle never enters certificates or
+serialized output. Direct DSL-native token feeds advance both halves without
+re-lexing the rendered prefix. Parser forks copy control stacks only, while
+semantic authority remains in the independent persistent state.
+
+The semantic state replaces repeated prefix scans with Python-integer masks and
+interned facts for declarations, references, dependency reachability, active
+calls/arrays, slot use, string/literal frames, and schema requirements. The
+scan-based helpers remain executable differential references, not a production
+owner.
+
+For an interned state `s` and remaining room `r`, bounded witness search follows
+the existing forest edge order with strictly decreasing token cost. Each
+top-level candidate retains the historical 16-node allowance and 64-entry
+query-local LRU, preserving the outward `CompletionDomainV1` status, candidate
+order, witnesses, terminals, and reasons. A partial forest or depleted search
+is typed `UNKNOWN`; it is never cached as `UNSUPPORTED`. Only replayable
+positive paths become witnesses. This also preserves the established difficult
+prefix contract: `root = Card([b1,` exposes exactly 12 replayable ordered
+candidates in both the production kernel and V1 differential reference. Its
+outward V1 status is `complete` with reason `witness_pruned`: the bounded
+reference search leaves the additional `Form` and `Table` branches unknown,
+so exact parity narrows to the 12 proven siblings; it does not prove those two
+unknown branches unreachable.
+
+`forced_closure(s, r)` follows only complete single-edge forests and stops at an
+ambiguity, EOS, literal boundary, incomplete authority, or the token horizon.
+Compiler decode consumes that closure before neural ranking. Decode rows retain
+their current state handle across commits and rollback, and equivalent rows may
+share immutable completed domains while keeping logits row-local. The verified
+support solver likewise advances packed state handles; proof payloads remain
+token/digest based.
+
+Greedy compiler batches synchronize independent rows at those completion
+checkpoints. Complete singletons and forced closures commit before tensor
+packing; only ambiguous row canvases enter a shared denoiser forward, bounded
+by the existing device-aware prefill limits. Parser/semantic state, contracts,
+runtime symbols, biases, and final validation remain per row. Speculative
+ranking and rollback/trajectory search retain the sequential decoder because
+their control state can choose or restore a row before tensor work is known.
+
+All prefix/state/domain caches are lifetime-bounded by the request, decode row,
+or batch and occupy O(unique packed states/prefixes); they have no
+process-global arbitrary-prefix forest cache. `TimeoutError` is checked before
+cache reuse and after forest/closure construction and propagates through
+parser, witness, and solver loops. Native OpenUI production uses the packed
+path. The prefix-oriented reference remains a differential oracle and the
+compatibility path for tokenizers without lexer-native kind ids (including
+current word-tokenizer ONNX exports).
+
+OpenUI remains deterministic LALR: its ambiguous work is semantic candidate
+ranking, not generalized parsing. A GSS/SPPF dependency would add runtime and
+packaging cost without changing this grammar's deterministic control path.
+
 ## Offline compiler contract
 
 The fast path must make the same decisions in a clean worktree that has no
@@ -123,51 +183,3 @@ completion forest reports `coverage="complete"`; a partial singleton still runs
 the neural ranker and is not counted as a certified forced span. MaskGIT's narrow
 one-hole terminal step can bypass; every step whose schedule, confidence, attention,
 survival, or remasking could depend on logits remains neural work.
-
-## Packed completion session (2026-07-29)
-
-Lexer-native decode now keeps one `CompletionSession` per decode row and shares
-the same session among batch rows only when tokenizer, runtime-symbol inventory,
-slot contract, pack/schema identity, grammar options, proof budget, and exact
-prefix match. The session interns parser/recognition plus semantic state,
-memoizes transitions/outgoing domains, replays positive and negative
-terminal-witness proofs with the original per-query node charges, and caches
-exact completed domain results. Complete-authority budget-exhausted UNKNOWN
-schedules are keyed by exact state, room, and node budget;
-incomplete-authority UNKNOWN is never cached. State ids are request-local
-implementation details and never enter certificates.
-
-Supported rows use immutable tree-free recognition snapshots to verify edge
-targets. Endpoints remain lazy: semantic state and a full parser record are
-materialized only when a verified edge is traversed. Literal boundaries retain
-the canonical decoded-prefix recognition path, and any unsupported recognition
-transition falls back to the exact incremental engine. Thus the optimization
-removes speculative parser copies without widening the legal domain.
-
-`GrammarDecodeState.advance_token` advances the packed state beside the existing
-incremental parser. Arbitrary replacement prefixes discard the row attachment;
-lattice rollback restores an exact pooled interned engine/state when available
-and otherwise takes the legacy replay path. Append-only commits advance it.
-Complete, terminal-reachable singleton closures
-commit before compiler ranking and stop at branches, EOS, literal frames,
-incomplete coverage, deadlines, or the remaining-token budget. The solver
-expander likewise memoizes an identical `(state, hole, value)` successor, so an
-exact successor is expanded once per request.
-
-`DecodeStats` exposes the `completion_*` work counters. Non-native and
-non-kernel paths leave them zero. The private
-`_openui_completion_domain_reference` remains only for differential tests and
-the perf-matrix control; production never selects it.
-
-Correctness is pinned by prefix/corpus differential tests, replayable terminal
-witnesses, UNKNOWN/timeout poisoning tests, cache-context separation,
-zero-cost-edge rejection, request-local batch sharing, interned restore tests, and
-singleton no-forward tests. Measured fixture results and the remaining negative
-decode result are recorded in
-[completion-kernel-perf-results.json](completion-kernel-perf-results.json) and
-[the perf matrix](perf-experiment-matrix.md#packed-completion-kernel-2026-07-29).
-The clean seven-pair fixture passes direct graph/DP, cold-prefix, choice, and
-solver gates. Compiler decode preserves exact output/certification and zero
-rebuild work but reaches only 1.067× against a 5× gate, so the merged verdict is
-`fail` and the mechanism is non-promotable. It authorizes no semantic-quality
-or ship claim.
