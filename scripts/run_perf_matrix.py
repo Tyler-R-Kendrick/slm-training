@@ -15,6 +15,7 @@ import importlib.metadata
 import json
 import os
 import platform
+import shutil
 import statistics
 import time
 import warnings
@@ -23,6 +24,7 @@ from copy import deepcopy
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from slm_training.dsl.schema import load_jsonl
 from slm_training.models.decode_stats import DecodeStats, aggregate_stats
@@ -30,6 +32,8 @@ from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.models.twotower import TwoTowerModel
 from slm_training.levers import DEFAULT_EVAL_DATA_DIR, MAX_HARNESS_WALL_SECONDS
 from slm_training.versioning import build_version_stamp
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _installed_version(name: str) -> str | None:
@@ -55,6 +59,59 @@ def _repo_relative_artifact_paths(value: Any) -> Any:
             except ValueError:
                 pass
     return value
+
+
+def _persist_agentv_bundle(run_dir: Path, docs_dir: Path) -> dict[str, Any]:
+    """Copy the complete AgentV bundle, including traces, into durable docs."""
+    source = run_dir / "agentv"
+    if not source.is_dir():
+        raise FileNotFoundError(f"AgentV bundle missing: {source}")
+    if docs_dir.exists():
+        raise FileExistsError(f"durable AgentV directory already exists: {docs_dir}")
+    shutil.copytree(source, docs_dir / "agentv")
+    for index_path in (docs_dir / "agentv").glob("*/index.jsonl"):
+        active = {
+            str(json.loads(line)["artifact_dir"])
+            for line in index_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+        for suite_dir in index_path.parent.glob("*.eval"):
+            for case_dir in suite_dir.iterdir():
+                relative = case_dir.relative_to(index_path.parent).as_posix()
+                if case_dir.is_dir() and relative not in active:
+                    shutil.rmtree(case_dir)
+    for outputs_dir in sorted(
+        (docs_dir / "agentv").rglob("outputs"),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    ):
+        outputs_dir.rename(outputs_dir.with_name("artifacts"))
+    replacements = {
+        str(run_dir.resolve()): "agentv-dir://",
+        quote(str(run_dir.resolve()), safe=""): quote("agentv-dir://", safe=""),
+        str(ROOT.resolve()): "repo://",
+        quote(str(ROOT.resolve()), safe=""): quote("repo://", safe=""),
+        "outputs/": "artifacts/",
+    }
+    for path in (docs_dir / "agentv").rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".jsonl", ".md"}:
+            continue
+        content = path.read_text(encoding="utf-8")
+        for source_path, portable_path in replacements.items():
+            content = content.replace(source_path, portable_path)
+        path.write_text(content, encoding="utf-8")
+    files = [path for path in (docs_dir / "agentv").rglob("*") if path.is_file()]
+    traces = [
+        path
+        for path in files
+        if path.name in {"trace.json", "transcript.jsonl"}
+    ]
+    return {
+        "root": _repo_relative_artifact_paths(str(docs_dir)),
+        "files": len(files),
+        "trace_files": len(traces),
+        "includes_traces": bool(traces),
+    }
 
 
 @dataclass(frozen=True)
@@ -1638,6 +1695,8 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
                 _repo_relative_artifact_paths(str(args.out_dir)),
                 "--docs-out",
                 _repo_relative_artifact_paths(str(args.docs_out)),
+                "--docs-agentv-dir",
+                _repo_relative_artifact_paths(str(args.docs_agentv_dir)),
             ],
             "scoreboard_path": _repo_relative_artifact_paths(
                 str(args.out_dir / "scoreboard.json")
@@ -1714,6 +1773,9 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
             ],
         )
     )
+    board["agentv"]["durable_artifacts"] = _persist_agentv_bundle(
+        args.out_dir, args.docs_agentv_dir
+    )
     board_path = args.out_dir / "scoreboard.json"
     board_path.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
     args.docs_out.parent.mkdir(parents=True, exist_ok=True)
@@ -1767,12 +1829,20 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("docs/design/perf-matrix-results.json"),
     )
     parser.add_argument(
+        "--docs-agentv-dir",
+        type=Path,
+        default=None,
+        help="New tracked directory for the complete AgentV bundle and traces.",
+    )
+    parser.add_argument(
         "--list",
         action="store_true",
         help="Print selected experiment definitions without running them.",
     )
     args = parser.parse_args(argv)
     if args.completion_kernel:
+        if args.docs_agentv_dir is None:
+            parser.error("--completion-kernel requires --docs-agentv-dir")
         if args.docs_out == Path("docs/design/perf-matrix-results.json"):
             args.docs_out = Path(
                 "docs/design/completion-kernel-perf-results.json"
