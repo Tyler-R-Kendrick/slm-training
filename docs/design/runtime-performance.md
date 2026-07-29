@@ -13,6 +13,63 @@ Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 | Eval gold design lint | ~75ms×N | ~0 (meta) | same |
 | Cactus / NEON kernel | n/a | separate | separate |
 
+## Packed completion kernel fixture (2026-07-29)
+
+The canonical capped run
+
+```bash
+python -m scripts.run_perf_matrix --completion-kernel \
+  --completion-repetitions 5 \
+  --out-dir outputs/runs/perf_matrix/completion_kernel_20260729 \
+  --docs-out docs/design/completion-kernel-perf-results.json
+```
+
+ran on WSL2 Linux/aarch64 (Qualcomm, 12 logical CPUs), Python 3.12.3 and
+Lark 1.3.1. It is `fixture_or_scratch` evidence, not a model-quality or ship
+claim. Raw samples, dispersion, correctness digests, counters, version stamp,
+and AgentV results are in
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
+
+| Matched workload | V1 median | Packed median | V1 / packed |
+| --- | ---: | ---: | ---: |
+| Cold empty | 12.84 ms | 13.56 ms | 0.95× |
+| Cold `root` | 5.99 ms | 6.59 ms | 0.91× |
+| Cold `root = Card([b1` | 47.92 ms | 45.96 ms | 1.04× |
+| Cold `root = Card([b1,` | 707.31 ms | 812.27 ms | 0.87× |
+| Warm exact hard-domain repeat | 721.57 ms | 0.071 ms | 10,182× |
+| Choice-codec cold bounded distance | 145.46 ms | 9.13 ms | 15.93× |
+| Bounded solver fixture | 16.85 ms | 16.52 ms | 1.02× |
+| Equivalent-row compiler fixture | 2,386.23 ms | 71.97 ms | 33.16× wall |
+
+The compiler fixture deliberately compares fresh V1 rows with V2's production
+equivalent-row hard-domain cache. Its median `compiler_ms` was 2,305.72 ms
+versus 0.799 ms (2,885×); this is a warm sharing result, not a claim that one
+cold decode is thousands of times faster. The untimed cold parity payload was
+2,975.2 ms V1 versus 2,512.9 ms packed. The
+singleton fixture remained identical and performed zero neural forwards.
+
+All 13 canonical gates passed: exact V1 payload/witness parity, the identical
+12-candidate hard-prefix payload, simple-prefix regression, choice oracle
+parity, solver and compiler payload parity, zero-forward singleton behavior,
+warm zero
+full-prefix lexical bytes, warm zero candidate-engine allocations, and the
+declared latency thresholds. AgentV passed 13/13 with no execution errors.
+
+The Amdahl boundary is explicit: cold hard-prefix construction remains about
+13% slower because parser-state interning and control forks have not amortized.
+The ≥10× gate is explicitly the primed persistent-row repeat, not matched cold
+construction. The large gains occur only when the exact same hard state is
+reused across a row or equivalent rows. Future work should reduce cold
+state/fork overhead; no whole-model factor is inferred from the warm fixture.
+
+Development diagnostics are retained rather than promoted: the interrupted
+choice probe lacked raw samples, alternation, and a discarded warm-up; the
+discarded kernel probe compared a complete 12-path reference with an incomplete
+zero-candidate prototype. Two early canonical invocations exposed request-field
+and EOS-state integration bugs and emitted no evidence. Later complete runs
+failed 3/11 and then 1/11 latency criteria before the final matched fixture
+passed. The canonical JSON labels each of these negative/incomplete stages.
+
 ## Round 2 changes
 
 1. **Batched LTR decode** (`generate_batch`) with progressive canvases; eval uses it automatically.

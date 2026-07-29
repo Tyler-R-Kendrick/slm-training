@@ -1,4 +1,8 @@
-from slm_training.models.decode_stats import DecodeStats, aggregate_stats
+from slm_training.models.decode_stats import (
+    DecodeStats,
+    aggregate_stats,
+    collect_completion_session_delta,
+)
 from slm_training.harnesses.model_build.eval_runner import _nearest_rank
 
 
@@ -61,6 +65,12 @@ def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
         choice_vocab_candidates_avoided=1200,
         choice_completion_cache_hits=29,
         choice_completion_cache_misses=3,
+        choice_schema_intern_hits=11,
+        choice_distance_cache_hits=13,
+        choice_distance_cache_evictions=2,
+        choice_distance_cache_peak_entries=64,
+        choice_clone_count=17,
+        choice_frame_cow_copies=5,
     )
     summary = aggregate_stats([stats])
     assert summary["choice_state_cache_hits_sum"] == 7.0
@@ -69,6 +79,33 @@ def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
     assert summary["choice_vocab_candidates_avoided_sum"] == 1200.0
     assert summary["choice_completion_cache_hits_sum"] == 29.0
     assert summary["choice_completion_cache_misses_sum"] == 3.0
+    assert summary["choice_schema_intern_hits_sum"] == 11.0
+    assert summary["choice_distance_cache_hits_sum"] == 13.0
+    assert summary["choice_distance_cache_evictions_sum"] == 2.0
+    assert summary["choice_distance_cache_peak_entries_sum"] == 64.0
+    assert summary["choice_clone_count_sum"] == 17.0
+    assert summary["choice_frame_cow_copies_sum"] == 5.0
+
+
+def test_completion_session_snapshots_are_folded_as_deltas() -> None:
+    class Session:
+        counters = {"session_starts": 1, "unique_states": 2, "edges_built": 1}
+
+        def stats(self):
+            return dict(self.counters)
+
+    session = Session()
+    stats = DecodeStats()
+    snapshot = collect_completion_session_delta(session, stats=stats)
+    session.counters.update(unique_states=3, edges_built=4)
+    collect_completion_session_delta(session, snapshot, stats=stats)
+
+    assert stats.completion_session_starts == 1
+    assert stats.completion_unique_states == 3
+    assert stats.completion_edges_built == 4
+    summary = aggregate_stats([stats])
+    assert summary["completion_unique_states_sum"] == 3.0
+    assert summary["completion_edges_built_sum"] == 4.0
 
 
 def test_decode_stats_aggregates_root_reference_arity_counts() -> None:

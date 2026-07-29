@@ -235,7 +235,7 @@ Recipe: CPU, committed `playground_demo/last.pt`, smoke `n=2`, no training,
 same-run C0 control, official bridge healthy. The run emitted AgentEvals JSONL
 and a pinned `@agentv/core` result bundle (`total=5`, `passed=0`,
 `executionErrors=0`). Full evidence is in
-[`perf-matrix-results.json`](perf-matrix-results.json).
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
 
 | ID | mode | mean ms | p50 ms | forwards/call | forced tokens | fallbacks | parse | fidelity |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -403,3 +403,35 @@ two-target-cluster wiring screen; confirmation was not touched, no checkpoint
 was written, and no production/default claim is supported. AgentV passed 5/5
 with no execution errors. Full k-grid, confidence intervals, work attribution,
 and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).
+
+## Packed incremental completion kernel (2026-07-29)
+
+`python -m scripts.run_perf_matrix --completion-kernel
+--completion-repetitions 5` compares the private prefix-oriented V1 reference
+with the production request-local packed kernel on the same tokenizer, schema,
+budget, process, and interpreter. This is CPU fixture/scratch evidence only.
+
+The exact-V1-output gates passed, including ordered witnesses at every canonical
+prefix and exactly 12 replayable candidates for `root = Card([b1,`. The V1
+payload labels that bounded subset `complete`/`witness_pruned`; it is not a
+claim that the two omitted UNKNOWN branches were proven unreachable. Cold empty
+and `root` medians stayed within the 15% regression guard. The cold difficult
+prefix remained a negative latency point (707.31 ms V1 versus 812.27 ms
+packed), while a primed row-owned exact-domain repeat fell from 721.57 ms to
+0.071 ms. Choice-codec cold bounded-distance queries improved 15.93× with
+exhaustive parity. The bounded solver was 1.02×.
+
+The compiler fixture exercises immutable hard-domain sharing across equivalent
+V2 rows: wall median 2,386.23 ms → 71.97 ms and compiler-time median
+2,305.72 ms → 0.799 ms, with identical ids/outcome/validation/forward count.
+The singleton arm remained identical with zero forwards. This is explicitly a
+warm sharing result; the cold parity payload was 2,975.2 ms V1 versus
+2,512.9 ms packed, and no
+end-to-end production or ship factor is claimed.
+
+All 13 gates and AgentV criteria passed. The ≥10× criterion is named and
+scoped to the primed persistent-row repeat; the matched cold hard row is the
+negative 0.87× point above. Canonical raw samples, MAD/min/max,
+environment, work deltas, correctness digests, version stamp, and the two
+earlier non-promotable diagnostics are retained in
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).

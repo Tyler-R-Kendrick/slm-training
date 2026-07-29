@@ -4,7 +4,10 @@ from types import SimpleNamespace
 import pytest
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
-from slm_training.harnesses.model_build.factory import apply_runtime_overrides
+from slm_training.harnesses.model_build.factory import (
+    _twotower_config_from_build,
+    apply_runtime_overrides,
+)
 
 
 def test_none_decode_overrides_preserve_checkpoint_settings() -> None:
@@ -190,3 +193,37 @@ def test_action_alias_overrides_round_trip() -> None:
 
     assert model.config.action_alias_mode == "fixed"
     assert model.config.action_description_name_mode == "alias_aware_description"
+
+
+def test_compiler_completion_flags_reach_twotower_config() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        required_slot_array_completion=True,
+        required_slot_root_completion=True,
+        slot_alias_unique_decode=True,
+        binder_topology_unique_decode=True,
+        compiler_schema_component_types=True,
+    )
+
+    runtime = _twotower_config_from_build(config)
+
+    assert runtime.required_slot_array_completion is True
+    assert runtime.required_slot_root_completion is True
+    assert runtime.slot_alias_unique_decode is True
+    assert runtime.binder_topology_unique_decode is True
+    assert runtime.compiler_schema_component_types is True
+
+
+def test_unowned_compiler_auxiliary_fails_closed_at_factory_boundary() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        binder_slot_ownership_loss_weight=1.0,
+        binder_slot_ownership_decode_weight=1.0,
+    )
+
+    with pytest.raises(ValueError, match="no runtime owner is implemented"):
+        _twotower_config_from_build(config)

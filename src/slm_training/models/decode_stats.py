@@ -98,6 +98,40 @@ class DecodeStats:
     choice_vocab_candidates_avoided: int = 0
     choice_completion_cache_hits: int = 0
     choice_completion_cache_misses: int = 0
+    choice_schema_intern_hits: int = 0
+    choice_schema_intern_misses: int = 0
+    choice_distance_cache_hits: int = 0
+    choice_distance_cache_misses: int = 0
+    choice_distance_cache_evictions: int = 0
+    choice_distance_cache_peak_entries: int = 0
+    choice_clone_count: int = 0
+    choice_frame_cow_copies: int = 0
+    # Packed grammar-completion kernel.  These counters are request-local
+    # deltas folded from CompletionSession snapshots; they must never be
+    # assigned from a cumulative snapshot or repeated domain queries would
+    # double count prior work.
+    completion_session_starts: int = 0
+    completion_state_intern_hits: int = 0
+    completion_state_intern_misses: int = 0
+    completion_unique_states: int = 0
+    completion_edges_built: int = 0
+    completion_transition_cache_hits: int = 0
+    completion_transition_cache_misses: int = 0
+    completion_domain_cache_hits: int = 0
+    completion_domain_cache_misses: int = 0
+    completion_reachability_cache_hits: int = 0
+    completion_reachability_cache_misses: int = 0
+    completion_witness_states_expanded: int = 0
+    completion_forced_closure_hits: int = 0
+    completion_forced_closure_tokens: int = 0
+    completion_direct_terminal_feeds: int = 0
+    completion_full_sync_fallbacks: int = 0
+    completion_full_prefix_lex_bytes: int = 0
+    completion_parser_forks: int = 0
+    completion_candidate_engine_allocations: int = 0
+    completion_scope_reference_scans_avoided: int = 0
+    completion_shared_domain_hits: int = 0
+    completion_shared_domain_misses: int = 0
     trie_nodes: int = 0
     restricted_projections: int = 0
     full_projections: int = 0
@@ -245,6 +279,52 @@ def get_active_stats() -> DecodeStats | None:
     return _ACTIVE
 
 
+_COMPLETION_COUNTER_FIELDS = {
+    "session_starts": "completion_session_starts",
+    "state_intern_hits": "completion_state_intern_hits",
+    "state_intern_misses": "completion_state_intern_misses",
+    "unique_states": "completion_unique_states",
+    "edges_built": "completion_edges_built",
+    "transition_cache_hits": "completion_transition_cache_hits",
+    "transition_cache_misses": "completion_transition_cache_misses",
+    "domain_cache_hits": "completion_domain_cache_hits",
+    "domain_cache_misses": "completion_domain_cache_misses",
+    "reachability_cache_hits": "completion_reachability_cache_hits",
+    "reachability_cache_misses": "completion_reachability_cache_misses",
+    "witness_states_expanded": "completion_witness_states_expanded",
+    "forced_closure_hits": "completion_forced_closure_hits",
+    "forced_closure_tokens": "completion_forced_closure_tokens",
+    "direct_terminal_feeds": "completion_direct_terminal_feeds",
+    "full_sync_fallbacks": "completion_full_sync_fallbacks",
+    "full_prefix_lex_bytes": "completion_full_prefix_lex_bytes",
+    "parser_forks": "completion_parser_forks",
+    "candidate_engine_allocations": "completion_candidate_engine_allocations",
+    "scope_reference_scans_avoided": "completion_scope_reference_scans_avoided",
+}
+
+
+def collect_completion_session_delta(
+    session: Any,
+    previous: dict[str, int] | None = None,
+    *,
+    stats: DecodeStats | None = None,
+) -> dict[str, int]:
+    """Fold new request-local completion work into a decode collector."""
+    current = {
+        str(key): int(value)
+        for key, value in dict(session.stats()).items()
+        if isinstance(value, (int, float))
+    }
+    bucket = stats if stats is not None else get_active_stats()
+    if bucket is not None:
+        before = previous or {}
+        for counter, field_name in _COMPLETION_COUNTER_FIELDS.items():
+            delta = current.get(counter, 0) - int(before.get(counter, 0))
+            if delta > 0:
+                setattr(bucket, field_name, int(getattr(bucket, field_name)) + delta)
+    return current
+
+
 def set_active_stats(stats: DecodeStats | None) -> DecodeStats | None:
     global _ACTIVE
     prev = _ACTIVE
@@ -344,6 +424,36 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "choice_vocab_candidates_avoided",
         "choice_completion_cache_hits",
         "choice_completion_cache_misses",
+        "choice_schema_intern_hits",
+        "choice_schema_intern_misses",
+        "choice_distance_cache_hits",
+        "choice_distance_cache_misses",
+        "choice_distance_cache_evictions",
+        "choice_distance_cache_peak_entries",
+        "choice_clone_count",
+        "choice_frame_cow_copies",
+        "completion_session_starts",
+        "completion_state_intern_hits",
+        "completion_state_intern_misses",
+        "completion_unique_states",
+        "completion_edges_built",
+        "completion_transition_cache_hits",
+        "completion_transition_cache_misses",
+        "completion_domain_cache_hits",
+        "completion_domain_cache_misses",
+        "completion_reachability_cache_hits",
+        "completion_reachability_cache_misses",
+        "completion_witness_states_expanded",
+        "completion_forced_closure_hits",
+        "completion_forced_closure_tokens",
+        "completion_direct_terminal_feeds",
+        "completion_full_sync_fallbacks",
+        "completion_full_prefix_lex_bytes",
+        "completion_parser_forks",
+        "completion_candidate_engine_allocations",
+        "completion_scope_reference_scans_avoided",
+        "completion_shared_domain_hits",
+        "completion_shared_domain_misses",
         "trie_nodes",
         "restricted_projections",
         "full_projections",
@@ -445,6 +555,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
 __all__ = [
     "DecodeStats",
     "aggregate_stats",
+    "collect_completion_session_delta",
     "collect_decode_stats",
     "get_active_stats",
     "set_active_stats",

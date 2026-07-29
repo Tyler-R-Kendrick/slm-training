@@ -62,6 +62,7 @@ from slm_training.models.decode_stats import (
 )
 from slm_training.runtime.decode_schedule import plan_prefill, record_plan
 from slm_training.models.grammar import (
+    CompletionBatchCache,
     apply_structural_bias,
     exact_forced_token_id,
     filter_ids_by_stream,
@@ -419,6 +420,12 @@ class TwoTowerConfig:
     binder_topology_decode_weight: float = 0.0
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
+    binder_slot_ownership_loss_weight: float = 0.0
+    binder_slot_ownership_decode_weight: float = 0.0
+    binder_slot_presence_loss_weight: float = 0.0
+    binder_slot_presence_decode_weight: float = 0.0
+    binder_reference_presence_loss_weight: float = 0.0
+    binder_reference_presence_decode_weight: float = 0.0
     root_reference_arity_loss_weight: float = 0.0
     root_reference_arity_decode_weight: float = 0.0
     root_reference_identity_loss_weight: float = 0.0
@@ -441,6 +448,12 @@ class TwoTowerConfig:
     encoder_ops_conditioning: bool = False
     semantic_role_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    required_slot_array_completion: bool = False
+    required_slot_root_completion: bool | None = None
+    request_aware_slot_reservation: bool = False
+    slot_alias_unique_decode: bool = False
+    binder_topology_unique_decode: bool = False
+    compiler_schema_component_types: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
     template_fill_decode: bool = False
     contract_template_fastpath: bool = False
@@ -714,6 +727,29 @@ class TwoTowerConfig:
             validate_twotower_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
+        unsupported = [
+            name
+            for name in (
+                "binder_slot_ownership_loss_weight",
+                "binder_slot_ownership_decode_weight",
+                "binder_slot_presence_loss_weight",
+                "binder_slot_presence_decode_weight",
+                "binder_reference_presence_loss_weight",
+                "binder_reference_presence_decode_weight",
+            )
+            if float(getattr(self, name, 0.0) or 0.0) > 0.0
+        ]
+        if unsupported:
+            raise ValueError(
+                "unsupported compiler auxiliary lever(s): "
+                + ", ".join(unsupported)
+                + "; no runtime owner is implemented"
+            )
+        if self.request_aware_slot_reservation:
+            raise ValueError(
+                "request_aware_slot_reservation is unsupported; "
+                "no request-aware compiler owner is implemented"
+            )
         repair_modes = {
             "recursive_update_mode": (
                 self.recursive_update_mode,
@@ -1768,7 +1804,7 @@ class TwoTowerModel(nn.Module):
                 ),
                 110,
             )
-            if root_reference_identity_enabled and _is_choice_output(self.config)
+            if root_reference_identity_enabled
             else None
         )
         # AP-023 (SLM-315): default-off discrete abstract-plan head over
@@ -4200,9 +4236,31 @@ class TwoTowerModel(nn.Module):
         if root_identity_negative_w < 0.0:
             raise ValueError("root_reference_identity_negative_weight must be >= 0")
         if root_identity_w > 0.0 and self.root_reference_identity_head is not None:
-            from slm_training.models.choice_tokenizer import (
-                structural_root_reference_identity_target,
-            )
+            if _is_choice_output(self.config):
+                from slm_training.models.choice_tokenizer import (
+                    structural_root_reference_identity_target,
+                )
+
+                def identity_target(
+                    row: int, record: Any
+                ) -> tuple[frozenset[int], int] | None:
+                    return structural_root_reference_identity_target(
+                        self.tokenizer,
+                        target_ids[row].tolist(),
+                        slot_count=len(record.placeholders or ()),
+                    )
+
+            else:
+                from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                    root_declaration_reference_identity_target,
+                )
+
+                def identity_target(
+                    row: int, _record: Any
+                ) -> tuple[frozenset[int], int] | None:
+                    return root_declaration_reference_identity_target(
+                        self.tokenizer, target_ids[row].tolist()
+                    )
 
             identity_logits = self.root_reference_identity_head(
                 self._pool_context(ctx, ctx_pad).detach()
@@ -4213,11 +4271,7 @@ class TwoTowerModel(nn.Module):
             identity_negative_accuracies: list[torch.Tensor] = []
             identity_class_counts: list[int] = []
             for row, record in enumerate(batch):
-                target_and_bound = structural_root_reference_identity_target(
-                    self.tokenizer,
-                    target_ids[row].tolist(),
-                    slot_count=len(record.placeholders or ()),
-                )
+                target_and_bound = identity_target(row, record)
                 if target_and_bound is None:
                     continue
                 references, section_count = target_and_bound
@@ -5348,6 +5402,8 @@ class TwoTowerModel(nn.Module):
                 forest = build_completion_forest(
                     tok, prefix, state=st, remaining_tokens=canvas - t
                 )
+            except (TimeoutError, KeyboardInterrupt):
+                raise
             except Exception:  # noqa: BLE001 - an unprovable probe claims nothing
                 return None
             if forest.coverage != "complete":
@@ -6521,6 +6577,44 @@ class TwoTowerModel(nn.Module):
                         float(bias[position].item()),
                         margin_bias,
                     )
+                applied = True
+        if (
+            margin > 0.0
+            and remaining_counts is not None
+            and not any(remaining_counts.values())
+            and prefix
+            and candidate_scores is not None
+            and state is not None
+        ):
+            slot_contract = (
+                self._slot_contracts[row]
+                if self._slot_contracts and row < len(self._slot_contracts)
+                else None
+            )
+            visible_slots = {
+                int(self.tokenizer.sym_id(index))
+                for index in range(
+                    min(
+                        len(slot_contract or ()),
+                        int(getattr(self.tokenizer, "sym_slots", 0)),
+                    )
+                )
+            }
+            close_id = self.tokenizer.token_to_id.get("]")
+            comma_id = self.tokenizer.token_to_id.get(",")
+            if (
+                visible_slots
+                and visible_slots.issubset(prefix)
+                and close_id in candidate_ids
+                and comma_id in candidate_ids
+            ):
+                target = candidate_ids.index(close_id)
+                bias[target] = max(
+                    float(bias[target].item()),
+                    float(candidate_scores.max().item())
+                    + margin
+                    - float(candidate_scores[target].item()),
+                )
                 applied = True
         frames = getattr(state, "frames", ())
         if margin > 0.0 and remaining_counts is not None and not frames:
@@ -8099,8 +8193,6 @@ class TwoTowerModel(nn.Module):
             ):
                 return None
             close_id = self.tokenizer.token_to_id.get("]")
-            if close_id not in candidate_ids:
-                return None
             targets = [
                 position
                 for position, token_id in enumerate(candidate_ids)
@@ -8108,6 +8200,56 @@ class TwoTowerModel(nn.Module):
             ]
             if not targets:
                 return None
+            if self.config.compiler_schema_component_types or typed_margin > 0.0:
+                allowed_components: set[str] = set()
+                pending = [dict(schema["items"])]
+                seen_refs: set[str] = set()
+                definitions = library_schema().get("$defs", {})
+                while pending:
+                    item_schema = pending.pop()
+                    reference = str(item_schema.get("$ref") or "")
+                    if reference.startswith("#/$defs/"):
+                        component = reference.rsplit("/", 1)[-1]
+                        allowed_components.add(component)
+                        if component not in seen_refs:
+                            seen_refs.add(component)
+                            definition = definitions.get(component)
+                            if isinstance(definition, dict):
+                                pending.append(dict(definition))
+                    pending.extend(
+                        dict(child)
+                        for child in item_schema.get("anyOf", ())
+                        if isinstance(child, dict)
+                    )
+                    if isinstance(item_schema.get("items"), dict):
+                        pending.append(dict(item_schema["items"]))
+                if not self.config.compiler_schema_component_types:
+                    allowed_components = {
+                        component
+                        for component in allowed_components
+                        for definition in (definitions.get(component),)
+                        if isinstance(definition, dict)
+                        if not any(
+                            name in set(definition.get("required", ()))
+                            and isinstance(property_schema, dict)
+                            and property_schema.get("type") == "array"
+                            for name, property_schema in (
+                                definition.get("properties") or {}
+                            ).items()
+                        )
+                    }
+                typed_targets = [
+                    position
+                    for position in targets
+                    if str(
+                        self.tokenizer.id_to_token.get(candidate_ids[position], "")
+                    ).removeprefix("+")
+                    in allowed_components
+                ]
+                if typed_targets:
+                    targets = typed_targets
+                else:
+                    return None
             target = max(targets, key=lambda position: float(scores[position].item()))
             bias = scores.new_zeros(len(candidate_ids))
             bias[target] = max(
@@ -9385,6 +9527,30 @@ class TwoTowerModel(nn.Module):
             if child is not None and kind.startswith("bind_reference"):
                 bias[position] = weight * logits[child]
                 applied = True
+        if self.config.binder_topology_unique_decode:
+            equals_id = self.tokenizer.token_to_id.get("=")
+            declaration_start = (
+                max(
+                    (
+                        position
+                        for position, token_id in enumerate(prefix)
+                        if token_id == equals_id
+                    ),
+                    default=-1,
+                )
+                + 1
+            )
+            referenced = {
+                token_id
+                for token_id in prefix[declaration_start:]
+                if token_id in binder_index
+            }
+            for position, (token_id, kind) in enumerate(
+                zip(candidate_ids, candidate_kinds, strict=True)
+            ):
+                if token_id in referenced and kind.startswith("bind_reference"):
+                    bias[position] = -1e9
+                    applied = True
         return bias if applied else None
 
     def _binder_arity_path_bias(
@@ -9404,7 +9570,10 @@ class TwoTowerModel(nn.Module):
 
         binder_ids = self._binder_component_token_ids()
         binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
-        parent = binder_index.get(active_declaration_binder_id(self.tokenizer, prefix))
+        parent_id = active_declaration_binder_id(self.tokenizer, prefix)
+        if parent_id == self.tokenizer.bind_id(0):
+            return None
+        parent = binder_index.get(parent_id)
         emitted = active_declaration_reference_count(self.tokenizer, prefix)
         if parent is None or emitted is None:
             return None
@@ -9473,6 +9642,152 @@ class TwoTowerModel(nn.Module):
         return [
             weight * float(stop_score if stops[index] else continue_score)
             for index in range(len(paths))
+        ]
+
+    def _root_reference_identity_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        paths: tuple,
+        scores: torch.Tensor,
+    ) -> list[float] | None:
+        """Re-rank unused lexer binder references without changing legality."""
+        weight = float(
+            getattr(self.config, "root_reference_identity_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.root_reference_identity_head is None:
+            return None
+        binder_ids = self._binder_component_token_ids()
+        binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+        references = [
+            (position, binder_index.get(int(path.token_ids[0])))
+            for position, path in enumerate(paths)
+            if path.token_ids
+        ]
+        references = [
+            (position, reference)
+            for position, reference in references
+            if reference is not None
+        ]
+        if not references:
+            return None
+        used = {
+            binder_index[token_id]
+            for token_id in prefix
+            if token_id in binder_index and token_id != self.tokenizer.bind_id(0)
+        }
+        unused = [
+            (position, reference)
+            for position, reference in references
+            if reference not in used
+        ]
+        if not unused:
+            return None
+        logits = self.root_reference_identity_head(self._pool_context(ctx, ctx_pad))[
+            0, : len(binder_ids)
+        ]
+        ranked_unused = sorted(
+            unused,
+            key=lambda item: float(logits[item[1]].detach().cpu()),
+            reverse=True,
+        )
+        ranked_scores = sorted(
+            (float(scores[position].item()) for position, _ in references),
+            reverse=True,
+        )
+        mix = min(weight, 1.0)
+        bias = [0.0] * len(paths)
+        for rank, (position, _) in enumerate(ranked_unused):
+            bias[position] = mix * (ranked_scores[rank] - float(scores[position].item()))
+        for position, reference in references:
+            if reference in used:
+                bias[position] = -20.0 * mix
+        return bias
+
+    def _slot_alias_unique_path_bias(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+    ) -> list[float] | None:
+        """Reject repeated references to binders that already realize a slot."""
+        if not self.config.slot_alias_unique_decode or not slot_contract:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            bound_binder_reference_counts,
+            bound_binder_slot_ids,
+        )
+
+        slot_binders = {
+            binder
+            for binder, slots in bound_binder_slot_ids(
+                self.tokenizer, prefix
+            ).items()
+            if slots
+            and bound_binder_reference_counts(self.tokenizer, prefix).get(binder, 0)
+            > 0
+        }
+        if not slot_binders:
+            return None
+        return [
+            -1e9
+            if path.token_ids and int(path.token_ids[0]) in slot_binders
+            else 0.0
+            for path in paths
+        ]
+
+    def _required_slot_array_completion_path_bias(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+        state: Any | None,
+    ) -> list[float] | None:
+        """Keep a nested collection open until every visible slot is realized."""
+        if not self.config.required_slot_array_completion or not slot_contract:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
+
+        active = _active_call(getattr(state, "engine", state))
+        if active is None or int(active[1]) <= 0:
+            return None
+        visible = {
+            int(self.tokenizer.sym_id(index))
+            for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
+        }
+        if visible.issubset(prefix):
+            return None
+        close_id = self.tokenizer.token_to_id.get("]")
+        return [
+            -1e9 if close_id in path.token_ids else 0.0
+            for path in paths
+        ]
+
+    def _required_slot_root_completion_path_bias(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+    ) -> list[float] | None:
+        """Keep the root collection open until every visible slot is realized."""
+        enabled = self.config.required_slot_root_completion
+        if enabled is None:
+            enabled = self.config.required_slot_array_completion
+        if not enabled or not slot_contract:
+            return None
+        visible = {
+            int(self.tokenizer.sym_id(index))
+            for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
+        }
+        if visible.issubset(prefix):
+            return None
+        close_id = self.tokenizer.token_to_id.get("]")
+        if close_id is None:
+            return None
+        return [
+            -1e9 if close_id in path.token_ids else 0.0
+            for path in paths
         ]
 
     def _select_compiler_path(
@@ -9729,6 +10044,22 @@ class TwoTowerModel(nn.Module):
                     stats.root_reference_arity_choice_changes += int(
                         int(scores.argmax().item()) != before_root_arity
                     )
+            root_identity_bias = self._root_reference_identity_path_bias(
+                ctx, ctx_pad, prefix, paths, scores
+            )
+            if root_identity_bias is not None:
+                scores = scores + scores.new_tensor(root_identity_bias)
+            for path_bias in (
+                self._slot_alias_unique_path_bias(prefix, paths, slot_contract),
+                self._required_slot_array_completion_path_bias(
+                    prefix, paths, slot_contract, state
+                ),
+                self._required_slot_root_completion_path_bias(
+                    prefix, paths, slot_contract
+                ),
+            ):
+                if path_bias is not None:
+                    scores = scores + scores.new_tensor(path_bias)
             semantic_plan_bias = self._semantic_plan_bias(
                 plan_row,
                 candidates,
@@ -10052,6 +10383,29 @@ class TwoTowerModel(nn.Module):
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_root_arity
                 )
+        path_tensor = torch.tensor(path_scores, device=ctx.device)
+        root_identity_bias = self._root_reference_identity_path_bias(
+            ctx, ctx_pad, prefix, paths, path_tensor
+        )
+        if root_identity_bias is not None:
+            path_scores = [
+                score + root_identity_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+        for path_bias in (
+            self._slot_alias_unique_path_bias(prefix, paths, slot_contract),
+            self._required_slot_array_completion_path_bias(
+                prefix, paths, slot_contract, state
+            ),
+            self._required_slot_root_completion_path_bias(
+                prefix, paths, slot_contract
+            ),
+        ):
+            if path_bias is not None:
+                path_scores = [
+                    score + path_bias[index]
+                    for index, score in enumerate(path_scores)
+                ]
         coverage_close_bias = self._slot_coverage_close_path_bias(
             prefix, paths, slot_contract, path_scores
         )
@@ -10264,6 +10618,7 @@ class TwoTowerModel(nn.Module):
         _trajectory_id: int = 0,
         _disable_trajectory_fork: bool = False,
         _plan_row: int = 0,
+        _shared_completion_domains: CompletionBatchCache | None = None,
     ) -> torch.Tensor:
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
             build_completion_forest,
@@ -10289,6 +10644,8 @@ class TwoTowerModel(nn.Module):
             state = make_grammar_state()
             for initial_token_id in prefix[1:]:
                 state.advance_token(self.tokenizer, int(initial_token_id))
+        if _shared_completion_domains is not None:
+            state.completion_batch_cache = _shared_completion_domains
         stats = get_active_stats()
         search_mode = str(
             getattr(self.config, "compiler_search_mode", "greedy") or "greedy"
@@ -10343,6 +10700,13 @@ class TwoTowerModel(nn.Module):
                     remaining_tokens=length - len(prefix),
                     runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                 )
+            forced_closure: tuple[int, ...] = ()
+            if forest.coverage == "complete":
+                closure = state.completion_forced_closure(length - len(prefix))
+                if closure is not None:
+                    closure_tokens, _closure_state, closure_coverage = closure
+                    if closure_coverage == "complete" and closure_tokens:
+                        forced_closure = tuple(int(token_id) for token_id in closure_tokens)
             if getattr(self.config, "verified_solver_decode", False):
                 # VSS1-03: certified exact closure prunes the forest to the live
                 # subset before any soft ranking. Disabled by default (guard above),
@@ -10388,9 +10752,7 @@ class TwoTowerModel(nn.Module):
                     )
                     if restored is not None:
                         prefix, selected_path = restored
-                        state = make_grammar_state()
-                        for stable_token_id in prefix[1:]:
-                            state.advance_token(self.tokenizer, stable_token_id)
+                        state.sync_ids(self.tokenizer, list(prefix))
                         selected = (
                             tuple(selected_path.token_ids)
                             if selected_path is not None
@@ -10436,7 +10798,10 @@ class TwoTowerModel(nn.Module):
                 # certification layer emit a tagged deterministic fallback.
                 break
 
-            if mode == "forced" and len(forest.paths) > 1:
+            if forced_closure:
+                self._record_exact_bypass(int(forced_closure[0]))
+                selected = forced_closure
+            elif mode == "forced" and len(forest.paths) > 1:
                 # Forced-only mode preserves the legacy full-vocabulary choice
                 # at semantic branch points while still collapsing unique spans.
                 canvas = self._compiler_canvas(prefix, length)
@@ -10560,6 +10925,7 @@ class TwoTowerModel(nn.Module):
                                     _trajectory_id=trajectory_id + 1,
                                     _disable_trajectory_fork=True,
                                     _plan_row=_plan_row,
+                                    _shared_completion_domains=_shared_completion_domains,
                                 )
                                 text = self._decode_ids(branch)
                                 canonical = self._canonical_valid_openui(
@@ -10705,6 +11071,7 @@ class TwoTowerModel(nn.Module):
         result[:used] = torch.as_tensor(
             prefix[:used], dtype=torch.long, device=self.device_name
         )
+        state._collect_completion_stats()
         return result
 
     def _compiler_ltr_decode_batch(
@@ -10716,6 +11083,7 @@ class TwoTowerModel(nn.Module):
         mode: str,
     ) -> torch.Tensor:
         rows = []
+        shared_completion_domains = CompletionBatchCache()
         for i in range(int(ctx.size(0))):
             contract = (
                 self._slot_contracts[i]
@@ -10732,6 +11100,7 @@ class TwoTowerModel(nn.Module):
                     mode=mode,
                     slot_contract=contract,
                     _plan_row=i,
+                    _shared_completion_domains=shared_completion_domains,
                 )
             )
         return torch.stack(rows)
@@ -10770,6 +11139,18 @@ class TwoTowerModel(nn.Module):
         ]
         active = torch.ones(bsz, dtype=torch.bool, device=self.device_name)
         stats = get_active_stats()
+        choice_kernel_counters = {
+            name: int(getattr(tok, name, 0))
+            for name in (
+                "schema_intern_hits",
+                "schema_intern_misses",
+                "distance_cache_hits",
+                "distance_cache_misses",
+                "distance_cache_evictions",
+                "clone_count",
+                "frame_cow_copies",
+            )
+        }
 
         for position in range(1, length):
             rows = active.nonzero(as_tuple=False).flatten().tolist()
@@ -11311,6 +11692,23 @@ class TwoTowerModel(nn.Module):
                         ids[row, position + 1 :] = tok.pad_id
                 else:
                     assert states[row].advance_id(choice)
+        if stats is not None:
+            for counter, field_name in (
+                ("schema_intern_hits", "choice_schema_intern_hits"),
+                ("schema_intern_misses", "choice_schema_intern_misses"),
+                ("distance_cache_hits", "choice_distance_cache_hits"),
+                ("distance_cache_misses", "choice_distance_cache_misses"),
+                ("distance_cache_evictions", "choice_distance_cache_evictions"),
+                ("clone_count", "choice_clone_count"),
+                ("frame_cow_copies", "choice_frame_cow_copies"),
+            ):
+                delta = int(getattr(tok, counter, 0)) - choice_kernel_counters[counter]
+                if delta > 0:
+                    setattr(stats, field_name, int(getattr(stats, field_name)) + delta)
+            stats.choice_distance_cache_peak_entries = max(
+                stats.choice_distance_cache_peak_entries,
+                int(getattr(tok, "distance_cache_peak_entries", 0)),
+            )
         return ids
 
     def _greedy_ltr_decode_batch(

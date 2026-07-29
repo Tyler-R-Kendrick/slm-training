@@ -393,6 +393,24 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         slot_contract_constrained_decode=getattr(
             config, "slot_contract_constrained_decode", False
         ),
+        required_slot_array_completion=bool(
+            getattr(config, "required_slot_array_completion", False)
+        ),
+        required_slot_root_completion=getattr(
+            config, "required_slot_root_completion", None
+        ),
+        request_aware_slot_reservation=bool(
+            getattr(config, "request_aware_slot_reservation", False)
+        ),
+        slot_alias_unique_decode=bool(
+            getattr(config, "slot_alias_unique_decode", False)
+        ),
+        binder_topology_unique_decode=bool(
+            getattr(config, "binder_topology_unique_decode", False)
+        ),
+        compiler_schema_component_types=bool(
+            getattr(config, "compiler_schema_component_types", False)
+        ),
         template_fill_decode=getattr(config, "template_fill_decode", False),
         honest_slot_contract=getattr(config, "honest_slot_contract", False),
         retrieval_k=getattr(config, "retrieval_k", 0),
@@ -678,6 +696,24 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         binder_arity_decode_weight=float(
             getattr(config, "binder_arity_decode_weight", 0.0) or 0.0
+        ),
+        binder_slot_ownership_loss_weight=float(
+            getattr(config, "binder_slot_ownership_loss_weight", 0.0) or 0.0
+        ),
+        binder_slot_ownership_decode_weight=float(
+            getattr(config, "binder_slot_ownership_decode_weight", 0.0) or 0.0
+        ),
+        binder_slot_presence_loss_weight=float(
+            getattr(config, "binder_slot_presence_loss_weight", 0.0) or 0.0
+        ),
+        binder_slot_presence_decode_weight=float(
+            getattr(config, "binder_slot_presence_decode_weight", 0.0) or 0.0
+        ),
+        binder_reference_presence_loss_weight=float(
+            getattr(config, "binder_reference_presence_loss_weight", 0.0) or 0.0
+        ),
+        binder_reference_presence_decode_weight=float(
+            getattr(config, "binder_reference_presence_decode_weight", 0.0) or 0.0
         ),
         root_reference_arity_loss_weight=float(
             getattr(config, "root_reference_arity_loss_weight", 0.0) or 0.0

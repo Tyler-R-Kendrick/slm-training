@@ -27,6 +27,8 @@ Full fidelity tags and honesty rules: [research-lineage.md](research-lineage.md)
 | Module | Role |
 | --- | --- |
 | `engine.py` | `OpenUIIncrementalEngine` — Lex + feed tokens; `accepts()`; `is_deterministic_next()` |
+| `completion_kernel.py` | Request-local packed parser/semantic states, outgoing edges, bounded witnesses, and forced closures |
+| `semantic_state.py` | Immutable scope, binder, schema, slot, and literal-frame facts updated per DSL-native token |
 | `force_emit.py` | Map singleton terminal → tokenizer id; draft windows |
 | `maskgit_constrain.py` | `admit_fill` — hole probe via benign `hole` substitution |
 | `losses.py` | Cheap `force_align_loss` on gold `= ( ) [ ] ,` positions |
@@ -87,6 +89,56 @@ post-generation product policy, not a grammar rule.
   legacy checkpoint metadata is normalized to the mandatory safe policy.
 - **Train aux**: `fastpath_aux_weight` (CLI `--fastpath-aux-weight`) adds
   `force_align_loss` without walking the DFA every step.
+
+## Packed incremental completion kernel
+
+Lexer-native OpenUI completion is owned by one request-local
+`CompletionSession`. Its integer state handles intern pairs of LALR control
+state and immutable `SemanticState`; the handle never enters certificates or
+serialized output. Direct DSL-native token feeds advance both halves without
+re-lexing the rendered prefix. Parser forks copy control stacks only, while
+semantic authority remains in the independent persistent state.
+
+The semantic state replaces repeated prefix scans with Python-integer masks and
+interned facts for declarations, references, dependency reachability, active
+calls/arrays, slot use, string/literal frames, and schema requirements. The
+scan-based helpers remain executable differential references, not a production
+owner.
+
+For an interned state `s` and remaining room `r`, bounded witness search follows
+the existing forest edge order with strictly decreasing token cost. Each
+top-level candidate retains the historical 16-node allowance and 64-entry
+query-local LRU, preserving the outward `CompletionDomainV1` status, candidate
+order, witnesses, terminals, and reasons. A partial forest or depleted search
+is typed `UNKNOWN`; it is never cached as `UNSUPPORTED`. Only replayable
+positive paths become witnesses. This also preserves the established difficult
+prefix contract: `root = Card([b1,` exposes exactly 12 replayable ordered
+candidates in both the production kernel and V1 differential reference. Its
+outward V1 status is `complete` with reason `witness_pruned`: the bounded
+reference search leaves the additional `Form` and `Table` branches unknown,
+so exact parity narrows to the 12 proven siblings; it does not prove those two
+unknown branches unreachable.
+
+`forced_closure(s, r)` follows only complete single-edge forests and stops at an
+ambiguity, EOS, literal boundary, incomplete authority, or the token horizon.
+Compiler decode consumes that closure before neural ranking. Decode rows retain
+their current state handle across commits and rollback, and equivalent rows may
+share immutable completed domains while keeping logits row-local. The verified
+support solver likewise advances packed state handles; proof payloads remain
+token/digest based.
+
+All prefix/state/domain caches are lifetime-bounded by the request, decode row,
+or batch and occupy O(unique packed states/prefixes); they have no
+process-global arbitrary-prefix forest cache. `TimeoutError` is checked before
+cache reuse and after forest/closure construction and propagates through
+parser, witness, and solver loops. Native OpenUI production uses the packed
+path. The prefix-oriented reference remains a differential oracle and the
+compatibility path for tokenizers without lexer-native kind ids (including
+current word-tokenizer ONNX exports).
+
+OpenUI remains deterministic LALR: its ambiguous work is semantic candidate
+ranking, not generalized parsing. A GSS/SPPF dependency would add runtime and
+packaging cost without changing this grammar's deterministic control path.
 
 ## Offline compiler contract
 

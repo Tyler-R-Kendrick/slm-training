@@ -170,6 +170,117 @@ def apply_literal_frame(
     return set(candidates) - byte_ids - {int(closer)}
 
 
+def dsl_direct_terminal_map(
+    tokenizer: Any,
+    grammar_terminals: Any,
+) -> dict[str, Any] | None:
+    """Verified DSL-native token-id → Lark-terminal mapping for direct feeds.
+
+    Derived at call time from the live tokenizer metadata and the grammar's
+    ``TerminalDef`` list (``Lark.terminals``) — never a hardcoded table. Every
+    emitted terminal name is checked against the actual grammar's terminal set;
+    anything unverifiable fails closed (returns ``None``) so the caller stays
+    on the canonical text path. The engine feeds only the terminals named here:
+    literal (string-pattern) terminals for punctuation, regex terminals for the
+    broad content kinds, and framed-literal openers/closer for ``STRING`` /
+    ``NUMBER`` bodies.
+
+    Returned dict keys:
+
+    - ``punct``: ``{token_id: terminal_name}`` for STRUCT punctuation + NL.
+    - ``bool`` / ``null``: ``{token_id: "BOOL"}`` / ``{token_id: "NULL"}``.
+    - ``kind_terminals``: ``{TokenKind: terminal_name}`` for COMPONENT,
+      BUILTIN, BIND (→ NAME), STATE (→ STATE_NAME), SYM (→ STRING).
+    - ``str_lit_ids``: ``{token_id: "STRING"}`` for fixed ``STR:*`` LIT rows.
+    - ``lit_str`` / ``lit_num`` / ``lit_end``: framed-literal opener/closer
+      ids (``lit_str`` may be ``None`` when the vocab has no ``LIT_STR`` row).
+    - ``skip_ids``: BOS/EOS/PAD/MASK ids — never fed, consumed as no-ops.
+    """
+    if not _is_dsl_native(tokenizer):
+        return None
+
+    from slm_training.models.dsl_tokenizer import TokenKind
+
+    by_name = {t.name: t for t in grammar_terminals}
+    required = {
+        "_NL",
+        "NAME",
+        "COMPONENT",
+        "BUILTIN",
+        "STATE_NAME",
+        "STRING",
+        "NUMBER",
+        "BOOL",
+        "NULL",
+    }
+    if not required <= set(by_name):
+        return None
+
+    # Literal (string-pattern) terminals: map the exact literal text to its
+    # verified terminal name (covers EQUAL…RBRACE plus anonymous __ANON_*).
+    literal_terminals = {
+        t.pattern.value: t.name
+        for t in grammar_terminals
+        if t.pattern.type == "str" and t.pattern.value
+    }
+    punct: dict[int, str] = {}
+    for token_id in tokenizer.kind_ids(TokenKind.STRUCT):
+        text = str(tokenizer.id_to_token.get(int(token_id), ""))
+        if text == "NL":
+            punct[int(token_id)] = "_NL"
+            continue
+        name = literal_terminals.get(text)
+        if name is None:
+            # Unverifiable punctuation row — fail closed.
+            return None
+        punct[int(token_id)] = name
+
+    t2id = tokenizer.token_to_id
+    bool_ids = {
+        int(t2id[b]): "BOOL" for b in ("true", "false") if b in t2id
+    }
+    if len(bool_ids) != 2 or "null" not in t2id:
+        return None
+    lit_num = t2id.get("LIT_NUM")
+    lit_end = t2id.get("LIT_END")
+    if lit_num is None or lit_end is None:
+        return None
+
+    kind_terminals = {
+        TokenKind.COMPONENT: "COMPONENT",
+        TokenKind.BUILTIN: "BUILTIN",
+        TokenKind.BIND: "NAME",
+        TokenKind.STATE: "STATE_NAME",
+        TokenKind.SYM: "STRING",
+    }
+    str_lit_ids = {
+        int(token_id): "STRING"
+        for token_id in tokenizer.kind_ids(TokenKind.LIT)
+        if str(tokenizer.id_to_token.get(int(token_id), "")).startswith("STR:")
+    }
+    skip_ids = {
+        int(token_id)
+        for token_id in (
+            tokenizer.bos_id,
+            tokenizer.eos_id,
+            tokenizer.pad_id,
+            tokenizer.mask_id,
+        )
+        if token_id is not None
+    }
+    return {
+        "punct": punct,
+        "bool": bool_ids,
+        "null": {int(t2id["null"]): "NULL"},
+        "kind_terminals": kind_terminals,
+        "str_lit_ids": str_lit_ids,
+        "lit_str": t2id.get("LIT_STR"),
+        "lit_num": int(lit_num),
+        "lit_end": int(lit_end),
+        "skip_ids": skip_ids,
+    }
+
+
 def terminal_equivalence_classes(
     tokenizer: OpenUITokenizer,
     terminal_sets: list[frozenset[str]],

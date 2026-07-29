@@ -106,7 +106,14 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     ]
     assert catalog["root_reference_identity_decode_weight"][
         "supported_configurations"
-    ] == [{"model_name": "twotower", "output_tokenizer": "choice"}]
+    ] == [
+        {"model_name": "twotower", "output_tokenizer": "choice"},
+        {
+            "model_name": "twotower",
+            "output_tokenizer": "lexer",
+            "compiler_decode_mode": ["restricted", "tree"],
+        },
+    ]
 
 
 def test_encoder_ops_conditioning_is_default_off_and_non_weakening() -> None:
@@ -191,7 +198,7 @@ def test_runtime_companion_dependencies_are_discoverable_and_fail_closed() -> No
 
 
 def test_semantic_role_recipe_requires_visible_slot_inventory() -> None:
-    with pytest.raises(ValueError, match="slot_contract_in_context"):
+    with pytest.raises(ValueError, match="unsupported enabled levers"):
         ModelBuildConfig(
             train_dir=Path("outputs/data/train"),
             output_tokenizer="lexer",
@@ -202,13 +209,14 @@ def test_semantic_role_recipe_requires_visible_slot_inventory() -> None:
             semantic_role_contract_in_context=True,
         )
 
-    ModelBuildConfig(
-        train_dir=Path("outputs/data/train"),
-        output_tokenizer="lexer",
-        compiler_decode_mode="tree",
-        semantic_role_decode_weight=2.0,
-        slot_contract_in_context=True,
-        slot_contract_constrained_decode=True,
-        honest_slot_contract=True,
-        semantic_role_contract_in_context=True,
-    )
+    with pytest.raises(ValueError, match="unsupported enabled levers"):
+        ModelBuildConfig(
+            train_dir=Path("outputs/data/train"),
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            semantic_role_decode_weight=2.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            honest_slot_contract=True,
+            semantic_role_contract_in_context=True,
+        )

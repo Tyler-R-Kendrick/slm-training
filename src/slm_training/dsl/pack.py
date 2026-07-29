@@ -276,6 +276,231 @@ def _openui_completion_domain(request: Any) -> Any:
     This is deliberately pack-owned: component schema, binder scope, literal
     framing, and the OpenUI static language contract do not leak into the
     grammar-agnostic decoder.
+
+    The kind-ids (lexer-native) branch runs through one request-local packed
+    :class:`~slm_training.dsl.grammar.fastpath.completion_kernel.CompletionSession`:
+    interned states, shared outgoing edges, and bounded terminal-witness
+    queries, with exactly the reference's external contract and per-candidate
+    expansion discipline. ``_openui_completion_domain_reference`` also
+    remains the compatibility implementation for tokenizers without native
+    kind ids.
+    """
+    from slm_training.models.decode_stats import check_decode_deadline
+
+    check_decode_deadline()
+    if not callable(getattr(request.tokenizer, "kind_ids", None)):
+        # Word-tokenizer exports (including ONNX) do not carry the lexer-native
+        # binder/component inventory — the witness-projection branch is
+        # unchanged and shared with the reference.
+        return _openui_completion_domain_reference(request)
+    from slm_training.dsl.grammar.fastpath.completion_kernel import (
+        CompletionSession,
+        WitnessStatus,
+    )
+    from slm_training.dsl.grammar_capabilities import (
+        CompletionDomainCandidateV1,
+        CompletionDomainV1,
+    )
+
+    prefix = tuple(int(token_id) for token_id in request.prefix_ids)
+    budget = int(request.remaining_tokens) if request.remaining_tokens is not None else 64
+    fingerprint = _openui_domain_fingerprint(request, prefix, budget)
+    # Budget and prefix vary as a row advances; every other input is hard
+    # authority and must match before a request-local session may be reused.
+    authority_key = (
+        id(request.tokenizer),
+        int(getattr(request.tokenizer, "version", 0)),
+        tuple(
+            tuple(str(token) for token in expansion)
+            for expansion in getattr(request.tokenizer, "macro_expansions", ())
+        ),
+        tuple(request.slot_contract),
+        int(request.min_content),
+        int(request.max_path_tokens),
+        hashlib.sha256(
+            json.dumps(
+                tuple(request.runtime_symbols),
+                default=str,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest(),
+        bool(request.explain),
+    )
+    row_state = request.state
+    session = (
+        getattr(row_state, "completion_session", None)
+        if getattr(row_state, "completion_authority_key", None) == authority_key
+        else None
+    )
+    if not isinstance(session, CompletionSession):
+        session = CompletionSession(
+            request.tokenizer,
+            slot_contract=tuple(request.slot_contract),
+            min_content=request.min_content,
+            max_path_tokens=request.max_path_tokens,
+            runtime_symbols=tuple(request.runtime_symbols),
+            explain=request.explain,
+        )
+    seed_id = None
+    if row_state is not None and session is getattr(
+        row_state, "completion_session", None
+    ):
+        seed_id = getattr(row_state, "completion_prefix_states", {}).get(prefix)
+        current_id = getattr(row_state, "completion_state_id", None)
+        if current_id is not None:
+            try:
+                if session.prefix_ids_of(int(current_id)) == prefix:
+                    seed_id = int(current_id)
+            except (IndexError, KeyError, TypeError, ValueError):
+                seed_id = None
+    if seed_id is None:
+        seed_id = session.seed(
+            prefix,
+            state=(
+                row_state
+                if session is not getattr(row_state, "completion_session", None)
+                else None
+            ),
+        )
+    if row_state is not None and callable(
+        getattr(row_state, "bind_completion_session", None)
+    ):
+        row_state.bind_completion_session(
+            session, authority_key, int(seed_id), prefix
+        )
+    batch_cache = getattr(row_state, "completion_batch_cache", None)
+    batch_key = (authority_key, prefix, budget)
+    row_cache = getattr(row_state, "completion_domain_cache", None)
+    row_cache_key = ("packed_completion_domain", *batch_key)
+    if row_cache is not None:
+        cached_domain = row_cache.get(row_cache_key)
+        if cached_domain is not None:
+            check_decode_deadline()
+            return cached_domain
+    if batch_cache is not None:
+        cached_domain = batch_cache.domains.get(batch_key)
+        from slm_training.models.decode_stats import get_active_stats
+
+        stats = get_active_stats()
+        if cached_domain is not None:
+            if stats is not None:
+                stats.completion_shared_domain_hits += 1
+            check_decode_deadline()
+            return cached_domain
+        if stats is not None:
+            stats.completion_shared_domain_misses += 1
+
+    def _finish(domain: Any) -> Any:
+        check_decode_deadline()
+        if row_state is not None and callable(
+            getattr(row_state, "_collect_completion_stats", None)
+        ):
+            row_state._collect_completion_stats()
+        if batch_cache is not None:
+            batch_cache.domains[batch_key] = domain
+        if row_cache is not None:
+            row_cache[row_cache_key] = domain
+        if row_state is None:
+            session.close()
+        return domain
+
+    initial = session.outgoing(int(seed_id))
+    if initial.coverage != "complete":
+        return _finish(
+            CompletionDomainV1(
+                status="incomplete",
+                scope_fingerprint=fingerprint,
+                terminals=initial.terminals,
+                reason="openui_completion_forest_incomplete",
+            )
+        )
+
+    candidates: list[Any] = []
+    unsupported = False
+    for path in initial.paths:
+        tokens = tuple(int(token_id) for token_id in path.token_ids)
+        if not tokens or len(tokens) > budget:
+            unsupported = True
+            continue
+        if path.kind == "eos":
+            witness = tokens
+        else:
+            child = session.advance_path(seed_id, tokens)
+            if child is None:
+                unsupported = True
+                continue
+            proof = session.terminal_witness(child, budget - len(tokens))
+            if proof.status is WitnessStatus.UNKNOWN:
+                # Preserve V1's behavior-visible per-candidate expansion
+                # discipline: an unproven candidate is omitted while proven
+                # siblings remain available. UNKNOWN itself is never cached
+                # as a negative kernel fact.
+                unsupported = True
+                continue
+            if proof.status is WitnessStatus.UNSUPPORTED:
+                unsupported = True
+                continue
+            suffix = tuple(int(token_id) for token_id in proof.witness)
+            witness = tokens + suffix
+            if not suffix:
+                unsupported = True
+                continue
+        candidates.append(
+            CompletionDomainCandidateV1(
+                token_ids=tokens,
+                kind=path.kind,
+                terminal_witness=witness,
+            )
+        )
+    if not candidates:
+        return _finish(
+            CompletionDomainV1(
+                status="incomplete",
+                scope_fingerprint=fingerprint,
+                terminals=initial.terminals,
+                reason="terminal_witness_unavailable",
+            )
+        )
+    return _finish(
+        CompletionDomainV1(
+            status="complete",
+            candidates=tuple(candidates),
+            scope_fingerprint=fingerprint,
+            terminals=initial.terminals,
+            reason="witness_pruned" if unsupported else "",
+        )
+    )
+
+
+def _openui_domain_fingerprint(request: Any, prefix: tuple[int, ...], budget: int) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            {
+                "prefix": prefix,
+                "runtime_symbols": request.runtime_symbols,
+                "slot_contract": request.slot_contract,
+                "tokenizer_version": int(getattr(request.tokenizer, "version", 0)),
+                "macro_expansions": getattr(
+                    request.tokenizer, "macro_expansions", ()
+                ),
+                "remaining_tokens": budget,
+                "max_path_tokens": request.max_path_tokens,
+                "min_content": request.min_content,
+            },
+            default=str,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _openui_completion_domain_reference(request: Any) -> Any:
+    """Pre-kernel reference and non-native-tokenizer compatibility path.
+
+    Native OpenUI production uses the packed kernel. Tokenizers without
+    lexer-native kind ids retain this fail-closed witness implementation;
+    tests and benchmarks also call it directly for byte-for-byte parity.
     """
     from functools import lru_cache
 
@@ -289,21 +514,7 @@ def _openui_completion_domain(request: Any) -> Any:
 
     prefix = tuple(int(token_id) for token_id in request.prefix_ids)
     budget = int(request.remaining_tokens) if request.remaining_tokens is not None else 64
-    fingerprint = hashlib.sha256(
-        json.dumps(
-            {
-                "prefix": prefix,
-                "runtime_symbols": request.runtime_symbols,
-                "slot_contract": request.slot_contract,
-                "remaining_tokens": budget,
-                "max_path_tokens": request.max_path_tokens,
-                "min_content": request.min_content,
-            },
-            default=str,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
+    fingerprint = _openui_domain_fingerprint(request, prefix, budget)
     if not callable(getattr(request.tokenizer, "kind_ids", None)):
         # Word-tokenizer exports (including ONNX) do not carry the lexer-native
         # binder/component inventory.  Project declared, grammar-validated pack
@@ -389,6 +600,41 @@ def _openui_completion_domain(request: Any) -> Any:
     # A completion domain is exact only when every exposed action has an actual
     # terminal continuation inside this request's remaining decode budget.
     # The search is over the pack's own finite forest, never model logits.
+    #
+    # Structural reuse, shared across every ``_tail_from`` proof below:
+    # - ``_tail_forests`` memoizes the *stateless* forest for a node.  The
+    #   build is a pure function of (node prefix, slot contract, path bounds,
+    #   schema identity) — all fixed for this request — so a cached forest is
+    #   identical to a rebuild.  The process-global front it delegates to
+    #   (``compiler_draft._build_openui_completion_forest``) carries schema
+    #   identity in its cache key, so a forest built under a different
+    #   ``_official_schema()`` is never served here.  (Only the stateless
+    #   tail builds are memoized; the stateful initial build above is a
+    #   different authority path and is never mixed into this cache.)
+    # - ``_tail_engines`` holds one engine per node, forked from its parent
+    #   node (``OpenUIIncrementalEngine.copy``) so the child build feeds only
+    #   the delta lexemes instead of re-lexing+re-feeding the whole prefix.
+    #   Every build still calls ``set_prefix`` on the full decoded node text,
+    #   and the engine falls back to a full sync whenever the fed lexemes do
+    #   not extend cleanly, so each node's forest is identical to the
+    #   from-scratch build.
+    _tail_forests: dict[tuple[int, ...], Any] = {}
+    _tail_engines: dict[tuple[int, ...], Any] = {}
+
+    def _tail_forest(current: tuple[int, ...]) -> Any:
+        forest = _tail_forests.get(current)
+        if forest is None:
+            forest = _build_openui_completion_forest(
+                request.tokenizer,
+                list(current),
+                engine=_tail_engines.get(current),
+                slot_contract=list(request.slot_contract),
+                max_path_tokens=request.max_path_tokens,
+                min_content=request.min_content,
+            )
+            _tail_forests[current] = forest
+        return forest
+
     def _tail_from(
         start: tuple[int, ...], remaining: int
     ) -> tuple[int, ...] | None:
@@ -398,6 +644,7 @@ def _openui_completion_domain(request: Any) -> Any:
         # chance to establish a witness, so an early complex branch cannot
         # starve a later simple one.
         nodes_left = 16
+        _tail_engines.setdefault(tuple(start), _openui_engine())
 
         @lru_cache(maxsize=64)
         def _tail(current: tuple[int, ...], room: int) -> tuple[int, ...] | None:
@@ -405,13 +652,7 @@ def _openui_completion_domain(request: Any) -> Any:
             if room <= 0 or nodes_left <= 0:
                 return None
             nodes_left -= 1
-            forest = _build_openui_completion_forest(
-                request.tokenizer,
-                list(current),
-                slot_contract=list(request.slot_contract),
-                max_path_tokens=request.max_path_tokens,
-                min_content=request.min_content,
-            )
+            forest = _tail_forest(current)
             if forest.coverage != "complete":
                 return None
             for path in forest.paths:
@@ -420,7 +661,15 @@ def _openui_completion_domain(request: Any) -> Any:
                     continue
                 if path.kind == "eos":
                     return tokens
-                suffix = _tail(current + tokens, room - len(tokens))
+                child = current + tokens
+                if child not in _tail_engines:
+                    parent_engine = _tail_engines.get(current)
+                    _tail_engines[child] = (
+                        parent_engine.copy()
+                        if parent_engine is not None
+                        else _openui_engine()
+                    )
+                suffix = _tail(child, room - len(tokens))
                 if suffix is not None:
                     return tokens + suffix
             return None
