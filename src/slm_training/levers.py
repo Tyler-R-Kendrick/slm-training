@@ -338,9 +338,7 @@ _CHOICE_ONLY_DECODE_LEVERS: Final = (
     "semantic_plan_root_margin_decode_weight",
     "semantic_plan_repeated_array_close_margin_decode_weight",
     "semantic_plan_repeated_slot_margin_decode_weight",
-    "semantic_plan_typed_array_item_margin_decode_weight",
     "visible_reference_decode_weight",
-    "root_reference_identity_decode_weight",
 )
 _DUAL_PATH_DECODE_LEVERS: Final = (
     "component_inventory_decode_weight",
@@ -353,7 +351,9 @@ _DUAL_PATH_DECODE_LEVERS: Final = (
     "semantic_plan_decode_weight",
     "semantic_plan_margin_decode_weight",
     "semantic_plan_typed_array_nonempty_margin_decode_weight",
+    "semantic_plan_typed_array_item_margin_decode_weight",
     "root_reference_arity_decode_weight",
+    "root_reference_identity_decode_weight",
 )
 _COMPILER_PATH_DECODE_LEVERS: Final = (
     "component_edge_decode_weight",
@@ -369,7 +369,7 @@ LEVER_REQUIREMENTS: Final = {
     **{name: (_CHOICE, _LEXER_COMPILER) for name in _DUAL_PATH_DECODE_LEVERS},
     **{name: (_LEXER_COMPILER,) for name in _COMPILER_PATH_DECODE_LEVERS},
     "root_reference_arity_loss_weight": (_CHOICE, _LEXER_COMPILER),
-    "root_reference_identity_loss_weight": (_CHOICE,),
+    "root_reference_identity_loss_weight": (_CHOICE, _LEXER_COMPILER),
 }
 
 # A decode head is usable only when its checkpoint trained that head. Without
@@ -484,6 +484,11 @@ def _positive_numeric(config: Any, field: str) -> bool:
     )
 
 
+def _lever_enabled(config: Any, field: str) -> bool:
+    value = getattr(config, field, None)
+    return value if isinstance(value, bool) else _positive_numeric(config, field)
+
+
 def untrained_decode_levers(config: Any) -> dict[str, tuple[str, ...]]:
     """Return enabled learned decode levers without a trained owning objective."""
     return {
@@ -511,9 +516,20 @@ def lever_configuration_errors(
 ) -> tuple[str, ...]:
     """Return every canonical lever-contract violation for ``config``."""
     errors: list[str] = []
-    incompatible = incompatible_lever_requirements(config)
+    prohibited = {
+        name
+        for name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS
+        if _lever_enabled(config, name)
+    }
+    incompatible = set(incompatible_lever_requirements(config)) - prohibited
     if incompatible:
-        errors.append(f"unsupported enabled levers: {', '.join(incompatible)}")
+        errors.append(
+            f"unsupported enabled levers: {', '.join(sorted(incompatible))}"
+        )
+    if prohibited:
+        errors.append(
+            f"prohibited enabled levers: {', '.join(sorted(prohibited))}"
+        )
     missing_companions = missing_lever_companions(config)
     errors.extend(
         f"{name} requires one companion configuration: "

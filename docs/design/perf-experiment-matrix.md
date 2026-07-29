@@ -235,7 +235,7 @@ Recipe: CPU, committed `playground_demo/last.pt`, smoke `n=2`, no training,
 same-run C0 control, official bridge healthy. The run emitted AgentEvals JSONL
 and a pinned `@agentv/core` result bundle (`total=5`, `passed=0`,
 `executionErrors=0`). Full evidence is in
-[`perf-matrix-results.json`](perf-matrix-results.json).
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).
 
 | ID | mode | mean ms | p50 ms | forwards/call | forced tokens | fallbacks | parse | fidelity |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -403,3 +403,36 @@ two-target-cluster wiring screen; confirmation was not touched, no checkpoint
 was written, and no production/default claim is supported. AgentV passed 5/5
 with no execution errors. Full k-grid, confidence intervals, work attribution,
 and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).
+
+## Packed incremental completion kernel (2026-07-29)
+
+`python -m scripts.run_perf_matrix --completion-kernel
+--completion-repetitions 5` compares the private prefix-oriented V1 reference
+with the production request-local packed kernel on the same tokenizer, schema,
+budget, process, and interpreter. This is CPU fixture/scratch evidence only.
+
+The exact-V1-output gates passed, including ordered witnesses at every canonical
+prefix and exactly 12 replayable candidates for `root = Card([b1,`. The V1
+payload labels that bounded subset `complete`/`witness_pruned`; it is not a
+claim that the two omitted UNKNOWN branches were proven unreachable. Cold empty
+and `root` medians stayed within the 15% regression guard. The cold difficult
+prefix remained a negative latency point at 738.29 ms V1 versus 880.92 ms
+packed, while a primed row-owned session with the row-domain
+cache cleared before every V2 sample fell from 735.96 ms to 8.05 ms (91.44×).
+Choice-codec cold bounded-distance queries improved 21.04× with exhaustive
+parity. The bounded solver was 1.03×.
+
+The compiler fixture exercises immutable hard-domain sharing across equivalent
+V2 rows: wall median 2,389.07 ms → 82.01 ms and compiler-time median
+2,315.39 ms → 4.069 ms, with identical ids/outcome/validation/forward count.
+The singleton arm remained identical with zero forwards. This is explicitly a
+warm sharing result; the cold parity payload was 2,975.2 ms V1 versus
+2,512.9 ms packed, and no
+end-to-end production or ship factor is claimed.
+
+All 13 gates and AgentV criteria passed. The ≥10× criterion is named and
+scoped to persistent-session kernel work without a row-domain cache hit; the
+matched cold hard row is the negative 0.84× point above. Canonical raw samples,
+MAD/min/max, environment, work deltas, correctness digests, version stamp, and
+the two earlier non-promotable diagnostics are retained in
+[`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).

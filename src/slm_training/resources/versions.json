@@ -27,13 +27,43 @@
       ]
     },
     "config.levers": {
-      "version": "v26",
+      "version": "v30",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v30",
+          "date": "2026-07-29T11:21:19-05:00",
+          "note": "no-bump: expand hosted CI to eight exact-once external partitions while retaining four internal workers; lever behavior is unchanged."
+        },
+        {
+          "version": "v30",
+          "date": "2026-07-29T11:06:46-05:00",
+          "note": "Match four internal changed-test workers to the four external CI partitions so hosted runners avoid CPU oversubscription while preserving exact coverage."
+        },
+        {
+          "version": "v29",
+          "date": "2026-07-29T10:33:03-05:00",
+          "note": "Split changed-test coverage across eight single-threaded workers so cold CI remains within the unchanged three-minute repository cap."
+        },
+        {
+          "version": "v28",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v28 history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v28",
+          "date": "2026-07-29",
+          "note": "Reject enabled boolean constraint-weakening levers and distinguish prohibited from unsupported compiler lever failures."
+        },
+        {
+          "version": "v27",
+          "date": "2026-07-29",
+          "note": "Extend typed-item and root-reference-identity levers to the lexer compiler, enforce opaque-marker semantic lever prohibitions uniformly, and fail closed for registered compiler auxiliaries without runtime owners."
+        },
         {
           "version": "v26",
           "date": "2026-07-26",
@@ -1024,6 +1054,50 @@
         }
       ]
     },
+    "dsl.completion_kernel": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/grammar/fastpath/engine.py",
+        "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
+        "src/slm_training/dsl/grammar/fastpath/force_emit.py",
+        "src/slm_training/dsl/grammar/fastpath/semantic_state.py",
+        "src/slm_training/dsl/solver/openui_support.py",
+        "tests/test_dsl/test_engine_direct_feed.py",
+        "tests/test_dsl/test_semantic_state.py",
+        "tests/test_dsl/test_completion_kernel.py",
+        "tests/test_dsl/test_completion_forest_engine_reuse.py",
+        "tests/test_dsl/test_solver_packed_reuse.py",
+        "docs/design/grammar-fastpath.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-29T11:43:16-05:00",
+          "note": "no-bump: add regression coverage proving special-token assignments participate in packed completion authority; kernel behavior is unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-29T11:36:25-05:00",
+          "note": "no-bump: bound deterministic generated-program prefix sampling so hosted CI stays inside the canonical run cap; completion-kernel behavior and exhaustive corpus coverage are unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v2 hardening history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-29",
+          "note": "Harden recursive macro handling, content-derived tokenizer authority, exhaustive oracle independence, solver-pruned forced closure, parser fallback, and persistent-session benchmark evidence."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-29",
+          "note": "Add the request-local packed grammar-completion state graph, direct parser transitions, immutable semantic state, tri-state bounded terminal witnesses, forced singleton closure, and solver reuse without changing CompletionDomainV1 or certificate wire formats."
+        }
+      ]
+    },
     "dsl.operators.references": {
       "version": "v3",
       "kind": "harness",
@@ -1050,7 +1124,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v5",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1058,6 +1132,31 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-29T11:43:16-05:00",
+          "note": "Bind packed completion authority to the tokenizer's pad, BOS, EOS, mask, and unknown token IDs so incompatible terminal semantics cannot share cached domains."
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v8 history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-29",
+          "note": "Key request-local packed completion sessions by content-derived tokenizer authority so in-place codec mutations cannot reuse stale legal domains."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-29",
+          "note": "Route OpenUI lexer-native completion domains through the persistent packed session while preserving the V1 ordered bounded-witness contract; retain the pre-kernel implementation as a private differential and benchmark reference."
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-29",
+          "note": "Prototype pack-owned request-local completion sessions and terminal-witness pruning without a performance or promotion claim."
+        },
         {
           "version": "v5",
           "date": "2026-07-26",
@@ -7402,7 +7501,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v63",
+      "version": "v65",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7421,6 +7520,21 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v65",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v65 history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v65",
+          "date": "2026-07-29",
+          "note": "Expose applications and choice-change counters for slot-alias uniqueness and required-slot array and root completion biases."
+        },
+        {
+          "version": "v64",
+          "date": "2026-07-29",
+          "note": "Aggregate packed completion-session, parser-transition, reachability, forced-closure, equivalent-row, and choice-state work counters in DecodeStats."
+        },
         {
           "version": "v63",
           "date": "2026-07-27",
@@ -8570,12 +8684,32 @@
       ]
     },
     "matrix.perf": {
-      "version": "v2",
+      "version": "v4",
       "kind": "matrix",
       "paths": [
-        "scripts/run_perf_matrix.py"
+        "scripts/run_perf_matrix.py",
+        "tests/test_scripts/test_perf_matrix.py",
+        "docs/design/perf-matrix-results.json",
+        "docs/design/completion-kernel-perf-results.json",
+        "docs/design/perf-experiment-matrix.md",
+        "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-29T10:05:51-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v4 history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-29",
+          "note": "Measure warm V2 with a persistent session but without row-domain cache lookup, derive all gates from replayed observations, and record exact reproducible recipe metadata."
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-29",
+          "note": "Add the capped packed completion-kernel correctness and latency suite with matched V1/V2 authority, robust timing summaries, work counters, and explicit promotion gates."
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -8772,10 +8906,14 @@
         "tests/test_scripts/test_run_candidate_proposal_matrix.py",
         "docs/design/iter-slm194-candidate-proposals-20260724.json",
         "docs/design/iter-slm194-candidate-proposals-20260724.md",
-        "docs/design/iter-slm194-candidate-proposals-agentv-20260724/",
-        "docs/design/perf-experiment-matrix.md"
+        "docs/design/iter-slm194-candidate-proposals-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-29",
+          "note": "no-bump: move perf-experiment-matrix.md to its canonical matrix.perf owner; SLM-194 candidate-proposal behavior and evidence are unchanged"
+        },
         {
           "version": "ffe3-03-v1",
           "date": "2026-07-24",
@@ -9326,7 +9464,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v261",
+      "version": "v265",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9369,6 +9507,36 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v265",
+          "date": "2026-07-29T10:14:34-05:00",
+          "note": "no-bump: preserve the exact recording datetime for the existing v265 diagnostic-history event; runtime behavior is unchanged."
+        },
+        {
+          "version": "v265",
+          "date": "2026-07-29",
+          "note": "no-bump: align the existing fail-closed diagnostic regression with the distinct prohibited-lever message."
+        },
+        {
+          "version": "v265",
+          "date": "2026-07-29",
+          "note": "Preserve grammar sync authority on failed resyncs, thread semantic state through NL tokens, account new completion biases, and keep verified solver pruning authoritative."
+        },
+        {
+          "version": "v264",
+          "date": "2026-07-29",
+          "note": "Restore factory propagation and generalized lexer ownership for required-slot completion, typed schema items, root-reference identity, slot-alias uniqueness, and topology uniqueness; reject unimplemented compiler auxiliaries instead of silently dropping them."
+        },
+        {
+          "version": "v263",
+          "date": "2026-07-29",
+          "note": "Persist one authority-keyed completion session per decode row, restore interned states on rollback, share exact domains across equivalent rows, and apply verified forced closure before neural ranking."
+        },
+        {
+          "version": "v262",
+          "date": "2026-07-29",
+          "note": "Prototype direct grammar-token feeds, semantic-state views, persistent choice frames, and completion-forest engine reuse without a performance or promotion claim."
+        },
         {
           "version": "v261",
           "date": "2026-07-27",

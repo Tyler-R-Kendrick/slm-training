@@ -331,7 +331,7 @@ def test_model_build_config_rejects_prohibited_semantic_marker_lever_before_arti
     tmp_path: Path,
 ) -> None:
     run_root = tmp_path / "runs"
-    with pytest.raises(ValueError, match="template markers are opaque"):
+    with pytest.raises(ValueError, match="prohibited enabled levers"):
         _valid_build_config(
             run_root=run_root,
             run_id="must-not-exist",

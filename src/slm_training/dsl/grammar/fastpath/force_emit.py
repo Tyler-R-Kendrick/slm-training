@@ -11,13 +11,18 @@ def force_next_token_id(
     engine: OpenUIIncrementalEngine,
     tokenizer: OpenUITokenizer,
     prefix_text: str,
+    *,
+    assume_synced: bool = False,
 ) -> int | None:
     """If DFA says the next lexeme is fully determined, return its token id.
 
     R2: skip ``set_prefix`` when the engine is already synced to ``prefix_text``
-    (common after P1 ``advance_token`` / pick).
+    (common after P1 ``advance_token`` / pick).  ``assume_synced`` lets the
+    caller vouch for sync via the P3 direct-feed marker
+    (``GrammarDecodeState.engine_in_sync``) when the engine's internal text is
+    grammatically — but not byte — identical to ``prefix_text``.
     """
-    already = (
+    already = assume_synced or (
         getattr(engine, "_prefix", None) == prefix_text
         and getattr(engine, "_ip", None) is not None
     )

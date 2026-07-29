@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from types import SimpleNamespace
 
 from scripts import check_changed
@@ -116,7 +118,7 @@ def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
     ]
 
 
-def test_changed_tests_are_collected_once_and_partitioned_by_node(monkeypatch) -> None:
+def test_changed_tests_are_collected_once_and_hash_balanced(monkeypatch) -> None:
     commands = []
 
     def fake_collect(command, **kwargs):
@@ -146,22 +148,120 @@ def test_changed_tests_are_collected_once_and_partitioned_by_node(monkeypatch) -
     assert check_changed._run_changed_tests_parallel(
         ["tests/test_a.py", "tests/test_b.py"]
     ) == 0
-    assert sorted(commands) == sorted(
+    assert len(commands) == 3
+    assert all(len(command) - 4 == 1 for command in commands)
+    assert {
+        node
+        for command in commands
+        for node in command[4:]
+    } == {
+        "tests/test_a.py::test_one",
+        "tests/test_a.py::test_two",
+        "tests/test_b.py::test_three",
+    }
+
+
+def test_changed_test_shards_balance_each_source_file() -> None:
+    nodes = [
+        *(f"tests/test_slow.py::test_{index}" for index in range(11)),
+        *(f"tests/test_fast.py::test_{index}" for index in range(5)),
+    ]
+
+    batches = check_changed._shard_test_nodes(nodes, 4)
+
+    for path in ("tests/test_slow.py", "tests/test_fast.py"):
+        counts = [
+            sum(node.startswith(f"{path}::") for node in batch)
+            for batch in batches
+        ]
+        assert max(counts) - min(counts) <= 1
+    assert {node for batch in batches for node in batch} == set(nodes)
+
+
+def test_parallel_runner_overdecomposes_for_work_stealing(monkeypatch) -> None:
+    collected_nodes = "\n".join(
+        f"tests/test_slow.py::test_{index}" for index in range(12)
+    )
+    commands = []
+
+    def fake_collect(command, **kwargs):
+        return SimpleNamespace(returncode=0, stdout=collected_nodes, stderr="")
+
+    monkeypatch.setattr(check_changed, "CHANGED_TEST_WORKERS", 2)
+    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
+    monkeypatch.setattr(check_changed, "_run", lambda command: commands.append(command) or 0)
+
+    assert check_changed._run_changed_tests_parallel(["tests/test_slow.py"]) == 0
+    assert len(commands) == 4
+    assert {node for command in commands for node in command[4:]} == set(
+        collected_nodes.splitlines()
+    )
+
+
+def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
+    collected_nodes = "\n".join(
         [
-            [
-                check_changed.sys.executable,
-                "-m",
-                "pytest",
-                "-q",
-                "tests/test_a.py::test_one",
-                "tests/test_b.py::test_three",
-            ],
-            [
-                check_changed.sys.executable,
-                "-m",
-                "pytest",
-                "-q",
-                "tests/test_a.py::test_two",
-            ],
+            *(f"tests/test_slow.py::test_{index}" for index in range(16)),
+            *(f"tests/test_fast.py::test_{index}" for index in range(8)),
         ]
     )
+    shard_nodes = []
+
+    def fake_collect(command, **kwargs):
+        return SimpleNamespace(returncode=0, stdout=collected_nodes, stderr="")
+
+    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
+    monkeypatch.setattr(
+        check_changed,
+        "_run",
+        lambda command: shard_nodes.extend(command[4:]) or 0,
+    )
+
+    for shard_index in range(8):
+        before = set(shard_nodes)
+        assert (
+            check_changed._run_changed_tests_parallel(
+                ["tests/test_slow.py", "tests/test_fast.py"],
+                shard_index=shard_index,
+                shard_count=8,
+            )
+            == 0
+        )
+        current = set(shard_nodes) - before
+        assert len(current) == 3
+
+    assert set(shard_nodes) == set(collected_nodes.splitlines())
+    assert len(shard_nodes) == len(set(shard_nodes))
+
+
+def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
+    monkeypatch.setenv("OMP_NUM_THREADS", "16")
+    monkeypatch.setenv("OPENBLAS_NUM_THREADS", "32")
+
+    env = check_changed._pytest_worker_env()
+
+    assert env["OMP_NUM_THREADS"] == "1"
+    assert env["MKL_NUM_THREADS"] == "1"
+    assert env["OPENBLAS_NUM_THREADS"] == "1"
+    assert env["NUMEXPR_NUM_THREADS"] == "1"
+
+
+def test_list_mode_needs_no_installed_dependencies() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-S",
+            "-m",
+            "scripts.check_changed",
+            "--changed-tests-only",
+            "--base-ref",
+            "HEAD",
+            "--list",
+        ],
+        cwd=check_changed.ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr

@@ -29,7 +29,7 @@ the single committed source of truth:
       "kind": "gate",
       "paths": ["src/slm_training/harnesses/model_build/ship_gates.py"],
       "history": [
-        {"version": "openui_ship_gates_v1", "date": "2026-07-18", "note": "initial registration"}
+        {"version": "openui_ship_gates_v1", "date": "2026-07-18T20:15:00+00:00", "note": "initial registration"}
       ]
     }
   }
@@ -49,6 +49,9 @@ the single committed source of truth:
   `version`. **Ordering authority is the position in `history`, never string
   comparison** — legacy encodings (`2.0.0`, `openui_ship_gates_v1`,
   `vss4-02-v1`) order correctly next to new monotonic `v1, v2, …` labels.
+- **`history[].date`** accepts legacy ISO date-only values for compatibility.
+  Every newly prepended row must preserve the event time as a timezone-aware
+  ISO 8601 datetime (for example, `2026-07-18T20:15:00+00:00`).
 - Pre-existing in-code constants (`LOSS_SUITE_VERSION`, `METRIC_VERSION`,
   `MEANINGFUL_METRIC_POLICY["threshold_version"]`, `MATRIX_VERSION`) stay
   canonical at runtime; `tests/test_versioning/test_mirrors.py` pins the
