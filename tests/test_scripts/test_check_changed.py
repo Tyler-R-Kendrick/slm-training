@@ -157,3 +157,20 @@ def test_changed_tests_are_collected_once_and_hash_balanced(monkeypatch) -> None
         "tests/test_a.py::test_two",
         "tests/test_b.py::test_three",
     }
+
+
+def test_changed_test_shards_balance_each_source_file() -> None:
+    nodes = [
+        *(f"tests/test_slow.py::test_{index}" for index in range(11)),
+        *(f"tests/test_fast.py::test_{index}" for index in range(5)),
+    ]
+
+    batches = check_changed._shard_test_nodes(nodes, 4)
+
+    for path in ("tests/test_slow.py", "tests/test_fast.py"):
+        counts = [
+            sum(node.startswith(f"{path}::") for node in batch)
+            for batch in batches
+        ]
+        assert max(counts) - min(counts) <= 1
+    assert {node for batch in batches for node in batch} == set(nodes)

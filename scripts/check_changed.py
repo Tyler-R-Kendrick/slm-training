@@ -321,14 +321,7 @@ def _run_changed_tests_parallel(tests: list[str]) -> int:
     nodes = [line for line in collected.stdout.splitlines() if "::" in line]
     if len(nodes) < 2:
         return _run([sys.executable, "-m", "pytest", "-q", *tests])
-    shuffled = sorted(
-        nodes,
-        key=lambda node: hashlib.sha256(node.encode()).digest(),
-    )
-    batches = [
-        shuffled[index::CHANGED_TEST_WORKERS]
-        for index in range(CHANGED_TEST_WORKERS)
-    ]
+    batches = _shard_test_nodes(nodes, CHANGED_TEST_WORKERS)
     commands = [
         [sys.executable, "-m", "pytest", "-q", *batch]
         for batch in batches
@@ -338,6 +331,24 @@ def _run_changed_tests_parallel(tests: list[str]) -> int:
         max_workers=CHANGED_TEST_WORKERS
     ) as executor:
         return int(any(executor.map(_run, commands)))
+
+
+def _shard_test_nodes(nodes: list[str], workers: int) -> list[list[str]]:
+    """Hash-shard each test file independently so slow suites stay balanced."""
+    batches: list[list[str]] = [[] for _ in range(workers)]
+    by_file: dict[str, list[str]] = {}
+    for node in nodes:
+        by_file.setdefault(node.split("::", 1)[0], []).append(node)
+    offset = 0
+    for path in sorted(by_file):
+        group = sorted(
+            by_file[path],
+            key=lambda node: hashlib.sha256(node.encode()).digest(),
+        )
+        for index, node in enumerate(group):
+            batches[(offset + index) % workers].append(node)
+        offset = (offset + len(group)) % workers
+    return batches
 
 
 def main(argv: list[str] | None = None) -> int:

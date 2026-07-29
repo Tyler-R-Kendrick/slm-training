@@ -9455,6 +9455,11 @@
         {
           "version": "v265",
           "date": "2026-07-29",
+          "note": "no-bump: align the existing fail-closed diagnostic regression with the distinct prohibited-lever message."
+        },
+        {
+          "version": "v265",
+          "date": "2026-07-29",
           "note": "Preserve grammar sync authority on failed resyncs, thread semantic state through NL tokens, account new completion biases, and keep verified solver pruning authoritative."
         },
         {
