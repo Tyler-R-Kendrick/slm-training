@@ -9356,7 +9356,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v263",
+      "version": "v264",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9404,6 +9404,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v264",
+          "date": "2026-07-29",
+          "note": "Add immutable tokenizer-layout token facts and exact tree-free recognition snapshots with fail-closed tri-state token transitions."
+        },
         {
           "version": "v263",
           "date": "2026-07-29",
