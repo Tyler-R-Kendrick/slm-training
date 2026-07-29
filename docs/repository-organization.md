@@ -69,7 +69,7 @@ python -m scripts.repo_policy
 
 The policy rejects unapproved root paths, copied skill mirrors, canonical skills
 with no discovery symlink, redundant Codex skill copies, and newly tracked
-ignored artifacts. The tracked pre-commit hook and CI run the same check.
+ignored artifacts. The tracked pre-commit and pre-push hooks run the same check.
 
 Agent hooks add per-edit feedback and are certified identical across harnesses
 by `python -m scripts.verify_agent_surfaces`:
@@ -81,6 +81,7 @@ by `python -m scripts.verify_agent_surfaces`:
 - Cursor and Gemini CLI have no hook mechanism configured; agents there run
   `python -m scripts.repo_policy` and `.githooks/check-changed` by hand.
 
-CI remains authoritative either way. Instruction-file parity across harnesses
+The tracked Git hooks are authoritative; GitHub Actions CI is disabled.
+Instruction-file parity across harnesses
 is covered in
 [`design/agent-harness-parity-audit.md`](design/agent-harness-parity-audit.md).

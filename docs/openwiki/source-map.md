@@ -15,7 +15,7 @@ High-signal paths (not exhaustive):
 | `docs/openwiki/` | Agent wiki (this directory) |
 | `.agents/skills/` | Canonical skills |
 | `scripts/repo_policy.py` | Repository organization checker + raw-move hook |
-| `.github/workflows/ci.yml` | Lint / pytest |
+| `.githooks/` | Pre-commit and pre-push validation |
 | `.github/workflows/openwiki-update.yml` | Scheduled OpenWiki PRs |
 
 ## `src/slm_training/`

@@ -467,6 +467,11 @@
       "history": [
         {
           "version": "v7",
+          "date": "2026-07-29T11:06:43-05:00",
+          "note": "no-bump: replace references to automatic hosted CI enforcement with the local pre-push certificate; no decode invariant or certificate behavior changed"
+        },
+        {
+          "version": "v7",
           "date": "2026-07-25",
           "note": "Add parameter-efficiency law I16-I19 and certify the capacity-scaling lever registry"
         },
@@ -6120,6 +6125,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-29T11:06:43-05:00",
+          "note": "no-bump: document the repository's switch from automatic hosted CI to tracked pre-commit and pre-push hooks; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-27",

@@ -5,7 +5,7 @@ GHCP, Grok, others). Prefer this file over tool-specific defaults on process
 conflicts.
 
 Every harness enforces the **same** laws. `python -m scripts.verify_agent_surfaces`
-owns the obligation × surface matrix and fails CI when one surface drops a law;
+owns the obligation × surface matrix and fails the pre-push hook when one surface drops a law;
 current coverage and known differences are in
 [`docs/design/agent-harness-parity-audit.md`](docs/design/agent-harness-parity-audit.md).
 
@@ -67,7 +67,7 @@ them, never a file-local number — every agent surface uses the same ids so
   constrained decoding.** Levers may change *how legal symbols are chosen*
   (ranking, speculation technique, batching) — never *whether output is
   legal*. Weakening levers are registered in
-  `levers.CONSTRAINT_WEAKENING_LEVERS` and CI-blocked from production configs.
+  `levers.CONSTRAINT_WEAKENING_LEVERS` and hook-blocked from production configs.
 
 ### II. Inference is the last resort (deterministic completion law)
 
@@ -182,7 +182,7 @@ them, never a file-local number — every agent surface uses the same ids so
   the decode/vocab/conversation design docs, and are regenerated into
   OpenWiki. Changing one requires editing that doc, bumping the
   `decode.invariants` component in `resources/versions.json`, and passing
-  `python -m scripts.verify_decode_invariants` in CI — a silent weakening is
+  `python -m scripts.verify_decode_invariants` in pre-push — a silent weakening is
   a regression and blocks merge.
 
 ## Hard run cap
@@ -190,11 +190,11 @@ them, never a file-local number — every agent surface uses the same ids so
 Every train, eval, benchmark, profile, telemetry, matrix, reproduction, and
 supporting shell command must obey the canonical cap in
 `src/slm_training/levers.py`. Use its derived interrupt and kill-grace values;
-training, campaign, and CI harnesses must not exceed its `MAX_RUN_MINUTES`.
+training, campaign, and validation harnesses must not exceed its `MAX_RUN_MINUTES`.
 Change that one constant, then run
 `python -m scripts.repo_policy --sync-run-policy` to regenerate the GitHub and
 Vercel adapters. Prefer local compute;
-remote CI and managed jobs are last-resort convenience surfaces. A timed
+remote managed jobs are last-resort convenience surfaces. A timed
 out, interrupted, or killed run is never evidence.
 
 Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
@@ -505,7 +505,7 @@ which revision of the constraints produced it. Contract:
   registry entry in the same change — a version bump (new ids use monotonic
   `v1, v2, …`) or a same-version history entry whose note starts with
   `no-bump:` for behavior-neutral edits. Enforced by
-  `python -m scripts.verify_version_stamps --check` (CI, pre-commit, agent
+  `python -m scripts.verify_version_stamps --check` (pre-commit, pre-push, agent
   hooks).
 - **Re-test discovery:** after a bump, `python -m scripts.verify_version_stamps
   --stale [--component <id>] [--include-outputs]` lists results produced under
