@@ -1617,9 +1617,6 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
     compiler_decode = _run_compiler_decode_fixture(
         repetitions=repetitions, deadline=deadline
     )
-    compiler_batch = _run_compiler_batch_fixture(
-        repetitions=repetitions, deadline=deadline
-    )
 
     def prefix_ids(text: str) -> tuple[int, ...]:
         return (
@@ -1780,6 +1777,11 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
         }
     )
 
+    # Preserve the upstream microbenchmark preconditions. This multi-second
+    # neural fixture runs only after every pre-existing packed-kernel row.
+    compiler_batch = _run_compiler_batch_fixture(
+        repetitions=repetitions, deadline=deadline
+    )
     by_id = {row["id"]: row for row in rows}
     simple_ok = all(
         float(by_id[row_id]["v2"]["median_ns"])
@@ -1856,6 +1858,16 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
             _prior_kernel_diagnostic(),
         ],
         "development_run_history": [
+            {
+                "status": "complete_negative",
+                "code_commit": "79a9dadf519bca61e61ce65573047877d51d5528",
+                "agentv_passed": 16,
+                "agentv_total": 17,
+                "reason": (
+                    "new neural batch fixture ran before the upstream "
+                    "microbenchmarks; cold-root missed its latency gate"
+                ),
+            },
             {
                 "status": "incomplete_not_evidence",
                 "reason": "benchmark fixture exposed unsupported request kwargs",

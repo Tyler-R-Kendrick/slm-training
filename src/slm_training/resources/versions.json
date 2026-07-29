@@ -8739,7 +8739,7 @@
       ]
     },
     "matrix.perf": {
-      "version": "v6",
+      "version": "v7",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
@@ -8750,6 +8750,11 @@
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-29",
+          "note": "Run the new multi-second neural batch fixture only after every unchanged upstream packed-kernel microbenchmark, preserving their preregistered CPU, cache, and thermal preconditions."
+        },
         {
           "version": "v6",
           "date": "2026-07-29",
