@@ -33,6 +33,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     _forward_binder_component_requirements,
     _forward_binder_component_requirements_reference,
     _literal_frame_is_open,
+    _generated_ast_is_complete,
     _literal_frame_is_open_reference,
     _references_resolved,
     _references_resolved_reference,
@@ -73,12 +74,12 @@ def schema() -> dict:
 # and as prefixes of the longer programs.
 _PROGRAMS = (
     'root = TextContent(":slot_0")\n',
-    'root = Card([])\n',
+    "root = Card([])\n",
     'root = Card([b1, b2])\nb1 = TextContent(":slot_0")\nb2 = TextContent(":slot_1")\n',
     'root = Card([b1, b1])\nb1 = TextContent(":slot_0")\n',
     'root = Card([b1])\nb1 = Card([b2])\nb2 = TextContent(":slot_0")\n',
-    'root = Card([b1])\nb1 = Card([b1])\n',
-    'root = Card([b1])\nb1 = Card([b2])\nb2 = Card([b1])\n',
+    "root = Card([b1])\nb1 = Card([b1])\n",
+    "root = Card([b1])\nb1 = Card([b2])\nb2 = Card([b1])\n",
     'root = Callout("info", ":slot_0", ":slot_1", true)\n',
     'root = Card([TextContent(":slot_0"), b1])\nb1 = TextContent(":slot_1")\n',
     # Redeclaration of an already-declared binder slot.
@@ -139,16 +140,18 @@ def _check_prefix(tok, schema, prefix: list[int], label: str) -> None:
     ), label
     unresolved = set(ref_refs) - set(ref_decl)
     assert _slots_to_ids(tok, ss.unresolved_slots(state)) == unresolved, label
-    assert ss.root_is_declared(state) == bool(
-        int(tok.bind_id(0)) in set(ref_decl)
-    ), label
+    assert ss.root_is_declared(state) == bool(int(tok.bind_id(0)) in set(ref_decl)), (
+        label
+    )
 
     # --- binder -> component types ---
     ref_types = {
         int(k): v
         for k, v in _binder_component_types_reference(tok, list(prefix)).items()
     }
-    got_types = {int(tok.bind_id(s)): n for s, n in ss.binder_component_types(state).items()}
+    got_types = {
+        int(tok.bind_id(s)): n for s, n in ss.binder_component_types(state).items()
+    }
     assert got_types == ref_types, label
 
     # --- dependency graph + cycle relation ---
@@ -239,19 +242,34 @@ def _check_prefix(tok, schema, prefix: list[int], label: str) -> None:
     # the stack until the next token forces reduction, so at RPAR-final
     # prefixes the reference lags by exactly the trailing unreduced RPAR run.
     position_state = trimmed_state if len(trimmed) != len(prefix) else state
-    assert ss.active_array_position(position_state) == _active_array_position(
-        engine
-    ), label
+    assert ss.active_array_position(position_state) == _active_array_position(engine), (
+        label
+    )
     assert ss.active_list_occupancy(state) == _active_list_occupancy(engine), label
-    assert ss.schema_slot_name(state, schema) == _schema_slot_name(engine, schema), label
-    assert ss.schema_slot_type(state, schema) == _schema_slot_type(engine, schema), label
-    assert ss.schema_call_arity(state, schema) == _schema_call_arity(engine, schema), label
+    assert ss.schema_slot_name(state, schema) == _schema_slot_name(engine, schema), (
+        label
+    )
+    assert ss.schema_slot_type(state, schema) == _schema_slot_type(engine, schema), (
+        label
+    )
+    assert ss.schema_call_arity(state, schema) == _schema_call_arity(engine, schema), (
+        label
+    )
     assert ss.schema_slot_components(state, schema) == _schema_slot_components(
         engine, schema
     ), label
     assert ss.schema_array_item_components(state, schema) == (
         _schema_array_item_components(engine, schema)
     ), label
+    cursor = ss.schema_cursor(state)
+    assert cursor.active_call == _active_call(engine), label
+    assert cursor.active_array_empty == _active_array_is_empty(engine), label
+    assert cursor.active_array_position == _active_array_position(engine), label
+    assert cursor.active_list_occupancy == _active_list_occupancy(engine), label
+    if "$END" in engine.next_terminals():
+        assert ss.generated_ast_is_complete(state) == _generated_ast_is_complete(
+            decode_prefix(tok, list(prefix))
+        ), label
     # Prove the exact completed-string relationship: at RPAR-final prefixes
     # reference(P) == state(P minus trailing RPAR run) ⊆ state(P).
     for component in {name for name, _i, _v in state.completed_str} | {
@@ -278,8 +296,10 @@ def test_every_prefix_matches_reference(tok, schema, program: str) -> None:
 
 def test_framed_literal_prefixes_match_reference(tok, schema) -> None:
     """Hand-built framed-literal prefixes (encode forbids free-form strings)."""
+
     def byte(ch: str) -> int:
         return tok.token_to_id[f"B:{ord(ch):02x}"]
+
     lit_end = tok.token_to_id["LIT_END"]
     num_head = tok.encode("root = Slider(", add_special=False)
     sequences = []
@@ -331,17 +351,27 @@ def test_whitespace_equivalent_prefixes_converge(tok, schema) -> None:
 
 def test_equivalence_key_separates_semantic_differences(tok, schema) -> None:
     """States differing in authority-relevant facts must never merge."""
-    open_item = _fold(tok, list(tok.encode("root = Card([b1", add_special=False)), schema)
-    after_comma = _fold(tok, list(tok.encode("root = Card([b1,", add_special=False)), schema)
+    open_item = _fold(
+        tok, list(tok.encode("root = Card([b1", add_special=False)), schema
+    )
+    after_comma = _fold(
+        tok, list(tok.encode("root = Card([b1,", add_special=False)), schema
+    )
     assert open_item is not after_comma
     assert open_item != after_comma
 
     flat = _fold(
-        tok, list(tok.encode("root = Card([b1])\nb1 = Card([b2])", add_special=False)), schema
+        tok,
+        list(tok.encode("root = Card([b1])\nb1 = Card([b2])", add_special=False)),
+        schema,
     )
     cycle = _fold(
         tok,
-        list(tok.encode("root = Card([b1])\nb1 = Card([b2])\nb2 = Card([b1]", add_special=False)),
+        list(
+            tok.encode(
+                "root = Card([b1])\nb1 = Card([b2])\nb2 = Card([b1]", add_special=False
+            )
+        ),
         schema,
     )
     assert flat is not cycle
@@ -435,9 +465,7 @@ def test_scope_bitset_updates_counter(tok, schema) -> None:
     assert ss.SCOPE_COUNTERS["scope_bitset_updates"] == again
 
 
-def test_production_forest_build_never_rescans_prefix(
-    tok, schema, monkeypatch
-) -> None:
+def test_production_forest_build_never_rescans_prefix(tok, schema, monkeypatch) -> None:
     """The forest builder reads SemanticState facts, not the scan oracle.
 
     Every prefix-rescan helper is replaced with a raising stub; a full

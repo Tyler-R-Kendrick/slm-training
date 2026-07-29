@@ -52,6 +52,7 @@ __all__ = [
     "ArrayFrame",
     "BraceFrame",
     "CallFrame",
+    "SchemaCursor",
     "SemanticState",
     "active_array_direct_references",
     "active_array_is_empty",
@@ -79,10 +80,12 @@ __all__ = [
     "references_resolved",
     "root_is_declared",
     "schema_array_item_components",
+    "schema_cursor",
     "schema_call_arity",
     "schema_slot_components",
     "schema_slot_name",
     "schema_slot_type",
+    "generated_ast_is_complete",
     "scope_counters",
     "unresolved_slots",
     "used_sym_mask",
@@ -109,6 +112,7 @@ SCOPE_COUNTERS: dict[str, int] = {
 def scope_counters() -> dict[str, int]:
     """Snapshot of the process-wide scope counters."""
     return dict(SCOPE_COUNTERS)
+
 
 # Request-local tokenizer ordinals keep states from different tokenizers from
 # ever merging while staying stable within one build.  Ordinals come from a
@@ -184,6 +188,17 @@ Frame = CallFrame | ArrayFrame | BraceFrame
 
 
 @dataclass(frozen=True)
+class SchemaCursor:
+    """Parser-parity schema facts without retaining Lark value trees."""
+
+    active_call: tuple[str, int, int] | None
+    active_array_empty: bool
+    active_array_position: str | None
+    active_list_occupancy: str | None
+    completed_strings: tuple[tuple[str, int, str], ...]
+
+
+@dataclass(frozen=True)
 class SemanticState:
     """Immutable, interned semantic summary of an OpenUI token prefix."""
 
@@ -209,6 +224,12 @@ class SemanticState:
     opaque_bind: bool = False  # a slot-less bind token was seen (conservative)
     decl_order: tuple[int, ...] = ()  # binder slots, first-declaration order
     ref_order: tuple[int, ...] = ()  # binder slots, first-reference order
+    # Lark delays reducing a trailing run of RPARs until lookahead arrives.
+    # Preserve the pre-run schema view so the tree-free cursor stays exactly
+    # aligned with the reference parser's value stack.
+    schema_lag_stack: tuple[Frame, ...] = ()
+    schema_lag_completed_str: tuple[tuple[str, int, str], ...] = ()
+    schema_lagging: bool = False
 
     def __post_init__(self) -> None:
         if len(self.edges) != len(self.reachable):
@@ -298,9 +319,7 @@ def _intersect_requirement(
     prior = merged.get(slot)
     merged[slot] = allowed if prior is None else prior & allowed
     return tuple(
-        (s, tuple(sorted(names)))
-        for s, names in sorted(merged.items())
-        if names
+        (s, tuple(sorted(names))) for s, names in sorted(merged.items()) if names
     )
 
 
@@ -323,6 +342,33 @@ def _mark_started(stack: tuple[Frame, ...]) -> tuple[Frame, ...]:
     else:
         top = replace(top, started=True)
     return (*stack[:-1], top)
+
+
+def _finish(previous: SemanticState, current: SemanticState, raw: str) -> SemanticState:
+    """Attach the exact trailing-RPAR schema lag before interning."""
+    if raw == ")":
+        lag_stack = (
+            previous.schema_lag_stack if previous.schema_lagging else previous.stack
+        )
+        lag_completed = (
+            previous.schema_lag_completed_str
+            if previous.schema_lagging
+            else previous.completed_str
+        )
+        current = replace(
+            current,
+            schema_lag_stack=lag_stack,
+            schema_lag_completed_str=lag_completed,
+            schema_lagging=True,
+        )
+    else:
+        current = replace(
+            current,
+            schema_lag_stack=current.stack,
+            schema_lag_completed_str=current.completed_str,
+            schema_lagging=False,
+        )
+    return previous if current == previous else _intern(current)
 
 
 def _context_components(
@@ -348,7 +394,11 @@ def _context_components(
     top = stack[-1] if stack else None
     if isinstance(top, ArrayFrame) and not top.started:
         items = value.get("items") or {}
-        return _schema_component_refs(items, schema) if isinstance(items, dict) else frozenset()
+        return (
+            _schema_component_refs(items, schema)
+            if isinstance(items, dict)
+            else frozenset()
+        )
     if value.get("type") == "array":
         return frozenset()
     return _schema_component_refs(value, schema)
@@ -413,10 +463,14 @@ def advance(
             pass
         stack = _mark_started(stack)
         new = replace(
-            state, literal_body=literal_body, stack=stack, schema_tracked=schema_tracked,
-            decl_order=decl_order, ref_order=ref_order,
+            state,
+            literal_body=literal_body,
+            stack=stack,
+            schema_tracked=schema_tracked,
+            decl_order=decl_order,
+            ref_order=ref_order,
         )
-        return state if new == state else _intern(new)
+        return _finish(state, new, raw)
 
     # Resolve a pending binder: ``bind =`` is a declaration head, anything
     # else makes the pending binder a reference at its use-site.
@@ -455,7 +509,7 @@ def advance(
             decl_order=decl_order,
             ref_order=ref_order,
         )
-        return state if new == state else _intern(new)
+        return _finish(state, new, raw)
 
     # ``bind = <token>``: a component token certifies the declaration type.
     if expect_decl:
@@ -471,7 +525,7 @@ def advance(
             decl_order=decl_order,
             ref_order=ref_order,
         )
-        return state if new == state else _intern(new)
+        return _finish(state, new, raw)
     if raw == "(":
         stack = _mark_started(stack)
         stack = (*stack, CallFrame(component=pending_component))
@@ -615,7 +669,7 @@ def advance(
         decl_order=decl_order,
         ref_order=ref_order,
     )
-    return state if new == state else _intern(new)
+    return _finish(state, new, raw)
 
 
 # ---------------------------------------------------------------------------
@@ -658,7 +712,9 @@ def reference_slots(state: SemanticState) -> frozenset[int]:
 
 def unresolved_slots(state: SemanticState) -> frozenset[int]:
     """Referenced binder slots with no declaration yet."""
-    return frozenset(_bits((state.referenced_mask | _pending_bit(state)) & ~state.declared_mask))
+    return frozenset(
+        _bits((state.referenced_mask | _pending_bit(state)) & ~state.declared_mask)
+    )
 
 
 def references_resolved(state: SemanticState) -> bool:
@@ -678,9 +734,15 @@ def root_is_declared(state: SemanticState) -> bool:
     return bool(state.declared_mask & 1)
 
 
-def binder_scope(state: SemanticState) -> tuple[frozenset[int], frozenset[int], int | None]:
+def binder_scope(
+    state: SemanticState,
+) -> tuple[frozenset[int], frozenset[int], int | None]:
     """Reference-shaped (declarations, references, active) slot triple."""
-    return declaration_slots(state), reference_slots(state), active_declaration_slot(state)
+    return (
+        declaration_slots(state),
+        reference_slots(state),
+        active_declaration_slot(state),
+    )
 
 
 def binder_component_types(state: SemanticState) -> dict[int, str]:
@@ -691,7 +753,9 @@ def binder_component_types(state: SemanticState) -> dict[int, str]:
 def dependency_edges(state: SemanticState) -> dict[int, frozenset[int]]:
     """Direct declaration → reference edges (a trailing pending binder counts
     as a reference of the active declaration, matching the prefix scan)."""
-    edges = {slot: frozenset(_bits(mask)) for slot, mask in enumerate(state.edges) if mask}
+    edges = {
+        slot: frozenset(_bits(mask)) for slot, mask in enumerate(state.edges) if mask
+    }
     for slot in _bits(state.declared_mask):
         edges.setdefault(slot, frozenset())
     if state.pending_bind >= 0 and state.active_slot >= 0:
@@ -767,17 +831,7 @@ def active_array_position(state: SemanticState) -> str | None:
     Mirrors the reference: only arrays opened *after* the innermost open
     call's LPAR count — an array beneath a nested open call is not active.
     """
-    above: list[Frame] = []
-    for frame in reversed(state.stack):
-        if isinstance(frame, CallFrame):
-            break
-        above.append(frame)
-    else:
-        return None
-    array = next((f for f in above if isinstance(f, ArrayFrame)), None)
-    if array is None:
-        return None
-    return "item_start" if not array.started else "item_end"
+    return _array_position(state.stack)
 
 
 def active_list_occupancy(state: SemanticState) -> str | None:
@@ -786,6 +840,47 @@ def active_list_occupancy(state: SemanticState) -> str | None:
     if array is None:
         return None
     return "empty" if not array.started and array.separators == 0 else "populated"
+
+
+def _array_position(stack: tuple[Frame, ...]) -> str | None:
+    above: list[Frame] = []
+    for frame in reversed(stack):
+        if isinstance(frame, CallFrame):
+            break
+        above.append(frame)
+    else:
+        return None
+    array = next((frame for frame in above if isinstance(frame, ArrayFrame)), None)
+    if array is None:
+        return None
+    return "item_start" if not array.started else "item_end"
+
+
+def schema_cursor(state: SemanticState) -> SchemaCursor:
+    """Return the exact Lark-parity schema view for this token prefix."""
+    lag_stack = state.schema_lag_stack if state.schema_lagging else state.stack
+    lag_completed = (
+        state.schema_lag_completed_str if state.schema_lagging else state.completed_str
+    )
+    return SchemaCursor(
+        active_call=active_call(state),
+        active_array_empty=active_array_is_empty(state),
+        active_array_position=_array_position(lag_stack),
+        active_list_occupancy=active_list_occupancy(state),
+        completed_strings=lag_completed,
+    )
+
+
+def generated_ast_is_complete(state: SemanticState) -> bool:
+    """Tree-free structural completeness; grammar acceptance is checked apart."""
+    return bool(
+        root_is_declared(state)
+        and not state.stack
+        and state.pending_component is None
+        and state.pending_bind < 0
+        and not state.expect_decl_component
+        and not state.literal_kind
+    )
 
 
 def emitted_component_count(state: SemanticState) -> int:
@@ -861,7 +956,9 @@ def schema_slot_type(state: SemanticState, schema: dict[str, Any]) -> str | None
     return str(value.get("type")) if value.get("type") else None
 
 
-def schema_call_arity(state: SemanticState, schema: dict[str, Any]) -> tuple[int, int, int, bool] | None:
+def schema_call_arity(
+    state: SemanticState, schema: dict[str, Any]
+) -> tuple[int, int, int, bool] | None:
     """(required, maximum, supplied, current-slot started) for the live call."""
     call = active_call(state)
     if call is None:
@@ -872,11 +969,15 @@ def schema_call_arity(state: SemanticState, schema: dict[str, Any]) -> tuple[int
     if not names:
         return None
     required = set(definition.get("required") or ())
-    minimum = max((names.index(name) + 1 for name in required if name in names), default=0)
+    minimum = max(
+        (names.index(name) + 1 for name in required if name in names), default=0
+    )
     return minimum, len(names), arg_count, arg_count > index
 
 
-def schema_slot_components(state: SemanticState, schema: dict[str, Any]) -> frozenset[str]:
+def schema_slot_components(
+    state: SemanticState, schema: dict[str, Any]
+) -> frozenset[str]:
     """Component types admitted directly by the active positional property."""
     from slm_training.dsl.grammar.fastpath.compiler_draft import (
         _schema_component_refs,
@@ -897,7 +998,9 @@ def schema_slot_components(state: SemanticState, schema: dict[str, Any]) -> froz
     return _schema_component_refs(value, schema)
 
 
-def schema_array_item_components(state: SemanticState, schema: dict[str, Any]) -> frozenset[str]:
+def schema_array_item_components(
+    state: SemanticState, schema: dict[str, Any]
+) -> frozenset[str]:
     """Component types admitted by the active array property's items."""
     from slm_training.dsl.grammar.fastpath.compiler_draft import (
         _schema_component_refs,

@@ -29,6 +29,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
 )
 from slm_training.dsl.grammar.fastpath.completion_kernel import (
     CompletionSession,
+    WitnessVerdict,
     _StateRecord,
 )
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
@@ -209,7 +210,15 @@ def test_incomplete_authority_stays_unknown_and_keeps_siblings(
     # J's partial coverage is an authority gap, never a witness — and it must
     # not erase D's proven witnesses on earlier paths.
     assert session.terminal_witness(session.sid("J"), 8) is None
+    assert (
+        session.terminal_witness_verdict(session.sid("J"), 8).verdict
+        is WitnessVerdict.UNKNOWN
+    )
     assert session.terminal_witness(session.sid("D"), 5) == (5, 8, 12, 13)
+    assert (
+        session.terminal_witness_verdict(session.sid("D"), 5).verdict
+        is WitnessVerdict.SUPPORTED
+    )
 
 
 def test_node_budget_matches_reference(packed_graph: dict) -> None:
@@ -300,15 +309,37 @@ def test_session_counters_and_warm_allocation(tok: DSLNativeTokenizer) -> None:
     assert session.stats()["domain_cache_hits"] == 1
     child = session.advance_path(seed, first.paths[0].token_ids)
     assert child is not None
+    assert session._rows[seed].targets[first.paths[0].token_ids] == child
     again = session.advance_path(seed, first.paths[0].token_ids)
     assert again == child
     stats = session.stats()
     assert stats["transition_cache_hits"] >= 1
+    assert stats["transition_rows_built"] == 1
+    assert stats["transition_rows_hits"] == 1
+    assert stats["semantic_masks_applied"] == 1
+    assert stats["edge_replays"] == 1
+    assert stats["ast_bridge_calls"] == 0
     assert stats["direct_terminal_feeds"] > 0
     # Warm kernel queries fork interned engines; they never construct fresh
     # OpenUIIncrementalEngine instances beyond the seed.
     assert stats["candidate_engine_allocations"] == allocations_after_seed
     assert stats["unique_states"] >= 2
+
+
+def test_packed_row_never_calls_ast_bridge(
+    tok: DSLNativeTokenizer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Grammar acceptance plus the semantic cursor owns EOS completeness."""
+    from slm_training.dsl.grammar.fastpath import compiler_draft as cd
+
+    def _explode(_prefix: str) -> bool:
+        raise AssertionError("packed row reparsed the generated AST")
+
+    monkeypatch.setattr(cd, "_generated_ast_is_complete", _explode)
+    session = CompletionSession(tok, slot_contract=(":slot_0",))
+    ids = list(tok.encode('root = TextContent(":slot_0")', add_special=False))
+    forest = session.outgoing(session.seed(ids))
+    assert any(path.kind == "eos" for path in forest.paths)
 
 
 def test_restore_decode_state_uses_interned_engine_without_replay(
@@ -320,18 +351,17 @@ def test_restore_decode_state_uses_interned_engine_without_replay(
     state = make_grammar_state()
     pool = {("ctx", tuple(prefix)): (session, state_id)}
 
-    session.restore_decode_state(
-        state_id, state, context="ctx", pool=pool
-    )
+    session.restore_decode_state(state_id, state, context="ctx", pool=pool)
 
     assert state.prefix_ids == prefix
     assert state.completion_session is session
     assert state.completion_state_id == state_id
     assert state.engine_ids_len == len(prefix)
     assert state.engine is not session._states[state_id].engine
-    assert state.engine.parser_state_key() == session._states[
-        state_id
-    ].engine.parser_state_key()
+    assert (
+        state.engine.parser_state_key()
+        == session._states[state_id].engine.parser_state_key()
+    )
 
 
 def test_cache_isolation_across_authority_contexts(tok: DSLNativeTokenizer) -> None:
@@ -368,7 +398,7 @@ def test_cache_isolation_across_authority_contexts(tok: DSLNativeTokenizer) -> N
 
 _CORPUS = (
     'root = TextContent(":slot_0")\n',
-    'root = Card([])\n',
+    "root = Card([])\n",
     'root = Card([b1, b2])\nb1 = TextContent(":slot_0")\nb2 = TextContent(":slot_1")\n',
     'root = Card([b1])\nb1 = Card([b2])\nb2 = TextContent(":slot_0")\n',
     'root = Callout("info", ":slot_0", ":slot_1", true)\n',
@@ -381,7 +411,9 @@ _CORPUS = (
 )
 
 
-def _domain_pair(tok, prefix_ids, *, budget, slot_contract=(":slot_0", ":slot_1"), **kw):
+def _domain_pair(
+    tok, prefix_ids, *, budget, slot_contract=(":slot_0", ":slot_1"), **kw
+):
     from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
     from slm_training.dsl.pack import (
         _openui_completion_domain,
@@ -429,18 +461,16 @@ def _check_prefix_parity(tok, prefix_ids, label: str, budgets=(8, 32)) -> None:
         _assert_domain_equal(kernel, reference, f"{label} budget={budget}")
         for candidate in kernel.candidates:
             assert candidate.terminal_witness[-1] == int(tok.eos_id), label
-            assert _replays_to_end(
-                tok, prefix_ids, candidate.terminal_witness
-            ), f"{label} budget={budget} witness={candidate.terminal_witness}"
+            assert _replays_to_end(tok, prefix_ids, candidate.terminal_witness), (
+                f"{label} budget={budget} witness={candidate.terminal_witness}"
+            )
 
 
 @pytest.mark.parametrize("program", _CORPUS, ids=lambda p: repr(p[-24:]))
 def test_domain_parity_every_prefix(tok: DSLNativeTokenizer, program: str) -> None:
     ids = [int(t) for t in tok.encode(program, add_special=False)]
     for end in range(0, len(ids) + 1):
-        _check_prefix_parity(
-            tok, [tok.bos_id, *ids[:end]], f"{program!r}[:{end}]"
-        )
+        _check_prefix_parity(tok, [tok.bos_id, *ids[:end]], f"{program!r}[:{end}]")
 
 
 def test_domain_parity_card_open_item_yields_twelve_paths(
@@ -743,9 +773,7 @@ def test_tmerge2_no_false_merge_stack_vs_card(tok: DSLNativeTokenizer) -> None:
     intern differently — the semantic state's CallFrame.component separates
     them — and their schema-filtered candidate sets must differ."""
     session = CompletionSession(tok, slot_contract=(":slot_0",))
-    stack_sid = session.seed(
-        list(tok.encode("root = Stack([b1], ", add_special=False))
-    )
+    stack_sid = session.seed(list(tok.encode("root = Stack([b1], ", add_special=False)))
     card_sid = session.seed(list(tok.encode("root = Card([b1], ", add_special=False)))
     assert stack_sid != card_sid
     stack_forest = session.outgoing(stack_sid)

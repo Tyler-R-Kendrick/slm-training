@@ -9366,7 +9366,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v264",
+      "version": "v265",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9414,6 +9414,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v265",
+          "date": "2026-07-29",
+          "note": "Add the request-local transition-row cache, parser-parity schema cursor, bridge-free AST completeness check, transactional iterative terminal-witness proof, and isolate recognition accepts memoization from canonical parser accepts."
+        },
         {
           "version": "v264",
           "date": "2026-07-29",

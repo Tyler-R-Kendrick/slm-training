@@ -30,6 +30,7 @@ it is never caught.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 from slm_training.dsl.grammar.fastpath import semantic_state as _ss
@@ -45,7 +46,19 @@ from slm_training.dsl.grammar.fastpath.token_map import (
 )
 from slm_training.models.decode_stats import check_decode_deadline
 
-__all__ = ["CompletionSession"]
+__all__ = ["CompletionSession", "WitnessProof", "WitnessVerdict"]
+
+
+class WitnessVerdict(str, Enum):
+    SUPPORTED = "supported"
+    UNSUPPORTED = "unsupported"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class WitnessProof:
+    witness: tuple[int, ...] | None
+    verdict: WitnessVerdict
 
 
 @dataclass
@@ -55,6 +68,15 @@ class _StateRecord:
     engine: OpenUIIncrementalEngine
     semantic: Any
     prefix_ids: tuple[int, ...]
+    recognition: Any | None = None
+
+
+@dataclass
+class _TransitionRow:
+    """One request-local static row plus lazily verified edge targets."""
+
+    forest: CompletionForest
+    targets: dict[tuple[int, ...], int | None]
 
 
 class CompletionSession:
@@ -101,7 +123,9 @@ class CompletionSession:
         self._states: list[_StateRecord] = []
         self._intern: dict[tuple[Any, Any], int] = {}
         self._transitions: dict[tuple[int, int], int | None] = {}
+        self._path_transitions: dict[tuple[int, tuple[int, ...]], int | None] = {}
         self._outgoing: dict[int, CompletionForest] = {}
+        self._rows: dict[int, _TransitionRow] = {}
         # (state, room) -> budget-costing keys (in evaluation order) of a
         # proven-UNSUPPORTED exploration.  Only fully explored, complete-
         # authority None verdicts are stored (see ``terminal_witness``);
@@ -138,6 +162,15 @@ class CompletionSession:
             "scope_reference_scans_avoided": 0,
             "result_cache_hits": 0,
             "result_cache_misses": 0,
+            "transition_rows_built": 0,
+            "transition_rows_lookups": 0,
+            "transition_rows_hits": 0,
+            "transition_rows_misses": 0,
+            "semantic_masks_applied": 0,
+            "edge_replays": 0,
+            "value_tree_clones": 0,
+            "ast_bridge_calls": 0,
+            "general_forest_builds": 0,
         }
 
     # --- introspection ----------------------------------------------------
@@ -154,6 +187,7 @@ class CompletionSession:
 
     def _fork(self, engine: OpenUIIncrementalEngine) -> OpenUIIncrementalEngine:
         self._counters["parser_forks"] += 1
+        self._counters["value_tree_clones"] += 1
         return engine.copy()
 
     def _intern_state(
@@ -162,14 +196,26 @@ class CompletionSession:
         semantic: Any,
         prefix_ids: tuple[int, ...],
     ) -> int:
-        key = (engine.parser_state_key(), semantic)
+        recognition = None
+        recognition_state = getattr(engine, "recognition_state", None)
+        if callable(recognition_state):
+            recognition = recognition_state()
+        key = (
+            (
+                getattr(recognition, "key", None),
+                getattr(recognition, "lexical_junction", None),
+            )
+            if recognition is not None
+            else engine.parser_state_key(),
+            semantic,
+        )
         state_id = self._intern.get(key)
         if state_id is not None:
             self._counters["state_intern_hits"] += 1
             return state_id
         state_id = len(self._states)
         self._intern[key] = state_id
-        self._states.append(_StateRecord(engine, semantic, prefix_ids))
+        self._states.append(_StateRecord(engine, semantic, prefix_ids, recognition))
         self._counters["state_intern_misses"] += 1
         self._counters["unique_states"] += 1
         return state_id
@@ -191,7 +237,9 @@ class CompletionSession:
         ids = tuple(int(token_id) for token_id in prefix_ids)
         semantic = _ss.initial_state(self._tokenizer)
         for token_id in ids:
-            semantic = _ss.advance(semantic, token_id, self._tokenizer, schema=self._schema)
+            semantic = _ss.advance(
+                semantic, token_id, self._tokenizer, schema=self._schema
+            )
         holder_engine = getattr(state, "engine", None) if state is not None else None
         if isinstance(holder_engine, OpenUIIncrementalEngine):
             positioned = self._fork(holder_engine)
@@ -295,11 +343,23 @@ class CompletionSession:
         self, state_id: int, token_ids: tuple[int, ...] | list[int]
     ) -> int | None:
         """Fold ``token_ids`` through :meth:`advance`; ``None`` on rejection."""
+        tokens = tuple(int(token_id) for token_id in token_ids)
+        key = (int(state_id), tokens)
+        cached = self._path_transitions.get(key, _MISSING)
+        if cached is not _MISSING:
+            self._counters["transition_cache_hits"] += 1
+            return cached
+        if int(state_id) in self._rows:
+            self._counters["edge_replays"] += 1
         current: int | None = int(state_id)
-        for token_id in token_ids:
+        for token_id in tokens:
             if current is None:
-                return None
+                break
             current = self.advance(current, int(token_id))
+        self._path_transitions[key] = current
+        row = self._rows.get(int(state_id))
+        if row is not None:
+            row.targets[tokens] = current
         return current
 
     # --- outgoing edges ------------------------------------------------------
@@ -313,11 +373,14 @@ class CompletionSession:
         as the memoizing front).
         """
         state_id = int(state_id)
+        self._counters["transition_rows_lookups"] += 1
         if state is None:
-            cached = self._outgoing.get(state_id)
-            if cached is not None:
+            row = self._rows.get(state_id)
+            if row is not None:
+                self._counters["transition_rows_hits"] += 1
                 self._counters["domain_cache_hits"] += 1
-                return cached
+                return row.forest
+            self._counters["transition_rows_misses"] += 1
         self._counters["domain_cache_misses"] += 1
         record = self._states[state_id]
         engine = None if state is not None else self._fork(record.engine)
@@ -337,10 +400,14 @@ class CompletionSession:
             semantic_state=record.semantic,
             scan_counter=scan_counter,
         )
+        self._counters["general_forest_builds"] += 1
         self._counters["edges_built"] += 1
+        self._counters["semantic_masks_applied"] += 1
         self._counters["scope_reference_scans_avoided"] += scan_counter["avoided"]
         if state is None:
             self._outgoing[state_id] = forest
+            self._rows[state_id] = _TransitionRow(forest, {})
+            self._counters["transition_rows_built"] += 1
         return forest
 
     # --- bounded terminal-witness DP -----------------------------------------
@@ -348,39 +415,22 @@ class CompletionSession:
     def terminal_witness_proof(
         self, state_id: int, room: int
     ) -> tuple[tuple[int, ...] | None, bool]:
-        """Return a witness and whether a missing witness was fully proved.
+        """Iteratively prove SUPPORTED/UNSUPPORTED; ``False`` means UNKNOWN.
 
-        One bounded proof shared across all candidates/positions of the
-        request.  Per-query discipline is exactly V1's (``dsl/pack.py``'s
-        reference ``_tail_from``): a fresh node budget, and a per-query
-        LRU memo (capacity 64, like the reference's ``lru_cache``) whose
-        evictions are behavior-visible — an evicted key is re-evaluated and
-        re-charged.  The session-wide memo stores only *proven-UNSUPPORTED*
-        entries: a ``None`` whose exploration was complete — every expanded
-        node had ``coverage == "complete"`` and no expansion was truncated by
-        budget.  Such a verdict is exact for its ``room`` and for every
-        *smaller* room (reachability is monotone in budget), which is why
-        replaying it can never change a verdict — but it is NOT exact for a
-        *larger* room, so the memo is keyed by the exact ``(state, room)``
-        pair and must never be widened to a ``≤ room`` key.  Each entry
-        carries the budget-costing keys its exploration evaluated, in
-        evaluation order, so a hit charges exactly what V1's fresh evaluation
-        would have charged and refreshes the query LRU in the same order.  A
-        ``None`` produced under a depleted budget or under incomplete
-        authority (UNKNOWN, never UNSUPPORTED — verified-scope-solver law)
-        is never stored, and witness results stay query-local because a
-        cached witness replayed under a smaller fresh budget could prove
-        more than V1.
+        The explicit stack preserves the historical path order, fresh
+        per-query node budget and 64-entry LRU. Session caches are committed
+        only after the whole query returns normally, so a deadline or
+        interrupt can never leave a partial proof behind.
         """
         nodes_left = self._node_budget
-        # Per-query LRU, capacity 64 — mirrors the reference's
-        # ``@lru_cache(maxsize=64)`` including eviction re-charges.
         query_cache: dict[tuple[int, int], tuple[tuple[int, ...] | None, bool]] = {}
         _QUERY_CACHE_CAP = 64
+        pending_reach: dict[tuple[int, int], tuple[tuple[int, int], ...]] = {}
+        pending_witness: dict[
+            tuple[int, int], tuple[tuple[int, ...], tuple[tuple[int, int], ...]]
+        ] = {}
 
-        def _qget(
-            key: tuple[int, int]
-        ) -> tuple[tuple[int, ...] | None, bool] | None:
+        def _qget(key: tuple[int, int]) -> tuple[tuple[int, ...] | None, bool] | None:
             value = query_cache.get(key)
             if value is not None:
                 query_cache[key] = query_cache.pop(key)  # refresh recency
@@ -395,110 +445,167 @@ class CompletionSession:
             while len(query_cache) > _QUERY_CACHE_CAP:
                 query_cache.pop(next(iter(query_cache)))
 
-        def _eval(
-            sid: int, rm: int
+        def _replay(
+            key: tuple[int, int],
+            taxed_keys: tuple[tuple[int, int], ...],
+            witness: tuple[int, ...] | None,
         ) -> tuple[tuple[int, ...] | None, bool, tuple[tuple[int, int], ...]]:
-            """Return (witness|None, proven, budget-costing keys in eval order)."""
             nonlocal nodes_left
-            check_decode_deadline()
-            key = (sid, rm)
-            hit = _qget(key)
-            if hit is not None:
-                return hit[0], hit[1], ()
-            if rm <= 0:
-                # Budget-independent verdict, zero node cost in V1 (the
-                # reference checks ``room`` before decrementing).
-                _qput(key, (None, True))
-                return None, True, ()
-            if nodes_left <= 0:
-                # Depleted-query artifact: never enters the session memo.
-                _qput(key, (None, False))
-                return None, False, ()
-            shared_witness = self._witness.get(key)
-            if shared_witness is not None:
-                self._counters["witness_cache_hits"] += 1
-                witness, taxed_keys = shared_witness
-                charged: list[tuple[int, int]] = []
-                for taxed_key in taxed_keys:
-                    if _qget(taxed_key) is not None:
-                        continue
-                    if nodes_left <= 0:
-                        _qput(key, (None, False))
-                        return None, False, tuple(charged)
-                    nodes_left -= 1
-                    _qput(taxed_key, (None, True))
-                    charged.append(taxed_key)
-                _qput(key, (witness, True))
-                return witness, True, tuple(charged)
-            self._counters["witness_cache_misses"] += 1
-            shared = self._reach.get(key)
-            if shared is not None:
-                self._counters["reachability_cache_hits"] += 1
-                charged = []
-                for taxed_key in shared:
-                    if _qget(taxed_key) is not None:
-                        continue
-                    if nodes_left <= 0:
-                        # V1 spent the fresh budget before completing this
-                        # exact replay: query-local UNKNOWN.
-                        _qput(key, (None, False))
-                        return None, False, tuple(charged)
-                    nodes_left -= 1
-                    _qput(taxed_key, (None, True))
-                    charged.append(taxed_key)
-                return None, True, tuple(charged)
-            self._counters["reachability_cache_misses"] += 1
-            self._counters["witness_states_expanded"] += 1
-            nodes_left -= 1
-            forest = self.outgoing(sid)
-            if forest.coverage != "complete":
-                # UNKNOWN, not UNSUPPORTED: partial authority proves nothing
-                # either way (verified-scope-solver law — unknown never
-                # removes).  The verdict is query-local only; it must NEVER
-                # enter the session memo, or a transiently incomplete
-                # authority becomes a session-permanent, cross-candidate
-                # false UNSUPPORTED.  A later query with repaired authority
-                # re-expands this node.
-                _qput(key, (None, False))
-                return None, False, ()
-            proven = True
-            taxed: list[tuple[int, int]] = [key]
-            for path in forest.paths:
-                tokens = tuple(int(token_id) for token_id in path.token_ids)
-                if not tokens:
-                    raise ValueError("completion graph edges must consume a token")
-                if len(tokens) > rm:
+            charged: list[tuple[int, int]] = []
+            for taxed_key in taxed_keys:
+                if _qget(taxed_key) is not None:
                     continue
-                if path.kind == "eos":
-                    _qput(key, (tokens, True))
-                    stored = tuple(taxed)
-                    self._witness[key] = (tokens, stored)
-                    return tokens, True, stored
-                child = self.advance_path(sid, tokens)
-                if child is None:
-                    continue
-                witness, child_proven, child_taxed = _eval(child, rm - len(tokens))
-                if witness is not None:
-                    result = tokens + witness
-                    _qput(key, (result, True))
-                    stored = tuple([*taxed, *child_taxed])
-                    self._witness[key] = (result, stored)
-                    return result, True, stored
-                proven = proven and child_proven
-                taxed.extend(child_taxed)
-            _qput(key, (None, proven))
-            if proven:
-                stored = tuple(taxed)
-                self._reach[key] = stored
-                return None, True, stored
-            return None, False, ()
+                if nodes_left <= 0:
+                    _qput(key, (None, False))
+                    return None, False, tuple(charged)
+                nodes_left -= 1
+                _qput(taxed_key, (None, True))
+                charged.append(taxed_key)
+            _qput(key, (witness, True))
+            return witness, True, tuple(charged)
 
-        witness, proven, _ = _eval(int(state_id), int(room))
+        @dataclass
+        class _Frame:
+            sid: int
+            rm: int
+            key: tuple[int, int]
+            paths: tuple[Any, ...]
+            index: int = 0
+            proven: bool = True
+            taxed: list[tuple[int, int]] | None = None
+            pending_tokens: tuple[int, ...] | None = None
+
+        stack: list[_Frame] = []
+        request: tuple[int, int] | None = (int(state_id), int(room))
+        result: (
+            tuple[tuple[int, ...] | None, bool, tuple[tuple[int, int], ...]] | None
+        ) = None
+
+        while request is not None or stack or result is not None:
+            if request is not None:
+                check_decode_deadline()
+                sid, rm = request
+                request = None
+                key = (sid, rm)
+                hit = _qget(key)
+                if hit is not None:
+                    result = (hit[0], hit[1], ())
+                elif rm <= 0:
+                    _qput(key, (None, True))
+                    result = (None, True, ())
+                elif nodes_left <= 0:
+                    _qput(key, (None, False))
+                    result = (None, False, ())
+                elif (shared := self._witness.get(key)) is not None:
+                    self._counters["witness_cache_hits"] += 1
+                    result = _replay(key, shared[1], shared[0])
+                elif (shared_reach := self._reach.get(key)) is not None:
+                    self._counters["witness_cache_misses"] += 1
+                    self._counters["reachability_cache_hits"] += 1
+                    result = _replay(key, shared_reach, None)
+                else:
+                    self._counters["witness_cache_misses"] += 1
+                    self._counters["reachability_cache_misses"] += 1
+                    self._counters["witness_states_expanded"] += 1
+                    nodes_left -= 1
+                    forest = self.outgoing(sid)
+                    if forest.coverage != "complete":
+                        _qput(key, (None, False))
+                        result = (None, False, ())
+                    else:
+                        stack.append(
+                            _Frame(
+                                sid,
+                                rm,
+                                key,
+                                forest.paths,
+                                taxed=[key],
+                            )
+                        )
+
+            if result is not None:
+                if not stack:
+                    break
+                parent = stack[-1]
+                tokens = parent.pending_tokens
+                if tokens is None:
+                    # The result belongs to a root request whose frame was
+                    # satisfied immediately.
+                    break
+                witness, child_proven, child_taxed = result
+                result = None
+                parent.pending_tokens = None
+                assert parent.taxed is not None
+                parent.taxed.extend(child_taxed)
+                if witness is not None:
+                    combined = tokens + witness
+                    stored = tuple(parent.taxed)
+                    _qput(parent.key, (combined, True))
+                    pending_witness[parent.key] = (combined, stored)
+                    stack.pop()
+                    result = (combined, True, stored)
+                else:
+                    parent.proven = parent.proven and child_proven
+
+            if result is None and stack:
+                frame = stack[-1]
+                scheduled = False
+                while frame.index < len(frame.paths):
+                    path = frame.paths[frame.index]
+                    frame.index += 1
+                    tokens = tuple(int(token_id) for token_id in path.token_ids)
+                    if not tokens:
+                        raise ValueError("completion graph edges must consume a token")
+                    if len(tokens) > frame.rm:
+                        continue
+                    if path.kind == "eos":
+                        assert frame.taxed is not None
+                        stored = tuple(frame.taxed)
+                        _qput(frame.key, (tokens, True))
+                        pending_witness[frame.key] = (tokens, stored)
+                        stack.pop()
+                        result = (tokens, True, stored)
+                        break
+                    child = self.advance_path(frame.sid, tokens)
+                    if child is None:
+                        continue
+                    frame.pending_tokens = tokens
+                    request = (child, frame.rm - len(tokens))
+                    scheduled = True
+                    break
+                else:
+                    assert frame.taxed is not None
+                    stored = tuple(frame.taxed)
+                    _qput(frame.key, (None, frame.proven))
+                    if frame.proven:
+                        pending_reach[frame.key] = stored
+                        result = (None, True, stored)
+                    else:
+                        result = (None, False, ())
+                    stack.pop()
+                if scheduled:
+                    continue
+
+        if result is None:
+            result = (None, False, ())
+        witness, proven, _ = result
+        self._reach.update(pending_reach)
+        self._witness.update(pending_witness)
         return witness, proven
 
     def terminal_witness(self, state_id: int, room: int) -> tuple[int, ...] | None:
         """First-in-path-order terminal witness within ``room`` tokens, or None."""
         return self.terminal_witness_proof(state_id, room)[0]
+
+    def terminal_witness_verdict(self, state_id: int, room: int) -> WitnessProof:
+        """Tri-state facade: incomplete authority is UNKNOWN, never rejection."""
+        witness, proven = self.terminal_witness_proof(state_id, room)
+        verdict = (
+            WitnessVerdict.SUPPORTED
+            if witness is not None
+            else (WitnessVerdict.UNSUPPORTED if proven else WitnessVerdict.UNKNOWN)
+        )
+        return WitnessProof(witness, verdict)
 
     # --- forced singleton closure ---------------------------------------------
 

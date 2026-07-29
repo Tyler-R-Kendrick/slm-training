@@ -552,29 +552,24 @@ class OpenUIIncrementalEngine:
         """Exact LALR accepts for ``stack`` without callbacks or value trees."""
         if self._ip is None or not stack:
             return frozenset()
-        key = (self._resolved, stack)
+        # Keep recognition trials separate from InteractiveParser.accepts().
+        # A recognition snapshot intentionally has no value stack, so sharing
+        # its memo entry could silently replace the canonical accepts set.
+        key = (f"recognition:{self._resolved}", stack)
         cached = _ACCEPTS_MEMO.get(key)
         if cached is not None:
             return cached
         base_conf = self._ip.parser_state.parse_conf
         conf = _shallow_copy(base_conf)
         conf.callbacks = {}
-        accepted: set[str] = set()
-        for terminal in conf.states[stack[-1]]:
-            if not str(terminal).isupper():
-                continue
-            trial = type(self._ip.parser_state)(
-                conf,
-                self._ip.parser_state.lexer,
-                list(stack),
-                [None] * (len(stack) - 1),
-            )
-            try:
-                trial.feed_token(Token(str(terminal), ""))
-            except UnexpectedToken:
-                continue
-            accepted.add(str(terminal))
-        result = frozenset(accepted)
+        state = type(self._ip.parser_state)(
+            conf,
+            self._ip.parser_state.lexer,
+            list(stack),
+            [None] * (len(stack) - 1),
+        )
+        cursor = type(self._ip)(self._ip.parser, state, self._ip.lexer_thread)
+        result = frozenset(str(terminal) for terminal in cursor.accepts())
         if len(_ACCEPTS_MEMO) >= _ACCEPTS_MEMO_CAP:
             _ACCEPTS_MEMO.clear()
         _ACCEPTS_MEMO[key] = result
