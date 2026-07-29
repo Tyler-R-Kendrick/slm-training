@@ -63,6 +63,29 @@ warm zero
 full-prefix lexical bytes, warm zero candidate-engine allocations, and the
 declared latency thresholds. AgentV passed 13/13 with no execution errors.
 
+The first reconciliation run (`79a9dadf`) deliberately remains negative
+evidence. Its new batch-two compiler arm was exact, compacted 10 neural calls to
+5 at the same 10-row volume, and measured 1.030x faster, but the suite passed
+only 16/17 criteria because cold `root` measured 7.05 ms V1 versus 8.74 ms
+packed. The new multi-second neural fixture had been placed before the existing
+microbenchmarks and changed their preconditions. A locked successor moves only
+that fixture after the upstream measurements; the failed AgentV bundle is
+retained in
+[`completion-kernel-perf-agentv-20260729-reconciled/`](completion-kernel-perf-agentv-20260729-reconciled/).
+
+After moving only the new fixture behind the unchanged upstream measurements,
+the clean v7 successor passed 17/17. Warm hard-prefix reuse measured 89.81x,
+choice cold bounded-distance 22.01x, solver 1.032x, and equivalent-row compiler
+wall/compiler time 31.06x/566.22x; singleton decode still made zero neural
+forwards. Cold empty and `root` passed at 0.902x and 0.957x.
+
+The batch-two path preserved exact output and row volume while reducing neural
+calls from 10 to 5. On this CPU fixture, compact execution was 2,743.42 ms
+versus 2,636.95 ms sequential (0.961x), so it is a call-compaction result, not
+a latency win. It cleared the preregistered <=15% regression guard. Full
+17-case traces are retained in
+[`completion-kernel-perf-agentv-20260729-reconciled-v2/`](completion-kernel-perf-agentv-20260729-reconciled-v2/).
+
 The Amdahl boundary is explicit: cold hard-prefix construction remains about
 19% slower because parser-state interning and control forks have not amortized.
 The ≥10× gate is explicitly the primed persistent-row session with its
