@@ -8595,12 +8595,17 @@
       ]
     },
     "matrix.perf": {
-      "version": "v4",
+      "version": "v5",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-29",
+          "note": "After excluded result and graph-only warmups, gate direct completion on measured rebuild-work deltas; independently calibrate per-arm power-of-two bundles to the timing floor so large speedups remain within the hard run cap."
+        },
         {
           "version": "v4",
           "date": "2026-07-29",
@@ -9366,7 +9371,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v265",
+      "version": "v266",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9414,6 +9419,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v266",
+          "date": "2026-07-29",
+          "note": "Replay complete-authority node-budget UNKNOWN schedules and build lazy tree-free recognition rows without parser clones; preserve exact fresh-budget tri-state proofs and materialize semantic endpoints only when traversed."
+        },
         {
           "version": "v265",
           "date": "2026-07-29",

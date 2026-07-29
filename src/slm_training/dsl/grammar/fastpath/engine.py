@@ -623,6 +623,54 @@ class OpenUIIncrementalEngine:
             return frozenset()
         return state.terminals
 
+    def recognition_deterministic_next(
+        self, snapshot: RecognitionSnapshot
+    ) -> str | None:
+        """Return the exact forced structural text for a tree-free snapshot."""
+        if snapshot._grammar_fingerprint != self._fingerprint:
+            return None
+        ignorable = frozenset({"$END", "WS_INLINE", "COMMENT", "_NL"})
+        meaningful = snapshot.terminals - ignorable
+        if len(meaningful) != 1:
+            return None
+        term = next(iter(meaningful))
+        if term in _BROAD:
+            return None
+        return _TERM_TO_TEXT.get(term)
+
+    def recognition_from_text(self, prefix: str) -> RecognitionSnapshot | None:
+        """Build the exact callback-free recognition state for source text."""
+        try:
+            tokens, _trimmed = self._lex_tokens_report(prefix)
+            if tokens is None:
+                return None
+            cursor = self._parser.parse_interactive()
+            base = cursor.parser_state
+            conf = _shallow_copy(base.parse_conf)
+            conf.callbacks = {}
+            state = type(base)(
+                conf,
+                base.lexer,
+                list(base.state_stack),
+                [None] * (len(base.state_stack) - 1),
+            )
+            last_terminal = None
+            for token in tokens:
+                state.feed_token(token)
+                last_terminal = str(token.type)
+            snapshot = self._make_recognition_snapshot(
+                tuple(int(item) for item in state.state_stack),
+                None,
+                last_terminal,
+            )
+        except (TimeoutError, KeyboardInterrupt):
+            raise
+        except Exception:
+            self.recognition_unsupported += 1
+            return None
+        self.recognition_snapshots += 1
+        return snapshot
+
     def _recognition_feed_terminal(
         self,
         snapshot: RecognitionSnapshot,

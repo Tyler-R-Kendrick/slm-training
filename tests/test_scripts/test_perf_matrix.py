@@ -1,11 +1,13 @@
 import argparse
 import json
+import time
 
 import pytest
 
 from scripts.run_perf_matrix import (
     _COMPLETION_REQUIRED_WORKLOADS,
     _completion_fixture_digest,
+    _completion_solver_bench,
     _guardrails,
     _median_mad,
     _merge_completion_shards,
@@ -50,7 +52,7 @@ def test_completion_pairing_alternates_and_records_stable_stats() -> None:
         ["reference", "packed"],
         ["packed", "reference"],
     ]
-    assert measured["bundle_size"] == 1
+    assert measured["bundle_sizes"] == {"reference": 1, "packed": 1}
     assert measured["pair_count"] == 4
     assert measured["output_digest"]
     median, mad = _median_mad([1.0, 2.0, 3.0])
@@ -61,6 +63,32 @@ def test_completion_pairing_alternates_and_records_stable_stats() -> None:
 def test_completion_pairing_fails_on_any_output_mismatch() -> None:
     with pytest.raises(AssertionError, match="parity mismatch"):
         _paired_measure(lambda: {"v": 1}, lambda: {"v": 2}, 1, min_sample_ns=0)
+
+
+def test_completion_pairing_calibrates_arm_bundles_independently() -> None:
+    def slower():
+        time.sleep(0.002)
+        return {"v": 1}
+
+    measured = _paired_measure(
+        slower,
+        lambda: {"v": 1},
+        1,
+        min_sample_ns=1_000_000,
+    )
+
+    assert measured["bundle_sizes"]["reference"] == 1
+    assert measured["bundle_sizes"]["packed"] > 1
+
+
+def test_completion_solver_gate_counts_only_warmed_root_successors() -> None:
+    result = _completion_solver_bench(1)
+
+    assert result["correct"] is True
+    assert result["cached_root_successors"] == result["n"] == 14
+    assert result["cached_successors_after_replay"] > result["cached_root_successors"]
+    assert result["certificate_replay_failures"] == 0
+    assert result["pass"] is True
 
 
 def _write_completion_shards(tmp_path, *, dirty=False, mixed_commit=False) -> argparse.Namespace:

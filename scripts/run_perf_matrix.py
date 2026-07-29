@@ -101,22 +101,24 @@ def _paired_measure(
     """Measure alternating paired arms and verify every invocation."""
     reference_pilot = reference_fn()
     packed_pilot = packed_fn()
-    if _result_digest(reference_pilot) != _result_digest(packed_pilot):
+    expected_digest = _result_digest(reference_pilot)
+    if expected_digest != _result_digest(packed_pilot):
         raise AssertionError("completion benchmark pilot parity mismatch")
 
-    bundle_size = 1
-    while True:
-        reference_ns, reference_digests, reference_value = _timed_bundle(
-            reference_fn, bundle_size
-        )
-        packed_ns, packed_digests, packed_value = _timed_bundle(
-            packed_fn, bundle_size
-        )
-        if reference_digests != packed_digests:
-            raise AssertionError("completion benchmark bundle parity mismatch")
-        if min(reference_ns, packed_ns) >= min_sample_ns:
-            break
-        bundle_size *= 2
+    def calibrated_bundle(fn) -> int:
+        bundle_size = 1
+        while True:
+            elapsed_ns, digests, _ = _timed_bundle(fn, bundle_size)
+            if any(digest != expected_digest for digest in digests):
+                raise AssertionError("completion benchmark bundle parity mismatch")
+            if elapsed_ns >= min_sample_ns:
+                return bundle_size
+            bundle_size *= 2
+
+    bundle_sizes = {
+        "reference": calibrated_bundle(reference_fn),
+        "packed": calibrated_bundle(packed_fn),
+    }
 
     pairs: list[dict[str, Any]] = []
     reference_samples: list[float] = []
@@ -128,16 +130,18 @@ def _paired_measure(
         for arm in order:
             measured[arm] = _timed_bundle(
                 reference_fn if arm == "reference" else packed_fn,
-                bundle_size,
+                bundle_sizes[arm],
             )
         reference_ns, reference_digests, reference_value = measured["reference"]
         packed_ns, packed_digests, packed_value = measured["packed"]
-        if reference_digests != packed_digests:
+        if any(digest != expected_digest for digest in reference_digests) or any(
+            digest != expected_digest for digest in packed_digests
+        ):
             raise AssertionError(
                 f"completion benchmark pair {index} parity mismatch"
             )
-        reference_ns_op = reference_ns / bundle_size
-        packed_ns_op = packed_ns / bundle_size
+        reference_ns_op = reference_ns / bundle_sizes["reference"]
+        packed_ns_op = packed_ns / bundle_sizes["packed"]
         reference_samples.append(reference_ns_op)
         packed_samples.append(packed_ns_op)
         pairs.append(
@@ -149,7 +153,7 @@ def _paired_measure(
                 "packed_over_reference": round(
                     packed_ns_op / reference_ns_op, 6
                 ),
-                "output_digest": reference_digests[-1],
+                "output_digest": expected_digest,
             }
         )
 
@@ -162,7 +166,7 @@ def _paired_measure(
     )
     return {
         "pair_count": pair_count,
-        "bundle_size": bundle_size,
+        "bundle_sizes": bundle_sizes,
         "pilot_excluded": True,
         "minimum_sample_ns": min_sample_ns,
         "pairs": pairs,
@@ -244,6 +248,11 @@ def _completion_direct_bench(repeats: int) -> dict[str, Any]:
             session._results.clear()  # benchmark the graph/DP, not result replay
         return _openui_completion_domain(packed_request)
 
+    # Exclude both full-result construction and the first graph-only replay.
+    # The measured arm starts only after its reusable transition/proof rows exist.
+    packed_graph_query()
+    session = getattr(packed_request.state, "completion_session", None)
+    counters_before = session.stats() if session is not None else {}
     measurement = _paired_measure(
         lambda: _openui_completion_domain_reference(reference_request),
         packed_graph_query,
@@ -252,9 +261,18 @@ def _completion_direct_bench(repeats: int) -> dict[str, Any]:
     reference = measurement.pop("reference_value")
     packed = measurement.pop("packed_value")
     session = getattr(packed_request.state, "completion_session", None)
-    counters = session.stats() if session is not None else {}
+    counters_after = session.stats() if session is not None else {}
+    counters = {
+        key: counters_after.get(key, 0) - counters_before.get(key, 0)
+        for key in sorted(counters_after.keys() | counters_before.keys())
+    }
     correct = packed == reference and len(packed.candidates) == 12
-    work_ok = counters.get("general_forest_fallbacks", 0) == 0
+    work_ok = (
+        counters.get("general_forest_builds", 0) == 0
+        and counters.get("value_tree_clones", 0) == 0
+        and counters.get("edge_replays", 0) == 0
+        and counters.get("witness_states_expanded", 0) == 0
+    )
     return {
         "n": 1,
         "prefix": "root = Card([b1,",
@@ -263,7 +281,8 @@ def _completion_direct_bench(repeats: int) -> dict[str, Any]:
         "correct": correct,
         "gate": (
             "exact 12-path parity, stable paired speedup >= 10, "
-            "and zero supported-path general forest fallbacks"
+            "and zero measured forest builds, tree clones, edge replays, "
+            "or witness-state expansions"
         ),
         "pass": bool(
             correct
@@ -570,13 +589,14 @@ def _completion_solver_bench(repeats: int) -> dict[str, Any]:
                         "coverage": forest.coverage,
                         "program_digest": None,
                         "next_state": state_payload(child),
-                        "detail": None,
+                        "detail": "",
                     }
                 )
         return rows
 
     # Populate each request-local successor once; timed packed calls are cache hits.
     packed()
+    cached_root_successors = len(packed_expander._successors)
     measurement = _paired_measure(reference, packed, repeats)
     reference_rows = measurement.pop("reference_value")
     packed_rows = measurement.pop("packed_value")
@@ -622,7 +642,8 @@ def _completion_solver_bench(repeats: int) -> dict[str, Any]:
         "reference_nonempty": bool(reference_rows),
         "packed_nonempty": bool(packed_rows),
         "correct": correct,
-        "cached_successors": len(packed_expander._successors),
+        "cached_root_successors": cached_root_successors,
+        "cached_successors_after_replay": len(packed_expander._successors),
         "certificates": certificates,
         "certificate_replay_failures": replay_failures,
         "gate": (
@@ -634,7 +655,7 @@ def _completion_solver_bench(repeats: int) -> dict[str, Any]:
             and packed_rows
             and correct
             and replay_failures == 0
-            and len(packed_expander._successors) == unique_successors
+            and cached_root_successors == unique_successors
             and not measurement["unstable"]
             and measurement["packed_over_reference"] <= 1.0
         ),
@@ -729,9 +750,14 @@ def _completion_decode_bench(repeats: int, device: str) -> dict[str, Any]:
     measurement = _paired_measure(reference_run, packed_run, repeats)
     reference_value = measurement.pop("reference_value")
     packed_value = measurement.pop("packed_value")
-    measured_invocations = measurement["pair_count"] * measurement["bundle_size"]
-    reference_stats = stats_by_arm["reference"][-measured_invocations:]
-    packed_stats_rows = stats_by_arm["packed"][-measured_invocations:]
+    reference_invocations = (
+        measurement["pair_count"] * measurement["bundle_sizes"]["reference"]
+    )
+    packed_invocations = (
+        measurement["pair_count"] * measurement["bundle_sizes"]["packed"]
+    )
+    reference_stats = stats_by_arm["reference"][-reference_invocations:]
+    packed_stats_rows = stats_by_arm["packed"][-packed_invocations:]
     reference_compiler_ms = statistics.median(
         row.compiler_ms for row in reference_stats
     )

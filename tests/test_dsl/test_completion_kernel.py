@@ -231,6 +231,21 @@ def test_node_budget_matches_reference(packed_graph: dict) -> None:
             assert got == want, f"{start=} {room=}: {got=} != {want=}"
 
 
+def test_budget_unknown_replays_exact_fresh_charge(packed_graph: dict) -> None:
+    session = _GraphSession(packed_graph, node_budget=2)
+    assert session.terminal_witness(session.sid("A"), 8) is None
+    expanded = session.stats()["witness_states_expanded"]
+    assert session._budget_unknown
+    assert session.terminal_witness(session.sid("A"), 8) is None
+    assert session.stats()["witness_states_expanded"] == expanded
+    assert session.stats()["budget_unknown_cache_hits"] == 1
+    # The node budget is proof authority and therefore part of the cache key.
+    session._node_budget = 16
+    assert session.terminal_witness(session.sid("A"), 8) == _bruteforce(
+        packed_graph, "A", 8
+    )
+
+
 def test_rejected_edge_is_skipped(packed_graph: dict) -> None:
     session = _GraphSession(packed_graph)
     assert session.terminal_witness(session.sid("K"), 8) is None
@@ -312,12 +327,20 @@ def test_session_counters_and_warm_allocation(tok: DSLNativeTokenizer) -> None:
     assert session._rows[seed].targets[first.paths[0].token_ids] == child
     again = session.advance_path(seed, first.paths[0].token_ids)
     assert again == child
+    sequential = seed
+    for token_id in first.paths[0].token_ids:
+        sequential = session.advance(sequential, token_id)
+        assert sequential is not None
+    assert session.prefix_ids_of(sequential) == (
+        *session.prefix_ids_of(seed),
+        *first.paths[0].token_ids,
+    )
     stats = session.stats()
     assert stats["transition_cache_hits"] >= 1
     assert stats["transition_rows_built"] == 1
     assert stats["transition_rows_hits"] == 1
     assert stats["semantic_masks_applied"] == 1
-    assert stats["edge_replays"] == 1
+    assert stats["edge_replays"] == 0
     assert stats["ast_bridge_calls"] == 0
     assert stats["direct_terminal_feeds"] > 0
     # Warm kernel queries fork interned engines; they never construct fresh
@@ -588,6 +611,37 @@ def test_decode_state_reuses_one_session_across_positions(
     assert stats.completion_transition_cache_hits > 0
 
 
+def test_warm_direct_query_replays_no_general_work(
+    tok: DSLNativeTokenizer,
+) -> None:
+    from slm_training.dsl.grammar_capabilities import CompletionDomainRequestV1
+    from slm_training.dsl.pack import _openui_completion_domain
+
+    ids = tuple(
+        [tok.bos_id, *tok.encode("root = Card([b1,", add_special=False)]
+    )
+    request = CompletionDomainRequestV1(
+        prefix_ids=ids,
+        tokenizer=tok,
+        slot_contract=(":slot_0", ":slot_1"),
+        remaining_tokens=32,
+        state=make_grammar_state(),
+    )
+    first = _openui_completion_domain(request)
+    assert len(first.candidates) == 12
+    session = request.state.completion_session
+    # First graph-only replay records complete-authority budget UNKNOWN plans.
+    session._results.clear()
+    assert _openui_completion_domain(request) == first
+    session._results.clear()
+    before = session.stats()
+    assert _openui_completion_domain(request) == first
+    after = session.stats()
+    assert after["budget_unknown_cache_hits"] - before["budget_unknown_cache_hits"] == 2
+    for counter in ("general_forest_builds", "value_tree_clones", "edge_replays"):
+        assert after[counter] == before[counter]
+
+
 def test_domain_parity_context_variants(tok: DSLNativeTokenizer) -> None:
     ids = [tok.bos_id, *tok.encode('root = Callout("info", ', add_special=False)]
     for kw in ({"min_content": 2}, {"max_path_tokens": 4}, {"explain": True}):
@@ -637,6 +691,7 @@ def test_twit4_timeout_mid_exploration_propagates_and_poisons_nothing(
         session.terminal_witness(session.sid("A"), 8)
     assert session._reach == {}
     assert session._witness == {}
+    assert session._budget_unknown == {}
     assert session._forced == {}
     monkeypatch.setattr(kernel_mod, "check_decode_deadline", lambda: None)
     # A fresh query recomputes cleanly and agrees with the reference.

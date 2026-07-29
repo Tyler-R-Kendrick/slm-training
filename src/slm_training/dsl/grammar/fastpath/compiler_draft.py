@@ -15,6 +15,7 @@ from slm_training.dsl.grammar.fastpath.token_map import (
     allowed_id_set,
     apply_literal_frame,
     decode_prefix,
+    string_to_token_ids,
     token_surface_piece as _token_piece,
 )
 
@@ -1680,6 +1681,8 @@ def _build_openui_completion_forest_impl(
     explain: bool = False,
     semantic_state: Any | None = None,
     scan_counter: Any | None = None,
+    recognition_snapshot: Any | None = None,
+    transition_snapshots: dict[tuple[int, ...], Any] | None = None,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
 
@@ -1815,13 +1818,18 @@ def _build_openui_completion_forest_impl(
     # though its internal text is not byte-identical to ``prefix_text`` — skip
     # the full re-lex.  ``engine_in_sync`` never widens this: any doubt falls
     # through to the canonical ``set_prefix`` below.
-    ids_synced = (
+    ids_synced = recognition_snapshot is not None or (
         state is not None
         and getattr(state, "engine", None) is engine
         and callable(getattr(state, "engine_in_sync", None))
         and bool(state.engine_in_sync(prefix_ids, prefix_text))
     )
-    if not ids_synced and not engine.set_prefix(prefix_text) and prefix_text.strip():
+    if (
+        recognition_snapshot is None
+        and not ids_synced
+        and not engine.set_prefix(prefix_text)
+        and prefix_text.strip()
+    ):
         if evidence is not None:
             summary = ConstraintEvidenceSummary("none", 0, 0, 0, ())
             return CompletionForest((), "none", (), (), summary)
@@ -1925,7 +1933,11 @@ def _build_openui_completion_forest_impl(
         _bump()
         return _ss.literal_frame_is_open(sstate)
 
-    terminals = engine.next_terminals()
+    terminals = (
+        engine.recognition_terminals(recognition_snapshot)
+        if recognition_snapshot is not None
+        else engine.next_terminals()
+    )
     candidates = allowed_id_set(tokenizer, terminals) or set()
     before_stage = _snapshot()
     if prefix_ids and tokenizer.id_to_token.get(int(prefix_ids[-1])) == "NL":
@@ -2541,8 +2553,9 @@ def _build_openui_completion_forest_impl(
         # below is then a same-text no-op, so the branch behaves exactly like
         # a fresh full sync.  P3: when the parent is direct-feed id-synced the
         # fork inherits that exact state, so the text sync is skipped outright.
-        branch = engine.copy()
-        if not ids_synced and not branch.set_prefix(prefix_text):
+        branch = None if recognition_snapshot is not None else engine.copy()
+        branch_recognition = recognition_snapshot
+        if branch is not None and not ids_synced and not branch.set_prefix(prefix_text):
             _record_one(
                 ConstraintStage.GRAMMAR,
                 "branch_prefix_rejected",
@@ -2554,8 +2567,35 @@ def _build_openui_completion_forest_impl(
         admitted = True
         opened_literal_frame = _literal_frame_open_view()
         crossed_literal_boundary = False
+        recognition_prefix: list[int] = []
         for token_id in sequence:
             raw = str(tokenizer.id_to_token.get(int(token_id), ""))
+            if branch_recognition is not None:
+                piece = _token_piece(tokenizer, int(token_id))
+                if raw in {"LIT_STR", "LIT_NUM", "LIT_END"}:
+                    admitted = True
+                elif sstate.literal_kind:
+                    branch_text += piece
+                    branch_recognition = engine.recognition_from_text(branch_text)
+                    admitted = branch_recognition is not None
+                else:
+                    advanced = engine.recognition_advance(
+                        branch_recognition, tokenizer, int(token_id)
+                    )
+                    admitted = advanced.status.value == "accepted"
+                    branch_recognition = advanced.snapshot if admitted else None
+                if not admitted:
+                    break
+                recognition_prefix.append(int(token_id))
+                if transition_snapshots is not None:
+                    transition_snapshots[tuple(recognition_prefix)] = branch_recognition
+                if raw in {"LIT_STR", "LIT_NUM"}:
+                    opened_literal_frame = True
+                    crossed_literal_boundary = True
+                elif raw == "LIT_END":
+                    opened_literal_frame = False
+                    crossed_literal_boundary = True
+                continue
             if raw in {"LIT_STR", "LIT_NUM"}:
                 opened_literal_frame = True
                 crossed_literal_boundary = True
@@ -2567,13 +2607,19 @@ def _build_openui_completion_forest_impl(
             piece = _token_piece(tokenizer, int(token_id))
             # Single-pass test-and-commit: same accept/reject outcome as the
             # probe_chunk + advance pair, with one lex and one delta feed.
+            assert branch is not None
             admitted = branch.advance_checked(piece)
             if not admitted:
                 break
             branch_text += piece
         # InteractiveParser accepted the edge and exposes at least one follow
         # terminal, which is the exact CFG reachability guarantee we need.
-        if not admitted or not branch.next_terminals():
+        branch_terminals = (
+            engine.recognition_terminals(branch_recognition)
+            if branch_recognition is not None
+            else (branch.next_terminals() if branch is not None else frozenset())
+        )
+        if not admitted or not branch_terminals:
             _record_one(
                 ConstraintStage.GRAMMAR, "branch_unreachable", candidate, admitted=False
             )
@@ -2590,15 +2636,39 @@ def _build_openui_completion_forest_impl(
             and not crossed_literal_boundary
             and len(drafted) < max_path_tokens
         ):
-            forced = force_next_token_id(
-                branch, tokenizer, branch_text, assume_synced=branch_synced
-            )
+            if branch_recognition is not None:
+                forced_text = engine.recognition_deterministic_next(branch_recognition)
+                forced_ids = (
+                    string_to_token_ids(tokenizer, forced_text)
+                    if forced_text is not None
+                    else ()
+                )
+                forced = int(forced_ids[0]) if len(forced_ids) == 1 else None
+            else:
+                assert branch is not None
+                forced = force_next_token_id(
+                    branch, tokenizer, branch_text, assume_synced=branch_synced
+                )
             if forced is None or forced in specials:
                 break
             drafted.append(int(forced))
             piece = _token_piece(tokenizer, forced)
             branch_text += piece
-            branch_synced = bool(branch.advance_checked(piece))
+            if branch_recognition is not None:
+                advanced = engine.recognition_advance(
+                    branch_recognition, tokenizer, int(forced)
+                )
+                if advanced.status.value != "accepted":
+                    break
+                branch_recognition = advanced.snapshot
+                recognition_prefix.append(int(forced))
+                if transition_snapshots is not None:
+                    transition_snapshots[tuple(recognition_prefix)] = branch_recognition
+            else:
+                assert branch is not None
+                branch_synced = bool(branch.advance_checked(piece))
+        if transition_snapshots is not None and branch_recognition is not None:
+            transition_snapshots[tuple(drafted)] = branch_recognition
         paths.append(
             CompletionPath(
                 tuple(drafted),

@@ -226,10 +226,12 @@ def test_successor_reuses_session_without_new_engine_allocations(
     for value in hole.values:
         expander.successor(root, hole.hole_id, value)
     stats = expander._session.stats()
-    # Warm successor queries fork interned engines; they never construct
-    # fresh OpenUIIncrementalEngine instances beyond the root seed.
+    # Warm successor queries use verified row targets; they neither construct
+    # fresh engines nor replay/copy parser trees.
     assert stats["candidate_engine_allocations"] == allocations_after_root
-    assert stats["transition_cache_misses"] > 0
+    assert stats["transition_cache_misses"] == 0
+    assert stats["value_tree_clones"] == 0
+    assert stats["edge_replays"] == 0
     assert stats["unique_states"] >= 2
 
 

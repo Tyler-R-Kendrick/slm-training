@@ -76,7 +76,14 @@ class _TransitionRow:
     """One request-local static row plus lazily verified edge targets."""
 
     forest: CompletionForest
-    targets: dict[tuple[int, ...], int | None]
+    targets: dict[tuple[int, ...], int | _RecognitionTarget | None]
+
+
+@dataclass(frozen=True)
+class _RecognitionTarget:
+    """A verified tree-free endpoint, materialized only when traversed."""
+
+    snapshot: Any
 
 
 class CompletionSession:
@@ -135,6 +142,12 @@ class CompletionSession:
         self._witness: dict[
             tuple[int, int], tuple[tuple[int, ...], tuple[tuple[int, int], ...]]
         ] = {}
+        # Complete-authority searches that consume the fresh node budget may
+        # replay that exact charge schedule. They remain UNKNOWN (never a
+        # negative proof); incomplete-authority UNKNOWN is never cached.
+        self._budget_unknown: dict[
+            tuple[int, int, int], tuple[tuple[int, int], ...]
+        ] = {}
         self._forced: dict[tuple[int, int], tuple[tuple[int, ...], int, str]] = {}
         self._results: dict[tuple[int, int, str], Any] = {}
         self._counters: dict[str, int] = {
@@ -152,6 +165,8 @@ class CompletionSession:
             "witness_cache_hits": 0,
             "witness_cache_misses": 0,
             "witness_states_expanded": 0,
+            "budget_unknown_cache_hits": 0,
+            "budget_unknown_cache_misses": 0,
             "forced_closure_hits": 0,
             "forced_closure_tokens": 0,
             "direct_terminal_feeds": 0,
@@ -195,11 +210,13 @@ class CompletionSession:
         engine: OpenUIIncrementalEngine,
         semantic: Any,
         prefix_ids: tuple[int, ...],
+        *,
+        recognition: Any | None = None,
     ) -> int:
-        recognition = None
-        recognition_state = getattr(engine, "recognition_state", None)
-        if callable(recognition_state):
-            recognition = recognition_state()
+        if recognition is None:
+            recognition_state = getattr(engine, "recognition_state", None)
+            if callable(recognition_state):
+                recognition = recognition_state()
         key = (
             (
                 getattr(recognition, "key", None),
@@ -242,9 +259,9 @@ class CompletionSession:
             )
         holder_engine = getattr(state, "engine", None) if state is not None else None
         if isinstance(holder_engine, OpenUIIncrementalEngine):
-            positioned = self._fork(holder_engine)
+            positioned = holder_engine
         elif isinstance(engine, OpenUIIncrementalEngine):
-            positioned = self._fork(engine)
+            positioned = engine
         else:
             self._counters["candidate_engine_allocations"] += 1
             positioned = OpenUIIncrementalEngine()
@@ -316,7 +333,49 @@ class CompletionSession:
             self._counters["transition_cache_hits"] += 1
             return cached
         self._counters["transition_cache_misses"] += 1
+        row = self._rows.get(int(state_id))
+        targets = row.targets if row is not None else {}
+        if (int(token_id),) in targets:
+            return self.advance_path(int(state_id), (int(token_id),))
         record = self._states[int(state_id)]
+        if record.recognition is not None:
+            raw = str(self._tokenizer.id_to_token.get(int(token_id), ""))
+            if raw in {"LIT_STR", "LIT_NUM", "LIT_END"}:
+                status = "accepted"
+                child_recognition = record.recognition
+            elif getattr(record.semantic, "literal_kind", ""):
+                child_recognition = record.engine.recognition_from_text(
+                    decode_prefix(
+                        self._tokenizer,
+                        [*record.prefix_ids, int(token_id)],
+                    )
+                )
+                status = "accepted" if child_recognition is not None else "rejected"
+            else:
+                advanced = record.engine.recognition_advance(
+                    record.recognition, self._tokenizer, int(token_id)
+                )
+                status = advanced.status.value
+                child_recognition = advanced.snapshot
+            if status == "rejected":
+                self._transitions[key] = None
+                return None
+            if status == "accepted" and child_recognition is not None:
+                semantic = _ss.advance(
+                    record.semantic,
+                    int(token_id),
+                    self._tokenizer,
+                    schema=self._schema,
+                )
+                child_id = self._intern_state(
+                    record.engine,
+                    semantic,
+                    record.prefix_ids + (int(token_id),),
+                    recognition=child_recognition,
+                )
+                self._transitions[key] = child_id
+                self._counters["direct_terminal_feeds"] += 1
+                return child_id
         child = self._fork(record.engine)
         outcome = child.feed_token_id(self._tokenizer, int(token_id))
         if outcome is None:
@@ -349,7 +408,33 @@ class CompletionSession:
         if cached is not _MISSING:
             self._counters["transition_cache_hits"] += 1
             return cached
-        if int(state_id) in self._rows:
+        row = self._rows.get(int(state_id))
+        targets = row.targets if row is not None else {}
+        if targets:
+            target = targets.get(tokens, _MISSING)
+            if isinstance(target, _RecognitionTarget):
+                record = self._states[int(state_id)]
+                semantic = record.semantic
+                for token_id in tokens:
+                    semantic = _ss.advance(
+                        semantic, token_id, self._tokenizer, schema=self._schema
+                    )
+                child = self._intern_state(
+                    record.engine,
+                    semantic,
+                    record.prefix_ids + tokens,
+                    recognition=target.snapshot,
+                )
+                targets[tokens] = child
+                self._path_transitions[key] = child
+                self._counters["direct_terminal_feeds"] += len(tokens)
+                if len(tokens) == 1:
+                    self._transitions[(int(state_id), tokens[0])] = child
+                return child
+            if target is not _MISSING:
+                self._path_transitions[key] = target
+                return target
+        if row is not None:
             self._counters["edge_replays"] += 1
         current: int | None = int(state_id)
         for token_id in tokens:
@@ -383,8 +468,16 @@ class CompletionSession:
             self._counters["transition_rows_misses"] += 1
         self._counters["domain_cache_misses"] += 1
         record = self._states[state_id]
-        engine = None if state is not None else self._fork(record.engine)
+        recognition = record.recognition
+        engine = (
+            None
+            if state is not None
+            else (
+                record.engine if recognition is not None else self._fork(record.engine)
+            )
+        )
         scan_counter: dict[str, int] = {"avoided": 0}
+        transition_snapshots: dict[tuple[int, ...], Any] = {}
         forest = _build_openui_completion_forest_impl(
             self._tokenizer,
             list(record.prefix_ids),
@@ -399,14 +492,21 @@ class CompletionSession:
             explain=self._explain,
             semantic_state=record.semantic,
             scan_counter=scan_counter,
+            recognition_snapshot=recognition,
+            transition_snapshots=transition_snapshots,
         )
-        self._counters["general_forest_builds"] += 1
+        if recognition is None:
+            self._counters["general_forest_builds"] += 1
         self._counters["edges_built"] += 1
         self._counters["semantic_masks_applied"] += 1
         self._counters["scope_reference_scans_avoided"] += scan_counter["avoided"]
         if state is None:
             self._outgoing[state_id] = forest
-            self._rows[state_id] = _TransitionRow(forest, {})
+            targets: dict[tuple[int, ...], int | _RecognitionTarget | None] = {
+                tokens: _RecognitionTarget(snapshot)
+                for tokens, snapshot in transition_snapshots.items()
+            }
+            self._rows[state_id] = _TransitionRow(forest, targets)
             self._counters["transition_rows_built"] += 1
         return forest
 
@@ -422,7 +522,33 @@ class CompletionSession:
         only after the whole query returns normally, so a deadline or
         interrupt can never leave a partial proof behind.
         """
+        root_key = (int(state_id), int(room))
+        check_decode_deadline()
+        # At the top level the fresh budget has no later consumer. A cached
+        # proof whose recorded charge fits can therefore return directly;
+        # nested replays still debit every node before exploring siblings.
+        if (
+            (shared_witness := self._witness.get(root_key)) is not None
+            and len(shared_witness[1]) <= self._node_budget
+        ):
+            self._counters["witness_cache_hits"] += 1
+            return shared_witness[0], True
+        if (
+            (shared_reach := self._reach.get(root_key)) is not None
+            and len(shared_reach) <= self._node_budget
+        ):
+            self._counters["witness_cache_misses"] += 1
+            self._counters["reachability_cache_hits"] += 1
+            return None, True
+        budget_unknown_key = (*root_key, self._node_budget)
+        if budget_unknown_key in self._budget_unknown:
+            self._counters["witness_cache_misses"] += 1
+            self._counters["budget_unknown_cache_hits"] += 1
+            return None, False
+
         nodes_left = self._node_budget
+        budget_exhausted = False
+        incomplete_authority = False
         query_cache: dict[tuple[int, int], tuple[tuple[int, ...] | None, bool]] = {}
         _QUERY_CACHE_CAP = 64
         pending_reach: dict[tuple[int, int], tuple[tuple[int, int], ...]] = {}
@@ -449,20 +575,23 @@ class CompletionSession:
             key: tuple[int, int],
             taxed_keys: tuple[tuple[int, int], ...],
             witness: tuple[int, ...] | None,
+            *,
+            proven: bool = True,
         ) -> tuple[tuple[int, ...] | None, bool, tuple[tuple[int, int], ...]]:
-            nonlocal nodes_left
+            nonlocal budget_exhausted, nodes_left
             charged: list[tuple[int, int]] = []
             for taxed_key in taxed_keys:
                 if _qget(taxed_key) is not None:
                     continue
                 if nodes_left <= 0:
+                    budget_exhausted = True
                     _qput(key, (None, False))
                     return None, False, tuple(charged)
                 nodes_left -= 1
                 _qput(taxed_key, (None, True))
                 charged.append(taxed_key)
-            _qput(key, (witness, True))
-            return witness, True, tuple(charged)
+            _qput(key, (witness, proven))
+            return witness, proven, tuple(charged)
 
         @dataclass
         class _Frame:
@@ -494,6 +623,7 @@ class CompletionSession:
                     _qput(key, (None, True))
                     result = (None, True, ())
                 elif nodes_left <= 0:
+                    budget_exhausted = True
                     _qput(key, (None, False))
                     result = (None, False, ())
                 elif (shared := self._witness.get(key)) is not None:
@@ -503,13 +633,23 @@ class CompletionSession:
                     self._counters["witness_cache_misses"] += 1
                     self._counters["reachability_cache_hits"] += 1
                     result = _replay(key, shared_reach, None)
+                elif (
+                    shared_unknown := self._budget_unknown.get(
+                        (*key, self._node_budget)
+                    )
+                ) is not None:
+                    self._counters["witness_cache_misses"] += 1
+                    self._counters["budget_unknown_cache_hits"] += 1
+                    result = _replay(key, shared_unknown, None, proven=False)
                 else:
                     self._counters["witness_cache_misses"] += 1
+                    self._counters["budget_unknown_cache_misses"] += 1
                     self._counters["reachability_cache_misses"] += 1
                     self._counters["witness_states_expanded"] += 1
                     nodes_left -= 1
                     forest = self.outgoing(sid)
                     if forest.coverage != "complete":
+                        incomplete_authority = True
                         _qput(key, (None, False))
                         result = (None, False, ())
                     else:
@@ -581,7 +721,7 @@ class CompletionSession:
                         pending_reach[frame.key] = stored
                         result = (None, True, stored)
                     else:
-                        result = (None, False, ())
+                        result = (None, False, stored)
                     stack.pop()
                 if scheduled:
                     continue
@@ -591,6 +731,14 @@ class CompletionSession:
         witness, proven, _ = result
         self._reach.update(pending_reach)
         self._witness.update(pending_witness)
+        if (
+            witness is None
+            and not proven
+            and budget_exhausted
+            and not incomplete_authority
+            and result[2]
+        ):
+            self._budget_unknown[budget_unknown_key] = result[2]
         return witness, proven
 
     def terminal_witness(self, state_id: int, room: int) -> tuple[int, ...] | None:
