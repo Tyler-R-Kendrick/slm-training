@@ -37,6 +37,11 @@ jobs:
           # The torch-heavy pip cache is about 3 GB and takes roughly 40 seconds
           # to restore, which consumes a third of this job's hard wall budget.
           # Install the constrained binary wheels directly instead.
+      - name: Cache the pinned CPU Torch wheel
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/torch-wheels
+          key: torch-2.5.1-cpu-cp312-${{ runner.os }}-${{ runner.arch }}
       - name: Install Python and Node dependencies
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -56,11 +61,15 @@ jobs:
             torch_wheels="$RUNNER_TEMP/torch-wheels"
             mkdir -p "$torch_wheels"
             download_torch() {
+              if compgen -G "$torch_wheels/torch-2.5.1+cpu-*.whl" > /dev/null; then
+                echo "Using cached CPU Torch wheel."
+                return 0
+              fi
               for attempt in 1 2; do
                 if timeout --signal=INT --kill-after=5s 45s \
                   python -m pip download --only-binary=:all: \
                     --index-url https://download.pytorch.org/whl/cpu \
-                    --dest "$torch_wheels" "torch>=2.2,<2.6"; then
+                    --dest "$torch_wheels" "torch==2.5.1+cpu"; then
                   return 0
                 fi
                 echo "Torch wheel download attempt $attempt timed out; retrying."
@@ -100,7 +109,7 @@ jobs:
           if [ "$need_torch" = true ]; then
             wait "$torch_pid"
             python -m pip install --no-index --find-links "$torch_wheels" \
-              "torch>=2.2,<2.6"
+              "torch==2.5.1+cpu"
           fi
 
           extras=
