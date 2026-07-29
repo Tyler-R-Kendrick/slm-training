@@ -2004,6 +2004,11 @@ it. The preregistered successor isolates the new fixture after the unchanged
 upstream measurements; this is benchmark-order correction, not an adopted
 speedup claim.
 
+That successor passed 17/17 with exact outputs and 10-to-5 neural-call
+compaction at unchanged row volume. Its tiny CPU batch was 0.961x in wall time,
+so the evidence supports the divergent-row batching mechanism but not a CPU
+latency speedup or any transfer of the cited systems' reported gains.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

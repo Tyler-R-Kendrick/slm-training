@@ -6153,6 +6153,11 @@
         {
           "version": "v1",
           "date": "2026-07-29",
+          "note": "no-bump: record the final 17/17 packed-completion successor and its bounded CPU batching result in shared research lineage; SLM-228 spectral-disposition behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-29",
           "note": "no-bump: record packed-completion reconciliation outcome and benchmark-order successor in shared research lineage; SLM-228 spectral-disposition behavior is unchanged."
         },
         {
@@ -8750,6 +8755,11 @@
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-29",
+          "note": "no-bump: record the clean v7 17/17 successor, retained upstream speedups, exact 10-to-5 neural-call compaction, and bounded 0.961x CPU batch latency; matrix behavior is unchanged."
+        },
         {
           "version": "v7",
           "date": "2026-07-29",

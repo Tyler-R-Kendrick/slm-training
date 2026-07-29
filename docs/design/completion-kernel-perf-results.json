@@ -21,13 +21,13 @@
       "--completion-repetitions",
       "5",
       "--out-dir",
-      "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled",
+      "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled_v2",
       "--docs-out",
       "docs/design/completion-kernel-perf-results.json",
       "--docs-agentv-dir",
-      "docs/design/completion-kernel-perf-agentv-20260729-reconciled"
+      "docs/design/completion-kernel-perf-agentv-20260729-reconciled-v2"
     ],
-    "scoreboard_path": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled/scoreboard.json",
+    "scoreboard_path": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled_v2/scoreboard.json",
     "docs_path": "docs/design/completion-kernel-perf-results.json"
   },
   "correctness_prefixes": [
@@ -230,31 +230,31 @@
       "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          12978033,
-          14327325,
-          13499104,
-          12780144,
-          17142611
+          13153405,
+          12507477,
+          12272834,
+          13430081,
+          12011499
         ],
-        "median_ns": 13499104.0,
-        "min_ns": 12780144,
-        "max_ns": 17142611,
-        "mad_ns": 718960.0
+        "median_ns": 12507477.0,
+        "min_ns": 12011499,
+        "max_ns": 13430081,
+        "mad_ns": 495978.0
       },
       "v2": {
         "samples_ns": [
-          12844256,
-          15222698,
-          13362184,
-          13866492,
-          17489992
+          15591159,
+          13861645,
+          13977338,
+          13034664,
+          13480204
         ],
-        "median_ns": 13866492.0,
-        "min_ns": 12844256,
-        "max_ns": 17489992,
-        "mad_ns": 1022236.0
+        "median_ns": 13861645.0,
+        "min_ns": 13034664,
+        "max_ns": 15591159,
+        "mad_ns": 381441.0
       },
-      "speedup_v1_over_v2": 0.9735053393461014
+      "speedup_v1_over_v2": 0.9023082758215205
     },
     {
       "id": "cold_root",
@@ -267,31 +267,31 @@
       "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          6757985,
-          9140826,
-          6755576,
-          7054243,
-          7697356
+          6501623,
+          7179390,
+          6037273,
+          5906764,
+          7160476
         ],
-        "median_ns": 7054243.0,
-        "min_ns": 6755576,
-        "max_ns": 9140826,
-        "mad_ns": 298667.0
+        "median_ns": 6501623.0,
+        "min_ns": 5906764,
+        "max_ns": 7179390,
+        "mad_ns": 594859.0
       },
       "v2": {
         "samples_ns": [
-          8946709,
-          8256558,
-          8744106,
-          7961558,
-          9565204
+          9187576,
+          7338901,
+          6495738,
+          6742782,
+          6797003
         ],
-        "median_ns": 8744106.0,
-        "min_ns": 7961558,
-        "max_ns": 9565204,
-        "mad_ns": 487548.0
+        "median_ns": 6797003.0,
+        "min_ns": 6495738,
+        "max_ns": 9187576,
+        "mad_ns": 301265.0
       },
-      "speedup_v1_over_v2": 0.8067426218300647
+      "speedup_v1_over_v2": 0.9565426115009806
     },
     {
       "id": "card_open_item",
@@ -304,31 +304,31 @@
       "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          49904119,
-          49750543,
-          49130267,
-          50108503,
-          49450514
+          46194905,
+          47088506,
+          47080225,
+          47229634,
+          45167195
         ],
-        "median_ns": 49750543.0,
-        "min_ns": 49130267,
-        "max_ns": 50108503,
-        "mad_ns": 300029.0
+        "median_ns": 47080225.0,
+        "min_ns": 45167195,
+        "max_ns": 47229634,
+        "mad_ns": 149409.0
       },
       "v2": {
         "samples_ns": [
-          46661208,
-          42871352,
-          44792942,
-          46066388,
-          46354056
+          41420379,
+          41066259,
+          41729483,
+          41817333,
+          40742242
         ],
-        "median_ns": 46066388.0,
-        "min_ns": 42871352,
-        "max_ns": 46661208,
-        "mad_ns": 594820.0
+        "median_ns": 41420379.0,
+        "min_ns": 40742242,
+        "max_ns": 41817333,
+        "mad_ns": 354120.0
       },
-      "speedup_v1_over_v2": 1.0799749049133176
+      "speedup_v1_over_v2": 1.1366439935279202
     },
     {
       "id": "card_open_comma",
@@ -341,31 +341,31 @@
       "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          795555080,
-          704435949,
-          749592279,
-          705957871,
-          743218551
+          661979608,
+          680611983,
+          692697138,
+          667547982,
+          756123667
         ],
-        "median_ns": 743218551.0,
-        "min_ns": 704435949,
-        "max_ns": 795555080,
-        "mad_ns": 37260680.0
+        "median_ns": 680611983.0,
+        "min_ns": 661979608,
+        "max_ns": 756123667,
+        "mad_ns": 13064001.0
       },
       "v2": {
         "samples_ns": [
-          826134464,
-          830176474,
-          857614294,
-          888040728,
-          873741326
+          797030712,
+          852597951,
+          835156753,
+          800117338,
+          834455519
         ],
-        "median_ns": 857614294.0,
-        "min_ns": 826134464,
-        "max_ns": 888040728,
-        "mad_ns": 27437820.0
+        "median_ns": 834455519.0,
+        "min_ns": 797030712,
+        "max_ns": 852597951,
+        "mad_ns": 18142432.0
       },
-      "speedup_v1_over_v2": 0.866611664707165
+      "speedup_v1_over_v2": 0.8156360255315179
     },
     {
       "id": "warm_card_open_comma",
@@ -376,31 +376,31 @@
       "digest": "e38519a65e2f73ff0cab779699a9b4cdf5a1174b2b49342afdedb51ae4ebeb7a",
       "v1": {
         "samples_ns": [
-          716777091,
-          730481331,
-          614402005,
-          763112915,
-          747703115
+          687764847,
+          582351296,
+          753581528,
+          718391327,
+          718093171
         ],
-        "median_ns": 730481331.0,
-        "min_ns": 614402005,
-        "max_ns": 763112915,
-        "mad_ns": 17221784.0
+        "median_ns": 718093171.0,
+        "min_ns": 582351296,
+        "max_ns": 753581528,
+        "mad_ns": 30328324.0
       },
       "v2": {
         "samples_ns": [
-          8556619,
-          6986679,
-          9366698,
-          8290542,
-          8063074
+          8284065,
+          6601717,
+          8102884,
+          7013491,
+          7995560
         ],
-        "median_ns": 8290542.0,
-        "min_ns": 6986679,
-        "max_ns": 9366698,
-        "mad_ns": 266077.0
+        "median_ns": 7995560.0,
+        "min_ns": 6601717,
+        "max_ns": 8284065,
+        "mad_ns": 288505.0
       },
-      "speedup_v1_over_v2": 88.11020208328961,
+      "speedup_v1_over_v2": 89.81149175292288,
       "v2_work_delta": {
         "candidate_engine_allocations": 0,
         "direct_terminal_feeds": 0,
@@ -490,62 +490,62 @@
         "mode": "cold_domain_distance_caches",
         "v1": {
           "samples_ns": [
-            150274936,
-            148687574,
-            134619538,
-            145604091,
-            141784966
+            141969010,
+            144129545,
+            142142688,
+            142156225,
+            139829253
           ],
-          "median_ns": 145604091.0,
-          "min_ns": 134619538,
-          "max_ns": 150274936,
-          "mad_ns": 3819125.0
+          "median_ns": 142142688.0,
+          "min_ns": 139829253,
+          "max_ns": 144129545,
+          "mad_ns": 173678.0
         },
         "v2": {
           "samples_ns": [
-            9954631,
-            6744826,
-            6536256,
-            7549027,
-            6692606
+            6812904,
+            6195010,
+            6434276,
+            6457677,
+            10094844
           ],
-          "median_ns": 6744826.0,
-          "min_ns": 6536256,
-          "max_ns": 9954631,
-          "mad_ns": 208570.0
+          "median_ns": 6457677.0,
+          "min_ns": 6195010,
+          "max_ns": 10094844,
+          "mad_ns": 262667.0
         },
-        "speedup_v1_over_v2": 21.587523681114977
+        "speedup_v1_over_v2": 22.011427329053465
       },
       {
         "id": "choice_warm_completion_caches",
         "mode": "warm_domain_distance_caches",
         "v1": {
           "samples_ns": [
-            22724,
-            14975,
-            14871,
-            14766,
-            14556
+            20989,
+            15217,
+            14797,
+            14692,
+            14797
           ],
-          "median_ns": 14871.0,
-          "min_ns": 14556,
-          "max_ns": 22724,
+          "median_ns": 14797.0,
+          "min_ns": 14692,
+          "max_ns": 20989,
           "mad_ns": 105.0
         },
         "v2": {
           "samples_ns": [
-            17593,
-            14347,
-            14033,
-            13928,
-            14138
+            15951,
+            15426,
+            13957,
+            13643,
+            13747
           ],
-          "median_ns": 14138.0,
-          "min_ns": 13928,
-          "max_ns": 17593,
-          "mad_ns": 209.0
+          "median_ns": 13957.0,
+          "min_ns": 13643,
+          "max_ns": 15951,
+          "mad_ns": 314.0
         },
-        "speedup_v1_over_v2": 1.0518460885556655
+        "speedup_v1_over_v2": 1.0601848534785412
       }
     ],
     "legacy_false_pruned_ids": [
@@ -626,31 +626,31 @@
     },
     "v1": {
       "samples_ns": [
-        18947759,
-        18122441,
-        19883454,
-        17507092,
-        19783758
+        18060833,
+        16618966,
+        17438771,
+        17329709,
+        17827260
       ],
-      "median_ns": 18947759.0,
-      "min_ns": 17507092,
-      "max_ns": 19883454,
-      "mad_ns": 835999.0
+      "median_ns": 17438771.0,
+      "min_ns": 16618966,
+      "max_ns": 18060833,
+      "mad_ns": 388489.0
     },
     "v2": {
       "samples_ns": [
-        15689318,
-        16897501,
-        29999021,
-        17350217,
-        17832359
+        16917497,
+        16896083,
+        17275755,
+        15175016,
+        15592056
       ],
-      "median_ns": 17350217.0,
-      "min_ns": 15689318,
-      "max_ns": 29999021,
-      "mad_ns": 482142.0
+      "median_ns": 16896083.0,
+      "min_ns": 15175016,
+      "max_ns": 17275755,
+      "mad_ns": 379672.0
     },
-    "speedup_v1_over_v2": 1.0920761970873332,
+    "speedup_v1_over_v2": 1.0321191603994844,
     "equivalent": true
   },
   "compiler_decode_fixture": {
@@ -677,7 +677,7 @@
       ],
       "outcome": null,
       "forwards_count": 5,
-      "compiler_ms": 3191.0570690015447,
+      "compiler_ms": 2946.7481529973156,
       "final_validation": "reject"
     },
     "v2_payload": {
@@ -701,7 +701,7 @@
       ],
       "outcome": null,
       "forwards_count": 5,
-      "compiler_ms": 2636.482229001558,
+      "compiler_ms": 2420.907147006801,
       "final_validation": "reject"
     },
     "singleton": {
@@ -717,7 +717,7 @@
         ],
         "outcome": "root = Separator()",
         "forwards_count": 0,
-        "compiler_ms": 1.845211001636926,
+        "compiler_ms": 2.1976249990984797,
         "final_validation": "accept"
       },
       "v2": {
@@ -732,7 +732,7 @@
         ],
         "outcome": "root = Separator()",
         "forwards_count": 0,
-        "compiler_ms": 0.7525360015279148,
+        "compiler_ms": 0.7420239999191836,
         "final_validation": "accept"
       },
       "equivalent": true,
@@ -740,58 +740,58 @@
     },
     "v1": {
       "samples_ns": [
-        2427762405,
-        2462763123,
-        2509543502,
-        2544449053,
-        2507427136
+        2339462234,
+        2324981960,
+        2291773391,
+        2348934803,
+        2288709701
       ],
-      "median_ns": 2507427136.0,
-      "min_ns": 2427762405,
-      "max_ns": 2544449053,
-      "mad_ns": 37021917.0
+      "median_ns": 2324981960.0,
+      "min_ns": 2288709701,
+      "max_ns": 2348934803,
+      "mad_ns": 23952843.0
     },
     "v2": {
       "samples_ns": [
-        83781528,
-        88448254,
-        86166524,
-        80148521,
-        96311313
+        82002068,
+        76116302,
+        74850063,
+        65465258,
+        73035133
       ],
-      "median_ns": 86166524.0,
-      "min_ns": 80148521,
-      "max_ns": 96311313,
-      "mad_ns": 2384996.0
+      "median_ns": 74850063.0,
+      "min_ns": 65465258,
+      "max_ns": 82002068,
+      "mad_ns": 1814930.0
     },
     "v1_compiler": {
       "samples_ns": [
-        2332173277,
-        2381917839,
-        2413160884,
-        2468877423,
-        2392486927
+        2242595884,
+        2244595930,
+        2203375222,
+        2253319831,
+        2167334990
       ],
-      "median_ns": 2392486927.0,
-      "min_ns": 2332173277,
-      "max_ns": 2468877423,
-      "mad_ns": 20673957.0
+      "median_ns": 2242595884.0,
+      "min_ns": 2167334990,
+      "max_ns": 2253319831,
+      "mad_ns": 10723947.0
     },
     "v2_compiler": {
       "samples_ns": [
-        3941025,
-        4433353,
-        4410077,
-        3764475,
-        5731409
+        4541199,
+        3960614,
+        3740101,
+        3372478,
+        4381725
       ],
-      "median_ns": 4410077.0,
-      "min_ns": 3764475,
-      "max_ns": 5731409,
-      "mad_ns": 469052.0
+      "median_ns": 3960614.0,
+      "min_ns": 3372478,
+      "max_ns": 4541199,
+      "mad_ns": 421111.0
     },
-    "speedup_v1_over_v2": 29.099782834456686,
-    "compiler_ms_speedup_v1_over_v2": 542.5045701016105,
+    "speedup_v1_over_v2": 31.06185708888448,
+    "compiler_ms_speedup_v1_over_v2": 566.224298555729,
     "equivalent": true
   },
   "compiler_batch_fixture": {
@@ -902,31 +902,31 @@
     },
     "control": {
       "samples_ns": [
-        2882322483,
-        2995516271,
-        2912849179,
-        2873681058,
-        2971213009
+        2636948885,
+        2779181374,
+        2546165954,
+        2831562159,
+        2554310347
       ],
-      "median_ns": 2912849179.0,
-      "min_ns": 2873681058,
-      "max_ns": 2995516271,
-      "mad_ns": 39168121.0
+      "median_ns": 2636948885.0,
+      "min_ns": 2546165954,
+      "max_ns": 2831562159,
+      "mad_ns": 90782931.0
     },
     "compact": {
       "samples_ns": [
-        2828796237,
-        2835749907,
-        2699594078,
-        2841231947,
-        2681905890
+        2778823931,
+        2509278009,
+        2743419466,
+        2513033499,
+        2776674904
       ],
-      "median_ns": 2828796237.0,
-      "min_ns": 2681905890,
-      "max_ns": 2841231947,
-      "mad_ns": 12435710.0
+      "median_ns": 2743419466.0,
+      "min_ns": 2509278009,
+      "max_ns": 2778823931,
+      "mad_ns": 35404465.0
     },
-    "speedup_control_over_compact": 1.0297133250181143,
+    "speedup_control_over_compact": 0.9611905571424563,
     "equivalent": true
   },
   "prior_incomplete_diagnostics": [
@@ -986,6 +986,13 @@
   ],
   "development_run_history": [
     {
+      "status": "complete_negative",
+      "code_commit": "79a9dadf519bca61e61ce65573047877d51d5528",
+      "agentv_passed": 16,
+      "agentv_total": 17,
+      "reason": "new neural batch fixture ran before the upstream microbenchmarks; cold-root missed its latency gate"
+    },
+    {
       "status": "incomplete_not_evidence",
       "reason": "benchmark fixture exposed unsupported request kwargs"
     },
@@ -1016,7 +1023,7 @@
     "v1_authority_preserved_and_witnesses_replayed": true,
     "hard_prefix_identical_12_paths": true,
     "warm_hard_prefix_speedup_ge_10x": true,
-    "simple_prefix_regression_le_15pct": false,
+    "simple_prefix_regression_le_15pct": true,
     "choice_exact_oracle_parity": true,
     "choice_speedup_ge_3x": true,
     "warm_zero_full_prefix_lex_bytes": true,
@@ -1030,33 +1037,31 @@
     "compiler_batch_reduces_forwards": true,
     "compiler_batch_preserves_denoiser_rows": true,
     "compiler_batch_latency_regression_le_15pct": true,
-    "pass": false
+    "pass": true
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "79a9dadf519bca61e61ce65573047877d51d5528",
+    "code_commit": "61945d6899be733bdbb217d7655864f5cae8129a",
     "code_dirty": false,
     "components": {
-      "matrix.perf": "v6",
+      "matrix.perf": "v7",
       "dsl.completion_kernel": "v2",
       "dsl.operators.registry": "v10",
       "harness.model_build.eval": "v66",
       "model.twotower": "v267"
     },
-    "stamped_at": "2026-07-29T17:23:39.077968+00:00"
+    "stamped_at": "2026-07-29T17:33:56.456322+00:00"
   },
   "agentv": {
     "format": "AgentEvals JSONL",
     "authority": "AgentEvals assertions",
     "sdk": "@agentv/core",
     "criteria": {
-      "pass": false,
-      "passed": 16,
-      "failed": 1,
+      "pass": true,
+      "passed": 17,
+      "failed": 0,
       "total": 17,
-      "failures": [
-        "simple_prefix_regression_le_15pct:domain_criterion"
-      ],
+      "failures": [],
       "results": [
         {
           "id": "v1_authority_preserved_and_witnesses_replayed:domain_criterion",
@@ -1084,9 +1089,9 @@
         },
         {
           "id": "simple_prefix_regression_le_15pct:domain_criterion",
-          "pass": false,
+          "pass": true,
           "criterion_id": "simple_prefix_regression_le_15pct:domain_criterion",
-          "actual": false,
+          "actual": true,
           "operator": "eq",
           "expected": true
         },
@@ -1201,23 +1206,23 @@
       "sdk": "@agentv/core",
       "execution_errors": 0
     },
-    "spec": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled/agentv/packed-completion-kernel.eval.jsonl",
+    "spec": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled_v2/agentv/packed-completion-kernel.eval.jsonl",
     "summary": {
       "total": 17,
-      "passed": 16,
-      "failed": 1,
+      "passed": 17,
+      "failed": 0,
       "executionErrors": 0,
-      "durationMs": 426,
-      "meanScore": 0.9411764705882353
+      "durationMs": 419,
+      "meanScore": 1
     },
     "artifacts": {
-      "runDir": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled/agentv/packed-completion-kernel",
-      "benchmarkPath": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled/agentv/packed-completion-kernel/benchmark.json",
-      "indexPath": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled/agentv/packed-completion-kernel/index.jsonl",
-      "timingPath": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled/agentv/packed-completion-kernel/timing.json"
+      "runDir": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled_v2/agentv/packed-completion-kernel",
+      "benchmarkPath": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled_v2/agentv/packed-completion-kernel/benchmark.json",
+      "indexPath": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled_v2/agentv/packed-completion-kernel/index.jsonl",
+      "timingPath": "outputs/runs/perf_matrix/completion_kernel_20260729_reconciled_v2/agentv/packed-completion-kernel/timing.json"
     },
     "durable_artifacts": {
-      "root": "docs/design/completion-kernel-perf-agentv-20260729-reconciled",
+      "root": "docs/design/completion-kernel-perf-agentv-20260729-reconciled-v2",
       "files": 123,
       "trace_files": 34,
       "includes_traces": true

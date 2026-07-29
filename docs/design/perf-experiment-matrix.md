@@ -474,3 +474,17 @@ upstream measurements; workload, repetitions, gates, model, and arm
 implementations remain unchanged. The failed run and its 17-case AgentV traces
 remain durable under
 [`completion-kernel-perf-agentv-20260729-reconciled/`](completion-kernel-perf-agentv-20260729-reconciled/).
+
+The isolated v7 successor at `61945d68` passed all 17/17 gates and AgentV
+criteria with no execution errors. Cold empty and `root` remained inside the
+15% guard at 0.902x and 0.957x; warm hard-prefix reuse retained an 89.81x
+speedup, choice cold bounded-distance retained 22.01x, the solver retained
+1.032x, and compiler wall/compiler-time speedups were 31.06x/566.22x.
+
+The batch-two arm again had exact ids/outcomes/final validation, cut neural
+calls from 10 to 5, and preserved 10 evaluated denoiser rows. Its CPU median
+was 2,636.95 ms sequential versus 2,743.42 ms compact (0.961x), a 4.0%
+wall-time regression inside the locked 15% guard. The result promotes
+cross-row call compaction, not a CPU latency claim; larger-device/batch
+throughput remains unmeasured. The complete successor traces are under
+[`completion-kernel-perf-agentv-20260729-reconciled-v2/`](completion-kernel-perf-agentv-20260729-reconciled-v2/).
