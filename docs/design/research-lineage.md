@@ -1998,6 +1998,12 @@ fine-grained reuse direction, LAVE verified future validity, and
 SpecInfer/ACRoBat the batched shared-compute shape under divergent control
 flow. Their reported speedups do not transfer.
 
+The first integrated run confirmed exact batch compaction but failed one
+pre-existing cold microbenchmark after the neural fixture was inserted ahead of
+it. The preregistered successor isolates the new fixture after the unchanged
+upstream measurements; this is benchmark-order correction, not an adopted
+speedup claim.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

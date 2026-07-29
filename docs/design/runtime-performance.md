@@ -63,6 +63,16 @@ warm zero
 full-prefix lexical bytes, warm zero candidate-engine allocations, and the
 declared latency thresholds. AgentV passed 13/13 with no execution errors.
 
+The first reconciliation run (`79a9dadf`) deliberately remains negative
+evidence. Its new batch-two compiler arm was exact, compacted 10 neural calls to
+5 at the same 10-row volume, and measured 1.030x faster, but the suite passed
+only 16/17 criteria because cold `root` measured 7.05 ms V1 versus 8.74 ms
+packed. The new multi-second neural fixture had been placed before the existing
+microbenchmarks and changed their preconditions. A locked successor moves only
+that fixture after the upstream measurements; the failed AgentV bundle is
+retained in
+[`completion-kernel-perf-agentv-20260729-reconciled/`](completion-kernel-perf-agentv-20260729-reconciled/).
+
 The Amdahl boundary is explicit: cold hard-prefix construction remains about
 19% slower because parser-state interning and control forks have not amortized.
 The ≥10× gate is explicitly the primed persistent-row session with its

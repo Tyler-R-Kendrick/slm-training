@@ -459,3 +459,18 @@ ids/outcome/final-validation parity, fewer neural calls with the same nonzero
 pre-existing packed-kernel gate. Failure rejects the batching candidate and
 retains the upstream implementation; no gate or model size may change after
 the outcome is visible.
+
+The first clean run at `79a9dadf` was a complete negative: AgentV passed 16/17
+with no execution errors. The batching candidate itself preserved exact
+ids/outcomes/final validation, reduced neural calls from 10 to 5 for the same
+10 denoiser rows, and improved median latency from 2,912.85 ms to 2,828.80 ms
+(1.030x). The unrelated pre-existing cold-`root` gate failed at 7.05 ms V1
+versus 8.74 ms packed (0.807x), while all other old gates passed.
+
+The run-order audit found that the newly added multi-second neural fixture ran
+before the unchanged upstream microbenchmarks, altering their CPU/cache/thermal
+preconditions. The successor is locked to move only that new fixture after all
+upstream measurements; workload, repetitions, gates, model, and arm
+implementations remain unchanged. The failed run and its 17-case AgentV traces
+remain durable under
+[`completion-kernel-perf-agentv-20260729-reconciled/`](completion-kernel-perf-agentv-20260729-reconciled/).

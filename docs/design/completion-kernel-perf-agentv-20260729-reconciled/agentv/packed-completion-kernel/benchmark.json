@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/packed-completion-kernel.eval.jsonl",
+    "timestamp": "2026-07-29T17:23:39.366Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "choice_exact_oracle_parity",
+      "choice_speedup_ge_3x",
+      "compiler_batch_exact_parity",
+      "compiler_batch_latency_regression_le_15pct",
+      "compiler_batch_preserves_denoiser_rows",
+      "compiler_batch_reduces_forwards",
+      "compiler_decode_parity",
+      "compiler_ms_speedup_ge_5x",
+      "compiler_singleton_parity",
+      "compiler_singleton_zero_forward",
+      "hard_prefix_identical_12_paths",
+      "simple_prefix_regression_le_15pct",
+      "solver_payload_certificate_status_parity",
+      "v1_authority_preserved_and_witnesses_replayed",
+      "warm_hard_prefix_speedup_ge_10x",
+      "warm_zero_candidate_engine_allocations",
+      "warm_zero_full_prefix_lex_bytes"
+    ],
+    "experiment": "packed-completion-kernel"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 0.941,
+        "stddev": 0.235
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "v1_authority_preserved_and_witnesses_replayed:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "hard_prefix_identical_12_paths:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "warm_hard_prefix_speedup_ge_10x:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "simple_prefix_regression_le_15pct:domain_criterion:code-grader": {
+      "mean": 0,
+      "stddev": 0
+    },
+    "choice_exact_oracle_parity:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "choice_speedup_ge_3x:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "warm_zero_full_prefix_lex_bytes:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "warm_zero_candidate_engine_allocations:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "solver_payload_certificate_status_parity:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_decode_parity:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_singleton_parity:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_singleton_zero_forward:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_ms_speedup_ge_5x:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_batch_exact_parity:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_batch_reduces_forwards:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_batch_preserves_denoiser_rows:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "compiler_batch_latency_regression_le_15pct:domain_criterion:code-grader": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": []
+}
