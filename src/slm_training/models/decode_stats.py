@@ -42,6 +42,8 @@ class DecodeStats:
     compiler_prefill_batches: int = 0
     compiler_prefill_states: int = 0
     compiler_prefill_tokens: int = 0
+    compiler_persistent_sessions: int = 0
+    compiler_batch_forwards: int = 0
     # SLM-293: inventory is a live factor bias, so causal-use controls need
     # the same eligible-position/argmax accounting as the other factor heads.
     component_inventory_applications: int = 0
@@ -125,6 +127,14 @@ class DecodeStats:
     completion_scope_reference_scans_avoided: int = 0
     completion_result_cache_hits: int = 0
     completion_result_cache_misses: int = 0
+    completion_transition_rows_built: int = 0
+    completion_transition_row_lookups: int = 0
+    completion_transition_row_hits: int = 0
+    completion_transition_row_misses: int = 0
+    completion_semantic_masks_applied: int = 0
+    completion_edge_replays: int = 0
+    completion_value_tree_clones: int = 0
+    completion_ast_bridge_calls: int = 0
     trie_nodes: int = 0
     restricted_projections: int = 0
     full_projections: int = 0
@@ -188,6 +198,9 @@ class DecodeStats:
     solver_expanded_nodes: int = 0
     solver_verifier_calls: int = 0
     solver_certificate_replay_failures: int = 0
+    solver_successor_cache_hits: int = 0
+    solver_successor_cache_misses: int = 0
+    solver_successor_expansions: int = 0
     solver_terminal_status: str = ""
     constrained_dead_ends: int = 0
     constrained_dead_end_last_position: int = -1
@@ -325,6 +338,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_prefill_batches",
         "compiler_prefill_states",
         "compiler_prefill_tokens",
+        "compiler_persistent_sessions",
+        "compiler_batch_forwards",
         "component_inventory_applications",
         "component_inventory_choice_changes",
         "component_plan_applications",
@@ -395,6 +410,14 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "completion_scope_reference_scans_avoided",
         "completion_result_cache_hits",
         "completion_result_cache_misses",
+        "completion_transition_rows_built",
+        "completion_transition_row_lookups",
+        "completion_transition_row_hits",
+        "completion_transition_row_misses",
+        "completion_semantic_masks_applied",
+        "completion_edge_replays",
+        "completion_value_tree_clones",
+        "completion_ast_bridge_calls",
         "trie_nodes",
         "restricted_projections",
         "full_projections",
@@ -454,6 +477,9 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "solver_expanded_nodes",
         "solver_verifier_calls",
         "solver_certificate_replay_failures",
+        "solver_successor_cache_hits",
+        "solver_successor_cache_misses",
+        "solver_successor_expansions",
     ]
     out: dict[str, Any] = {"n": len(rows)}
     # Timings always report (a 0ms phase is a measurement); feature counters

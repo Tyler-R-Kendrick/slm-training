@@ -29,6 +29,7 @@ from slm_training.dsl.solver.support import (
     replay_support_certificate,
 )
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+from slm_training.models.decode_stats import collect_decode_stats
 
 
 @pytest.fixture(scope="module")
@@ -239,9 +240,19 @@ def test_identical_successor_expands_once(
     expander = _expander(tok, prefix, bounds)
     root = expander.root_state()
     value = root.holes[0].values[0]
-    first = expander.successor(root, root.holes[0].hole_id, value)
-    stats = expander._session.stats()
-    second = expander.successor(root, root.holes[0].hole_id, value)
+    with collect_decode_stats() as decode_stats:
+        first = expander.successor(root, root.holes[0].hole_id, value)
+        session_stats = expander._session.stats()
+        second = expander.successor(root, root.holes[0].hole_id, value)
 
     assert second is first
-    assert expander._session.stats() == stats
+    assert expander._session.stats() == session_stats
+    assert decode_stats.solver_successor_cache_misses == 1
+    assert decode_stats.solver_successor_cache_hits == 1
+    assert decode_stats.solver_successor_expansions == 1
+    # Hot cache identity is session-local integers. Canonical DomainValue
+    # payloads remain only in the edge table/certificate-facing state.
+    assert all(
+        isinstance(state_id, int) and isinstance(edge_id, int)
+        for state_id, edge_id in expander._successors
+    )

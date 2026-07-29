@@ -79,6 +79,11 @@ def test_decode_stats_aggregates_completion_kernel_counts() -> None:
         completion_forced_closure_tokens=3,
         completion_full_prefix_lex_bytes=12,
         completion_candidate_engine_allocations=1,
+        completion_transition_rows_built=5,
+        completion_semantic_masks_applied=9,
+        completion_edge_replays=2,
+        completion_value_tree_clones=3,
+        completion_ast_bridge_calls=4,
     )
     summary = aggregate_stats([stats])
     assert summary["completion_session_starts_sum"] == 1.0
@@ -87,6 +92,27 @@ def test_decode_stats_aggregates_completion_kernel_counts() -> None:
     assert summary["completion_forced_closure_tokens_sum"] == 3.0
     assert summary["completion_full_prefix_lex_bytes_sum"] == 12.0
     assert summary["completion_candidate_engine_allocations_sum"] == 1.0
+    assert summary["completion_transition_rows_built_sum"] == 5.0
+    assert summary["completion_semantic_masks_applied_sum"] == 9.0
+    assert summary["completion_edge_replays_sum"] == 2.0
+    assert summary["completion_value_tree_clones_sum"] == 3.0
+    assert summary["completion_ast_bridge_calls_sum"] == 4.0
+
+
+def test_decode_stats_aggregates_compiler_batch_and_solver_successors() -> None:
+    stats = DecodeStats(
+        compiler_persistent_sessions=2,
+        compiler_batch_forwards=3,
+        solver_successor_cache_hits=7,
+        solver_successor_cache_misses=2,
+        solver_successor_expansions=2,
+    )
+    summary = aggregate_stats([stats])
+    assert summary["compiler_persistent_sessions_sum"] == 2.0
+    assert summary["compiler_batch_forwards_sum"] == 3.0
+    assert summary["solver_successor_cache_hits_sum"] == 7.0
+    assert summary["solver_successor_cache_misses_sum"] == 2.0
+    assert summary["solver_successor_expansions_sum"] == 2.0
 
 
 def test_decode_stats_aggregates_root_reference_arity_counts() -> None:

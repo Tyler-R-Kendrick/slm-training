@@ -19,7 +19,7 @@ This module is Torch-free and is not invoked by decode by default.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypeAlias
 
 from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
 from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest
@@ -43,6 +43,9 @@ WELL_FORMED_PROFILE = "openui/lang-core-validate/well-formed@0.2.x"
 # Coverage-"none" marker for a rejected advance (identical to a fresh build's
 # dead-prefix forest: no paths, no terminals).
 _DEAD_FOREST = CompletionForest((), "none")
+
+StateId: TypeAlias = int
+EdgeId: TypeAlias = int
 
 
 class OpenUIWellFormedVerifier:
@@ -105,9 +108,8 @@ class OpenUIForestExpander:
         self._session = CompletionSession(tokenizer, max_path_tokens=self._mpt)
         self._prefix_by_fp: dict[str, tuple[int, ...]] = {}
         self._sid_by_fp: dict[str, int] = {}
-        self._successors: dict[
-            tuple[str, HoleId, DomainValue], ExpandStep
-        ] = {}
+        self._edge_ids: dict[tuple[StateId, HoleId, DomainValue], EdgeId] = {}
+        self._successors: dict[tuple[StateId, EdgeId], ExpandStep] = {}
         self._root = self._project(tuple(int(t) for t in prefix_ids), None)
 
     def _project(
@@ -157,10 +159,26 @@ class OpenUIForestExpander:
             return ExpandStep(
                 ExpandStatus.INCOMPLETE, coverage="none", detail="unknown_state"
             )
-        cache_key = (state.fingerprint, hole_id, value)
+        edge_key = (sid, hole_id, value)
+        edge_id = self._edge_ids.get(edge_key)
+        if edge_id is None:
+            edge_id = len(self._edge_ids)
+            self._edge_ids[edge_key] = edge_id
+        cache_key = (sid, edge_id)
         cached = self._successors.get(cache_key)
         if cached is not None:
+            from slm_training.models.decode_stats import get_active_stats
+
+            stats = get_active_stats()
+            if stats is not None:
+                stats.solver_successor_cache_hits += 1
             return cached
+        from slm_training.models.decode_stats import get_active_stats
+
+        stats = get_active_stats()
+        if stats is not None:
+            stats.solver_successor_cache_misses += 1
+            stats.solver_successor_expansions += 1
 
         def _done(step: ExpandStep) -> ExpandStep:
             self._successors[cache_key] = step

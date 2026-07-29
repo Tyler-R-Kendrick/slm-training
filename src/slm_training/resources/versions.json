@@ -7412,7 +7412,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v64",
+      "version": "v65",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7431,6 +7431,11 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v65",
+          "date": "2026-07-29",
+          "note": "Record packed transition-row, semantic-mask, edge-replay, parser-allocation, compiler-batch, and solver-successor telemetry."
+        },
         {
           "version": "v64",
           "date": "2026-07-29",
@@ -9351,7 +9356,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v262",
+      "version": "v263",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9399,6 +9404,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v263",
+          "date": "2026-07-29",
+          "note": "Batch greedy compiler ambiguity across persistent per-row completion sessions and key solver successor reuse by request-local state and edge ids."
+        },
         {
           "version": "v262",
           "date": "2026-07-29",
