@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v29",
+      "version": "v30",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v30",
+          "date": "2026-07-29T11:06:46-05:00",
+          "note": "Match four internal changed-test workers to the four external CI partitions so hosted runners avoid CPU oversubscription while preserving exact coverage."
+        },
         {
           "version": "v29",
           "date": "2026-07-29T10:33:03-05:00",
