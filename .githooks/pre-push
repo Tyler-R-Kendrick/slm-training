@@ -1,0 +1,51 @@
+#!/bin/sh
+set -eu
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+remote=${1:-origin}
+zero=0000000000000000000000000000000000000000
+head=$(git -C "$root" rev-parse HEAD)
+base=
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+  if [ "$local_sha" != "$head" ]; then
+    echo "pre-push: only the checked-out HEAD can be certified" >&2
+    exit 1
+  fi
+  if [ "$remote_sha" != "$zero" ]; then
+    base=$remote_sha
+  elif git -C "$root" show-ref --verify --quiet "refs/remotes/$remote/main"; then
+    base=$(git -C "$root" merge-base "$head" "refs/remotes/$remote/main")
+  elif git -C "$root" rev-parse --verify "$head^" >/dev/null 2>&1; then
+    base="$head^"
+  fi
+done
+
+[ -z "$base" ] && exit 0
+
+common_git_dir=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)
+common_root=$(dirname -- "$common_git_dir")
+unset $(git -C "$root" rev-parse --local-env-vars)
+cd "$root"
+if [ -x .venv/bin/python ]; then
+  python=.venv/bin/python
+elif [ -x "$common_root/.venv/bin/python" ]; then
+  python="$common_root/.venv/bin/python"
+else
+  python=python3
+fi
+
+"$python" -m scripts.check_changed --changed-tests-only --base-ref "$base"
+"$python" -m scripts.verify_decode_invariants
+"$python" -m scripts.verify_agent_surfaces
+"$python" -m scripts.verify_checkpoint_references --check
+command -v npm >/dev/null 2>&1 || {
+  echo "pre-push: npm is required for the OpenUI certificates" >&2
+  exit 1
+}
+npm --prefix src/apps/openui_bridge ci
+"$python" -m scripts.verify_tokenizer_grammar_invariants
+"$python" scripts/validate_page_dsl.py --check
+"$python" -m ruff check .
+"$python" -m compileall -q src scripts tests

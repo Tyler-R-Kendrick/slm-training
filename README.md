@@ -306,7 +306,7 @@ See [docs/design/checkpoint-bucket.md](docs/design/checkpoint-bucket.md).
 
 Checkpoint provenance is fail-closed: each sync emits a verified
 `CheckpointReferenceV1`, and `frontier`/`ship_candidate` citations must resolve
-from a fresh clone or CI fails (`python -m scripts.verify_checkpoint_references
+from a fresh clone or pre-push fails (`python -m scripts.verify_checkpoint_references
 --check`). See
 [docs/design/checkpoint-provenance.md](docs/design/checkpoint-provenance.md).
 
@@ -377,9 +377,12 @@ python -m scripts.repo_policy
 pytest -m training
 ```
 
-Enable the tracked pre-commit hook once per clone with
+Enable the tracked pre-commit and pre-push hooks once per clone with
 `git config core.hooksPath .githooks` (a Claude Code `SessionStart` hook arms it
-when it is unset). That hook is what runs the changed-file checker.
+when it is unset). Pre-commit checks staged changes quickly; pre-push reruns
+changed tests and repository certificates against the outgoing commits.
+Automatic GitHub Actions CI is intentionally disabled, so a clone without this
+configuration has no equivalent enforcement and `--no-verify` bypasses it.
 
 Agent hooks are narrower and are certified identical across harnesses by
 `python -m scripts.verify_agent_surfaces`:
@@ -392,7 +395,7 @@ Agent hooks are narrower and are certified identical across harnesses by
 | Cursor, Gemini CLI | — (no hook mechanism configured) | no | no |
 
 Agents on a harness without hooks run `python -m scripts.repo_policy` and
-`.githooks/check-changed` themselves. CI remains authoritative either way. See
+`.githooks/check-changed` themselves. The tracked Git hooks are authoritative. See
 [`docs/repository-organization.md`](docs/repository-organization.md) and
 [`docs/design/agent-harness-parity-audit.md`](docs/design/agent-harness-parity-audit.md).
 

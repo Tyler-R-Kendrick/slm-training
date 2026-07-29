@@ -14,7 +14,7 @@ document is its expansion: what each invariant means, where it is implemented,
 what its current status is, and — where an approach was rejected — which
 successor approach carries the goal forward.
 
-Machine enforcement: `python -m scripts.verify_decode_invariants` (CI, static;
+Machine enforcement: `python -m scripts.verify_decode_invariants` (pre-push, static;
 no torch required). Component: `decode.invariants` in
 `src/slm_training/resources/versions.json`.
 
@@ -60,7 +60,7 @@ Certainty is never downgraded into a soft preference.
 canonical shape is the `forwards_count == 0` assertion in
 `tests/test_models/test_inference_speed.py`; the ONNX equivalent is
 `tests/test_web/test_onnx_inference.py::test_onnx_forced_tokens_cost_zero_denoiser_runs`.
-`scripts/verify_decode_invariants.py` fails CI when a registered decode backend
+`scripts/verify_decode_invariants.py` fails pre-push when a registered decode backend
 has no such test. That gate is static — it proves the assertion exists; pytest
 proves it holds.
 
@@ -467,7 +467,7 @@ preregistered experiment (a capacity ladder is a legitimate experiment; a
 champion recipe that quietly carries a wider geometry is not).
 
 Machine enforcement: `_capacity_levers()` in
-`scripts/verify_decode_invariants.py` fails CI if the registry is deleted,
+`scripts/verify_decode_invariants.py` fails pre-push if the registry is deleted,
 emptied, or loses its `baseline_value` / `axis` fields.
 
 **Open goals (approach state, not waivers):** `run_quality_matrix.py` splices
@@ -566,7 +566,7 @@ and they are carried into OpenWiki regeneration via
 
 Changing an invariant means editing this file, bumping the `decode.invariants`
 component in `src/slm_training/resources/versions.json`, and passing
-`python -m scripts.verify_decode_invariants` in CI. A silent weakening is a
+`python -m scripts.verify_decode_invariants` in pre-push. A silent weakening is a
 regression and blocks merge.
 
 ---

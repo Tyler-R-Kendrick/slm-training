@@ -22,7 +22,7 @@ while verifying Phase 1 and is **not** fixed here — see its entry.
 | `python -m scripts.verify_tokenizer_grammar_invariants` | full certificate incl. live-library agreement (A1) |
 | `scripts/repo_policy.py::validate_skill_mirrors` | skill mirrors in **both** directions (B6) |
 
-Both new checks run in CI's `python-static` job and, for changed surfaces, in
+Both new checks run in pre-push and, for changed surfaces, in
 `.githooks/check-changed`.
 
 ## Method
@@ -389,7 +389,7 @@ A3 was found during this phase's verification and is deliberately left open.
 1. `scripts/verify_agent_surfaces.py` holds the declarative
    obligation × surface matrix — twelve instruction laws plus two hook laws.
 2. `verify_decode_invariants.check_agent_surfaces()` delegates to it.
-3. Wired into `ci.yml`'s `python-static` job and into `check_changed.check()`,
+3. Wired into `.githooks/pre-push` and into `check_changed.check()`,
    which re-certifies whenever any surface file changes.
 4. Backfilled `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, and
    a new `.cursor/rules/repo-laws.mdc` (`alwaysApply: true`). Markers are skill
@@ -406,7 +406,7 @@ Both halves, not either/or: the hooks were implemented **and** the README claim
 corrected. `.github/hooks/changed-tests.json` and `.codex/hooks.json` now carry
 the same `PostToolUse` pair as `.claude/settings.json`; hook parity is itself
 certified by the `hooks.raw-mv-guard` and `hooks.post-edit-checks` obligations,
-so a one-sided hook edit fails CI. A Claude Code `SessionStart` hook arms
+so a one-sided hook edit fails pre-push. A Claude Code `SessionStart` hook arms
 `core.hooksPath .githooks` when unset. `README.md` carries a per-harness
 coverage table, and Cursor's and Gemini's lack of a hook mechanism is stated in
 their own instruction surfaces rather than only in `AGENTS.md`.

@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-18
 **Status:** active contract. Enforced by `scripts/verify_version_stamps.py` in
-CI, the pre-commit changed-file check, and agent PostToolUse hooks.
+the pre-commit/pre-push changed-file checks and agent PostToolUse hooks.
 
 The eval/smoke/checkpoint stack is self-improving: metric definitions, gate
 thresholds, harness implementations, matrices, and the eval-suite builder all
@@ -112,8 +112,8 @@ poisons every later comparison against the old numbers.
 
 | Surface | Mode | Command |
 | --- | --- | --- |
-| CI (`.github/workflows/ci.yml`) | blocking | `verify_version_stamps --check --base <PR base sha>` (PRs) / `--check` (push) |
 | Pre-commit (`.githooks/check-changed` → `scripts/check_changed.py`) | blocking | `verify_version_stamps --check --staged` |
+| Pre-push (`.githooks/pre-push` → `scripts/check_changed.py`) | blocking | `verify_version_stamps --check --base <remote sha>` |
 | Agent PostToolUse hook (`.claude/settings.json`) | advisory nudge | `verify_version_stamps --post-tool-use` |
 | Agents directly (skills, AGENTS.md iron law item 8) | instruction | `verify_version_stamps --check` before finishing |
 

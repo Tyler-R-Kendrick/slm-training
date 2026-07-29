@@ -1,13 +1,14 @@
 # Testing guidance
 
-## Local / CI
+## Local hooks
 
-Default CI job (`.github/workflows/ci.yml`) runs:
+Configure the tracked hooks with `git config core.hooksPath .githooks`.
+Pre-commit runs the staged changed-file check. Pre-push runs:
 
+- changed-test selection against the outgoing commits
+- repository, decode, agent-surface, checkpoint, tokenizer/grammar, and page-DSL certificates
 - `ruff check .`
-- `python -m compileall`
-- `pytest -q`
-- Documented disjoint data-build check
+- `python -m compileall -q src scripts tests`
 
 Install: `pip install -e ".[dev,mcp,web]"`.
 

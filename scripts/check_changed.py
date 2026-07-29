@@ -77,7 +77,7 @@ SUITES_BY_PREFIX = (
     ),
     # Checkpoint-reference audit: committed frontier/ship claims must stay
     # resolvable, so model-card and README changes run it. (Design result JSON
-    # is covered by the always-on CI audit step; docs stay otherwise
+    # is covered by the pre-push audit; docs stay otherwise
     # conservative for the local hook.)
     (
         "docs/MODEL_CARD.md",
@@ -199,8 +199,8 @@ def select_tests(paths: list[str]) -> list[str]:
         if path in GLOBAL_TEST_FILES:
             return ["tests"]
         if path in NON_PYTHON_LOCKFILES:
-            # The CI install step validates lockfile integrity. Do not spend the
-            # bounded Python-test budget on an unrelated full suite.
+            # The pre-push Node install validates lockfile integrity. Do not
+            # spend the bounded Python-test budget on an unrelated full suite.
             continue
         if path.startswith("tests/") and path.endswith(".py"):
             if (ROOT / path).is_file():
@@ -241,7 +241,7 @@ def select_changed_tests(paths: list[str]) -> list[str]:
 
 
 def hook_test_targets(paths: list[str]) -> list[str]:
-    """Keep local hooks bounded; CI owns broad validation for large diffs."""
+    """Keep local commit and push hooks bounded."""
     if len(paths) > HOOK_TEST_FILE_LIMIT:
         return []
     return select_changed_tests(paths)
@@ -250,10 +250,9 @@ def hook_test_targets(paths: list[str]) -> list[str]:
 def check(
     paths: list[str],
     *,
+    base_ref: str | None = None,
     changed_tests_only: bool = False,
     staged: bool = False,
-    test_shard_index: int = 0,
-    test_shard_count: int = 1,
 ) -> int:
     policy_errors = validate_repository()
     if policy_errors:
@@ -264,6 +263,8 @@ def check(
     stamp_command = [sys.executable, "-m", "scripts.verify_version_stamps", "--check"]
     if staged:
         stamp_command.append("--staged")
+    elif base_ref:
+        stamp_command.extend(["--base", base_ref])
     if _run(stamp_command):
         return 1
     # Cheap, no imports beyond stdlib: every configured harness must still
@@ -277,18 +278,14 @@ def check(
     if changed_tests_only and len(paths) > HOOK_TEST_FILE_LIMIT:
         print(
             f"changed-check: pytest deferred for large diff ({len(paths)} > "
-            f"{HOOK_TEST_FILE_LIMIT} files); run the listed suites manually or in CI"
+            f"{HOOK_TEST_FILE_LIMIT} files); run the listed suites manually"
         )
     if python_paths and _run([sys.executable, "-m", "ruff", "check", *python_paths]):
         return 1
     if python_paths and _run([sys.executable, "-m", "py_compile", *python_paths]):
         return 1
-    if tests and changed_tests_only and (len(tests) > 1 or test_shard_count > 1):
-        if _run_changed_tests_parallel(
-            tests,
-            shard_index=test_shard_index,
-            shard_count=test_shard_count,
-        ):
+    if tests and len(tests) > 1:
+        if _run_changed_tests_parallel(tests):
             return 1
     elif tests and _run([sys.executable, "-m", "pytest", "-q", *tests]):
         return 1
@@ -320,7 +317,7 @@ def _run(command: list[str]) -> int:
 
 
 def _pytest_worker_env() -> dict[str, str]:
-    """Keep parallel pytest workers from oversubscribing CI CPU threads."""
+    """Keep parallel pytest workers from oversubscribing local CPU threads."""
     env = os.environ.copy()
     for variable in (
         "OMP_NUM_THREADS",
@@ -334,9 +331,6 @@ def _pytest_worker_env() -> dict[str, str]:
 
 def _run_changed_tests_parallel(
     tests: list[str],
-    *,
-    shard_index: int = 0,
-    shard_count: int = 1,
 ) -> int:
     workers = _changed_test_workers()
     collected = subprocess.run(
@@ -352,13 +346,6 @@ def _run_changed_tests_parallel(
         print(collected.stderr, end="", file=sys.stderr)
         return collected.returncode
     nodes = [line for line in collected.stdout.splitlines() if "::" in line]
-    nodes = _shard_test_nodes(nodes, shard_count)[shard_index]
-    print(
-        f"changed-check: test shard {shard_index + 1}/{shard_count} "
-        f"owns {len(nodes)} node(s)"
-    )
-    if not nodes:
-        return 0
     if len(nodes) < 2:
         return _run([sys.executable, "-m", "pytest", "-q", *nodes])
     # More batches than workers let the executor steal remaining work when
@@ -407,24 +394,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--staged", action="store_true", help="check only staged paths")
     parser.add_argument(
         "--base-ref",
-        help="check committed changes since this ref (for bounded CI validation)",
+        help="check committed changes since this ref (used by pre-push)",
     )
     parser.add_argument(
         "--changed-tests-only",
         action="store_true",
         help="prefer explicitly changed test files; intended for latency-bounded hooks",
-    )
-    parser.add_argument(
-        "--test-shard-index",
-        type=int,
-        default=0,
-        help="zero-based changed-test CI shard index",
-    )
-    parser.add_argument(
-        "--test-shard-count",
-        type=int,
-        default=1,
-        help="number of disjoint changed-test CI shards",
     )
     parser.add_argument("--list", action="store_true", help="print selected tests without running")
     parser.add_argument(
@@ -433,10 +408,6 @@ def main(argv: list[str] | None = None) -> int:
         help="emit an agent Stop-hook decision instead of regular output",
     )
     args = parser.parse_args(argv)
-    if args.test_shard_count < 1:
-        parser.error("--test-shard-count must be positive")
-    if not 0 <= args.test_shard_index < args.test_shard_count:
-        parser.error("--test-shard-index must be within --test-shard-count")
     paths = changed_files(staged=args.staged, base_ref=args.base_ref)
     if args.list:
         selected = (
@@ -460,10 +431,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     return check(
         paths,
+        base_ref=args.base_ref,
         changed_tests_only=args.changed_tests_only,
         staged=args.staged,
-        test_shard_index=args.test_shard_index,
-        test_shard_count=args.test_shard_count,
     )
 
 

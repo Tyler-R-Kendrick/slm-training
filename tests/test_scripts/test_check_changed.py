@@ -118,6 +118,28 @@ def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
     ]
 
 
+def test_check_passes_push_base_to_version_stamp_verifier(monkeypatch) -> None:
+    commands = []
+    monkeypatch.setattr(check_changed, "validate_repository", lambda: [])
+    monkeypatch.setattr(
+        check_changed,
+        "_run",
+        lambda command: commands.append(command) or 0,
+    )
+
+    assert check_changed.check([], base_ref="base-sha") == 0
+    assert commands == [
+        [
+            check_changed.sys.executable,
+            "-m",
+            "scripts.verify_version_stamps",
+            "--check",
+            "--base",
+            "base-sha",
+        ]
+    ]
+
+
 def test_changed_tests_are_collected_once_and_hash_balanced(monkeypatch) -> None:
     commands = []
 
@@ -196,42 +218,6 @@ def test_parallel_runner_overdecomposes_for_work_stealing(monkeypatch) -> None:
     assert {node for command in commands for node in command[4:]} == set(
         collected_nodes.splitlines()
     )
-
-
-def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
-    collected_nodes = "\n".join(
-        [
-            *(f"tests/test_slow.py::test_{index}" for index in range(9)),
-            *(f"tests/test_fast.py::test_{index}" for index in range(3)),
-        ]
-    )
-    shard_nodes = []
-
-    def fake_collect(command, **kwargs):
-        return SimpleNamespace(returncode=0, stdout=collected_nodes, stderr="")
-
-    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
-    monkeypatch.setattr(
-        check_changed,
-        "_run",
-        lambda command: shard_nodes.extend(command[4:]) or 0,
-    )
-
-    for shard_index in range(4):
-        before = set(shard_nodes)
-        assert (
-            check_changed._run_changed_tests_parallel(
-                ["tests/test_slow.py", "tests/test_fast.py"],
-                shard_index=shard_index,
-                shard_count=4,
-            )
-            == 0
-        )
-        current = set(shard_nodes) - before
-        assert len(current) == 3
-
-    assert set(shard_nodes) == set(collected_nodes.splitlines())
-    assert len(shard_nodes) == len(set(shard_nodes))
 
 
 def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
