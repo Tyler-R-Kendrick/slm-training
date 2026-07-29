@@ -10,8 +10,10 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
@@ -19,6 +21,7 @@ from slm_training.lineage.store import LineageStore
 from slm_training.web import jobs as jobs_mod
 from slm_training.web.app import create_app
 from slm_training.web.observability import Readers
+from slm_training.web.routes import _dsl_pack_payload, dsl_packs
 
 SMOKE_SUITE = {
     "smoke": {
@@ -44,13 +47,151 @@ def ro_client() -> TestClient:
 # --- observability reads ---------------------------------------------------
 def test_overview_aggregates_committed_evidence(ro_client: TestClient) -> None:
     overview = ro_client.get("/api/overview").json()
-    assert {"scoreboards", "experiment_totals", "checkpoints", "system"} <= set(overview)
+    assert {"scoreboards", "experiment_totals", "checkpoints", "system"} <= set(
+        overview
+    )
     assert overview["experiment_totals"]["count"] >= 1
 
 
 def test_scoreboard_unknown_kind_is_404(ro_client: TestClient) -> None:
     assert ro_client.get("/api/scoreboards/bogus").status_code == 404
     assert ro_client.get("/api/scoreboards/quality").json()["kind"] == "quality"
+
+
+def _pack_request():
+    return SimpleNamespace()
+
+
+def test_dsl_pack_details_are_source_backed() -> None:
+    payload = _dsl_pack_payload(_pack_request(), "openui")
+
+    assert payload["selected"] == "openui"
+    assert "openui" in payload["packs"]
+    assert "start:" in payload["grammar"]["source"]
+    assert payload["summary"]["production_count"] > 0
+    assert any(
+        row["boundary"] == "Topology AST nodes" and row["maximum"] == "256"
+        for row in payload["boundaries"]
+    )
+    calculated = {row["metric"]: row for row in payload["calculated"]["rows"]}
+    assert {row["scope"] for row in payload["boundaries"]} <= {
+        "pack fact",
+        "training",
+        "experiment policy",
+    }
+    assert all(row["formula"] and row["inputs"] for row in calculated.values())
+    target_contract = " ".join(
+        f"{row['formula']} {row['inputs']}" for row in calculated.values()
+    ).casefold()
+    assert all(
+        forbidden not in target_contract
+        for forbidden in ("recorded", "observed", "scoreboard", "run_id", "timeout")
+    )
+    assert not any(
+        row["boundary"] == "Throughput normalization" for row in payload["boundaries"]
+    )
+    assert calculated["Grammar description target"]["minimum"] == "1792"
+    assert calculated["Grammar description target"]["maximum"] == "2135"
+    assert calculated["Estimated optimal grammar-memory parameters"]["minimum"] == "299"
+    assert calculated["Estimated optimal grammar-memory parameters"]["maximum"] == "712"
+    assert calculated["AST legal-choice information"]["maximum"] == "851"
+    assert calculated["Estimated optimal structural turns"]["minimum"] == "4"
+    assert calculated["Estimated optimal structural turns"]["maximum"] == "36"
+    assert (
+        "4 above configured phase cap"
+        in calculated["Estimated optimal structural turns"]["cap_use"]
+    )
+    assert all(
+        name not in calculated
+        for name in (
+            "Topology choice slots",
+            "Decode token-attempt work",
+            "Estimated inference work target",
+            "Optimal throughput target",
+        )
+    )
+    unavailable = {row["metric"]: row for row in payload["calculated"]["unavailable"]}
+    assert unavailable["Actual attainable throughput"]["formula"] == (
+        "observed TPS is compared independently below"
+    )
+    assumption_keys = {row["key"] for row in payload["planning"]["assumptions"]}
+    assert {
+        "peak_compute_gops",
+        "memory_bandwidth_gbs",
+        "compute_utilization",
+        "bandwidth_utilization",
+        "ops_per_parameter_forward",
+        "bytes_per_parameter_forward",
+        "independent_streams",
+        "dispatch_step_us",
+        "oracle_operation_us",
+    } <= assumption_keys
+    assert payload["planning"]["machine"]["logical_cores"] >= 1
+    target = payload["planning"]["performance_target"]
+    assert target["status"] == "estimated"
+    assert target["parameter_count"] == 740_000
+    assert "timeout" not in target["formula"].casefold()
+    assert [row["id"] for row in target["profiles"]] == [
+        "single_stream",
+        "aggregate",
+    ]
+    assert target["profiles"][0]["floor_tps"] < target["profiles"][1]["floor_tps"]
+    assert any(
+        row["code_or_input"] == "Old dashboard P"
+        and "grammar-description" in row["current"]
+        for row in target["mismatches"]
+    )
+    assert any(row["lever"] == "structural_forwards" for row in target["levers"])
+    assert payload["evidence"]["perf"]
+    assert all(
+        row["evidence_class"] == "diagnostic perf/smoke; not ship evidence"
+        for row in payload["evidence"]["perf"]
+    )
+    assert all(
+        row["target_floor_tps_min"] > 0
+        and row["target_floor_tps_max"] > row["target_floor_tps_min"]
+        and row["target_gap_factor_min"] > 1
+        and row["target_gap_factor_max"] > row["target_gap_factor_min"]
+        and row["target_gap_status"].startswith("range only")
+        for row in payload["evidence"]["perf"]
+    )
+    assert any(
+        row["role"] == "Latest checkpoint" for row in payload["evidence"]["checkpoints"]
+    )
+    kernel = payload["evidence"]["completion_kernel"]
+    timings = {row["id"]: row for row in kernel["timings"]}
+    assert kernel["claim_class"] == "fixture_or_scratch"
+    assert timings["warm_card_open_comma"]["speedup"] == pytest.approx(
+        89.81149175292288
+    )
+    assert timings["tiny_compiler_decode_compiler"]["speedup"] == pytest.approx(
+        566.224298555729
+    )
+    assert any(
+        row["scope"] == "compiler_batch_two"
+        and row["metric"] == "forwards_count"
+        and row["baseline"] == 10
+        and row["value"] == 5
+        for row in kernel["work"]
+    )
+    assert kernel["gates"]
+    assert all(row["pass"] for row in kernel["gates"])
+    artifact = payload["evidence"]["completion_artifact"]
+    assert artifact["status"] == "hash_verified"
+    assert artifact["lalr_state_count"] == 119
+    assert artifact["direct_token_count"] == 408
+    assert "scope visibility" in artifact["request_dependent_authority_excluded"]
+    assert (
+        "No current model, checkpoint, run, telemetry, timeout"
+        in payload["calculated"]["basis"]
+    )
+    assert len(payload["calculated"]["references"]) >= 5
+
+
+def test_unknown_dsl_pack_is_404() -> None:
+    with pytest.raises(HTTPException, match="unknown DSL pack") as exc:
+        dsl_packs(_pack_request(), "unknown")
+    assert exc.value.status_code == 404
 
 
 def test_checkpoints_roster_includes_fixture(ro_client: TestClient) -> None:
@@ -68,9 +209,7 @@ def test_e499_cold_start_evidence_is_persisted() -> None:
     readers = Readers(root)
     run_id = "e499-choice-compatible-strict-hf-choice-candidate-r6"
     assert any(row.get("run_id") == run_id for row in readers.runs()["runs"])
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert {
         "e499-remediated-roots-hf-choice-control-r4",
         "e499-strict-r4-hf-choice-candidate-r4",
@@ -81,12 +220,8 @@ def test_e499_cold_start_evidence_is_persisted() -> None:
 def test_e500_cold_start_evidence_is_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
-    run_ids = {
-        row.get("run_id") for row in readers.runs()["runs"]
-    }
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     expected = {
         "e500-document-control-hf-choice-r1",
         "e500-documentized-expression-hf-choice-r2",
@@ -146,7 +281,8 @@ def test_e527_visible_component_types_data_is_persisted() -> None:
     assert records["count"] == 244
     assert all("Components: " in row["prompt"] for row in records["records"])
     assert all(
-        " x" not in next(
+        " x"
+        not in next(
             line
             for line in row["prompt"].splitlines()
             if line.startswith("Components: ")
@@ -168,12 +304,8 @@ def test_e530_visible_semantic_roles_data_is_persisted() -> None:
 def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
-    run_ids = {
-        row.get("run_id") for row in readers.runs()["runs"]
-    }
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     expected_runs = {
         "e501-e396-control-r1",
         "e501-e396-e500-init-r1",
@@ -196,9 +328,7 @@ def test_e502_matched_runs_and_checkpoints_are_persisted() -> None:
         "e502-e396-e500-prior-retained-lr3e4-r4-5k",
     }
     run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert expected <= run_ids
     assert expected <= checkpoint_ids
     assert all(readers.run(run_id)["scoreboard"] for run_id in expected)
@@ -214,9 +344,7 @@ def test_e503_matched_runs_and_checkpoints_are_persisted() -> None:
         "e503-e396-e500-retention003-r4-5k",
     }
     run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert expected <= run_ids
     assert expected <= checkpoint_ids
     assert all(readers.run(run_id)["scoreboard"] for run_id in expected)
@@ -233,9 +361,7 @@ def test_e504_matched_runs_and_checkpoints_are_persisted() -> None:
         "e504-e396-e500-replay050-retention001-r5-5k",
     }
     run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert expected <= run_ids
     assert expected <= checkpoint_ids
     assert all(readers.run(run_id)["scoreboard"] for run_id in expected)
@@ -246,9 +372,7 @@ def test_e505_run_and_checkpoint_are_persisted() -> None:
     readers = Readers(root)
     run_id = "e505-e396-e500-replay050-loss-attribution-r1-5k"
     assert run_id in {row.get("run_id") for row in readers.runs()["runs"]}
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert readers.run(run_id)["scoreboard"]
 
 
@@ -306,9 +430,7 @@ def test_e511_component_plan_three_suite_run_is_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e511-e505-three-suite192-component-plan4-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"held_out", "ood", "adversarial"}
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {
         "held_out",
@@ -321,9 +443,7 @@ def test_e512_slot_component_weight_run_is_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e512-e505-ood160-component-plan4-slot8-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
 
@@ -332,14 +452,10 @@ def test_e513_durable_checkpoint_and_run_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e513-e396-e500-replay050-slotrole4-focal2-r3-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -347,15 +463,11 @@ def test_e515_focal_control_checkpoint_and_run_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e515-e396-e500-replay050-slotrole4-focal0-r1-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -363,15 +475,11 @@ def test_e517_context_control_checkpoint_and_run_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e517-e396-e500-replay050-slotrole1-context-r1-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -379,15 +487,11 @@ def test_e519_honest_context_checkpoint_and_run_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e519-e396-e500-replay050-slotrole1-honest-context-r1-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -395,15 +499,11 @@ def test_e522_visible_inventory_checkpoint_and_run_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e522-e396-e521-replay050-slotrole1-honest-context-r2-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -411,15 +511,11 @@ def test_e525_visible_component_checkpoint_and_run_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e525-e396-e524-replay050-slotrole1-honest-context-r2-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -429,9 +525,7 @@ def test_e528_visible_component_types_checkpoint_and_run_are_persisted(
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e528-e396-e527-replay050-slotrole1-honest-context-r1-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     monkeypatch.setattr(readers, "_run_dir", lambda *_: tmp_path / "missing")
@@ -444,13 +538,14 @@ def test_e528_visible_component_types_checkpoint_and_run_are_persisted(
         "e527_visible_component_types_slot_contract_r1_20260719"
     )
     assert detail["training_data"]["dataset"]["fingerprint_matches_run"] is True
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
-    assert run_id in readers.train_data(
-        version="e527_visible_component_types_slot_contract_r1_20260719"
-    )["used_by_runs"]
+    assert (
+        run_id
+        in readers.train_data(
+            version="e527_visible_component_types_slot_contract_r1_20260719"
+        )["used_by_runs"]
+    )
 
 
 def test_e531_visible_semantic_roles_checkpoint_and_run_are_persisted(
@@ -459,9 +554,7 @@ def test_e531_visible_semantic_roles_checkpoint_and_run_are_persisted(
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     monkeypatch.setattr(readers, "_run_dir", lambda *_: tmp_path / "missing")
@@ -474,22 +567,21 @@ def test_e531_visible_semantic_roles_checkpoint_and_run_are_persisted(
         "e530_visible_semantic_roles_r2_20260719"
     )
     assert detail["training_data"]["dataset"]["fingerprint_matches_run"] is True
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
-    assert run_id in readers.train_data(
-        version="e530_visible_semantic_roles_r2_20260719"
-    )["used_by_runs"]
+    assert (
+        run_id
+        in readers.train_data(version="e530_visible_semantic_roles_r2_20260719")[
+            "used_by_runs"
+        ]
+    )
 
 
 def test_e533_visible_role_inference_run_is_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e533-e531-ood160-visible-role-inference-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
+    listed = next(row for row in readers.runs()["runs"] if row.get("run_id") == run_id)
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
     detail = readers.run(run_id)
@@ -528,9 +620,7 @@ def test_e544_root_identity_run_and_checkpoint_are_persisted(
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
     assert detail["scoreboard"]["agentv"]["passed"] == 0
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -553,9 +643,7 @@ def test_e545_matched_train_summaries_and_checkpoints_are_persisted(
         assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.0
         assert detail["scoreboard"]["agentv"]["passed"] == 0
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_ids <= checkpoint_ids
 
 
@@ -578,9 +666,7 @@ def test_e546_matched_train_summaries_and_checkpoints_are_persisted(
         assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.0
         assert detail["scoreboard"]["agentv"]["passed"] == 0
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_ids <= checkpoint_ids
 
 
@@ -596,9 +682,7 @@ def test_e547_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.2248
     assert detail["scoreboard"]["agentv"]["passed"] == 0
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -653,9 +737,7 @@ def test_e551_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.3
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -672,9 +754,7 @@ def test_e552_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
         0.13333333333333333
     )
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -692,9 +772,7 @@ def test_e553_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == (
         0.12437500000000001
     )
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -711,9 +789,7 @@ def test_e554_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
         0.2583333333333333
     )
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id in checkpoint_ids
 
 
@@ -728,9 +804,7 @@ def test_e555_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.3
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e556_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
@@ -746,9 +820,7 @@ def test_e556_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
         0.21666666666666667
     )
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e557_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
@@ -762,9 +834,7 @@ def test_e557_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.3
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e558_runs_and_checkpoints_are_persisted(tmp_path: Path) -> None:
@@ -782,9 +852,7 @@ def test_e558_runs_and_checkpoints_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.425
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert {trial_id, run_id} <= checkpoint_ids
 
 
@@ -802,9 +870,7 @@ def test_e559_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
         detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"]
         == 0.44166666666666665
     )
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e560_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
@@ -818,9 +884,7 @@ def test_e560_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.218125
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e561_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
@@ -834,9 +898,7 @@ def test_e561_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 24
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.575
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e562_eval_is_persisted(tmp_path: Path) -> None:
@@ -937,9 +999,7 @@ def test_e568_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 48
     assert detail["scoreboard"]["suites"]["ood"]["reward_score"] == 0.692
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e569_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
@@ -953,9 +1013,7 @@ def test_e569_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 48
     assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e570_eval_is_persisted(tmp_path: Path) -> None:
@@ -967,9 +1025,7 @@ def test_e570_eval_is_persisted(tmp_path: Path) -> None:
 
     detail = readers.run(run_id)
     assert detail["provenance"] == "committed"
-    assert (
-        detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.335
-    )
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.335
     assert detail["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7695
 
 
@@ -1001,9 +1057,7 @@ def test_e572_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 48
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.65
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e573_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
@@ -1017,9 +1071,7 @@ def test_e573_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 48
     assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.475
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e574_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
@@ -1033,9 +1085,7 @@ def test_e574_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert detail["provenance"] == "committed"
     assert detail["train_summary"]["steps"] == 48
     assert detail["scoreboard"]["suites"]["ood"]["reward_score"] == 0.757
-    assert run_id in {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    assert run_id in {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
 
 
 def test_e575_matched_eval_arms_are_persisted_without_new_checkpoint(
@@ -1058,9 +1108,7 @@ def test_e575_matched_eval_arms_are_persisted_without_new_checkpoint(
     ):
         assert readers.run(run_id)["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1084,9 +1132,7 @@ def test_e576_matched_eval_arms_are_persisted_without_new_checkpoint(
     ):
         assert readers.run(run_id)["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1107,9 +1153,7 @@ def test_e577_matched_eval_arms_are_persisted_without_new_checkpoint(
     control = readers.run("e577-e569-plan-binding-order-control-r1")
     assert control["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1133,9 +1177,7 @@ def test_e578_matched_eval_arms_are_persisted_without_new_checkpoint(
     ):
         assert readers.run(run_id)["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1157,9 +1199,7 @@ def test_e579_matched_eval_arms_are_persisted_without_new_checkpoint(
         run_id = f"e579-e569-verified-root{weight}-r2"
         assert readers.run(run_id)["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1176,13 +1216,9 @@ def test_e580_matched_eval_arms_are_persisted_without_new_checkpoint(
     assert primary["provenance"] == "committed"
     assert primary["scoreboard"]["suites"]["ood"]["ast_edge_f1"] == 0.0
     assert primary["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7345
-    assert readers.run(
-        "e580-e569-cardinality-root0-r1"
-    )["provenance"] == "committed"
+    assert readers.run("e580-e569-cardinality-root0-r1")["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1204,9 +1240,7 @@ def test_e581_matched_eval_arms_are_persisted_without_new_checkpoint(
         run_id = f"e581-e569-count-components{weight}-r1"
         assert readers.run(run_id)["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1221,19 +1255,11 @@ def test_e582_matched_eval_arms_are_persisted_without_new_checkpoint(
     primary_id = "e582-e569-distinct-slots4-r1"
     primary = readers.run(primary_id)
     assert primary["provenance"] == "committed"
-    assert (
-        primary["scoreboard"]["suites"]["ood"]["ast_edge_f1"]
-        == 0.16666666666666666
-    )
+    assert primary["scoreboard"]["suites"]["ood"]["ast_edge_f1"] == 0.16666666666666666
     assert primary["scoreboard"]["suites"]["ood"]["reward_score"] == 0.751
-    assert (
-        readers.run("e582-e569-distinct-slots0-r1")["provenance"]
-        == "committed"
-    )
+    assert readers.run("e582-e569-distinct-slots0-r1")["provenance"] == "committed"
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1253,9 +1279,7 @@ def test_e583_matched_eval_arms_are_persisted_without_new_checkpoint(
     assert control["provenance"] == "committed"
     assert control["scoreboard"]["suites"]["ood"]["reward_score"] == 0.776
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1275,9 +1299,7 @@ def test_e584_matched_eval_arms_are_persisted_without_new_checkpoint(
     assert control["provenance"] == "committed"
     assert control["scoreboard"]["suites"]["ood"]["reward_score"] == 0.776
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1297,9 +1319,7 @@ def test_e585_matched_eval_arms_are_persisted_without_new_checkpoint(
     assert control["provenance"] == "committed"
     assert control["scoreboard"]["suites"]["ood"]["reward_score"] == 0.776
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1319,9 +1339,7 @@ def test_e586_matched_eval_arms_are_persisted_without_new_checkpoint(
     assert control["provenance"] == "committed"
     assert control["scoreboard"]["suites"]["ood"]["reward_score"] == 0.776
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1344,9 +1362,7 @@ def test_e587_matched_eval_ladder_is_persisted_without_new_checkpoint(
     assert aggressive["provenance"] == "committed"
     assert aggressive["scoreboard"]["suites"]["ood"]["reward_score"] == 0.692
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1369,9 +1385,7 @@ def test_e588_root_closure_ladder_is_persisted_without_new_checkpoint(
     assert plateau["provenance"] == "committed"
     assert plateau["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7585
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1386,23 +1400,15 @@ def test_e589_opaque_slot_ladder_is_persisted_without_new_checkpoint(
     primary_id = "e589-e588-opaque4-r1"
     primary = readers.run(primary_id)
     assert primary["provenance"] == "committed"
-    assert primary["scoreboard"]["suites"]["ood"]["structural_similarity"] == (
-        0.331875
-    )
+    assert primary["scoreboard"]["suites"]["ood"]["structural_similarity"] == (0.331875)
     control = readers.run("e589-e588-opaque0-control-r1")
     plateau = readers.run("e589-e588-opaque8-r1")
     assert control["provenance"] == "committed"
-    assert control["scoreboard"]["suites"]["ood"]["structural_similarity"] == (
-        0.406875
-    )
+    assert control["scoreboard"]["suites"]["ood"]["structural_similarity"] == (0.406875)
     assert plateau["provenance"] == "committed"
-    assert plateau["scoreboard"]["suites"]["ood"]["structural_similarity"] == (
-        0.331875
-    )
+    assert plateau["scoreboard"]["suites"]["ood"]["structural_similarity"] == (0.331875)
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1425,9 +1431,7 @@ def test_e590_opaque_close_ladder_is_persisted_without_new_checkpoint(
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7585
 
-    checkpoint_ids = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoint_ids = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert primary_id not in checkpoint_ids
 
 
@@ -1477,9 +1481,7 @@ def test_e593_enum_close_ladder_is_persisted_without_new_checkpoint(
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["reward_score"] == reward
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1497,9 +1499,7 @@ def test_e594_inline_plan_ladder_is_persisted_without_new_checkpoint(
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["reward_score"] == 0.8115
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1550,9 +1550,7 @@ def test_e597_schema_role_ladder_is_persisted_without_new_checkpoint(
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["reward_score"] == 0.8115
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1571,9 +1569,7 @@ def test_e598_owner_slot_ladder_is_persisted_without_new_checkpoint(
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["reward_score"] == 0.8115
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1591,13 +1587,8 @@ def test_e599_slot_coverage_close_ladder_is_persisted_without_new_checkpoint(
     for run_id in run_ids:
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
-        assert (
-            run["scoreboard"]["suites"]["ood"]["structural_similarity"]
-            == 0.516875
-        )
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+        assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.516875
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1615,9 +1606,7 @@ def test_e600_modified_count_ladder_is_persisted_without_new_checkpoint(
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["component_type_recall"] == 0.625
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1638,13 +1627,8 @@ def test_e601_first_component_seed_ladder_is_persisted_without_new_checkpoint(
     for run_id in run_ids:
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
-        assert (
-            run["scoreboard"]["suites"]["ood"]["structural_similarity"]
-            == 0.516875
-        )
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+        assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.516875
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1658,9 +1642,7 @@ def test_e602_plan_seed_trace_is_persisted_without_new_checkpoint(
     run = readers.run(run_id)
     assert run["provenance"] == "committed"
     assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.516875
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1678,9 +1660,7 @@ def test_e603_reachability_trace_runs_are_persisted_without_new_checkpoint(
         run = readers.run(run_id)
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == structure
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(expected_structure)
 
 
@@ -1699,9 +1679,7 @@ def test_e604_plan_pressure_runs_are_persisted_without_new_checkpoint(
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.575625
         assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1720,9 +1698,7 @@ def test_e605_missing_family_trace_runs_are_persisted_without_new_checkpoint(
         assert run["provenance"] == "committed"
         assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.575625
         assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert not checkpoints.intersection(run_ids)
 
 
@@ -1737,9 +1713,7 @@ def test_e606_plan_margin_run_is_persisted_without_new_checkpoint(
     assert run["provenance"] == "committed"
     assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.575625
     assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1754,9 +1728,7 @@ def test_e607_root_trace_run_is_persisted_without_new_checkpoint(
     assert run["provenance"] == "committed"
     assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.575625
     assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1772,9 +1744,7 @@ def test_e608_root_margin_run_is_persisted_without_new_checkpoint(
     assert run["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.75
     assert run["scoreboard"]["suites"]["ood"]["reward_score"] == 0.67875
     assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1794,9 +1764,7 @@ def test_e621_coverage_closure_runs_are_persisted_without_new_checkpoint(
         suite = run["scoreboard"]["suites"]["ood"]
         assert suite["meaningful_program_rate"] == meaningful
         assert suite["reward_score"] == reward
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert checkpoints.isdisjoint(expected)
 
 
@@ -1813,9 +1781,7 @@ def test_e622_coverage_closure_trace_is_persisted_without_new_checkpoint(
     assert suite["meaningful_program_rate"] == 0.75
     assert suite["reward_score"] == 0.8175
     assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1832,9 +1798,7 @@ def test_e630_prompt_owned_closure_is_persisted_without_new_checkpoint(
     assert suite["meaningful_program_rate"] == 0.5
     assert suite["reward_score"] == 0.785
     assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1852,9 +1816,7 @@ def test_e631_owner_escape_is_persisted_without_new_checkpoint(
     assert suite["structural_similarity"] == 0.572925
     assert suite["reward_score"] == 0.8515
     assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1874,9 +1836,7 @@ def test_e633_input_role_runs_persist_without_new_checkpoints(tmp_path: Path) ->
         assert suite["meaningful_program_rate"] == meaningful
         assert suite["reward_score"] == reward
         assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert checkpoints.isdisjoint(expected)
 
 
@@ -1890,9 +1850,7 @@ def test_e634_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["meaningful_program_rate"] == 0.5
     assert suite["reward_score"] == 0.785
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1911,9 +1869,7 @@ def test_e635_confirmed_runs_persist_without_new_checkpoints(tmp_path: Path) -> 
         assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.25
         assert suite["reward_score"] == 0.8515
         assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert checkpoints.isdisjoint(run_ids)
 
 
@@ -1932,9 +1888,7 @@ def test_e636_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
         assert suite["binding_aware_meaningful_v2_rate_strict"] == strict_rate
         assert suite["reward_score"] == 0.8575
         assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert checkpoints.isdisjoint(expected)
 
 
@@ -1953,9 +1907,7 @@ def test_e637_confirmed_runs_persist_without_new_checkpoints(tmp_path: Path) -> 
         assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.5
         assert suite["structural_similarity"] == 0.581675
         assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert checkpoints.isdisjoint(run_ids)
 
 
@@ -1969,9 +1921,7 @@ def test_e638_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.5
     assert suite["reward_score"] == 0.819
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -1989,9 +1939,7 @@ def test_e639_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> No
         suite = run["scoreboard"]["suites"]["ood"]
         assert suite["binding_aware_meaningful_v2_rate_strict"] == strict
         assert run["scoreboard"]["agentv"]["passed"] == 0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert checkpoints.isdisjoint(expected)
 
 
@@ -2005,9 +1953,7 @@ def test_e640_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> Non
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.5
     assert suite["structural_similarity"] == 0.581675
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2021,9 +1967,7 @@ def test_e641_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.25
     assert suite["reward_score"] == 0.884
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2037,9 +1981,7 @@ def test_e642_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.5
     assert suite["structural_similarity"] == 0.48835
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2053,9 +1995,7 @@ def test_e643_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.25
     assert suite["placeholder_fidelity"] == 0.7583333333333333
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2069,9 +2009,7 @@ def test_e644_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["structural_similarity"] == 0.605625
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2086,9 +2024,7 @@ def test_e645_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> No
         suite = run["scoreboard"]["suites"]["ood"]
         assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
         assert suite["structural_similarity"] == 0.605625
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_ids.isdisjoint(checkpoints)
 
 
@@ -2102,9 +2038,7 @@ def test_e646_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> Non
     suite = run["scoreboard"]["suites"]["ood"]
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["structural_similarity"] == 0.605625
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2119,9 +2053,7 @@ def test_e647_diagnostic_runs_persist_without_new_checkpoints(tmp_path: Path) ->
         suite = run["scoreboard"]["suites"]["ood"]
         assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
         assert suite["structural_similarity"] == 0.605625
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_ids.isdisjoint(checkpoints)
 
 
@@ -2137,9 +2069,7 @@ def test_e648_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["structural_similarity"] == 0.73545
     assert suite["component_type_recall"] == 0.875
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2154,9 +2084,7 @@ def test_e649_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert suite["meaningful_program_rate"] == 0.75
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["placeholder_fidelity"] == 1.0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2172,9 +2100,7 @@ def test_e650_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["placeholder_fidelity"] == 1.0
     assert suite["placeholder_validity"] == 1.0
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2189,9 +2115,7 @@ def test_e651_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert suite["meaningful_program_rate"] == 0.75
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["structural_similarity"] == 0.7629250000000001
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2206,9 +2130,7 @@ def test_e652_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert suite["meaningful_program_rate"] == 0.75
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["structural_similarity"] == 0.78235
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2223,9 +2145,7 @@ def test_e653_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert suite["meaningful_program_rate"] == 1.0
     assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
     assert suite["structural_similarity"] == 0.769175
-    checkpoints = {
-        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
-    }
+    checkpoints = {row.get("run_id") for row in readers.checkpoints()["checkpoints"]}
     assert run_id not in checkpoints
 
 
@@ -2513,10 +2433,7 @@ def test_train_records_supports_browsing_filters_and_pagination(tmp_path) -> Non
 
 
 def test_preference_data_lists_committed_event_corpora(tmp_path) -> None:
-    directory = (
-        tmp_path
-        / "src/slm_training/resources/data/preference/events-v1"
-    )
+    directory = tmp_path / "src/slm_training/resources/data/preference/events-v1"
     directory.mkdir(parents=True)
     (directory / "manifest.json").write_text(
         json.dumps(
@@ -2627,9 +2544,7 @@ def test_run_detail_missing_is_graceful(ro_client: TestClient) -> None:
 def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
     design = tmp_path / "docs" / "design"
     design.mkdir(parents=True)
-    run_dir = (
-        tmp_path / "outputs" / "autoresearch" / "e9-current" / "runs" / "e9-run"
-    )
+    run_dir = tmp_path / "outputs" / "autoresearch" / "e9-current" / "runs" / "e9-run"
     run_dir.mkdir(parents=True)
     suites = {
         "smoke": {
@@ -2650,9 +2565,7 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
                 "train_result": {"trace_id": "a" * 32},
                 "suites": suites,
                 "ship_gates": {"pass": False},
-                "evals": {
-                    "criteria": {"total": 5, "passed": 1, "pass": False}
-                },
+                "evals": {"criteria": {"total": 5, "passed": 1, "pass": False}},
                 "scoreboard": "outputs/autoresearch/e9-current/runs/e9-run/scoreboard.json",
             }
         ),
@@ -2777,9 +2690,7 @@ def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None
                 "evaluation": {
                     "suites": suites,
                     "failed_gates": 4,
-                    "evals": {
-                        "criteria": {"total": 5, "passed": 1, "pass": False}
-                    },
+                    "evals": {"criteria": {"total": 5, "passed": 1, "pass": False}},
                 },
             }
         ),
@@ -2925,7 +2836,10 @@ def test_experiment_feature_flag_detail_endpoint(ro_client: TestClient) -> None:
 def test_read_only_blocks_execution(ro_client: TestClient) -> None:
     resp = ro_client.post(
         "/api/jobs",
-        json={"job": "build_train_data", "params": {"source": "fixture", "version": "v0"}},
+        json={
+            "job": "build_train_data",
+            "params": {"source": "fixture", "version": "v0"},
+        },
     )
     assert resp.status_code == 403
 
@@ -2999,7 +2913,10 @@ def test_remote_train_allowlisted_and_safe(tmp_path) -> None:
         assert (
             client.post(
                 "/api/jobs",
-                json={"job": "remote_train", "params": {"host": "a;rm -rf /", "run_id": "r"}},
+                json={
+                    "job": "remote_train",
+                    "params": {"host": "a;rm -rf /", "run_id": "r"},
+                },
             ).status_code
             == 422
         )
@@ -3009,19 +2926,28 @@ def test_remote_train_allowlisted_and_safe(tmp_path) -> None:
 def test_allowlist_rejects_unknown_and_malicious(tmp_path) -> None:
     with TestClient(create_app(execution=True, root=tmp_path)) as client:
         assert client.get("/api/capabilities").json()["execution"] is True
-        assert client.post("/api/jobs", json={"job": "nope", "params": {}}).status_code == 400
+        assert (
+            client.post("/api/jobs", json={"job": "nope", "params": {}}).status_code
+            == 400
+        )
         # shell-injection / path-escape attempts are rejected at validation.
         assert (
             client.post(
                 "/api/jobs",
-                json={"job": "build_train_data", "params": {"source": "x;rm -rf /", "version": "v0"}},
+                json={
+                    "job": "build_train_data",
+                    "params": {"source": "x;rm -rf /", "version": "v0"},
+                },
             ).status_code
             == 422
         )
         assert (
             client.post(
                 "/api/jobs",
-                json={"job": "build_test_data", "params": {"source": "both", "version": "../etc"}},
+                json={
+                    "job": "build_test_data",
+                    "params": {"source": "both", "version": "../etc"},
+                },
             ).status_code
             == 422
         )
@@ -3066,11 +2992,15 @@ def test_job_cancel(tmp_path, monkeypatch) -> None:
         jobs_mod.JOB_SPECS,
         "_serve",
         jobs_mod.JobSpec(
-            "http.server", positional=("port",), params={"port": jobs_mod.IntRange(20000, 65000)}
+            "http.server",
+            positional=("port",),
+            params={"port": jobs_mod.IntRange(20000, 65000)},
         ),
     )
     with TestClient(create_app(execution=True, root=tmp_path)) as client:
-        job = client.post("/api/jobs", json={"job": "_serve", "params": {"port": 48231}}).json()
+        job = client.post(
+            "/api/jobs", json={"job": "_serve", "params": {"port": 48231}}
+        ).json()
         job_id = job["id"]
         # wait until it is actually running
         for _ in range(50):

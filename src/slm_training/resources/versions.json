@@ -1055,10 +1055,11 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
+        "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
         "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
         "src/slm_training/dsl/grammar/fastpath/force_emit.py",
         "src/slm_training/dsl/grammar/fastpath/semantic_state.py",
@@ -1067,10 +1068,20 @@
         "tests/test_dsl/test_semantic_state.py",
         "tests/test_dsl/test_completion_kernel.py",
         "tests/test_dsl/test_completion_forest_engine_reuse.py",
+        "tests/test_dsl/test_completion_artifact.py",
         "tests/test_dsl/test_solver_packed_reuse.py",
-        "docs/design/grammar-fastpath.md"
+        "scripts/build_completion_artifact.py",
+        "src/slm_training/resources/decode/openui_completion_v1.safetensors",
+        "src/slm_training/resources/decode/openui_completion_v1.manifest.json",
+        "docs/design/grammar-fastpath.md",
+        "docs/design/certified-completion-artifact-and-tps-target.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-29",
+          "note": "Add a deterministic safe-tensor LALR/token projection artifact, exact live checker, cross-process canonical control coloring, and fail-closed runtime reuse while keeping semantic authority request-local."
+        },
         {
           "version": "v2",
           "date": "2026-07-29",
@@ -1129,7 +1140,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1137,6 +1148,16 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-29",
+          "note": "Declare the OpenUI pack's optional static completion artifact capability; loaders still certify it and preserve request-local semantic authority."
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-29",
+          "note": "no-bump: surface current-main committed completion-kernel timing summaries, work counters, and fixture gates on the read-only DSL Packs page; OpenFeature behavior is unchanged"
+        },
         {
           "version": "v10",
           "date": "2026-07-29",
@@ -2100,7 +2121,7 @@
       ]
     },
     "features.openfeature": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
@@ -2110,7 +2131,10 @@
         "src/slm_training/web/observability.py",
         "src/slm_training/web/app.py",
         "src/slm_training/web/routes.py",
+        "src/slm_training/runtime/performance_target.py",
         "tests/test_web/test_promotion_evaluate_locked_manifest_digest.py",
+        "tests/test_web/test_control_plane.py",
+        "tests/test_runtime/test_performance_target.py",
         "src/apps/dashboard/src/features/keys.ts",
         "src/apps/dashboard/src/features/runtime.ts",
         "src/apps/dashboard/src/interpret/library.tsx",
@@ -2118,9 +2142,21 @@
         "src/apps/dashboard/src/main.tsx",
         "src/apps/dashboard/src/pages/Experiments.tsx",
         "src/apps/dashboard/src/pages/ExperimentFlagDetail.tsx",
+        "src/apps/dashboard/src/pages/DslPacks.tsx",
+        "src/slm_training/web/static/openui/dsl-packs.openui",
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-29",
+          "note": "Replace the client-side grammar-memory TPS calculation with one backend causal target using whole-model parameters, grammar work, separate single-stream and aggregate profiles, explicit levers, and non-circular evidence gaps."
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-29",
+          "note": "no-bump: add the read-only DSL Packs dashboard route and source-backed pack metadata endpoint; OpenFeature evaluation, defaults, exposure tracking, and experiment behavior are unchanged"
+        },
         {
           "version": "v10",
           "date": "2026-07-27",
@@ -8763,6 +8799,11 @@
         {
           "version": "v7",
           "date": "2026-07-29",
+          "note": "no-bump: link the normative causal TPS target and certified artifact design from runtime-performance.md; matrix behavior and measured evidence are unchanged."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-29",
           "note": "no-bump: record the clean v7 17/17 successor, retained upstream speedups, exact 10-to-5 neural-call compaction, and bounded 0.961x CPU batch latency; matrix behavior is unchanged."
         },
         {
@@ -9584,7 +9625,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v267",
+      "version": "v268",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9627,6 +9668,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v268",
+          "date": "2026-07-29",
+          "note": "Bind new lexer-native checkpoint payloads and metadata to the checked static completion artifact digest; checkpoint saving fails closed on artifact-manifest mismatch."
+        },
         {
           "version": "v267",
           "date": "2026-07-29",

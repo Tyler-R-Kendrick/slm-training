@@ -41,6 +41,7 @@ import { EMPTY_HERO } from "../hero";
 import { getJSON, postJSON } from "../api";
 import { useCaps, jobDef } from "../caps";
 import { Playground } from "../pages/Playground";
+import { DslPackEstimator as DslPackEstimatorC } from "../pages/DslPacks";
 import {
   DataQualityCard,
   RejectedRecordsBrowser,
@@ -609,6 +610,14 @@ const AnnotatePlayground = defineComponent({
   component: () => <Playground />,
 });
 
+const DslPackEstimator = defineComponent({
+  name: "DslPackEstimator",
+  description:
+    "Stateful DSL-pack planning assumptions, modeled rate targets, and independent current-evidence comparisons.",
+  props: z.object({ data: any }),
+  component: ({ props }: any) => <DslPackEstimatorC data={props.data} />,
+});
+
 // Active training runs across telemetry peers. Delegates to the shared
 // OtelRunLines / OtelBadgesView views so compiled and interpreted match verbatim.
 const OtelRunList = defineComponent({
@@ -663,6 +672,7 @@ const CUSTOM = [
   RejectedBrowser,
   CheckpointConsole,
   AnnotatePlayground,
+  DslPackEstimator,
 ];
 
 export const dashboardLibrary = createLibrary({

@@ -14840,11 +14840,19 @@ class TwoTowerModel(nn.Module):
     def save(self, path: Path | str) -> None:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
+        completion_artifact = None
+        if _is_lexer_output(self.config):
+            from slm_training.dsl.grammar.fastpath.completion_artifact import (
+                completion_artifact_checkpoint_identity,
+            )
+
+            completion_artifact = completion_artifact_checkpoint_identity()
         payload = {
             "kind": "twotower",
             "config": asdict(self.config),
             "gen_len": self.gen_len,
             "output_contract_version": self.output_contract_version,
+            "completion_artifact": completion_artifact,
             "state_dict": self._state_dict_for_checkpoint(),
         }
         tok_path = path.with_suffix(".tokenizer.json")
@@ -14863,6 +14871,7 @@ class TwoTowerModel(nn.Module):
                     "config": asdict(self.config),
                     "gen_len": self.gen_len,
                     "output_contract_version": self.output_contract_version,
+                    "completion_artifact": completion_artifact,
                     "tokenizer": str(tok_path.name),
                     "context_tokenizer": ctx_tok_name,
                     "vocab_size": self.tokenizer.vocab_size,
@@ -14887,6 +14896,11 @@ class TwoTowerModel(nn.Module):
         if payload.get("kind") != "twotower":
             raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
         require_current_output_contract(payload)
+        from slm_training.dsl.grammar.fastpath.completion_artifact import (
+            require_checkpoint_completion_artifact,
+        )
+
+        require_checkpoint_completion_artifact(payload)
         _check_output_head_tie_migration(
             self,
             payload.get("config") or {},
@@ -14947,6 +14961,11 @@ class TwoTowerModel(nn.Module):
             )
             raise ValueError(f"checkpoint kind {kind!r} is not twotower")
         require_current_output_contract(payload)
+        from slm_training.dsl.grammar.fastpath.completion_artifact import (
+            require_checkpoint_completion_artifact,
+        )
+
+        require_checkpoint_completion_artifact(payload)
         tok_path = path.with_suffix(".tokenizer.json")
         if not tok_path.exists():
             raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tok_path}")

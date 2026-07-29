@@ -27,6 +27,7 @@ Full fidelity tags and honesty rules: [research-lineage.md](research-lineage.md)
 | Module | Role |
 | --- | --- |
 | `engine.py` | `OpenUIIncrementalEngine` — Lex + feed tokens; `accepts()`; `is_deterministic_next()` |
+| `completion_artifact.py` | Safe on-disk static LALR/token projection plus independent certified loader |
 | `completion_kernel.py` | Request-local packed parser/semantic states, outgoing edges, bounded witnesses, and forced closures |
 | `semantic_state.py` | Immutable scope, binder, schema, slot, and literal-frame facts updated per DSL-native token |
 | `force_emit.py` | Map singleton terminal → tokenizer id; draft windows |
@@ -137,7 +138,12 @@ their control state can choose or restore a row before tensor work is known.
 
 All prefix/state/domain caches are lifetime-bounded by the request, decode row,
 or batch and occupy O(unique packed states/prefixes); they have no
-process-global arbitrary-prefix forest cache. `TimeoutError` is checked before
+process-global arbitrary-prefix forest cache. The request-independent LALR
+control relation and tokenizer-to-terminal projection are compiled into the
+checked artifact described in
+[certified-completion-artifact-and-tps-target.md](certified-completion-artifact-and-tps-target.md).
+The decoder consumes only the projection after exact live equivalence passes;
+scope and semantic state are never serialized. `TimeoutError` is checked before
 cache reuse and after forest/closure construction and propagates through
 parser, witness, and solver loops. Native OpenUI production uses the packed
 path. The prefix-oriented reference remains a differential oracle and the
