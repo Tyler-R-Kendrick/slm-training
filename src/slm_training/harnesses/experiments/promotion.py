@@ -22,6 +22,12 @@ from slm_training.harness_core.promotion_engine import (
 from slm_training.harness_core.promotion_engine import (
     evaluate_promotion as _evaluate_promotion,
 )
+from slm_training.harnesses.experiments.verified_metrics import (
+    VerifiedMetricError,
+    default_metric_paths,
+    sha256_file,
+    verify_metric_certificate,
+)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -224,6 +230,10 @@ def register_promoted_checkpoint(
     campaign_store: CampaignStore | None = None,
     artifact_root: Path | None = None,
     locked_manifest_path: Path | None = None,
+    promoted_candidate_id: str | None = None,
+    metric_evidence_path: Path | None = None,
+    metric_certificate_path: Path | None = None,
+    leverproof_bin: Path | str | None = None,
 ) -> Path:
     """Copy/link the mid-trained anchor to ``promoted.pt`` (P1d)."""
     import shutil
@@ -272,6 +282,26 @@ def register_promoted_checkpoint(
         raise ValueError(
             "checkpoint registration requires a promotable campaign-governed result"
         )
+    if promoted_candidate_id is None:
+        raise ValueError(
+            "checkpoint registration requires the promoted LeverProof candidate id"
+        )
+    assert artifact_root is not None
+    default_evidence, default_certificate = default_metric_paths(artifact_root)
+    evidence_path = metric_evidence_path or default_evidence
+    certificate_path = metric_certificate_path or default_certificate
+    try:
+        metric_certificate = verify_metric_certificate(
+            evidence_path=evidence_path,
+            certificate_path=certificate_path,
+            expected_campaign_manifest_sha256=governance["manifest_sha256"],
+            expected_selected_candidate=promoted_candidate_id,
+            checker=leverproof_bin,
+        )
+    except VerifiedMetricError as exc:
+        raise ValueError(
+            f"checkpoint registration requires verified resource metrics: {exc}"
+        ) from exc
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     dest = checkpoint_dir / "promoted.pt"
@@ -285,6 +315,9 @@ def register_promoted_checkpoint(
         "kind": "promoted_anchor",
         "campaign_manifest_sha256": governance["manifest_sha256"],
         "locked_eval_manifest_sha256": manifest.locked_eval_manifest_sha256,
+        "metric_certificate_sha256": sha256_file(certificate_path),
+        "metric_evidence_sha256": sha256_file(evidence_path),
+        "metric_selected_candidate": metric_certificate["selected_candidate"],
     }
     meta_path.write_text(
         __import__("json").dumps(payload, indent=2) + "\n", encoding="utf-8"

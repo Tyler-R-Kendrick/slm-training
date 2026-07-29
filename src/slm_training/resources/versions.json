@@ -2739,7 +2739,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v140",
+      "version": "v141",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2751,6 +2751,11 @@
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v141",
+          "date": "2026-07-29",
+          "note": "Require replayed Lean LeverProof raw-resource metric certificates at generic campaign promotion, binding the selected candidate and locked campaign digest"
+        },
         {
           "version": "v140",
           "date": "2026-07-27",
@@ -6176,7 +6181,7 @@
       ]
     },
     "harness.experiments.slm228_spectral_disposition": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm228_spectral_disposition.py",
@@ -6191,6 +6196,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-29",
+          "note": "Require explicit replayed Lean LeverProof evidence and certificate inputs before model_cycle can mutate a validated run into a champion"
+        },
         {
           "version": "v1",
           "date": "2026-07-29",
@@ -7994,13 +8004,19 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v26",
+      "version": "v27",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
-        "src/slm_training/harnesses/model_build/full_state.py"
+        "src/slm_training/harnesses/model_build/full_state.py",
+        "src/slm_training/harnesses/quality/__init__.py"
       ],
       "history": [
+        {
+          "version": "v27",
+          "date": "2026-07-29",
+          "note": "Bind direct promoted-checkpoint registration to a Lean-certified candidate id and campaign resource evidence; project curriculum and synthesized stress records to contiguous opaque slot markers"
+        },
         {
           "version": "v26",
           "date": "2026-07-27",

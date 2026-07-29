@@ -43,6 +43,10 @@ from slm_training.lineage.tracks import (
 from slm_training.harnesses.experiments.slm228_spectral_disposition import (
     validate_spectral_recipe,
 )
+from slm_training.harnesses.experiments.verified_metrics import (
+    VerifiedMetricError,
+    verify_metric_certificate,
+)
 from slm_training.integrations.nemo_rl import (
     DEFAULT_BUCKET as NEMO_DEFAULT_BUCKET,
     DEFAULT_FLAVOR as NEMO_DEFAULT_FLAVOR,
@@ -618,6 +622,17 @@ def cmd_promote(args: argparse.Namespace) -> int:
             failures.append("Windows warm p95 must be at most 15 seconds")
     if failures:
         raise ValueError("promotion rejected: " + "; ".join(failures))
+    try:
+        verify_metric_certificate(
+            evidence_path=args.metric_evidence,
+            certificate_path=args.metric_certificate,
+            expected_selected_candidate=manifest.run_id,
+            checker=args.leverproof_bin,
+        )
+    except VerifiedMetricError as exc:
+        raise ValueError(
+            f"promotion requires verified resource metrics: {exc}"
+        ) from exc
     champion = store.champion(manifest.track)
     promoted = store.transition_run(manifest.run_id, "champion")
     pointer = ChampionPointer(
@@ -1366,6 +1381,9 @@ def build_parser() -> argparse.ArgumentParser:
     promote.add_argument("--parent-report")
     promote.add_argument("--finalist-report", action="append", default=[])
     promote.add_argument("--deployment-artifact", type=Path)
+    promote.add_argument("--metric-evidence", type=Path, required=True)
+    promote.add_argument("--metric-certificate", type=Path, required=True)
+    promote.add_argument("--leverproof-bin", type=Path)
     promote.add_argument(
         "--publish-train-data",
         action=argparse.BooleanOptionalAction,

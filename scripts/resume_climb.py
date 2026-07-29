@@ -184,6 +184,7 @@ def main(argv: list[str] | None = None) -> int:
             campaign_store=campaign_store,
             artifact_root=artifact_root,
             locked_manifest_path=locked_manifest_path,
+            promoted_candidate_id=out.name,
             meta={"policy_sha": policy_sha, "gates": gates},
         )
 
