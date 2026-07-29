@@ -1073,6 +1073,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-29T11:36:25-05:00",
+          "note": "no-bump: bound deterministic generated-program prefix sampling so hosted CI stays inside the canonical run cap; completion-kernel behavior and exhaustive corpus coverage are unchanged."
+        },
+        {
+          "version": "v2",
           "date": "2026-07-29T10:05:51-05:00",
           "note": "no-bump: preserve the exact recording datetime for the existing v2 hardening history event; runtime behavior is unchanged."
         },

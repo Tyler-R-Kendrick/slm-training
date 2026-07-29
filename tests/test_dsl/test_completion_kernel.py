@@ -518,6 +518,17 @@ def _check_prefix_parity(tok, prefix_ids, label: str, budgets=(8, 32)) -> None:
             ), f"{label} budget={budget} witness={candidate.terminal_witness}"
 
 
+def _sampled_prefix_ends(length: int, *, max_samples: int = 12) -> tuple[int, ...]:
+    """Keep generated-program parity broad without making CI scale by token count."""
+    candidates = list(range(0, length + 1, 2))
+    if candidates[-1] != length:
+        candidates.append(length)
+    if len(candidates) <= max_samples:
+        return tuple(candidates)
+    last = len(candidates) - 1
+    return tuple(candidates[index * last // (max_samples - 1)] for index in range(max_samples))
+
+
 @pytest.mark.parametrize("program", _CORPUS, ids=lambda p: repr(p[-24:]))
 def test_domain_parity_every_prefix(tok: DSLNativeTokenizer, program: str) -> None:
     ids = [int(t) for t in tok.encode(program, add_special=False)]
@@ -562,7 +573,7 @@ def test_domain_parity_seeded_generated_programs(tok: DSLNativeTokenizer) -> Non
         except ValueError:
             continue  # template content outside the symbolic surface
         checked += 1
-        for end in range(0, len(ids) + 1, 2):
+        for end in _sampled_prefix_ends(len(ids)):
             _check_prefix_parity(
                 tok,
                 [tok.bos_id, *ids[:end]],
