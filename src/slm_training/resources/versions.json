@@ -6049,6 +6049,11 @@
         {
           "version": "v1",
           "date": "2026-07-29",
+          "note": "no-bump: replace preliminary packed-completion lineage text with clean seven-pair measured results and the I14 decode successor; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-29",
           "note": "no-bump: add packed incremental grammar completion provenance and negative runtime evidence to the shared research-lineage index; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -8816,6 +8821,11 @@
         "docs/design/perf-experiment-matrix.md"
       ],
       "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-29",
+          "note": "no-bump: replace preliminary packed-completion matrix text with clean seven-pair measured results; the SLM-194 candidate-proposal matrix is unchanged"
+        },
         {
           "version": "ffe3-03-v1",
           "date": "2026-07-29",

@@ -410,42 +410,48 @@ Canonical runner:
 
 ```bash
 PYTHONPATH=src python -m scripts.run_perf_matrix \
-  --completion-kernel-workload direct,corpus,choice,solver,decode \
-  --completion-repeats 2
+  --completion-kernel-workload <direct|corpus|choice|solver|decode> \
+  --completion-repeats 7 \
+  --completion-run-id completion-kernel-20260729-final
+PYTHONPATH=src python -m scripts.run_perf_matrix \
+  --completion-merge \
+  --completion-run-id completion-kernel-20260729-final
 ```
 
-The workloads were executed as separate CPU shards under the three-minute
-repository cap and merged into
+The five workloads ran as separate CPU processes under the three-minute
+repository cap and were merged only after the runner verified the same clean
+commit, component versions, recipe, host, and fixture digests. The result is
 [completion-kernel-perf-results.json](completion-kernel-perf-results.json).
-The artifact records the measured repeat count for each shard (direct 3,
-corpus 2, choice 5, solver 3, decode 2).
-Recipe: scratch/fixture authorities, no checkpoint, no training, no eval suite,
-`honesty_mode=fixture_perf_not_ship`. The V1 reference and packed path ran in
-the same process with identical tokenizer, prefixes, slot contract, horizons,
-and output comparisons.
+Source: clean commit `adab7e4365c4fe350040d233839d58223d48e018`;
+`matrix.perf=v5`, `model.twotower=v266`; seven alternating pairs per workload,
+one excluded pilot, independently calibrated power-of-two bundles, 10 ms
+timing floor, and 15% relative-MAD ceiling. Recipe: scratch/fixture authorities,
+no checkpoint, no training, no eval suite,
+`honesty_mode=fixture_perf_not_ship`.
 
 | Workload | n | Reference | Packed | Correctness | Gate | Outcome |
 | --- | ---: | ---: | ---: | --- | --- | --- |
-| difficult warm graph/DP | 1 | 14.1658 ms | 6.3338 ms | exact 12 paths | ≥10× | **fail, 2.237×** |
-| fresh-request/cache-cleared prefixes | 3 | — | max ratio 1.156× | exact domains | ≤1.15× | **fail** |
-| choice feasibility, allowed-cache cleared | 1 | 44.7459 ms | 2.7204 ms | exact legal set | ≥3× | **pass, 16.448×** |
-| solver successors | 14 | 0.0432 ms | 1.2994 ms | all cached once | expand once | **mechanical pass; intended verdict/certificate gate unmeasured** |
-| cold compiler decode | 1 | 1,708.32 compiler ms | 1,997.61 compiler ms | identical fail-closed output | ≥5× | **fail, 0.855×** |
+| difficult warm graph/DP | 1 | 16.9321 ms | 0.0441 ms | exact 12 paths; zero measured rebuild work | ≥10× | **pass, 383.998×** |
+| fresh-request/cache-cleared prefixes | 3 | paired per prefix | max ratio 1.064× | exact domains; stable pairs | ≤1.15× | **pass** |
+| choice feasibility, allowed-cache cleared | 1 | 41.5198 ms | 2.0004 ms | exact legal set | ≥3× | **pass, 20.756×** |
+| solver successors | 14 | 5.8882 ms | 2.5126 ms | exact payloads; 14/14 certificates replay | one root expansion each; packed ≤ reference | **pass, 2.343×** |
+| cold compiler decode | 1 | 1,612.48 compiler ms | 1,511.12 compiler ms | identical ids/text/certification; one forward each; zero rebuild work | ≥5× | **fail, 1.067×** |
 
-The kernel also reported one session start, zero append-path full-prefix lexical
-bytes, and zero fresh candidate-engine allocations on the decode fixture.
-Focused tests prove complete-singleton zero-forward behavior; this bounded
-fixture used one forward before its exact authority stopped fail-closed.
+The direct measurement added zero general-forest builds, tree clones, edge
+replays, or witness-state expansions after its excluded warmups. The decode
+row started one request-local session and added zero full-prefix lexical bytes,
+fresh candidate engines, general-forest builds, tree clones, AST bridges, or
+edge replays. Its remaining one neural forward was identical to the reference
+and dominates the fixture, so removing parser/semantic replay did not approach
+the 5× end-to-end compiler threshold.
 
-This is a mixed, non-promotable result. Exact parity and cold choice
-feasibility pass. The difficult graph/DP, cold-prefix regression, and
-compiler-decode speed objectives do not; the solver row proves only request
-reuse and is not the plan's verdict/certificate gate. Profiling found 827
-packed forest builds versus 830 reference builds, so the current graph does
-not converge enough to amortize the general forest builder; the cold `root =`
-result also shows that building the packed graph can cost more before reuse.
-Per I14, the successor remains open: precompile schema/semantic transitions so
-outgoing edges no longer invoke the general forest builder at every state,
-then rerun these unchanged cold fixtures and add exact solver verdict and
-certificate replay. Do not replace request-local authority with a global
-cache and do not enable `compiler_decode_mode` by default from this evidence.
+Decision: **mixed and non-promotable**. Four unchanged gates now pass, including
+the previously failing graph/DP and cold-prefix rows, but the five-workload
+merge remains `overall_status=fail` because compiler decode reaches only
+1.067×. Per I14, the next approach is to profile the residual shared-forward
+latency and extend exact `common_forced_run` / scope-singleton proofs far enough
+to avoid that forward where the grammar truly determines the branch; genuine
+ambiguity must stay on the ordinary model-ranked path. Also measure compact
+ambiguous-row batching on a multi-row fixture. Do not weaken the 5× gate,
+introduce a heuristic forced choice, replace request-local authority with a
+global cache, or enable `compiler_decode_mode` by default from this evidence.

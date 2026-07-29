@@ -129,11 +129,20 @@ survival, or remasking could depend on logits remains neural work.
 Lexer-native decode now keeps one `CompletionSession` per decode row and shares
 the same session among batch rows only when tokenizer, runtime-symbol inventory,
 slot contract, pack/schema identity, grammar options, proof budget, and exact
-prefix match. The session interns
-parser plus semantic state, memoizes transitions/outgoing domains, replays
-positive and negative terminal-witness proofs with the original per-query node
-charges, and caches exact completed domain results. State ids are request-local
+prefix match. The session interns parser/recognition plus semantic state,
+memoizes transitions/outgoing domains, replays positive and negative
+terminal-witness proofs with the original per-query node charges, and caches
+exact completed domain results. Complete-authority budget-exhausted UNKNOWN
+schedules are keyed by exact state, room, and node budget;
+incomplete-authority UNKNOWN is never cached. State ids are request-local
 implementation details and never enter certificates.
+
+Supported rows use immutable tree-free recognition snapshots to verify edge
+targets. Endpoints remain lazy: semantic state and a full parser record are
+materialized only when a verified edge is traversed. Literal boundaries retain
+the canonical decoded-prefix recognition path, and any unsupported recognition
+transition falls back to the exact incremental engine. Thus the optimization
+removes speculative parser copies without widening the legal domain.
 
 `GrammarDecodeState.advance_token` advances the packed state beside the existing
 incremental parser. Arbitrary replacement prefixes discard the row attachment;
@@ -157,3 +166,8 @@ singleton no-forward tests. Measured fixture results and the remaining negative
 decode result are recorded in
 [completion-kernel-perf-results.json](completion-kernel-perf-results.json) and
 [the perf matrix](perf-experiment-matrix.md#packed-completion-kernel-2026-07-29).
+The clean seven-pair fixture passes direct graph/DP, cold-prefix, choice, and
+solver gates. Compiler decode preserves exact output/certification and zero
+rebuild work but reaches only 1.067× against a 5× gate, so the merged verdict is
+`fail` and the mechanism is non-promotable. It authorizes no semantic-quality
+or ship claim.

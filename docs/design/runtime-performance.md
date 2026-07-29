@@ -354,33 +354,33 @@ It is compiler/runtime evidence only (`honesty_mode=fixture_perf_not_ship`);
 no checkpoint, evaluation suite, AgentV result, or ship claim was produced.
 
 - The warmed difficult `root = Card([b1,` query retained exactly 12 paths and
-  measured 14.1658 ms for the V1 reference versus 6.3338 ms for a
-  request-local graph/DP query with the final-result cache cleared (2.237×).
-  It therefore **failed** the required 10× gate; the earlier timer-floor
-  result-cache replay is not accepted as kernel evidence.
+  measured 16.9321 ms for the V1 reference versus 0.0441 ms for a
+  request-local graph/DP query with the final-result cache cleared
+  (383.998×). It **passed** the required 10× gate with zero measured forest
+  builds, tree clones, edge replays, or witness-state expansions.
 - Seven corpus prefix domains were byte-identical. Three fresh-request simple
-  prefixes measured packed/reference ratios of 0.927×, 0.833×, and 1.156×.
-  The worst case therefore **failed** the preregistered 1.15× regression
-  ceiling despite exact parity. These are fresh-request/cache-cleared rows
-  after shared immutable schema/tokenizer warmup, not process-cold starts.
+  prefixes measured median packed/reference ratios of 0.963×, 0.997×, and
+  1.064×. The worst case therefore **passed** the preregistered 1.15×
+  regression ceiling. These are fresh-request/cache-cleared rows after shared
+  immutable schema/tokenizer warmup, not process-cold starts.
 - The choice feasibility query cleared the allowed-result cache on every
-  measurement and was identical at 44.7459 ms versus 2.7204 ms (16.448×).
-  Warm allowed-cache replay was 0.0030 ms and is recorded only as secondary
+  measurement and was identical at 41.5198 ms versus 2.0004 ms (20.756×).
+  Warm allowed-cache replay was 0.0031 ms and is recorded only as secondary
   cache evidence.
-- All 14 identical solver successors were cached after one expansion. Warm
-  adapter lookup remained slower than the reference stateless-forest lookup
-  (1.2994 ms versus 0.0432 ms), so no solver speedup is claimed. This row does
-  not yet establish exact solver-verdict parity or certificate replay.
+- All 14 root solver successors were cached after one expansion. Packed
+  successor lookup measured 2.5126 ms versus 5.8882 ms reference (2.343×);
+  exact status, coverage, program digest, child state, and detail matched.
+  All 14 support certificates replayed with zero violations.
 - The cold 16-token compiler decode preserved output and started one packed
-  session with zero full-prefix lexical bytes and zero fresh candidate-engine
-  allocations, but `compiler_ms` regressed 1,708.32→1,997.61 ms (0.855×).
-  The bounded authority stopped fail-closed after one forward; it therefore
-  **failed** the required 5× decode-fixture gate.
+  session with zero full-prefix lexical bytes, fresh candidate engines,
+  general-forest builds, tree clones, AST bridges, or edge replays.
+  `compiler_ms` improved 1,612.48→1,511.12 ms (1.067×), but both arms retained
+  one neural forward, so it **failed** the required 5× decode-fixture gate.
 
-Decision: retain the correctness-preserving request-local kernel and its
-telemetry, but do not claim the packed decode performance objective is complete.
-The dated successor is to replace repeated general
-`_build_openui_completion_forest_impl` calls with a schema-precompiled
-semantic-state transition table, then rerun the same cold prefix and decode
-fixtures. A global authority cache is not an acceptable shortcut because
-request-local scope and liveness remain part of the proof.
+Decision: retain the correctness-preserving request-local recognition rows,
+lazy semantic endpoints, proof caches, and telemetry. Four workload gates pass,
+but the merged fixture remains non-promotable because decode misses 5×. The
+dated successor is to isolate the residual shared-forward latency, extend exact
+forced-run/scope-singleton proof where authority permits a zero-forward commit,
+and measure compact ambiguous-row batching. A global authority cache or
+heuristic forced choice is not an acceptable shortcut.

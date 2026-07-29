@@ -1,223 +1,1310 @@
 {
   "schema_version": "completion-kernel-perf/v1",
+  "run_id": "completion-kernel-20260729-final",
+  "overall_status": "fail",
+  "overall_pass": false,
   "recipe": {
     "device": "cpu",
     "execution": "independently capped workload shards",
     "honesty_mode": "fixture_perf_not_ship",
-    "hard_cap_minutes": 3
+    "hard_cap_minutes": 3,
+    "pair_count": 7,
+    "pair_order": "alternating_ab_ba",
+    "pilot": "one excluded pair",
+    "minimum_sample_ns": 10000000,
+    "relative_mad_limit": 0.15
+  },
+  "source": {
+    "code_commit": "adab7e4365c4fe350040d233839d58223d48e018",
+    "code_dirty": false,
+    "components": {
+      "matrix.perf": "v5",
+      "harness.model_build.eval": "v65",
+      "harness.solver_bench": "v2",
+      "model.twotower": "v266",
+      "dsl.operators.registry": "v6",
+      "config.levers": "v26"
+    },
+    "host": {
+      "machine": "aarch64",
+      "python": "3.12.3"
+    }
   },
   "workloads": {
     "direct": {
       "n": 1,
       "prefix": "root = Card([b1,",
-      "reference_ms": 14.1658,
-      "packed_ms": 6.3338,
-      "speedup": 2.237,
+      "measurement": {
+        "pair_count": 7,
+        "bundle_sizes": {
+          "reference": 1,
+          "packed": 256
+        },
+        "pilot_excluded": true,
+        "minimum_sample_ns": 10000000,
+        "pairs": [
+          {
+            "index": 0,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 16932089.0,
+            "packed_ns_per_op": 42866.551,
+            "packed_over_reference": 0.002532,
+            "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+          },
+          {
+            "index": 1,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 17319247.0,
+            "packed_ns_per_op": 46815.008,
+            "packed_over_reference": 0.002703,
+            "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+          },
+          {
+            "index": 2,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 114633611.0,
+            "packed_ns_per_op": 43288.098,
+            "packed_over_reference": 0.000378,
+            "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+          },
+          {
+            "index": 3,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 15526212.0,
+            "packed_ns_per_op": 44094.25,
+            "packed_over_reference": 0.00284,
+            "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+          },
+          {
+            "index": 4,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 14821474.0,
+            "packed_ns_per_op": 44635.43,
+            "packed_over_reference": 0.003012,
+            "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+          },
+          {
+            "index": 5,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 84513781.0,
+            "packed_ns_per_op": 42421.324,
+            "packed_over_reference": 0.000502,
+            "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+          },
+          {
+            "index": 6,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 16777924.0,
+            "packed_ns_per_op": 49450.66,
+            "packed_over_reference": 0.002947,
+            "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+          }
+        ],
+        "reference": {
+          "median_ns_per_op": 16932089.0,
+          "mad_ns_per_op": 1405877.0,
+          "min_ns_per_op": 14821474.0,
+          "max_ns_per_op": 114633611.0,
+          "relative_mad": 0.08303
+        },
+        "packed": {
+          "median_ns_per_op": 44094.25,
+          "mad_ns_per_op": 1227.699,
+          "min_ns_per_op": 42421.324,
+          "max_ns_per_op": 49450.66,
+          "relative_mad": 0.027843
+        },
+        "packed_over_reference": 0.002604,
+        "speedup": 383.997664,
+        "unstable": false,
+        "output_digest": "11d5d2b0174351dd7763e87f5d1965ea1a61982dea9d906ed03993f4a36d2a35"
+      },
+      "work_counters": {
+        "ast_bridge_calls": 0,
+        "budget_unknown_cache_hits": 4608,
+        "budget_unknown_cache_misses": 0,
+        "candidate_engine_allocations": 0,
+        "direct_terminal_feeds": 0,
+        "domain_cache_hits": 2304,
+        "domain_cache_misses": 0,
+        "edge_replays": 0,
+        "edges_built": 0,
+        "forced_closure_hits": 0,
+        "forced_closure_tokens": 0,
+        "full_prefix_lex_bytes": 0,
+        "full_sync_fallbacks": 0,
+        "general_forest_builds": 0,
+        "parser_forks": 0,
+        "reachability_cache_hits": 0,
+        "reachability_cache_misses": 0,
+        "result_cache_hits": 0,
+        "result_cache_misses": 2304,
+        "scope_reference_scans_avoided": 0,
+        "semantic_masks_applied": 0,
+        "session_starts": 0,
+        "state_intern_hits": 0,
+        "state_intern_misses": 0,
+        "transition_cache_hits": 32256,
+        "transition_cache_misses": 0,
+        "transition_rows_built": 0,
+        "transition_rows_hits": 2304,
+        "transition_rows_lookups": 2304,
+        "transition_rows_misses": 0,
+        "unique_states": 0,
+        "value_tree_clones": 0,
+        "witness_cache_hits": 27648,
+        "witness_cache_misses": 4608,
+        "witness_states_expanded": 0
+      },
       "correct": true,
-      "gate": "warm graph/DP speedup >= 10 and exact 12-path parity",
-      "pass": false,
-      "repeats": 3,
-      "measured_at": "2026-07-29T11:58:38.973791+00:00",
+      "gate": "exact 12-path parity, stable paired speedup >= 10, and zero measured forest builds, tree clones, edge replays, or witness-state expansions",
+      "pass": true,
+      "repeats": 7,
+      "measured_at": "2026-07-29T13:57:04.391642+00:00",
       "argv": [
         "--completion-kernel-workload",
         "direct",
         "--completion-repeats",
-        "3"
+        "7",
+        "--completion-run-id",
+        "completion-kernel-20260729-final",
+        "--device",
+        "cpu"
       ],
       "host": {
         "machine": "aarch64",
         "python": "3.12.3"
       },
+      "schema_version": "completion-kernel-workload/v1",
+      "run_id": "completion-kernel-20260729-final",
+      "workload": "direct",
+      "fixture_manifest_digest": "28e4a2dc34fe2972c00f7684af311785c2415940335c86b4ed24a0250be1777d",
+      "recipe": {
+        "device": "cpu",
+        "execution": "independently capped workload shards",
+        "honesty_mode": "fixture_perf_not_ship",
+        "hard_cap_minutes": 3,
+        "pair_count": 7,
+        "pair_order": "alternating_ab_ba",
+        "pilot": "one excluded pair",
+        "minimum_sample_ns": 10000000,
+        "relative_mad_limit": 0.15
+      },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
-        "code_dirty": true,
+        "code_commit": "adab7e4365c4fe350040d233839d58223d48e018",
+        "code_dirty": false,
         "components": {
-          "matrix.perf": "v3",
-          "harness.model_build.eval": "v64",
-          "model.twotower": "v262",
-          "dsl.operators.registry": "v6"
+          "matrix.perf": "v5",
+          "harness.model_build.eval": "v65",
+          "harness.solver_bench": "v2",
+          "model.twotower": "v266",
+          "dsl.operators.registry": "v6",
+          "config.levers": "v26"
         },
-        "stamped_at": "2026-07-29T11:58:39.240090+00:00"
+        "stamped_at": "2026-07-29T13:57:02.031995+00:00"
       }
     },
     "corpus": {
       "n": 7,
-      "reference_ms": 108.1814,
-      "packed_ms": 0.1124,
-      "packed_over_reference": 0.001,
+      "warm_measurement": {
+        "pair_count": 7,
+        "bundle_sizes": {
+          "reference": 1,
+          "packed": 128
+        },
+        "pilot_excluded": true,
+        "minimum_sample_ns": 10000000,
+        "pairs": [
+          {
+            "index": 0,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 179614370.0,
+            "packed_ns_per_op": 90092.219,
+            "packed_over_reference": 0.000502,
+            "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+          },
+          {
+            "index": 1,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 179234654.0,
+            "packed_ns_per_op": 90832.852,
+            "packed_over_reference": 0.000507,
+            "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+          },
+          {
+            "index": 2,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 63099200.0,
+            "packed_ns_per_op": 90651.484,
+            "packed_over_reference": 0.001437,
+            "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+          },
+          {
+            "index": 3,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 175145416.0,
+            "packed_ns_per_op": 86676.664,
+            "packed_over_reference": 0.000495,
+            "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+          },
+          {
+            "index": 4,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 170605590.0,
+            "packed_ns_per_op": 155213.766,
+            "packed_over_reference": 0.00091,
+            "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+          },
+          {
+            "index": 5,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 202242628.0,
+            "packed_ns_per_op": 109634.75,
+            "packed_over_reference": 0.000542,
+            "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+          },
+          {
+            "index": 6,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 170535230.0,
+            "packed_ns_per_op": 95624.203,
+            "packed_over_reference": 0.000561,
+            "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+          }
+        ],
+        "reference": {
+          "median_ns_per_op": 175145416.0,
+          "mad_ns_per_op": 4539826.0,
+          "min_ns_per_op": 63099200.0,
+          "max_ns_per_op": 202242628.0,
+          "relative_mad": 0.02592
+        },
+        "packed": {
+          "median_ns_per_op": 90832.852,
+          "mad_ns_per_op": 4156.188,
+          "min_ns_per_op": 86676.664,
+          "max_ns_per_op": 155213.766,
+          "relative_mad": 0.045756
+        },
+        "packed_over_reference": 0.000519,
+        "speedup": 1928.216642,
+        "unstable": false,
+        "output_digest": "79dfebab890383e1f29c9eee8e23a4a8dfe091939b0c60f1a15f49bb6b92ff47"
+      },
       "cold_simple_prefixes": [
         {
           "prefix": "",
-          "reference_ms": 13.7711,
-          "packed_ms": 12.7608,
-          "packed_over_reference": 0.927
+          "measurement": {
+            "pair_count": 7,
+            "bundle_sizes": {
+              "reference": 1,
+              "packed": 1
+            },
+            "pilot_excluded": true,
+            "minimum_sample_ns": 10000000,
+            "pairs": [
+              {
+                "index": 0,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 12812490.0,
+                "packed_ns_per_op": 12338382.0,
+                "packed_over_reference": 0.962996,
+                "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+              },
+              {
+                "index": 1,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 12656943.0,
+                "packed_ns_per_op": 12073715.0,
+                "packed_over_reference": 0.95392,
+                "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+              },
+              {
+                "index": 2,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 12533404.0,
+                "packed_ns_per_op": 13261748.0,
+                "packed_over_reference": 1.058112,
+                "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+              },
+              {
+                "index": 3,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 12518166.0,
+                "packed_ns_per_op": 12380413.0,
+                "packed_over_reference": 0.988996,
+                "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+              },
+              {
+                "index": 4,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 13799467.0,
+                "packed_ns_per_op": 14094506.0,
+                "packed_over_reference": 1.02138,
+                "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+              },
+              {
+                "index": 5,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 15205123.0,
+                "packed_ns_per_op": 12052137.0,
+                "packed_over_reference": 0.792637,
+                "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+              },
+              {
+                "index": 6,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 14608703.0,
+                "packed_ns_per_op": 12084147.0,
+                "packed_over_reference": 0.827188,
+                "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+              }
+            ],
+            "reference": {
+              "median_ns_per_op": 12812490.0,
+              "mad_ns_per_op": 294324.0,
+              "min_ns_per_op": 12518166.0,
+              "max_ns_per_op": 15205123.0,
+              "relative_mad": 0.022972
+            },
+            "packed": {
+              "median_ns_per_op": 12338382.0,
+              "mad_ns_per_op": 264667.0,
+              "min_ns_per_op": 12052137.0,
+              "max_ns_per_op": 14094506.0,
+              "relative_mad": 0.021451
+            },
+            "packed_over_reference": 0.962996,
+            "speedup": 1.038425,
+            "unstable": false,
+            "output_digest": "f2580a31f146b121259e02bde44db7b81aebd0fdc0adb2f33b843bbc3e5eb270"
+          }
         },
         {
           "prefix": "root",
-          "reference_ms": 7.2616,
-          "packed_ms": 6.0461,
-          "packed_over_reference": 0.833
+          "measurement": {
+            "pair_count": 7,
+            "bundle_sizes": {
+              "reference": 2,
+              "packed": 2
+            },
+            "pilot_excluded": true,
+            "minimum_sample_ns": 10000000,
+            "pairs": [
+              {
+                "index": 0,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 6558724.5,
+                "packed_ns_per_op": 6417392.0,
+                "packed_over_reference": 0.978451,
+                "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+              },
+              {
+                "index": 1,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 7025726.0,
+                "packed_ns_per_op": 6647441.0,
+                "packed_over_reference": 0.946157,
+                "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+              },
+              {
+                "index": 2,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 6998881.0,
+                "packed_ns_per_op": 6804625.5,
+                "packed_over_reference": 0.972245,
+                "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+              },
+              {
+                "index": 3,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 6343453.5,
+                "packed_ns_per_op": 6650662.5,
+                "packed_over_reference": 1.048429,
+                "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+              },
+              {
+                "index": 4,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 6221602.5,
+                "packed_ns_per_op": 6595234.0,
+                "packed_over_reference": 1.060054,
+                "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+              },
+              {
+                "index": 5,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 6668150.0,
+                "packed_ns_per_op": 6481462.0,
+                "packed_over_reference": 0.972003,
+                "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+              },
+              {
+                "index": 6,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 6780746.0,
+                "packed_ns_per_op": 7745581.5,
+                "packed_over_reference": 1.14229,
+                "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+              }
+            ],
+            "reference": {
+              "median_ns_per_op": 6668150.0,
+              "mad_ns_per_op": 324696.5,
+              "min_ns_per_op": 6221602.5,
+              "max_ns_per_op": 7025726.0,
+              "relative_mad": 0.048694
+            },
+            "packed": {
+              "median_ns_per_op": 6647441.0,
+              "mad_ns_per_op": 157184.5,
+              "min_ns_per_op": 6417392.0,
+              "max_ns_per_op": 7745581.5,
+              "relative_mad": 0.023646
+            },
+            "packed_over_reference": 0.996894,
+            "speedup": 1.003115,
+            "unstable": false,
+            "output_digest": "dbace40ebf2825b69338e57f13638cf856b4f2daf3d99fb31e79e732e36f365e"
+          }
         },
         {
           "prefix": "root =",
-          "reference_ms": 1371.3428,
-          "packed_ms": 1585.7819,
-          "packed_over_reference": 1.156
+          "measurement": {
+            "pair_count": 7,
+            "bundle_sizes": {
+              "reference": 1,
+              "packed": 1
+            },
+            "pilot_excluded": true,
+            "minimum_sample_ns": 10000000,
+            "pairs": [
+              {
+                "index": 0,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 1201605169.0,
+                "packed_ns_per_op": 1287793480.0,
+                "packed_over_reference": 1.071728,
+                "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+              },
+              {
+                "index": 1,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 1160598296.0,
+                "packed_ns_per_op": 1271047319.0,
+                "packed_over_reference": 1.095166,
+                "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+              },
+              {
+                "index": 2,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 1169038425.0,
+                "packed_ns_per_op": 1295055214.0,
+                "packed_over_reference": 1.107795,
+                "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+              },
+              {
+                "index": 3,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 1254409122.0,
+                "packed_ns_per_op": 1150846181.0,
+                "packed_over_reference": 0.917441,
+                "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+              },
+              {
+                "index": 4,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 1194971002.0,
+                "packed_ns_per_op": 1193123635.0,
+                "packed_over_reference": 0.998454,
+                "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+              },
+              {
+                "index": 5,
+                "order": [
+                  "packed",
+                  "reference"
+                ],
+                "reference_ns_per_op": 1184338330.0,
+                "packed_ns_per_op": 1337399104.0,
+                "packed_over_reference": 1.129237,
+                "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+              },
+              {
+                "index": 6,
+                "order": [
+                  "reference",
+                  "packed"
+                ],
+                "reference_ns_per_op": 1197564662.0,
+                "packed_ns_per_op": 1172336037.0,
+                "packed_over_reference": 0.978933,
+                "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+              }
+            ],
+            "reference": {
+              "median_ns_per_op": 1194971002.0,
+              "mad_ns_per_op": 10632672.0,
+              "min_ns_per_op": 1160598296.0,
+              "max_ns_per_op": 1254409122.0,
+              "relative_mad": 0.008898
+            },
+            "packed": {
+              "median_ns_per_op": 1271047319.0,
+              "mad_ns_per_op": 66351785.0,
+              "min_ns_per_op": 1150846181.0,
+              "max_ns_per_op": 1337399104.0,
+              "relative_mad": 0.052202
+            },
+            "packed_over_reference": 1.063664,
+            "speedup": 0.940147,
+            "unstable": false,
+            "output_digest": "74f1300b71ef8604725e6f3a07d1b9c680ba9b7dbf933c2df531079863abf190"
+          }
         }
       ],
-      "cold_packed_over_reference_max": 1.156,
+      "cold_packed_over_reference_max": 1.063664,
       "correct": true,
       "gate": "exact parity and cold packed time <= 1.15x reference",
-      "pass": false,
-      "repeats": 2,
-      "measured_at": "2026-07-29T11:59:02.557823+00:00",
+      "pass": true,
+      "repeats": 7,
+      "measured_at": "2026-07-29T13:57:40.836684+00:00",
       "argv": [
         "--completion-kernel-workload",
         "corpus",
         "--completion-repeats",
-        "2"
+        "7",
+        "--completion-run-id",
+        "completion-kernel-20260729-final",
+        "--device",
+        "cpu"
       ],
       "host": {
         "machine": "aarch64",
         "python": "3.12.3"
       },
+      "schema_version": "completion-kernel-workload/v1",
+      "run_id": "completion-kernel-20260729-final",
+      "workload": "corpus",
+      "fixture_manifest_digest": "7efaac57874240a1f862ee81df845b86a8b66857554efe46e7cb9337503c2873",
+      "recipe": {
+        "device": "cpu",
+        "execution": "independently capped workload shards",
+        "honesty_mode": "fixture_perf_not_ship",
+        "hard_cap_minutes": 3,
+        "pair_count": 7,
+        "pair_order": "alternating_ab_ba",
+        "pilot": "one excluded pair",
+        "minimum_sample_ns": 10000000,
+        "relative_mad_limit": 0.15
+      },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
-        "code_dirty": true,
+        "code_commit": "adab7e4365c4fe350040d233839d58223d48e018",
+        "code_dirty": false,
         "components": {
-          "matrix.perf": "v3",
-          "harness.model_build.eval": "v64",
-          "model.twotower": "v262",
-          "dsl.operators.registry": "v6"
+          "matrix.perf": "v5",
+          "harness.model_build.eval": "v65",
+          "harness.solver_bench": "v2",
+          "model.twotower": "v266",
+          "dsl.operators.registry": "v6",
+          "config.levers": "v26"
         },
-        "stamped_at": "2026-07-29T11:59:02.769242+00:00"
+        "stamped_at": "2026-07-29T13:57:11.836618+00:00"
       }
     },
     "choice": {
       "n": 1,
       "remaining_tokens": 12,
-      "reference_ms": 44.7459,
-      "packed_ms": 2.7204,
-      "warm_allowed_cache_ms": 0.003,
-      "speedup": 16.448,
+      "warm_allowed_cache_ms": 0.0031,
+      "measurement": {
+        "pair_count": 7,
+        "bundle_sizes": {
+          "reference": 1,
+          "packed": 8
+        },
+        "pilot_excluded": true,
+        "minimum_sample_ns": 10000000,
+        "pairs": [
+          {
+            "index": 0,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 41606628.0,
+            "packed_ns_per_op": 1929227.875,
+            "packed_over_reference": 0.046368,
+            "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+          },
+          {
+            "index": 1,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 43885735.0,
+            "packed_ns_per_op": 1946037.875,
+            "packed_over_reference": 0.044343,
+            "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+          },
+          {
+            "index": 2,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 43057071.0,
+            "packed_ns_per_op": 2039854.375,
+            "packed_over_reference": 0.047376,
+            "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+          },
+          {
+            "index": 3,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 41519805.0,
+            "packed_ns_per_op": 2011130.375,
+            "packed_over_reference": 0.048438,
+            "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+          },
+          {
+            "index": 4,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 40773976.0,
+            "packed_ns_per_op": 2000354.125,
+            "packed_over_reference": 0.04906,
+            "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+          },
+          {
+            "index": 5,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 40921035.0,
+            "packed_ns_per_op": 2108219.375,
+            "packed_over_reference": 0.051519,
+            "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+          },
+          {
+            "index": 6,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 39691794.0,
+            "packed_ns_per_op": 1974621.375,
+            "packed_over_reference": 0.049749,
+            "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+          }
+        ],
+        "reference": {
+          "median_ns_per_op": 41519805.0,
+          "mad_ns_per_op": 745829.0,
+          "min_ns_per_op": 39691794.0,
+          "max_ns_per_op": 43885735.0,
+          "relative_mad": 0.017963
+        },
+        "packed": {
+          "median_ns_per_op": 2000354.125,
+          "mad_ns_per_op": 39500.25,
+          "min_ns_per_op": 1929227.875,
+          "max_ns_per_op": 2108219.375,
+          "relative_mad": 0.019747
+        },
+        "packed_over_reference": 0.048178,
+        "speedup": 20.756227,
+        "unstable": false,
+        "output_digest": "b2d9ad44166c7e6a6b231bb10fd18bd4c2111c5cb05b2c193ab8b1968f96a907"
+      },
       "correct": true,
-      "gate": "exact parity and speedup >= 3",
+      "gate": "exact parity and stable paired speedup >= 3",
       "pass": true,
-      "repeats": 5,
-      "measured_at": "2026-07-29T11:59:15.223436+00:00",
+      "repeats": 7,
+      "measured_at": "2026-07-29T13:57:51.941989+00:00",
       "argv": [
         "--completion-kernel-workload",
         "choice",
         "--completion-repeats",
-        "5"
+        "7",
+        "--completion-run-id",
+        "completion-kernel-20260729-final",
+        "--device",
+        "cpu"
       ],
       "host": {
         "machine": "aarch64",
         "python": "3.12.3"
       },
+      "schema_version": "completion-kernel-workload/v1",
+      "run_id": "completion-kernel-20260729-final",
+      "workload": "choice",
+      "fixture_manifest_digest": "c0d4dbbba512ac772995af04aaa1dd39861ca029fc5832695151ae9a5bcd6142",
+      "recipe": {
+        "device": "cpu",
+        "execution": "independently capped workload shards",
+        "honesty_mode": "fixture_perf_not_ship",
+        "hard_cap_minutes": 3,
+        "pair_count": 7,
+        "pair_order": "alternating_ab_ba",
+        "pilot": "one excluded pair",
+        "minimum_sample_ns": 10000000,
+        "relative_mad_limit": 0.15
+      },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
-        "code_dirty": true,
+        "code_commit": "adab7e4365c4fe350040d233839d58223d48e018",
+        "code_dirty": false,
         "components": {
-          "matrix.perf": "v3",
-          "harness.model_build.eval": "v64",
-          "model.twotower": "v262",
-          "dsl.operators.registry": "v6"
+          "matrix.perf": "v5",
+          "harness.model_build.eval": "v65",
+          "harness.solver_bench": "v2",
+          "model.twotower": "v266",
+          "dsl.operators.registry": "v6",
+          "config.levers": "v26"
         },
-        "stamped_at": "2026-07-29T11:59:15.438007+00:00"
+        "stamped_at": "2026-07-29T13:57:51.249442+00:00"
       }
     },
     "solver": {
       "n": 14,
-      "reference_ms": 0.0432,
-      "packed_ms": 1.2994,
-      "speedup": 0.033,
+      "measurement": {
+        "pair_count": 7,
+        "bundle_sizes": {
+          "reference": 2,
+          "packed": 4
+        },
+        "pilot_excluded": true,
+        "minimum_sample_ns": 10000000,
+        "pairs": [
+          {
+            "index": 0,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 5576119.0,
+            "packed_ns_per_op": 2512617.75,
+            "packed_over_reference": 0.450603,
+            "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+          },
+          {
+            "index": 1,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 6017422.5,
+            "packed_ns_per_op": 2463342.5,
+            "packed_over_reference": 0.409368,
+            "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+          },
+          {
+            "index": 2,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 5624686.0,
+            "packed_ns_per_op": 2386267.25,
+            "packed_over_reference": 0.424249,
+            "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+          },
+          {
+            "index": 3,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 6920974.5,
+            "packed_ns_per_op": 2610157.0,
+            "packed_over_reference": 0.377137,
+            "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+          },
+          {
+            "index": 4,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 5888163.0,
+            "packed_ns_per_op": 2459978.0,
+            "packed_over_reference": 0.417784,
+            "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+          },
+          {
+            "index": 5,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 26890482.5,
+            "packed_ns_per_op": 2569507.25,
+            "packed_over_reference": 0.095555,
+            "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+          },
+          {
+            "index": 6,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 5411395.5,
+            "packed_ns_per_op": 2676759.75,
+            "packed_over_reference": 0.494652,
+            "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+          }
+        ],
+        "reference": {
+          "median_ns_per_op": 5888163.0,
+          "mad_ns_per_op": 312044.0,
+          "min_ns_per_op": 5411395.5,
+          "max_ns_per_op": 26890482.5,
+          "relative_mad": 0.052995
+        },
+        "packed": {
+          "median_ns_per_op": 2512617.75,
+          "mad_ns_per_op": 56889.5,
+          "min_ns_per_op": 2386267.25,
+          "max_ns_per_op": 2676759.75,
+          "relative_mad": 0.022642
+        },
+        "packed_over_reference": 0.426724,
+        "speedup": 2.343438,
+        "unstable": false,
+        "output_digest": "d045eb746c0826815b3dbcdaca332765e203bc0985b386a9113613464abd1977"
+      },
       "reference_nonempty": true,
       "packed_nonempty": true,
-      "cached_successors": 14,
-      "gate": "both paths complete and every identical successor expands once",
+      "correct": true,
+      "cached_root_successors": 14,
+      "cached_successors_after_replay": 183,
+      "certificates": [
+        {
+          "verdict": "unknown",
+          "certificate_digest": "4b1dd785edb193a55ab11a6a15128956cfe5e61cca1cd863576ec4cc0c38a4d1",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "eed1a4ea94444ceda82bd7ae68a245aff927bccf19d3778f507adad4aac0db33",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "0c896fa954ac0cd5c68e35d80de408b644f2e3a67f17e34004b6eb696cc5be8f",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "48369b958f630d7cc9172974b9adbf915d7bb59e0bfac2c6ddac12518b70642e",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "7aa97c776e1413ce5e463ba139bb78d8358f85049659b53bad6b37583254ca3d",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "0527994ff756144f1b18643b351e028752f3c58161a0a50a2ec8c9ff7e1d7cd4",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "506cc543732426780f1abbdf8c386568b43c063f72f989fdb9958e66fe182197",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "e58057ce51a6c6d33fc056baeda483c372be65418ce1a776fc4dbcce97e0e257",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "2c3f83f0d5e36527728d9cabf9a354eb68c0e26126470683c9601c5cba031b97",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "b7f6512a4462317df66b4a39b9898d161fa3d653bcab7f8fd6763f0ab2baca9e",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "0d33cbe4c60d77d1514c31c1c0e6ab321041d66d5be44ffab476bde92ecc3131",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "6c097db0216d3a815b43c412319267b32c133e9a3e2bbce3c17977ff5ed13494",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "90400e68188481ed885153536fdffcbc790611698bf38a7d6382073fef94b733",
+          "replay_ok": true,
+          "replay_violations": []
+        },
+        {
+          "verdict": "unknown",
+          "certificate_digest": "0c8408a1b4b6675c341b575bedf1b48d43f7c1a5edd33a78c6d682248de464c4",
+          "replay_ok": true,
+          "replay_violations": []
+        }
+      ],
+      "certificate_replay_failures": 0,
+      "gate": "exact successor parity, replay-valid certificates, one expansion per unique successor, and packed no slower than reference",
       "pass": true,
-      "repeats": 3,
-      "measured_at": "2026-07-29T11:59:23.987783+00:00",
+      "repeats": 7,
+      "measured_at": "2026-07-29T13:58:00.113402+00:00",
       "argv": [
         "--completion-kernel-workload",
         "solver",
         "--completion-repeats",
-        "3"
+        "7",
+        "--completion-run-id",
+        "completion-kernel-20260729-final",
+        "--device",
+        "cpu"
       ],
       "host": {
         "machine": "aarch64",
         "python": "3.12.3"
       },
+      "schema_version": "completion-kernel-workload/v1",
+      "run_id": "completion-kernel-20260729-final",
+      "workload": "solver",
+      "fixture_manifest_digest": "78b09f228419f11260adc28a77e4864029b0b3cae0cfd13a6cbb9ab20f98c0a2",
+      "recipe": {
+        "device": "cpu",
+        "execution": "independently capped workload shards",
+        "honesty_mode": "fixture_perf_not_ship",
+        "hard_cap_minutes": 3,
+        "pair_count": 7,
+        "pair_order": "alternating_ab_ba",
+        "pilot": "one excluded pair",
+        "minimum_sample_ns": 10000000,
+        "relative_mad_limit": 0.15
+      },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
-        "code_dirty": true,
+        "code_commit": "adab7e4365c4fe350040d233839d58223d48e018",
+        "code_dirty": false,
         "components": {
-          "matrix.perf": "v3",
-          "harness.model_build.eval": "v64",
-          "model.twotower": "v262",
-          "dsl.operators.registry": "v6"
+          "matrix.perf": "v5",
+          "harness.model_build.eval": "v65",
+          "harness.solver_bench": "v2",
+          "model.twotower": "v266",
+          "dsl.operators.registry": "v6",
+          "config.levers": "v26"
         },
-        "stamped_at": "2026-07-29T11:59:24.224444+00:00"
+        "stamped_at": "2026-07-29T13:57:58.722516+00:00"
       }
     },
     "decode": {
       "n": 1,
       "device": "cpu",
-      "reference_wall_ms": 1870.2134,
-      "packed_wall_ms": 2020.2109,
-      "reference_compiler_ms": 1708.3221,
-      "packed_compiler_ms": 1997.6054,
-      "compiler_speedup": 0.855,
+      "measurement": {
+        "pair_count": 7,
+        "bundle_sizes": {
+          "reference": 1,
+          "packed": 1
+        },
+        "pilot_excluded": true,
+        "minimum_sample_ns": 10000000,
+        "pairs": [
+          {
+            "index": 0,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 1540314281.0,
+            "packed_ns_per_op": 1549619901.0,
+            "packed_over_reference": 1.006041,
+            "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+          },
+          {
+            "index": 1,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 1534927769.0,
+            "packed_ns_per_op": 1534774151.0,
+            "packed_over_reference": 0.9999,
+            "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+          },
+          {
+            "index": 2,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 1629095492.0,
+            "packed_ns_per_op": 1572448687.0,
+            "packed_over_reference": 0.965228,
+            "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+          },
+          {
+            "index": 3,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 1538062109.0,
+            "packed_ns_per_op": 1456033308.0,
+            "packed_over_reference": 0.946667,
+            "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+          },
+          {
+            "index": 4,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 1702774904.0,
+            "packed_ns_per_op": 1398478736.0,
+            "packed_over_reference": 0.821294,
+            "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+          },
+          {
+            "index": 5,
+            "order": [
+              "packed",
+              "reference"
+            ],
+            "reference_ns_per_op": 1687440641.0,
+            "packed_ns_per_op": 1595986079.0,
+            "packed_over_reference": 0.945803,
+            "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+          },
+          {
+            "index": 6,
+            "order": [
+              "reference",
+              "packed"
+            ],
+            "reference_ns_per_op": 1668805066.0,
+            "packed_ns_per_op": 1420020240.0,
+            "packed_over_reference": 0.85092,
+            "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+          }
+        ],
+        "reference": {
+          "median_ns_per_op": 1629095492.0,
+          "mad_ns_per_op": 73679412.0,
+          "min_ns_per_op": 1534927769.0,
+          "max_ns_per_op": 1702774904.0,
+          "relative_mad": 0.045227
+        },
+        "packed": {
+          "median_ns_per_op": 1534774151.0,
+          "mad_ns_per_op": 61211928.0,
+          "min_ns_per_op": 1398478736.0,
+          "max_ns_per_op": 1595986079.0,
+          "relative_mad": 0.039883
+        },
+        "packed_over_reference": 0.942102,
+        "speedup": 1.061456,
+        "unstable": false,
+        "output_digest": "c5d9a4ae0d440d09078527a978cb81f05fca42cd7a9321e11f4d1da470d1914c"
+      },
+      "reference_compiler_ms": 1612.4786,
+      "packed_compiler_ms": 1511.1169,
+      "compiler_speedup": 1.067,
       "correct": true,
+      "reference_forwards": 1,
       "packed_forwards": 1,
-      "packed_completion_session_starts": 1,
-      "packed_completion_full_prefix_lex_bytes": 0,
-      "packed_completion_candidate_engine_allocations": 0,
-      "gate": "identical output and compiler_ms speedup >= 5",
+      "work_counters": {
+        "completion_session_starts": 1,
+        "completion_full_prefix_lex_bytes": 0,
+        "completion_candidate_engine_allocations": 0,
+        "completion_general_forest_builds": 0,
+        "completion_value_tree_clones": 0,
+        "completion_ast_bridge_calls": 0,
+        "completion_edge_replays": 0
+      },
+      "gate": "identical ids/text/certification, stable compiler_ms speedup >= 5, no extra forwards, one session, and zero supported-path rebuild work",
       "pass": false,
-      "repeats": 2,
-      "measured_at": "2026-07-29T11:59:40.166514+00:00",
+      "repeats": 7,
+      "measured_at": "2026-07-29T13:58:37.590747+00:00",
       "argv": [
         "--completion-kernel-workload",
         "decode",
         "--completion-repeats",
-        "2"
+        "7",
+        "--completion-run-id",
+        "completion-kernel-20260729-final",
+        "--device",
+        "cpu"
       ],
       "host": {
         "machine": "aarch64",
         "python": "3.12.3"
       },
+      "schema_version": "completion-kernel-workload/v1",
+      "run_id": "completion-kernel-20260729-final",
+      "workload": "decode",
+      "fixture_manifest_digest": "8de12d975f120dfc801d6468de552bd25181356d323899147400944419233677",
+      "recipe": {
+        "device": "cpu",
+        "execution": "independently capped workload shards",
+        "honesty_mode": "fixture_perf_not_ship",
+        "hard_cap_minutes": 3,
+        "pair_count": 7,
+        "pair_order": "alternating_ab_ba",
+        "pilot": "one excluded pair",
+        "minimum_sample_ns": 10000000,
+        "relative_mad_limit": 0.15
+      },
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
-        "code_dirty": true,
+        "code_commit": "adab7e4365c4fe350040d233839d58223d48e018",
+        "code_dirty": false,
         "components": {
-          "matrix.perf": "v3",
-          "harness.model_build.eval": "v64",
-          "model.twotower": "v262",
-          "dsl.operators.registry": "v6"
+          "matrix.perf": "v5",
+          "harness.model_build.eval": "v65",
+          "harness.solver_bench": "v2",
+          "model.twotower": "v266",
+          "dsl.operators.registry": "v6",
+          "config.levers": "v26"
         },
-        "stamped_at": "2026-07-29T11:59:40.377207+00:00"
+        "stamped_at": "2026-07-29T13:58:09.819438+00:00"
       }
     }
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
-    "code_dirty": true,
+    "code_commit": "adab7e4365c4fe350040d233839d58223d48e018",
+    "code_dirty": false,
     "components": {
-      "matrix.perf": "v3",
-      "harness.model_build.eval": "v64",
-      "model.twotower": "v262",
-      "dsl.operators.registry": "v6"
+      "matrix.perf": "v5",
+      "harness.model_build.eval": "v65",
+      "harness.solver_bench": "v2",
+      "model.twotower": "v266",
+      "dsl.operators.registry": "v6",
+      "config.levers": "v26"
     },
-    "stamped_at": "2026-07-29T11:59:40.377395+00:00"
-  },
-  "selected_pass": false,
-  "overall_pass": false
+    "stamped_at": "2026-07-29T13:57:02.031995+00:00"
+  }
 }

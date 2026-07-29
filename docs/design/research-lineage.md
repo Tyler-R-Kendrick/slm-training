@@ -1991,10 +1991,14 @@ oracle-ceiling, or causal-latent-use claim, and no LOT1 model implementation.
 
 The implementation preserves pack-owned legality and treats an exhausted or
 incomplete witness proof as UNKNOWN, never as permission to prune and certify
-the remainder. Fixture parity and the cold choice row pass, but the packed
-graph/DP, cold-prefix, and compiler-decode performance gates fail. This is
-non-promotable negative runtime evidence; the successor is a request-local
-schema-precompiled semantic transition table, not a global authority cache.
+the remainder. Clean seven-pair fixture evidence passes graph/DP (383.998×),
+cold-prefix (worst packed/reference 1.064×), choice (20.756×), and exact
+certificate-replayed solver (2.343×) gates. Compiler decode remains
+non-promotable: exact output and zero rebuild work, but only 1.067× against the
+5× gate because both arms retain one neural forward. Per I14, the successor is
+exact forced-run/scope-singleton proof that can remove that forward where
+legality truly determines the branch, plus compact ambiguous-row batching;
+never a global authority cache or heuristic forced choice.
 
 ## Honesty rules (for docs & claims)
 
