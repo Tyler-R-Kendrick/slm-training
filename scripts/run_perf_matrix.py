@@ -1434,6 +1434,123 @@ def _run_compiler_decode_fixture(
     }
 
 
+def _run_compiler_batch_fixture(
+    *, repetitions: int, deadline: float
+) -> dict[str, Any]:
+    """Compare upstream-equivalent sequential rows with compact batch decode."""
+    import torch
+
+    from slm_training.data.contract import canonicalize_example_template_markers
+    from slm_training.dsl.parser import validate
+    from slm_training.dsl.schema import ExampleRecord
+    from slm_training.models.decode_stats import collect_decode_stats
+    from slm_training.models.grammar import CompletionBatchCache
+    from slm_training.models.twotower import TwoTowerConfig
+
+    record = canonicalize_example_template_markers(
+        ExampleRecord(
+            id="completion-kernel-batch-perf",
+            prompt="card",
+            openui='root = Card([title])\ntitle = TextContent(":hero.title")\n',
+            placeholders=[":hero.title"],
+            split="train",
+            source="fixture",
+        )
+    )
+    config = TwoTowerConfig(
+        context_backend="scratch",
+        output_tokenizer="lexer",
+        compiler_decode_mode="restricted",
+        d_model=32,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=32,
+        grammar_ltr_max_tokens=32,
+        gen_steps=1,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records([record], config=config, device="cpu")
+    model.eval()
+    prompts = [record.prompt, record.prompt]
+    ctx, ctx_pad = model._encode_context(prompts)
+    length = 16
+
+    def decode(*, compact: bool) -> dict[str, Any]:
+        with collect_decode_stats() as stats:
+            if compact:
+                ids = model._compiler_ltr_decode_batch(
+                    ctx, ctx_pad, length, mode="restricted"
+                )
+            else:
+                shared_domains = CompletionBatchCache()
+                ids = torch.stack(
+                    [
+                        model._compiler_ltr_decode_one(
+                            ctx[row : row + 1],
+                            ctx_pad[row : row + 1],
+                            length,
+                            mode="restricted",
+                            slot_contract=None,
+                            _plan_row=row,
+                            _shared_completion_domains=shared_domains,
+                        )
+                        for row in range(len(prompts))
+                    ]
+                )
+        outcomes: list[str | None] = []
+        validations: list[str] = []
+        for row in ids:
+            text = model._decode_ids(row)
+            canonical = model._canonical_valid_openui(
+                model._repair_surface_syntax(text)
+            )
+            outcomes.append(canonical)
+            try:
+                validate(canonical or text)
+            except Exception:  # noqa: BLE001 - recorded fixture outcome
+                validations.append("reject")
+            else:
+                validations.append("accept")
+        return {
+            "ids": [
+                [int(token_id) for token_id in row.tolist()]
+                for row in ids
+            ],
+            "outcomes": outcomes,
+            "final_validation": validations,
+            "forwards_count": int(stats.forwards_count),
+            "denoiser_rows_evaluated": int(stats.denoiser_rows_evaluated),
+            "ambiguous_rows_forwarded": int(stats.ambiguous_rows_forwarded),
+        }
+
+    control_payload = decode(compact=False)
+    compact_payload = decode(compact=True)
+    comparable = ("ids", "outcomes", "final_validation")
+    equivalent = all(
+        control_payload[key] == compact_payload[key] for key in comparable
+    )
+    control_timing, compact_timing = _timed_alternating(
+        lambda: decode(compact=False),
+        lambda: decode(compact=True),
+        repetitions=repetitions,
+        deadline=deadline,
+    )
+    return {
+        "id": "compiler_batch_two",
+        "mode": "upstream_sequential_rows_vs_compact_ambiguous_rows",
+        "batch_size": len(prompts),
+        "control_payload": control_payload,
+        "compact_payload": compact_payload,
+        "control": control_timing,
+        "compact": compact_timing,
+        "speedup_control_over_compact": float(control_timing["median_ns"])
+        / max(1.0, float(compact_timing["median_ns"])),
+        "equivalent": equivalent,
+    }
+
+
 def _completion_fixture_gates(
     solver: dict[str, Any], compiler_decode: dict[str, Any]
 ) -> dict[str, bool]:
@@ -1449,6 +1566,27 @@ def _completion_fixture_gates(
         ),
         "compiler_ms_speedup_ge_5x": (
             float(compiler_decode["compiler_ms_speedup_v1_over_v2"]) >= 5.0
+        ),
+    }
+
+
+def _compiler_batch_fixture_gates(batch: dict[str, Any]) -> dict[str, bool]:
+    """Decision-complete parity, work-compaction, and latency guardrails."""
+    control = batch["control_payload"]
+    compact = batch["compact_payload"]
+    return {
+        "compiler_batch_exact_parity": bool(batch["equivalent"]),
+        "compiler_batch_reduces_forwards": (
+            0 < int(compact["forwards_count"]) < int(control["forwards_count"])
+        ),
+        "compiler_batch_preserves_denoiser_rows": (
+            int(compact["denoiser_rows_evaluated"])
+            == int(control["denoiser_rows_evaluated"])
+            and int(compact["denoiser_rows_evaluated"]) > 0
+        ),
+        "compiler_batch_latency_regression_le_15pct": (
+            float(batch["compact"]["median_ns"])
+            <= 1.15 * float(batch["control"]["median_ns"])
         ),
     }
 
@@ -1639,6 +1777,11 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
         }
     )
 
+    # Preserve the upstream microbenchmark preconditions. This multi-second
+    # neural fixture runs only after every pre-existing packed-kernel row.
+    compiler_batch = _run_compiler_batch_fixture(
+        repetitions=repetitions, deadline=deadline
+    )
     by_id = {row["id"]: row for row in rows}
     simple_ok = all(
         float(by_id[row_id]["v2"]["median_ns"])
@@ -1666,6 +1809,7 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
             warm_work_delta.get("candidate_engine_allocations", 0) == 0
         ),
         **_completion_fixture_gates(solver, compiler_decode),
+        **_compiler_batch_fixture_gates(compiler_batch),
     }
     gates["pass"] = all(bool(value) for value in gates.values())
 
@@ -1708,11 +1852,22 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
         "choice_codec": choice,
         "solver_fixture": solver,
         "compiler_decode_fixture": compiler_decode,
+        "compiler_batch_fixture": compiler_batch,
         "prior_incomplete_diagnostics": [
             _prior_choice_diagnostic(),
             _prior_kernel_diagnostic(),
         ],
         "development_run_history": [
+            {
+                "status": "complete_negative",
+                "code_commit": "79a9dadf519bca61e61ce65573047877d51d5528",
+                "agentv_passed": 16,
+                "agentv_total": 17,
+                "reason": (
+                    "new neural batch fixture ran before the upstream "
+                    "microbenchmarks; cold-root missed its latency gate"
+                ),
+            },
             {
                 "status": "incomplete_not_evidence",
                 "reason": "benchmark fixture exposed unsupported request kwargs",

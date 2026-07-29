@@ -1980,6 +1980,35 @@ generation are out of scope for this issue per the LOT0-01 authorization. A
 The gate verdict is `inconclusive`: it authorizes no semantic-quality,
 oracle-ceiling, or causal-latent-use claim, and no LOT1 model implementation.
 
+## Packed incremental grammar completion (2026-07-29)
+
+| | |
+| --- | --- |
+| **Papers** | *Pre³: Enabling Deterministic Pushdown Automata for Faster Structured LLM Generation* ([ACL 2025](https://aclanthology.org/2025.acl-long.551/)); *XGrammar 2* ([arXiv:2601.04426](https://arxiv.org/abs/2601.04426)); *Lookahead-then-Verify* ([arXiv:2602.00612](https://arxiv.org/abs/2602.00612)); SpecInfer ([arXiv:2305.09781](https://arxiv.org/abs/2305.09781)); ACRoBat ([MLSys 2024](https://proceedings.mlsys.org/paper_files/paper/2024/hash/096b1019463f34eb241e87cfce8dfe16-Abstract-Conference.html)) |
+| **Fidelity** | **Adapted compiler/runtime mechanism** — prefix-conditioned packed transitions, request-local reusable state, verified completion lookahead, and batching of independent ambiguous rows; not a reproduction of any cited model or serving system |
+| **Code** | [`completion_kernel.py`](../../src/slm_training/dsl/grammar/fastpath/completion_kernel.py), [`semantic_state.py`](../../src/slm_training/dsl/grammar/fastpath/semantic_state.py), [`pack.py`](../../src/slm_training/dsl/pack.py), and compiler batching in [`twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Evidence** | [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json) and [`perf-experiment-matrix.md`](perf-experiment-matrix.md#packed-incremental-completion-kernel-2026-07-29) |
+
+The authority boundary is narrower than the systems analogies. Grammar and
+scope state remain row-local; only immutable exact domains and neural tensor
+work may be shared. An incomplete witness, failed transition, or depleted
+budget stays UNKNOWN, and an exact complete singleton bypasses inference.
+Pre³ supports the prefix-conditioned transition direction, XGrammar 2 the
+fine-grained reuse direction, LAVE verified future validity, and
+SpecInfer/ACRoBat the batched shared-compute shape under divergent control
+flow. Their reported speedups do not transfer.
+
+The first integrated run confirmed exact batch compaction but failed one
+pre-existing cold microbenchmark after the neural fixture was inserted ahead of
+it. The preregistered successor isolates the new fixture after the unchanged
+upstream measurements; this is benchmark-order correction, not an adopted
+speedup claim.
+
+That successor passed 17/17 with exact outputs and 10-to-5 neural-call
+compaction at unchanged row volume. Its tiny CPU batch was 0.961x in wall time,
+so the evidence supports the divergent-row batching mechanism but not a CPU
+latency speedup or any transfer of the cited systems' reported gains.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

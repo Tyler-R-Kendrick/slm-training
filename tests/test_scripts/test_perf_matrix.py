@@ -2,6 +2,7 @@ from scripts.run_perf_matrix import (
     _choice_brute_allowed_ids,
     _choice_brute_distance,
     _choice_fixture_states,
+    _compiler_batch_fixture_gates,
     _completion_domain_payload,
     _completion_fixture_gates,
     _guardrails,
@@ -176,3 +177,26 @@ def test_solver_and_compiler_fixture_gates_require_parity_speed_and_singleton() 
     gates = _completion_fixture_gates(solver, compiler)
     assert gates["compiler_ms_speedup_ge_5x"] is False
     assert gates["compiler_singleton_zero_forward"] is False
+
+
+def test_compiler_batch_fixture_gates_require_parity_compaction_and_latency() -> None:
+    batch = {
+        "equivalent": True,
+        "control_payload": {
+            "forwards_count": 10,
+            "denoiser_rows_evaluated": 10,
+        },
+        "compact_payload": {
+            "forwards_count": 5,
+            "denoiser_rows_evaluated": 10,
+        },
+        "control": {"median_ns": 100},
+        "compact": {"median_ns": 114},
+    }
+    assert all(_compiler_batch_fixture_gates(batch).values())
+
+    batch["compact_payload"]["forwards_count"] = 10
+    batch["compact"]["median_ns"] = 116
+    gates = _compiler_batch_fixture_gates(batch)
+    assert gates["compiler_batch_reduces_forwards"] is False
+    assert gates["compiler_batch_latency_regression_le_15pct"] is False

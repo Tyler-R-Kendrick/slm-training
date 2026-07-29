@@ -9804,6 +9804,7 @@ class TwoTowerModel(nn.Module):
         coverage: str = "complete",
         plan_row: int = 0,
         state: Any | None = None,
+        _hidden_rows: dict[tuple[int, ...], torch.Tensor] | None = None,
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
         if len(paths) == 1 and coverage == "complete":
@@ -9959,10 +9960,14 @@ class TwoTowerModel(nn.Module):
             return scores
 
         if not tree:
-            canvas = self._compiler_canvas(prefix, length)
-            hidden = self._denoiser_hidden(canvas, ctx, ctx_pad)
+            hidden_row = (
+                _hidden_rows.get(tuple(prefix)) if _hidden_rows is not None else None
+            )
+            if hidden_row is None:
+                canvas = self._compiler_canvas(prefix, length)
+                hidden_row = self._denoiser_hidden(canvas, ctx, ctx_pad)[0]
             candidates = tuple(int(path.token_ids[0]) for path in paths)
-            raw_logits = self.denoiser.project(hidden[0, len(prefix)])
+            raw_logits = self.denoiser.project(hidden_row[len(prefix)])
             scores = raw_logits[list(candidates)]
             inventory_bias = self._component_inventory_bias(ctx, ctx_pad, candidates)
             if inventory_bias is not None:
@@ -10183,9 +10188,12 @@ class TwoTowerModel(nn.Module):
                 or max_states * length
             )
             batch_states = max(1, min(max_states, token_budget // max(1, length)))
-            hidden_rows: dict[tuple[int, ...], torch.Tensor] = {}
-            for start in range(0, len(parents), batch_states):
-                chunk = parents[start : start + batch_states]
+            hidden_rows = dict(_hidden_rows or {})
+            missing_parents = [
+                parent for parent in parents if parent not in hidden_rows
+            ]
+            for start in range(0, len(missing_parents), batch_states):
+                chunk = missing_parents[start : start + batch_states]
                 canvases = torch.cat(
                     [
                         self._compiler_canvas(list(parent), length)
@@ -11150,28 +11158,319 @@ class TwoTowerModel(nn.Module):
         *,
         mode: str,
     ) -> torch.Tensor:
-        rows = []
+        if mode not in {"forced", "restricted", "tree"}:
+            raise ValueError(
+                "compiler_decode_mode must be off, forced, restricted, or tree"
+            )
+        bsz = int(ctx.size(0))
         shared_completion_domains = CompletionBatchCache()
-        for i in range(int(ctx.size(0))):
+
+        def sequential() -> torch.Tensor:
+            rows = []
+            for row in range(bsz):
+                contract = (
+                    self._slot_contracts[row]
+                    if self._slot_contracts and row < len(self._slot_contracts)
+                    else None
+                )
+                if not getattr(self.config, "slot_contract_constrained_decode", False):
+                    contract = None
+                rows.append(
+                    self._compiler_ltr_decode_one(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        length,
+                        mode=mode,
+                        slot_contract=contract,
+                        _plan_row=row,
+                        _shared_completion_domains=shared_completion_domains,
+                    )
+                )
+            return torch.stack(rows)
+
+        search_mode = str(
+            getattr(self.config, "compiler_search_mode", "greedy") or "greedy"
+        ).lower()
+        # Rollback/trajectory state and deterministic speculative commits are
+        # intentionally owned by the proven sequential decoder.
+        if search_mode != "greedy" or self._speculative_ranker() is not None:
+            return sequential()
+
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            build_completion_forest,
+        )
+
+        contracts: list[list[str] | None] = []
+        for row in range(bsz):
             contract = (
-                self._slot_contracts[i]
-                if self._slot_contracts and i < len(self._slot_contracts)
+                self._slot_contracts[row]
+                if self._slot_contracts and row < len(self._slot_contracts)
                 else None
             )
             if not getattr(self.config, "slot_contract_constrained_decode", False):
                 contract = None
-            rows.append(
-                self._compiler_ltr_decode_one(
-                    ctx[i : i + 1],
-                    ctx_pad[i : i + 1],
-                    length,
-                    mode=mode,
-                    slot_contract=contract,
-                    _plan_row=i,
-                    _shared_completion_domains=shared_completion_domains,
+            contracts.append(contract)
+
+        states = self._new_grammar_states(bsz) or [
+            make_grammar_state() for _ in range(bsz)
+        ]
+        for state in states:
+            state.completion_batch_cache = shared_completion_domains
+        prefixes = [[int(self.tokenizer.bos_id)] for _ in range(bsz)]
+        active = [True] * bsz
+        stats = get_active_stats()
+        draft_window = int(getattr(self.config, "grammar_draft_window", 8) or 8)
+
+        def commit(row: int, forest: Any, selected: tuple[int, ...]) -> None:
+            prefix = prefixes[row]
+            room = length - len(prefix)
+            if room <= draft_window:
+                eos_path = next(
+                    (
+                        path
+                        for path in forest.paths
+                        if path.token_ids == (int(self.tokenizer.eos_id),)
+                    ),
+                    None,
                 )
+                if eos_path is not None:
+                    selected = tuple(eos_path.token_ids)
+            selected = selected[:room]
+            if not selected:
+                active[row] = False
+                return
+            forced_span = forest.coverage == "complete" and (
+                len(forest.paths) == 1 or len(selected) > 1
             )
-        return torch.stack(rows)
+            if forced_span and stats is not None:
+                stats.forced_spans += 1
+                stats.forced_tokens += len(selected)
+            for token_id in selected:
+                prefix.append(int(token_id))
+                states[row].advance_token(self.tokenizer, int(token_id))
+                if stats is not None:
+                    stats.tokens_emitted += 1
+                if token_id == self.tokenizer.eos_id:
+                    active[row] = False
+                    break
+            if len(prefix) >= length:
+                active[row] = False
+
+        while any(active):
+            forests: dict[int, Any] = {}
+            selected_now: dict[int, tuple[int, ...]] = {}
+            model_rows: list[int] = []
+            for row in range(bsz):
+                if not active[row]:
+                    continue
+                prefix = prefixes[row]
+                state = states[row]
+                state.remaining_tokens = length - len(prefix)
+                with timed_ms(stats, "compiler_ms"):
+                    forest = build_completion_forest(
+                        self.tokenizer,
+                        prefix,
+                        state=state,
+                        slot_contract=contracts[row],
+                        max_path_tokens=draft_window,
+                        min_content=self._effective_min_content(contracts[row]),
+                        remaining_tokens=length - len(prefix),
+                        runtime_symbols=self._runtime_symbols_for_row(row),
+                    )
+                forced_closure: tuple[int, ...] = ()
+                verified_solver_decode = bool(
+                    getattr(self.config, "verified_solver_decode", False)
+                )
+                if forest.coverage == "complete" and not verified_solver_decode:
+                    closure = state.completion_forced_closure(length - len(prefix))
+                    if closure is not None:
+                        closure_tokens, _closure_state, closure_coverage = closure
+                        if closure_coverage == "complete" and closure_tokens:
+                            forced_closure = tuple(
+                                int(token_id) for token_id in closure_tokens
+                            )
+                if verified_solver_decode:
+                    forest = self._solver_prune_forest(forest, prefix)
+                forests[row] = forest
+                if not forest.paths:
+                    if stats is not None:
+                        stats.constrained_dead_ends += 1
+                        stats.constrained_dead_end_last_position = len(prefix)
+                        stats.compiler_fallbacks += 1
+                        if len(stats.constrained_dead_end_traces) < 16:
+                            stats.constrained_dead_end_traces.append(
+                                {
+                                    "phase": "compiler_tree",
+                                    "reason": "empty_completion_forest",
+                                    "position": len(prefix),
+                                    "prefix_text": self._decode_ids(
+                                        torch.tensor(prefix, dtype=torch.long)
+                                    ),
+                                    "prefix_tokens": [
+                                        self.tokenizer.id_to_token.get(
+                                            int(token_id), ""
+                                        )
+                                        for token_id in prefix
+                                    ],
+                                    "terminals": list(forest.terminals),
+                                }
+                            )
+                    active[row] = False
+                elif forced_closure:
+                    self._record_exact_bypass(int(forced_closure[0]))
+                    selected_now[row] = forced_closure
+                elif forest.coverage == "complete" and len(forest.paths) == 1:
+                    path = forest.paths[0]
+                    if path.token_ids:
+                        self._record_exact_bypass(int(path.token_ids[0]))
+                    selected_now[row] = tuple(path.token_ids)
+                else:
+                    model_rows.append(row)
+
+            for row, selected in selected_now.items():
+                commit(row, forests[row], selected)
+            if stats is not None and selected_now:
+                stats.forced_row_tokens_without_forward += sum(
+                    len(selected) for selected in selected_now.values()
+                )
+                if not model_rows:
+                    stats.all_forced_steps_without_forward += 1
+            if not model_rows:
+                continue
+
+            forced_rows = [
+                row
+                for row in model_rows
+                if mode == "forced" and len(forests[row].paths) > 1
+            ]
+            ranked_rows = [row for row in model_rows if row not in forced_rows]
+
+            if forced_rows:
+                canvases = torch.cat(
+                    [
+                        self._compiler_canvas(prefixes[row], length)
+                        for row in forced_rows
+                    ],
+                    dim=0,
+                )
+                row_ids = torch.as_tensor(
+                    forced_rows, dtype=torch.long, device=self.device_name
+                )
+                logits = self._denoiser_forward(
+                    canvases,
+                    ctx.index_select(0, row_ids),
+                    ctx_pad.index_select(0, row_ids),
+                )
+                if stats is not None:
+                    stats.ambiguous_rows_forwarded += len(forced_rows)
+                for index, row in enumerate(forced_rows):
+                    prefix = prefixes[row]
+                    choice = pick_constrained_token(
+                        logits[index, len(prefix)].clone(),
+                        self.tokenizer,
+                        prefix,
+                        top_k=self.config.grammar_top_k,
+                        slot_contract=contracts[row],
+                        state=states[row],
+                        runtime_symbols=self._runtime_symbols_for_row(row),
+                        **self._pick_kwargs(),
+                    )
+                    selected = (
+                        int(choice if choice is not None else self.tokenizer.eos_id),
+                    )
+                    commit(row, forests[row], selected)
+
+            if not ranked_rows:
+                continue
+            entries: list[tuple[int, tuple[int, ...]]] = []
+            for row in ranked_rows:
+                prefix = prefixes[row]
+                forest = forests[row]
+                if mode != "tree":
+                    entries.append((row, tuple(prefix)))
+                    continue
+                children: dict[tuple[int, ...], set[int]] = {}
+                for path in forest.paths:
+                    parent = tuple(prefix)
+                    for token_id in path.token_ids:
+                        children.setdefault(parent, set()).add(int(token_id))
+                        parent = (*parent, int(token_id))
+                entries.extend(
+                    (row, parent)
+                    for parent, child_ids in children.items()
+                    if len(parent) < length and len(child_ids) > 1
+                )
+
+            hidden_by_row: dict[int, dict[tuple[int, ...], torch.Tensor]] = {
+                row: {} for row in ranked_rows
+            }
+            device_type = str(self.device_name).split(":", 1)[0].lower()
+            auto_states = 4 if device_type == "cpu" else 32
+            max_states = int(
+                getattr(self.config, "compiler_prefill_max_states", 0) or auto_states
+            )
+            token_budget = int(
+                getattr(self.config, "compiler_prefill_token_budget", 0)
+                or max_states * length
+            )
+            batch_states = max(1, min(max_states, token_budget // max(1, length)))
+            for start in range(0, len(entries), batch_states):
+                chunk = entries[start : start + batch_states]
+                canvases = torch.cat(
+                    [
+                        self._compiler_canvas(list(parent), length)
+                        for _, parent in chunk
+                    ],
+                    dim=0,
+                )
+                row_ids = torch.as_tensor(
+                    [row for row, _ in chunk],
+                    dtype=torch.long,
+                    device=self.device_name,
+                )
+                hidden = self._denoiser_hidden(
+                    canvases,
+                    ctx.index_select(0, row_ids),
+                    ctx_pad.index_select(0, row_ids),
+                )
+                for index, (row, parent) in enumerate(chunk):
+                    hidden_by_row[row][parent] = hidden[index]
+                if stats is not None and mode == "tree":
+                    stats.compiler_prefill_batches += 1
+                    stats.compiler_prefill_states += len(chunk)
+                    stats.compiler_prefill_tokens += len(chunk) * length
+            if stats is not None:
+                stats.ambiguous_rows_forwarded += len({row for row, _parent in entries})
+
+            for row in ranked_rows:
+                selected = self._select_compiler_path(
+                    prefixes[row],
+                    forests[row].paths,
+                    ctx[row : row + 1],
+                    ctx_pad[row : row + 1],
+                    length,
+                    tree=mode == "tree",
+                    slot_contract=contracts[row],
+                    coverage=forests[row].coverage,
+                    plan_row=row,
+                    state=states[row],
+                    _hidden_rows=hidden_by_row[row],
+                )
+                commit(row, forests[row], selected)
+
+        result = torch.full(
+            (bsz, length),
+            self.tokenizer.pad_id,
+            dtype=torch.long,
+            device=self.device_name,
+        )
+        for row, prefix in enumerate(prefixes):
+            used = min(length, len(prefix))
+            result[row, :used] = torch.as_tensor(
+                prefix[:used], dtype=torch.long, device=self.device_name
+            )
+            states[row]._collect_completion_stats()
+        return result
 
     def _greedy_ltr_decode(
         self,

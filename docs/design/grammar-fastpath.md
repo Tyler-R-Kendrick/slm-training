@@ -127,6 +127,14 @@ share immutable completed domains while keeping logits row-local. The verified
 support solver likewise advances packed state handles; proof payloads remain
 token/digest based.
 
+Greedy compiler batches synchronize independent rows at those completion
+checkpoints. Complete singletons and forced closures commit before tensor
+packing; only ambiguous row canvases enter a shared denoiser forward, bounded
+by the existing device-aware prefill limits. Parser/semantic state, contracts,
+runtime symbols, biases, and final validation remain per row. Speculative
+ranking and rollback/trajectory search retain the sequential decoder because
+their control state can choose or restore a row before tensor work is known.
+
 All prefix/state/domain caches are lifetime-bounded by the request, decode row,
 or batch and occupy O(unique packed states/prefixes); they have no
 process-global arbitrary-prefix forest cache. `TimeoutError` is checked before

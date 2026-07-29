@@ -1073,6 +1073,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-29",
+          "note": "no-bump: document the reconciled packed compiler batching boundary in grammar-fastpath.md; completion-kernel behavior is unchanged."
+        },
+        {
+          "version": "v2",
           "date": "2026-07-29T11:43:16-05:00",
           "note": "no-bump: add regression coverage proving special-token assignments participate in packed completion authority; kernel behavior is unchanged."
         },
@@ -1124,7 +1129,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1132,6 +1137,16 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-29",
+          "note": "Reconcile the packed-completion branch with the authority-keyed origin/main kernel while preserving both append-only development histories."
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-29",
+          "note": "OpenUI pack completion domains use a request-local packed state graph with budget-accounted witness/result replay while retaining the private V1 differential oracle."
+        },
         {
           "version": "v9",
           "date": "2026-07-29T11:43:16-05:00",
@@ -6142,6 +6157,31 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-29",
+          "note": "no-bump: record the final 17/17 packed-completion successor and its bounded CPU batching result in shared research lineage; SLM-228 spectral-disposition behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-29",
+          "note": "no-bump: record packed-completion reconciliation outcome and benchmark-order successor in shared research lineage; SLM-228 spectral-disposition behavior is unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-29",
+          "note": "no-bump: reconcile packed-completion research lineage with origin/main and preregister the independent-row compiler batching follow-up; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-29",
+          "note": "no-bump: replace preliminary packed-completion lineage text with clean seven-pair measured results and the I14 decode successor; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-29",
+          "note": "no-bump: add packed incremental grammar completion provenance and negative runtime evidence to the shared research-lineage index; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-27",
           "note": "no-bump: review follow-up tightens the SLM-420 (DSH5-12) Negative-boundary row wording in research-lineage.md so it no longer contradicts the adjacent Unrun-boundary row (set-valued selection and event memory are unrun_conditional, not unavailable); SLM-228 spectral-disposition behavior is unchanged"
         },
@@ -7501,7 +7541,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v65",
+      "version": "v66",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7520,6 +7560,21 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v66",
+          "date": "2026-07-29",
+          "note": "Reconcile packed-completion telemetry and record compiler forwards compacted across independent ambiguous rows."
+        },
+        {
+          "version": "v65",
+          "date": "2026-07-29",
+          "note": "Record packed transition-row, semantic-mask, edge-replay, parser-allocation, compiler-batch, and solver-successor telemetry."
+        },
+        {
+          "version": "v64",
+          "date": "2026-07-29",
+          "note": "Add packed completion-session, state, witness, forced-closure, lexer-work, and allocation counters to DecodeStats aggregation; non-kernel paths remain zero."
+        },
         {
           "version": "v65",
           "date": "2026-07-29T10:05:51-05:00",
@@ -8296,12 +8351,22 @@
       ]
     },
     "harness.solver_bench": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/solver_bench.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-29",
+          "note": "Reconcile the branch solver-successor experiment with origin/main's certificate-parity packed solver fixture."
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-29",
+          "note": "Key packed OpenUI successor reuse by request-local state and edge ids and require canonical certificate replay in the completion-kernel benchmark."
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -8684,18 +8749,52 @@
       ]
     },
     "matrix.perf": {
-      "version": "v5",
+      "version": "v7",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
         "tests/test_scripts/test_perf_matrix.py",
         "docs/design/perf-matrix-results.json",
         "docs/design/completion-kernel-perf-results.json",
-        "docs/design/completion-kernel-perf-agentv-20260729/",
         "docs/design/perf-experiment-matrix.md",
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-29",
+          "note": "no-bump: record the clean v7 17/17 successor, retained upstream speedups, exact 10-to-5 neural-call compaction, and bounded 0.961x CPU batch latency; matrix behavior is unchanged."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-29",
+          "note": "Run the new multi-second neural batch fixture only after every unchanged upstream packed-kernel microbenchmark, preserving their preregistered CPU, cache, and thermal preconditions."
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-29",
+          "note": "no-bump: record the clean 16/17 reconciliation run, its passing batch compaction arm, the cold-root ordering regression, and the locked isolation successor; matrix behavior is unchanged."
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-29",
+          "note": "Reconcile both packed-kernel matrices and add a preregistered same-commit sequential-versus-compacted compiler batch fixture with exact, work, and latency gates."
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-29",
+          "note": "After excluded result and graph-only warmups, gate direct completion on measured rebuild-work deltas; independently calibrate per-arm power-of-two bundles to the timing floor so large speedups remain within the hard run cap."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-29",
+          "note": "Require alternating paired samples, minimum-duration bundling, raw digest parity, stability statistics, exact solver replay, and clean homogeneous completion-kernel shard merges."
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-29",
+          "note": "Add sharded completion-kernel direct, corpus, choice, solver, and decode fixture workloads with exact-parity and preregistered performance guardrails."
+        },
         {
           "version": "v5",
           "date": "2026-07-29T12:03:12-05:00",
@@ -8915,6 +9014,21 @@
         "docs/design/iter-slm194-candidate-proposals-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-29",
+          "note": "no-bump: reconcile packed-completion matrix evidence and its batching preregistration without changing the SLM-194 candidate-proposal matrix"
+        },
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-29",
+          "note": "no-bump: replace preliminary packed-completion matrix text with clean seven-pair measured results; the SLM-194 candidate-proposal matrix is unchanged"
+        },
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-29",
+          "note": "no-bump: append unrelated packed completion-kernel evidence without changing the SLM-194 candidate-proposal matrix"
+        },
         {
           "version": "ffe3-03-v1",
           "date": "2026-07-29",
@@ -9470,7 +9584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v265",
+      "version": "v267",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9513,6 +9627,36 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v267",
+          "date": "2026-07-29",
+          "note": "Reconcile the origin/main completion kernel and compact independent greedy compiler ambiguity into shared forwards while retaining row-local authority and exact singleton bypass."
+        },
+        {
+          "version": "v266",
+          "date": "2026-07-29",
+          "note": "Replay complete-authority node-budget UNKNOWN schedules and build lazy tree-free recognition rows without parser clones; preserve exact fresh-budget tri-state proofs and materialize semantic endpoints only when traversed."
+        },
+        {
+          "version": "v265",
+          "date": "2026-07-29",
+          "note": "Add the request-local transition-row cache, parser-parity schema cursor, bridge-free AST completeness check, transactional iterative terminal-witness proof, and isolate recognition accepts memoization from canonical parser accepts."
+        },
+        {
+          "version": "v264",
+          "date": "2026-07-29",
+          "note": "Add immutable tokenizer-layout token facts and exact tree-free recognition snapshots with fail-closed tri-state token transitions."
+        },
+        {
+          "version": "v263",
+          "date": "2026-07-29",
+          "note": "Batch greedy compiler ambiguity across persistent per-row completion sessions and key solver successor reuse by request-local state and edge ids."
+        },
+        {
+          "version": "v262",
+          "date": "2026-07-29",
+          "note": "Persist packed completion state per decode row, share identical batched hard states request-locally, direct-feed parser terminals, compress terminal-reachable singleton spans before inference, and memoize choice feasibility."
+        },
         {
           "version": "v265",
           "date": "2026-07-29T10:14:34-05:00",
