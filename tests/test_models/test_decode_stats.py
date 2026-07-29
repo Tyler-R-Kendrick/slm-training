@@ -132,10 +132,14 @@ def test_decode_stats_aggregates_required_slot_margin_counts() -> None:
     """E627: root-cause instrumentation counters for E626's required_slot_margin_decode_weight."""
     stats = DecodeStats(
         required_slot_margin_applications=5,
+        required_slot_root_completion_applications=2,
+        required_slot_root_completion_choice_changes=1,
         required_slot_margin_choice_changes=4,
     )
     summary = aggregate_stats([stats])
     assert summary["required_slot_margin_applications_sum"] == 5.0
+    assert summary["required_slot_root_completion_applications_sum"] == 2.0
+    assert summary["required_slot_root_completion_choice_changes_sum"] == 1.0
     assert summary["required_slot_margin_choice_changes_sum"] == 4.0
 
 

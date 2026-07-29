@@ -246,7 +246,7 @@ class OpenUIIncrementalEngine:
                 int(state)
                 for state in getattr(self._ip.parser_state, "state_stack", ())
             )
-            key = (self._resolved, stack)
+            key = (self._fingerprint, stack)
             cached = _ACCEPTS_MEMO.get(key)
             if cached is None:
                 cached = frozenset(str(x) for x in self._ip.accepts())
@@ -598,7 +598,13 @@ class OpenUIIncrementalEngine:
         self.full_sync_fallbacks += 1
         return self.advance_checked(token_surface_piece(tokenizer, token_id))
 
-    def feed_token_id(self, tokenizer, token_id: int) -> bool | None:
+    def feed_token_id(
+        self,
+        tokenizer,
+        token_id: int,
+        *,
+        _macro_seen: frozenset[int] = frozenset(),
+    ) -> bool | None:
         """Feed one DSL-native token id directly as its Lark terminal.
 
         Returns ``True`` when committed (terminal fed, frame advanced, or a
@@ -713,6 +719,8 @@ class OpenUIIncrementalEngine:
 
         # --- macros: feed the verified fixed expansion iteratively ---
         if kind is TokenKind.MACRO:
+            if tid in _macro_seen:
+                return None
             slot = tokenizer.macro_slot_of(tid)
             expansions = getattr(tokenizer, "macro_expansions", ())
             if slot is None or slot >= len(expansions):
@@ -724,7 +732,11 @@ class OpenUIIncrementalEngine:
                 if sub_id is None:
                     self._restore(snap)
                     return None
-                result = self.feed_token_id(tokenizer, sub_id)
+                result = self.feed_token_id(
+                    tokenizer,
+                    sub_id,
+                    _macro_seen=_macro_seen | {tid},
+                )
                 if result is not True:
                     self._restore(snap)
                     return result

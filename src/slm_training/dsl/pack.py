@@ -308,8 +308,7 @@ def _openui_completion_domain(request: Any) -> Any:
     # Budget and prefix vary as a row advances; every other input is hard
     # authority and must match before a request-local session may be reused.
     authority_key = (
-        id(request.tokenizer),
-        int(getattr(request.tokenizer, "version", 0)),
+        _openui_tokenizer_authority_fingerprint(request.tokenizer),
         tuple(
             tuple(str(token) for token in expansion)
             for expansion in getattr(request.tokenizer, "macro_expansions", ())
@@ -495,6 +494,32 @@ def _openui_domain_fingerprint(request: Any, prefix: tuple[int, ...], budget: in
     ).hexdigest()
 
 
+def _openui_tokenizer_authority_fingerprint(tokenizer: Any) -> str:
+    """Content identity for completion authority shared across batch rows."""
+    tokenizer_type = type(tokenizer)
+    return hashlib.sha256(
+        json.dumps(
+            {
+                "type": f"{tokenizer_type.__module__}.{tokenizer_type.__qualname__}",
+                "version": int(getattr(tokenizer, "version", 0)),
+                "id_to_token": sorted(
+                    (int(token_id), str(token))
+                    for token_id, token in getattr(tokenizer, "id_to_token", {}).items()
+                ),
+                "id_to_kind": sorted(
+                    (int(token_id), str(kind))
+                    for token_id, kind in getattr(tokenizer, "id_to_kind", {}).items()
+                ),
+                "sym_slots": int(getattr(tokenizer, "sym_slots", 0)),
+                "bind_slots": int(getattr(tokenizer, "bind_slots", 0)),
+                "state_slots": int(getattr(tokenizer, "state_slots", 0)),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
 def _openui_completion_domain_reference(request: Any) -> Any:
     """Pre-kernel reference and non-native-tokenizer compatibility path.
 
@@ -604,13 +629,10 @@ def _openui_completion_domain_reference(request: Any) -> Any:
     # Structural reuse, shared across every ``_tail_from`` proof below:
     # - ``_tail_forests`` memoizes the *stateless* forest for a node.  The
     #   build is a pure function of (node prefix, slot contract, path bounds,
-    #   schema identity) — all fixed for this request — so a cached forest is
-    #   identical to a rebuild.  The process-global front it delegates to
-    #   (``compiler_draft._build_openui_completion_forest``) carries schema
-    #   identity in its cache key, so a forest built under a different
-    #   ``_official_schema()`` is never served here.  (Only the stateless
-    #   tail builds are memoized; the stateful initial build above is a
-    #   different authority path and is never mixed into this cache.)
+    #   schema identity) — all fixed for this request by
+    #   ``_official_schema()`` — so a cached forest is identical to a rebuild.
+    #   Only stateless tail builds are memoized; the stateful initial build
+    #   above is a different authority path and is never mixed into this cache.
     # - ``_tail_engines`` holds one engine per node, forked from its parent
     #   node (``OpenUIIncrementalEngine.copy``) so the child build feeds only
     #   the delta lexemes instead of re-lexing+re-feeding the whole prefix.

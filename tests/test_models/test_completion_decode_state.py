@@ -47,6 +47,27 @@ class _Session:
         return ((3,) if room else (), state_id + 3, "complete")
 
 
+class _CompletionSessionStub:
+    def __init__(self, tokenizer, **_kwargs):
+        self.tokenizer = tokenizer
+        self.prefix = ()
+
+    def stats(self):
+        return {"session_starts": 1, "unique_states": 1}
+
+    def seed(self, prefix, **_kwargs):
+        self.prefix = tuple(prefix)
+        return 0
+
+    def prefix_ids_of(self, _state_id):
+        return self.prefix
+
+    def outgoing(self, _state_id):
+        return CompletionForest(
+            (CompletionPath((self.tokenizer.eos_id,), "eos"),), "complete"
+        )
+
+
 def test_row_completion_state_advances_and_rollback_restores_interned_id() -> None:
     tok = _Tokenizer()
     session = _Session()
@@ -72,29 +93,9 @@ def test_forced_closure_uses_current_completion_state() -> None:
 
 
 def test_equivalent_batch_rows_share_domain_but_own_sessions(monkeypatch) -> None:
-    class Session:
-        def __init__(self, tokenizer, **_kwargs):
-            self.tokenizer = tokenizer
-            self.prefix = ()
-
-        def stats(self):
-            return {"session_starts": 1, "unique_states": 1}
-
-        def seed(self, prefix, **_kwargs):
-            self.prefix = tuple(prefix)
-            return 0
-
-        def prefix_ids_of(self, _state_id):
-            return self.prefix
-
-        def outgoing(self, _state_id):
-            return CompletionForest(
-                (CompletionPath((self.tokenizer.eos_id,), "eos"),), "complete"
-            )
-
     import slm_training.dsl.grammar.fastpath.completion_kernel as kernel
 
-    monkeypatch.setattr(kernel, "CompletionSession", Session)
+    monkeypatch.setattr(kernel, "CompletionSession", _CompletionSessionStub)
     tok = _Tokenizer()
     tok.kind_ids = lambda *_args: set()
     shared = CompletionBatchCache()
@@ -133,29 +134,9 @@ def test_equivalent_batch_rows_share_domain_but_own_sessions(monkeypatch) -> Non
 
 
 def test_mutated_macro_authority_replaces_row_session(monkeypatch) -> None:
-    class Session:
-        def __init__(self, tokenizer, **_kwargs):
-            self.tokenizer = tokenizer
-            self.prefix = ()
-
-        def stats(self):
-            return {"session_starts": 1, "unique_states": 1}
-
-        def seed(self, prefix, **_kwargs):
-            self.prefix = tuple(prefix)
-            return 0
-
-        def prefix_ids_of(self, _state_id):
-            return self.prefix
-
-        def outgoing(self, _state_id):
-            return CompletionForest(
-                (CompletionPath((self.tokenizer.eos_id,), "eos"),), "complete"
-            )
-
     import slm_training.dsl.grammar.fastpath.completion_kernel as kernel
 
-    monkeypatch.setattr(kernel, "CompletionSession", Session)
+    monkeypatch.setattr(kernel, "CompletionSession", _CompletionSessionStub)
     tok = _Tokenizer()
     tok.kind_ids = lambda *_args: set()
     tok.macro_expansions = ()

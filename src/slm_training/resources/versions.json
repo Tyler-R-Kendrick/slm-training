@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-07-29",
+          "note": "Reject enabled boolean constraint-weakening levers and distinguish prohibited from unsupported compiler lever failures."
+        },
         {
           "version": "v27",
           "date": "2026-07-29",
@@ -1030,11 +1035,12 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
         "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
+        "src/slm_training/dsl/grammar/fastpath/force_emit.py",
         "src/slm_training/dsl/grammar/fastpath/semantic_state.py",
         "src/slm_training/dsl/solver/openui_support.py",
         "tests/test_dsl/test_engine_direct_feed.py",
@@ -1045,6 +1051,11 @@
         "docs/design/grammar-fastpath.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-29",
+          "note": "Harden recursive macro handling, content-derived tokenizer authority, exhaustive oracle independence, solver-pruned forced closure, parser fallback, and persistent-session benchmark evidence."
+        },
         {
           "version": "v1",
           "date": "2026-07-29",
@@ -1078,7 +1089,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -1086,6 +1097,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-29",
+          "note": "Key request-local packed completion sessions by content-derived tokenizer authority so in-place codec mutations cannot reuse stale legal domains."
+        },
         {
           "version": "v7",
           "date": "2026-07-29",
@@ -7440,7 +7456,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v64",
+      "version": "v65",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7459,6 +7475,11 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v65",
+          "date": "2026-07-29",
+          "note": "Expose applications and choice-change counters for slot-alias uniqueness and required-slot array and root completion biases."
+        },
         {
           "version": "v64",
           "date": "2026-07-29",
@@ -8613,7 +8634,7 @@
       ]
     },
     "matrix.perf": {
-      "version": "v3",
+      "version": "v4",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
@@ -8624,6 +8645,11 @@
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-29",
+          "note": "Measure warm V2 with a persistent session but without row-domain cache lookup, derive all gates from replayed observations, and record exact reproducible recipe metadata."
+        },
         {
           "version": "v3",
           "date": "2026-07-29",
@@ -9383,7 +9409,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v264",
+      "version": "v265",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -9426,6 +9452,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v265",
+          "date": "2026-07-29",
+          "note": "Preserve grammar sync authority on failed resyncs, thread semantic state through NL tokens, account new completion biases, and keep verified solver pruning authoritative."
+        },
         {
           "version": "v264",
           "date": "2026-07-29",

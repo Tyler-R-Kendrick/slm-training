@@ -293,6 +293,33 @@ def _kind_of(tokenizer: Any, token_id: int) -> str:
     return ""
 
 
+def _expanded_macro_ids(
+    tokenizer: Any, token_id: int, seen: frozenset[int]
+) -> tuple[int, ...] | None:
+    """Resolve a macro atomically; malformed or recursive tables have no authority."""
+    tid = int(token_id)
+    if tid in seen:
+        return None
+    slot_of = getattr(tokenizer, "macro_slot_of", None)
+    slot = slot_of(tid) if callable(slot_of) else None
+    expansions = getattr(tokenizer, "macro_expansions", ())
+    if slot is None or slot >= len(expansions):
+        return None
+    resolved: list[int] = []
+    for name in expansions[slot]:
+        sub_id = getattr(tokenizer, "token_to_id", {}).get(name)
+        if sub_id is None:
+            return None
+        if _kind_of(tokenizer, int(sub_id)) == "macro":
+            nested = _expanded_macro_ids(tokenizer, int(sub_id), seen | {tid})
+            if nested is None:
+                return None
+            resolved.extend(nested)
+        else:
+            resolved.append(int(sub_id))
+    return tuple(resolved)
+
+
 def _extend(bits: tuple[int, ...], size: int) -> tuple[int, ...]:
     if len(bits) >= size:
         return bits
@@ -412,6 +439,7 @@ def advance(
     schema: dict[str, Any] | None = None,
     *,
     arena: SemanticArena | None = None,
+    _macro_seen: frozenset[int] = frozenset(),
 ) -> SemanticState:
     """Advance ``state`` by one token; pure, interned, no-op-stable.
 
@@ -424,11 +452,8 @@ def advance(
     if state.tokenizer_key != _tokenizer_key(tokenizer):
         raise ValueError("semantic state is bound to a different tokenizer")
     if _kind_of(tokenizer, tid) == "macro":
-        expand = getattr(tokenizer, "expand_macros", None)
-        expanded = list(expand([tid])) if callable(expand) else []
-        # Orphaned/recursive macros are not semantic authority.  The parser
-        # transition rejects them; this layer remains a no-op.
-        if not expanded or expanded == [tid]:
+        expanded = _expanded_macro_ids(tokenizer, tid, _macro_seen)
+        if expanded is None:
             return state
         current = state
         for sub_id in expanded:
@@ -438,6 +463,7 @@ def advance(
                 tokenizer,
                 schema=schema,
                 arena=arena,
+                _macro_seen=_macro_seen | {tid},
             )
         return current
     specials = {
@@ -537,6 +563,14 @@ def advance(
         new = replace(
             state,
             active_slot=-1,
+            referenced_mask=referenced,
+            edges=edges,
+            reachable=reachable,
+            binder_types=binder_types,
+            pending_bind=pending_bind,
+            pending_allowed=pending_allowed,
+            expect_decl_component=expect_decl,
+            requirements=requirements,
             schema_tracked=schema_tracked,
             decl_order=decl_order,
             ref_order=ref_order,

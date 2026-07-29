@@ -32,6 +32,13 @@ from slm_training.levers import DEFAULT_EVAL_DATA_DIR, MAX_HARNESS_WALL_SECONDS
 from slm_training.versioning import build_version_stamp
 
 
+def _installed_version(name: str) -> str | None:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
 def _repo_relative_artifact_paths(value: Any) -> Any:
     """Make local artifact paths portable before committing result JSON."""
     if isinstance(value, dict):
@@ -746,6 +753,8 @@ def _choice_fixture_states() -> list[tuple[str, Any, int]]:
         if not probe.advance_id(token_id):
             break
         reachable.append(probe)
+    if len(reachable) < 2:
+        raise AssertionError("choice fixture could not walk the hero program")
     selected = sorted({0, 1, len(reachable) // 2, max(0, len(reachable) - 2)})
     rows = [
         ("synthetic_root", root, 2),
@@ -767,9 +776,9 @@ def _choice_brute_distance(
     """Independent BFS over admitted transitions with no production distance DP."""
     room = max(0, int(room))
     if state.can_end():
-        return 1 if room else 1
+        return 1 if room >= 1 else room + 1
     if room < 1:
-        return 1
+        return room + 1
     frontier = {state.signature(): state.clone()}
     for depth in range(1, room + 1):
         following: dict[tuple[object, ...], Any] = {}
@@ -919,6 +928,9 @@ def _run_choice_codec_rows(
     fixtures = _choice_fixture_states()
     tokenizer = fixtures[0][1].tokenizer
     correctness: list[dict[str, Any]] = []
+    # ponytail: parity is bounded at remaining=2/3 while the timed fixture uses
+    # remaining=8; extend the oracle to the timed room before making a broader
+    # correctness claim than this fixture gate.
     for name, state, remaining in fixtures:
         exact = state.allowed_ids(remaining)
         oracle = _choice_brute_allowed_ids(
@@ -1190,8 +1202,7 @@ def _run_solver_fixture(
 
     v1_payload, v1_work = evaluate(False)
     v2_payload, v2_work = evaluate(True)
-    if v1_payload != v2_payload:
-        raise AssertionError("solver fixture V1/V2 payload or certificate mismatch")
+    equivalent = v1_payload == v2_payload
     v1_timing, v2_timing = _timed_alternating(
         lambda: evaluate(False),
         lambda: evaluate(True),
@@ -1209,7 +1220,7 @@ def _run_solver_fixture(
         "v2": v2_timing,
         "speedup_v1_over_v2": float(v1_timing["median_ns"])
         / max(1.0, float(v2_timing["median_ns"])),
-        "equivalent": True,
+        "equivalent": equivalent,
     }
 
 
@@ -1427,7 +1438,7 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
             state=state,
         )
 
-    def replay_witnesses(text: str, domain: Any) -> None:
+    def replay_witnesses(text: str, domain: Any) -> bool:
         prefix = prefix_ids(text)
         for candidate in domain.candidates:
             engine = OpenUIIncrementalEngine()
@@ -1438,14 +1449,10 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
                         token_surface_piece(tokenizer, int(token_id))
                     )
                 if outcome is not True:
-                    raise AssertionError(
-                        f"terminal witness rejected for {text!r}: "
-                        f"{candidate.terminal_witness}"
-                    )
+                    return False
             if "$END" not in engine.next_terminals():
-                raise AssertionError(
-                    f"terminal witness did not reach $END for {text!r}"
-                )
+                return False
+        return True
 
     # Check every prefix of a small canonical corpus before timing. This is
     # deliberately bounded so the complete suite fits the repository wall.
@@ -1455,6 +1462,8 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
         'root = Card([b1])\nb1 = TextContent(":slot_0")\n',
     )
     correctness: list[dict[str, Any]] = []
+    authority_preserved = True
+    witnesses_replayed = True
     for program in canonical_programs:
         ids = [
             int(token_id)
@@ -1474,10 +1483,8 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
             )
             v2 = _openui_completion_domain(one)
             v2_payload = _completion_domain_payload(v2)
-            if not _v1_domain_is_preserved(v1_payload, v2_payload):
-                raise AssertionError(
-                    f"V2 removed V1 completion authority at {program!r}[:{end}]"
-                )
+            preserved = _v1_domain_is_preserved(v1_payload, v2_payload)
+            authority_preserved = authority_preserved and preserved
             correctness.append(
                 {
                     "program_sha256": hashlib.sha256(
@@ -1485,6 +1492,7 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
                     ).hexdigest(),
                     "prefix_tokens": end,
                     "digest": _payload_digest(v2_payload),
+                    "v1_authority_preserved": preserved,
                 }
             )
 
@@ -1501,9 +1509,10 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
         v2 = _openui_completion_domain(one)
         v1_payload = _completion_domain_payload(v1)
         v2_payload = _completion_domain_payload(v2)
-        if not _v1_domain_is_preserved(v1_payload, v2_payload):
-            raise AssertionError(f"{name}: V2 removed V1 completion authority")
-        replay_witnesses(text, v2)
+        preserved = _v1_domain_is_preserved(v1_payload, v2_payload)
+        replayed = replay_witnesses(text, v2)
+        authority_preserved = authority_preserved and preserved
+        witnesses_replayed = witnesses_replayed and replayed
 
         v1_timing, v2_timing = _timed_alternating(
             lambda: _openui_completion_domain_reference(request(text)),
@@ -1522,6 +1531,8 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
                 "budget": budget,
                 "candidate_count": len(v2.candidates),
                 "digest": _payload_digest(v2_payload),
+                "v1_authority_preserved": preserved,
+                "terminal_witnesses_replayed": replayed,
                 "v1": v1_timing,
                 "v2": v2_timing,
                 "speedup_v1_over_v2": speedup,
@@ -1536,9 +1547,14 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
     warm_state.sync_ids(tokenizer, list(warm_request.prefix_ids))
     _openui_completion_domain(warm_request)
     warm_before = dict(warm_state.completion_session.stats())
+
+    def warm_v2_call():
+        warm_state.completion_domain_cache.clear()
+        return _openui_completion_domain(warm_request)
+
     warm_v1, warm_v2 = _timed_alternating(
         lambda: _openui_completion_domain_reference(request(hard_text)),
-        lambda: _openui_completion_domain(warm_request),
+        warm_v2_call,
         repetitions=repetitions,
         deadline=deadline,
     )
@@ -1554,7 +1570,7 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
     rows.append(
         {
             "id": "warm_card_open_comma",
-            "mode": "persistent_row_session",
+            "mode": "persistent_row_session_no_domain_cache",
             "prefix": hard_text,
             "budget": budget,
             "candidate_count": len(warm_domain.candidates),
@@ -1574,7 +1590,9 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
     )
     hard = by_id["warm_card_open_comma"]
     gates = {
-        "v1_authority_preserved_and_witnesses_replayed": True,
+        "v1_authority_preserved_and_witnesses_replayed": (
+            authority_preserved and witnesses_replayed
+        ),
         "hard_prefix_identical_12_paths": (
             hard["candidate_count"] == 12
         ),
@@ -1606,7 +1624,25 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
             "processor": platform.processor(),
             "logical_cpus": os.cpu_count(),
             "python": platform.python_version(),
-            "lark": importlib.metadata.version("lark"),
+            "lark": _installed_version("lark"),
+        },
+        "recipe": {
+            "command": [
+                "python",
+                "-m",
+                "scripts.run_perf_matrix",
+                "--completion-kernel",
+                "--completion-repetitions",
+                str(repetitions),
+                "--out-dir",
+                _repo_relative_artifact_paths(str(args.out_dir)),
+                "--docs-out",
+                _repo_relative_artifact_paths(str(args.docs_out)),
+            ],
+            "scoreboard_path": _repo_relative_artifact_paths(
+                str(args.out_dir / "scoreboard.json")
+            ),
+            "docs_path": _repo_relative_artifact_paths(str(args.docs_out)),
         },
         "correctness_prefixes": correctness,
         "rows": rows,
@@ -1644,7 +1680,8 @@ def _run_completion_kernel_suite(args: argparse.Namespace) -> int:
             "arm_order": "alternating; V1 first on even repetitions",
             "warmup": (
                 "correctness and payload-parity calls precede timed rows; "
-                "persistent-session rows are explicitly primed once"
+                "persistent-session rows are explicitly primed once and clear "
+                "only the row-domain cache before each timed V2 sample"
             ),
             "raw_samples_retained": True,
         },

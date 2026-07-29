@@ -108,6 +108,15 @@ def _fold(tok: DSLNativeTokenizer, ids: list[int], schema: dict) -> ss.SemanticS
     return state
 
 
+def test_mutually_recursive_macro_expansion_is_semantic_noop(
+    schema: dict,
+) -> None:
+    tok = DSLNativeTokenizer.build()
+    tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
+    initial = ss.initial_state(tok)
+    assert ss.advance(initial, tok.macro_id(0), tok, schema=schema) is initial
+
+
 def _slots_to_ids(tok: DSLNativeTokenizer, slots) -> set[int]:
     return {int(tok.bind_id(slot)) for slot in slots}
 

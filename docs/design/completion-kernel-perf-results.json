@@ -12,161 +12,208 @@
     "python": "3.12.3",
     "lark": "1.3.1"
   },
+  "recipe": {
+    "command": [
+      "python",
+      "-m",
+      "scripts.run_perf_matrix",
+      "--completion-kernel",
+      "--completion-repetitions",
+      "5",
+      "--out-dir",
+      "outputs/runs/perf_matrix/completion_kernel_20260729",
+      "--docs-out",
+      "docs/design/completion-kernel-perf-results.json"
+    ],
+    "scoreboard_path": "outputs/runs/perf_matrix/completion_kernel_20260729/scoreboard.json",
+    "docs_path": "docs/design/completion-kernel-perf-results.json"
+  },
   "correctness_prefixes": [
     {
       "program_sha256": "6672a3e4ccf7c9d8acefceb4de51c0ddba239ef6e7621c845ce9848f63cc4902",
       "prefix_tokens": 0,
-      "digest": "d7ef9ebc5827c8162aab698d16435ddbd71cdc2a333635f73628c08aa56fbb22"
+      "digest": "d7ef9ebc5827c8162aab698d16435ddbd71cdc2a333635f73628c08aa56fbb22",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "6672a3e4ccf7c9d8acefceb4de51c0ddba239ef6e7621c845ce9848f63cc4902",
       "prefix_tokens": 1,
-      "digest": "2a4c6eaefc19e3fdeffcc1f504fd435f156e1d45d9d70bdccaed30a3da27b16a"
+      "digest": "2a4c6eaefc19e3fdeffcc1f504fd435f156e1d45d9d70bdccaed30a3da27b16a",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "6672a3e4ccf7c9d8acefceb4de51c0ddba239ef6e7621c845ce9848f63cc4902",
       "prefix_tokens": 2,
-      "digest": "896b8f23ff49b31d82d7e157ce8c46a18edca4ea4dc6ebde91940b541da9f670"
+      "digest": "896b8f23ff49b31d82d7e157ce8c46a18edca4ea4dc6ebde91940b541da9f670",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "6672a3e4ccf7c9d8acefceb4de51c0ddba239ef6e7621c845ce9848f63cc4902",
       "prefix_tokens": 3,
-      "digest": "09fc0e1eb8d9262cd148bbb84df2663e32038487316eb1b29ccfa1669314cedc"
+      "digest": "09fc0e1eb8d9262cd148bbb84df2663e32038487316eb1b29ccfa1669314cedc",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "6672a3e4ccf7c9d8acefceb4de51c0ddba239ef6e7621c845ce9848f63cc4902",
       "prefix_tokens": 4,
-      "digest": "16bd584ec3afc9c017bbc4316771fb68f321206ee538677e77112eb4786e9d09"
+      "digest": "16bd584ec3afc9c017bbc4316771fb68f321206ee538677e77112eb4786e9d09",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "6672a3e4ccf7c9d8acefceb4de51c0ddba239ef6e7621c845ce9848f63cc4902",
       "prefix_tokens": 5,
-      "digest": "2b0ecd46010829fe50df87c934ba05633d5bb68a17bf0845a2d4048ab5ea4693"
+      "digest": "2b0ecd46010829fe50df87c934ba05633d5bb68a17bf0845a2d4048ab5ea4693",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "6672a3e4ccf7c9d8acefceb4de51c0ddba239ef6e7621c845ce9848f63cc4902",
       "prefix_tokens": 6,
-      "digest": "0fab08655bc76acfb385831661cbd29fdd88aebe0cf8e8cbf7db024abc251b67"
+      "digest": "0fab08655bc76acfb385831661cbd29fdd88aebe0cf8e8cbf7db024abc251b67",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 0,
-      "digest": "d7ef9ebc5827c8162aab698d16435ddbd71cdc2a333635f73628c08aa56fbb22"
+      "digest": "d7ef9ebc5827c8162aab698d16435ddbd71cdc2a333635f73628c08aa56fbb22",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 1,
-      "digest": "2a4c6eaefc19e3fdeffcc1f504fd435f156e1d45d9d70bdccaed30a3da27b16a"
+      "digest": "2a4c6eaefc19e3fdeffcc1f504fd435f156e1d45d9d70bdccaed30a3da27b16a",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 2,
-      "digest": "896b8f23ff49b31d82d7e157ce8c46a18edca4ea4dc6ebde91940b541da9f670"
+      "digest": "896b8f23ff49b31d82d7e157ce8c46a18edca4ea4dc6ebde91940b541da9f670",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 3,
-      "digest": "1807011206a718ba3f2b4b3e8182e05b238d6d93a296c3129267c48281340072"
+      "digest": "1807011206a718ba3f2b4b3e8182e05b238d6d93a296c3129267c48281340072",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 4,
-      "digest": "2c9447e717ad26c57c57b50107f46237c92789b6f0bd0eeba298744686d89fa0"
+      "digest": "2c9447e717ad26c57c57b50107f46237c92789b6f0bd0eeba298744686d89fa0",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 5,
-      "digest": "5a3e14de7583b0b55288a977499c58f660c8cdc274d017a0610d9f9e42069089"
+      "digest": "5a3e14de7583b0b55288a977499c58f660c8cdc274d017a0610d9f9e42069089",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 6,
-      "digest": "1aad50f4e235806469516944008001420f5992242a193f9703b49419e7670388"
+      "digest": "1aad50f4e235806469516944008001420f5992242a193f9703b49419e7670388",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "7d4d150fa083e177a6aea984af5563e6d11cddd665726fb98541760b2780d693",
       "prefix_tokens": 7,
-      "digest": "dff0a6961ecfc7e3492513cfb40008a95cc99af816113cb2423b7d50b4a640da"
+      "digest": "dff0a6961ecfc7e3492513cfb40008a95cc99af816113cb2423b7d50b4a640da",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 0,
-      "digest": "d7ef9ebc5827c8162aab698d16435ddbd71cdc2a333635f73628c08aa56fbb22"
+      "digest": "d7ef9ebc5827c8162aab698d16435ddbd71cdc2a333635f73628c08aa56fbb22",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 1,
-      "digest": "2a4c6eaefc19e3fdeffcc1f504fd435f156e1d45d9d70bdccaed30a3da27b16a"
+      "digest": "2a4c6eaefc19e3fdeffcc1f504fd435f156e1d45d9d70bdccaed30a3da27b16a",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 2,
-      "digest": "896b8f23ff49b31d82d7e157ce8c46a18edca4ea4dc6ebde91940b541da9f670"
+      "digest": "896b8f23ff49b31d82d7e157ce8c46a18edca4ea4dc6ebde91940b541da9f670",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 3,
-      "digest": "1807011206a718ba3f2b4b3e8182e05b238d6d93a296c3129267c48281340072"
+      "digest": "1807011206a718ba3f2b4b3e8182e05b238d6d93a296c3129267c48281340072",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 4,
-      "digest": "2c9447e717ad26c57c57b50107f46237c92789b6f0bd0eeba298744686d89fa0"
+      "digest": "2c9447e717ad26c57c57b50107f46237c92789b6f0bd0eeba298744686d89fa0",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 5,
-      "digest": "5a3e14de7583b0b55288a977499c58f660c8cdc274d017a0610d9f9e42069089"
+      "digest": "5a3e14de7583b0b55288a977499c58f660c8cdc274d017a0610d9f9e42069089",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 6,
-      "digest": "fdff6fc07e9124bc2ac4eeeabfc7f9c3f330ac3dc38f5c2eda1c86325f98debd"
+      "digest": "fdff6fc07e9124bc2ac4eeeabfc7f9c3f330ac3dc38f5c2eda1c86325f98debd",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 7,
-      "digest": "e09837a3e1738dde36e1ba4b23562ac3da23591dbd7efbf8c7819e453bb9a2ff"
+      "digest": "e09837a3e1738dde36e1ba4b23562ac3da23591dbd7efbf8c7819e453bb9a2ff",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 8,
-      "digest": "04e1727f2811269ea7d35e4e2235d635387ce5717c8f16d946d984e5b87e763b"
+      "digest": "04e1727f2811269ea7d35e4e2235d635387ce5717c8f16d946d984e5b87e763b",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 9,
-      "digest": "b4e878787d0b8613237e73380de3f06a5d5f1c61d7379cf1da0e4e95770a878e"
+      "digest": "b4e878787d0b8613237e73380de3f06a5d5f1c61d7379cf1da0e4e95770a878e",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 10,
-      "digest": "c266f7ec01a3623bdcde321300730bc8017c93df8c604b04917c8622cd017d23"
+      "digest": "c266f7ec01a3623bdcde321300730bc8017c93df8c604b04917c8622cd017d23",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 11,
-      "digest": "d214524a99872770cd51e040fbbcbca68a20e4fa62948363d7b2240beb653901"
+      "digest": "d214524a99872770cd51e040fbbcbca68a20e4fa62948363d7b2240beb653901",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 12,
-      "digest": "3073cde66f918f1446c7dcdb6303432e7975d73ead29f39f892bd416d8b1101c"
+      "digest": "3073cde66f918f1446c7dcdb6303432e7975d73ead29f39f892bd416d8b1101c",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 13,
-      "digest": "6bcbaf33518f98f53a857717d06241d2682658e799b56485729e5428c57a7f9b"
+      "digest": "6bcbaf33518f98f53a857717d06241d2682658e799b56485729e5428c57a7f9b",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 14,
-      "digest": "926c0228b9760c9bd68d296e93867e737d1a059bbb61d874e4e7ec3fc9c90b5a"
+      "digest": "926c0228b9760c9bd68d296e93867e737d1a059bbb61d874e4e7ec3fc9c90b5a",
+      "v1_authority_preserved": true
     },
     {
       "program_sha256": "8b0c184e7d40cf1b9f80c1486699160282e06fd1da588abf4f893133dd4064fc",
       "prefix_tokens": 15,
-      "digest": "7695e80983b6d0f9f17b5834b0fddf6a18d683c5084c8ced337b40392ef2312f"
+      "digest": "7695e80983b6d0f9f17b5834b0fddf6a18d683c5084c8ced337b40392ef2312f",
+      "v1_authority_preserved": true
     }
   ],
   "rows": [
@@ -177,33 +224,35 @@
       "budget": 32,
       "candidate_count": 2,
       "digest": "d7ef9ebc5827c8162aab698d16435ddbd71cdc2a333635f73628c08aa56fbb22",
+      "v1_authority_preserved": true,
+      "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          12749599,
-          12839843,
-          13251835,
-          12226466,
-          13448201
+          14106470,
+          14270583,
+          14633161,
+          13441452,
+          13876751
         ],
-        "median_ns": 12839843.0,
-        "min_ns": 12226466,
-        "max_ns": 13448201,
-        "mad_ns": 411992.0
+        "median_ns": 14106470.0,
+        "min_ns": 13441452,
+        "max_ns": 14633161,
+        "mad_ns": 229719.0
       },
       "v2": {
         "samples_ns": [
-          12369362,
-          15061031,
-          15108561,
-          12265698,
-          13561391
+          15107142,
+          14599224,
+          14618925,
+          14377551,
+          14509069
         ],
-        "median_ns": 13561391.0,
-        "min_ns": 12265698,
-        "max_ns": 15108561,
-        "mad_ns": 1295693.0
+        "median_ns": 14599224.0,
+        "min_ns": 14377551,
+        "max_ns": 15107142,
+        "mad_ns": 90155.0
       },
-      "speedup_v1_over_v2": 0.9467939535111111
+      "speedup_v1_over_v2": 0.9662479320818695
     },
     {
       "id": "cold_root",
@@ -212,33 +261,35 @@
       "budget": 32,
       "candidate_count": 1,
       "digest": "2a4c6eaefc19e3fdeffcc1f504fd435f156e1d45d9d70bdccaed30a3da27b16a",
+      "v1_authority_preserved": true,
+      "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          6624432,
-          5993436,
-          5972847,
-          5746774,
-          7677355
+          6882571,
+          6194860,
+          6524944,
+          6067366,
+          6267582
         ],
-        "median_ns": 5993436.0,
-        "min_ns": 5746774,
-        "max_ns": 7677355,
-        "mad_ns": 246662.0
+        "median_ns": 6267582.0,
+        "min_ns": 6067366,
+        "max_ns": 6882571,
+        "mad_ns": 200216.0
       },
       "v2": {
         "samples_ns": [
-          5846340,
-          7496149,
-          7030073,
-          5894382,
-          6594521
+          8235401,
+          6980256,
+          6636761,
+          7946475,
+          6943224
         ],
-        "median_ns": 6594521.0,
-        "min_ns": 5846340,
-        "max_ns": 7496149,
-        "mad_ns": 700139.0
+        "median_ns": 6980256.0,
+        "min_ns": 6636761,
+        "max_ns": 8235401,
+        "mad_ns": 343495.0
       },
-      "speedup_v1_over_v2": 0.9088508475444994
+      "speedup_v1_over_v2": 0.8979014523249577
     },
     {
       "id": "card_open_item",
@@ -247,33 +298,35 @@
       "budget": 32,
       "candidate_count": 2,
       "digest": "fdff6fc07e9124bc2ac4eeeabfc7f9c3f330ac3dc38f5c2eda1c86325f98debd",
+      "v1_authority_preserved": true,
+      "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          43408930,
-          48074508,
-          47206889,
-          47924340,
-          48387957
+          50617010,
+          49364443,
+          53601283,
+          51328962,
+          51349488
         ],
-        "median_ns": 47924340.0,
-        "min_ns": 43408930,
-        "max_ns": 48387957,
-        "mad_ns": 463617.0
+        "median_ns": 51328962.0,
+        "min_ns": 49364443,
+        "max_ns": 53601283,
+        "mad_ns": 711952.0
       },
       "v2": {
         "samples_ns": [
-          47727256,
-          46496916,
-          45958828,
-          41753897,
-          43390593
+          45657181,
+          46782358,
+          45599727,
+          43966220,
+          43105010
         ],
-        "median_ns": 45958828.0,
-        "min_ns": 41753897,
-        "max_ns": 47727256,
-        "mad_ns": 1768428.0
+        "median_ns": 45599727.0,
+        "min_ns": 43105010,
+        "max_ns": 46782358,
+        "mad_ns": 1182631.0
       },
-      "speedup_v1_over_v2": 1.0427667998844532
+      "speedup_v1_over_v2": 1.1256418706190938
     },
     {
       "id": "card_open_comma",
@@ -282,72 +335,74 @@
       "budget": 32,
       "candidate_count": 12,
       "digest": "e38519a65e2f73ff0cab779699a9b4cdf5a1174b2b49342afdedb51ae4ebeb7a",
+      "v1_authority_preserved": true,
+      "terminal_witnesses_replayed": true,
       "v1": {
         "samples_ns": [
-          750340212,
-          700569063,
-          704711075,
-          731990921,
-          707305601
+          729114962,
+          738285411,
+          757137267,
+          690654743,
+          816316052
         ],
-        "median_ns": 707305601.0,
-        "min_ns": 700569063,
-        "max_ns": 750340212,
-        "mad_ns": 6736538.0
+        "median_ns": 738285411.0,
+        "min_ns": 690654743,
+        "max_ns": 816316052,
+        "mad_ns": 18851856.0
       },
       "v2": {
         "samples_ns": [
-          820410252,
-          812265387,
-          803321744,
-          798533405,
-          834023684
+          899113068,
+          944692376,
+          880917146,
+          843096809,
+          856483004
         ],
-        "median_ns": 812265387.0,
-        "min_ns": 798533405,
-        "max_ns": 834023684,
-        "mad_ns": 8943643.0
+        "median_ns": 880917146.0,
+        "min_ns": 843096809,
+        "max_ns": 944692376,
+        "mad_ns": 24434142.0
       },
-      "speedup_v1_over_v2": 0.8707814124794166
+      "speedup_v1_over_v2": 0.8380872302830623
     },
     {
       "id": "warm_card_open_comma",
-      "mode": "persistent_row_session",
+      "mode": "persistent_row_session_no_domain_cache",
       "prefix": "root = Card([b1,",
       "budget": 32,
       "candidate_count": 12,
       "digest": "e38519a65e2f73ff0cab779699a9b4cdf5a1174b2b49342afdedb51ae4ebeb7a",
       "v1": {
         "samples_ns": [
-          701765466,
-          721565333,
-          750290768,
-          760480946,
-          632258996
+          720237267,
+          607043441,
+          765558546,
+          735959129,
+          750410787
         ],
-        "median_ns": 721565333.0,
-        "min_ns": 632258996,
-        "max_ns": 760480946,
-        "mad_ns": 28725435.0
+        "median_ns": 735959129.0,
+        "min_ns": 607043441,
+        "max_ns": 765558546,
+        "mad_ns": 15721862.0
       },
       "v2": {
         "samples_ns": [
-          89048,
-          17769,
-          70870,
-          17564,
-          74153
+          8048277,
+          7373343,
+          11091511,
+          7686267,
+          9593874
         ],
-        "median_ns": 70870.0,
-        "min_ns": 17564,
-        "max_ns": 89048,
-        "mad_ns": 18178.0
+        "median_ns": 8048277.0,
+        "min_ns": 7373343,
+        "max_ns": 11091511,
+        "mad_ns": 674934.0
       },
-      "speedup_v1_over_v2": 10181.534259912516,
+      "speedup_v1_over_v2": 91.44306650976351,
       "v2_work_delta": {
         "candidate_engine_allocations": 0,
         "direct_terminal_feeds": 0,
-        "domain_cache_hits": 0,
+        "domain_cache_hits": 855,
         "domain_cache_misses": 0,
         "edges_built": 0,
         "forced_closure_hits": 0,
@@ -355,16 +410,16 @@
         "full_prefix_lex_bytes": 0,
         "full_sync_fallbacks": 0,
         "parser_forks": 0,
-        "reachability_cache_hits": 0,
-        "reachability_cache_misses": 0,
+        "reachability_cache_hits": 130,
+        "reachability_cache_misses": 850,
         "scope_reference_scans_avoided": 0,
         "session_starts": 0,
         "state_intern_hits": 0,
         "state_intern_misses": 0,
-        "transition_cache_hits": 0,
+        "transition_cache_hits": 24150,
         "transition_cache_misses": 0,
         "unique_states": 0,
-        "witness_states_expanded": 0
+        "witness_states_expanded": 850
       }
     }
   ],
@@ -433,62 +488,62 @@
         "mode": "cold_domain_distance_caches",
         "v1": {
           "samples_ns": [
-            145307103,
-            142254682,
-            145459098,
-            151152506,
-            147777246
+            143030287,
+            137845433,
+            142069572,
+            143093834,
+            140134650
           ],
-          "median_ns": 145459098.0,
-          "min_ns": 142254682,
-          "max_ns": 151152506,
-          "mad_ns": 2318148.0
+          "median_ns": 142069572.0,
+          "min_ns": 137845433,
+          "max_ns": 143093834,
+          "mad_ns": 1024262.0
         },
         "v2": {
           "samples_ns": [
-            11158001,
-            8096874,
-            9852820,
-            9086591,
-            9131043
+            7916219,
+            6548168,
+            6863326,
+            6497084,
+            6751888
           ],
-          "median_ns": 9131043.0,
-          "min_ns": 8096874,
-          "max_ns": 11158001,
-          "mad_ns": 721777.0
+          "median_ns": 6751888.0,
+          "min_ns": 6497084,
+          "max_ns": 7916219,
+          "mad_ns": 203720.0
         },
-        "speedup_v1_over_v2": 15.93017336573708
+        "speedup_v1_over_v2": 21.041458626090954
       },
       {
         "id": "choice_warm_completion_caches",
         "mode": "warm_domain_distance_caches",
         "v1": {
           "samples_ns": [
-            22226,
-            14647,
-            14442,
-            14442,
-            14441
+            28941,
+            15243,
+            14522,
+            14728,
+            14419
           ],
-          "median_ns": 14442.0,
-          "min_ns": 14441,
-          "max_ns": 22226,
-          "mad_ns": 1.0
+          "median_ns": 14728.0,
+          "min_ns": 14419,
+          "max_ns": 28941,
+          "mad_ns": 309.0
         },
         "v2": {
           "samples_ns": [
-            16388,
-            14339,
-            13520,
-            13520,
-            13725
+            18745,
+            14419,
+            13698,
+            13698,
+            13699
           ],
-          "median_ns": 13725.0,
-          "min_ns": 13520,
-          "max_ns": 16388,
-          "mad_ns": 205.0
+          "median_ns": 13699.0,
+          "min_ns": 13698,
+          "max_ns": 18745,
+          "mad_ns": 1.0
         },
-        "speedup_v1_over_v2": 1.05224043715847
+        "speedup_v1_over_v2": 1.0751149718957589
       }
     ],
     "legacy_false_pruned_ids": [
@@ -569,31 +624,31 @@
     },
     "v1": {
       "samples_ns": [
-        16848438,
-        17757344,
-        20365042,
-        16357830,
-        16412934
+        19455410,
+        17769009,
+        16979674,
+        18049767,
+        18039055
       ],
-      "median_ns": 16848438.0,
-      "min_ns": 16357830,
-      "max_ns": 20365042,
-      "mad_ns": 490608.0
+      "median_ns": 18039055.0,
+      "min_ns": 16979674,
+      "max_ns": 19455410,
+      "mad_ns": 270046.0
     },
     "v2": {
       "samples_ns": [
-        16662131,
-        17097429,
-        15681939,
-        15242849,
-        16521298
+        17453439,
+        17530993,
+        16182408,
+        16407858,
+        17757782
       ],
-      "median_ns": 16521298.0,
-      "min_ns": 15242849,
-      "max_ns": 17097429,
-      "mad_ns": 576131.0
+      "median_ns": 17453439.0,
+      "min_ns": 16182408,
+      "max_ns": 17757782,
+      "mad_ns": 304343.0
     },
-    "speedup_v1_over_v2": 1.0198011076369424,
+    "speedup_v1_over_v2": 1.0335530436150722,
     "equivalent": true
   },
   "compiler_decode_fixture": {
@@ -620,7 +675,7 @@
       ],
       "outcome": null,
       "forwards_count": 5,
-      "compiler_ms": 2975.2407440046227,
+      "compiler_ms": 3008.6051180005597,
       "final_validation": "reject"
     },
     "v2_payload": {
@@ -644,7 +699,7 @@
       ],
       "outcome": null,
       "forwards_count": 5,
-      "compiler_ms": 2512.9139890013903,
+      "compiler_ms": 2472.2943359993224,
       "final_validation": "reject"
     },
     "singleton": {
@@ -660,7 +715,7 @@
         ],
         "outcome": "root = Separator()",
         "forwards_count": 0,
-        "compiler_ms": 1.993982999920263,
+        "compiler_ms": 1.6729799990571337,
         "final_validation": "accept"
       },
       "v2": {
@@ -675,7 +730,7 @@
         ],
         "outcome": "root = Separator()",
         "forwards_count": 0,
-        "compiler_ms": 0.4538610010058619,
+        "compiler_ms": 0.7227690002764575,
         "final_validation": "accept"
       },
       "equivalent": true,
@@ -683,58 +738,58 @@
     },
     "v1": {
       "samples_ns": [
-        2371664006,
-        2343541675,
-        2402485359,
-        2391123300,
-        2386233192
+        2371229364,
+        2438900442,
+        2360803718,
+        2421759785,
+        2389072769
       ],
-      "median_ns": 2386233192.0,
-      "min_ns": 2343541675,
-      "max_ns": 2402485359,
-      "mad_ns": 14569186.0
+      "median_ns": 2389072769.0,
+      "min_ns": 2360803718,
+      "max_ns": 2438900442,
+      "mad_ns": 28269051.0
     },
     "v2": {
       "samples_ns": [
-        71966421,
-        64025992,
-        84903521,
-        70880774,
-        73260021
+        83832476,
+        80296948,
+        110349207,
+        77812887,
+        82006490
       ],
-      "median_ns": 71966421.0,
-      "min_ns": 64025992,
-      "max_ns": 84903521,
-      "mad_ns": 1293600.0
+      "median_ns": 82006490.0,
+      "min_ns": 77812887,
+      "max_ns": 110349207,
+      "mad_ns": 1825986.0
     },
     "v1_compiler": {
       "samples_ns": [
-        2293339225,
-        2250535252,
-        2317900340,
-        2305723093,
-        2310199563
+        2291305685,
+        2363340035,
+        2275555709,
+        2343165742,
+        2315393000
       ],
-      "median_ns": 2305723093.0,
-      "min_ns": 2250535252,
-      "max_ns": 2317900340,
-      "mad_ns": 12177247.0
+      "median_ns": 2315393000.0,
+      "min_ns": 2275555709,
+      "max_ns": 2363340035,
+      "mad_ns": 27772742.0
     },
     "v2_compiler": {
       "samples_ns": [
-        718956,
-        828429,
-        799169,
-        826179,
-        712132
+        4009759,
+        3729213,
+        4170457,
+        4438319,
+        4069443
       ],
-      "median_ns": 799169.0,
-      "min_ns": 712132,
-      "max_ns": 828429,
-      "mad_ns": 29260.0
+      "median_ns": 4069443.0,
+      "min_ns": 3729213,
+      "max_ns": 4438319,
+      "mad_ns": 101014.0
     },
-    "speedup_v1_over_v2": 33.1575915384204,
-    "compiler_ms_speedup_v1_over_v2": 2885.1508166608064,
+    "speedup_v1_over_v2": 29.132728019453094,
+    "compiler_ms_speedup_v1_over_v2": 568.9704954707561,
     "equivalent": true
   },
   "prior_incomplete_diagnostics": [
@@ -817,7 +872,7 @@
   "timing_protocol": {
     "clock": "time.perf_counter_ns",
     "arm_order": "alternating; V1 first on even repetitions",
-    "warmup": "correctness and payload-parity calls precede timed rows; persistent-session rows are explicitly primed once",
+    "warmup": "correctness and payload-parity calls precede timed rows; persistent-session rows are explicitly primed once and clear only the row-domain cache before each timed V2 sample",
     "raw_samples_retained": true
   },
   "gates": {
@@ -838,16 +893,16 @@
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "7bb77c9191dc1410f6b4af10670f81e27ecc43b8",
+    "code_commit": "7acdfbfa73a16462f20a0be1634011ac7a1649f8",
     "code_dirty": true,
     "components": {
-      "matrix.perf": "v3",
-      "dsl.completion_kernel": "v1",
-      "dsl.operators.registry": "v7",
-      "harness.model_build.eval": "v64",
-      "model.twotower": "v264"
+      "matrix.perf": "v4",
+      "dsl.completion_kernel": "v2",
+      "dsl.operators.registry": "v8",
+      "harness.model_build.eval": "v65",
+      "model.twotower": "v265"
     },
-    "stamped_at": "2026-07-29T14:10:09.837931+00:00"
+    "stamped_at": "2026-07-29T15:00:15.533756+00:00"
   },
   "agentv": {
     "format": "AgentEvals JSONL",
@@ -977,7 +1032,7 @@
       "passed": 13,
       "failed": 0,
       "executionErrors": 0,
-      "durationMs": 346,
+      "durationMs": 338,
       "meanScore": 1
     },
     "artifacts": {

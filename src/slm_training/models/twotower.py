@@ -420,6 +420,8 @@ class TwoTowerConfig:
     binder_topology_decode_weight: float = 0.0
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
+    # ponytail: these binder/request-aware fields are reserved and rejected by
+    # __post_init__; implement their train and decode owners before enabling.
     binder_slot_ownership_loss_weight: float = 0.0
     binder_slot_ownership_decode_weight: float = 0.0
     binder_slot_presence_loss_weight: float = 0.0
@@ -9719,14 +9721,13 @@ class TwoTowerModel(nn.Module):
             bound_binder_slot_ids,
         )
 
+        reference_counts = bound_binder_reference_counts(self.tokenizer, prefix)
         slot_binders = {
             binder
             for binder, slots in bound_binder_slot_ids(
                 self.tokenizer, prefix
             ).items()
-            if slots
-            and bound_binder_reference_counts(self.tokenizer, prefix).get(binder, 0)
-            > 0
+            if slots and reference_counts.get(binder, 0) > 0
         }
         if not slot_binders:
             return None
@@ -9750,7 +9751,7 @@ class TwoTowerModel(nn.Module):
         from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
 
         active = _active_call(getattr(state, "engine", state))
-        if active is None or int(active[1]) <= 0:
+        if active is None:
             return None
         visible = {
             int(self.tokenizer.sym_id(index))
@@ -10048,18 +10049,46 @@ class TwoTowerModel(nn.Module):
                 ctx, ctx_pad, prefix, paths, scores
             )
             if root_identity_bias is not None:
+                before_root_identity = int(scores.argmax().item())
                 scores = scores + scores.new_tensor(root_identity_bias)
-            for path_bias in (
-                self._slot_alias_unique_path_bias(prefix, paths, slot_contract),
-                self._required_slot_array_completion_path_bias(
-                    prefix, paths, slot_contract, state
+                if stats is not None:
+                    stats.root_reference_identity_applications += 1
+                    stats.root_reference_identity_choice_changes += int(
+                        int(scores.argmax().item()) != before_root_identity
+                    )
+            for path_bias, counter in (
+                (
+                    self._slot_alias_unique_path_bias(prefix, paths, slot_contract),
+                    "slot_alias_unique",
                 ),
-                self._required_slot_root_completion_path_bias(
-                    prefix, paths, slot_contract
+                (
+                    self._required_slot_array_completion_path_bias(
+                        prefix, paths, slot_contract, state
+                    ),
+                    "required_slot_array_completion",
+                ),
+                (
+                    self._required_slot_root_completion_path_bias(
+                        prefix, paths, slot_contract
+                    ),
+                    "required_slot_root_completion",
                 ),
             ):
                 if path_bias is not None:
+                    before_path_bias = int(scores.argmax().item())
                     scores = scores + scores.new_tensor(path_bias)
+                    if stats is not None:
+                        setattr(
+                            stats,
+                            f"{counter}_applications",
+                            getattr(stats, f"{counter}_applications") + 1,
+                        )
+                        setattr(
+                            stats,
+                            f"{counter}_choice_changes",
+                            getattr(stats, f"{counter}_choice_changes")
+                            + int(int(scores.argmax().item()) != before_path_bias),
+                        )
             semantic_plan_bias = self._semantic_plan_bias(
                 plan_row,
                 candidates,
@@ -10388,24 +10417,60 @@ class TwoTowerModel(nn.Module):
             ctx, ctx_pad, prefix, paths, path_tensor
         )
         if root_identity_bias is not None:
+            before_root_identity = max(
+                range(len(paths)), key=path_scores.__getitem__
+            )
             path_scores = [
                 score + root_identity_bias[index]
                 for index, score in enumerate(path_scores)
             ]
-        for path_bias in (
-            self._slot_alias_unique_path_bias(prefix, paths, slot_contract),
-            self._required_slot_array_completion_path_bias(
-                prefix, paths, slot_contract, state
+            if stats is not None:
+                stats.root_reference_identity_applications += 1
+                stats.root_reference_identity_choice_changes += int(
+                    max(range(len(paths)), key=path_scores.__getitem__)
+                    != before_root_identity
+                )
+        for path_bias, counter in (
+            (
+                self._slot_alias_unique_path_bias(prefix, paths, slot_contract),
+                "slot_alias_unique",
             ),
-            self._required_slot_root_completion_path_bias(
-                prefix, paths, slot_contract
+            (
+                self._required_slot_array_completion_path_bias(
+                    prefix, paths, slot_contract, state
+                ),
+                "required_slot_array_completion",
+            ),
+            (
+                self._required_slot_root_completion_path_bias(
+                    prefix, paths, slot_contract
+                ),
+                "required_slot_root_completion",
             ),
         ):
             if path_bias is not None:
+                before_path_bias = max(
+                    range(len(paths)), key=path_scores.__getitem__
+                )
                 path_scores = [
                     score + path_bias[index]
                     for index, score in enumerate(path_scores)
                 ]
+                if stats is not None:
+                    setattr(
+                        stats,
+                        f"{counter}_applications",
+                        getattr(stats, f"{counter}_applications") + 1,
+                    )
+                    setattr(
+                        stats,
+                        f"{counter}_choice_changes",
+                        getattr(stats, f"{counter}_choice_changes")
+                        + int(
+                            max(range(len(paths)), key=path_scores.__getitem__)
+                            != before_path_bias
+                        ),
+                    )
         coverage_close_bias = self._slot_coverage_close_path_bias(
             prefix, paths, slot_contract, path_scores
         )
@@ -10701,13 +10766,16 @@ class TwoTowerModel(nn.Module):
                     runtime_symbols=self._runtime_symbols_for_row(_plan_row),
                 )
             forced_closure: tuple[int, ...] = ()
-            if forest.coverage == "complete":
+            verified_solver_decode = bool(
+                getattr(self.config, "verified_solver_decode", False)
+            )
+            if forest.coverage == "complete" and not verified_solver_decode:
                 closure = state.completion_forced_closure(length - len(prefix))
                 if closure is not None:
                     closure_tokens, _closure_state, closure_coverage = closure
                     if closure_coverage == "complete" and closure_tokens:
                         forced_closure = tuple(int(token_id) for token_id in closure_tokens)
-            if getattr(self.config, "verified_solver_decode", False):
+            if verified_solver_decode:
                 # VSS1-03: certified exact closure prunes the forest to the live
                 # subset before any soft ranking. Disabled by default (guard above),
                 # so the default decode path is untouched.

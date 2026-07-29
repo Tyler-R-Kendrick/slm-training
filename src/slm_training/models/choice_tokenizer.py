@@ -229,7 +229,10 @@ class ChoiceTokenizer:
     )
     schema_intern_hits: int = field(default=0, repr=False, compare=False)
     schema_intern_misses: int = field(default=0, repr=False, compare=False)
-    # Shared bounded-completion-distance memo keyed by (signature, room).
+    component_schema_ids_cache: dict[str, tuple[int, ...]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    # Shared completion lower-bound memo keyed by state signature.
     distance_cache: dict[tuple[object, ...], int] = field(
         default_factory=dict, repr=False, compare=False
     )
@@ -273,7 +276,7 @@ class ChoiceTokenizer:
         has_slots: bool,
         _active: frozenset[str] = frozenset(),
     ) -> int:
-        """Exact minimum tokens for one expression accepted by ``schema``."""
+        """Valid lower bound for one expression accepted by ``schema``."""
         if not schema:
             return 1
         schema_id = self.intern_schema(schema)
@@ -370,7 +373,7 @@ class ChoiceTokenizer:
         has_slots: bool,
         _active: frozenset[str] = frozenset(),
     ) -> int:
-        """Exact minimum tokens for a complete ``element:<component>``."""
+        """Valid lower bound for a complete ``element:<component>``."""
         key = (component, bool(has_slots))
         if not _active:
             cached = self.component_cost_cache.get(key)
@@ -393,7 +396,7 @@ class ChoiceTokenizer:
         return cost
 
     def element_min_tokens(self, *, has_slots: bool) -> int:
-        """Exact minimum tokens for any complete element section."""
+        """Valid lower bound for any complete element section."""
         key = bool(has_slots)
         cached = self.element_cost_cache.get(key)
         if cached is None:
@@ -409,6 +412,16 @@ class ChoiceTokenizer:
                 default=_INFEASIBLE_DISTANCE,
             )
             self.element_cost_cache[key] = cached
+        return cached
+
+    def component_schema_ids(
+        self, component: str, schemas: tuple[dict[str, Any], ...]
+    ) -> tuple[int, ...]:
+        """Intern one static component contract once."""
+        cached = self.component_schema_ids_cache.get(component)
+        if cached is None:
+            cached = tuple(self.intern_schema(schema) for schema in schemas)
+            self.component_schema_ids_cache[component] = cached
         return cached
 
     def cache_distance(self, key: tuple[object, ...], value: int) -> None:
@@ -1067,8 +1080,8 @@ class ChoiceDecodeState:
                     schemas=schemas,
                     required_args=required_args,
                     property_names=tuple(_prop_order().get(component, ())),
-                    schema_ids=tuple(
-                        self.tokenizer.intern_schema(schema) for schema in schemas
+                    schema_ids=self.tokenizer.component_schema_ids(
+                        component, schemas
                     ),
                 )
             )
@@ -1514,28 +1527,26 @@ class ChoiceDecodeState:
         ``1 + min`` over admitted actions ``a`` of ``D(advance(q, a))``.
         Computed with a strict budget: the room decreases on every edge so
         cycles terminate; a node whose completion needs more than its room
-        reports ``room + 1`` (infeasible within budget). Results are memoized
-        per ``(signature, room)`` in the tokenizer's shared ``distance_cache``.
+        reports ``room + 1`` (infeasible within budget). The room-independent
+        lower bound is memoized by signature in the tokenizer's shared cache.
         Choice frames are a deterministic pushdown machine once optional
         actions are omitted, so the exact distance is the sum of pending
         required schema expressions, unmatched closes, and the terminal root
-        suffix. The strict room is still part of the memo key and values above
-        it collapse to ``room + 1``.
+        suffix. Values above the requested room collapse to ``room + 1``.
         """
         tok = self.tokenizer
         room = max(0, int(room))
         if self.can_end():
             return 1 if room >= 1 else room + 1
-        root_key = (self.signature(), room)
+        root_key = self.signature()
         cached = tok.distance_cache.get(root_key)
         if cached is not None:
             tok.distance_cache_hits += 1
-            return cached
+            return cached if cached <= room else room + 1
         tok.distance_cache_misses += 1
         exact = self._completion_lower_bound()
-        value = exact if exact <= room else room + 1
-        tok.cache_distance(root_key, value)
-        return value
+        tok.cache_distance(root_key, exact)
+        return exact if exact <= room else room + 1
 
     def _frame_schema_ids(self, frame: _ChoiceFrame) -> tuple[int, ...]:
         """Interned schema identities for a frame, interning on demand for
@@ -1693,9 +1704,21 @@ class ChoiceDecodeState:
 
     def exhaustive_allowed_ids(self, remaining_positions: int) -> set[int]:
         """Reference implementation used to prove direct candidates exact."""
-        return self._filter_allowed(
-            self.tokenizer.id_to_token, int(remaining_positions)
-        )
+        remaining_positions = int(remaining_positions)
+        budget = min(remaining_positions - 1, 1024)
+        allowed: set[int] = set()
+        for token_id in self.tokenizer.id_to_token:
+            probe = self.clone()
+            if not probe.advance_id(int(token_id)):
+                continue
+            completion = (
+                0
+                if int(token_id) == self.tokenizer.eos_id
+                else probe._completion_distance(budget)
+            )
+            if completion <= remaining_positions - 1:
+                allowed.add(int(token_id))
+        return allowed
 
     def allowed_ids(self, remaining_positions: int) -> set[int]:
         key = (self.signature(), int(remaining_positions))

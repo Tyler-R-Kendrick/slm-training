@@ -456,20 +456,27 @@ class GrammarDecodeState:
                     except Exception:  # noqa: BLE001
                         pass
                 if chunk:
+                    resynced = True
                     try:
                         self.engine.advance(chunk)  # type: ignore[union-attr]
                     except (TimeoutError, KeyboardInterrupt):
                         raise
                     except Exception:  # noqa: BLE001
                         try:
-                            self.engine.set_prefix(self.prefix_text)  # type: ignore[union-attr]
+                            resynced = bool(
+                                self.engine.set_prefix(self.prefix_text)  # type: ignore[union-attr]
+                            )
                         except (TimeoutError, KeyboardInterrupt):
                             raise
                         except Exception:  # noqa: BLE001
-                            pass
+                            resynced = False
+                else:
+                    resynced = True
                 # The text route leaves the engine grammar-synced with the
                 # same token stream the direct marker would vouch for.
-                self.engine_ids_len = len(self.prefix_ids)
+                self.engine_ids_len = (
+                    len(self.prefix_ids) if resynced else None
+                )
         # EOS is a terminal certificate edge, not an incremental parser
         # state. The row is complete and will not query another domain.
         if int(token_id) != int(tokenizer.eos_id):

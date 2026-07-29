@@ -1177,7 +1177,9 @@ def _generated_ast_is_complete(prefix_text: str) -> bool:
         return isinstance(program.root, dict) and bool(program.root)
     except (TimeoutError, KeyboardInterrupt):
         raise
-    except Exception:  # noqa: BLE001
+    except lang_core.ParseError:
+        return False
+    except RuntimeError:
         try:
             from slm_training.dsl.grammar.backends import get_backend
 
@@ -1630,13 +1632,13 @@ def _build_openui_completion_forest_direct(
     the order-sensitive binder inventory) are never called on the production
     path; they remain importable as ``<name>_reference`` strictly for the
     differential parity tests (``tests/test_dsl/test_semantic_state.py``).
-    Helpers that read Lark's *parser* value stack (``_active_call`` and the
-    schema helpers built on it, ``_active_array_is_empty``/
-    ``_active_array_position``, ``_active_list_occupancy``,
-    ``_completed_call_string_values``) stay engine-based: Lark lags the token
-    stream by trailing unreduced RPARs, and reconciling at the trim point
-    would not be byte-identical.  ``scan_counter`` is an optional mutable
-    mapping; each avoided prefix rescan increments
+    Active-call/schema views, array position/emptiness, list occupancy,
+    completed call strings, and grammar-terminal occupancy are also read from
+    ``semantic_state`` on the production path.  This is required because
+    :meth:`CompletionSession.outgoing` uses a control-only engine with no
+    semantic value stack.  Only the named ``*_reference`` helpers above retain
+    prefix rescans for differential tests. ``scan_counter`` is an optional
+    mutable mapping; each avoided prefix rescan increments
     ``scan_counter["avoided"]`` (and the process-wide
     ``semantic_state.SCOPE_COUNTERS["scope_reference_scans_avoided"]``).
     """
@@ -2516,8 +2518,11 @@ def _build_openui_completion_forest_direct(
                 break
             drafted.append(int(forced))
             piece = _token_piece(tokenizer, forced)
+            if not branch.advance_checked(piece):
+                drafted.pop()
+                break
             branch_text += piece
-            branch_synced = bool(branch.advance_checked(piece))
+            branch_synced = True
         paths.append(
             CompletionPath(
                 tuple(drafted),
@@ -2553,7 +2558,7 @@ def _build_openui_completion_forest_impl(
     prefix_ids: list[int],
     **kwargs: Any,
 ) -> CompletionForest:
-    """Private scan/reference entrypoint retained for differential tests."""
+    """Private test alias for the same direct production implementation."""
     return _build_openui_completion_forest_direct(
         tokenizer,
         prefix_ids,

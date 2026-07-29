@@ -10,6 +10,8 @@ the previous greedy probe behavior on reachable states.
 
 from __future__ import annotations
 
+import random
+
 import pytest
 
 from slm_training.dsl.production_codec import CLOSE, LIST_CLOSE, OBJ_CLOSE
@@ -29,7 +31,7 @@ HERO = (
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def tok() -> ChoiceTokenizer:
     return ChoiceTokenizer.build()
 
@@ -195,7 +197,7 @@ def test_clone_shares_untouched_frames(tok: ChoiceTokenizer) -> None:
 
 def test_clone_advance_matches_replay_reference(tok: ChoiceTokenizer) -> None:
     """COW transitions equal from-scratch replay semantics on random walks."""
-    rng = __import__("random").Random(20260728)
+    rng = random.Random(20260728)
     for _ in range(6):
         state = ChoiceDecodeState(tok, slot_count=2)
         history: list[int] = []

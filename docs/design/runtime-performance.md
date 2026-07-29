@@ -32,18 +32,18 @@ and AgentV results are in
 
 | Matched workload | V1 median | Packed median | V1 / packed |
 | --- | ---: | ---: | ---: |
-| Cold empty | 12.84 ms | 13.56 ms | 0.95× |
-| Cold `root` | 5.99 ms | 6.59 ms | 0.91× |
-| Cold `root = Card([b1` | 47.92 ms | 45.96 ms | 1.04× |
-| Cold `root = Card([b1,` | 707.31 ms | 812.27 ms | 0.87× |
-| Warm exact hard-domain repeat | 721.57 ms | 0.071 ms | 10,182× |
-| Choice-codec cold bounded distance | 145.46 ms | 9.13 ms | 15.93× |
-| Bounded solver fixture | 16.85 ms | 16.52 ms | 1.02× |
-| Equivalent-row compiler fixture | 2,386.23 ms | 71.97 ms | 33.16× wall |
+| Cold empty | 14.11 ms | 14.60 ms | 0.97× |
+| Cold `root` | 6.27 ms | 6.98 ms | 0.90× |
+| Cold `root = Card([b1` | 51.33 ms | 45.60 ms | 1.13× |
+| Cold `root = Card([b1,` | 738.29 ms | 880.92 ms | 0.84× |
+| Warm hard-domain, session only | 735.96 ms | 8.05 ms | 91.44× |
+| Choice-codec cold bounded distance | 142.07 ms | 6.75 ms | 21.04× |
+| Bounded solver fixture | 18.04 ms | 17.45 ms | 1.03× |
+| Equivalent-row compiler fixture | 2,389.07 ms | 82.01 ms | 29.13× wall |
 
 The compiler fixture deliberately compares fresh V1 rows with V2's production
 equivalent-row hard-domain cache. Its median `compiler_ms` was 2,305.72 ms
-versus 0.799 ms (2,885×); this is a warm sharing result, not a claim that one
+versus 4.069 ms (568.97×); this is a warm sharing result, not a claim that one
 cold decode is thousands of times faster. The untimed cold parity payload was
 2,975.2 ms V1 versus 2,512.9 ms packed. The
 singleton fixture remained identical and performed zero neural forwards.
@@ -56,11 +56,13 @@ full-prefix lexical bytes, warm zero candidate-engine allocations, and the
 declared latency thresholds. AgentV passed 13/13 with no execution errors.
 
 The Amdahl boundary is explicit: cold hard-prefix construction remains about
-13% slower because parser-state interning and control forks have not amortized.
-The ≥10× gate is explicitly the primed persistent-row repeat, not matched cold
-construction. The large gains occur only when the exact same hard state is
-reused across a row or equivalent rows. Future work should reduce cold
-state/fork overhead; no whole-model factor is inferred from the warm fixture.
+19% slower because parser-state interning and control forks have not amortized.
+The ≥10× gate is explicitly the primed persistent-row session with its
+row-domain cache cleared before every V2 sample, not matched cold construction
+or a completed cache lookup. The large gains occur only when the exact same
+hard state is reused within a row or across equivalent rows. Future work should
+reduce cold state/fork overhead; no whole-model factor is inferred from the
+warm fixture.
 
 Development diagnostics are retained rather than promoted: the interrupted
 choice probe lacked raw samples, alternation, and a discarded warm-up; the

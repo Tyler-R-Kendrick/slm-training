@@ -484,6 +484,11 @@ def _positive_numeric(config: Any, field: str) -> bool:
     )
 
 
+def _lever_enabled(config: Any, field: str) -> bool:
+    value = getattr(config, field, None)
+    return value if isinstance(value, bool) else _positive_numeric(config, field)
+
+
 def untrained_decode_levers(config: Any) -> dict[str, tuple[str, ...]]:
     """Return enabled learned decode levers without a trained owning objective."""
     return {
@@ -514,12 +519,16 @@ def lever_configuration_errors(
     prohibited = {
         name
         for name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS
-        if _positive_numeric(config, name)
+        if _lever_enabled(config, name)
     }
-    incompatible = set(incompatible_lever_requirements(config)) | prohibited
+    incompatible = set(incompatible_lever_requirements(config)) - prohibited
     if incompatible:
         errors.append(
             f"unsupported enabled levers: {', '.join(sorted(incompatible))}"
+        )
+    if prohibited:
+        errors.append(
+            f"prohibited enabled levers: {', '.join(sorted(prohibited))}"
         )
     missing_companions = missing_lever_companions(config)
     errors.extend(

@@ -142,7 +142,8 @@ def test_certificate_replay_still_succeeds(
     result = EnumerativeSupportOracle(expander, OpenUIWellFormedVerifier()).check(
         root, query
     )
-    assert result.verdict in set(SupportVerdict)
+    assert result.verdict is SupportVerdict.UNKNOWN
+    assert result.certificate.stop_reason == "budget:max_depth"
     if result.verdict is SupportVerdict.UNSUPPORTED:
         assert result.certificate.exhausted
         assert set(result.certificate.coverage_observations) <= {"complete"}

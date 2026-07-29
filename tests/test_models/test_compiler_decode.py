@@ -1630,7 +1630,7 @@ def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
     weight or checkpoint quality. Fail loud instead of reproducing that footgun.
     """
     expected = (
-        "unsupported enabled levers"
+        "prohibited enabled levers"
         if weight_name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS
         else "requires one companion configuration"
     )
@@ -1652,7 +1652,7 @@ def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
 def test_semantic_role_weight_remains_prohibited_with_contract_decode(
     enabling_flag: str,
 ) -> None:
-    with pytest.raises(ValueError, match="unsupported enabled levers"):
+    with pytest.raises(ValueError, match="prohibited enabled levers"):
         TwoTowerConfig(
             output_tokenizer="choice",
             slot_contract_in_context=True,
@@ -2857,23 +2857,33 @@ def test_lexer_required_slot_root_completion_rejects_premature_close(
     )
     ctx, ctx_pad = model._encode_context(["Single label."])
 
-    selected = model._select_compiler_path(
-        prefix, paths, ctx, ctx_pad, 32, tree=tree, slot_contract=[":label"], state=state
-    )
-    assert selected == paths[1].token_ids
+    with collect_decode_stats() as stats:
+        selected = model._select_compiler_path(
+            prefix,
+            paths,
+            ctx,
+            ctx_pad,
+            32,
+            tree=tree,
+            slot_contract=[":label"],
+            state=state,
+        )
+        assert selected == paths[1].token_ids
 
-    covered = [*prefix, tokenizer.sym_id(0)]
-    monkeypatch.setattr(
-        model,
-        "_project_candidates",
-        lambda _hidden, candidate_ids: torch.tensor(
-            [5.0 if token_id == close_id else 1.0 for token_id in candidate_ids]
-        ),
-    )
-    selected = model._select_compiler_path(
-        covered, paths, ctx, ctx_pad, 32, tree=tree, slot_contract=[":label"], state=state
-    )
+        covered = [*prefix, tokenizer.sym_id(0)]
+        selected = model._select_compiler_path(
+            covered,
+            paths,
+            ctx,
+            ctx_pad,
+            32,
+            tree=tree,
+            slot_contract=[":label"],
+            state=state,
+        )
     assert selected == paths[0].token_ids
+    assert stats.required_slot_root_completion_applications == 1
+    assert stats.required_slot_root_completion_choice_changes == 1
 
 
 def test_required_slot_array_completion_rejects_nested_close_before_coverage() -> None:
@@ -2913,12 +2923,47 @@ def test_required_slot_array_completion_rejects_nested_close_before_coverage() -
     root_state = make_grammar_state()
     for token_id in root_prefix[1:]:
         root_state.advance_token(tokenizer, token_id)
-    assert (
-        model._required_slot_array_completion_path_bias(
-            root_prefix, paths, [":slot_0", ":slot_1"], root_state
-        )
-        is None
+    assert model._required_slot_array_completion_path_bias(
+        root_prefix, paths, [":slot_0", ":slot_1"], root_state
+    ) == [-1e9, 0.0]
+
+
+def test_verified_solver_decode_skips_unpruned_forced_closure(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    model = _model(verified_solver_decode=True)
+    tokenizer = model.tokenizer
+    eos = int(tokenizer.eos_id)
+    forest = CompletionForest(
+        (CompletionPath((eos,), "eos"),),
+        "complete",
     )
+    state = SimpleNamespace(remaining_tokens=None)
+
+    def forbidden_closure(_room):
+        raise AssertionError("forced closure bypassed solver pruning")
+
+    state.completion_forced_closure = forbidden_closure
+    state.advance_token = lambda *_args: None
+    state._collect_completion_stats = lambda: None
+    monkeypatch.setattr(model, "_new_grammar_states", lambda _rows: [state])
+    monkeypatch.setattr(
+        compiler_draft, "build_completion_forest", lambda *_args, **_kwargs: forest
+    )
+    monkeypatch.setattr(model, "_solver_prune_forest", lambda value, _prefix: value)
+    ctx, ctx_pad = model._encode_context(["card"])
+
+    result = model._compiler_ltr_decode_one(
+        ctx,
+        ctx_pad,
+        4,
+        mode="tree",
+        slot_contract=None,
+    )
+
+    assert int(result[1]) == eos
 
 
 @pytest.mark.parametrize("tree", [False, True])
@@ -4894,6 +4939,30 @@ def test_complete_ast_uses_lark_when_official_parser_is_unavailable(
         'root = TextContent(":slot_0")'
     )
     assert not compiler_draft._generated_ast_is_complete("root = TextContent(")
+
+
+def test_complete_ast_does_not_widen_authority_after_parse_rejection(
+    monkeypatch,
+) -> None:
+    from slm_training.dsl import lang_core
+    from slm_training.dsl.grammar import backends
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    compiler_draft._generated_ast_is_complete.cache_clear()
+    monkeypatch.setattr(
+        lang_core,
+        "parse",
+        lambda _source: (_ for _ in ()).throw(lang_core.ParseError("invalid")),
+    )
+    monkeypatch.setattr(
+        backends,
+        "get_backend",
+        lambda _name: (_ for _ in ()).throw(
+            AssertionError("parse rejection must not widen to Lark authority")
+        ),
+    )
+
+    assert not compiler_draft._generated_ast_is_complete("root = invalid")
 
 
 def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> None:

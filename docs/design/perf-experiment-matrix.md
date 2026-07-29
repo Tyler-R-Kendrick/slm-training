@@ -416,22 +416,23 @@ prefix and exactly 12 replayable candidates for `root = Card([b1,`. The V1
 payload labels that bounded subset `complete`/`witness_pruned`; it is not a
 claim that the two omitted UNKNOWN branches were proven unreachable. Cold empty
 and `root` medians stayed within the 15% regression guard. The cold difficult
-prefix remained a negative latency point (707.31 ms V1 versus 812.27 ms
-packed), while a primed row-owned exact-domain repeat fell from 721.57 ms to
-0.071 ms. Choice-codec cold bounded-distance queries improved 15.93× with
-exhaustive parity. The bounded solver was 1.02×.
+prefix remained a negative latency point at 738.29 ms V1 versus 880.92 ms
+packed, while a primed row-owned session with the row-domain
+cache cleared before every V2 sample fell from 735.96 ms to 8.05 ms (91.44×).
+Choice-codec cold bounded-distance queries improved 21.04× with exhaustive
+parity. The bounded solver was 1.03×.
 
 The compiler fixture exercises immutable hard-domain sharing across equivalent
-V2 rows: wall median 2,386.23 ms → 71.97 ms and compiler-time median
-2,305.72 ms → 0.799 ms, with identical ids/outcome/validation/forward count.
+V2 rows: wall median 2,389.07 ms → 82.01 ms and compiler-time median
+2,315.39 ms → 4.069 ms, with identical ids/outcome/validation/forward count.
 The singleton arm remained identical with zero forwards. This is explicitly a
 warm sharing result; the cold parity payload was 2,975.2 ms V1 versus
 2,512.9 ms packed, and no
 end-to-end production or ship factor is claimed.
 
 All 13 gates and AgentV criteria passed. The ≥10× criterion is named and
-scoped to the primed persistent-row repeat; the matched cold hard row is the
-negative 0.87× point above. Canonical raw samples, MAD/min/max,
-environment, work deltas, correctness digests, version stamp, and the two
-earlier non-promotable diagnostics are retained in
+scoped to persistent-session kernel work without a row-domain cache hit; the
+matched cold hard row is the negative 0.84× point above. Canonical raw samples,
+MAD/min/max, environment, work deltas, correctness digests, version stamp, and
+the two earlier non-promotable diagnostics are retained in
 [`completion-kernel-perf-results.json`](completion-kernel-perf-results.json).

@@ -177,17 +177,14 @@ def test_single_token_probes_match_text_route() -> None:
 def test_literal_frame_feeds_terminal_only_at_close() -> None:
     tok = _tok()
     ids = _ids(tok, "root = Slider(0.5)")
-    opener = tok.token_to_id["LIT_NUM"]
-    closer = tok.token_to_id["LIT_END"]
     engine = OpenUIIncrementalEngine()
     engine.reset()
     for tid in ids:
         before = engine.next_terminals()
         assert engine.feed_token_id(tok, tid) is True
-        if tid == opener or engine._frame is not None and tid != closer:
+        if engine._frame is not None:
             # Opener and frame bytes advance frame state without feeding.
-            if engine._frame is not None:
-                assert engine.next_terminals() == before
+            assert engine.next_terminals() == before
     # After the closer, exactly one NUMBER terminal was fed for the frame.
     text_engine = OpenUIIncrementalEngine()
     assert text_engine.set_prefix(decode_prefix(tok, ids))
@@ -263,6 +260,16 @@ def test_macro_expansion_feeds_iteratively() -> None:
     engine.reset()
     key = engine.parser_state_key()
     assert engine.feed_token_id(tok, tok.macro_id(1)) is None
+    assert engine.parser_state_key() == key
+
+
+def test_mutually_recursive_macro_expansion_fails_closed() -> None:
+    tok = _tok()
+    tok.macro_expansions = (("<MACRO_1>", "Card"), ("<MACRO_0>", "("))
+    engine = OpenUIIncrementalEngine()
+    engine.reset()
+    key = engine.parser_state_key()
+    assert engine.feed_token_id(tok, tok.macro_id(0)) is None
     assert engine.parser_state_key() == key
 
 
@@ -480,3 +487,19 @@ def test_decode_state_replacement_clears_direct_sync_marker() -> None:
     state.sync_ids(tok, ids[5:10])
     assert state.engine_ids_len is None
     assert not state.engine_in_sync(ids[5:10], state.prefix_text)
+
+
+def test_decode_state_failed_text_resync_clears_direct_sync_marker() -> None:
+    from slm_training.models.grammar import make_grammar_state
+
+    tok = _tok()
+    state = make_grammar_state()
+    engine = state.engine
+    assert engine is not None
+    engine.feed_token_id = lambda *_args: None
+    engine.advance = lambda _chunk: (_ for _ in ()).throw(ValueError("reject"))
+    engine.set_prefix = lambda _prefix: False
+
+    state.advance_token(tok, tok.token_to_id["Card"])
+
+    assert state.engine_ids_len is None
