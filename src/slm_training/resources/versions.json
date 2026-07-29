@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v28",
+      "version": "v29",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v29",
+          "date": "2026-07-29T10:33:03-05:00",
+          "note": "Split changed-test coverage across eight single-threaded workers so cold CI remains within the unchanged three-minute repository cap."
+        },
         {
           "version": "v28",
           "date": "2026-07-29T10:05:51-05:00",

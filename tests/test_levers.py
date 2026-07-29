@@ -31,7 +31,7 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert "docs/design/*.json" in VERCEL_FUNCTION_INCLUDE_FILES
     assert "docs/design/**" not in VERCEL_FUNCTION_INCLUDE_FILES
     assert "docs/MODEL_CARD.md" in VERCEL_FUNCTION_INCLUDE_FILES
-    assert CHANGED_TEST_WORKERS > 0
+    assert CHANGED_TEST_WORKERS == 8
 
 
 def test_catalog_discovers_build_levers_and_context_differences() -> None:

@@ -29,7 +29,7 @@ MAX_HARNESS_WALL_SECONDS: Final = (
 )
 MAX_HARNESS_WALL_MINUTES: Final = MAX_HARNESS_WALL_SECONDS / 60
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
-CHANGED_TEST_WORKERS: Final = 4
+CHANGED_TEST_WORKERS: Final = 8
 # Superfiltering easy-tail fraction for build-time difficulty curation
 # (records below this NLL percentile are down-weighted / droppable).
 DIFFICULTY_EASY_TAIL_FRACTION: Final = 0.2
