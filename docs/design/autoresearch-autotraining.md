@@ -25,6 +25,14 @@ Research and proposal compilation are separate stages:
    matrix must name its predecessor and acknowledge every supplied feedback ID, while
    older feedback is recaptured as prior-campaign evidence.
 
+When a campaign preregisters `metric_expectations_sha256`, `autoresearch run`
+can also replay a Lean `metric_certificate/v2` and attach typed
+`OptimumFeedbackV1`. This is a cycle-level experiment signal, never a gradient
+term. A theorem-backed miss stops the campaign. An assumption-backed miss
+preserves the terminal outcome but blocks promotion and requires the successor
+matrix to cover `measurement_control`, `training_method`, `architecture`,
+`lean_model`, and `assumptions` with explicitly labeled candidates.
+
 The registry in `src/slm_training/autoresearch/researchers.py` initially provides
 two invocation adapters. Both run in a separately installed upstream checkout and
 Python environment; no upstream package or dependency graph is vendored into this
@@ -111,7 +119,8 @@ unknown fields forbidden:
   candidate records how research, prior traces, and prior results informed it plus a
   typed `CategoricalNoveltyAudit`;
 - `HypothesisFeedback` records the tested hypothesis/signature, terminal metrics,
-  diagnosis evidence, and recommended actions without inventing causal support;
+  diagnosis evidence, recommended actions, and optional hash-bound Lean optimum
+  feedback without inventing causal support;
 - `ExperimentOutcome` and `Diagnosis` route failures to data, researcher, model, or
   infrastructure remediation;
 - `RLReadinessReport` is the only accepted RL capability token.

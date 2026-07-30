@@ -459,10 +459,65 @@ class CategoricalNoveltyAudit(StrictModel):
         return self
 
 
+DiagnosisLane = Literal[
+    "measurement_control",
+    "training_method",
+    "architecture",
+    "lean_model",
+    "assumptions",
+]
+
+
+class MetricBandBreachV1(StrictModel):
+    metric_id: str = Field(min_length=1)
+    authority: Literal["theorem", "assumption_backed"]
+    relation: Literal["below", "above", "mixed"]
+
+
+class OptimumFeedbackV1(StrictModel):
+    """Cycle-level disposition from a replayed Lean metric certificate."""
+
+    schema_version: Literal["OptimumFeedbackV1"] = "OptimumFeedbackV1"
+    policy: Literal[
+        "continue",
+        "stop",
+        "block_promotion_and_diagnose",
+        "historical_only",
+    ]
+    breaches: tuple[MetricBandBreachV1, ...] = ()
+    diagnosis_lanes: tuple[DiagnosisLane, ...] = ()
+    metric_evidence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    metric_certificate_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_disposition(self) -> OptimumFeedbackV1:
+        has_breach = bool(self.breaches)
+        if has_breach != bool(self.diagnosis_lanes):
+            raise ValueError("band breaches and diagnosis lanes must appear together")
+        if has_breach and set(self.diagnosis_lanes) != {
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        }:
+            raise ValueError("band breaches require the complete diagnosis matrix")
+        if self.policy in {"continue", "historical_only"} and has_breach:
+            raise ValueError(f"{self.policy} feedback cannot contain a breach")
+        if self.policy in {"stop", "block_promotion_and_diagnose"} and not has_breach:
+            raise ValueError(f"{self.policy} feedback requires a breach")
+        if self.policy == "stop" and not any(
+            breach.authority == "theorem" for breach in self.breaches
+        ):
+            raise ValueError("stop policy requires a theorem-backed breach")
+        return self
+
+
 class HypothesisCandidate(StrictModel):
     experiment: ExperimentSpec
     evidence_uses: tuple[EvidenceUse, ...] = Field(min_length=1)
     novelty: CategoricalNoveltyAudit
+    diagnosis_lane: DiagnosisLane | None = None
 
     @model_validator(mode="after")
     def validate_evidence_citations(self) -> HypothesisCandidate:
@@ -532,6 +587,7 @@ class HypothesisFeedback(StrictModel):
     ]
     diagnosis_evidence: tuple[str, ...]
     recommended_actions: tuple[str, ...]
+    optimum_feedback: OptimumFeedbackV1 | None = None
     created_at: str = Field(default_factory=utc_now)
 
 

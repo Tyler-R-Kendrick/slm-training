@@ -10,7 +10,9 @@ import tempfile
 from pathlib import Path
 
 from slm_training.harnesses.experiments.verified_metrics import (
+    IN_REPO_CHECKER,
     VerifiedMetricError,
+    optimum_feedback,
     verify_metric_certificate,
     write_metric_evidence,
 )
@@ -45,12 +47,20 @@ def _cmd_export(args: argparse.Namespace) -> int:
         cold_requests=args.cold_requests,
         warm_requests=args.warm_requests,
         candidates=_candidate_rows(args.candidate_json),
+        expectation_manifest_path=args.expectations,
+        observations_path=args.observations,
     )
     print(path)
     return 0
 
 
 def _cmd_certify(args: argparse.Namespace) -> int:
+    checker = Path(args.leverproof_bin or IN_REPO_CHECKER)
+    if not checker.is_file():
+        raise VerifiedMetricError(
+            "in-repo LeverProof checker is unavailable; run "
+            "`make -C src/leverproof_lean build`"
+        )
     destination = args.certificate
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -59,14 +69,19 @@ def _cmd_certify(args: argparse.Namespace) -> int:
         temporary = Path(handle.name)
     try:
         with temporary.open("w", encoding="utf-8") as output:
-            completed = subprocess.run(
-                [str(args.leverproof_bin), "check", str(args.evidence)],
-                stdout=output,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False,
-                timeout=INTERRUPT_AFTER_SECONDS,
-            )
+            try:
+                completed = subprocess.run(
+                    [str(checker), "check", str(args.evidence)],
+                    stdout=output,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False,
+                    timeout=INTERRUPT_AFTER_SECONDS,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise VerifiedMetricError(
+                    "LeverProof certification exceeded the run cap"
+                ) from exc
         if completed.returncode != 0:
             raise VerifiedMetricError(
                 "LeverProof rejected evidence: "
@@ -78,7 +93,7 @@ def _cmd_certify(args: argparse.Namespace) -> int:
     verify_metric_certificate(
         evidence_path=args.evidence,
         certificate_path=destination,
-        checker=args.leverproof_bin,
+        checker=checker,
     )
     print(destination)
     return 0
@@ -91,12 +106,14 @@ def _cmd_verify(args: argparse.Namespace) -> int:
         expected_campaign_manifest_sha256=args.campaign_manifest_sha256,
         expected_selected_candidate=args.selected_candidate,
         checker=args.leverproof_bin,
+        require_band_certificate=args.require_band_certificate,
     )
     print(
         json.dumps(
             {
                 "verified": True,
                 "selected_candidate": certificate["selected_candidate"],
+                **optimum_feedback(certificate),
             },
             sort_keys=True,
         )
@@ -116,19 +133,22 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--cold-requests", type=int, required=True)
     export.add_argument("--warm-requests", type=int, required=True)
     export.add_argument("--candidate-json", type=Path, action="append", required=True)
+    export.add_argument("--expectations", type=Path)
+    export.add_argument("--observations", type=Path)
     export.add_argument("--out", type=Path, required=True)
     export.set_defaults(func=_cmd_export)
 
     certify = subparsers.add_parser("certify")
     certify.add_argument("--evidence", type=Path, required=True)
     certify.add_argument("--certificate", type=Path, required=True)
-    certify.add_argument("--leverproof-bin", type=Path, required=True)
+    certify.add_argument("--leverproof-bin", type=Path)
     certify.set_defaults(func=_cmd_certify)
 
     verify = subparsers.add_parser("verify")
     verify.add_argument("--evidence", type=Path, required=True)
     verify.add_argument("--certificate", type=Path, required=True)
-    verify.add_argument("--leverproof-bin", type=Path, required=True)
+    verify.add_argument("--leverproof-bin", type=Path)
+    verify.add_argument("--require-band-certificate", action="store_true")
     verify.add_argument("--campaign-manifest-sha256")
     verify.add_argument("--selected-candidate")
     verify.set_defaults(func=_cmd_verify)

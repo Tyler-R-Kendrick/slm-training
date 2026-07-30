@@ -60,6 +60,7 @@ from slm_training.autoresearch.schemas import (
     HypothesisMatrix,
     OpenDeepResearchConfig,
     OpenResearcherConfig,
+    OptimumFeedbackV1,
     ResearchSource,
 )
 from slm_training.autoresearch.storage import CampaignStore
@@ -224,6 +225,7 @@ def hypothesis_matrix(
     predecessor_matrix_id: str | None = None,
     feedback_ids: tuple[str, ...] = (),
     offset: int = 0,
+    diagnosis_lanes: tuple[str, ...] = (),
 ) -> HypothesisMatrix:
     citations = (
         "docs/design/research-lineage.md",
@@ -277,6 +279,9 @@ def hypothesis_matrix(
                     stress_tests=("evaluate every honest suite",),
                     worthiness_criteria=("positive primary delta without regression",),
                 ),
+                diagnosis_lane=(
+                    diagnosis_lanes[index] if index < len(diagnosis_lanes) else None
+                ),
             )
         )
     return HypothesisMatrix(
@@ -288,6 +293,74 @@ def hypothesis_matrix(
         selection_rationale="Highest-information safe candidate in this matrix.",
         predecessor_matrix_id=predecessor_matrix_id,
         feedback_ids=feedback_ids,
+    )
+
+
+def test_out_of_band_feedback_requires_complete_diagnosis_matrix() -> None:
+    first = hypothesis_matrix()
+    optimum = OptimumFeedbackV1(
+        policy="block_promotion_and_diagnose",
+        breaches=(
+            {
+                "metric_id": "tokens_per_step",
+                "authority": "assumption_backed",
+                "relation": "above",
+            },
+        ),
+        diagnosis_lanes=(
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        ),
+        metric_evidence_sha256="a" * 64,
+        metric_certificate_sha256="b" * 64,
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="test-campaign",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="none",
+        diagnosis_evidence=("Observed metric exceeded its calculated band.",),
+        recommended_actions=("Run the five-lane diagnosis matrix.",),
+        optimum_feedback=optimum,
+    )
+    incomplete = hypothesis_matrix(
+        matrix_id="matrix-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+    )
+
+    with pytest.raises(ValueError, match="diagnosis lane"):
+        validate_hypothesis_matrix(
+            campaign(),
+            incomplete,
+            matrix_evidence(),
+            [source()],
+            feedback=(feedback,),
+            previous_matrix=first,
+        )
+
+    complete = hypothesis_matrix(
+        matrix_id="matrix-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        diagnosis_lanes=optimum.diagnosis_lanes,
+    )
+    validate_hypothesis_matrix(
+        campaign(),
+        complete,
+        matrix_evidence(),
+        [source()],
+        feedback=(feedback,),
+        previous_matrix=first,
     )
 
 

@@ -290,13 +290,19 @@ def register_promoted_checkpoint(
     default_evidence, default_certificate = default_metric_paths(artifact_root)
     evidence_path = metric_evidence_path or default_evidence
     certificate_path = metric_certificate_path or default_certificate
+    if manifest.metric_expectations_sha256 is None:
+        raise ValueError(
+            "checkpoint registration requires preregistered metric expectations"
+        )
     try:
         metric_certificate = verify_metric_certificate(
             evidence_path=evidence_path,
             certificate_path=certificate_path,
             expected_campaign_manifest_sha256=governance["manifest_sha256"],
+            expected_metric_expectations_sha256=manifest.metric_expectations_sha256,
             expected_selected_candidate=promoted_candidate_id,
             checker=leverproof_bin,
+            require_band_certificate=True,
         )
     except VerifiedMetricError as exc:
         raise ValueError(

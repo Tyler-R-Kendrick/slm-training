@@ -19,6 +19,7 @@ from slm_training.harnesses.experiments.promotion import (
 from slm_training.harnesses.experiments.verified_metrics import (
     VerifiedMetricError,
     build_metric_evidence,
+    optimum_feedback,
     verify_metric_certificate,
 )
 from slm_training.harnesses.experiments.slm183_power_protocol import (
@@ -80,6 +81,75 @@ def _certificate(evidence: dict) -> dict:
     }
 
 
+def _band_certificate(
+    evidence: dict,
+    *,
+    authority: str = "assumption_backed",
+    relation: str = "in_band",
+) -> dict:
+    return {
+        **_certificate(evidence),
+        "schema": "metric_certificate/v2",
+        "checker": "leverproof-lean/v2",
+        "assurance": "calculated_bands_and_observed_raw_samples",
+        "metric_expectations_sha256": evidence["source"][
+            "metric_expectations_sha256"
+        ],
+        "assessments": [
+            {
+                "metric_id": "tokens_per_step",
+                "authority": authority,
+                "relation": relation,
+            }
+        ],
+    }
+
+
+def _band_evidence(tmp_path: Path) -> dict:
+    expectations = {
+        "schema": "metric_expectations/v1",
+        "metrics": [
+            {
+                "metric_id": "tokens_per_step",
+                "unit": "tokens",
+                "authority": "assumption_backed",
+                "dependencies": [
+                    {
+                        "name": "batch",
+                        "value": {
+                            "lower": {"numerator": 8, "denominator": 1},
+                            "upper": {"numerator": 16, "denominator": 1},
+                        },
+                    }
+                ],
+                "program": [{"op": "variable", "name": "batch"}],
+            }
+        ],
+    }
+    observations = {
+        "schema": "metric_observations/v1",
+        "metrics": {"tokens_per_step": [8, 12, 16]},
+    }
+    expectations_path = tmp_path / "expectations.json"
+    observations_path = tmp_path / "observations.json"
+    expectations_path.write_text(json.dumps(expectations), encoding="utf-8")
+    observations_path.write_text(json.dumps(observations), encoding="utf-8")
+    campaign = build_experiment_campaign(seeds=(0,))
+    campaign_path = tmp_path / "band-campaign.json"
+    campaign_path.write_text(campaign.model_dump_json(), encoding="utf-8")
+    return build_metric_evidence(
+        run_id="run-1",
+        evidence_bundle_path=_write(tmp_path / "band-bundle.json", b"bundle"),
+        feature_flags_path=_write(tmp_path / "band-flags.json", b"flags"),
+        campaign_manifest_path=campaign_path,
+        cold_requests=1,
+        warm_requests=9,
+        candidates=_evidence(tmp_path)["candidates"],
+        expectation_manifest_path=expectations_path,
+        observations_path=observations_path,
+    )
+
+
 def test_build_metric_evidence_hashes_provenance(tmp_path: Path) -> None:
     evidence = _evidence(tmp_path)
 
@@ -97,7 +167,7 @@ def test_verify_metric_certificate_replays_checker(
     certificate_path = tmp_path / "metric-certificate.json"
     evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
     certificate_path.write_text(json.dumps(certificate), encoding="utf-8")
-    monkeypatch.setattr(verified_metrics.shutil, "which", lambda _: "/bin/leverproof")
+    checker = _write(tmp_path / "leverproof", b"")
     monkeypatch.setattr(
         verified_metrics.subprocess,
         "run",
@@ -113,9 +183,62 @@ def test_verify_metric_certificate_replays_checker(
             "campaign_manifest_sha256"
         ],
         expected_selected_candidate="candidate",
+        checker=checker,
     )
 
     assert actual["verified"] is True
+
+
+def test_band_evidence_binds_expectations_and_observations(tmp_path: Path) -> None:
+    evidence = _band_evidence(tmp_path)
+
+    assert evidence["schema"] == "metric_evidence/v2"
+    assert len(evidence["source"]["metric_expectations_sha256"]) == 64
+    assert evidence["expectations"][0]["observations"] == [8, 12, 16]
+
+
+@pytest.mark.parametrize(
+    ("authority", "relation", "policy"),
+    [
+        ("assumption_backed", "in_band", "continue"),
+        ("assumption_backed", "above", "block_promotion_and_diagnose"),
+        ("theorem", "below", "stop"),
+    ],
+)
+def test_optimum_feedback_uses_tiered_policy(
+    tmp_path: Path, authority: str, relation: str, policy: str
+) -> None:
+    evidence = _band_evidence(tmp_path)
+
+    feedback = optimum_feedback(
+        _band_certificate(evidence, authority=authority, relation=relation)
+    )
+
+    assert feedback["policy"] == policy
+    assert bool(feedback["diagnosis_lanes"]) == (relation != "in_band")
+
+
+def test_new_promotion_rejects_assumption_backed_band_miss(
+    tmp_path: Path,
+) -> None:
+    evidence = _band_evidence(tmp_path)
+    evidence_path = tmp_path / "metric-evidence.json"
+    certificate_path = tmp_path / "metric-certificate.json"
+    evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+    certificate_path.write_text(
+        json.dumps(_band_certificate(evidence, relation="above")),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(VerifiedMetricError, match="assumption-backed"):
+        verify_metric_certificate(
+            evidence_path=evidence_path,
+            certificate_path=certificate_path,
+            expected_metric_expectations_sha256=evidence["source"][
+                "metric_expectations_sha256"
+            ],
+            require_band_certificate=True,
+        )
 
 
 def test_verify_metric_certificate_rejects_wrong_selected_candidate(
@@ -157,7 +280,9 @@ def test_build_metric_evidence_rejects_aggregate_only_input(tmp_path: Path) -> N
 def test_checkpoint_registration_fails_closed_without_certificate(
     tmp_path: Path,
 ) -> None:
-    manifest = build_experiment_campaign(seeds=(0,))
+    manifest = build_experiment_campaign(seeds=(0,)).model_copy(
+        update={"metric_expectations_sha256": "d" * 64}
+    )
     manifest_sha = campaign_manifest_sha256(manifest)
     result = CampaignResultV1(
         campaign_id=manifest.campaign_id,

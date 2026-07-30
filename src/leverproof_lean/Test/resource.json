@@ -1,0 +1,43 @@
+{
+  "schema": "metric_evidence/v1",
+  "run_id": "fixture-resource-comparison",
+  "source": {
+    "evidence_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "feature_flags_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "campaign_manifest_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "workload": {
+    "cold_requests": 1,
+    "warm_requests": 9
+  },
+  "candidates": [
+    {
+      "id": "baseline",
+      "hardware": "fixture-cpu",
+      "lever_snapshot_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "cold_ns": [100, 110],
+      "warm_ns": [20, 22, 21],
+      "input_units": [512, 512, 512],
+      "passes": [3, 3, 3],
+      "successes": 5,
+      "quality_failures": 0,
+      "trainable_params": 1000,
+      "energy_uj": [40, 42, 41],
+      "cost_micro_usd": [5, 5, 5]
+    },
+    {
+      "id": "candidate",
+      "hardware": "fixture-cpu",
+      "lever_snapshot_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "cold_ns": [90, 95],
+      "warm_ns": [18, 19, 18],
+      "input_units": [512, 512, 512],
+      "passes": [2, 2, 2],
+      "successes": 5,
+      "quality_failures": 0,
+      "trainable_params": 900,
+      "energy_uj": [35, 36, 35],
+      "cost_micro_usd": [4, 4, 4]
+    }
+  ]
+}

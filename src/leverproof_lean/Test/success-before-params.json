@@ -1,0 +1,43 @@
+{
+  "schema": "metric_evidence/v1",
+  "run_id": "success-before-params",
+  "source": {
+    "evidence_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "feature_flags_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "campaign_manifest_sha256": null
+  },
+  "workload": {
+    "cold_requests": 1,
+    "warm_requests": 1
+  },
+  "candidates": [
+    {
+      "id": "smaller-but-less-successful",
+      "hardware": "fixture-cpu",
+      "lever_snapshot_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "cold_ns": [10],
+      "warm_ns": [10],
+      "input_units": [1],
+      "passes": [1],
+      "successes": 1,
+      "quality_failures": 0,
+      "trainable_params": 1,
+      "energy_uj": [1],
+      "cost_micro_usd": [1]
+    },
+    {
+      "id": "success-winner",
+      "hardware": "fixture-cpu",
+      "lever_snapshot_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "cold_ns": [10],
+      "warm_ns": [10],
+      "input_units": [1],
+      "passes": [1],
+      "successes": 2,
+      "quality_failures": 0,
+      "trainable_params": 100,
+      "energy_uj": [1],
+      "cost_micro_usd": [1]
+    }
+  ]
+}

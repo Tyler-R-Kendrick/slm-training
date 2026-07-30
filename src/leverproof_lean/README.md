@@ -1,0 +1,71 @@
+# LeverProof Lean
+
+LeverProof Lean is a Lean 4 implementation of the experiment-resource metric
+oracle used by `slm-training`. It consumes raw integer samples and provenance
+digests, derives exact rational and interval metrics, selects a candidate with
+the committed lexicographic policy, and emits a replayable certificate.
+
+This project is part of the `slm-training` monorepo. The initial import preserves
+external snapshot
+`51a03f0cc410ef3e0591862f32b3393307280d1e`; the in-repo path is authoritative
+for subsequent changes. The executable protocol is:
+
+- input: replayable `metric_evidence/v1` or band-aware `metric_evidence/v2`;
+- output: the matching `metric_certificate/v1` or `metric_certificate/v2`;
+- replay: exact recomputation from the original evidence;
+- arithmetic: natural numbers and unreduced rational pairs, never floats.
+
+## Build and verify
+
+Install Elan, then run:
+
+```sh
+lake build
+make test
+```
+
+The project pins Lean in `lean-toolchain`. `make proofs` compiles the public
+proof audit and rejects `sorry` or declared `axiom` in project sources.
+
+```sh
+.lake/build/bin/leverproof-lean check Test/resource.json
+.lake/build/bin/leverproof-lean verify \
+  Test/resource.json Test/resource.certificate.json
+```
+
+## Proven core
+
+Lean proves:
+
+- every observed sample lies in its derived minimum/maximum interval;
+- a non-empty sample mean has a positive denominator;
+- piecewise model evaluation uses a declared box;
+- selection returns a member of the candidate set;
+- the selected candidate globally minimizes the primary quality-failure key;
+- successful checking requires valid evidence;
+- a checked selection belongs to the derived candidates and satisfies the
+  primary optimum theorem.
+
+The remaining lexicographic tie-breaks are executable definitions replayed by
+the checker. Extending their global optimality proofs is the next proof-depth
+milestone; the certificate never claims more than the checked algorithm and
+the named theorems establish.
+
+The v2 protocol also evaluates generic reverse-Polish metric programs over
+named rational intervals, classifies every raw natural-number observation as
+below, within, or above the calculated interval, and records whether the range
+is theorem-backed or assumption-backed. `countPositions_total` proves that no
+observation disappears during classification, and `inBand_has_no_violations`
+proves the in-band disposition has no below/above samples.
+
+## Trust boundary
+
+Lean checks the arithmetic and selection propositions. Measurement truth,
+sensor calibration, experiment design, JSON decoding, filesystem I/O,
+SHA-256 implementations, the Lean runtime/compiler, and the operating system
+remain trusted. A certificate binds conclusions to evidence; it does not prove
+that the observations were unbiased.
+
+The model language covers affine and polynomial expressions, box-selected
+piecewise expressions, and integer inverse powers. Unsupported models fail
+closed. Rational-power fits must be lowered to a certified piecewise envelope.

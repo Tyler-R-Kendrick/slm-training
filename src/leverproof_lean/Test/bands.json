@@ -1,0 +1,50 @@
+{
+  "schema": "metric_evidence/v2",
+  "run_id": "band-fixture",
+  "source": {
+    "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "feature_flags_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "campaign_manifest_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "metric_expectations_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "workload": {
+    "cold_requests": 1,
+    "warm_requests": 1
+  },
+  "candidates": [
+    {
+      "id": "candidate",
+      "hardware": "fixture-cpu",
+      "lever_snapshot_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "cold_ns": [100],
+      "warm_ns": [20],
+      "input_units": [1],
+      "passes": [1],
+      "successes": 2,
+      "quality_failures": 0,
+      "trainable_params": 100,
+      "energy_uj": [5],
+      "cost_micro_usd": [1]
+    }
+  ],
+  "expectations": [
+    {
+      "metric_id": "generic_metric",
+      "unit": "units",
+      "authority": "assumption_backed",
+      "dependencies": [
+        {
+          "name": "calculated_range",
+          "value": {
+            "lower": {"numerator": 10, "denominator": 1},
+            "upper": {"numerator": 20, "denominator": 1}
+          }
+        }
+      ],
+      "program": [
+        {"op": "variable", "name": "calculated_range"}
+      ],
+      "observations": [9, 15, 21]
+    }
+  ]
+}

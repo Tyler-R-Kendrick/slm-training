@@ -1,49 +1,62 @@
 # LeverProof integration
 
-LeverProof Lean is the executable oracle for resource-derived experiment
-metrics. This repository remains the owner of raw measurement, feature-flag
-snapshots, campaign governance, model-quality gates, and checkpoint promotion.
+The in-repo [`src/leverproof_lean/`](../../src/leverproof_lean/) project is the
+executable oracle for resource metrics and preregistered calculated ranges.
+Python owns files, hashes, process execution, and typed cycle policy. Lean owns
+exact arithmetic, selection, band calculation, and observation classification.
 
 ```text
-raw integer samples + content digests
-  -> metric_evidence/v1
-  -> native Lean checker
-  -> metric_certificate/v1
-  -> replay at the promotion boundary
+locked campaign + expectation digest + raw integer observations
+  -> metric_evidence/v2
+  -> src/leverproof_lean/.lake/build/bin/leverproof-lean
+  -> metric_certificate/v2
+  -> typed OptimumFeedbackV1
+  -> continue | stop | block promotion and diagnose
 ```
 
-No floating-point mean, fitted optimum, or dashboard summary is accepted as
-proof input. Durations are nanoseconds, energy is microjoules, cost is
-micro-USD, and counts are natural numbers. `CycleTelemetry` retains
-`samples_ns` so callers can export observations rather than reverse-engineer
-rounded summaries.
+Version 1 remains replayable for historical evidence, but cannot authorize a
+new checkpoint promotion. New promotions require v2 and a campaign-locked
+`metric_expectations_sha256`.
 
-## Provenance and derivation
+## Generic calculated ranges
 
-`metric_evidence/v1` binds:
+Each expectation names a metric and unit, an authority
+(`theorem` or `assumption_backed`), named rational dependency intervals, and a
+small reverse-Polish program. Supported instructions are `constant`,
+`variable`, `add`, `multiply`, `power`, and `inverse`. The checker rejects
+unknown variables, malformed stacks, zero-denominator inverses, invalid
+intervals, duplicate metrics, and empty observations.
 
-- the existing `EvidenceBundleV1` bytes;
-- the persisted OpenFeature snapshot bytes;
-- the locked campaign manifest bytes, when present;
-- candidate lever-snapshot digests;
-- one hardware identity shared by compared arms;
-- the declared cold/warm workload and every raw sample.
+Observed values remain raw natural numbers. Lean emits the calculated interval,
+observed min/max interval, below/within/above counts, and an `in_band`, `below`,
+`above`, or `mixed` relation. This protocol is metric-generic: latency, memory,
+energy, token counts, loss-scaled integers, or another preregistered quantity
+use the same structure.
 
-The checker derives cold/warm min-max intervals, the workload-weighted
-expected-latency interval, exact rational means for input size, passes, energy
-and cost, success rate, and parameter count. It selects by the committed
-lexicographic policy: quality failures, success rate, parameters, latency upper
-bound, passes, energy, cost, then candidate id.
+No floating-point summary is proof input. The expectation manifest digest is
+locked before outcomes are visible and is embedded in evidence and the
+certificate. Bounds are never widened after a miss.
 
-Promotion does not trust the certificate's `verified` field alone. It invokes
-the pinned Lean binary over the evidence and certificate, checks the selected
-candidate, and independently binds the campaign-manifest digest. Missing
-evidence, a missing binary, timeouts, digest drift, replay failure, or candidate
-mismatch fail closed.
+## Cycle policy
+
+An out-of-band metric is a cycle-level research signal, not an auxiliary loss:
+
+- all metrics in band: continue;
+- theorem-backed miss: stop the campaign;
+- assumption-backed miss: keep the terminal run as evidence, block promotion,
+  and require a successor hypothesis matrix;
+- v1 certificate: historical replay only.
+
+A miss does not identify its own cause. The successor matrix must cover all
+five controlled diagnosis lanes: measurement/control, training method,
+architecture, Lean model, and assumptions/dependent variables. Automatic
+source rewriting, gate weakening, and post-hoc range edits are forbidden.
 
 ## Usage
 
 ```bash
+make -C src/leverproof_lean test
+
 python -m scripts.leverproof_metrics export \
   --run-id RUN \
   --evidence-bundle outputs/runs/RUN/evidence-bundle.json \
@@ -51,33 +64,31 @@ python -m scripts.leverproof_metrics export \
   --campaign-manifest outputs/campaigns/CAMPAIGN/manifest.json \
   --cold-requests 1 --warm-requests 9 \
   --candidate-json outputs/runs/RUN/raw-resource-candidates.json \
+  --expectations outputs/campaigns/CAMPAIGN/metric-expectations.json \
+  --observations outputs/runs/RUN/metric-observations.json \
   --out outputs/campaigns/CAMPAIGN/metric-evidence.json
 
 python -m scripts.leverproof_metrics certify \
   --evidence outputs/campaigns/CAMPAIGN/metric-evidence.json \
-  --certificate outputs/campaigns/CAMPAIGN/metric-certificate.json \
-  --leverproof-bin ../leverproof-lean/.lake/build/bin/leverproof-lean
+  --certificate outputs/campaigns/CAMPAIGN/metric-certificate.json
 ```
 
-`register_promoted_checkpoint` looks for `metric-evidence.json` and
-`metric-certificate.json` in the campaign artifact root by default. The
-lineage `model_cycle promote` command requires explicit paths. Set
-`LEVERPROOF_BIN` when the checker is not on `PATH`.
+The CLI and promotion paths default to the pinned in-repo executable; there is
+no environment or `PATH` fallback. An explicit binary is retained only for
+controlled tests. Missing evidence, digest drift, replay failure, timeout,
+candidate mismatch, v1 evidence at a new promotion, or any band breach fails
+promotion closed.
 
-## Proof and trust boundary
+## Trust boundary
 
-Lean proves sample bounds, a nonzero mean denominator, declared-box model
-selection, deterministic candidate membership, primary quality-failure
-optimality, valid evidence, and checked-selection soundness. The standalone
-audit reports standard logical axioms explicitly and rejects unfinished proof
-placeholders.
+Lean proves the declared calculation and classification. Measurement truth,
+sensor calibration, experiment design, JSON decoding, SHA-256, filesystem I/O,
+the Lean runtime/compiler, and the operating system remain trusted. Therefore
+the diagnosis matrix always includes a measurement-control lane.
 
-Measurement truth, timers, JSON parsing, SHA-256, filesystem I/O, the Lean
-runtime/compiler, and the operating system remain trusted. A certificate says
-the checked result follows from the bound raw evidence; it does not assert that
-a sensor was calibrated or that the experiment design was unbiased.
-
-The v1 model language includes affine and polynomial expressions, declared-box
-piecewise models, and integer inverse powers. A rational power fit must be
-lowered to a certified piecewise polynomial envelope. Unsupported models are
-rejected rather than approximated silently.
+The candidate selector still derives exact rational resource summaries and
+replays its committed lexicographic policy: quality failures, success rate,
+parameters, latency upper bound, passes, energy, cost, then candidate id.
+Current global theorems cover membership and the primary quality-failure
+optimum; the remaining tie-breaks are executable replayed definitions and are
+not overstated as fully proved.
