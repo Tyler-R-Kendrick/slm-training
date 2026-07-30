@@ -39,6 +39,33 @@ RESULT_EVIDENCE_KINDS = {
     "data_snapshot",
 }
 
+_DEFAULT_EVAL_VERSION_CANDIDATES = (
+    "e938_role_safe_all_targets_v2",
+    "e842_harness_owned_slots_v1",
+    "e827_target_slots_only_v4",
+    "e763_symbol_only_eval_r2_20260722",
+)
+
+
+def default_eval_version() -> str:
+    """Return a published eval snapshot that has a smoke suite on disk."""
+    from slm_training.data.store import DataStore
+
+    store = DataStore()
+    for name in _DEFAULT_EVAL_VERSION_CANDIDATES:
+        root = store.resolve_path("eval", name)
+        if (root / "suites" / "smoke" / "records.jsonl").is_file():
+            return name
+    eval_root = store.resolve_path("eval", "e938_role_safe_all_targets_v2").parent
+    if eval_root.is_dir():
+        for child in sorted(eval_root.iterdir()):
+            if child.is_dir() and (child / "suites" / "smoke" / "records.jsonl").is_file():
+                return child.name
+    raise FileNotFoundError(
+        "no published eval snapshot with a smoke suite is available; "
+        "set ExperimentKnobs.eval_version explicitly"
+    )
+
 
 def validate_experiment(
     campaign: CampaignSpec,
@@ -603,7 +630,7 @@ def compile_commands(
         "-m",
         "scripts.evaluate_model",
         "--test-dir",
-        knobs.eval_version or "v1",
+        knobs.eval_version or default_eval_version(),
         "--run-root",
         str(root.parent),
         "--run-id",

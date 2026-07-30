@@ -2482,3 +2482,42 @@ def test_compile_action_alias_knobs() -> None:
         train[train.index("--action-description-name-mode") + 1]
         == "alias_aware_description"
     )
+
+
+def test_default_eval_version_resolves_published_smoke_suite() -> None:
+    from slm_training.autoresearch.engine import default_eval_version
+    from slm_training.data.store import DataStore
+
+    name = default_eval_version()
+    root = DataStore().resolve_path("eval", name)
+    assert (root / "suites" / "smoke" / "records.jsonl").is_file()
+
+
+def test_compile_commands_default_eval_is_not_missing_v1() -> None:
+    from slm_training.autoresearch.engine import compile_commands
+    from slm_training.autoresearch.schemas import (
+        CampaignSpec,
+        ExperimentKnobs,
+        ExperimentSpec,
+    )
+
+    campaign = CampaignSpec(
+        campaign_id="eval-default",
+        objective="Ensure continuous eval defaults resolve.",
+        primary_metric="smoke.parse_rate",
+    )
+    experiment = ExperimentSpec(
+        experiment_id="eval-default-1",
+        campaign_id="eval-default",
+        hypothesis="Default eval points at a published smoke suite.",
+        rationale="Continuous loops must not die on missing v1.",
+        expected_effect="evaluate_model receives a resolvable test-dir.",
+        falsification_criteria=("Default still points at missing v1.",),
+        stop_conditions=("Stop after plan compile.",),
+        citations=("docs/design/research-lineage.md",),
+        knobs=ExperimentKnobs(train_version="wf_smoke_v2", steps=2, seed=0),
+    )
+    commands = compile_commands(campaign, experiment)
+    evaluate = next(cmd for cmd in commands if "scripts.evaluate_model" in cmd)
+    test_dir = evaluate[evaluate.index("--test-dir") + 1]
+    assert test_dir != "v1"

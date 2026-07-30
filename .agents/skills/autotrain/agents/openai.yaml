@@ -1,4 +1,10 @@
 interface:
   display_name: "Autotrain OpenUI SLMs"
-  short_description: "Continuously improve OpenUI models and harnesses"
-  default_prompt: "Use $autotrain in its continuous local-only mode: keep a persistent goal, fetch latest between bounded campaigns, improve the model or evidence-implicated canonical harness, and print the verified result matrix between runs. Use one finite pass only when I name a phase or say --once."
+  short_description: "Hands-off continuous OpenUI model + harness improvement"
+  default_prompt: >
+    Use $autotrain in continuous local-only mode with zero user intervention:
+    keep chaining bounded campaigns forever (or until a thrice-repeated hard
+    block), fetch/merge latest between cycles, self-heal path and harness
+    failures from evidence, print the verified result matrix between runs, and
+    immediately start the next cycle without asking me to continue. Use one
+    finite pass only when I name a phase or say --once.
