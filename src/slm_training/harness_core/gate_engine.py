@@ -41,6 +41,7 @@ def build_gate_criteria(
     *,
     normalize_suite: SuiteNormalizer,
     default_min_n: int,
+    suite_reachability: Mapping[str, float] | None = None,
 ) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
     """Lower a gate policy to raw deterministic AgentEvals criteria."""
     actual: dict[str, dict[str, Any]] = {}
@@ -84,6 +85,16 @@ def build_gate_criteria(
                 "expected": int(mins.get("min_n", default_min_n)),
             }
         )
+        if suite_reachability is not None and suite_name in suite_reachability:
+            criteria.append(
+                {
+                    "id": f"{suite_name}:reachability_unproven",
+                    "suite": suite_name,
+                    "actual": _json_scalar(suite_reachability[suite_name]),
+                    "operator": "eq",
+                    "expected": 1.0,
+                }
+            )
         criteria.extend(
             {
                 "id": f"{suite_name}:{metric}",
@@ -124,6 +135,12 @@ def criterion_passes(criterion: Mapping[str, Any]) -> bool:
     if operator == "eq":
         if criterion_id.endswith(":certified_fallback"):
             return _integral_count(actual) and int(actual) == expected
+        if criterion_id.endswith(":reachability_unproven"):
+            return (
+                _finite_real(actual)
+                and _finite_real(expected)
+                and float(actual) == float(expected)
+            )
         return actual is not None and actual == expected
     if operator == "gte":
         valid = (
@@ -154,6 +171,9 @@ def criterion_failure(criterion: Mapping[str, Any]) -> str:
                 "for learned-quality claims"
             )
         return f"{key} actual={actual} need=0 for learned-quality claims"
+    if key.endswith(":reachability_unproven"):
+        suite = key.removesuffix(":reachability_unproven")
+        return f"reachability_unproven:{suite} actual={actual!r} need=1.0"
     if criterion.get("operator") == "eq":
         return f"{key} actual={actual!r} need={expected}"
     return f"{key} actual={actual!r} need>={expected}"
@@ -165,6 +185,8 @@ def criterion_failure_category(criterion: Mapping[str, Any]) -> str:
     if key.endswith(":missing_suite"):
         return "evidence_volume_failures"
     if key.endswith(":certified_fallback"):
+        return "measurement_integrity_failures"
+    if key.endswith(":reachability_unproven"):
         return "measurement_integrity_failures"
     if key.endswith(":decode_timeout_count"):
         return "runtime_failures"
@@ -187,6 +209,7 @@ def run_gate_checks(
     *,
     normalize_suite: SuiteNormalizer,
     default_min_n: int,
+    suite_reachability: Mapping[str, float] | None = None,
 ) -> tuple[
     dict[str, dict[str, Any]],
     dict[str, bool],
@@ -205,6 +228,7 @@ def run_gate_checks(
         policy,
         normalize_suite=normalize_suite,
         default_min_n=default_min_n,
+        suite_reachability=suite_reachability,
     )
     checks = {str(item["id"]): criterion_passes(item) for item in criteria}
     failures = [

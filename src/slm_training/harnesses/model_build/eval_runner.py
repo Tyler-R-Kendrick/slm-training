@@ -2063,6 +2063,7 @@ def evaluate_suites(
     model=None,
     write_gates: bool = False,
     cache: EvalCache | None = None,
+    suite_reachability: dict[str, float] | None = None,
 ) -> dict[str, dict]:
     """Run eval across multiple suites; write scoreboard.json (and optional gates)."""
     from dataclasses import replace
@@ -2146,6 +2147,8 @@ def evaluate_suites(
     from slm_training.harnesses.model_build.feature_flags import load_snapshot
 
     scoreboard["feature_flags"] = load_snapshot(run_dir)
+    if suite_reachability is not None:
+        scoreboard["suite_reachability"] = dict(suite_reachability)
     path = run_dir / "scoreboard.json"
     scoreboard["output"] = str(path)
     gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
@@ -2156,12 +2159,18 @@ def evaluate_suites(
             run_dir,
             board,
             include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
+            suite_reachability=suite_reachability,
         )
         scoreboard["evals"]["suites_run"] = gate_suites
     else:
         scoreboard["evals"] = {"skipped": "no ship-gate policy suites evaluated"}
     if write_gates:
-        gates = write_ship_gates(run_dir, board, evals_result=scoreboard["evals"])
+        gates = write_ship_gates(
+            run_dir,
+            board,
+            suite_reachability=suite_reachability,
+            evals_result=scoreboard["evals"],
+        )
         scoreboard["gates"] = {
             key: gates[key]
             for key in (

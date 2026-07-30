@@ -43,6 +43,7 @@ from slm_training.data.locked_eval_manifest import (
     load_locked_manifest_payload,
 )
 from slm_training.web.app import create_app
+from slm_training.web.routes import PromotionEvalRequest, promotion_evaluate
 
 _REAL_DIGEST = load_locked_manifest_payload(canonical_manifest_path())["manifest_sha256"]
 assert isinstance(_REAL_DIGEST, str) and len(_REAL_DIGEST) == 64
@@ -202,3 +203,15 @@ def test_verify_flag_true_accepts_real_committed_digest(ro_client: TestClient) -
     assert "locked_eval_manifest_digest_unverified_on_disk" not in failures
     assert "locked_eval_manifest_sha256_mismatch" not in failures
     assert "locked_eval_manifest_sha256_missing" not in failures
+
+
+def test_promotion_evaluate_charges_parameter_growth() -> None:
+    result = promotion_evaluate(
+        PromotionEvalRequest(
+            baseline_trainable_params=100,
+            candidate_trainable_params=200,
+        )
+    )
+
+    assert result["checks"]["eg_params"]["pass"] is False
+    assert "eg_params" in result["failures"]

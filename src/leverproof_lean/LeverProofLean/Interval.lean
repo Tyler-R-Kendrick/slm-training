@@ -52,6 +52,9 @@ namespace Interval
 def valid (i : Interval) : Bool :=
   i.lower.valid && i.upper.valid && i.lower.leb i.upper
 
+def Contains (i : Interval) (q : Ratio) : Prop :=
+  i.lower.Le q ∧ q.Le i.upper
+
 def ofNat (n : Nat) : Interval := ⟨Ratio.ofNat n, Ratio.ofNat n⟩
 
 def add (x y : Interval) : Interval :=
@@ -67,6 +70,114 @@ def inv? (x : Interval) : Option Interval := do
   let low ← x.upper.inv?
   let high ← x.lower.inv?
   pure ⟨low, high⟩
+
+theorem add_contains (x y : Interval) (a b : Ratio)
+    (ha : x.Contains a) (hb : y.Contains b) :
+    (x.add y).Contains (a.add b) := by
+  constructor
+  · simp only [Contains, Ratio.Le, add] at ha hb ⊢
+    have h₁ := Nat.mul_le_mul_right (y.lower.denominator * b.denominator) ha.1
+    have h₂ := Nat.mul_le_mul_right (x.lower.denominator * a.denominator) hb.1
+    calc
+      (x.lower.numerator * y.lower.denominator +
+          y.lower.numerator * x.lower.denominator) *
+          (a.denominator * b.denominator) =
+          (x.lower.numerator * a.denominator) *
+              (y.lower.denominator * b.denominator) +
+            (y.lower.numerator * b.denominator) *
+              (x.lower.denominator * a.denominator) := by
+                rw [Nat.add_mul]
+                congr 1 <;> ac_rfl
+      _ ≤
+          (a.numerator * x.lower.denominator) *
+              (y.lower.denominator * b.denominator) +
+            (b.numerator * y.lower.denominator) *
+              (x.lower.denominator * a.denominator) :=
+            Nat.add_le_add h₁ h₂
+      _ =
+          (a.numerator * b.denominator + b.numerator * a.denominator) *
+            (x.lower.denominator * y.lower.denominator) := by
+              rw [Nat.add_mul]
+              congr 1 <;> ac_rfl
+  · simp only [Contains, Ratio.Le, add] at ha hb ⊢
+    have h₁ := Nat.mul_le_mul_right (y.upper.denominator * b.denominator) ha.2
+    have h₂ := Nat.mul_le_mul_right (x.upper.denominator * a.denominator) hb.2
+    calc
+      (a.numerator * b.denominator + b.numerator * a.denominator) *
+          (x.upper.denominator * y.upper.denominator) =
+          (a.numerator * x.upper.denominator) *
+              (y.upper.denominator * b.denominator) +
+            (b.numerator * y.upper.denominator) *
+              (x.upper.denominator * a.denominator) := by
+                rw [Nat.add_mul]
+                congr 1 <;> ac_rfl
+      _ ≤
+          (x.upper.numerator * a.denominator) *
+              (y.upper.denominator * b.denominator) +
+            (y.upper.numerator * b.denominator) *
+              (x.upper.denominator * a.denominator) :=
+            Nat.add_le_add h₁ h₂
+      _ =
+          (x.upper.numerator * y.upper.denominator +
+              y.upper.numerator * x.upper.denominator) *
+            (a.denominator * b.denominator) := by
+              rw [Nat.add_mul]
+              congr 1 <;> ac_rfl
+
+theorem mul_contains (x y : Interval) (a b : Ratio)
+    (ha : x.Contains a) (hb : y.Contains b) :
+    (x.mul y).Contains (a.mul b) := by
+  constructor
+  · simp only [Contains, Ratio.Le, mul] at ha hb ⊢
+    have h := Nat.mul_le_mul ha.1 hb.1
+    calc
+      x.lower.numerator * y.lower.numerator *
+          (a.denominator * b.denominator) =
+          (x.lower.numerator * a.denominator) *
+            (y.lower.numerator * b.denominator) := by ac_rfl
+      _ ≤
+          (a.numerator * x.lower.denominator) *
+            (b.numerator * y.lower.denominator) := h
+      _ =
+          a.numerator * b.numerator *
+            (x.lower.denominator * y.lower.denominator) := by ac_rfl
+  · simp only [Contains, Ratio.Le, mul] at ha hb ⊢
+    have h := Nat.mul_le_mul ha.2 hb.2
+    calc
+      a.numerator * b.numerator *
+          (x.upper.denominator * y.upper.denominator) =
+          (a.numerator * x.upper.denominator) *
+            (b.numerator * y.upper.denominator) := by ac_rfl
+      _ ≤
+          (x.upper.numerator * a.denominator) *
+            (y.upper.numerator * b.denominator) := h
+      _ =
+          x.upper.numerator * y.upper.numerator *
+            (a.denominator * b.denominator) := by ac_rfl
+
+theorem pow_contains (x : Interval) (a : Ratio) (exponent : Nat)
+    (ha : x.Contains a) :
+    (x.pow exponent).Contains (a.pow exponent) := by
+  induction exponent with
+  | zero =>
+      simp [pow, Ratio.pow, Contains, Ratio.Le, Ratio.ofNat]
+  | succ exponent ih =>
+      exact mul_contains x (x.pow exponent) a (a.pow exponent) ha ih
+
+theorem inv_contains (x inverse : Interval) (a reciprocal : Ratio)
+    (hx : x.inv? = some inverse) (haInv : a.inv? = some reciprocal)
+    (ha : x.Contains a) :
+    inverse.Contains reciprocal := by
+  simp only [inv?, Ratio.inv?] at hx haInv
+  split at hx <;> try contradiction
+  split at hx <;> try contradiction
+  split at haInv <;> try contradiction
+  simp at hx haInv
+  subst inverse
+  subst reciprocal
+  simp only [Contains, Ratio.Le] at ha ⊢
+  constructor <;> first | simpa [Nat.mul_comm] using ha.2 |
+    simpa [Nat.mul_comm] using ha.1
 
 end Interval
 

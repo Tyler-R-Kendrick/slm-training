@@ -53,6 +53,7 @@ def check (evidence : Evidence) : Option Certificate := do
   if evidence.valid then pure () else none
   let candidates ← deriveCandidates evidence.workload evidence.candidates
   let selected ← selectBest candidates
+  if globallyPreferred selected candidates then pure () else none
   pure {
     runId := evidence.runId
     sourceSha256 := evidence.sourceSha256
@@ -87,7 +88,7 @@ theorem checked_selection_comes_from_derived_candidates
           | none => simp [hderive, hselected] at hcheck
           | some selected =>
               simp [hderive, hselected] at hcheck
-              subst certificate
+              rcases hcheck with ⟨_, rfl⟩
               exact selectBest_member candidates selected hselected
   · simp at hcheck
 
@@ -106,9 +107,28 @@ theorem checked_selection_minimizes_qualityFailures
           | none => simp [hderive, hselected] at hcheck
           | some selected =>
               simp [hderive, hselected] at hcheck
-              subst certificate
+              rcases hcheck with ⟨_, rfl⟩
               exact selectBest_minimizes_qualityFailures
                 candidates selected hselected
+  · simp at hcheck
+
+theorem checked_selection_is_globally_preferred
+    (evidence : Evidence) (certificate : Certificate)
+    (hcheck : check evidence = some certificate) :
+    ∀ candidate ∈ certificate.candidates,
+      preferCandidate certificate.selected candidate = true := by
+  simp only [check] at hcheck
+  split at hcheck
+  · next _ =>
+      cases hderive : deriveCandidates evidence.workload evidence.candidates with
+      | none => simp [hderive] at hcheck
+      | some candidates =>
+          cases hselected : selectBest candidates with
+          | none => simp [hderive, hselected] at hcheck
+          | some selected =>
+              simp [hderive, hselected] at hcheck
+              rcases hcheck with ⟨hpreferred, rfl⟩
+              exact (globallyPreferred_iff selected candidates).mp hpreferred
   · simp at hcheck
 
 end LeverProofLean

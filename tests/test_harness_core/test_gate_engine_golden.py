@@ -188,6 +188,7 @@ EXPECTED = json.loads(r"""
         "component_type_recall": 0.2
       },
       "rico_held": {
+        "min_n": 1500,
         "meaningful_program_rate": 0.1,
         "structural_similarity": 0.2,
         "component_type_recall": 0.15
@@ -195,7 +196,7 @@ EXPECTED = json.loads(r"""
     },
     "meaningful_metric_policy": {
       "active_primary": "meaningful_program_v1",
-      "threshold_version": "openui_ship_gates_v2",
+      "threshold_version": "openui_ship_gates_v5",
       "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
@@ -264,7 +265,7 @@ EXPECTED = json.loads(r"""
       "rico_held:missing_suite"
     ],
     "pass": false,
-    "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
+    "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
   },
   "default_fallback_and_legacy": {
     "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
@@ -293,6 +294,7 @@ EXPECTED = json.loads(r"""
         "component_type_recall": 0.2
       },
       "rico_held": {
+        "min_n": 1500,
         "meaningful_program_rate": 0.1,
         "structural_similarity": 0.2,
         "component_type_recall": 0.15
@@ -300,7 +302,7 @@ EXPECTED = json.loads(r"""
     },
     "meaningful_metric_policy": {
       "active_primary": "meaningful_program_v1",
-      "threshold_version": "openui_ship_gates_v2",
+      "threshold_version": "openui_ship_gates_v5",
       "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
@@ -414,7 +416,7 @@ EXPECTED = json.loads(r"""
       "ood:structural_similarity": true,
       "ood:component_type_recall": true,
       "rico_held:certified_fallback": true,
-      "rico_held:insufficient_n": true,
+      "rico_held:insufficient_n": false,
       "rico_held:meaningful_program_rate": true,
       "rico_held:structural_similarity": true,
       "rico_held:component_type_recall": true
@@ -425,10 +427,11 @@ EXPECTED = json.loads(r"""
       "adversarial:insufficient_n actual=4 need>=20",
       "adversarial:structural_similarity actual=None need>=0.25",
       "adversarial:component_type_recall actual=None need>=0.2",
-      "ood:insufficient_n actual=None need>=20"
+      "ood:insufficient_n actual=None need>=20",
+      "rico_held:insufficient_n actual=25 need>=1500"
     ],
     "pass": false,
-    "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
+    "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
   },
   "custom_thresholds": {
     "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
@@ -484,7 +487,7 @@ EXPECTED = json.loads(r"""
       "extra_suite:missing_suite"
     ],
     "pass": false,
-    "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
+    "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
   }
 }
 """)
