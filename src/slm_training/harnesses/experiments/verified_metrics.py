@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import shutil
 import subprocess
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -26,8 +24,23 @@ from slm_training.levers import INTERRUPT_AFTER_SECONDS
 EVIDENCE_SCHEMA = "metric_evidence/v1"
 CERTIFICATE_SCHEMA = "metric_certificate/v1"
 CHECKER_ID = "leverproof-lean/v1"
+EVIDENCE_SCHEMA_V2 = "metric_evidence/v2"
+CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
+CHECKER_ID_V2 = "leverproof-lean/v2"
+EXPECTATIONS_SCHEMA = "metric_expectations/v1"
+OBSERVATIONS_SCHEMA = "metric_observations/v1"
 DEFAULT_EVIDENCE_NAME = "metric-evidence.json"
 DEFAULT_CERTIFICATE_NAME = "metric-certificate.json"
+REPO_ROOT = Path(__file__).resolve().parents[4]
+IN_REPO_CHECKER = (
+    REPO_ROOT
+    / "src"
+    / "leverproof_lean"
+    / ".lake"
+    / "build"
+    / "bin"
+    / "leverproof-lean"
+)
 
 
 class VerifiedMetricError(ValueError):
@@ -81,6 +94,8 @@ def build_metric_evidence(
     cold_requests: int,
     warm_requests: int,
     candidates: Sequence[Mapping[str, Any]],
+    expectation_manifest_path: Path | str | None = None,
+    observations_path: Path | str | None = None,
 ) -> dict[str, Any]:
     """Build exact raw-sample evidence with content-addressed provenance."""
     if not run_id:
@@ -140,7 +155,7 @@ def build_metric_evidence(
             raise VerifiedMetricError(f"{prefix}.successes exceeds measured requests")
         normalized.append(row)
 
-    return {
+    result = {
         "schema": EVIDENCE_SCHEMA,
         "run_id": run_id,
         "source": {
@@ -158,6 +173,46 @@ def build_metric_evidence(
         },
         "candidates": normalized,
     }
+    if expectation_manifest_path is None and observations_path is None:
+        return result
+    if expectation_manifest_path is None or observations_path is None:
+        raise VerifiedMetricError(
+            "band-aware evidence requires both expectations and observations"
+        )
+    expectations = _load_object(
+        Path(expectation_manifest_path), schema=EXPECTATIONS_SCHEMA
+    )
+    observations = _load_object(Path(observations_path), schema=OBSERVATIONS_SCHEMA)
+    metrics = expectations.get("metrics")
+    observed = observations.get("metrics")
+    if not isinstance(metrics, list) or not metrics:
+        raise VerifiedMetricError("metric expectations require a non-empty metrics list")
+    if not isinstance(observed, dict):
+        raise VerifiedMetricError("metric observations require a metrics object")
+    embedded: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, metric in enumerate(metrics):
+        if not isinstance(metric, dict):
+            raise VerifiedMetricError(f"metrics[{index}] must be an object")
+        metric_id = str(metric.get("metric_id", ""))
+        if not metric_id or metric_id in seen:
+            raise VerifiedMetricError("metric expectation ids must be non-empty and unique")
+        seen.add(metric_id)
+        samples = _natural_samples(
+            observed.get(metric_id), field=f"observations.metrics.{metric_id}"
+        )
+        embedded.append({**metric, "observations": samples})
+    extras = set(observed) - seen
+    if extras:
+        raise VerifiedMetricError(
+            f"observations contain undeclared metrics: {sorted(extras)}"
+        )
+    result["schema"] = EVIDENCE_SCHEMA_V2
+    result["source"]["metric_expectations_sha256"] = sha256_file(
+        expectation_manifest_path
+    )
+    result["expectations"] = embedded
+    return result
 
 
 def write_metric_evidence(
@@ -172,24 +227,73 @@ def write_metric_evidence(
 
 
 def _load_object(path: Path, *, schema: str) -> dict[str, Any]:
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise VerifiedMetricError(f"cannot load {path}: {exc}") from exc
-    if not isinstance(payload, dict) or payload.get("schema") != schema:
+    payload = _load_json_object(path)
+    if payload.get("schema") != schema:
         raise VerifiedMetricError(f"{path} is not a {schema} document")
     return payload
 
 
+def _load_json_object(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise VerifiedMetricError(f"cannot load {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise VerifiedMetricError(f"{path} must contain a JSON object")
+    return payload
+
+
 def _resolve_checker(checker: Path | str | None) -> str:
-    requested = str(checker or os.environ.get("LEVERPROOF_BIN") or "leverproof")
-    resolved = shutil.which(requested)
-    if resolved is None:
+    requested = Path(checker) if checker is not None else IN_REPO_CHECKER
+    if not requested.is_file():
         raise VerifiedMetricError(
-            "LeverProof checker is unavailable; set LEVERPROOF_BIN or "
-            "pass leverproof_bin"
+            "in-repo LeverProof checker is unavailable; run "
+            "`make -C src/leverproof_lean build`"
         )
-    return resolved
+    return str(requested)
+
+
+def optimum_feedback(certificate: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the cycle disposition without inventing a causal diagnosis."""
+    if certificate.get("schema") != CERTIFICATE_SCHEMA_V2:
+        return {
+            "policy": "historical_only",
+            "breaches": [],
+            "diagnosis_lanes": [],
+        }
+    assessments = certificate.get("assessments")
+    if not isinstance(assessments, list) or not assessments:
+        raise VerifiedMetricError("band certificate has no assessments")
+    breaches = [
+        {
+            "metric_id": str(row.get("metric_id", "")),
+            "authority": row.get("authority"),
+            "relation": row.get("relation"),
+        }
+        for row in assessments
+        if isinstance(row, dict) and row.get("relation") != "in_band"
+    ]
+    if not breaches:
+        policy = "continue"
+    elif any(row.get("authority") == "theorem" for row in breaches):
+        policy = "stop"
+    else:
+        policy = "block_promotion_and_diagnose"
+    return {
+        "policy": policy,
+        "breaches": breaches,
+        "diagnosis_lanes": (
+            [
+                "measurement_control",
+                "training_method",
+                "architecture",
+                "lean_model",
+                "assumptions",
+            ]
+            if breaches
+            else []
+        ),
+    }
 
 
 def verify_metric_certificate(
@@ -197,20 +301,39 @@ def verify_metric_certificate(
     evidence_path: Path | str,
     certificate_path: Path | str,
     expected_campaign_manifest_sha256: str | None = None,
+    expected_metric_expectations_sha256: str | None = None,
     expected_selected_candidate: str | None = None,
     checker: Path | str | None = None,
+    require_band_certificate: bool = False,
 ) -> dict[str, Any]:
     """Replay a whitelisted kernel-backed certificate and check bindings."""
     evidence_file = Path(evidence_path)
     certificate_file = Path(certificate_path)
-    evidence = _load_object(evidence_file, schema=EVIDENCE_SCHEMA)
-    certificate = _load_object(certificate_file, schema=CERTIFICATE_SCHEMA)
-    if (
-        certificate.get("checker") != CHECKER_ID
-        or certificate.get("verified") is not True
-    ):
+    raw_evidence = _load_json_object(evidence_file)
+    evidence_schema = raw_evidence.get("schema")
+    expected_certificate_schema = {
+        EVIDENCE_SCHEMA: CERTIFICATE_SCHEMA,
+        EVIDENCE_SCHEMA_V2: CERTIFICATE_SCHEMA_V2,
+    }.get(evidence_schema)
+    if expected_certificate_schema is None:
+        raise VerifiedMetricError(f"unsupported metric evidence schema {evidence_schema}")
+    evidence = _load_object(evidence_file, schema=evidence_schema)
+    certificate = _load_object(
+        certificate_file, schema=expected_certificate_schema
+    )
+    expected_checker = (
+        CHECKER_ID_V2
+        if expected_certificate_schema == CERTIFICATE_SCHEMA_V2
+        else CHECKER_ID
+    )
+    if certificate.get("checker") != expected_checker or certificate.get("verified") is not True:
         raise VerifiedMetricError("certificate is not a verified LeverProof result")
-    if certificate.get("assurance") != "observed_raw_samples":
+    expected_assurance = (
+        "calculated_bands_and_observed_raw_samples"
+        if expected_certificate_schema == CERTIFICATE_SCHEMA_V2
+        else "observed_raw_samples"
+    )
+    if certificate.get("assurance") != expected_assurance:
         raise VerifiedMetricError("certificate does not cover observed raw samples")
 
     source = evidence.get("source")
@@ -225,6 +348,12 @@ def verify_metric_certificate(
     for field, expected in bindings:
         if certificate.get(field) != expected:
             raise VerifiedMetricError(f"certificate {field} does not match evidence")
+    if expected_certificate_schema == CERTIFICATE_SCHEMA_V2:
+        expected_digest = source.get("metric_expectations_sha256")
+        if certificate.get("metric_expectations_sha256") != expected_digest:
+            raise VerifiedMetricError(
+                "certificate metric expectation digest does not match evidence"
+            )
     if expected_campaign_manifest_sha256 is not None and certificate.get(
         "campaign_manifest_sha256"
     ) != _sha256(
@@ -232,6 +361,13 @@ def verify_metric_certificate(
         field="expected_campaign_manifest_sha256",
     ):
         raise VerifiedMetricError("certificate campaign manifest digest mismatch")
+    if expected_metric_expectations_sha256 is not None and certificate.get(
+        "metric_expectations_sha256"
+    ) != _sha256(
+        expected_metric_expectations_sha256,
+        field="expected_metric_expectations_sha256",
+    ):
+        raise VerifiedMetricError("certificate metric expectation digest mismatch")
     if (
         expected_selected_candidate is not None
         and certificate.get("selected_candidate") != expected_selected_candidate
@@ -249,6 +385,20 @@ def verify_metric_certificate(
         != 1
     ):
         raise VerifiedMetricError("selected candidate is not uniquely certified")
+    feedback = optimum_feedback(certificate)
+    if require_band_certificate:
+        if expected_certificate_schema != CERTIFICATE_SCHEMA_V2:
+            raise VerifiedMetricError(
+                "new promotion requires a calculated-band v2 certificate"
+            )
+        if feedback["policy"] == "stop":
+            raise VerifiedMetricError(
+                "theorem-backed metric is outside its calculated range"
+            )
+        if feedback["policy"] == "block_promotion_and_diagnose":
+            raise VerifiedMetricError(
+                "assumption-backed metric is outside its calculated range"
+            )
 
     try:
         completed = subprocess.run(
@@ -278,13 +428,20 @@ def default_metric_paths(artifact_root: Path | str) -> tuple[Path, Path]:
 
 __all__ = [
     "CERTIFICATE_SCHEMA",
+    "CERTIFICATE_SCHEMA_V2",
     "CHECKER_ID",
+    "CHECKER_ID_V2",
     "DEFAULT_CERTIFICATE_NAME",
     "DEFAULT_EVIDENCE_NAME",
     "EVIDENCE_SCHEMA",
+    "EVIDENCE_SCHEMA_V2",
+    "EXPECTATIONS_SCHEMA",
+    "IN_REPO_CHECKER",
+    "OBSERVATIONS_SCHEMA",
     "VerifiedMetricError",
     "build_metric_evidence",
     "default_metric_paths",
+    "optimum_feedback",
     "sha256_file",
     "verify_metric_certificate",
     "write_metric_evidence",

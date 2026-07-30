@@ -18,6 +18,7 @@ from slm_training.autoresearch.schemas import (
     ExperimentSpec,
     HypothesisFeedback,
     HypothesisMatrix,
+    OptimumFeedbackV1,
     ResearchSource,
     utc_now,
 )
@@ -104,6 +105,31 @@ def validate_hypothesis_matrix(
             raise ValueError(
                 "feedback-informed matrix must identify its predecessor matrix"
             )
+        required_lanes = {
+            lane
+            for item in feedback
+            if item.optimum_feedback is not None
+            for lane in item.optimum_feedback.diagnosis_lanes
+        }
+        if any(
+            item.optimum_feedback is not None
+            and item.optimum_feedback.policy == "stop"
+            for item in feedback
+        ):
+            raise ValueError(
+                "theorem-backed metric contradiction stops this campaign"
+            )
+        if required_lanes:
+            supplied_lanes = {
+                item.diagnosis_lane
+                for item in matrix.hypotheses
+                if item.diagnosis_lane is not None
+            }
+            if supplied_lanes != required_lanes:
+                raise ValueError(
+                    "out-of-band feedback requires one hypothesis for every "
+                    f"diagnosis lane: {sorted(required_lanes)}"
+                )
     prior_signatures = {
         json.dumps(
             experiment.knobs.model_dump(exclude_none=True, mode="json"),
@@ -171,6 +197,7 @@ def create_hypothesis_feedback(
     matrix: HypothesisMatrix,
     outcome: ExperimentOutcome,
     diagnosis: Diagnosis,
+    optimum_feedback: OptimumFeedbackV1 | None = None,
 ) -> HypothesisFeedback:
     """Turn one completed matrix experiment into bounded hypothesizer feedback."""
     candidates = {
@@ -198,6 +225,11 @@ def create_hypothesis_feedback(
         "diagnosis_target": diagnosis.target,
         "diagnosis_evidence": diagnosis.evidence,
         "recommended_actions": diagnosis.recommended_actions,
+        "optimum_feedback": (
+            optimum_feedback.model_dump(mode="json")
+            if optimum_feedback is not None
+            else None
+        ),
     }
     feedback_id = "feedback-" + hashlib.sha256(
         json.dumps(identity, sort_keys=True).encode("utf-8")
@@ -215,6 +247,7 @@ def create_hypothesis_feedback(
         diagnosis_target=diagnosis.target,
         diagnosis_evidence=diagnosis.evidence,
         recommended_actions=diagnosis.recommended_actions,
+        optimum_feedback=optimum_feedback,
         created_at=outcome.finished_at or outcome.started_at or matrix.created_at,
     )
 

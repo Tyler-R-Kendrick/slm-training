@@ -11,6 +11,22 @@
     "New ids and future bumps use monotonic v1, v2, ...; pre-existing native encodings are kept."
   ],
   "components": {
+    "formal.leverproof": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/leverproof_lean/",
+        "scripts/leverproof_metrics.py",
+        "docs/design/leverproof-integration.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "Import LeverProof into the monorepo and add generic exact metric-band calculation, raw-observation classification, and replayable v2 certificates"
+        }
+      ]
+    },
     "analysis.arity.diffusion_graph": {
       "version": "v1",
       "kind": "metric",
@@ -2398,19 +2414,25 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
         "src/slm_training/autoresearch/schemas.py",
         "src/slm_training/autoresearch/storage.py",
         "src/slm_training/autoresearch/engine.py",
+        "src/slm_training/autoresearch/providers.py",
         "src/slm_training/autoresearch/rl_gate.py",
         "src/slm_training/autoresearch/__init__.py",
         "tests/test_autoresearch/test_experiment_campaign.py",
         "tests/test_autoresearch/test_harness.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-30",
+          "note": "Bind preregistered metric-expectation digests and carry replayed Lean optimum feedback into typed five-lane successor hypothesis matrices"
+        },
         {
           "version": "v6",
           "date": "2026-07-27",
@@ -2739,7 +2761,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v141",
+      "version": "v142",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2751,6 +2773,11 @@
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v142",
+          "date": "2026-07-30",
+          "note": "Require generic Lean-calculated metric bands for new promotions and apply tiered stop or diagnosis policy to certified out-of-band observations"
+        },
         {
           "version": "v141",
           "date": "2026-07-29",
@@ -6181,7 +6208,7 @@
       ]
     },
     "harness.experiments.slm228_spectral_disposition": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm228_spectral_disposition.py",
@@ -6196,6 +6223,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "Require a preregistered metric-expectation digest and band-aware v2 LeverProof replay before model_cycle promotion"
+        },
         {
           "version": "v2",
           "date": "2026-07-29",
@@ -8226,6 +8258,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-30",
+          "note": "no-bump: scripts/autoresearch.py adds independent Lean optimum feedback handling; remine campaign behavior is unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",

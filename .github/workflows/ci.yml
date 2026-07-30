@@ -13,6 +13,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: src/leverproof_lean
+      - name: Audit LeverProof proofs and protocol fixtures
+        run: make -C src/leverproof_lean test
+
   python:
     runs-on: ubuntu-latest
     strategy:

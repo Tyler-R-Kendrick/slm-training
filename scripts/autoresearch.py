@@ -49,6 +49,7 @@ from slm_training.autoresearch.schemas import (
     ExperimentSpec,
     HypothesisFeedback,
     HypothesisMatrix,
+    OptimumFeedbackV1,
     ResearcherRun,
     ResearchSource,
 )
@@ -56,6 +57,11 @@ from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.autoresearch.telemetry import TrackioSink
 from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
+from slm_training.harnesses.experiments.verified_metrics import (
+    optimum_feedback,
+    sha256_file,
+    verify_metric_certificate,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -554,6 +560,41 @@ def _require_hypothesis_matrix(
     return matrix
 
 
+def _verified_optimum_feedback(
+    args: argparse.Namespace,
+    *,
+    campaign_manifest_sha256: str | None,
+    metric_expectations_sha256: str | None,
+) -> OptimumFeedbackV1 | None:
+    evidence = getattr(args, "metric_evidence", None)
+    certificate = getattr(args, "metric_certificate", None)
+    if evidence is None and certificate is None:
+        return None
+    if evidence is None or certificate is None:
+        raise ValueError(
+            "optimum feedback requires both --metric-evidence and "
+            "--metric-certificate"
+        )
+    if campaign_manifest_sha256 is None or metric_expectations_sha256 is None:
+        raise ValueError(
+            "optimum feedback requires a locked campaign manifest with "
+            "metric_expectations_sha256"
+        )
+    verified = verify_metric_certificate(
+        evidence_path=evidence,
+        certificate_path=certificate,
+        expected_campaign_manifest_sha256=campaign_manifest_sha256,
+        expected_metric_expectations_sha256=metric_expectations_sha256,
+        checker=getattr(args, "leverproof_bin", None),
+        require_band_certificate=False,
+    )
+    return OptimumFeedbackV1(
+        **optimum_feedback(verified),
+        metric_evidence_sha256=sha256_file(evidence),
+        metric_certificate_sha256=sha256_file(certificate),
+    )
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     store = _store(args)
     campaign = store.load_campaign()
@@ -685,7 +726,25 @@ def cmd_run(args: argparse.Namespace) -> int:
         status=diagnosis.target,
         artifact_sha256=diagnosis_path.stem,
     )
-    _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
+    optimum = _verified_optimum_feedback(
+        args,
+        campaign_manifest_sha256=lock.manifest_sha256,
+        metric_expectations_sha256=lock.manifest.metric_expectations_sha256,
+    )
+    feedback_path = _record_hypothesis_feedback(
+        store, matrix, outcome, diagnosis, optimum
+    )
+    if optimum is not None:
+        store.append_event(
+            "optimum_feedback_recorded",
+            experiment_id=experiment.experiment_id,
+            status=optimum.policy,
+            artifact_sha256=feedback_path.stem,
+            detail={
+                "breach_count": len(optimum.breaches),
+                "diagnosis_lanes": list(optimum.diagnosis_lanes),
+            },
+        )
     if args.trackio:
         try:
             TrackioSink(
@@ -705,6 +764,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                 detail={"error": str(exc)},
             )
     print(outcome.model_dump_json(indent=2))
+    if optimum is not None and optimum.policy == "stop":
+        return 2
     return 0 if outcome.status == "completed" else 2
 
 
@@ -733,8 +794,11 @@ def _record_hypothesis_feedback(
     matrix: HypothesisMatrix,
     outcome: ExperimentOutcome,
     diagnosis: Diagnosis,
+    optimum: OptimumFeedbackV1 | None = None,
 ) -> Path:
-    feedback = create_hypothesis_feedback(matrix, outcome, diagnosis)
+    feedback = create_hypothesis_feedback(
+        matrix, outcome, diagnosis, optimum_feedback=optimum
+    )
     path = store.write_artifact("hypothesizer_feedback", feedback)
     already_recorded = any(
         row.get("event_type") == "hypothesizer_feedback_recorded"
@@ -989,6 +1053,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="ExperimentCampaignV1 JSON locked before --execute.",
     )
     run.add_argument("--trackio", action="store_true")
+    run.add_argument("--metric-evidence", type=Path)
+    run.add_argument("--metric-certificate", type=Path)
+    run.add_argument("--leverproof-bin", type=Path)
     run.set_defaults(func=cmd_run)
 
     diagnose = sub.add_parser("diagnose")

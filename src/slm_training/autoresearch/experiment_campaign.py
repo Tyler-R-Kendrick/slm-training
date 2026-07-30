@@ -146,6 +146,9 @@ class ExperimentCampaignV1(StrictModel):
     locked_eval_manifest_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    metric_expectations_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
 
     @field_validator("seeds", mode="before")
     @classmethod

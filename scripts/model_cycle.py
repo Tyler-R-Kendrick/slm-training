@@ -626,8 +626,10 @@ def cmd_promote(args: argparse.Namespace) -> int:
         verify_metric_certificate(
             evidence_path=args.metric_evidence,
             certificate_path=args.metric_certificate,
+            expected_metric_expectations_sha256=args.metric_expectations_sha256,
             expected_selected_candidate=manifest.run_id,
             checker=args.leverproof_bin,
+            require_band_certificate=True,
         )
     except VerifiedMetricError as exc:
         raise ValueError(
@@ -1383,6 +1385,7 @@ def build_parser() -> argparse.ArgumentParser:
     promote.add_argument("--deployment-artifact", type=Path)
     promote.add_argument("--metric-evidence", type=Path, required=True)
     promote.add_argument("--metric-certificate", type=Path, required=True)
+    promote.add_argument("--metric-expectations-sha256", required=True)
     promote.add_argument("--leverproof-bin", type=Path)
     promote.add_argument(
         "--publish-train-data",

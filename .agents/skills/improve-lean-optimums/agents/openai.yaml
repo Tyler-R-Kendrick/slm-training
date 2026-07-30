@@ -1,0 +1,4 @@
+interface:
+  display_name: "Improve Lean Optimums"
+  short_description: "Refine Lean metric ranges from cycle evidence"
+  default_prompt: "Use $improve-lean-optimums to diagnose a certified metric-band miss and improve the right harness, model, or assumption."
