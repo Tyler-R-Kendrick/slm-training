@@ -16,7 +16,7 @@ Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 | `openui-autoresearch` | Evidence-grounded research, hypothesis matrices, feedback, execution, and RL readiness |
 | `improve-openui-harnesses` | Harness-family owners, invariants, outputs, improvement checks, and anti-sprawl rules |
 | `improve-lean-optimums` | Diagnose certified metric-band misses and improve the correct harness, model, Lean calculation, or assumption |
-| `autotrain` | Facade for running any training pipeline phase; per-phase `references/*.md` load on demand |
+| `autotrain` | Continuous local model+harness improvement by default; explicit phases/`--once` are finite |
 | `autoresearch` | Knowledge-driven research loop: read/update repo + personal brains (OpenWiki / OKF / Obsidian), prior-work discovery, autotrain hypothesis loop, and Linear issue/milestone/project emission; per-stage `references/*.md` load on demand |
 | `playwright-cli` | Browser / playground automation |
 | `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |

@@ -13,7 +13,12 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from slm_training.autoresearch.schemas import CampaignSpec, utc_now
+from slm_training.autoresearch.schemas import (
+    CampaignSpec,
+    Diagnosis,
+    ExperimentOutcome,
+    utc_now,
+)
 from slm_training.autoresearch.experiment_campaign import (
     CampaignDeviationV1,
     CampaignLockV1,
@@ -414,3 +419,164 @@ class CampaignStore:
             writer.writerow(row)
             handle.flush()
             os.fsync(handle.fileno())
+
+
+def loop_result_rows(
+    root: Path | str,
+    loop_id: str,
+) -> list[dict[str, Any]]:
+    """Derive one compact row per finished experiment from verified event chains."""
+    rows: list[dict[str, Any]] = []
+    root = Path(root)
+    campaigns: list[CampaignSpec] = []
+    for campaign_path in root.glob("*/campaign.json"):
+        campaign = CampaignSpec.model_validate_json(
+            campaign_path.read_text(encoding="utf-8")
+        )
+        if campaign.loop_id == loop_id:
+            campaigns.append(campaign)
+    campaigns.sort(key=lambda item: (item.cycle_index or 0, item.campaign_id))
+    for expected_cycle, campaign in enumerate(campaigns, start=1):
+        if campaign.cycle_index != expected_cycle:
+            raise RuntimeError("loop campaign cycles must be unique and contiguous")
+        expected_predecessor = (
+            campaigns[expected_cycle - 2].campaign_id if expected_cycle > 1 else None
+        )
+        if campaign.predecessor_campaign_id != expected_predecessor:
+            raise RuntimeError("loop campaign predecessor chain is broken")
+
+    for campaign in campaigns:
+        store = CampaignStore(campaign.campaign_id, root)
+        events = store.verify_event_chain()
+        for finish in (
+            row for row in events if row.get("event_type") == "experiment_finished"
+        ):
+            experiment_id = str(finish.get("experiment_id", ""))
+            outcome = ExperimentOutcome.model_validate(
+                _event_payload(store, finish, "outcomes")
+            )
+            diagnosis_event = next(
+                (
+                    row
+                    for row in reversed(events)
+                    if row.get("event_type") == "outcome_diagnosed"
+                    and row.get("experiment_id") == experiment_id
+                ),
+                None,
+            )
+            diagnosis = (
+                Diagnosis.model_validate(
+                    _event_payload(store, diagnosis_event, "diagnoses")
+                )
+                if diagnosis_event is not None
+                else None
+            )
+            try:
+                source_commit = store.load_experiment_campaign(
+                    experiment_id
+                ).manifest.source_commit
+            except FileNotFoundError:
+                source_commit = ""
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "base": source_commit[:8] or "—",
+                    "lane": (
+                        f"harness/{diagnosis.harness_family}"
+                        if diagnosis is not None and diagnosis.target == "harness"
+                        else diagnosis.target
+                        if diagnosis is not None
+                        else "—"
+                    ),
+                    "experiment": experiment_id,
+                    "params": _metric_text(outcome.metrics, "trainable_params"),
+                    "primary": _metric_text(outcome.metrics, campaign.primary_metric),
+                    "gates": _gate_text(outcome.metrics),
+                    "status": outcome.status,
+                    "next": (
+                        diagnosis.recommended_actions[0]
+                        if diagnosis is not None and diagnosis.recommended_actions
+                        else "—"
+                    ),
+                    "campaign_id": campaign.campaign_id,
+                }
+            )
+    return sorted(
+        rows,
+        key=lambda row: (
+            int(row["cycle"] or 0),
+            str(row["campaign_id"]),
+            str(row["experiment"]),
+        ),
+    )
+
+
+def render_loop_result_matrix(root: Path | str, loop_id: str) -> str:
+    """Render the canonical between-run view without persisting duplicate results."""
+    columns = (
+        ("cycle", "Cycle"),
+        ("base", "Base"),
+        ("lane", "Lane"),
+        ("experiment", "Experiment"),
+        ("params", "Params"),
+        ("primary", "Primary"),
+        ("gates", "Gates"),
+        ("status", "Status"),
+        ("next", "Next"),
+    )
+    rows = loop_result_rows(root, loop_id)
+    lines = [
+        "| " + " | ".join(label for _, label in columns) + " |",
+        "|" + "|".join(" --- " for _ in columns) + "|",
+    ]
+    if not rows:
+        rows = [{key: "—" for key, _ in columns}]
+    for row in rows:
+        lines.append(
+            "| "
+            + " | ".join(_markdown_cell(row.get(key, "—")) for key, _ in columns)
+            + " |"
+        )
+    return "\n".join(lines)
+
+
+def _event_artifact(
+    store: CampaignStore,
+    event: dict[str, Any],
+    kind: str,
+) -> Path:
+    digest = str(event.get("artifact_sha256", ""))
+    return store.root / "artifacts" / kind / f"{digest}.json"
+
+
+def _event_payload(
+    store: CampaignStore,
+    event: dict[str, Any],
+    kind: str,
+) -> dict[str, Any]:
+    digest = str(event.get("artifact_sha256", ""))
+    payload = json.loads(
+        _event_artifact(store, event, kind).read_text(encoding="utf-8")
+    )
+    if _sha(payload) != digest:
+        raise RuntimeError(f"{kind} artifact content digest mismatch")
+    return payload
+
+
+def _metric_text(metrics: dict[str, float], name: str) -> str:
+    for key, value in metrics.items():
+        if key == name or key.endswith(f".{name}"):
+            return f"{value:g}"
+    return "—"
+
+
+def _gate_text(metrics: dict[str, float]) -> str:
+    for name in ("ship_gates_pass", "gates.pass"):
+        value = _metric_text(metrics, name)
+        if value != "—":
+            return "pass" if float(value) else "fail"
+    return "—"
+
+
+def _markdown_cell(value: Any) -> str:
+    return str(value).replace("|", r"\|").replace("\n", " ")

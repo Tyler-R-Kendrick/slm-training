@@ -54,7 +54,11 @@ from slm_training.autoresearch.schemas import (
     ResearchSource,
 )
 from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
-from slm_training.autoresearch.storage import CampaignStore
+from slm_training.autoresearch.storage import (
+    CampaignStore,
+    loop_result_rows,
+    render_loop_result_matrix,
+)
 from slm_training.autoresearch.telemetry import TrackioSink
 from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
 from slm_training.harnesses.experiments.verified_metrics import (
@@ -93,6 +97,9 @@ def cmd_init(args: argparse.Namespace) -> int:
             max_gpu_hours=args.max_gpu_hours,
             max_wall_minutes=args.max_wall_minutes,
         ),
+        loop_id=args.loop_id,
+        cycle_index=args.cycle_index,
+        predecessor_campaign_id=args.predecessor_campaign_id,
         notes=args.notes,
     )
     path = _store(args).initialize(campaign)
@@ -854,7 +861,35 @@ def cmd_evaluate_hypothesizer(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    print(json.dumps(_store(args).status(), indent=2))
+    if args.loop_id:
+        rows = loop_result_rows(args.root, args.loop_id)
+        if args.matrix:
+            print(render_loop_result_matrix(args.root, args.loop_id))
+        else:
+            campaigns = sorted(
+                [
+                    CampaignSpec.model_validate_json(path.read_text(encoding="utf-8"))
+                    for path in args.root.glob("*/campaign.json")
+                ],
+                key=lambda item: (item.cycle_index or 0, item.campaign_id),
+            )
+            campaigns = [item for item in campaigns if item.loop_id == args.loop_id]
+            print(
+                json.dumps(
+                    {
+                        "loop_id": args.loop_id,
+                        "active": True,
+                        "campaign_count": len(campaigns),
+                        "campaign_ids": [item.campaign_id for item in campaigns],
+                        "result_count": len(rows),
+                    },
+                    indent=2,
+                )
+            )
+    else:
+        if args.matrix:
+            raise ValueError("--matrix requires --loop-id")
+        print(json.dumps(_store(args).status(), indent=2))
     return 0
 
 
@@ -984,6 +1019,9 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     init.add_argument("--notes", default="")
+    init.add_argument("--loop-id")
+    init.add_argument("--cycle-index", type=int)
+    init.add_argument("--predecessor-campaign-id")
     init.set_defaults(func=cmd_init)
 
     research = sub.add_parser("research")
@@ -1081,7 +1119,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     benchmark.add_argument("--researcher-id", required=True)
     benchmark.add_argument("--pass-threshold", type=float, default=0.8)
-    benchmark.add_argument("--human-approve", action="store_true")
+    benchmark.add_argument(
+        "--human-approve",
+        action="store_true",
+        help="Deprecated compatibility metadata; frozen meta-gates promote automatically.",
+    )
     benchmark.add_argument("--output", type=Path, required=True)
     benchmark.set_defaults(func=cmd_evaluate_researcher)
 
@@ -1101,12 +1143,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     hypothesis_benchmark.add_argument("--hypothesizer-id", required=True)
     hypothesis_benchmark.add_argument("--pass-threshold", type=float, default=0.8)
-    hypothesis_benchmark.add_argument("--human-approve", action="store_true")
+    hypothesis_benchmark.add_argument(
+        "--human-approve",
+        action="store_true",
+        help="Deprecated compatibility metadata; frozen meta-gates promote automatically.",
+    )
     hypothesis_benchmark.add_argument("--output", type=Path, required=True)
     hypothesis_benchmark.set_defaults(func=cmd_evaluate_hypothesizer)
 
     status = sub.add_parser("status")
-    status.add_argument("--campaign-id", required=True)
+    status_target = status.add_mutually_exclusive_group(required=True)
+    status_target.add_argument("--campaign-id")
+    status_target.add_argument("--loop-id")
+    status.add_argument("--matrix", action="store_true")
     status.set_defaults(func=cmd_status)
 
     sync = sub.add_parser("sync")

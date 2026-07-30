@@ -2414,20 +2414,33 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
         "src/slm_training/autoresearch/schemas.py",
         "src/slm_training/autoresearch/storage.py",
         "src/slm_training/autoresearch/engine.py",
+        "src/slm_training/autoresearch/researcher_eval.py",
+        "src/slm_training/autoresearch/hypothesizer_eval.py",
         "src/slm_training/autoresearch/providers.py",
         "src/slm_training/autoresearch/rl_gate.py",
         "src/slm_training/autoresearch/__init__.py",
+        ".agents/skills/autotrain/SKILL.md",
+        ".agents/skills/autotrain/references/continuous.md",
+        ".agents/skills/openui-autoresearch/SKILL.md",
+        ".grok/workflows/autotrain.rhai",
+        "docs/design/autoresearch-autotraining.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
-        "tests/test_autoresearch/test_harness.py"
+        "tests/test_autoresearch/test_harness.py",
+        "tests/test_scripts/test_slm_cli.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-30",
+          "note": "Make bare autotrain a continuous local loop over bounded campaigns, route frozen reproduced signals to canonical harness owners, derive between-run matrices from verified event chains, and replace human promotion with automated frozen meta-gates"
+        },
         {
           "version": "v7",
           "date": "2026-07-30",
@@ -8246,7 +8259,7 @@
       ]
     },
     "harness.preference.remine_campaign": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/remine_campaign.py",
@@ -8258,6 +8271,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "Add continuous campaign lineage initialization and verified loop status matrix output while preserving the remine command"
+        },
         {
           "version": "v2",
           "date": "2026-07-30",

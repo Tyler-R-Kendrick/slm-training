@@ -118,7 +118,7 @@ def test_registry_guides_have_reference_files() -> None:
     for guide in guides:
         assert (REFERENCES / f"{guide}.md").is_file(), guide
     on_disk = {path.stem for path in REFERENCES.glob("*.md")}
-    assert on_disk == guides | {"contracts"}
+    assert on_disk == guides | {"contracts", "continuous"}
 
 
 def _skill_corpus() -> str:

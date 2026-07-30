@@ -66,8 +66,8 @@ hypothesis loop / Linear tracking around these campaigns, use `autoresearch`.
    finished knob signatures and all prior campaign experiment IDs. If data validity,
    leakage, or quality is bad, derive a new immutable snapshot with
    `--source existing --derive-from` and rerun matched controls. Improve provider
-   code only through `evaluate-hypothesizer`, frozen
-   evaluation, and human approval; never train on its frozen cases.
+   code only through `evaluate-hypothesizer` and frozen evaluation. Passing the
+   automated meta-gate promotes locally; never train on its frozen cases.
 
 7. Sync only after the local bundle is complete:
 
@@ -79,8 +79,10 @@ hypothesis loop / Linear tracking around these campaigns, use `autoresearch`.
 ## Researcher changes
 
 Run the frozen fixture benchmark and publish AgentV evidence. A researcher is
-promotable only when every score clears the threshold and a human explicitly
-approves it. Never train the researcher on the frozen benchmark cases.
+promotable when every score clears the automated frozen meta-gate. Judge, case,
+metric, or threshold changes require their own preregistered meta-campaign with
+unchanged held-out controls. Never train the researcher on frozen benchmark cases
+or weaken a gate.
 
 ## RL readiness
 

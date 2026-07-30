@@ -1,4 +1,4 @@
-// autotrain — deterministic OpenUI SLM pipeline orchestration
+// autotrain — continuous model + canonical harness improvement orchestration
 //
 // Host-owned workflow over the autotrain skill / slm CLI / OpenWiki.
 // Phase order + exact commands are script-owned; agents execute and verify,
@@ -22,7 +22,9 @@
 //   phases          custom phase id array
 //   dry_run         plan only — no execute agents after inspect
 //   allow_paid      required for hf-jobs/remote/bucket write
-//   skip_completed  default true (durable state under outputs/autotrain-workflow/)
+//   continuous      default true; false/once runs one finite pass
+//   once            alias for continuous=false
+//   skip_completed  default true (durable state under outputs/autoresearch/<run_id>/)
 //   seed            default 0
 //   force_phases    never skip these phase ids
 //   cli             command prefix (default:
@@ -51,7 +53,9 @@
 // docs/design/decode-invariants.md -- never weaken them; a rejected experiment
 // closes an approach, never a goal. Iron law docs (skill:
 // documenting-experiment-results), model card (docs/MODEL_CARD.md + README
-// summary), fixture≠ship, RL fail-closed, hard run cap
+// summary), fixture≠ship, RL fail-closed, improve-openui-harnesses only after a
+// frozen reproduced signal, result matrix via `slm autoresearch status --loop-id
+// <run_id> --matrix`, hard run cap
 // (slm_training.levers.MAX_RUN_MINUTES), no paid without allow_paid.
 
 let meta = #{
@@ -563,7 +567,7 @@ if run_id == "" {
     if dry_run {
         run_id = "autotrain_dry_run";
     } else {
-        pause("verification", "args.run_id required for durable state under outputs/autotrain-workflow/<run_id>/");
+        pause("verification", "args.run_id required for durable state under outputs/autoresearch/<run_id>/");
     }
 }
 
@@ -596,6 +600,8 @@ if recipe == "ship" { ship_gates = true; }
 let matrix_ver = str_or(a.matrix, "v6");
 let only_id = str_or(a.only, "E53");
 let allow_paid = bool_or(a.allow_paid, false);
+let continuous = bool_or(a.continuous, true);
+if bool_or(a.once, false) { continuous = false; }
 let skip_completed = bool_or(a.skip_completed, true);
 let seed = int_or(a.seed, 0);
 let force_phases = if a.force_phases == () { [] } else { a.force_phases };
@@ -628,8 +634,8 @@ if !allow_paid && context_backend == "hf" && !dry_run {
 let honesty_mode = "fixture_or_scratch";
 if ship_gates { honesty_mode = "ship_gates"; }
 
-let state_path = "outputs/autotrain-workflow/" + run_id + "/state.json";
-let workflow_dir = "outputs/autotrain-workflow/" + run_id;
+let state_path = "outputs/autoresearch/" + run_id + "/autotrain-state.json";
+let workflow_dir = "outputs/autoresearch/" + run_id;
 let run_dir = "outputs/runs/" + run_id;
 
 let cfg = #{
@@ -648,6 +654,7 @@ let cfg = #{
     matrix: matrix_ver,
     only: only_id,
     allow_paid: allow_paid,
+    continuous: continuous,
     skip_completed: skip_completed,
     seed: seed,
     honesty_mode: honesty_mode,
@@ -1179,6 +1186,13 @@ for c in verify_rejected {
     report += "- NO `" + str_or(c.claim_id, "") + "`: " + str_or(c.claim, "") + " — " + str_or(c.reason, "") + "\n";
 }
 report += "\n## Honesty\n\nFixture/smoke evidence is wiring only. See docs/openwiki/workflows/train-eval-docs.md and honest-ship-eval.\n";
+report += "\n## Continuation\n\n";
+if continuous {
+    report += "Loop remains active. Fetch/integrate origin/main, audit typed harness signals, then resume this workflow.\n";
+    report += "Between runs: `" + cli + " autoresearch status --loop-id " + run_id + " --matrix`.\n";
+} else {
+    report += "Finite `once` pass requested.\n";
+}
 
 let rpath = write_scratch_file("report.md", report);
 let status_path = write_scratch_file("status.json", json_encode(#{
@@ -1202,6 +1216,7 @@ persist += json_encode(phase_results);
 persist += "\nAlso write " + workflow_dir + "/last_status.json and " + workflow_dir + "/command_plan.json from:\n";
 persist += json_encode(#{ ok: ok, recipe: recipe, run_id: run_id, command_plan: command_plan, honesty_mode: honesty_mode });
 persist += "\nDo not train. Read-write only for workflow_dir + docs if closeout left gaps.\n";
+persist += "Record continuous=" + continuous.to_string() + " and the resume/result-matrix command. Do not mark a continuous loop complete.\n";
 persist += "Return one-line summary.\n";
 
 let persist_r = agent(persist, #{
@@ -1218,7 +1233,12 @@ let b = budget();
 log("budget spent=" + b.spent.to_string() + "/" + b.total.to_string());
 
 complete(#{
-    summary: if ok { "autotrain completed" } else { "autotrain completed with failures" },
+    summary: if continuous {
+        if ok { "autotrain iteration complete; loop remains active" } else { "autotrain iteration failed; loop remains active" }
+    } else {
+        if ok { "autotrain finite pass completed" } else { "autotrain finite pass completed with failures" }
+    },
+    active: continuous,
     ok: ok,
     recipe: recipe,
     run_id: run_id,

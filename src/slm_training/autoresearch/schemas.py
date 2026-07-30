@@ -10,6 +10,19 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from slm_training.levers import MAX_RUN_MINUTES
 
+HarnessFamily = Literal[
+    "autoresearch",
+    "annotations",
+    "distill",
+    "experiments",
+    "model_build",
+    "preference",
+    "quality",
+    "rl",
+    "test_data",
+    "train_data",
+]
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -130,8 +143,30 @@ class CampaignSpec(StrictModel):
     evidence_roots: tuple[str, ...] = ("outputs",)
     allowed_knobs: frozenset[str] = DEFAULT_ALLOWED_KNOBS
     budget: CampaignBudget = Field(default_factory=CampaignBudget)
+    loop_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+    cycle_index: int | None = Field(default=None, ge=1)
+    predecessor_campaign_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
     created_at: str = Field(default_factory=utc_now)
     notes: str = ""
+
+    @model_validator(mode="after")
+    def validate_loop_lineage(self) -> CampaignSpec:
+        if self.loop_id is None:
+            if self.cycle_index is not None or self.predecessor_campaign_id is not None:
+                raise ValueError("cycle lineage requires loop_id")
+            return self
+        if self.cycle_index is None:
+            raise ValueError("loop_id requires cycle_index")
+        if self.cycle_index == 1 and self.predecessor_campaign_id is not None:
+            raise ValueError("first loop cycle cannot have a predecessor campaign")
+        if self.cycle_index > 1 and self.predecessor_campaign_id is None:
+            raise ValueError("later loop cycles require a predecessor campaign")
+        return self
+
 
 class ResearchSource(StrictModel):
     source_id: str
@@ -583,12 +618,31 @@ class HypothesisFeedback(StrictModel):
     metrics: dict[str, float] = Field(default_factory=dict)
     data_metrics: dict[str, float] = Field(default_factory=dict)
     diagnosis_target: Literal[
-        "data", "researcher", "model", "infrastructure", "none"
+        "data", "researcher", "model", "harness", "infrastructure", "none"
     ]
+    harness_family: HarnessFamily | None = None
     diagnosis_evidence: tuple[str, ...]
     recommended_actions: tuple[str, ...]
     optimum_feedback: OptimumFeedbackV1 | None = None
     created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_harness_family(self) -> HypothesisFeedback:
+        if self.diagnosis_target == "harness" and self.harness_family is None:
+            raise ValueError("harness feedback requires harness_family")
+        if self.diagnosis_target != "harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for harness feedback")
+        return self
+
+
+class HarnessSignalV1(StrictModel):
+    """Frozen-input evidence that a canonical harness, not a model arm, failed."""
+
+    family: HarnessFamily
+    code: str = Field(min_length=1)
+    evidence_uri: str = Field(min_length=1)
+    reproduced_on_frozen_input: bool
+    primary: bool = False
 
 
 class ExperimentOutcome(StrictModel):
@@ -604,20 +658,38 @@ class ExperimentOutcome(StrictModel):
     error: str | None = None
     wall_time_budget_seconds: float | None = Field(default=None, gt=0)
     stage_telemetry: tuple[dict[str, Any], ...] = ()
+    harness_signals: tuple[HarnessSignalV1, ...] = ()
     started_at: str | None = None
     finished_at: str | None = None
     campaign_manifest_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
 
+    @model_validator(mode="after")
+    def validate_harness_signals(self) -> ExperimentOutcome:
+        if sum(signal.primary for signal in self.harness_signals) > 1:
+            raise ValueError(
+                "experiment outcome may name at most one primary harness signal"
+            )
+        return self
+
 
 class Diagnosis(StrictModel):
     experiment_id: str
-    target: Literal["data", "researcher", "model", "infrastructure", "none"]
+    target: Literal["data", "researcher", "model", "harness", "infrastructure", "none"]
+    harness_family: HarnessFamily | None = None
     confidence: float = Field(ge=0, le=1)
     evidence: tuple[str, ...]
     recommended_actions: tuple[str, ...]
     created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_harness_family(self) -> Diagnosis:
+        if self.target == "harness" and self.harness_family is None:
+            raise ValueError("harness diagnosis requires harness_family")
+        if self.target != "harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for a harness diagnosis")
+        return self
 
 
 class RLReadinessReport(StrictModel):
@@ -646,6 +718,9 @@ class ResearcherBenchmarkReport(StrictModel):
     actionable_rate: float = Field(ge=0, le=1)
     pass_threshold: float = Field(ge=0, le=1)
     passed: bool
+    promotion_policy: Literal["human_review_v1", "automated_frozen_meta_gate_v1"] = (
+        "human_review_v1"
+    )
     human_approved: bool = False
     promotable: bool = False
     agentv: dict[str, Any] = Field(default_factory=dict)
@@ -663,6 +738,9 @@ class HypothesizerBenchmarkReport(StrictModel):
     feedback_lineage_rate: float = Field(ge=0, le=1)
     pass_threshold: float = Field(ge=0, le=1)
     passed: bool
+    promotion_policy: Literal["human_review_v1", "automated_frozen_meta_gate_v1"] = (
+        "human_review_v1"
+    )
     human_approved: bool = False
     promotable: bool = False
     agentv: dict[str, Any] = Field(default_factory=dict)

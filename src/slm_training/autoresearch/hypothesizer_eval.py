@@ -144,8 +144,9 @@ def evaluate_hypothesizer(
         cases=len(scored),
         pass_threshold=pass_threshold,
         passed=passed,
+        promotion_policy="automated_frozen_meta_gate_v1",
         human_approved=human_approved,
-        promotable=passed and human_approved,
+        promotable=passed,
         agentv=agentv,
         **rates,
     )

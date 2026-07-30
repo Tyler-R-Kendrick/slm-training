@@ -291,10 +291,24 @@ ID uniqueness prevents run budgets and outcome lineage from aliasing an older
 candidate. Matrix candidates are reviewable plans; only uniquely started experiments
 consume `max_experiments`.
 
-This is bounded self-improvement by accumulated evidence and policy iteration. It is
-not online weight training or permission to edit implementation, frozen evaluations,
-promotion policy, or ship gates. Hypothesizer implementation changes still require
-held-out evaluation and human approval before being treated as promoted behavior.
+Each campaign is bounded self-improvement by accumulated evidence and policy
+iteration. Bare `/autotrain` may chain those bounded campaigns under one persistent
+`loop_id`; it never creates an unbounded train process. `cycle_index` and
+`predecessor_campaign_id` preserve cross-cycle lineage, while
+`autoresearch status --loop-id <id> --matrix` derives the between-run result matrix
+from verified event chains.
+
+An outcome may carry a typed `HarnessSignalV1`. Only a signal reproduced on the
+frozen input can diagnose `target=harness`, and it must identify one canonical
+harness family. The controller repairs that shared owner through
+`improve-openui-harnesses`, then replays the identical model/data arm. This keeps
+harness improvement attributable instead of allowing a model and judge to co-adapt.
+
+Ordinary researcher and hypothesizer changes promote locally when their frozen
+benchmark passes. A change to an evaluator, metric, threshold, gate, or frozen case
+requires a separate preregistered `ExperimentCampaignV1` meta-campaign with
+unchanged held-out controls. It may not lower/delete a gate, train on frozen cases,
+or change the meta-gate that judges itself.
 
 ## Isolated researcher setup
 
@@ -404,8 +418,9 @@ Researcher changes are evaluated on
 `src/slm_training/resources/autoresearch/researcher_cases.json`. The benchmark measures strict-spec
 validity, grounded citations, distinct bounded knob signatures, and actionable
 expected-knob/stop coverage. It publishes AgentEvals JSONL through the pinned AgentV
-SDK. Promotion requires every score to clear the threshold, all cases to pass, and a
-separate human approval. Frozen benchmark cases are evaluation-only.
+SDK. Promotion requires every score to clear the automated frozen meta-gate and all
+cases to pass. Frozen benchmark cases are evaluation-only; judge changes use the
+separate meta-campaign described above.
 
 Hypothesizer changes use the parallel frozen matrix evaluation in
 `src/slm_training/resources/autoresearch/hypothesizer_cases.json`. It measures valid

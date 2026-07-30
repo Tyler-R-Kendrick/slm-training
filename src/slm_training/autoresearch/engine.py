@@ -223,6 +223,7 @@ def create_hypothesis_feedback(
         "metrics": outcome.metrics,
         "data_metrics": outcome.data_metrics,
         "diagnosis_target": diagnosis.target,
+        "harness_family": diagnosis.harness_family,
         "diagnosis_evidence": diagnosis.evidence,
         "recommended_actions": diagnosis.recommended_actions,
         "optimum_feedback": (
@@ -245,6 +246,7 @@ def create_hypothesis_feedback(
         metrics=outcome.metrics,
         data_metrics=outcome.data_metrics,
         diagnosis_target=diagnosis.target,
+        harness_family=diagnosis.harness_family,
         diagnosis_evidence=diagnosis.evidence,
         recommended_actions=diagnosis.recommended_actions,
         optimum_feedback=optimum_feedback,
@@ -779,7 +781,28 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
     metrics = outcome.metrics
     evidence: list[str] = []
     actions: list[str] = []
-    if outcome.status in {"failed", "stopped"} and not metrics and not data:
+    reproduced_signals = [
+        signal
+        for signal in outcome.harness_signals
+        if signal.reproduced_on_frozen_input
+    ]
+    harness_family = None
+    if reproduced_signals:
+        signal = next(
+            (item for item in reproduced_signals if item.primary),
+            reproduced_signals[0],
+        )
+        target = "harness"
+        harness_family = signal.family
+        evidence.append(f"{signal.code}: {signal.evidence_uri}")
+        actions.extend(
+            (
+                f"route to improve-openui-harnesses/{signal.family}",
+                "repair the canonical owner and replay the identical frozen model/data arm",
+            )
+        )
+        confidence = 0.95
+    elif outcome.status in {"failed", "stopped"} and not metrics and not data:
         target = "infrastructure"
         evidence.append(outcome.error or "experiment process failed")
         actions.append("repair the failed harness stage and rerun the identical spec")
@@ -828,6 +851,7 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
     return Diagnosis(
         experiment_id=outcome.experiment_id,
         target=target,
+        harness_family=harness_family,
         confidence=confidence,
         evidence=tuple(evidence),
         recommended_actions=tuple(actions),

@@ -55,6 +55,7 @@ from slm_training.autoresearch.schemas import (
     ExperimentKnobs,
     ExperimentOutcome,
     ExperimentSpec,
+    HarnessSignalV1,
     HypothesisCandidate,
     HypothesisFeedback,
     HypothesisMatrix,
@@ -63,7 +64,7 @@ from slm_training.autoresearch.schemas import (
     OptimumFeedbackV1,
     ResearchSource,
 )
-from slm_training.autoresearch.storage import CampaignStore
+from slm_training.autoresearch.storage import CampaignStore, render_loop_result_matrix
 
 
 def campaign() -> CampaignSpec:
@@ -1303,7 +1304,8 @@ def test_hypothesizer_benchmark_scores_feedback_lineage(
     )
     assert report.passed
     assert report.feedback_lineage_rate == 1.0
-    assert not report.promotable
+    assert report.promotable
+    assert report.promotion_policy == "automated_frozen_meta_gate_v1"
 
 
 def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
@@ -1568,6 +1570,141 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     )
     assert diagnosis.target == "data"
     assert "immutable data snapshot" in diagnosis.recommended_actions[0]
+
+
+def test_campaign_loop_lineage_is_strict() -> None:
+    first = campaign().model_copy(update={"loop_id": "continuous-1", "cycle_index": 1})
+    assert first.predecessor_campaign_id is None
+    with pytest.raises(ValidationError, match="later loop cycles require"):
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Continue a bounded evidence-driven campaign.",
+            primary_metric="score",
+            loop_id="continuous-1",
+            cycle_index=2,
+        )
+
+
+def test_frozen_harness_signal_routes_one_canonical_owner() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="exp-1",
+            campaign_id="test-campaign",
+            status="failed",
+            error="evaluation crashed",
+            harness_signals=(
+                HarnessSignalV1(
+                    family="model_build",
+                    code="fixture-replay-crash",
+                    evidence_uri="outputs/repro/frozen.json",
+                    reproduced_on_frozen_input=True,
+                    primary=True,
+                ),
+            ),
+        )
+    )
+    assert diagnosis.target == "harness"
+    assert diagnosis.harness_family == "model_build"
+    assert "identical frozen model/data arm" in diagnosis.recommended_actions[1]
+
+    unconfirmed = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="exp-2",
+            campaign_id="test-campaign",
+            status="failed",
+            harness_signals=(
+                HarnessSignalV1(
+                    family="model_build",
+                    code="suspected-crash",
+                    evidence_uri="outputs/repro/unconfirmed.json",
+                    reproduced_on_frozen_input=False,
+                ),
+            ),
+        )
+    )
+    assert unconfirmed.target == "infrastructure"
+
+
+def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
+    tmp_path: Path,
+) -> None:
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Improve one declared metric with bounded evidence.",
+        primary_metric="held_out.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+    )
+    store = CampaignStore(loop_campaign.campaign_id, tmp_path)
+    store.initialize(loop_campaign)
+    manifest = experiment_campaign(
+        campaign_id="cycle-1",
+        experiment_id="hyp-0",
+        source_commit="d" * 40,
+    )
+    store.lock_experiment_campaign(manifest)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-0",
+        campaign_id="cycle-1",
+        status="completed",
+        metrics={
+            "held_out.structural_similarity": 0.75,
+            "trainable_params": 1234,
+            "ship_gates_pass": 1,
+        },
+    )
+    outcome_path = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        status="completed",
+        artifact_sha256=outcome_path.stem,
+        detail={"campaign_manifest_sha256": campaign_manifest_sha256(manifest)},
+    )
+    diagnosis = Diagnosis(
+        experiment_id="hyp-0",
+        target="none",
+        confidence=0.6,
+        evidence=("no defect",),
+        recommended_actions=("retain evidence",),
+    )
+    diagnosis_path = store.write_artifact("diagnoses", diagnosis)
+    store.append_event(
+        "outcome_diagnosed",
+        experiment_id="hyp-0",
+        status="none",
+        artifact_sha256=diagnosis_path.stem,
+    )
+
+    matrix = render_loop_result_matrix(tmp_path, "loop-1")
+    assert (
+        "| 1 | dddddddd | none | hyp-0 | 1234 | 0.75 | pass | completed | "
+        "retain evidence |"
+    ) in matrix
+
+
+def test_loop_result_matrix_rejects_broken_predecessor_chain(tmp_path: Path) -> None:
+    CampaignStore("cycle-1", tmp_path).initialize(
+        CampaignSpec(
+            campaign_id="cycle-1",
+            objective="Run the first bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=1,
+        )
+    )
+    CampaignStore("cycle-2", tmp_path).initialize(
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Run the next bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id="wrong-cycle",
+        )
+    )
+    with pytest.raises(RuntimeError, match="predecessor chain"):
+        render_loop_result_matrix(tmp_path, "loop-1")
 
 
 def test_compile_resolves_canonical_published_train_version() -> None:
