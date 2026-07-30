@@ -2485,7 +2485,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2504,9 +2504,15 @@
         "docs/design/autoresearch-autotraining.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
         "tests/test_autoresearch/test_harness.py",
-        "tests/test_scripts/test_slm_cli.py"
+        "tests/test_scripts/test_slm_cli.py",
+        "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-30",
+          "note": "Hands-off continuous autotrain: default eval_version resolves a published smoke suite instead of missing v1; continuous skill forbids mid-loop user prompts; add run_autotrain_continuous driver"
+        },
         {
           "version": "v10",
           "date": "2026-07-30",

@@ -1,0 +1,65 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260730-c2",
+  "cycle_index": 2,
+  "source_commit": "c3df22b34e213cd59560e1f7d99efbf0cbaa12e3",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c2-control": {
+      "status": "failed",
+      "reason": "missing suite 'smoke' under v1 (default eval_version)"
+    },
+    "c2r-control-e938": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.11499999999999999,
+        "latency_ms_p50": 1962.86,
+        "latency_ms_p95": 2698.32
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c2r-bounds-e938": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.11499999999999999,
+        "latency_ms_p50": 2017.26,
+        "latency_ms_p95": 2589.52
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": false
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 54.40000000000009,
+  "conclusion": "grammar_completion_bounds did not reduce smoke p50 latency on this size-matched 20-step fixture (delta +54.4ms); parse_rate held at 1.0. Default eval_version=v1 is a continuous-loop footgun.",
+  "next_priorities": [
+    "Require explicit eval_version in continuous compile_commands default or fail closed when v1 is missing",
+    "Re-test bounds/canvas at larger step budget only after diagnostic scoreboard path is default-safe",
+    "Do not promote RL; ship gates fail by design on fixture n"
+  ],
+  "recorded_at": "2026-07-30T21:17:14.622902+00:00"
+}

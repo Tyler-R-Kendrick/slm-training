@@ -1,6 +1,9 @@
 ---
 name: autotrain
-description: Operate the OpenUI SLM training pipeline end to end, including a continuous evidence-driven model and harness improvement loop. Bare /autotrain is continuous; an explicit phase or --once is finite.
+description: >
+  Operate the OpenUI SLM training pipeline end to end, including a continuous
+  hands-off model and harness improvement loop. Bare /autotrain is non-terminating
+  and must not stop for user confirmation; an explicit phase or --once is finite.
 ---
 
 # Autotrain OpenUI SLMs
@@ -14,29 +17,40 @@ discovery / Linear, use `autoresearch`.
 
 ## Workflow
 
-1. A bare `/autotrain` invocation enters the continuous loop in
-   [references/continuous.md](references/continuous.md). An explicit phase or
-   `--once` performs one finite pass.
-2. Pick the phase from the routing table below (`slm list` shows every
-   command; `slm guide <slug>` prints a reference from the terminal).
-3. Read `references/<slug>.md` — only the one you need — plus
-   [references/contracts.md](references/contracts.md) once per session.
-4. Run its `slm` commands (each ≡ `python -m scripts.<module>`); keep
-   artifacts in the canonical roots it names.
-5. Close out: docs + model-card duties per contracts
-   (`documenting-experiment-results`).
-6. Hand off: ship claims → `honest-ship-eval`; matrix methodology →
-   `running-experiment-matrices`; campaign methodology → `openui-autoresearch`;
-   certified metric bands and Lean proof/assumption repairs →
-   `improve-lean-optimums`;
-   knowledge-driven research orchestration (brains/OpenWiki/Linear) →
-   `autoresearch`.
+1. **Bare `/autotrain` (default) is continuous and hands-off.** Immediately
+   enter [references/continuous.md](references/continuous.md). Keep chaining
+   bounded campaigns until the session is preempted or the repeated-blocker
+   rule fires. **Do not stop to ask the user to continue.** Do not end a turn
+   with only a resume recipe. Print the result matrix between cycles, then
+   start the next cycle without waiting.
+2. An explicit phase name or `--once` performs **one finite pass** only.
+3. For finite phase work: pick the phase from the routing table below
+   (`slm list` / `slm guide <slug>`), read `references/<slug>.md` plus
+   [references/contracts.md](references/contracts.md) once per session, run
+   the `slm` commands, and close out docs/model-card duties.
+4. Hand off (when those claims appear): ship → `honest-ship-eval`; matrices →
+   `running-experiment-matrices`; campaigns → `openui-autoresearch`; Lean
+   bands → `improve-lean-optimums`; brains/OpenWiki/Linear → `autoresearch`.
+
+## Continuous mode (bare `/autotrain`) — non-negotiable
+
+| Rule | Required behavior |
+| --- | --- |
+| Hands-off | No confirmation prompts; no “say continue” |
+| Non-terminating | Cycle N finish → cycle N+1 start immediately |
+| Self-heal | Fix path/knob/harness failures from evidence; re-run |
+| Soft failures | Fixture ship-gate fails / null deltas / single timeouts → next cycle |
+| Hard block only | Same unrecoverable blocker 3× with no new info → report blocked |
+| Local default | No push/PR/remote/HF write without prior user authority |
+| Matrix between cycles | `slm autoresearch status --loop-id <id> --matrix --last 5` |
+
+Full procedure: [references/continuous.md](references/continuous.md).
 
 ## Phase routing
 
 | Phase | Command | Reference |
 | --- | --- | --- |
-| Continuous model + harness improvement | `slm autoresearch status --loop-id <id> --matrix` | [references/continuous.md](references/continuous.md) |
+| **Continuous model + harness improvement (default)** | keep chaining campaigns; `status --loop-id <id> --matrix` between cycles | [references/continuous.md](references/continuous.md) |
 | Build/publish training corpora | `slm data build-train` / `publish-train` / `store` | [references/train-data.md](references/train-data.md) |
 | Build held-out/adversarial/OOD suites | `slm data build-test` | [references/test-data.md](references/test-data.md) |
 | SFT / model build (Phase A) | `slm sft train` / `remote` / `hf-jobs` | [references/sft.md](references/sft.md) |
