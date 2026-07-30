@@ -1,7 +1,10 @@
 # Closeout: bottom-up rubber-duck + adversarial review → squash-merge
 
 **When:** Parent agent has finished implementing (via subagents) and opened
-one or more PRs / a stack. Closeout is **required** before the task is done.
+one or more PRs / a stack — **or** just pushed commits that are meant to land.
+Closeout is **required** before the task is done. Opening the PR is part of
+closeout prep if it is not open yet (`gh pr create` / `gh stack submit --open`).
+Do not ask the user whether to open, review, or merge.
 
 **Order:** Always **bottom → top** (closest to trunk first). Higher layers
 assume lower layers; fixing a top PR while the bottom is wrong wastes work.
@@ -135,11 +138,13 @@ assume sticky approval across force-with-lease pushes if rules require re-review
 
 ## 7. Definition of done (parent)
 
+- [ ] PR(s) exist for every intended land (created without asking)
 - [ ] Every PR opened by this parent is squash-merged **or** closed with reason
+- [ ] Rubber-duck + adversarial notes posted on each PR
 - [ ] No open review threads left dangling on merged PRs
 - [ ] No red relevant checks ignored (except documented billing block)
 - [ ] Stack synced/pruned; local branches cleaned
 - [ ] Cross-skill obligations done (docs, model card, version stamps, …)
-- [ ] Handoff lists PR URLs, merge commits, residual risks
+- [ ] Handoff lists **merged** PR URLs, merge commits, residual risks
 
-Incomplete closeout = incomplete task.
+Incomplete closeout = incomplete task. “Pushed; want a PR?” is a process bug.

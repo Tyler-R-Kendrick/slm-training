@@ -237,16 +237,20 @@ directly (never create `.codex/skills/`).
 ### SDLC / multi-step delivery
 
 Multi-phase, multi-layer, or multi-task work uses the **`sdlc`** skill
-(`.agents/skills/sdlc/`):
+(`.agents/skills/sdlc/`). Activation is automatic for landable engineering
+work — not only when the user types `sdlc`.
 
 - **Parent agent** plans layers and owns official GitHub Stacked PRs
-  (`gh stack` / `gs` from `github/gh-stack`).
+  (`gh stack` / `gs` from `github/gh-stack`), or one PR for single-concern work.
 - **Subagents** implement layers with **incremental check-ins** (small commits
   on the layer branch).
+- **Push is not done.** After the last intended commit, open/update PRs in the
+  same turn. Do **not** ask “want me to open a PR?” — open it.
 - **Closeout is mandatory and bottom-up:** rubber-duck + adversarial review of
-  each PR, address all comments and review feedback, fix all relevant status
-  checks (billing/budget exceeded is the only allowed CI pause), then
-  **squash-merge** every PR the parent opened.
+  each PR (post notes on the PR), address all comments and review feedback,
+  fix all relevant status checks (billing/budget exceeded is the only allowed
+  CI pause), then **squash-merge** every PR the parent opened unless the human
+  explicitly said not to merge.
 - **Workspaces:** `scalar register` for scale Git settings (sparse-checkout,
   partial clones on new clones, background maintenance); prefer dedicated
   worktrees + cone sparse-checkout per task so agents do not collide.
