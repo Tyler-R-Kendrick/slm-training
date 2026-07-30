@@ -89,6 +89,22 @@ the diagnosis matrix always includes a measurement-control lane.
 The candidate selector still derives exact rational resource summaries and
 replays its committed lexicographic policy: quality failures, success rate,
 parameters, latency upper bound, passes, energy, cost, then candidate id.
-Current global theorems cover membership and the primary quality-failure
-optimum; the remaining tie-breaks are executable replayed definitions and are
-not overstated as fully proved.
+The checker now rejects a finite candidate set unless the selected candidate
+beats or ties every member under that complete policy, and Lean proves that a
+checked certificate has that global property.
+
+The metric-program kernel also has point semantics. Lean proves that interval
+addition, multiplication, natural powers, and inversion preserve containment,
+then lifts those lemmas through complete reverse-Polish evaluation. Therefore
+the emitted calculated interval contains every value produced by dependencies
+inside their declared boxes. Separate classifier theorems characterize below,
+within, and above exactly.
+
+## Production publication binding
+
+AgentEvals assertions remain the verdict authority. Production `rico_held`
+evidence requires all 1500 records; the other suites retain the default
+20-record evidence floor. A preregistered suite-reachability map may be supplied
+to `scripts.evaluate_model --suite-reachability-json`; each supplied fraction
+is emitted as a raw `actual == 1.0` AgentEvals assertion and is preserved in
+`gates.json`. Omitting the map does not invent reachability evidence.

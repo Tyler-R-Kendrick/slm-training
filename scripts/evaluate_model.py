@@ -74,6 +74,28 @@ def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_suite_reachability(path: Path | None) -> dict[str, float] | None:
+    if path is None:
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise SystemExit("--suite-reachability-json must contain an object")
+    result: dict[str, float] = {}
+    for suite, value in payload.items():
+        if (
+            not isinstance(suite, str)
+            or not suite
+            or isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not 0.0 <= float(value) <= 1.0
+        ):
+            raise SystemExit(
+                "--suite-reachability-json values must be finite fractions in [0, 1]"
+            )
+        result[suite] = float(value)
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -95,6 +117,15 @@ def main(argv: list[str] | None = None) -> int:
         "--suites",
         default=None,
         help="Comma-separated suites for a scoreboard (overrides --suite).",
+    )
+    parser.add_argument(
+        "--suite-reachability-json",
+        type=Path,
+        default=None,
+        help=(
+            "Optional suite-to-reachable-fraction object from a preregistered "
+            "edit-space audit; supplied values become durable AgentEvals criteria."
+        ),
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--run-id", default="latest")
@@ -882,6 +913,9 @@ def main(argv: list[str] | None = None) -> int:
         from slm_training.runtime.telemetry import run_trace
 
         suites = [s.strip() for s in args.suites.split(",") if s.strip()]
+        suite_reachability = _load_suite_reachability(
+            args.suite_reachability_json
+        )
         with run_trace(args.run_id, "eval", run_dir=config.run_dir):
             scoreboard = evaluate_suites(
                 config,
@@ -889,6 +923,7 @@ def main(argv: list[str] | None = None) -> int:
                 checkpoint=args.checkpoint,
                 write_gates=args.ship_gates,
                 cache=cache,
+                suite_reachability=suite_reachability,
             )
         if flag_assignments:
             scoreboard["research_flags"] = assignments_payload(flag_assignments)
@@ -899,6 +934,7 @@ def main(argv: list[str] | None = None) -> int:
                 gates = write_ship_gates(
                     config.run_dir,
                     scoreboard["suites"],
+                    suite_reachability=suite_reachability,
                     evals_result=scoreboard["evals"],
                 )
             return 0 if gates.get("pass") else 8

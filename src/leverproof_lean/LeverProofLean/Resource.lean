@@ -115,6 +115,16 @@ def selectBest : List DerivedCandidate → Option DerivedCandidate
   | [] => none
   | candidate :: rest => some (selectFrom candidate rest)
 
+def globallyPreferred
+    (selected : DerivedCandidate) (candidates : List DerivedCandidate) : Bool :=
+  candidates.all (preferCandidate selected)
+
+theorem globallyPreferred_iff (selected : DerivedCandidate)
+    (candidates : List DerivedCandidate) :
+    globallyPreferred selected candidates = true ↔
+      ∀ candidate ∈ candidates, preferCandidate selected candidate = true := by
+  simp [globallyPreferred]
+
 theorem chooseBetter_member (left right : DerivedCandidate) :
     chooseBetter left right = left ∨ chooseBetter left right = right := by
   cases h : preferCandidate left right <;> simp [chooseBetter, h]

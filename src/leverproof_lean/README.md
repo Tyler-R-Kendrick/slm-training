@@ -40,23 +40,25 @@ Lean proves:
 - every observed sample lies in its derived minimum/maximum interval;
 - a non-empty sample mean has a positive denominator;
 - piecewise model evaluation uses a declared box;
+- interval addition, multiplication, natural powers, and inversion contain
+  every point admitted by their input intervals;
+- complete metric-program evaluation contains the corresponding point
+  evaluation for every dependency assignment inside the declared boxes;
 - selection returns a member of the candidate set;
 - the selected candidate globally minimizes the primary quality-failure key;
+- a checked certificate's selected candidate beats or ties every candidate
+  under the complete committed lexicographic policy;
 - successful checking requires valid evidence;
 - a checked selection belongs to the derived candidates and satisfies the
-  primary optimum theorem.
-
-The remaining lexicographic tie-breaks are executable definitions replayed by
-the checker. Extending their global optimality proofs is the next proof-depth
-milestone; the certificate never claims more than the checked algorithm and
-the named theorems establish.
+  primary and complete finite-candidate optimum theorems.
 
 The v2 protocol also evaluates generic reverse-Polish metric programs over
 named rational intervals, classifies every raw natural-number observation as
 below, within, or above the calculated interval, and records whether the range
 is theorem-backed or assumption-backed. `countPositions_total` proves that no
-observation disappears during classification, and `inBand_has_no_violations`
-proves the in-band disposition has no below/above samples.
+observation disappears during classification; the classifier theorems
+characterize all three positions exactly, and `relation_inBand_iff` proves
+that in-band is equivalent to having no below/above samples.
 
 ## Trust boundary
 
