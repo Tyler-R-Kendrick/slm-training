@@ -1,9 +1,17 @@
 # Agent skills (canonical)
 
 This directory is the **source of truth** for repo skills. Tool-discovery
-entries under `.claude/skills/` and `.cursor/skills/` are symlinks back here.
+entries under `.claude/skills/`, `.cursor/skills/`, and `.grok/skills/` are
+symlinks back here.
 
-Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
+| Client | Discovery path |
+| --- | --- |
+| Claude Code | `.claude/skills/` (symlinks) |
+| Cursor | `.cursor/skills/` (symlinks) |
+| Grok Build | `.grok/skills/` (symlinks) + scans `.agents/skills/` |
+| Codex | `.agents/skills/` directly — **no** `.codex/skills/` tree |
+| GitHub Copilot | `.agents/skills/` directly |
+| Gemini | `.agents/skills/` (via `GEMINI.md`) |
 
 ## Repo-authored
 
@@ -60,14 +68,15 @@ npx skills add roman-ryzenadvanced/headroom-skill --skill headroom \
 # no stray Codex tree. Idempotent, and also fixes an `hf skills add --dest=`
 # copy. repo_policy checks both directions, so a missing mirror fails too.
 rm -rf .codex/skills
+mkdir -p .claude/skills .cursor/skills .grok/skills
 for name in $(ls .agents/skills); do
   [ -d ".agents/skills/$name" ] || continue
-  for root in .claude/skills .cursor/skills; do
+  for root in .claude/skills .cursor/skills .grok/skills; do
     rm -rf "$root/$name"
     ln -s "../../.agents/skills/$name" "$root/$name"
   done
 done
-python -m scripts.repo_policy   # must print "repo-policy: ok"
+python -m scripts.repo_policy   # skill mirrors must be clean (other WIP may fail)
 
 # Re-copy headroom helpers if the skills CLI only dropped SKILL.md:
 # git clone --depth 1 https://github.com/roman-ryzenadvanced/headroom-skill /tmp/hr

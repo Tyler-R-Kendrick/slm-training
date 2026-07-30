@@ -6534,6 +6534,11 @@
         {
           "version": "v3",
           "date": "2026-07-30",
+          "note": "no-bump: README skill-discovery mirror note only; SLM-228 spectral disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-30",
           "note": "no-bump: README links the independent formal-autoresearch preflight contract; SLM-228 spectral-disposition behavior is unchanged"
         },
         {

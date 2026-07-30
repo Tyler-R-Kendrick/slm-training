@@ -181,6 +181,14 @@ extend-exclude = [
   ".cursor/skills/headroom",
   ".cursor/skills/caveman*",
   ".cursor/skills/ponytail*",
+  ".grok/skills/hf-*",
+  ".grok/skills/huggingface-*",
+  ".grok/skills/trl-training",
+  ".grok/skills/train-sentence-transformers",
+  ".grok/skills/transformers-js",
+  ".grok/skills/headroom",
+  ".grok/skills/caveman*",
+  ".grok/skills/ponytail*",
 ]
 
 [tool.ruff.lint.per-file-ignores]

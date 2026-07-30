@@ -205,8 +205,9 @@ Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
 ## Skills
 
 Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
-`.claude/skills/` and `.cursor/skills/` with symlinks. Edit only the canonical
-copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
+`.claude/skills/`, `.cursor/skills/`, and `.grok/skills/` with symlinks. Edit
+only the canonical copy; Codex and GitHub Copilot discover `.agents/skills/`
+directly (never create `.codex/skills/`).
 
 **If a skill might apply (~1%), open and follow it before acting.**
 
@@ -235,8 +236,9 @@ copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 ### Token-efficiency stack (ponytail · caveman · headroom · rtk)
 
 Installed into **`.agents/skills/`** and discovered by Claude Code
-(`.claude/skills/`), Cursor / Codex / GitHub Copilot (project `.agents/skills/`),
-with Cursor rule files under [`.cursor/rules/`](.cursor/rules/) and GHCP under
+(`.claude/skills/`), Cursor (`.cursor/skills/`), Grok (`.grok/skills/`), and
+Codex / GitHub Copilot (project `.agents/skills/` directly), with Cursor rule
+files under [`.cursor/rules/`](.cursor/rules/) and GHCP under
 [`.github/copilot-instructions.md`](.github/copilot-instructions.md).
 
 | Layer | What it saves | Default |
@@ -278,7 +280,7 @@ Optional full Headroom proxy (heavier than the portable skill):
 Source: [huggingface/skills](https://github.com/huggingface/skills) (Cursor:
 marketplace installs `hf-cli`; additional skills via `hf skills add`).
 
-Already installed under `.agents/skills/` and symlinked for Cursor/Claude.
+Already installed under `.agents/skills/` and symlinked for Claude/Cursor/Grok.
 Refresh commands and their cleanup steps live in
 [`.agents/skills/README.md`](.agents/skills/README.md) — the single owner.
 
