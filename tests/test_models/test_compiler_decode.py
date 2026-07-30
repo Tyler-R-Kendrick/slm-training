@@ -6,6 +6,8 @@ import json
 from collections import Counter
 
 import pytest
+
+from tests.casefiles import case_values
 import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
@@ -1610,13 +1612,10 @@ def test_schema_open_bias_prefers_true_for_authored_visible_component() -> None:
 
 @pytest.mark.parametrize(
     "weight_name",
-    [
-        "schema_role_slot_decode_weight",
-        "slot_coverage_close_decode_weight",
-        "semantic_plan_typed_array_nonempty_margin_decode_weight",
-        "semantic_plan_typed_array_item_margin_decode_weight",
-        "semantic_plan_repeated_slot_margin_decode_weight",
-    ],
+    case_values(
+        __file__,
+        "test_contract_gated_decode_weight_without_slot_contract_decode_raises",
+    ),
 )
 def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
     weight_name: str,
@@ -2893,7 +2892,7 @@ def test_required_slot_array_completion_rejects_nested_close_before_coverage() -
     comma_id = tokenizer.token_to_id[","]
     prefix = [
         tokenizer.bos_id,
-        *tokenizer.encode("root = Form(\"$1\", b1, [b2", add_special=False),
+        *tokenizer.encode('root = Form("$1", b1, [b2', add_special=False),
     ]
     paths = (
         CompletionPath((close_id, tokenizer.token_to_id[")"]), "grammar_rsqb"),
@@ -4935,9 +4934,7 @@ def test_complete_ast_uses_lark_when_official_parser_is_unavailable(
         lambda _source: (_ for _ in ()).throw(RuntimeError("offline")),
     )
 
-    assert compiler_draft._generated_ast_is_complete(
-        'root = TextContent(":slot_0")'
-    )
+    assert compiler_draft._generated_ast_is_complete('root = TextContent(":slot_0")')
     assert not compiler_draft._generated_ast_is_complete("root = TextContent(")
 
 
@@ -5050,9 +5047,7 @@ def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
 
     tokenizer = DSLNativeTokenizer.build()
     contract = [":slot_0", ":slot_1"]
-    prefix = tokenizer.encode(
-        'root=RadioItem(":slot_0",":slot_1",', add_special=False
-    )
+    prefix = tokenizer.encode('root=RadioItem(":slot_0",":slot_1",', add_special=False)
     forest = build_completion_forest(tokenizer, prefix, slot_contract=contract)
 
     assert "LIT_STR" not in tokenizer.token_to_id
@@ -5109,9 +5104,7 @@ def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
     from slm_training.models.dsl_tokenizer import TokenKind
 
     tokenizer = DSLNativeTokenizer.build()
-    number_slot = tokenizer.encode(
-        'root=Slider("$0","discrete",', add_special=False
-    )
+    number_slot = tokenizer.encode('root=Slider("$0","discrete",', add_special=False)
     opener = tokenizer.token_to_id["LIT_NUM"]
     opening = build_completion_forest(tokenizer, number_slot, slot_contract=[":value"])
     opener_path = next(path for path in opening.paths if path.token_ids[0] == opener)
@@ -5287,7 +5280,7 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
 def test_completion_forest_propagates_typed_array_use_to_forward_declaration() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Tabs([b1])\nb1=',
+        "root=Tabs([b1])\nb1=",
         add_special=True,
     )[:-1]
 
@@ -5314,7 +5307,7 @@ def test_completion_forest_propagates_typed_array_use_to_forward_declaration() -
 def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Stack([b1])\nb1=',
+        "root=Stack([b1])\nb1=",
         add_special=True,
     )[:-1]
 
@@ -5326,14 +5319,9 @@ def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> 
 
 @pytest.mark.parametrize(
     ("prefix_text", "allowed", "rejected"),
-    [
-        ('root=Form("$0",', "Buttons", "Button"),
-        (
-            'root=Form("$0",Buttons([]),[FormControl(":slot_0",',
-            "Input",
-            "TextContent",
-        ),
-    ],
+    case_values(
+        __file__, "test_completion_forest_enforces_direct_component_property_schema"
+    ),
 )
 def test_completion_forest_enforces_direct_component_property_schema(
     prefix_text: str,
@@ -5365,9 +5353,7 @@ def test_completion_forest_enforces_direct_component_property_schema(
 
 def test_completion_forest_closes_untyped_optional_action_to_null() -> None:
     tokenizer = DSLNativeTokenizer.build()
-    prefix = tokenizer.encode(
-        'root = Stack([Button(":slot_1", ', add_special=True
-    )[:-1]
+    prefix = tokenizer.encode('root = Stack([Button(":slot_1", ', add_special=True)[:-1]
 
     control = build_completion_forest(tokenizer, prefix)
     assert tokenizer.token_to_id["("] in control.candidate_ids
@@ -5424,8 +5410,7 @@ def test_root_list_does_not_admit_new_binder_after_slot_inventory_consumed() -> 
 def test_completion_forest_propagates_direct_component_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form("$0",b1,[FormControl(":slot_0",'
-        'Input("$1",":slot_1"))])\nb1=',
+        'root=Form("$0",b1,[FormControl(":slot_0",Input("$1",":slot_1"))])\nb1=',
         add_special=True,
     )[:-1]
 
@@ -5475,8 +5460,7 @@ def test_completion_forest_allows_structural_id_across_distinct_roles() -> None:
 def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
-        "b1=Buttons([",
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\nb1=Buttons([',
         add_special=True,
     )[:-1]
 
@@ -5503,8 +5487,7 @@ def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
 def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
-        "b1=Buttons([b3,b4",
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\nb1=Buttons([b3,b4',
         add_special=True,
     )[:-1]
     contract = [":slot_0", ":slot_1", ":slot_2"]
@@ -5532,9 +5515,9 @@ def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
 
 def test_completion_forest_reserves_slots_for_required_future_components() -> None:
     tokenizer = DSLNativeTokenizer.build()
-    prefix = tokenizer.encode(
-        'root=Form("$0",b0,[b1,b2,b3,b4,b5', add_special=True
-    )[:-1]
+    prefix = tokenizer.encode('root=Form("$0",b0,[b1,b2,b3,b4,b5', add_special=True)[
+        :-1
+    ]
     contract = [f":slot_{index}" for index in range(6)]
 
     control = build_completion_forest(
@@ -5590,8 +5573,7 @@ def test_completion_forest_reserves_unresolved_typed_binder_content() -> None:
 def test_completion_forest_closes_empty_buttons_for_pending_form_capacity() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Stack([Form("$1",b1,[b2,b3,b4,b5,b6]),Button(":slot_0")])\n'
-        "b1=Buttons([",
+        'root=Stack([Form("$1",b1,[b2,b3,b4,b5,b6]),Button(":slot_0")])\nb1=Buttons([',
         add_special=True,
     )[:-1]
     forest = build_completion_forest(
@@ -6173,10 +6155,9 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
     assert model.binder_component_plan_head.weight.grad.abs().sum() > 0
     assert model.last_training_metrics["binder_component_plan_rows"] == 2
     assert model.last_training_metrics["binder_component_plan_loss"] > 0
-    assert (
-        model.last_training_metrics["binder_component_plan_candidate_count_mean"]
-        < len(model._component_inventory_token_ids())
-    )
+    assert model.last_training_metrics[
+        "binder_component_plan_candidate_count_mean"
+    ] < len(model._component_inventory_token_ids())
 
     tokenizer = model.tokenizer
     binders = model._binder_component_token_ids()
@@ -6216,17 +6197,12 @@ def test_binder_component_targets_match_compiler_bound_component_decisions() -> 
             'b1 = Buttons([Button(":slot_0")])\n'
             'b2 = FormControl(":slot_1", Input("$1"))'
         ),
-        (
-            'root = Tabs([b1])\n'
-            'b1 = TabItem("$0", ":slot_0", [TextContent(":slot_1")])'
-        ),
+        ('root = Tabs([b1])\nb1 = TabItem("$0", ":slot_0", [TextContent(":slot_1")])'),
     ):
         token_ids = tokenizer.encode(target, add_special=True)
         compiler_targets = tuple(
             (
-                active_declaration_binder_id(
-                    tokenizer, token_ids[: decision.position]
-                ),
+                active_declaration_binder_id(tokenizer, token_ids[: decision.position]),
                 token_ids[decision.position],
             )
             for decision in gold_compiler_decisions(tokenizer, token_ids)
@@ -6368,9 +6344,7 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
         model.binder_arity_head.bias.zero_()
         model.binder_arity_head.bias[bound * buckets + 2] = 3.0
     ctx, ctx_pad = model._encode_context(["card with title and body"])
-    prefix = tokenizer.encode(
-        "root = Stack([b1])\nb1 = Card([b2", add_special=False
-    )
+    prefix = tokenizer.encode("root = Stack([b1])\nb1 = Card([b2", add_special=False)
     paths = (
         CompletionPath(
             (tokenizer.token_to_id[","], tokenizer.bind_id(2)),
@@ -6385,9 +6359,7 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
     assert bias is not None
     assert bias[0] > bias[1]
     root_prefix = tokenizer.encode("root = Card([b1", add_special=False)
-    assert model._binder_arity_path_bias(
-        ctx, ctx_pad, root_prefix, paths
-    ) is None
+    assert model._binder_arity_path_bias(ctx, ctx_pad, root_prefix, paths) is None
 
 
 def test_binder_component_plan_biases_typed_declaration_path() -> None:
@@ -6404,9 +6376,7 @@ def test_binder_component_plan_biases_typed_declaration_path() -> None:
     with torch.no_grad():
         model.binder_component_plan_head.weight.zero_()
         model.binder_component_plan_head.bias.zero_()
-        model.binder_component_plan_head.bias[
-            binder * len(components) + buttons
-        ] = 4.0
+        model.binder_component_plan_head.bias[binder * len(components) + buttons] = 4.0
     ctx, ctx_pad = model._encode_context(["form"])
     prefix = [
         tokenizer.bind_id(1),

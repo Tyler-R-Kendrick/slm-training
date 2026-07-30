@@ -11,6 +11,7 @@
 /slm_training.egg-info/
 /_uv/
 /tests/
+/src/slm_training/resources/test_cases/
 /.pytest_cache/
 /.ruff_cache/
 /src/apps/*/node_modules/

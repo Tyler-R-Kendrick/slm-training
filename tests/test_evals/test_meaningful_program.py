@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.meaningful_program import (
     CheckStatus,
@@ -31,9 +33,7 @@ def _record(case: dict[str, object]) -> ExampleRecord:
 def test_binding_aware_v2_gaming_corpus() -> None:
     for line in CORPUS.read_text(encoding="utf-8").splitlines():
         case = json.loads(line)
-        report = binding_aware_meaningful_v2(
-            case["prediction"], record=_record(case)
-        )
+        report = binding_aware_meaningful_v2(case["prediction"], record=_record(case))
         assert report.verdict is case["expected_verdict"], case["id"]
         assert set(case["expected_reason_codes"]) <= set(report.reason_codes), case[
             "id"
@@ -95,7 +95,7 @@ def test_hard_prompt_inventory_rejects_extra_placeholder_identity() -> None:
         id="extra",
         prompt="Build a Stack. Placeholders: :hero.title",
         openui=(
-            'root = Stack([title, extra])\n'
+            "root = Stack([title, extra])\n"
             'title = TextContent(":hero.title")\n'
             'extra = TextContent(":hero.extra")'
         ),
@@ -106,10 +106,7 @@ def test_hard_prompt_inventory_rejects_extra_placeholder_identity() -> None:
 
 
 def test_hard_prompt_inventory_rejects_duplicate_placeholder_identity() -> None:
-    source = (
-        'root = Stack([TextContent(":hero.title"), '
-        'TextContent(":hero.title")])'
-    )
+    source = 'root = Stack([TextContent(":hero.title"), TextContent(":hero.title")])'
     report = binding_aware_meaningful_v2(
         source,
         record=ExampleRecord(
@@ -148,7 +145,7 @@ def test_placeholder_only_contract_keeps_component_relevance_unknown() -> None:
 
 def test_v2_rejects_swapped_placeholder_semantic_roles() -> None:
     source = (
-        'root = Stack([button, title])\n'
+        "root = Stack([button, title])\n"
         'button = Button(":hero.title")\n'
         'title = TextContent(":actions.save")'
     )
@@ -171,7 +168,7 @@ def test_v2_accepts_schema_declared_modal_title_role() -> None:
     source = (
         'body = TextContent(":modal.body")\n'
         'confirm = Button(":modal.confirm")\n'
-        'actions = Buttons([confirm])\n'
+        "actions = Buttons([confirm])\n"
         'dialog = Modal(":modal.title", true, [body, actions])\n'
         'root = Stack([dialog], "column")'
     )
@@ -243,10 +240,7 @@ def test_v2_recognizes_singular_prose_for_plural_schema_component() -> None:
         source,
         record=ExampleRecord(
             id="singular-tabs-prose",
-            prompt=(
-                "Build a two-tab panel. "
-                "Placeholders: :tabs.trigger :tabs.text"
-            ),
+            prompt=("Build a two-tab panel. Placeholders: :tabs.trigger :tabs.text"),
             openui=source,
         ),
     )
@@ -260,7 +254,7 @@ def test_v2_rejects_duplicate_overview_slot_across_opaque_tab_ids() -> None:
         'overview = TextContent(":tabs.overview")\n'
         'one = TabItem("$0", ":tabs.tab1", [overview])\n'
         'two = TabItem("$1", ":tabs.tab2", [overview])\n'
-        'root = Tabs([one, two])'
+        "root = Tabs([one, two])"
     )
     report = binding_aware_meaningful_v2(
         source,
@@ -299,10 +293,7 @@ def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
 
 @pytest.mark.parametrize(
     "source",
-    [
-        'items = Query("q", {}, {rows: []})\nroot = Button(@Count(items.rows))',
-        'items = Query("q", {}, {rows: []})\nroot = Stack(@Count(items.rows))',
-    ],
+    case_values(__file__, "test_v2_rejects_known_dynamic_schema_role_mismatch"),
 )
 def test_v2_rejects_known_dynamic_schema_role_mismatch(source: str) -> None:
     report = binding_aware_meaningful_v2(
@@ -314,15 +305,15 @@ def test_v2_rejects_known_dynamic_schema_role_mismatch(source: str) -> None:
         ),
     )
     assert report.verdict is False
-    assert any(reason.startswith("schema_value_role_mismatch:") for reason in report.reason_codes)
+    assert any(
+        reason.startswith("schema_value_role_mismatch:")
+        for reason in report.reason_codes
+    )
 
 
 @pytest.mark.parametrize(
     "source",
-    [
-        'unused = Query("q", {}, {})\nroot = Button(":cta.label")',
-        '$a = $b\n$b = $a\nroot = Button(":cta.label")',
-    ],
+    case_values(__file__, "test_v2_rejects_unreachable_runtime_or_state_bindings"),
 )
 def test_v2_rejects_unreachable_runtime_or_state_bindings(source: str) -> None:
     report = binding_aware_meaningful_v2(
@@ -392,11 +383,7 @@ def test_negated_component_mention_is_not_a_hard_requirement() -> None:
 
 @pytest.mark.parametrize(
     "prompt",
-    [
-        "Replace the Button with a Card. Placeholders: :hero.title",
-        "Build a Card without a Button. Placeholders: :hero.title",
-        "Build a Button-free Card. Placeholders: :hero.title",
-    ],
+    case_values(__file__, "test_v2_excludes_replaced_or_negated_components"),
 )
 def test_v2_excludes_replaced_or_negated_components(prompt: str) -> None:
     source = 'root = Card([title])\ntitle = TextContent(":hero.title")'
@@ -427,10 +414,10 @@ def test_v2_allows_text_slots_when_requested_components_cannot_own_them() -> Non
     source = (
         'root = Stack([outer], "column")\n'
         'a = Card([TextContent(":rare.a.title")])\n'
-        'rule = Separator()\n'
+        "rule = Separator()\n"
         'b = Card([TextContent(":rare.b.body")])\n'
         'group = Stack([a, rule, b], "column")\n'
-        'outer = Card([group])'
+        "outer = Card([group])"
     )
     report = binding_aware_meaningful_v2(
         source,
@@ -505,7 +492,7 @@ def test_v2_rejects_input_placeholder_in_name_property() -> None:
 
 def test_v2_placeholder_spans_do_not_match_longer_identifiers() -> None:
     source = (
-        'root = Stack([short, long])\n'
+        "root = Stack([short, long])\n"
         'short = TextContent(":copy.title")\n'
         'long = TextContent(":copy.title.long")'
     )
@@ -591,10 +578,7 @@ def test_v2_accepts_valid_runtime_bindings_and_dynamic_schema_values() -> None:
         source,
         record=ExampleRecord(
             id="runtime",
-            prompt=(
-                "Build a Button and TextContent. "
-                "Placeholders: :actions.save"
-            ),
+            prompt=("Build a Button and TextContent. Placeholders: :actions.save"),
             openui=source,
         ),
     )
@@ -642,12 +626,7 @@ def test_design_md_example_placeholder_is_not_a_required_prompt_slot() -> None:
 
 @pytest.mark.parametrize(
     ("source", "reason"),
-    [
-        ("root = Stack([])", "empty_root_stack"),
-        ("root = Card([])", "empty_card"),
-        ('root = Stack([x])\nx = TextContent(":x")', None),
-        ("root = Separator()", "no_placeholders"),
-    ],
+    case_values(__file__, "test_meaningful_program_v1_backward_lock"),
 )
 def test_meaningful_program_v1_backward_lock(source: str, reason: str | None) -> None:
     ok, actual_reason, serialized = meaningful_program_v1(source)
@@ -667,31 +646,7 @@ def test_meaningful_program_v1_backward_lock(source: str, reason: str | None) ->
 # sibling props.
 @pytest.mark.parametrize(
     ("source", "reason"),
-    [
-        # The exact rico_eval_test_25 shape (E629/E630): Card's children are
-        # empty but its `variant` prop absorbed a stuffed slot.
-        ('root = Card([], ":stuffed.variant")', "empty_card"),
-        # The exact ood_dashboard_01 shape (E630): two stuffed non-content
-        # args after an empty children array.
-        (
-            'root = Card([], ":ood.dash.m1.value", ":ood.dash.m1.value")',
-            "empty_card",
-        ),
-        # Nested: nothing in the literal check's own substring form catches
-        # this either, since the padding still breaks the exact "Card([])"
-        # match even when nested inside a Stack.
-        (
-            'root = Stack([v0, v1], "column")\n'
-            'v0 = Card([TextContent(":a")])\n'
-            'v1 = Card([], ":stuffed.variant")',
-            "empty_card",
-        ),
-        # Modal/Carousel also declare a required `children` array in the
-        # schema but were never covered by the old literal check at all
-        # (it only special-cased Stack/Card by name).
-        ('root = Modal(":title", true, [])', "empty_children:Modal"),
-        ('root = Carousel([])', "empty_children:Carousel"),
-    ],
+    case_values(__file__, "test_meaningful_program_v1_catches_padded_empty_children"),
 )
 def test_meaningful_program_v1_catches_padded_empty_children(
     source: str, reason: str
@@ -704,13 +659,10 @@ def test_meaningful_program_v1_catches_padded_empty_children(
 
 @pytest.mark.parametrize(
     "source",
-    [
-        # Non-empty children with other props also present must still pass
-        # -- the fix must not reject a genuinely-populated component just
-        # because it also carries non-content properties.
-        'root = Card([TextContent(":a")], ":real.variant")',
-        'root = Stack([Card([TextContent(":a")])], "column")',
-    ],
+    case_values(
+        __file__,
+        "test_meaningful_program_v1_still_accepts_genuinely_nonempty_components",
+    ),
 )
 def test_meaningful_program_v1_still_accepts_genuinely_nonempty_components(
     source: str,

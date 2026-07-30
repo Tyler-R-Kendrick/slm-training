@@ -27,7 +27,10 @@ the single committed source of truth:
     "gates.ship": {
       "version": "openui_ship_gates_v1",
       "kind": "gate",
-      "paths": ["src/slm_training/harnesses/model_build/ship_gates.py"],
+      "paths": [
+        "src/slm_training/harnesses/model_build/ship_gates.py",
+        "src/slm_training/resources/evals/openui_ship_gates_v5.json"
+      ],
       "history": [
         {"version": "openui_ship_gates_v1", "date": "2026-07-18T20:15:00+00:00", "note": "initial registration"}
       ]
@@ -142,10 +145,12 @@ label their rows invalidated in the matrix markdown
 
 ## Worked examples
 
-**Tightening a ship gate** (`ship_gates.py` threshold change):
-1. Edit `ship_gates.py` (and `MEANINGFUL_METRIC_POLICY["threshold_version"]`
-   → e.g. `openui_ship_gates_v2` — the mirror test forces the pair).
+**Tightening a ship gate** (external policy change):
+1. Add the next versioned resource under `src/slm_training/resources/evals/`,
+   update the loader path, and set its `version` /
+   `meaningful_metric_policy.threshold_version` to the same filename stem.
 2. In `versions.json`, set `gates.ship.version` to `openui_ship_gates_v2` and
+   replace the watched policy path, then
    prepend `{"version": "openui_ship_gates_v2", "date": …, "note": "raised
    held_out parse bar to 0.45"}`.
 3. `python -m scripts.verify_version_stamps --stale --component gates.ship`

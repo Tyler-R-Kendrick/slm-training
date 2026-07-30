@@ -18,7 +18,7 @@ different DSL can reuse the same core.
 The extraction that created this package was **purely structural**: no
 behavior, output byte, or public API changed
 (`tests/test_harness_core/test_gate_engine_golden.py` pins the ship-gate
-payload; the pre-existing test suite ran unchanged).
+payload against its mirrored external case resource).
 
 ## Contract
 
@@ -68,9 +68,11 @@ payload; the pre-existing test suite ran unchanged).
   certification, `min_n` evidence floor, per-metric threshold loop).
   `run_gate_checks` is the compatibility Python preview over those same
   records; authoritative durable verdicts come from AgentEvals assertions.
-  `harnesses/model_build/ship_gates.py` remains the OpenUI policy owner:
-  `DEFAULT_SHIP_GATES`, `MEANINGFUL_METRIC_POLICY`, the OpenUI slim-metric
-  normalizer, AgentEvals result binding, and `gates.json` writing.
+  `resources/evals/openui_ship_gates_v5.json` owns the committed OpenUI policy;
+  `harnesses/model_build/ship_gates.py` strictly loads it and remains the
+  OpenUI binding owner for `DEFAULT_SHIP_GATES`, `MEANINGFUL_METRIC_POLICY`,
+  the slim-metric normalizer, AgentEvals result binding, and `gates.json`
+  writing.
 - **Promotion** — `promotion_engine.evaluate_promotion(...,
   hard_categories, gate_evaluator)` owns the frozen promotion checks;
   `harnesses/experiments/promotion.py` remains the policy owner

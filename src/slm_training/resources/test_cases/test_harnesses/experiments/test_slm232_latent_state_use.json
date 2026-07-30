@@ -1,0 +1,35 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_harnesses/experiments/test_slm232_latent_state_use.py",
+  "case_sets": {
+    "test_component_ablation_removes_only_declared_term": {
+      "parameters": [
+        "mode",
+        "removed"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "zero_ctx_proj",
+            "z_context_component"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "zero_z_latent",
+            "z_latent_component"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "remove_z_position",
+            "z_position_component"
+          ]
+        }
+      ]
+    }
+  }
+}

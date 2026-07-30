@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 torch = pytest.importorskip("torch")
 import torch.nn.functional as F
 
@@ -801,11 +803,7 @@ def test_recursive_private_norms_are_distinct_and_receive_gradients() -> None:
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [
-        ("update_mode", "unknown"),
-        ("empty_f_mode", "unknown"),
-        ("norm_mode", "unknown"),
-    ],
+    case_values(__file__, "test_recursive_repair_modes_fail_closed"),
 )
 def test_recursive_repair_modes_fail_closed(field: str, value: str) -> None:
     kwargs = {field: value}
@@ -1504,12 +1502,7 @@ def test_aux_weight_zero_is_primary_only_with_explicit_zero_telemetry() -> None:
 
 @pytest.mark.parametrize(
     ("mode", "weights", "num_depths", "match"),
-    [
-        ("bogus_mode", (1.0,), 2, "not one of"),
-        ("off", (1.0,), 2, "requires an empty"),
-        ("intermediate_only", (1.0, 1.0), 2, "length"),
-        ("all_depths", (1.0,), 2, "length"),
-    ],
+    case_values(__file__, "test_invalid_mode_weight_combinations_raise"),
 )
 def test_invalid_mode_weight_combinations_raise(
     mode: str, weights: tuple[float, ...], num_depths: int, match: str

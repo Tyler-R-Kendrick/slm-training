@@ -8,6 +8,8 @@ import math
 import numpy as np
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.evals.power_protocol import (
     benjamini_hochberg,
     binomial_rate_evidence,
@@ -100,7 +102,9 @@ def test_plan_binomial_rate_test_is_prospective_and_seed_separate() -> None:
 
 
 @pytest.mark.parametrize("seeds", [(0, 0), (True,), (1.5,)])
-def test_plan_binomial_rate_test_rejects_invalid_seeds(seeds: tuple[object, ...]) -> None:
+def test_plan_binomial_rate_test_rejects_invalid_seeds(
+    seeds: tuple[object, ...],
+) -> None:
     with pytest.raises((TypeError, ValueError)):
         plan_binomial_rate_test(null_rate=0.5, target_delta=0.1, seeds=seeds)
 
@@ -363,13 +367,7 @@ def test_holm_bonferroni_rejects_invalid_alpha(alpha: float) -> None:
 
 @pytest.mark.parametrize(
     "conclusion,mde,effect_size,expected",
-    [
-        (True, 0.08, 0.10, "decidable"),
-        ("power_met", 0.08, 0.10, "decidable"),
-        (0.85, 0.08, 0.10, "decidable"),
-        (False, 0.08, 0.05, "large_effect_only"),
-        (False, 0.08, 0.01, "underpowered"),
-    ],
+    case_values(__file__, "test_classify_power"),
 )
 def test_classify_power(conclusion, mde, effect_size, expected) -> None:
     assert classify_power(conclusion, mde, effect_size) == expected

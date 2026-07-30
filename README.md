@@ -384,7 +384,7 @@ when it is unset). That hook is what runs the changed-file checker.
 Agent hooks are narrower and are certified identical across harnesses by
 `python -m scripts.verify_agent_surfaces`:
 
-| Harness | Config | Blocks raw `mv` | Post-edit parity + version-stamp checks |
+| Harness | Config | Blocks raw `mv` | Post-edit parity, version, and case checks |
 | --- | --- | :-: | :-: |
 | Claude Code | [`.claude/settings.json`](.claude/settings.json) | yes | yes |
 | Codex | [`.codex/hooks.json`](.codex/hooks.json) | yes | yes |

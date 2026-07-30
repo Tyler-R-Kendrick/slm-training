@@ -42,7 +42,10 @@ from slm_training.evals.denoising_nll import (
 
 
 def load_suite_spec(version: str = LOSS_SUITE_VERSION) -> dict[str, Any]:
-    path = Path(__file__).with_name(f"loss_suite_{version}.json")
+    path = (
+        Path(__file__).resolve().parents[1]
+        / f"resources/evals/loss_suite_{version}.json"
+    )
     if not path.exists():
         raise FileNotFoundError(f"frozen loss-suite spec missing: {path}")
     return json.loads(path.read_text(encoding="utf-8"))
@@ -118,9 +121,7 @@ def _repair_rng(record_id: str, edit_index: int, *, suite_version: str, seed: in
     return random.Random(int(digest[:16], 16))
 
 
-def _wrong_token_id(
-    tokenizer: Any, original_id: int, rng: random.Random
-) -> int | None:
+def _wrong_token_id(tokenizer: Any, original_id: int, rng: random.Random) -> int | None:
     """Deterministic locally-plausible wrong token: same class when possible."""
     special = {
         tokenizer.pad_id,
@@ -362,7 +363,9 @@ def evaluate_loss_suites(
         categories["repair"] = evaluate_repair_nll(
             model, base_records, config=repair_cfg
         )
-        categories["broad"] = evaluate_denoising_nll(model, base_records, config=nll_cfg)
+        categories["broad"] = evaluate_denoising_nll(
+            model, base_records, config=nll_cfg
+        )
     else:
         categories["binding"] = None
         categories["structural"] = None

@@ -120,11 +120,12 @@ where = ["src", "."]
 include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
 
 [tool.setuptools.package-data]
-slm_training = ["evals/*.json", "dsl/grammars/*", "resources/**/*"]
+slm_training = ["dsl/grammars/*", "resources/**/*"]
 "slm_training.web" = ["static/**/*"]
 
 [tool.setuptools.exclude-package-data]
 slm_training = [
+  "resources/test_cases/**",
   "resources/data/**/governance/**",
   "resources/data/**/records.jsonl",
   "resources/data/train/slm230_symbol_only_v1/**",

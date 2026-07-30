@@ -1,0 +1,68 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_models/test_compiler_decode.py",
+  "case_sets": {
+    "test_contract_gated_decode_weight_without_slot_contract_decode_raises": {
+      "parameters": [
+        "weight_name"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "schema_role_slot_decode_weight"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "slot_coverage_close_decode_weight"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "semantic_plan_typed_array_nonempty_margin_decode_weight"
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            "semantic_plan_typed_array_item_margin_decode_weight"
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            "semantic_plan_repeated_slot_margin_decode_weight"
+          ]
+        }
+      ]
+    },
+    "test_completion_forest_enforces_direct_component_property_schema": {
+      "parameters": [
+        "prefix_text",
+        "allowed",
+        "rejected"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "root=Form(\"$0\",",
+            "Buttons",
+            "Button"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "root=Form(\"$0\",Buttons([]),[FormControl(\":slot_0\",",
+            "Input",
+            "TextContent"
+          ]
+        }
+      ]
+    }
+  }
+}

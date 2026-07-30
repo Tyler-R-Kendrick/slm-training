@@ -16,9 +16,13 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     ignored = (ROOT / ".vercelignore").read_text(encoding="utf-8")
     assert "src/slm_training/resources/data/train/slm230_symbol_only_v1/**" in ignored
     package_data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert "resources/data/train/slm230_symbol_only_v1/**" in package_data["tool"][
-        "setuptools"
-    ]["exclude-package-data"]["slm_training"]
+    setuptools = package_data["tool"]["setuptools"]
+    excluded = setuptools["exclude-package-data"]["slm_training"]
+    assert "resources/data/train/slm230_symbol_only_v1/**" in excluded
+    assert "resources/test_cases/**" in excluded
+    assert "resources/**/*" in setuptools["package-data"]["slm_training"]
+    assert "resources/evals/**" not in excluded
+    assert "/src/slm_training/resources/test_cases/" in ignored
     assert "docs/design/*-agentv-*/**" in ignored
     assert "src/slm_training/resources/data/**/records.jsonl" in ignored
     assert "src/slm_training/web/static/**/*.map" in ignored
@@ -51,12 +55,11 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     )
     assert "scripts/run_slm233_recursive_campaign.py" in ignored
     assert (
-        "src/slm_training/harnesses/experiments/slm233_recursive_campaign.py"
-        in ignored
+        "src/slm_training/harnesses/experiments/slm233_recursive_campaign.py" in ignored
     )
     for fragment in (
         "flow/{samplers,targets}",
-            "harnesses/experiments/**",
+        "harnesses/experiments/**",
         "models/legal_edit_flow",
     ):
         assert fragment in function["excludeFiles"]

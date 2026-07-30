@@ -13,6 +13,8 @@ import json
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harnesses.preference.remine_campaign import (
     CAMPAIGN_TAG,
     FailureSignature,
@@ -57,13 +59,14 @@ def test_config_validation_and_fingerprint_deterministic():
         _config(max_iterations=9)  # a fourth+ iteration needs explicit justification
     with pytest.raises(RemineConfigError):
         _config(prompt_group_ids=[])  # frozen prompt set must be non-empty
-    with pytest.raises(
-        RemineConfigError, match=rf"\(0, {MAX_RUN_MINUTES}\]"
-    ):
+    with pytest.raises(RemineConfigError, match=rf"\(0, {MAX_RUN_MINUTES}\]"):
         _config(max_wall_minutes=MAX_RUN_MINUTES + 0.01)
     assert _config().max_wall_minutes == float(MAX_RUN_MINUTES)
     assert _config().fingerprint() == _config().fingerprint()
-    assert _config(decode_config_hash="a").fingerprint() != _config(decode_config_hash="b").fingerprint()
+    assert (
+        _config(decode_config_hash="a").fingerprint()
+        != _config(decode_config_hash="b").fingerprint()
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -86,12 +89,18 @@ def test_fixture_smoke_publishes_artifacts_and_manifest(tmp_path):
 
 def test_resume_reuses_every_stage_and_matches_manifest(tmp_path):
     r1 = run_campaign(_config(), root=tmp_path)
-    r2 = run_campaign(_config(), root=tmp_path)  # interrupted-then-resumed == uninterrupted
+    r2 = run_campaign(
+        _config(), root=tmp_path
+    )  # interrupted-then-resumed == uninterrupted
     assert r2.stages_run == 0
     assert r2.stages_reused == r1.stages_run
     assert r1.manifest() == r2.manifest()
     # duplicate-safe: resume did not append a second manifest artifact
-    manifests = list((tmp_path / "ldi-remine-test" / "artifacts" / "remine_campaign_manifest").glob("*.json"))
+    manifests = list(
+        (tmp_path / "ldi-remine-test" / "artifacts" / "remine_campaign_manifest").glob(
+            "*.json"
+        )
+    )
     assert len(manifests) == 1
 
 
@@ -118,7 +127,9 @@ class _NoFailureBackend:
             for g in config.prompt_group_ids
         ]
 
-    def train(self, config, *, evidence, parent_adapter_id):  # pragma: no cover - never called
+    def train(
+        self, config, *, evidence, parent_adapter_id
+    ):  # pragma: no cover - never called
         raise AssertionError("training must be skipped when admission finds no failure")
 
 
@@ -143,11 +154,19 @@ def test_migration_classifies_every_category():
         FailureSignature("g1", "motif", "persist_one", supported=True),  # persisted
         FailureSignature("g1", "gate", "g_parent", supported=True),  # persisted
         FailureSignature("g1", "motif", "brand_new", supported=True),  # newly_exposed
-        FailureSignature("g3", "gate", "g_regress", supported=True),  # regressed (no parent gate on g3)
+        FailureSignature(
+            "g3", "gate", "g_regress", supported=True
+        ),  # regressed (no parent gate on g3)
     ]
     m = migrate_signatures(parent, child)
     c = m.counts()
-    assert c == {"repaired": 1, "persisted": 2, "regressed": 1, "newly_exposed": 1, "unresolved": 1}
+    assert c == {
+        "repaired": 1,
+        "persisted": 2,
+        "regressed": 1,
+        "newly_exposed": 1,
+        "unresolved": 1,
+    }
     # An unsupported disappearance is unresolved, never repair.
     assert ("g2", "motif", "vanish_unsupported") in m.unresolved
     assert ("g1", "motif", "repaired_one") in m.repaired
@@ -183,16 +202,7 @@ def _state(**overrides) -> CampaignState:
 
 @pytest.mark.parametrize(
     "overrides, reason",
-    [
-        ({"authorization": "no_safe_direction"}, "no_safe_direction"),
-        ({"budget_exhausted": True}, "budget_exhausted"),
-        ({"protected_gate_regressed": True}, "protected_gate_regressed"),
-        ({"locality_within_budget": False}, "locality_or_latency_over_budget"),
-        ({"new_qualified_evidence": 0}, "new_evidence_below_threshold"),
-        ({"end_to_end_improved": False}, "no_meaningful_end_to_end_improvement"),
-        ({"replication_ok": False}, "positive_result_failed_replication"),
-        ({"iteration": 2, "max_iterations": 2}, "max_iterations_reached"),
-    ],
+    case_values(__file__, "test_stop_rules_are_deterministic"),
 )
 def test_stop_rules_are_deterministic(overrides, reason):
     assert evaluate_stop_rules(_state(**overrides)).stop is True

@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harness_core.evidence_bundle import (
     BAR_SCHEMA_VERSION,
     SCHEMA_VERSION,
@@ -23,7 +25,9 @@ from slm_training.harness_core.evidence_bundle import (
 )
 
 
-def _file_ref(root: Path, name: str, data: bytes, *, uri: str | None = None) -> ArtifactRef:
+def _file_ref(
+    root: Path, name: str, data: bytes, *, uri: str | None = None
+) -> ArtifactRef:
     path = root / name
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
@@ -200,16 +204,7 @@ def test_claim_bar_schema_and_validation() -> None:
 
 @pytest.mark.parametrize(
     "overrides,fragment",
-    [
-        ({"min_sample_size": 0}, "min_sample_size"),
-        ({"seeds": ()}, "seed"),
-        ({"seeds": (1, 1)}, "unique"),
-        ({"stop_rule": ""}, "stop rule"),
-        ({"entry_gate": ""}, "entry gate"),
-        ({"falsifier": ""}, "falsifier"),
-        ({"target_metrics": {}}, "target metric"),
-        ({"confidence_level": 1.5}, "confidence_level"),
-    ],
+    case_values(__file__, "test_claim_bar_fail_closed"),
 )
 def test_claim_bar_fail_closed(overrides, fragment) -> None:
     base = {

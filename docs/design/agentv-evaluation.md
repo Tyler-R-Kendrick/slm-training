@@ -7,8 +7,10 @@ portable JSONL/YAML contract and the canonical
 Both are exact pins.
 
 AgentEvals assertions are the gate authority. The existing honest multi-suite
-thresholds in `ship_gates.py` remain the policy source, and `agentv.py` lowers
-the raw metric evidence into required `actual/operator/expected` assertions.
+thresholds in `src/slm_training/resources/evals/openui_ship_gates_v5.json`
+remain the policy source; `ship_gates.py` validates and loads them, and
+`agentv.py` lowers the raw metric evidence into required
+`actual/operator/expected` assertions.
 The assertions—not a Python-generated pass boolean—produce the durable
 verdict. AgentV runs the spec and publishes artifacts; it is not itself a gate
 or model-quality metric. Missing suites remain required failing criteria, so a

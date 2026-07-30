@@ -4,6 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
     CHANGED_TEST_WORKERS,
@@ -213,12 +215,7 @@ def test_semantic_role_decode_is_prohibited() -> None:
 
 @pytest.mark.parametrize(
     "field",
-    [
-        "namespace_augment",
-        "prompt_semantic_role_contract",
-        "semantic_role_contract_in_context",
-        "semantic_role_schema_candidates",
-    ],
+    case_values(__file__, "test_prohibited_boolean_levers_are_rejected"),
 )
 def test_prohibited_boolean_levers_are_rejected(field: str) -> None:
     errors = lever_configuration_errors(SimpleNamespace(**{field: True}))
