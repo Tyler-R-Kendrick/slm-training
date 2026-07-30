@@ -163,6 +163,13 @@ def test_integrity_alone_cannot_promote() -> None:
     ]
 
 
+def test_experiment_promotion_threads_parameter_efficiency() -> None:
+    result = evaluate_promotion(eg_params_by_seed=[1.2, 1.1, 1.3])
+
+    assert result["checks"]["eg_params"]["pass"] is True
+    assert "campaign_governance_missing" in result["failures"]
+
+
 def test_registration_rejects_forged_governance_result(tmp_path: Path) -> None:
     forged = {
         "promotable": True,

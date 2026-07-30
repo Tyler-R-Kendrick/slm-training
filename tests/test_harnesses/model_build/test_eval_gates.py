@@ -443,7 +443,7 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
     """Every policy suite passing every default bar, before overrides."""
     base = {
         suite: {
-            "n": 32,
+            "n": int(mins.get("min_n", 32)),
             "meaningful_program_rate": 0.9,
             "syntax_parse_rate": 1.0,
             "structural_similarity": 0.9,
@@ -454,7 +454,7 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
             # evidence, not absence.
             "fallback_count": 0,
         }
-        for suite in DEFAULT_SHIP_GATES
+        for suite, mins in DEFAULT_SHIP_GATES.items()
     }
     for metrics in base.values():
         metrics.update(overrides)
@@ -484,6 +484,16 @@ def test_ship_gates_pass_when_density_met() -> None:
     result = evaluate_ship_gates(_full_suite_metrics())
     assert result["pass"] is True
     assert not result["failures"]
+
+
+def test_rico_ship_gate_requires_full_production_suite() -> None:
+    suites = _full_suite_metrics()
+    suites["rico_held"]["n"] = 1499
+
+    result = evaluate_ship_gates(suites)
+
+    assert result["pass"] is False
+    assert "rico_held:insufficient_n actual=1499 need>=1500" in result["failures"]
 
 
 def test_ship_gates_fail_on_none_metric_values() -> None:
@@ -656,6 +666,40 @@ def test_write_ship_gates_binds_verdict_to_raw_agentevals_criteria(
     assert write_ship_gates(
         tmp_path / "tampered", suites, evals_result=evals_result
     )["pass"] is False
+
+
+def test_write_ship_gates_binds_reachability_to_agentevals(
+    tmp_path: Path,
+) -> None:
+    from slm_training.evals.agentv import model_ship_gate_cases
+
+    suites = _full_suite_metrics()
+    reachability = {"smoke": 0.75}
+    results = [
+        {**criterion, "pass": criterion["id"] != "smoke:reachability_unproven"}
+        for case in model_ship_gate_cases(
+            suites, suite_reachability=reachability
+        )
+        for criterion in case["assertions"]
+    ]
+    evals_result = {
+        "format": "AgentEvals JSONL",
+        "authority": "AgentEvals assertions",
+        "criteria": {"pass": False, "results": results},
+        "runner": {"name": "AgentV", "execution_errors": 0},
+    }
+
+    payload = write_ship_gates(
+        tmp_path,
+        suites,
+        suite_reachability=reachability,
+        evals_result=evals_result,
+    )
+
+    assert payload["gates"]["smoke:reachability_unproven"] is False
+    assert payload["measurement_integrity_failures"] == [
+        "reachability_unproven:smoke actual=0.75 need=1.0"
+    ]
 
 
 def test_evaluate_suites_scoreboard(

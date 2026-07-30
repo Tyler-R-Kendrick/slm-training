@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -20,6 +20,11 @@
         "docs/design/leverproof-integration.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "Prove metric-program interval containment and exact band classification, and require every checked selection to beat or tie the complete finite candidate set under the committed lexicographic policy"
+        },
         {
           "version": "v1",
           "date": "2026-07-30",
@@ -1614,7 +1619,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -1622,6 +1627,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "Publish supplied suite reachability as raw AgentEvals actual-equals-one assertions in the canonical model ship-gate cases"
+        },
         {
           "version": "v5",
           "date": "2026-07-25",
@@ -2137,7 +2147,7 @@
       ]
     },
     "features.openfeature": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
@@ -2163,6 +2173,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "Expose parameter-efficiency samples, counts, and threshold through the existing promotion-evaluation API"
+        },
         {
           "version": "v11",
           "date": "2026-07-29",
@@ -2280,13 +2295,18 @@
       ]
     },
     "gates.ship": {
-      "version": "openui_ship_gates_v4",
+      "version": "openui_ship_gates_v5",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/model_build/ship_gates.py",
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v5",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "Require all 1500 production rico_held records and carry supplied suite reachability into durable AgentEvals-authoritative gates"
+        },
         {
           "version": "openui_ship_gates_v4",
           "date": "2026-07-24",
@@ -2534,12 +2554,17 @@
       ]
     },
     "harness.core": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "Lower supplied suite reachability through the shared raw gate-criteria engine and classify malformed or sub-unit reachability as measurement-integrity failures"
+        },
         {
           "version": "v11",
           "date": "2026-07-25",
@@ -2774,7 +2799,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v142",
+      "version": "v143",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2786,6 +2811,11 @@
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v143",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "Thread EG_params samples and trainable-parameter counts through the canonical experiment promotion wrapper so scaling-ladder capacity evidence reaches the shared promotion engine"
+        },
         {
           "version": "v142",
           "date": "2026-07-30",
@@ -6971,6 +7001,11 @@
       "history": [
         {
           "version": "v9",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "no-bump: update the ship-gate integration fixture to satisfy the independently tightened production rico_held evidence floor; reachability analysis behavior is unchanged"
+        },
+        {
+          "version": "v9",
           "date": "2026-07-27",
           "note": "SLM-434 (LAR0-07): port the SLM-308/310 repair-arm model knobs from the never-merged branch forks (dbe2fd59/ae5448c5/d8f35563) onto main, default-off: TreeEditDiffusionConfig gains value_label_mode (default 'mutation_count' = byte-identical pre-port labels), pairwise_progress_margin, and stop_slot_accounting (default 'legacy' = byte-identical pre-port decode); 'bounded_distance' adds the SLM-308 oracle value labels + pairwise progress ranking, 'corrected' stops charging expand_per_state for duplicate STOP proposals. Verified byte-identical default behavior against pre-port main; required by the SLM-317 powered rerun's ar_repair_historical / ar_repair_improved arms."
         },
@@ -7632,7 +7667,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v66",
+      "version": "v67",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7651,6 +7686,11 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v67",
+          "date": "2026-07-30T10:18:42-05:00",
+          "note": "Accept a preregistered suite-reachability map in evaluate_model and persist it through scoreboard, AgentEvals, and gates.json publication"
+        },
         {
           "version": "v66",
           "date": "2026-07-29",

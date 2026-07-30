@@ -222,7 +222,10 @@ def _stamp_agentv_artifacts(
 
 
 def model_ship_gate_cases(
-    suites: dict[str, dict[str, Any]], *, include_missing_suites: bool = True
+    suites: dict[str, dict[str, Any]],
+    *,
+    include_missing_suites: bool = True,
+    suite_reachability: dict[str, float] | None = None,
 ) -> list[dict[str, Any]]:
     """Lower ship policy evidence to raw AgentEvals assertion cases."""
     from slm_training.harnesses.model_build.ship_gates import (
@@ -247,6 +250,7 @@ def model_ship_gate_cases(
         selected,
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
+        suite_reachability=suite_reachability,
     )
     for suite, thresholds in selected.items():
         cases.append(
@@ -276,6 +280,7 @@ def publish_model_evaluation(
     suites: dict[str, dict[str, Any]],
     *,
     include_missing_suites: bool = True,
+    suite_reachability: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     stamp = next(
         (
@@ -290,6 +295,8 @@ def publish_model_evaluation(
         name=f"openui-model-ship-gates-{stamp}",
         claim="honest_multi_suite_ship_gate",
         cases=model_ship_gate_cases(
-            suites, include_missing_suites=include_missing_suites
+            suites,
+            include_missing_suites=include_missing_suites,
+            suite_reachability=suite_reachability,
         ),
     )

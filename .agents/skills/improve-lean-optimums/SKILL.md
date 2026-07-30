@@ -45,6 +45,16 @@ code automatically from one observation.
 - Keep generic interval arithmetic and metric programs in
   `src/leverproof_lean/`; Python only handles files, hashes, process execution,
   and typed cycle policy.
+- Improve proof depth in this order: metric-program interval containment,
+  complete finite-candidate lexicographic optimality, publication-integrity
+  counts, deterministic compute bounds, then assumption-backed calibration.
+- Prefer decision-bearing exact targets: invalid grammar, uncertified fallback,
+  timeout, unreachable decided cases, missing observations, and singleton
+  neural forwards all have optimum zero. Do not spend a campaign proving
+  tautologies such as loss being non-negative.
+- Keep empirical quality, latency, energy, memory, cost, and confidence targets
+  `assumption_backed`. Lean may prove their arithmetic and classification, not
+  their calibration or generalization.
 - Prove reusable claims. Do not use `sorry`, `admit`, `axiom`, `native_decide`,
   or post-hoc constants derived from the observations under evaluation.
 - Raw observations remain outside Lean's trusted measurement boundary. Lean
@@ -66,3 +76,8 @@ python -m scripts.repo_policy
 Also run focused Python tests for `verified_metrics`, autoresearch feedback, and
 promotion. If an experiment ran, follow `documenting-experiment-results`; if a
 training-data build ran, follow `synthesis-feedback`.
+
+For production publication changes, also verify that AgentEvals remains the
+verdict authority, `rico_held` requires `n >= 1500`, supplied reachability is a
+durable raw assertion, and parameter-efficiency evidence reaches every
+promotion wrapper.

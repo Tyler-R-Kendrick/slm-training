@@ -53,6 +53,7 @@ DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
         "component_type_recall": 0.20,
     },
     "rico_held": {
+        "min_n": 1500,
         "meaningful_program_rate": 0.10,
         "structural_similarity": 0.20,
         "component_type_recall": 0.15,
@@ -66,7 +67,7 @@ DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
 # (candidate_pending_calibration) so recording it can never green a gate.
 MEANINGFUL_METRIC_POLICY = {
     "active_primary": "meaningful_program_v1",
-    "threshold_version": "openui_ship_gates_v4",
+    "threshold_version": "openui_ship_gates_v5",
     "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
@@ -83,7 +84,7 @@ MEANINGFUL_METRIC_POLICY = {
 def _meaningful_metric_policy(
     policy: dict[str, dict[str, float]], *, custom: bool
 ) -> dict[str, Any]:
-    policy_id = "openui_ship_gates_v4"
+    policy_id = "openui_ship_gates_v5"
     source = "DEFAULT_SHIP_GATES"
     if custom:
         encoded = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
@@ -162,21 +163,8 @@ def evaluate_ship_gates(
         policy,
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
+        suite_reachability=suite_reachability,
     )
-    if suite_reachability:
-        for suite_name, fraction in suite_reachability.items():
-            if suite_name not in policy:
-                continue
-            if (
-                isinstance(fraction, (int, float))
-                and not isinstance(fraction, bool)
-                and fraction < 1.0
-            ):
-                key = f"{suite_name}:reachability_unproven"
-                message = f"reachability_unproven:{suite_name} actual={fraction!r} need=1.0"
-                checks[key] = False
-                failures.append(message)
-                categorized["measurement_integrity_failures"].append(message)
     return {
         "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
         "policy": policy,
@@ -207,18 +195,24 @@ def write_ship_gates(
     suites: dict[str, dict[str, Any]],
     *,
     thresholds: dict[str, dict[str, float]] | None = None,
+    suite_reachability: dict[str, float] | None = None,
     evals_result: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Write the AgentEvals-authoritative gates.json payload."""
     from slm_training.versioning import build_version_stamp
 
-    payload = evaluate_ship_gates(suites, thresholds=thresholds)
+    payload = evaluate_ship_gates(
+        suites,
+        thresholds=thresholds,
+        suite_reachability=suite_reachability,
+    )
     policy = thresholds or DEFAULT_SHIP_GATES
     _, raw_criteria = build_gate_criteria(
         suites,
         policy,
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
+        suite_reachability=suite_reachability,
     )
     observed = {
         str(item.get("id")): item

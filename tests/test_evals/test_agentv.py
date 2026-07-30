@@ -72,6 +72,37 @@ def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
     )
 
 
+def test_model_ship_cases_publish_reachability_as_raw_assertion() -> None:
+    cases = model_ship_gate_cases(
+        {
+            "smoke": {
+                "n": 32,
+                "meaningful_program_rate": 1.0,
+                "structural_similarity": 1.0,
+                "component_type_recall": 1.0,
+                "placeholder_fidelity": 1.0,
+                "reward_score": 1.0,
+                "fallback_count": 0,
+            }
+        },
+        include_missing_suites=False,
+        suite_reachability={"smoke": 0.5},
+    )
+
+    assertion = next(
+        item
+        for item in cases[0]["assertions"]
+        if item["id"] == "smoke:reachability_unproven"
+    )
+    assert assertion == {
+        "id": "smoke:reachability_unproven",
+        "suite": "smoke",
+        "actual": 0.5,
+        "operator": "eq",
+        "expected": 1.0,
+    }
+
+
 def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
     published = publish_agentv_evaluation(
         tmp_path,

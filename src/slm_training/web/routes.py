@@ -1348,8 +1348,12 @@ class PromotionEvalRequest(BaseModel):
     integrity: dict[str, Any] | None = None
     rankings: dict[str, list[str]] | None = None
     eg_time_by_seed: list[float] | None = None
+    eg_params_by_seed: list[float] | None = None
+    baseline_trainable_params: int | None = None
+    candidate_trainable_params: int | None = None
     category_regression_tolerance: float = 0.02
     eg_time_lcb_min: float = 1.0
+    eg_params_lcb_min: float = 1.0
     require_rank_stable_top2: bool = True
     campaign_manifest: dict[str, Any] | None = None
     campaign_result: dict[str, Any] | None = None
@@ -1364,6 +1368,7 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
         category_regression_tolerance=payload.category_regression_tolerance,
         require_rank_stable_top2=payload.require_rank_stable_top2,
         eg_time_lcb_min=payload.eg_time_lcb_min,
+        eg_params_lcb_min=payload.eg_params_lcb_min,
     )
     campaign_store = None
     if (
@@ -1381,6 +1386,9 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
         integrity=payload.integrity,
         rankings=payload.rankings,
         eg_time_by_seed=payload.eg_time_by_seed,
+        eg_params_by_seed=payload.eg_params_by_seed,
+        baseline_trainable_params=payload.baseline_trainable_params,
+        candidate_trainable_params=payload.candidate_trainable_params,
         ship_suites=payload.ship_suites,
         criteria=criteria,
         hard_categories=_PROMOTION_HARD_CATEGORIES,

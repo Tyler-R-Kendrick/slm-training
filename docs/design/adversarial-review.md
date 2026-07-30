@@ -156,7 +156,7 @@ Full audit + fixes: `measurement-honesty-remediation-20260718.md`. Gate-policy
 changes (all strictly tightening; thresholds in `DEFAULT_SHIP_GATES` unchanged):
 
 - **Evidence floor.** Every suite gate now also requires `n >= min_n`
-  (`DEFAULT_MIN_SUITE_N = 20`, per-suite `min_n` override in a custom policy).
+  (`DEFAULT_MIN_SUITE_N = 20`; production `rico_held` overrides this to 1500).
   Fixture-scale suites (n=3-5) quantize rates to k/n — smoke meaningful could
   never exceed 0.6667 — and no longer read as gateable evidence
   (`<suite>:insufficient_n`).

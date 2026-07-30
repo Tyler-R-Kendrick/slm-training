@@ -306,12 +306,16 @@ def _gate_suites() -> dict[str, dict[str, object]]:
     suites: dict[str, dict[str, object]] = {}
     for suite, mins in DEFAULT_SHIP_GATES.items():
         suites[suite] = {
-            "n": 25,
+            "n": int(mins.get("min_n", 25)),
             "parse_rate": 1.0,
             "syntax_parse_rate": 1.0,
             "placeholder_validity": 1.0,
             "fallback_count": 0,
-            **{metric: min(1.0, floor + 0.3) for metric, floor in mins.items()},
+            **{
+                metric: min(1.0, floor + 0.3)
+                for metric, floor in mins.items()
+                if metric != "min_n"
+            },
         }
     return suites
 
