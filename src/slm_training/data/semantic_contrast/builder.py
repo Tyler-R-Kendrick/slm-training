@@ -11,7 +11,11 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from slm_training.data.contract import GenerationRequest, canonical_slot_contract
+from slm_training.data.contract import (
+    GenerationRequest,
+    canonical_slot_contract,
+    project_template_markers,
+)
 from slm_training.data.progspec.generate import GeneratorConfig, ProgramGenerator
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
 from slm_training.data.progspec.semantic_plan import SemanticPlanV1
@@ -31,12 +35,13 @@ from slm_training.data.semantic_plan.seed import PlanSeedBuilder
 from slm_training.data.store import DataStore, write_common_manifest
 from slm_training.data.verify import VerificationContext, run_preview_verifier_many, verify_record
 from slm_training.dsl.pack import get_pack
+from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.meaningful_program import binding_aware_meaningful_v2
 from slm_training.harness_core.versioning import build_version_stamp
 
 
-BUILDER_VERSION = "2.0.0"
+BUILDER_VERSION = "2.0.1"
 PROGRAM_FAMILY = "semantic_contrast"
 
 
@@ -214,11 +219,7 @@ class SemanticContrastBuilder:
                 ), seed=self.seed,
             )
             result = generator.generate(self.source_count)
-            from slm_training.dsl.placeholders import extract_placeholders
-            return tuple(ProgramSpec.from_dict({
-                **source.to_dict(), "facts": {**source.facts,
-                "placeholders": extract_placeholders(source.canonical_openui)}})
-                for source in result.programs)
+            return tuple(self._with_opaque_markers(source) for source in result.programs)
         config = GeneratorConfig(
             max_depth=2,
             max_width=3,
@@ -230,20 +231,7 @@ class SemanticContrastBuilder:
         # prompt-component contract.  Single-component roots leave the evaluator
         # in the UNKNOWN state, so they are dropped deterministically.
         result = generator.generate(self.source_count * 2)
-        from slm_training.dsl.placeholders import extract_placeholders
-
-        candidates: list[ProgramSpec] = []
-        for spec in result.programs:
-            enriched = ProgramSpec.from_dict(
-                {
-                    **spec.to_dict(),
-                    "facts": {
-                        **spec.facts,
-                        "placeholders": extract_placeholders(spec.canonical_openui),
-                    },
-                }
-            )
-            candidates.append(enriched)
+        candidates = [self._with_opaque_markers(spec) for spec in result.programs]
         # Keep any source that has at least one non-Stack component and a
         # placeholder so the prompt contract is non-trivial.
         sources = [
@@ -263,12 +251,32 @@ class SemanticContrastBuilder:
             )
         return tuple(sources[: self.source_count])
 
+    @staticmethod
+    def _with_opaque_markers(spec: ProgramSpec) -> ProgramSpec:
+        markers = extract_placeholders(spec.canonical_openui)
+        openui = project_template_markers(spec.canonical_openui, markers)
+        assert openui is not None
+        return ProgramSpec.from_openui(
+            id=spec.id,
+            openui=openui,
+            facts={
+                **spec.facts,
+                "placeholders": extract_placeholders(openui),
+            },
+            program_family_id=spec.program_family_id,
+            lineage_id=spec.lineage_id,
+            split_group_id=spec.split_group_id,
+            split=spec.split,
+            derivative_refs=spec.derivative_refs,
+            provenance=spec.provenance,
+        )
 
     def _compile_candidate(self, plan: SemanticPlanV1) -> tuple[str | None, str | None]:
         seed_result = self.seed_builder.build(plan)
         if not seed_result.ok or seed_result.seed is None:
             return None, seed_result.reason
-        return seed_result.seed, None
+        markers = extract_placeholders(seed_result.seed)
+        return project_template_markers(seed_result.seed, markers), None
 
     def _build_pair(
         self,
@@ -348,9 +356,13 @@ class SemanticContrastBuilder:
             meta={"split": split, "semantic_delta": semantic_delta},
         )
 
+        negative_has_expected_verdict = (
+            bool(negative_score.get("verdict"))
+            if family is ContrastFamily.POSITIVE
+            else not bool(negative_score.get("verdict"))
+        )
         admitted = bool(
-            positive_score.get("verdict")
-            and not negative_score.get("verdict")
+            positive_score.get("verdict") and negative_has_expected_verdict
         )
         pair_id = f"{source.id}_{transform_id}_{split}"
         return ContrastPair(
@@ -405,6 +417,15 @@ class SemanticContrastBuilder:
                                 candidate, "transform_id", "unknown"
                             ),
                             "reason": "compilation or verifier rejection",
+                        }
+                    )
+                    continue
+                if not pair.admitted:
+                    rejected.append(
+                        {
+                            "source_id": source.id,
+                            "transform_id": pair.transform_id,
+                            "reason": pair.admission_reason or "admission failed",
                         }
                     )
                     continue

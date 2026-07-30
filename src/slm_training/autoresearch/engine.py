@@ -80,6 +80,8 @@ def validate_hypothesis_matrix(
         raise ValueError(
             f"hypothesis matrix requires at least {campaign.min_hypotheses} candidates"
         )
+    if campaign.loop_id is not None and not matrix.next_run_priorities:
+        raise ValueError("continuous hypothesis matrix requires next-run priorities")
     reused_ids = sorted(
         candidate.experiment.experiment_id
         for candidate in matrix.hypotheses
@@ -96,7 +98,7 @@ def validate_hypothesis_matrix(
         if previous_matrix is None:
             raise ValueError("feedback-informed matrix requires its predecessor")
         if any(
-            item.campaign_id != campaign.campaign_id
+            item.campaign_id != previous_matrix.campaign_id
             or item.matrix_id != previous_matrix.matrix_id
             for item in feedback
         ):
@@ -112,13 +114,10 @@ def validate_hypothesis_matrix(
             for lane in item.optimum_feedback.diagnosis_lanes
         }
         if any(
-            item.optimum_feedback is not None
-            and item.optimum_feedback.policy == "stop"
+            item.optimum_feedback is not None and item.optimum_feedback.policy == "stop"
             for item in feedback
         ):
-            raise ValueError(
-                "theorem-backed metric contradiction stops this campaign"
-            )
+            raise ValueError("theorem-backed metric contradiction stops this campaign")
         if required_lanes:
             supplied_lanes = {
                 item.diagnosis_lane
@@ -130,6 +129,40 @@ def validate_hypothesis_matrix(
                     "out-of-band feedback requires one hypothesis for every "
                     f"diagnosis lane: {sorted(required_lanes)}"
                 )
+            if campaign.loop_id is not None:
+                priority_lanes = {
+                    item.area
+                    for item in matrix.next_run_priorities
+                    if item.authority == "lean_assumption"
+                }
+                if priority_lanes != required_lanes:
+                    raise ValueError(
+                        "out-of-band feedback requires one Lean-assumption priority "
+                        f"for every diagnosis lane: {sorted(required_lanes)}"
+                    )
+        if campaign.loop_id is not None:
+            priority_evidence = {
+                evidence_id
+                for priority in matrix.next_run_priorities
+                for evidence_id in priority.evidence_ids
+            }
+            if not expected_feedback <= priority_evidence:
+                raise ValueError(
+                    "continuous priorities must cite every supplied feedback id"
+                )
+            for item in feedback:
+                if item.diagnosis_target != "harness":
+                    continue
+                if not any(
+                    priority.area == item.harness_family
+                    and priority.authority == "reproduced_harness_signal"
+                    and priority.disposition == "repair_before_run"
+                    for priority in matrix.next_run_priorities
+                ):
+                    raise ValueError(
+                        "reproduced harness feedback requires a repair priority for "
+                        f"{item.harness_family}"
+                    )
     prior_signatures = {
         json.dumps(
             experiment.knobs.model_dump(exclude_none=True, mode="json"),
@@ -174,9 +207,7 @@ def validate_hypothesis_matrix(
         validate_experiment(campaign, candidate.experiment, evidence, sources)
         for use in candidate.evidence_uses:
             if use.role not in citation_roles.get(use.citation, set()):
-                raise ValueError(
-                    f"{use.citation} is not captured {use.role} evidence"
-                )
+                raise ValueError(f"{use.citation} is not captured {use.role} evidence")
             used_roles.add(use.role)
     available_roles = set().union(*citation_roles.values()) if citation_roles else set()
     missing_roles = available_roles - used_roles
@@ -200,9 +231,7 @@ def create_hypothesis_feedback(
     optimum_feedback: OptimumFeedbackV1 | None = None,
 ) -> HypothesisFeedback:
     """Turn one completed matrix experiment into bounded hypothesizer feedback."""
-    candidates = {
-        item.experiment.experiment_id: item for item in matrix.hypotheses
-    }
+    candidates = {item.experiment.experiment_id: item for item in matrix.hypotheses}
     candidate = candidates.get(outcome.experiment_id)
     if candidate is None:
         raise ValueError("outcome experiment is not a matrix member")
@@ -232,9 +261,12 @@ def create_hypothesis_feedback(
             else None
         ),
     }
-    feedback_id = "feedback-" + hashlib.sha256(
-        json.dumps(identity, sort_keys=True).encode("utf-8")
-    ).hexdigest()[:16]
+    feedback_id = (
+        "feedback-"
+        + hashlib.sha256(
+            json.dumps(identity, sort_keys=True).encode("utf-8")
+        ).hexdigest()[:16]
+    )
     return HypothesisFeedback(
         feedback_id=feedback_id,
         campaign_id=matrix.campaign_id,
@@ -349,7 +381,9 @@ def compile_commands(
     if knobs.local_files_only:
         train.append("--local-files-only")
     if knobs.sync_checkpoints is not None:
-        train.append("--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints")
+        train.append(
+            "--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints"
+        )
     if campaign.track == "grammar_diffusion":
         train.extend(["--model", "grammar_diffusion"])
         boolean_knobs = {
@@ -480,7 +514,10 @@ def compile_commands(
             )
         if knobs.binder_topology_loss_weight is not None:
             train.extend(
-                ["--binder-topology-loss-weight", str(knobs.binder_topology_loss_weight)]
+                [
+                    "--binder-topology-loss-weight",
+                    str(knobs.binder_topology_loss_weight),
+                ]
             )
         if knobs.binder_topology_decode_weight is not None:
             train.extend(
@@ -542,7 +579,10 @@ def compile_commands(
         )
     if knobs.mixture_total_decision_budget is not None:
         train.extend(
-            ["--mixture-total-decision-budget", str(knobs.mixture_total_decision_budget)]
+            [
+                "--mixture-total-decision-budget",
+                str(knobs.mixture_total_decision_budget),
+            ]
         )
     if knobs.mixture_per_root_cap is not None:
         train.extend(["--mixture-per-root-cap", str(knobs.mixture_per_root_cap)])
@@ -620,9 +660,7 @@ def execute_commands(
 ) -> ExperimentOutcome:
     started = utc_now()
     deadline = (
-        time.monotonic() + timeout_seconds
-        if timeout_seconds is not None
-        else None
+        time.monotonic() + timeout_seconds if timeout_seconds is not None else None
     )
     combined: list[str] = []
     stages: list[dict[str, object]] = []
@@ -630,9 +668,7 @@ def execute_commands(
     data_metrics: dict[str, float] = {}
     for command in commands:
         remaining_seconds = (
-            max(0.0, deadline - time.monotonic())
-            if deadline is not None
-            else None
+            max(0.0, deadline - time.monotonic()) if deadline is not None else None
         )
         if remaining_seconds == 0:
             return ExperimentOutcome(

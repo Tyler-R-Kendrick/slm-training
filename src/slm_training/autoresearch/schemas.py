@@ -150,17 +150,31 @@ class CampaignSpec(StrictModel):
     predecessor_campaign_id: str | None = Field(
         default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
     )
+    upstream_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    integration_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
     created_at: str = Field(default_factory=utc_now)
     notes: str = ""
 
     @model_validator(mode="after")
     def validate_loop_lineage(self) -> CampaignSpec:
         if self.loop_id is None:
-            if self.cycle_index is not None or self.predecessor_campaign_id is not None:
+            if any(
+                value is not None
+                for value in (
+                    self.cycle_index,
+                    self.predecessor_campaign_id,
+                    self.upstream_commit,
+                    self.integration_commit,
+                )
+            ):
                 raise ValueError("cycle lineage requires loop_id")
             return self
         if self.cycle_index is None:
             raise ValueError("loop_id requires cycle_index")
+        if self.upstream_commit is None or self.integration_commit is None:
+            raise ValueError(
+                "continuous cycle requires upstream_commit and integration_commit"
+            )
         if self.cycle_index == 1 and self.predecessor_campaign_id is not None:
             raise ValueError("first loop cycle cannot have a predecessor campaign")
         if self.cycle_index > 1 and self.predecessor_campaign_id is None:
@@ -296,7 +310,10 @@ class ExperimentKnobs(StrictModel):
     mixture_weights: dict[str, float] | None = None
     mixture_sampling_policy: (
         Literal[
-            "with_replacement", "capacity_aware", "quota_capacity_aware", "exposure_targeted"
+            "with_replacement",
+            "capacity_aware",
+            "quota_capacity_aware",
+            "exposure_targeted",
         ]
         | None
     ) = None
@@ -502,6 +519,30 @@ DiagnosisLane = Literal[
     "assumptions",
 ]
 
+PriorityArea = Literal[
+    "data",
+    "researcher",
+    "model",
+    "infrastructure",
+    "evaluation",
+    "promotion",
+    "autoresearch",
+    "annotations",
+    "distill",
+    "experiments",
+    "model_build",
+    "preference",
+    "quality",
+    "rl",
+    "test_data",
+    "train_data",
+    "measurement_control",
+    "training_method",
+    "architecture",
+    "lean_model",
+    "assumptions",
+]
+
 
 class MetricBandBreachV1(StrictModel):
     metric_id: str = Field(min_length=1)
@@ -565,6 +606,53 @@ class HypothesisCandidate(StrictModel):
         return self
 
 
+class NextRunPriorityV1(StrictModel):
+    """Evidence-linked steering; authority is kept distinct from speculation."""
+
+    schema_version: Literal["NextRunPriorityV1"] = "NextRunPriorityV1"
+    rank: int = Field(ge=1)
+    area: PriorityArea
+    hypothesis: str = Field(min_length=12)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    confidence: float = Field(ge=0, le=1)
+    expected_information_gain: str = Field(min_length=8)
+    authority: Literal[
+        "lean_theorem",
+        "lean_assumption",
+        "reproduced_harness_signal",
+        "observed_result",
+        "speculative",
+    ]
+    disposition: Literal[
+        "stop_campaign",
+        "block_promotion",
+        "repair_before_run",
+        "experiment_next",
+        "monitor",
+    ]
+    proposed_experiment_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+
+    @model_validator(mode="after")
+    def validate_authority(self) -> NextRunPriorityV1:
+        if self.authority == "lean_theorem" and self.disposition != "stop_campaign":
+            raise ValueError(
+                "Lean theorem authority must stop the contradicted campaign"
+            )
+        if (
+            self.disposition == "stop_campaign"
+            and self.proposed_experiment_id is not None
+        ):
+            raise ValueError("stopped campaigns cannot nominate a training experiment")
+        if (
+            self.disposition == "experiment_next"
+            and self.proposed_experiment_id is None
+        ):
+            raise ValueError("experiment_next priority requires an experiment id")
+        return self
+
+
 class HypothesisMatrix(StrictModel):
     matrix_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     campaign_id: str
@@ -574,6 +662,7 @@ class HypothesisMatrix(StrictModel):
     selection_rationale: str = Field(min_length=12)
     predecessor_matrix_id: str | None = None
     feedback_ids: tuple[str, ...] = ()
+    next_run_priorities: tuple[NextRunPriorityV1, ...] = ()
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
@@ -602,6 +691,32 @@ class HypothesisMatrix(StrictModel):
             raise ValueError(
                 "matrix with a predecessor_matrix_id must acknowledge feedback_ids"
             )
+        if self.next_run_priorities:
+            ordered = sorted(self.next_run_priorities, key=lambda item: item.rank)
+            if [item.rank for item in ordered] != list(
+                range(1, len(self.next_run_priorities) + 1)
+            ):
+                raise ValueError("next-run priority ranks must be contiguous from one")
+            unknown = {
+                item.proposed_experiment_id
+                for item in ordered
+                if item.proposed_experiment_id is not None
+            } - set(ids)
+            if unknown:
+                raise ValueError(
+                    f"next-run priorities reference unknown experiments: {sorted(unknown)}"
+                )
+            experiment_priorities = [
+                item for item in ordered if item.disposition == "experiment_next"
+            ]
+            if (
+                experiment_priorities
+                and experiment_priorities[0].proposed_experiment_id
+                != self.recommended_experiment_id
+            ):
+                raise ValueError(
+                    "highest-ranked experiment priority must match the recommendation"
+                )
         return self
 
 

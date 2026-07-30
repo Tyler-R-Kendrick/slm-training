@@ -62,8 +62,12 @@ hypothesis loop / Linear tracking around these campaigns, use `autoresearch`.
    runs only typed, locally compiled commands.
 
 6. Persist the outcome and diagnosis. The harness writes typed hypothesizer feedback;
-   the next matrix must link its predecessor, acknowledge that feedback, and avoid
-   finished knob signatures and all prior campaign experiment IDs. If data validity,
+   the next matrix must link its predecessor across bounded continuous campaigns,
+   acknowledge that feedback in ranked `NextRunPriorityV1` evidence, and avoid
+   finished knob signatures and all prior loop experiment IDs. Replayed
+   `OptimumFeedbackV1` remains authoritative: use `improve-lean-optimums`, stop on
+   theorem contradiction, and cover all five controlled lanes for an
+   assumption-backed miss. If data validity,
    leakage, or quality is bad, derive a new immutable snapshot with
    `--source existing --derive-from` and rerun matched controls. Improve provider
    code only through `evaluate-hypothesizer` and frozen evaluation. Passing the

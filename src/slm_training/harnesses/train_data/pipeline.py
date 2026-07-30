@@ -120,6 +120,7 @@ class TrainDataConfig:
     programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
     programspec_count: int = 16
     programspec_seed: int = 0
+    programspec_natural_prompts: bool = False
     include_language_contract: bool = True
     # Optional output-contract projection/selection for codec-specific corpora.
     # Projection is explicit and provenance-tagged; unselected kinds remain in
@@ -686,9 +687,13 @@ def _records_from_progspec(
             )
             continue
         try:
+            prompt = f"Generate the {spec.program_family_id} OpenUI program."
+            if config.programspec_natural_prompts:
+                family = spec.program_family_id.replace("_", " ").strip()
+                prompt = f"Create a {family} OpenUI program."
             record = emit_record(
                 spec,
-                prompt=f"Generate the {spec.program_family_id} OpenUI program.",
+                prompt=prompt,
                 task="generation",
                 record_id=spec.id,
                 source="programspec_generated",
@@ -2153,6 +2158,7 @@ def build_train_data(
             ),
             "programspec_count": config.programspec_count,
             "programspec_seed": config.programspec_seed,
+            "programspec_natural_prompts": config.programspec_natural_prompts,
             "language_contract": bool(config.include_language_contract),
             "documentize_expressions": bool(config.documentize_expressions),
             "target_kinds": (

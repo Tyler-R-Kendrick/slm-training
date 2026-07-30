@@ -115,9 +115,11 @@ unknown fields forbidden:
 - `ExperimentSpec` requires a hypothesis, expected effect, falsification and stop
   criteria, citations, parent, and typed `ExperimentKnobs`;
 - `HypothesisMatrix` requires at least five distinct candidates, a recommended
-  member, selection rationale, and feedback/predecessor lineage when revising. Each
-  candidate records how research, prior traces, and prior results informed it plus a
-  typed `CategoricalNoveltyAudit`;
+  member, selection rationale, and feedback/predecessor lineage when revising.
+  Continuous matrices also carry ranked `NextRunPriorityV1` steering that cites
+  its evidence and distinguishes Lean/reproduced-harness authority from speculative
+  hypotheses. Each candidate records how research, prior traces, and prior results
+  informed it plus a typed `CategoricalNoveltyAudit`;
 - `HypothesisFeedback` records the tested hypothesis/signature, terminal metrics,
   diagnosis evidence, recommended actions, and optional hash-bound Lean optimum
   feedback without inventing causal support;
@@ -293,16 +295,27 @@ consume `max_experiments`.
 
 Each campaign is bounded self-improvement by accumulated evidence and policy
 iteration. Bare `/autotrain` may chain those bounded campaigns under one persistent
-`loop_id`; it never creates an unbounded train process. `cycle_index` and
-`predecessor_campaign_id` preserve cross-cycle lineage, while
-`autoresearch status --loop-id <id> --matrix` derives the between-run result matrix
-from verified event chains.
+`loop_id`; it never creates an unbounded train process. `cycle_index`,
+`predecessor_campaign_id`, `upstream_commit`, and `integration_commit` preserve
+cross-cycle and merge provenance. The controller loads predecessor feedback across
+campaign stores, requires the locked manifest source to equal the clean integrated
+commit, and refuses a commit that does not contain the fetched `origin/main`.
+`autoresearch status --loop-id <id> --matrix --last 5` derives three between-run
+tables from verified event chains: results, diagnostic/harness/Lean signals, and
+ranked next-run priorities (`--all` shows complete history).
 
 An outcome may carry a typed `HarnessSignalV1`. Only a signal reproduced on the
 frozen input can diagnose `target=harness`, and it must identify one canonical
 harness family. The controller repairs that shared owner through
 `improve-openui-harnesses`, then replays the identical model/data arm. This keeps
 harness improvement attributable instead of allowing a model and judge to co-adapt.
+
+Lean optimum feedback crosses the same campaign boundary. A theorem-backed miss
+stops the contradicted campaign and leaves the persistent outer goal in
+measurement/formal-model repair. An assumption-backed miss blocks promotion and
+requires all five `measurement_control`, `training_method`, `architecture`,
+`lean_model`, and `assumptions` lanes in both the successor candidates and their
+ranked priorities. The signal never becomes a gradient term or causal claim.
 
 Ordinary researcher and hypothesizer changes promote locally when their frozen
 benchmark passes. A change to an evaluator, metric, threshold, gate, or frozen case

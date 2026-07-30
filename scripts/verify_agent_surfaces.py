@@ -69,7 +69,9 @@ class Obligation:
         return tuple(relative for relative, _ in self.requires)
 
 
-def _on(surfaces: tuple[str, ...], *markers: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+def _on(
+    surfaces: tuple[str, ...], *markers: str
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
     return tuple((relative, markers) for relative in surfaces)
 
 
@@ -80,11 +82,22 @@ OBLIGATIONS: tuple[Obligation, ...] = (
         requires=(
             (
                 ".agents/skills/autotrain/SKILL.md",
-                ("continuous", "improve-openui-harnesses", "--matrix"),
+                (
+                    "continuous",
+                    "improve-openui-harnesses",
+                    "improve-lean-optimums",
+                    "--matrix",
+                ),
             ),
             (
                 ".grok/workflows/autotrain.rhai",
-                ("continuous", "improve-openui-harnesses", "--matrix"),
+                (
+                    "continuous",
+                    "improve-openui-harnesses",
+                    "improve-lean-optimums",
+                    "origin/main",
+                    "--matrix",
+                ),
             ),
         ),
         scope="skills",
@@ -100,11 +113,20 @@ OBLIGATIONS: tuple[Obligation, ...] = (
                 ".github/copilot-instructions.md",
                 ("Non-negotiable architecture invariants", "AGENTS.md"),
             ),
-            (".cursor/rules/decode-invariants.mdc", ("alwaysApply: true", CANONICAL_DOC)),
+            (
+                ".cursor/rules/decode-invariants.mdc",
+                ("alwaysApply: true", CANONICAL_DOC),
+            ),
             (".agents/skills/autotrain/SKILL.md", ("decode-invariants.md",)),
             (".agents/skills/honest-ship-eval/SKILL.md", ("decode-invariants.md",)),
-            (".agents/skills/improve-openui-harnesses/SKILL.md", ("decode-invariants.md",)),
-            (".agents/skills/running-experiment-matrices/SKILL.md", ("decode-invariants.md",)),
+            (
+                ".agents/skills/improve-openui-harnesses/SKILL.md",
+                ("decode-invariants.md",),
+            ),
+            (
+                ".agents/skills/running-experiment-matrices/SKILL.md",
+                ("decode-invariants.md",),
+            ),
             (".grok/workflows/autotrain.rhai", ("decode-invariants.md",)),
         ),
     ),
@@ -120,7 +142,9 @@ OBLIGATIONS: tuple[Obligation, ...] = (
     Obligation(
         id="run.cap",
         why="a timed out, interrupted, or killed run is never evidence",
-        requires=_on(PRIMARY_SURFACES + (".grok/workflows/autotrain.rhai",), "MAX_RUN_MINUTES"),
+        requires=_on(
+            PRIMARY_SURFACES + (".grok/workflows/autotrain.rhai",), "MAX_RUN_MINUTES"
+        ),
     ),
     Obligation(
         id="docs.iron-law",
@@ -236,8 +260,7 @@ def check(*, obligation_id: str | None = None) -> dict[str, list[str]]:
     if gaps:
         raise AgentSurfaceError(
             "every configured harness must enforce the same laws (see AGENTS.md "
-            "and docs/design/agent-harness-parity-audit.md):\n- "
-            + "\n- ".join(gaps)
+            "and docs/design/agent-harness-parity-audit.md):\n- " + "\n- ".join(gaps)
         )
     return checked
 

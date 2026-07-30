@@ -27,6 +27,8 @@ discovery / Linear, use `autoresearch`.
    (`documenting-experiment-results`).
 6. Hand off: ship claims → `honest-ship-eval`; matrix methodology →
    `running-experiment-matrices`; campaign methodology → `openui-autoresearch`;
+   certified metric bands and Lean proof/assumption repairs →
+   `improve-lean-optimums`;
    knowledge-driven research orchestration (brains/OpenWiki/Linear) →
    `autoresearch`.
 

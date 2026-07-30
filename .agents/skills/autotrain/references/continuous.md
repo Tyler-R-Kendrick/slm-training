@@ -9,8 +9,21 @@ and the append-only campaign event chains.
 
 1. Work on a dedicated local branch/worktree. Default authority is local-only:
    no push, PR, merge, paid compute, remote job, or Hugging Face write.
-2. Fetch `origin/main` before every decision-bearing run, integrate it safely,
-   and record the exact source commit in the locked campaign manifest.
+2. Close and commit the preceding cycle, then fetch and merge before every
+   decision-bearing run:
+
+   ```bash
+   git fetch origin main
+   git merge --no-edit origin/main
+   git status --short
+   git rev-parse origin/main
+   git rev-parse HEAD
+   ```
+
+   Resolve semantic conflicts by preserving both upstream and cycle work. Repair
+   every failing repository check, including a failure reproduced on the fetched
+   baseline, before training resumes. Never rebase away experiment provenance or
+   begin a run with unresolved conflicts or tracked dirt.
 3. Create or resume an unbudgeted persistent host goal when the host supports
    goals. Do not mark it complete because a cycle, queue, or gate finished.
    Report blocked only after the host's repeated-blocker rule is satisfied.
@@ -21,8 +34,15 @@ and the append-only campaign event chains.
    ```bash
    slm autoresearch init --campaign-id <cycle-id> --loop-id <loop-id> \
      --cycle-index <n> [--predecessor-campaign-id <prior-cycle>] \
+     --upstream-commit <fetched-origin-main-sha> \
+     --integration-commit <merged-head-sha> \
      --objective "<falsifiable objective>" --primary-metric <metric>
    ```
+
+   Initialization verifies that `upstream_commit` is the current fetched
+   `origin/main`, `integration_commit` is the clean checked-out `HEAD`, and the
+   latter contains the former. The locked `ExperimentCampaignV1.source_commit`
+   must equal that integration commit and must declare `source_dirty=false`.
 
 ## Iterate forever
 
@@ -44,21 +64,33 @@ Coordinate the existing owners instead of reimplementing them:
 | --- | --- |
 | Campaign execution and typed feedback | `openui-autoresearch` |
 | Canonical harness diagnosis/repair | `improve-openui-harnesses` |
+| Lean metric certificate replay, band miss, or proof/assumption repair | `improve-lean-optimums` |
 | Data synthesis feedback | `synthesis-feedback` |
 | E*/matrix execution | `running-experiment-matrices` |
 | Evaluation/readiness interpretation | `honest-ship-eval` |
 | Run evidence and closeout | `documenting-experiment-results` |
 | Prior-work/knowledge refresh when needed | `autoresearch` |
 
-After each run and before choosing the next one, print:
+When a campaign carries `metric_expectations_sha256`, replay its v2 certificate
+through the in-repo LeverProof checker before promotion or successor selection.
+An in-band result continues. An assumption-backed miss blocks promotion and
+requires `measurement_control`, `training_method`, `architecture`, `lean_model`,
+and `assumptions` in both the candidate matrix and ranked priorities. A
+theorem-backed contradiction stops that campaign and moves the still-active outer
+goal into measurement/formal-model repair; ordinary training does not resume until
+the contradiction is repaired. Historical v1 certificates are display-only.
+
+After each run and upstream-integration repair, and before choosing the next run,
+print the default five-cycle view:
 
 ```bash
-slm autoresearch status --loop-id <loop-id> --matrix
+slm autoresearch status --loop-id <loop-id> --matrix --last 5
 ```
 
-The matrix is derived from verified campaign event chains and includes source
-commit, diagnosis lane, trainable parameters, primary metric, gates, status, and
-next action. Fetch and integrate latest `origin/main` again before the next run.
+It renders three tables derived from verified campaign event chains: run results,
+diagnostic/harness/Lean signals, and evidence-linked speculative next-run
+priorities. Use `--all` for complete history. Fetch and merge latest `origin/main`
+again before the next bounded run.
 
 ## Automated promotion and judge changes
 

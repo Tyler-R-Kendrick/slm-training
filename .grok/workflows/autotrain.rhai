@@ -54,8 +54,9 @@
 // closes an approach, never a goal. Iron law docs (skill:
 // documenting-experiment-results), model card (docs/MODEL_CARD.md + README
 // summary), fixture≠ship, RL fail-closed, improve-openui-harnesses only after a
-// frozen reproduced signal, result matrix via `slm autoresearch status --loop-id
-// <run_id> --matrix`, hard run cap
+// frozen reproduced signal, Lean certificate replay / band repair via
+// improve-lean-optimums, fetch+merge origin/main between runs, three result
+// matrices via `slm autoresearch status --loop-id <run_id> --matrix --last 5`, hard run cap
 // (slm_training.levers.MAX_RUN_MINUTES), no paid without allow_paid.
 
 let meta = #{
@@ -258,6 +259,8 @@ fn contracts_text() {
     s += "- Honesty: fixture/scratch/smoke is wiring only; readiness needs --ship-gates on full multi-suite scoreboard (honest-ship-eval).\n";
     s += "- RL fail-closed: approved RLReadinessReport required (slm autoresearch validate-rl); no override.\n";
     s += "- No shadow paths: only slm / python -m scripts.* and outputs/{data,runs,autoresearch}/ + docs/design/.\n";
+    s += "- Continuous source: commit cycle, fetch and merge origin/main, resolve conflicts, and fix every check before the next run.\n";
+    s += "- Lean optimums: replay v2 certificates with improve-lean-optimums; theorem miss stops the campaign, assumption miss blocks promotion and opens all five lanes.\n";
     s += "- Hard run cap: slm_training.levers.MAX_RUN_MINUTES (currently 3m). Timed-out runs are not evidence.\n";
     s += "- Approvals: no paid GPU/remote/HF write unless allow_paid=true.\n";
     s += "- OpenWiki (read, do not hand-edit generated pages): docs/openwiki/quickstart.md, docs/openwiki/workflows/train-eval-docs.md, docs/openwiki/operations/checkpoints-and-agents.md.\n";
@@ -1188,8 +1191,8 @@ for c in verify_rejected {
 report += "\n## Honesty\n\nFixture/smoke evidence is wiring only. See docs/openwiki/workflows/train-eval-docs.md and honest-ship-eval.\n";
 report += "\n## Continuation\n\n";
 if continuous {
-    report += "Loop remains active. Fetch/integrate origin/main, audit typed harness signals, then resume this workflow.\n";
-    report += "Between runs: `" + cli + " autoresearch status --loop-id " + run_id + " --matrix`.\n";
+    report += "Loop remains active. Commit, fetch+merge origin/main, repair every check, replay Lean certificates, audit typed harness signals, then resume this workflow.\n";
+    report += "Between runs: `" + cli + " autoresearch status --loop-id " + run_id + " --matrix --last 5`.\n";
 } else {
     report += "Finite `once` pass requested.\n";
 }

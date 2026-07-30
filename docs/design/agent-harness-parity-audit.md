@@ -228,7 +228,8 @@ certified surface in the parity matrix for the laws an orchestration script can
 act on (canonical AGENTS.md, decode invariants, run cap, iron law, model card).
 The `autotrain.continuous-harness-loop` obligation additionally keeps the shared
 skill and Grok workflow aligned on continuous default behavior, canonical
-`improve-openui-harnesses` routing, and the between-run `--matrix` view.
+`improve-openui-harnesses` and `improve-lean-optimums` routing, merge-from-
+`origin/main` provenance, and the between-run `--matrix` view.
 
 ### B3 — README overstates hook coverage; the Copilot hook is an empty stub
 

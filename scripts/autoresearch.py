@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 from pathlib import Path
 
 from slm_training.levers import MAX_RUN_MINUTES
@@ -70,6 +71,43 @@ from slm_training.harnesses.experiments.verified_metrics import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        check=check,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _validate_continuous_commits(upstream: str, integration: str) -> None:
+    resolved_upstream = _git(
+        "rev-parse", "--verify", f"{upstream}^{{commit}}"
+    ).stdout.strip()
+    resolved_integration = _git(
+        "rev-parse", "--verify", f"{integration}^{{commit}}"
+    ).stdout.strip()
+    current_upstream = _git(
+        "rev-parse", "--verify", "origin/main^{commit}"
+    ).stdout.strip()
+    current_head = _git("rev-parse", "--verify", "HEAD^{commit}").stdout.strip()
+    if resolved_upstream != current_upstream:
+        raise ValueError("upstream_commit is stale; fetch origin/main before the cycle")
+    if resolved_integration != current_head:
+        raise ValueError("integration_commit must be the current checked-out HEAD")
+    if _git(
+        "merge-base",
+        "--is-ancestor",
+        resolved_upstream,
+        resolved_integration,
+        check=False,
+    ).returncode:
+        raise ValueError("integration_commit does not contain upstream_commit")
+    if _git("status", "--porcelain", "--untracked-files=no").stdout.strip():
+        raise ValueError("continuous cycle requires a clean tracked worktree")
+
+
 def _store(args: argparse.Namespace) -> CampaignStore:
     return CampaignStore(args.campaign_id, args.root)
 
@@ -84,6 +122,12 @@ def _artifact(store: CampaignStore, kind: str, path: Path | None):
 
 
 def cmd_init(args: argparse.Namespace) -> int:
+    if args.loop_id is not None:
+        if args.upstream_commit is None or args.integration_commit is None:
+            raise ValueError(
+                "continuous init requires --upstream-commit and --integration-commit"
+            )
+        _validate_continuous_commits(args.upstream_commit, args.integration_commit)
     campaign = CampaignSpec(
         campaign_id=args.campaign_id,
         objective=args.objective,
@@ -100,6 +144,8 @@ def cmd_init(args: argparse.Namespace) -> int:
         loop_id=args.loop_id,
         cycle_index=args.cycle_index,
         predecessor_campaign_id=args.predecessor_campaign_id,
+        upstream_commit=args.upstream_commit,
+        integration_commit=args.integration_commit,
         notes=args.notes,
     )
     path = _store(args).initialize(campaign)
@@ -340,8 +386,13 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             else None
         )
     sources = _load_sources(source_path)
+    lineage_stores = _lineage_stores(store, campaign)
+    previous_store = store
     previous_matrix = _latest_formed_matrix(store, required=False)
-    feedback = _hypothesis_feedback(store, previous_matrix)
+    if previous_matrix is None and len(lineage_stores) > 1:
+        previous_store = lineage_stores[1]
+        previous_matrix = _latest_formed_matrix(previous_store, required=False)
+    feedback = _hypothesis_feedback(previous_store, previous_matrix)
     if previous_matrix is not None and not feedback:
         raise ValueError(
             "latest hypothesis matrix has no terminal feedback; run a matrix member "
@@ -366,10 +417,15 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         result.matrix,
         evidence,
         list(result.sources),
-        prior_experiments=_finished_experiments(store),
+        prior_experiments=tuple(
+            experiment
+            for lineage_store in lineage_stores
+            for experiment in _finished_experiments(lineage_store)
+        ),
         prior_experiment_ids=frozenset(
             candidate.experiment.experiment_id
-            for formed in _formed_matrices(store)
+            for lineage_store in lineage_stores
+            for formed in _formed_matrices(lineage_store)
             for candidate in formed.hypotheses
         ),
         feedback=feedback,
@@ -434,6 +490,28 @@ def _events(store: CampaignStore) -> list[dict]:
     )
 
 
+def _lineage_stores(
+    store: CampaignStore, campaign: CampaignSpec
+) -> tuple[CampaignStore, ...]:
+    stores = [store]
+    current = campaign
+    seen = {current.campaign_id}
+    while current.predecessor_campaign_id is not None:
+        predecessor = CampaignStore(current.predecessor_campaign_id, store.root.parent)
+        predecessor_campaign = predecessor.load_campaign()
+        if predecessor_campaign.campaign_id in seen:
+            raise RuntimeError("continuous campaign predecessor cycle detected")
+        if (
+            predecessor_campaign.loop_id != campaign.loop_id
+            or predecessor_campaign.cycle_index != (current.cycle_index or 0) - 1
+        ):
+            raise RuntimeError("continuous campaign predecessor lineage is invalid")
+        seen.add(predecessor_campaign.campaign_id)
+        stores.append(predecessor)
+        current = predecessor_campaign
+    return tuple(stores)
+
+
 def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:
     finished = {
         str(row.get("experiment_id"))
@@ -442,7 +520,9 @@ def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:
     }
     found = {}
     for path in (store.root / "artifacts" / "experiments").glob("*.json"):
-        experiment = ExperimentSpec.model_validate_json(path.read_text(encoding="utf-8"))
+        experiment = ExperimentSpec.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
         if experiment.experiment_id in finished:
             found[experiment.experiment_id] = experiment
     return tuple(found.values())
@@ -487,9 +567,11 @@ def _recorded_outcome_matches(
     if not digest:
         return False
     path = store.root / "artifacts" / "outcomes" / f"{digest}.json"
-    return path.exists() and ExperimentOutcome.model_validate_json(
-        path.read_text(encoding="utf-8")
-    ) == outcome
+    return (
+        path.exists()
+        and ExperimentOutcome.model_validate_json(path.read_text(encoding="utf-8"))
+        == outcome
+    )
 
 
 def _matrix_for_outcome(
@@ -563,7 +645,9 @@ def _require_hypothesis_matrix(
         if item.experiment.experiment_id == experiment.experiment_id
     ]
     if not matches or matches[0] != experiment:
-        raise ValueError("experiment is not an exact member of the latest hypothesis matrix")
+        raise ValueError(
+            "experiment is not an exact member of the latest hypothesis matrix"
+        )
     return matrix
 
 
@@ -579,8 +663,7 @@ def _verified_optimum_feedback(
         return None
     if evidence is None or certificate is None:
         raise ValueError(
-            "optimum feedback requires both --metric-evidence and "
-            "--metric-certificate"
+            "optimum feedback requires both --metric-evidence and --metric-certificate"
         )
     if campaign_manifest_sha256 is None or metric_expectations_sha256 is None:
         raise ValueError(
@@ -643,6 +726,18 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
         if manifest.experiment_id != experiment.experiment_id:
             raise ValueError("campaign manifest belongs to a different experiment")
+        if campaign.loop_id is not None:
+            assert campaign.upstream_commit is not None
+            assert campaign.integration_commit is not None
+            _validate_continuous_commits(
+                campaign.upstream_commit, campaign.integration_commit
+            )
+            if manifest.source_commit != campaign.integration_commit:
+                raise ValueError(
+                    "continuous manifest source_commit must equal integration_commit"
+                )
+            if manifest.source_dirty:
+                raise ValueError("continuous manifest source must be clean")
         lock = store.lock_experiment_campaign(manifest)
     else:
         try:
@@ -650,9 +745,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         except FileNotFoundError:
             lock = None
     if args.execute and lock is None:
-        raise ValueError(
-            "execution requires a preregistered --campaign-manifest lock"
-        )
+        raise ValueError("execution requires a preregistered --campaign-manifest lock")
     if lock is not None and lock.manifest.requires_rl:
         if not experiment.requires_rl or not experiment.rl_readiness_report:
             raise ValueError("RL campaign requires experiment readiness evidence")
@@ -702,10 +795,10 @@ def cmd_run(args: argparse.Namespace) -> int:
             "experiment_started",
             experiment_id=experiment.experiment_id,
             status="running",
-        detail={
-            "hypothesis_matrix_id": matrix.matrix_id,
-            "campaign_manifest_sha256": lock.manifest_sha256,
-        },
+            detail={
+                "hypothesis_matrix_id": matrix.matrix_id,
+                "campaign_manifest_sha256": lock.manifest_sha256,
+            },
         )
     outcome = execute_commands(
         experiment,
@@ -862,9 +955,10 @@ def cmd_evaluate_hypothesizer(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     if args.loop_id:
-        rows = loop_result_rows(args.root, args.loop_id)
+        limit = None if args.all else args.last
+        rows = loop_result_rows(args.root, args.loop_id, last=limit)
         if args.matrix:
-            print(render_loop_result_matrix(args.root, args.loop_id))
+            print(render_loop_result_matrix(args.root, args.loop_id, last=limit))
         else:
             campaigns = sorted(
                 [
@@ -889,6 +983,8 @@ def cmd_status(args: argparse.Namespace) -> int:
     else:
         if args.matrix:
             raise ValueError("--matrix requires --loop-id")
+        if args.all or args.last != 5:
+            raise ValueError("--last/--all require --loop-id")
         print(json.dumps(_store(args).status(), indent=2))
     return 0
 
@@ -976,7 +1072,11 @@ def cmd_remine(args: argparse.Namespace) -> int:
         "notes": "wiring-only fixture smoke",
     }
 
-    data = json.loads(args.config.read_text(encoding="utf-8")) if args.config else _smoke_config
+    data = (
+        json.loads(args.config.read_text(encoding="utf-8"))
+        if args.config
+        else _smoke_config
+    )
     config = RemineCampaignConfig.from_mapping(data)
 
     if args.describe or not args.smoke:
@@ -1022,6 +1122,8 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--loop-id")
     init.add_argument("--cycle-index", type=int)
     init.add_argument("--predecessor-campaign-id")
+    init.add_argument("--upstream-commit")
+    init.add_argument("--integration-commit")
     init.set_defaults(func=cmd_init)
 
     research = sub.add_parser("research")
@@ -1062,7 +1164,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     hypothesize = sub.add_parser("hypothesize")
     hypothesize.add_argument("--campaign-id", required=True)
-    hypothesize.add_argument("--provider", choices=("agent", "openai"), default="openai")
+    hypothesize.add_argument(
+        "--provider", choices=("agent", "openai"), default="openai"
+    )
     hypothesize.add_argument("--matrix", type=Path)
     hypothesize.add_argument("--memo", type=Path)
     hypothesize.add_argument("--evidence", type=Path)
@@ -1131,9 +1235,7 @@ def build_parser() -> argparse.ArgumentParser:
     hypothesis_benchmark.add_argument(
         "--cases",
         type=Path,
-        default=Path(
-            "src/slm_training/resources/autoresearch/hypothesizer_cases.json"
-        ),
+        default=Path("src/slm_training/resources/autoresearch/hypothesizer_cases.json"),
     )
     hypothesis_benchmark.add_argument("--predictions", type=Path, required=True)
     hypothesis_benchmark.add_argument(
@@ -1156,6 +1258,9 @@ def build_parser() -> argparse.ArgumentParser:
     status_target.add_argument("--campaign-id")
     status_target.add_argument("--loop-id")
     status.add_argument("--matrix", action="store_true")
+    status_history = status.add_mutually_exclusive_group()
+    status_history.add_argument("--last", type=int, default=5)
+    status_history.add_argument("--all", action="store_true")
     status.set_defaults(func=cmd_status)
 
     sync = sub.add_parser("sync")
