@@ -54,8 +54,9 @@ agent hooks block it when a tracked repository path is involved.
 ## Canonical copies
 
 - Keep each skill only under `.agents/skills/<name>/`.
-- Use `../../.agents/skills/<name>` symlinks under `.claude/skills/` and
-  `.cursor/skills/`; Codex and Copilot discover `.agents/skills/` directly.
+- Use `../../.agents/skills/<name>` symlinks under `.claude/skills/`,
+  `.cursor/skills/`, and `.grok/skills/`; Codex and Copilot discover
+  `.agents/skills/` directly (never add `.codex/skills/`).
 - Keep generated frontend assets, experiment evidence, resources, and vendored
   marketplace skills only where their owning workflow documents them.
 - Do not add a second helper, schema, config, or guide for an existing concern;

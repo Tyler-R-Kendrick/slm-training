@@ -9,10 +9,10 @@ from scripts.repo_policy import (
     sync_run_policy,
     sync_workflow_timeouts,
     validate_new_design_record_paths,
+    validate_published_data_sizes,
     validate_skill_mirrors,
     validate_top_level,
     validate_vercel_run_policy,
-    validate_published_data_sizes,
     validate_workflow_timeouts,
 )
 
@@ -69,9 +69,11 @@ def test_workflows_require_and_sync_canonical_timeout(tmp_path: Path) -> None:
     workflow = workflows / "ci.yml"
     workflow.write_text("jobs:\n  test:\n    timeout-minutes: 3\n", encoding="utf-8")
     assert validate_workflow_timeouts(root=tmp_path) == [
-        "workflow timeout differs from canonical 2-minute cap: "
-        ".github/workflows/ci.yml#test; run `python -m scripts.repo_policy "
-        "--sync-workflow-timeouts`"
+        (
+            "workflow timeout differs from canonical 2-minute cap: "
+            ".github/workflows/ci.yml#test; run `python -m scripts.repo_policy "
+            "--sync-workflow-timeouts`"
+        )
     ]
 
     assert sync_workflow_timeouts(root=tmp_path) == [workflow]
@@ -177,16 +179,25 @@ def test_pre_tool_hook_blocks_only_tracked_moves() -> None:
 
 
 def test_skill_discovery_entries_must_be_canonical_symlinks(tmp_path: Path) -> None:
+    from scripts.repo_policy import DISCOVERY_ROOTS
+
     source = tmp_path / ".agents/skills/example"
     source.mkdir(parents=True)
-    discovery = tmp_path / ".claude/skills/example"
-    discovery.mkdir(parents=True)
-    assert validate_skill_mirrors(tmp_path) == [
-        "copied skill mirror: .claude/skills/example; use a symlink to ../../.agents/skills/example"
+    for root in DISCOVERY_ROOTS:
+        discovery_root = tmp_path / root
+        discovery_root.mkdir(parents=True)
+        # A real directory is a forbidden "copy" for the skill name under test.
+        (discovery_root / "example").mkdir()
+
+    assert sorted(validate_skill_mirrors(tmp_path)) == [
+        f"copied skill mirror: {root}/example; use a symlink to ../../.agents/skills/example"
+        for root in DISCOVERY_ROOTS
     ]
 
-    discovery.rmdir()
-    discovery.symlink_to("../../.agents/skills/example", target_is_directory=True)
+    for root in DISCOVERY_ROOTS:
+        discovery = tmp_path / root / "example"
+        discovery.rmdir()
+        discovery.symlink_to("../../.agents/skills/example", target_is_directory=True)
     assert validate_skill_mirrors(tmp_path) == []
 
 
@@ -196,11 +207,14 @@ def test_canonical_skills_must_be_mirrored_into_every_discovery_root(
     """A canonical skill with no discovery entry is invisible to that client.
 
     The policy used to walk only discovery -> canonical, so a newly added skill
-    could ship unseen by Claude Code and Cursor with a green check.
+    could ship unseen by Claude Code, Cursor, and Grok with a green check.
     """
+    from scripts.repo_policy import DISCOVERY_ROOTS
+
     (tmp_path / ".agents/skills/example").mkdir(parents=True)
     (tmp_path / ".agents/skills/unmirrored").mkdir(parents=True)
-    for root in (".claude/skills", ".cursor/skills"):
+    discovery_roots = tuple(str(path) for path in DISCOVERY_ROOTS)
+    for root in discovery_roots:
         discovery = tmp_path / root
         discovery.mkdir(parents=True)
         (discovery / "example").symlink_to(
@@ -208,14 +222,30 @@ def test_canonical_skills_must_be_mirrored_into_every_discovery_root(
         )
 
     assert sorted(validate_skill_mirrors(tmp_path)) == [
-        "unmirrored skill: .claude/skills/unmirrored is missing; "
-        "add a symlink to ../../.agents/skills/unmirrored",
-        "unmirrored skill: .cursor/skills/unmirrored is missing; "
-        "add a symlink to ../../.agents/skills/unmirrored",
+        f"unmirrored skill: {root}/unmirrored is missing; "
+        "add a symlink to ../../.agents/skills/unmirrored"
+        for root in discovery_roots
     ]
 
-    for root in (".claude/skills", ".cursor/skills"):
+    for root in discovery_roots:
         (tmp_path / root / "unmirrored").symlink_to(
             "../../.agents/skills/unmirrored", target_is_directory=True
         )
     assert validate_skill_mirrors(tmp_path) == []
+
+
+def test_missing_skill_discovery_root_is_rejected(tmp_path: Path) -> None:
+    (tmp_path / ".agents/skills/example").mkdir(parents=True)
+    for root in (".claude/skills", ".cursor/skills"):
+        discovery = tmp_path / root
+        discovery.mkdir(parents=True)
+        (discovery / "example").symlink_to(
+            "../../.agents/skills/example", target_is_directory=True
+        )
+
+    assert validate_skill_mirrors(tmp_path) == [
+        (
+            "missing skill discovery root: .grok/skills; create it and symlink "
+            "every canonical skill from ../../.agents/skills/<name>"
+        )
+    ]
