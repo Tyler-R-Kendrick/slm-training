@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import subprocess
+import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -32,6 +34,29 @@ from slm_training.autoresearch.schemas import (
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.model_build.eval_runner import structural_similarity
 from slm_training.levers import MAX_RUN_MINUTES
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_formal_verifier_loads_before_project_dependencies_are_installed() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-S",
+            "-c",
+            (
+                "import runpy; "
+                "ns = runpy.run_path('scripts/verify_formal_contracts.py', "
+                "run_name='formal_audit_import'); "
+                "print(ns['_canonical_run_seconds']())"
+            ),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.strip() == str(MAX_RUN_MINUTES * 60)
 
 
 def _experiment(claim: FormalClaimV1) -> ExperimentSpec:

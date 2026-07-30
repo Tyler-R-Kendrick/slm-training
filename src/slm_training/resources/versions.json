@@ -2537,7 +2537,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2549,6 +2549,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-30",
+          "note": "Load the canonical run cap without importing optional project dependencies so the post-Lean CI axiom audit runs in its minimal toolchain environment"
+        },
         {
           "version": "v1",
           "date": "2026-07-30",
