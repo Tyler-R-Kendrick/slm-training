@@ -100,6 +100,14 @@ SUITES_BY_PREFIX = (
         "README.md",
         ("tests/test_scripts/test_verify_checkpoint_references.py",),
     ),
+    (
+        "scripts/verify_agent_surfaces.py",
+        ("tests/test_scripts/test_verify_agent_surfaces.py",),
+    ),
+    (
+        "scripts/check_changed.py",
+        ("tests/test_scripts/test_check_changed.py",),
+    ),
     ("scripts/", ("tests/test_scripts",)),
     (
         "src/slm_training/data/",
@@ -253,6 +261,15 @@ def select_tests(paths: list[str]) -> list[str]:
             continue
         if path == "src/slm_training/harnesses/model_build/ship_gates.py":
             targets.add("tests/test_harnesses/model_build/test_eval_gates.py")
+            continue
+        # Exact path entries own the mapping exclusively (narrow policy/script
+        # hooks without dragging the broad scripts/ suite).
+        exact = next(
+            (suites for prefix, suites in SUITES_BY_PREFIX if prefix == path),
+            None,
+        )
+        if exact is not None:
+            targets.update(exact)
             continue
         matches = [
             suites for prefix, suites in SUITES_BY_PREFIX if path.startswith(prefix)

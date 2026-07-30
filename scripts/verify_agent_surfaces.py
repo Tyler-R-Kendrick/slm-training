@@ -197,6 +197,14 @@ OBLIGATIONS: tuple[Obligation, ...] = (
         requires=_on(PRIMARY_SURFACES, "organize-repository", "git mv"),
     ),
     Obligation(
+        id="sdlc.delivery",
+        why="multi-step work uses subagents, stacked PRs, and mandatory bottom-up closeout",
+        requires=_on(PRIMARY_SURFACES, "sdlc")
+        + (
+            (".agents/skills/sdlc/SKILL.md", ("gh stack", "squash", "subagent")),
+        ),
+    ),
+    Obligation(
         id="skills.canonical-root",
         why="skills are edited only under .agents/skills; the rest are discovery symlinks",
         requires=_on(PRIMARY_SURFACES, ".agents/skills"),

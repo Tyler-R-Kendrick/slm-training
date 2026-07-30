@@ -85,6 +85,10 @@ Parity across harnesses is enforced by
 - **Repository organization.** Activate `organize-repository` before creating,
   moving, renaming, or deleting tracked paths, and use `git mv` for every
   tracked relocation.
+- **SDLC / multi-step delivery.** Multi-phase work uses the `sdlc` skill:
+  subagents with incremental check-ins, official `gh stack` stacked PRs,
+  bottom-up rubber-duck adversarial closeout (comments, CI, squash-merge),
+  and Scalar/sparse/worktree workspaces.
 
 Copilot CLI hooks in [`.github/hooks/`](hooks/) block raw `mv` of tracked paths
 and run the changed-file checker after edits. Copilot Chat in the IDE gets no

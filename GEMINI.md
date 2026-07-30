@@ -55,6 +55,10 @@ Parity across harnesses is enforced by
 - **Repository organization.** Use `organize-repository` before creating,
   moving, renaming, or deleting tracked paths, and use `git mv` for every
   tracked relocation.
+- **SDLC / multi-step delivery.** Multi-phase work uses the `sdlc` skill:
+  subagents with incremental check-ins, official `gh stack` stacked PRs,
+  bottom-up rubber-duck adversarial closeout (comments, CI, squash-merge),
+  and Scalar/sparse/worktree workspaces.
 
 Token stack: `ponytail`, `caveman`, `headroom`, `rtk` (see `AGENTS.md` /
 `RTK.md`). Hugging Face pack: `hf-cli` + marketplace skills from
