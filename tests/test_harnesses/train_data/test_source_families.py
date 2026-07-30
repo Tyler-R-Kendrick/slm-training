@@ -172,8 +172,9 @@ def test_pipeline_manifest_source_families(tmp_path: Path) -> None:
         output_root=tmp_path / "out",
         version="vfam",
         synthesizer="quality",
+        namespace_augment=True,
     )
-    assert not hasattr(config, "namespace_augment")
+    assert config.namespace_augment is True
 
 
 @pytestmark_bridge

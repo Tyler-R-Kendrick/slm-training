@@ -21,22 +21,22 @@ def _write_records(test_dir: Path) -> None:
     rows = [
         {
             "id": "good",
-            "prompt": "Build a Button. Placeholders: :cta.label",
-            "openui": 'root = Button(":cta.label")',
+            "prompt": "Build a Button. Placeholders: :slot_0",
+            "openui": 'root = Button(":slot_0")',
             "split": "smoke",
             "source": "audit-test",
         },
         {
             "id": "bad",
-            "prompt": "Build a Button. Placeholders: :bad",
-            "openui": 'root = Button(":bad")',
+            "prompt": "Build a Button. Placeholders: :slot_0",
+            "openui": 'root = Button(":slot_0")',
             "split": "smoke",
             "source": "audit-test",
         },
         {
             "id": "cut",
-            "prompt": "Build a Button. Placeholders: :cut",
-            "openui": 'root = Button(":cut")',
+            "prompt": "Build a Button. Placeholders: :slot_0",
+            "openui": 'root = Button(":slot_0")',
             "split": "smoke",
             "source": "audit-test",
         },
@@ -73,7 +73,7 @@ def test_frontier_replay_aggregates_versions_reasons_and_explicit_labels(
 ) -> None:
     test_dir = tmp_path / "test"
     _write_records(test_dir)
-    good = 'root = Button(":cta.label")'
+    good = 'root = Button(":slot_0")'
     eval_path = tmp_path / "eval_smoke.json"
     eval_path.write_text(
         json.dumps(
@@ -164,7 +164,9 @@ def test_exactly_500_characters_is_replayable_with_matching_digest(
 ) -> None:
     test_dir = tmp_path / "test"
     _write_records(test_dir)
-    prediction = 'root = Button(":cut")' + " " * (500 - len('root = Button(":cut")'))
+    prediction = 'root = Button(":slot_0")' + " " * (
+        500 - len('root = Button(":slot_0")')
+    )
     eval_path = tmp_path / "eval_smoke.json"
     eval_path.write_text(
         json.dumps(
@@ -199,7 +201,7 @@ def test_main_accepts_repeated_explicit_generation_sets(
 ) -> None:
     test_dir = tmp_path / "test"
     _write_records(test_dir)
-    prediction = 'root = Button(":cta.label")'
+    prediction = 'root = Button(":slot_0")'
     eval_paths = [tmp_path / "eval_a.json", tmp_path / "eval_b.json"]
     for index, path in enumerate(eval_paths):
         checkpoint = _checkpoint_payload(tmp_path, f"checkpoint-{index}.pt")
@@ -295,9 +297,9 @@ def test_frontier_replay_rejects_checkpoint_digest_mismatch(tmp_path: Path) -> N
                 "details": [{
                     "id": "good",
                     **_envelope(test_dir, "good"),
-                    "prediction": 'root = Button(":cta.label")',
+                    "prediction": 'root = Button(":slot_0")',
                     "prediction_sha256": hashlib.sha256(
-                        b'root = Button(":cta.label")'
+                        b'root = Button(":slot_0")'
                     ).hexdigest(),
                 }],
             }
@@ -318,8 +320,8 @@ def test_main_blocks_when_gaming_corpus_fails(tmp_path: Path, monkeypatch) -> No
         json.dumps(
             {
                 "id": "wrong-expectation",
-                "prompt": "Build a Button. Placeholders: :cta.label",
-                "prediction": 'root = Button(":cta.label")',
+                "prompt": "Build a Button. Placeholders: :slot_0",
+                "prediction": 'root = Button(":slot_0")',
                 "expected_verdict": False,
                 "expected_reason_codes": [],
             }
@@ -374,8 +376,8 @@ def test_frontier_replay_rejects_incomplete_or_duplicate_envelope(
                 **_checkpoint_payload(tmp_path),
                 "n": 3,
                 "details": [
-                    {"id": "good", "prediction": 'root = Button(":cta.label")'},
-                    {"id": "good", "prediction": 'root = Button(":cta.label")'},
+                    {"id": "good", "prediction": 'root = Button(":slot_0")'},
+                    {"id": "good", "prediction": 'root = Button(":slot_0")'},
                 ],
             }
         ),

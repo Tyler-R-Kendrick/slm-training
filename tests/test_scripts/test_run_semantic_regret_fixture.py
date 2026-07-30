@@ -5,7 +5,26 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts import run_semantic_regret_fixture
+
+
+@pytest.fixture(autouse=True)
+def _isolate_design_docs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        run_semantic_regret_fixture,
+        "_DESIGN_JSON",
+        str(tmp_path / "semantic-regret.json"),
+    )
+    monkeypatch.setattr(
+        run_semantic_regret_fixture,
+        "_DESIGN_MD",
+        str(tmp_path / "semantic-regret.md"),
+    )
+    monkeypatch.chdir(tmp_path)
 
 
 def test_fixture_cli_writes_json_and_markdown(tmp_path: Path) -> None:
@@ -37,6 +56,6 @@ def test_fixture_cli_prints_path(capsys, tmp_path: Path) -> None:
 def test_fixture_default_out_path_uses_date() -> None:
     # The default path is under outputs/runs/ and includes today's date. We
     # verify the CLI still exits 0 when --out is omitted; it writes to the real
-    # outputs/runs directory, which is acceptable for a fixture run.
+    # outputs/runs directory inside the isolated test working directory.
     rc = run_semantic_regret_fixture.main([])
     assert rc == 0

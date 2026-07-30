@@ -5,7 +5,26 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts import run_slm144_plan_predictor_fixture
+
+
+@pytest.fixture(autouse=True)
+def _isolate_design_docs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        run_slm144_plan_predictor_fixture,
+        "_DESIGN_JSON",
+        str(tmp_path / "plan-predictor.json"),
+    )
+    monkeypatch.setattr(
+        run_slm144_plan_predictor_fixture,
+        "_DESIGN_MD",
+        str(tmp_path / "plan-predictor.md"),
+    )
+    monkeypatch.chdir(tmp_path)
 
 
 def test_plan_only_cli_writes_json_and_markdown(tmp_path: Path) -> None:

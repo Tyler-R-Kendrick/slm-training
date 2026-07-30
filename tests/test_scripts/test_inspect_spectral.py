@@ -56,7 +56,12 @@ def test_fixture_writes_report_and_design_docs(tmp_path: Path) -> None:
     data = json.loads(run_json.read_text())
     assert data["status"] == "fixture"
     assert data["n_matrices"] > 0
-    assert data["version_stamp"]["components"]["harness.experiments.slm214_spectral_snapshot"] == "v2"
+    assert (
+        data["version_stamp"]["components"][
+            "harness.experiments.slm214_spectral_snapshot"
+        ]
+        == "v4"
+    )
     assert design_json.is_file()
     assert design_md.is_file()
     assert "Honest caveats" in design_md.read_text()
@@ -87,8 +92,30 @@ def test_spectral_null_subcommand(tmp_path: Path) -> None:
 def test_spectral_compare_subcommand(tmp_path: Path, capsys) -> None:
     left = tmp_path / "left.json"
     right = tmp_path / "right.json"
-    main(["spectral", "--mode", "fixture", "--output-dir", str(tmp_path / "a"), "--null-draws", "5"])
-    main(["spectral", "--mode", "fixture", "--output-dir", str(tmp_path / "b"), "--null-draws", "5"])
+    main(
+        [
+            "spectral",
+            "--mode",
+            "fixture",
+            "--output-dir",
+            str(tmp_path / "a"),
+            "--null-draws",
+            "5",
+            "--no-write-design-docs",
+        ]
+    )
+    main(
+        [
+            "spectral",
+            "--mode",
+            "fixture",
+            "--output-dir",
+            str(tmp_path / "b"),
+            "--null-draws",
+            "5",
+            "--no-write-design-docs",
+        ]
+    )
     left.write_text((tmp_path / "a" / "slm214_spectral_report.json").read_text())
     right.write_text((tmp_path / "b" / "slm214_spectral_report.json").read_text())
     assert main(["spectral-compare", "--left", str(left), "--right", str(right)]) == 0
@@ -97,6 +124,18 @@ def test_spectral_compare_subcommand(tmp_path: Path, capsys) -> None:
 
 
 def test_toy_model_runs_without_checkpoint(tmp_path: Path) -> None:
-    assert main(["spectral", "--output-dir", str(tmp_path), "--null-draws", "5"]) == 0
+    assert (
+        main(
+            [
+                "spectral",
+                "--output-dir",
+                str(tmp_path),
+                "--null-draws",
+                "5",
+                "--no-write-design-docs",
+            ]
+        )
+        == 0
+    )
     data = json.loads((tmp_path / "slm214_spectral_report.json").read_text())
     assert data["n_matrices"] > 0

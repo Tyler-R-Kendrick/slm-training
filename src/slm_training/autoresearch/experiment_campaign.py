@@ -10,7 +10,12 @@ from typing import Any, Literal
 
 from pydantic import Field, StrictInt, field_validator, model_validator
 
-from slm_training.autoresearch.schemas import CampaignBudget, StrictModel, utc_now
+from slm_training.autoresearch.schemas import (
+    CampaignBudget,
+    FormalObligationV1,
+    StrictModel,
+    utc_now,
+)
 from slm_training.lineage.records import canonical_json
 
 ClaimClass = Literal[
@@ -100,6 +105,7 @@ class ArtifactRequirementV1(StrictModel):
         "agentevals",
         "agentv",
         "ship_gates",
+        "formal_preflight",
     ]
     minimum_count: int = Field(default=1, ge=1)
 
@@ -129,6 +135,7 @@ class ExperimentCampaignV1(StrictModel):
     promotion_gates: tuple[CampaignGateV1, ...] = Field(min_length=1)
     rollback_gates: tuple[CampaignGateV1, ...] = Field(min_length=1)
     artifact_requirements: tuple[ArtifactRequirementV1, ...] = Field(min_length=1)
+    formal_obligations: tuple[FormalObligationV1, ...] = ()
     claim_class: ClaimClass
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     source_dirty: bool
@@ -169,6 +176,12 @@ class ExperimentCampaignV1(StrictModel):
         )
         requirement_kinds = tuple(item.kind for item in self.artifact_requirements)
         family_ids = tuple(item.family_id for item in self.multiplicity_families)
+        obligation_ids = tuple(
+            item.obligation_id for item in self.formal_obligations
+        )
+        obligation_templates = tuple(
+            item.template_id for item in self.formal_obligations
+        )
         for values, label in (
             (endpoint_ids, "endpoint"),
             (arm_ids, "arm"),
@@ -176,8 +189,14 @@ class ExperimentCampaignV1(StrictModel):
             (gate_ids, "gate"),
             (requirement_kinds, "artifact requirement"),
             (family_ids, "multiplicity family"),
+            (obligation_ids, "formal obligation"),
+            (obligation_templates, "formal obligation template"),
         ):
             _unique(values, label)
+        if self.formal_obligations and "formal_preflight" not in requirement_kinds:
+            raise ValueError(
+                "formal obligations require the formal_preflight artifact requirement"
+            )
         if sum(item.role == "primary" for item in self.endpoints) != 1:
             raise ValueError("exactly one primary endpoint is required")
         if not any(item.role == "control" for item in self.arms):

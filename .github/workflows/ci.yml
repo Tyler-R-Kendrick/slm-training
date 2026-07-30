@@ -200,6 +200,21 @@ jobs:
             python -m scripts.verify_version_stamps --check
           fi
 
+  lean-formal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: src/slm_training/formal/lean
+          build: true
+          test: false
+      - name: Reject proof placeholders and audit exported theorem axioms
+        run: PYTHONPATH=src python -m scripts.verify_formal_contracts
+
   data-build:
     runs-on: ubuntu-latest
     timeout-minutes: 3

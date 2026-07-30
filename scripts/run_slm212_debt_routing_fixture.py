@@ -46,6 +46,9 @@ def _build_payload(
     hysteresis: int,
     budget_mode: str,
     seed: int,
+    write_design_docs: bool,
+    design_json: Path | None,
+    design_md: Path | None,
 ) -> tuple[dict[str, Any], str]:
     if mode == "plan-only":
         arms = tuple(
@@ -96,6 +99,9 @@ def _build_payload(
         hysteresis=hysteresis,
         budget_mode=budget_mode,
         seed=seed,
+        write_design_docs=write_design_docs,
+        design_json=design_json,
+        design_md=design_md,
     )
     payload = manifest.to_dict()
     command = "python -m scripts.run_slm212_debt_routing_fixture --mode fixture"
@@ -112,6 +118,9 @@ def run_fixture(
     hysteresis: int,
     budget_mode: str,
     seed: int,
+    write_design_docs: bool,
+    design_json: Path | None,
+    design_md: Path | None,
 ) -> DebtRoutingMatrixManifest:
     """Thin wrapper that writes run artifacts and design docs."""
     from slm_training.harnesses.experiments.slm212_debt_routing import run_fixture_matrix
@@ -125,7 +134,9 @@ def run_fixture(
         hysteresis=hysteresis,
         budget_mode=budget_mode,
         seed=seed,
-        write_design_docs=True,
+        write_design_docs=write_design_docs,
+        design_json=design_json,
+        design_md=design_md,
     )
 
 
@@ -267,6 +278,9 @@ def main(argv: list[str] | None = None) -> int:
         args.hysteresis,
         args.budget_mode,
         args.seed,
+        args.write_design_docs,
+        args.design_json,
+        args.design_md,
     )
     payload["schema"] = "DebtRoutingMatrixManifest"
     payload["claim_class"] = "wiring"

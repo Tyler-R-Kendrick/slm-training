@@ -11,6 +11,11 @@ from scripts import run_sde4_02_min_controller_capacity
 torch = pytest.importorskip("torch")
 
 
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+
 def test_plan_only_mode(tmp_path: Path) -> None:
     out = tmp_path / "plan"
     rc = run_sde4_02_min_controller_capacity.main(

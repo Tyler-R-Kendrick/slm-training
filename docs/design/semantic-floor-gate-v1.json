@@ -15,7 +15,7 @@
   ],
   "anti_gaming": {
     "executed": false,
-    "owner_sha256": "c350af61cc609dbf2ddc38a25ba5e6b412c7c2ca1c9cb5c6f78927e2b0802e4a",
+    "owner_sha256": "22d6ee0616fe4004e8f73226d2c639de4a4a18fc25fbe1742515fe04fc467db5",
     "passed": false,
     "scheduled_cells": 24,
     "schema_version": "metric_gaming/v1",
@@ -332,8 +332,8 @@
   "eval_manifests": [],
   "evaluator_versions": {
     "@agentv/core": "4.42.4",
-    "agentv_owner_sha256": "6103125a86b3570e347614a534f2509e23a22af895fa5b802fe41aa145f1f3bc",
-    "evals.scoring": "v20"
+    "agentv_owner_sha256": "5cf864c79c02d24b5ba593d25291079047f5aca20e402c42b4318575085e7a2d",
+    "evals.scoring": "v22"
   },
   "evidence": [
     {
@@ -393,7 +393,7 @@
     }
   ],
   "evidence_cutoff": "2026-07-21T04:15:30.006965Z",
-  "gate_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
+  "gate_hash": "c0bc38733b12aa728f172516cf4435b7bf719a6419932805babc6f32638fcb34",
   "generated_at": "2026-07-23T07:03:22.541155Z",
   "legacy_meaning_v1_by_suite": {},
   "metric_versions": {
@@ -448,7 +448,7 @@
     "code_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v64",
+      "harness.experiments": "v140",
       "harness.experiments.semantic_floor_gate": "v1"
     },
     "stamp_schema": "version_stamp/v1",

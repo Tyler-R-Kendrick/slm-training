@@ -10,6 +10,11 @@ import pytest
 from scripts import run_sae_diagnostic_fixture
 
 
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+
 def test_plan_only_cli_writes_json_and_markdown(tmp_path: Path) -> None:
     out_dir = tmp_path / "out"
     rc = run_sae_diagnostic_fixture.main(

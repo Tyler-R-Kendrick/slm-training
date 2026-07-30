@@ -1200,6 +1200,7 @@ class FakeHypothesisResponses:
         assert kwargs["store"] is False
         assert kwargs["text_format"] is HypothesisMatrix
         assert "arXiv:2606.01444" in kwargs["input"]
+        assert "recurrence.layerscale_stability" in kwargs["input"]
         return SimpleNamespace(
             id="resp-hypotheses",
             model="gpt-test",
