@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 torch = pytest.importorskip("torch")
 
 from slm_training.dsl import bridge_available
@@ -129,7 +131,9 @@ def test_history_ops_text_omitted_reproduces_prior_output_exactly() -> None:
     # new parameter must be a strict no-op when absent -- the regression
     # guard for the encoder_ops_conditioning lever staying default-off.
     prompt = "Return a boolean"
-    before = format_context_text(prompt, output_kind="lexical", output_category="boolean")
+    before = format_context_text(
+        prompt, output_kind="lexical", output_category="boolean"
+    )
     after = format_context_text(
         prompt, output_kind="lexical", output_category="boolean", history_ops_text=None
     )
@@ -261,7 +265,9 @@ def test_ltr_tail_mask_selects_only_final_real_suffix_tokens() -> None:
     )
     target = torch.tensor([[model.tokenizer.bos_id, 7, 8, 9, model.tokenizer.pad_id]])
     suffix = torch.tensor([[False, True, True, True, False]])
-    assert model._ltr_tail_mask(target, suffix).tolist() == [[False, False, True, True, False]]
+    assert model._ltr_tail_mask(target, suffix).tolist() == [
+        [False, False, True, True, False]
+    ]
 
 
 def test_model_build_config_threads_ltr_tail_controls() -> None:
@@ -297,20 +303,7 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("output_tokenizer", "compiler_decode_mode", "loss_name", "head_name"),
-    [
-        (
-            "choice",
-            "off",
-            "root_reference_identity_loss_weight",
-            "root_reference_identity_head",
-        ),
-        (
-            "lexer",
-            "tree",
-            "root_reference_arity_loss_weight",
-            "root_reference_arity_head",
-        ),
-    ],
+    case_values(__file__, "test_checkpoint_rejects_missing_enabled_root_head"),
 )
 def test_checkpoint_rejects_missing_enabled_root_head(
     tmp_path: Path,
@@ -771,7 +764,8 @@ def test_abstract_plan_trace_emits_valid_plan_for_every_enabled_mode(
     assert trace.plan_tokens.shape == (1, model.abstract_plan.rounds)
     assert bool(
         (
-            (trace.plan_tokens >= 0) & (trace.plan_tokens < model.abstract_plan.slot_count)
+            (trace.plan_tokens >= 0)
+            & (trace.plan_tokens < model.abstract_plan.slot_count)
         ).all()
     )
 
@@ -1245,9 +1239,7 @@ def test_opt_in_choice_generation_returns_exact_verified_stream(
     encoded = json.dumps(first.to_dict(), sort_keys=True, ensure_ascii=False)
     assert ChoiceGenerationResult.from_dict(json.loads(encoded)) == first
     payload = {
-        key: value
-        for key, value in first.to_dict().items()
-        if key != "fingerprint"
+        key: value for key, value in first.to_dict().items() if key != "fingerprint"
     }
     assert choice_generation_fingerprint(payload) == first.fingerprint
     for key, value in (
@@ -1303,9 +1295,7 @@ def test_choice_generation_rejects_incompatible_or_unprovable_paths(
     undeclared = GenerationRequest(
         prompt="Hero",
         slot_contract=(":slot_0",),
-        runtime_symbols=(
-            RuntimeSymbol(surface=":slot_1", role="external_entity"),
-        ),
+        runtime_symbols=(RuntimeSymbol(surface=":slot_1", role="external_entity"),),
     )
     with pytest.raises(ValueError, match="must appear in slot_contract"):
         choice.generate_batch_choice_requests([undeclared])

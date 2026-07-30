@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -14,71 +15,109 @@ from slm_training.harness_core.gate_engine import (
     run_gate_checks,
 )
 
-# Per-suite minimums. Smoke is a canary; generalization requires the rest.
-#
-# ``component_type_recall`` is the **semantic-density floor** (E2): the fraction
-# of the gold's component *types* the prediction recovers. It collapses toward 0
-# for the trivial/empty program, so a compression- or decode-driven change that
-# emits shorter-but-emptier output cannot green these gates on syntax alone. The
-# floors sit at or below the structural bars (density must be at least as present
-# as structure) and only make the policy stricter — never weaker.
-# Minimum evidence per suite before its gate can pass. Fixture-scale suites
-# (n=3-5) quantize every rate to k/n steps and cannot support a ship claim —
-# per AGENTS.md, production claims need full scoreboards. A policy dict may
-# override per suite via a "min_n" entry (never treated as a metric bar).
-DEFAULT_MIN_SUITE_N = 20
-
-DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
+_POLICY_PATH = (
+    Path(__file__).resolve().parents[2] / "resources/evals/openui_ship_gates_v5.json"
+)
+_REQUIRED_SUITES = {"smoke", "held_out", "adversarial", "ood", "rico_held"}
+_REQUIRED_METRICS = {
     "smoke": {
-        "meaningful_program_rate": 0.66,
-        "structural_similarity": 0.35,
-        "component_type_recall": 0.35,
-        "placeholder_fidelity": 0.25,
-        "reward_score": 0.30,
+        "meaningful_program_rate",
+        "structural_similarity",
+        "component_type_recall",
+        "placeholder_fidelity",
+        "reward_score",
     },
     "held_out": {
-        "meaningful_program_rate": 0.40,
-        "structural_similarity": 0.30,
-        "component_type_recall": 0.30,
-        "placeholder_fidelity": 0.15,
+        "meaningful_program_rate",
+        "structural_similarity",
+        "component_type_recall",
+        "placeholder_fidelity",
     },
     "adversarial": {
-        "meaningful_program_rate": 0.25,
-        "structural_similarity": 0.25,
-        "component_type_recall": 0.20,
+        "meaningful_program_rate",
+        "structural_similarity",
+        "component_type_recall",
     },
     "ood": {
-        "meaningful_program_rate": 0.25,
-        "structural_similarity": 0.25,
-        "component_type_recall": 0.20,
+        "meaningful_program_rate",
+        "structural_similarity",
+        "component_type_recall",
     },
     "rico_held": {
-        "min_n": 1500,
-        "meaningful_program_rate": 0.10,
-        "structural_similarity": 0.20,
-        "component_type_recall": 0.15,
+        "meaningful_program_rate",
+        "structural_similarity",
+        "component_type_recall",
     },
 }
 
-# Provenance-only descriptor: which meaningful-program metric is the *gated*
-# primary (v1) and which is a reported, not-yet-gated candidate (v2). This never
-# adds, removes, or relaxes a ship threshold — DEFAULT_SHIP_GATES above is the
-# sole gate policy. binding_aware_meaningful_v2 stays ``thresholds: None``
-# (candidate_pending_calibration) so recording it can never green a gate.
-MEANINGFUL_METRIC_POLICY = {
-    "active_primary": "meaningful_program_v1",
-    "threshold_version": "openui_ship_gates_v5",
-    "meaningful_program_v1": {
-        "version": "1.0.0",
-        "wire_field": "meaningful_program_rate",
-        "thresholds": "DEFAULT_SHIP_GATES",
-    },
-    "binding_aware_meaningful_v2": {
-        "version": "2.13.0",
-        "thresholds": None,
-        "status": "candidate_pending_calibration",
-    },
-}
+
+def load_ship_gate_policy(path: Path | str = _POLICY_PATH) -> dict[str, Any]:
+    """Load the committed default policy, rejecting malformed or weaker shapes."""
+    source = Path(path)
+    try:
+        value = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid ship-gate policy {source}: {exc}") from exc
+    if (
+        not isinstance(value, dict)
+        or value.get("schema") != "openui_ship_gate_policy/v1"
+    ):
+        raise ValueError(f"{source}: invalid ship-gate policy schema")
+    version = value.get("version")
+    if not isinstance(version, str) or source.stem != version:
+        raise ValueError(f"{source}: version must match the resource filename")
+    minimum = value.get("default_min_suite_n")
+    if not isinstance(minimum, int) or isinstance(minimum, bool) or minimum <= 0:
+        raise ValueError(f"{source}: default_min_suite_n must be a positive integer")
+    suites = value.get("suites")
+    if not isinstance(suites, dict) or set(suites) != _REQUIRED_SUITES:
+        raise ValueError(f"{source}: all canonical ship suites are required")
+    for suite, thresholds in suites.items():
+        if not isinstance(thresholds, dict) or not thresholds:
+            raise ValueError(f"{source}: {suite} thresholds must be a non-empty object")
+        metrics = set(thresholds) - {"min_n"}
+        if metrics != _REQUIRED_METRICS[suite]:
+            raise ValueError(f"{source}: {suite} must define its canonical metrics")
+        for metric, threshold in thresholds.items():
+            if metric == "min_n":
+                if (
+                    not isinstance(threshold, int)
+                    or isinstance(threshold, bool)
+                    or threshold < minimum
+                ):
+                    raise ValueError(
+                        f"{source}: {suite}.min_n cannot weaken the evidence floor"
+                    )
+            elif (
+                not isinstance(threshold, (int, float))
+                or isinstance(threshold, bool)
+                or not math.isfinite(float(threshold))
+                or not 0.0 <= float(threshold) <= 1.0
+            ):
+                raise ValueError(f"{source}: invalid threshold {suite}.{metric}")
+    meaningful = value.get("meaningful_metric_policy")
+    if (
+        not isinstance(meaningful, dict)
+        or meaningful.get("active_primary") != "meaningful_program_v1"
+        or meaningful.get("threshold_version") != version
+        or (meaningful.get("meaningful_program_v1") or {}).get("wire_field")
+        != "meaningful_program_rate"
+        or (meaningful.get("meaningful_program_v1") or {}).get("thresholds")
+        != "DEFAULT_SHIP_GATES"
+        or not isinstance(meaningful.get("binding_aware_meaningful_v2"), dict)
+        or (meaningful.get("binding_aware_meaningful_v2") or {}).get("thresholds")
+        is not None
+        or (meaningful.get("binding_aware_meaningful_v2") or {}).get("status")
+        != "candidate_pending_calibration"
+    ):
+        raise ValueError(f"{source}: invalid meaningful-metric provenance")
+    return value
+
+
+_POLICY = load_ship_gate_policy()
+DEFAULT_MIN_SUITE_N = int(_POLICY["default_min_suite_n"])
+DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = _POLICY["suites"]
+MEANINGFUL_METRIC_POLICY: dict[str, Any] = _POLICY["meaningful_metric_policy"]
 
 
 def _meaningful_metric_policy(
@@ -228,9 +267,7 @@ def write_ship_gates(
         )
         for item in raw_criteria
     }
-    failed_criteria = [
-        item for item in raw_criteria if not checks[str(item["id"])]
-    ]
+    failed_criteria = [item for item in raw_criteria if not checks[str(item["id"])]]
     categorized = {
         "evidence_volume_failures": [],
         "measurement_integrity_failures": [],

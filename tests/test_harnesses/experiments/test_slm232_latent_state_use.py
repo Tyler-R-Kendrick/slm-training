@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import pytest
+
+from tests.casefiles import case_values
 import torch
 
 from slm_training.harnesses.experiments.slm232_latent_state_use import (
@@ -55,11 +57,7 @@ def test_initial_z_decomposition_sums_to_canonical_state_exactly() -> None:
 
 @pytest.mark.parametrize(
     ("mode", "removed"),
-    [
-        ("zero_ctx_proj", "z_context_component"),
-        ("zero_z_latent", "z_latent_component"),
-        ("remove_z_position", "z_position_component"),
-    ],
+    case_values(__file__, "test_component_ablation_removes_only_declared_term"),
 )
 def test_component_ablation_removes_only_declared_term(mode: str, removed: str) -> None:
     tower = _tower()
@@ -84,9 +82,7 @@ def test_unchanged_override_preserves_logits_and_source_weights_exactly() -> Non
     context = torch.randn(1, 2, 8)
     components = tower.initial_transition_components(noisy, context, 0)
     state = tower.initial_transition_state(noisy, context, 0)
-    unchanged = apply_initial_ablation(
-        components, RecursiveStateAblationV1("none")
-    )
+    unchanged = apply_initial_ablation(components, RecursiveStateAblationV1("none"))
     assert isinstance(state["y"], torch.Tensor)
     assert isinstance(state["z"], torch.Tensor)
     assert isinstance(unchanged, torch.Tensor)
@@ -108,9 +104,7 @@ def test_shuffle_preserves_shape_and_batch_norm_distribution() -> None:
     )
     baseline = compose_z0(components)
     assert baseline is not None
-    permutation, manifest_sha256 = within_group_permutation(
-        ["same", "same"], seed=232
-    )
+    permutation, manifest_sha256 = within_group_permutation(["same", "same"], seed=232)
     shuffled = apply_initial_ablation(
         components,
         RecursiveStateAblationV1("shuffle_z_across_examples"),
@@ -240,9 +234,7 @@ def test_path_ablation_is_default_off_and_changes_only_declared_route() -> None:
         y, z, context, mask, state_path_ablation="detach_z_to_y"
     )
     assert not torch.equal(baseline["logits"], disconnected["logits"])
-    torch.testing.assert_close(
-        baseline["z"], disconnected["z"], rtol=0, atol=0
-    )
+    torch.testing.assert_close(baseline["z"], disconnected["z"], rtol=0, atol=0)
     torch.testing.assert_close(
         baseline["z_update"], disconnected["z_update"], rtol=0, atol=0
     )
@@ -294,9 +286,7 @@ def test_parameter_free_context_is_not_mislabeled_as_projected() -> None:
     )
     assert components["context_projection_applied"] is False
     with pytest.raises(ValueError, match="applied learned projection"):
-        apply_initial_ablation(
-            components, RecursiveStateAblationV1("zero_ctx_proj")
-        )
+        apply_initial_ablation(components, RecursiveStateAblationV1("zero_ctx_proj"))
 
 
 def test_gold_oracle_is_explicitly_not_applicable() -> None:
@@ -305,8 +295,6 @@ def test_gold_oracle_is_explicitly_not_applicable() -> None:
         torch.tensor([[1, 2]]), torch.randn(1, 2, 8), 0
     )
     assert (
-        apply_initial_ablation(
-            components, RecursiveStateAblationV1("gold_oracle_z")
-        )
+        apply_initial_ablation(components, RecursiveStateAblationV1("gold_oracle_z"))
         is None
     )

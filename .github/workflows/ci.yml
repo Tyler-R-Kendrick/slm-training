@@ -180,6 +180,14 @@ jobs:
         run: python -m scripts.verify_decode_invariants
       - name: Certify every agent surface carries every repository law
         run: python -m scripts.verify_agent_surfaces
+      - name: Validate external test and eval cases
+        run: |
+          python -m scripts.extract_test_cases
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python -m scripts.refresh_test_cases --check --base-ref "${{ github.event.pull_request.base.sha }}"
+          else
+            python -m scripts.refresh_test_cases --check
+          fi
       - run: ruff check .
       - run: python -m compileall -q src scripts tests
       - name: Verify checkpoint references are resolvable and provenanced
@@ -191,6 +199,21 @@ jobs:
           else
             python -m scripts.verify_version_stamps --check
           fi
+
+  lean-formal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: src/slm_training/formal/lean
+          build: true
+          test: false
+      - name: Reject proof placeholders and audit exported theorem axioms
+        run: PYTHONPATH=src python -m scripts.verify_formal_contracts
 
   data-build:
     runs-on: ubuntu-latest

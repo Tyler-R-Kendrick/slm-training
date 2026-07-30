@@ -31,7 +31,10 @@ claims of proven discovery or SOTA. Each matrix names its recommended experiment
 completed outcomes and diagnoses become typed feedback for the next matrix and for
 future campaign evidence. The loop improves by evidence, never by rewriting its own
 code, frozen cases, or gates. RL remains locked until a model passes the frozen
-production readiness contract.
+production readiness contract. Architecture hypotheses can additionally use
+[Lean formal preflights](docs/design/formal-autoresearch.md) to reject structural
+contradictions before training; these prove explicit abstractions and assumptions,
+never empirical quality or ship readiness.
 
 See [docs/design/decode-invariants.md](docs/design/decode-invariants.md) (goal law — constrained decoding, deterministic bypass, symbol-table speculation and scheduling, shared ops vocab, CRDT multi-turn), [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/grammar-topology-diffusion.md](docs/design/grammar-topology-diffusion.md) (dynamic production-tree diffusion), [docs/design/verified-scope-solver.md](docs/design/verified-scope-solver.md) (VSS0 verified scope-solver contract — prefix legality vs verified support), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/semantic-planning-valid-state-disposition.md](docs/design/semantic-planning-valid-state-disposition.md) (SPV4-02 final disposition), [docs/design/recurrent-semantic-computation-looped-latent-disposition.md](docs/design/recurrent-semantic-computation-looped-latent-disposition.md) (RSC4 blocked; not ship), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X15 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/dsl-pack-contract.md](docs/design/dsl-pack-contract.md) (F1 DSL-pack contract; OpenUI first pack), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/binding-aware-meaningful-v2.md](docs/design/binding-aware-meaningful-v2.md) (versioned binding-aware metric and gaming audit), [docs/design/judge-independence-audit.md](docs/design/judge-independence-audit.md) (EFS0-04 cross-family/human audit contract), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
@@ -384,7 +387,7 @@ when it is unset). That hook is what runs the changed-file checker.
 Agent hooks are narrower and are certified identical across harnesses by
 `python -m scripts.verify_agent_surfaces`:
 
-| Harness | Config | Blocks raw `mv` | Post-edit parity + version-stamp checks |
+| Harness | Config | Blocks raw `mv` | Post-edit parity, version, and case checks |
 | --- | --- | :-: | :-: |
 | Claude Code | [`.claude/settings.json`](.claude/settings.json) | yes | yes |
 | Codex | [`.codex/hooks.json`](.codex/hooks.json) | yes | yes |

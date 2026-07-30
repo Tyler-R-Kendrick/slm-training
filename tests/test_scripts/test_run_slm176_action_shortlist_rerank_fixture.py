@@ -5,11 +5,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 import scripts.run_slm176_action_shortlist_rerank_fixture as _runner_module
 from scripts.run_slm176_action_shortlist_rerank_fixture import main
 from slm_training.harnesses.experiments.slm176_action_shortlist_rerank import (
     build_cells,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(_runner_module, "_DESIGN_JSON", str(tmp_path / "design.json"))
+    monkeypatch.setattr(_runner_module, "_DESIGN_MD", str(tmp_path / "design.md"))
 
 
 def test_plan_only_writes_manifest(tmp_path) -> None:

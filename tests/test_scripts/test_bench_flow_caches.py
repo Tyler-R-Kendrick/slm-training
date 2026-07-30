@@ -16,7 +16,17 @@ def test_describe(capsys) -> None:
 
 def test_plan_only(tmp_path: Path) -> None:
     output_dir = tmp_path / "out"
-    assert main(["--plan-only", "--output-dir", str(output_dir)]) == 0
+    assert (
+        main(
+            [
+                "--plan-only",
+                "--output-dir",
+                str(output_dir),
+                "--no-write-design-docs",
+            ]
+        )
+        == 0
+    )
     report = output_dir / "slm193_flow_caches_report.json"
     assert report.exists()
     text = report.read_text()

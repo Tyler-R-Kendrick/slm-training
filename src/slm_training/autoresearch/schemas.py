@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 from slm_training.levers import MAX_RUN_MINUTES
 
@@ -454,6 +454,96 @@ class ExperimentKnobs(StrictModel):
         return self
 
 
+FormalProofPolicy = Literal["required", "advisory"]
+FormalProofStatus = Literal["proved", "refuted", "conditional", "unknown"]
+FormalEvidenceScope = Literal["universal", "bounded_instance", "conditional"]
+
+
+class FormalClaimV1(StrictModel):
+    """A hypothesis claim routed to one versioned formal template."""
+
+    template_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{2,127}$")
+    claim: str = Field(min_length=12)
+    policy: FormalProofPolicy = "advisory"
+
+
+class FormalObligationV1(StrictModel):
+    """Immutable link from a campaign lock to a formal-preflight artifact."""
+
+    obligation_id: str = Field(pattern=r"^formal-[0-9a-f]{16}$")
+    template_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{2,127}$")
+    policy: FormalProofPolicy
+    preflight_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class FormalPreflightV1(StrictModel):
+    """Auditable proof or counterexample result produced before execution."""
+
+    schema_version: Literal["FormalPreflightV1"] = "FormalPreflightV1"
+    campaign_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    experiment_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    obligation_id: str = Field(pattern=r"^formal-[0-9a-f]{16}$")
+    template_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{2,127}$")
+    template_version: str = Field(pattern=r"^v[1-9][0-9]*$")
+    claim: str = Field(min_length=12)
+    policy: FormalProofPolicy
+    status: FormalProofStatus
+    evidence_scope: FormalEvidenceScope
+    theorem: str = Field(min_length=1)
+    proof_target: str = Field(min_length=1)
+    checker_contract: str | None = None
+    assumptions: tuple[str, ...] = ()
+    open_assumptions: tuple[str, ...] = ()
+    source_digests: dict[str, str] = Field(min_length=1)
+    proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    lean_version: str = Field(min_length=1)
+    mathlib_version: str = Field(min_length=1)
+    build_output_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    counterexample: dict[str, Any] | None = None
+    duration_seconds: float = Field(ge=0)
+    created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_evidence(self) -> FormalPreflightV1:
+        invalid = {
+            path: digest
+            for path, digest in self.source_digests.items()
+            if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest)
+        }
+        if invalid:
+            raise ValueError(f"invalid source digests: {sorted(invalid)}")
+        if self.status == "refuted" and self.counterexample is None:
+            raise ValueError("refuted formal preflights require a counterexample")
+        if self.status == "proved" and self.open_assumptions:
+            raise ValueError("proved formal preflights cannot have open assumptions")
+        if self.status == "conditional" and not self.open_assumptions:
+            raise ValueError("conditional formal preflights require open assumptions")
+        return self
+
+
+class FormalTraceStepV1(StrictModel):
+    """JSON representation of one step accepted by ``Trace.validTrace``."""
+
+    before_removed: tuple[StrictInt, ...]
+    after_removed: tuple[StrictInt, ...]
+    certified: tuple[StrictInt, ...]
+    before_history: tuple[str, ...]
+    after_history: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def unique_sets(self) -> FormalTraceStepV1:
+        for label, values in (
+            ("before_removed", self.before_removed),
+            ("after_removed", self.after_removed),
+            ("certified", self.certified),
+        ):
+            if any(value < 0 for value in values):
+                raise ValueError(f"{label} must contain nonnegative integer ordinals")
+            if len(values) != len(set(values)):
+                raise ValueError(f"{label} must contain unique candidates")
+        return self
+
+
 class ExperimentSpec(StrictModel):
     experiment_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     campaign_id: str
@@ -464,6 +554,7 @@ class ExperimentSpec(StrictModel):
     stop_conditions: tuple[str, ...] = Field(min_length=1)
     citations: tuple[str, ...] = Field(min_length=1)
     knobs: ExperimentKnobs
+    formal_claims: tuple[FormalClaimV1, ...] = ()
     parent_experiment_id: str | None = None
     requires_rl: bool = False
     rl_readiness_report: str | None = None
@@ -475,6 +566,9 @@ class ExperimentSpec(StrictModel):
             raise ValueError("experiment must change at least one allowlisted knob")
         if self.requires_rl and not self.rl_readiness_report:
             raise ValueError("RL experiments require an approved readiness report")
+        template_ids = tuple(claim.template_id for claim in self.formal_claims)
+        if len(template_ids) != len(set(template_ids)):
+            raise ValueError("formal claim template identifiers must be unique")
         return self
 
 

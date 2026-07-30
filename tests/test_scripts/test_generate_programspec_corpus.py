@@ -7,9 +7,26 @@ from pathlib import Path
 
 import pytest
 
+from scripts import generate_programspec_corpus
 from scripts.generate_programspec_corpus import main
 
 _SMALL = ["--components", "TextContent,Button,Separator", "--max-depth", "3", "--max-width", "3"]
+
+
+@pytest.fixture(autouse=True)
+def _isolate_fixture_design_docs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        generate_programspec_corpus,
+        "_FIXTURE_DESIGN_JSON",
+        str(tmp_path / "programspec-coverage.json"),
+    )
+    monkeypatch.setattr(
+        generate_programspec_corpus,
+        "_FIXTURE_DESIGN_MD",
+        str(tmp_path / "programspec-coverage.md"),
+    )
 
 
 def _records(out_dir: Path) -> list[dict]:

@@ -6,6 +6,8 @@ import json
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.paraphrase_provenance import (
     ApiKeyStubProviderV1,
     DeterministicFixtureProviderV1,
@@ -419,14 +421,7 @@ def test_api_key_stub_never_calls_network_without_a_wired_transport(
 
 @pytest.mark.parametrize(
     "kwargs",
-    [
-        {"temperature": -0.1},
-        {"temperature": 2.1},
-        {"top_p": 0.0},
-        {"top_p": 1.1},
-        {"max_tokens": 0},
-        {"max_tokens": -5},
-    ],
+    case_values(__file__, "test_sampling_params_rejects_out_of_range_values"),
 )
 def test_sampling_params_rejects_out_of_range_values(kwargs) -> None:
     with pytest.raises(ValueError):

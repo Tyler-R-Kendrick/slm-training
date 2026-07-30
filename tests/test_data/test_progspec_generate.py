@@ -223,8 +223,8 @@ def test_required_switch_topology_covers_content_and_nonempty_items() -> None:
     assert all(
         "SwitchGroup(" in source and "[switchitem" in source for source in sources
     )
-    assert all(source.count(":gen") >= 2 for source in sources)
-    assert all(source.count(":gen") >= 3 for source in sources)
+    assert all(len(extract_placeholders(source)) >= 3 for source in sources)
+    assert all(":gen" not in source for source in sources)
 
 
 def test_required_content_properties_force_the_direct_settings_slot_shape() -> None:
@@ -242,9 +242,9 @@ def test_required_content_properties_force_the_direct_settings_slot_shape() -> N
 
     sources = [program.canonical_openui for program in programs]
     assert all("SwitchGroup(" not in source for source in sources)
-    assert all('SwitchItem(":gen' in source for source in sources)
-    assert all('Slider("' in source and ":gen" in source for source in sources)
-    assert all(source.count(":gen") == 3 for source in sources)
+    assert all('SwitchItem(":slot_' in source for source in sources)
+    assert all('Slider("' in source and ":slot_" in source for source in sources)
+    assert all(len(extract_placeholders(source)) == 3 for source in sources)
 
 
 def test_required_form_topology_resolves_anyof_input_refs() -> None:

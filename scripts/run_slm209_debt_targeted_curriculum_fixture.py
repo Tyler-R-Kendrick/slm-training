@@ -49,6 +49,9 @@ def _build_payload(
     total_decision_budget: int,
     per_group_cap: int,
     seed: int,
+    write_design_docs: bool,
+    design_json: Path | None,
+    design_md: Path | None,
 ) -> tuple[dict[str, Any], str]:
     cells = build_cells(
         seeds,
@@ -91,7 +94,9 @@ def _build_payload(
         total_decision_budget=total_decision_budget,
         per_group_cap=per_group_cap,
         seed=seed,
-        write_design_docs=True,
+        write_design_docs=write_design_docs,
+        design_json=design_json,
+        design_md=design_md,
     )
     payload = manifest.to_dict()
     command = "python -m scripts.run_slm209_debt_targeted_curriculum_fixture --mode fixture"
@@ -240,6 +245,9 @@ def main(argv: list[str] | None = None) -> int:
         args.total_decision_budget,
         args.per_group_cap,
         args.seed,
+        args.write_design_docs,
+        args.design_json,
+        args.design_md,
     )
     payload["schema"] = "DebtCurriculumManifestV1"
     payload["claim_class"] = "wiring"

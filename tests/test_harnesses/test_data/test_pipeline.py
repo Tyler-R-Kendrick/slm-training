@@ -12,6 +12,7 @@ from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.data.leakage import load_train_fingerprints
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+from slm_training.versioning import component_version
 
 pytestmark = pytest.mark.skipif(
     not bridge_available(),
@@ -65,7 +66,9 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
     out_dir = Path(result["output_dir"])
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["suite_counts"]["smoke"] == 1
-    assert manifest["version_stamp"]["components"] == {"data.test_build": "v10"}
+    assert manifest["version_stamp"]["components"] == {
+        "data.test_build": component_version("data.test_build")
+    }
     assert result["stats"]["version_stamp"] == manifest["version_stamp"]
     assert (out_dir / "suites" / "smoke" / "records.jsonl").exists()
 

@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 from slm_training.levers import MAX_RUN_MINUTES
@@ -20,6 +21,12 @@ from slm_training.autoresearch.engine import (
     validate_hypothesis_matrix,
 )
 from slm_training.autoresearch.evidence import collect_evidence
+from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
+from slm_training.autoresearch.formal import (
+    bind_preflight,
+    run_formal_preflight,
+    validate_formal_preflights,
+)
 from slm_training.autoresearch.hypothesizer_eval import evaluate_hypothesizer
 from slm_training.autoresearch.literature import (
     HuggingFacePapersClient,
@@ -54,7 +61,6 @@ from slm_training.autoresearch.schemas import (
     ResearcherRun,
     ResearchSource,
 )
-from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
 from slm_training.autoresearch.storage import (
     CampaignStore,
     loop_result_rows,
@@ -738,6 +744,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 )
             if manifest.source_dirty:
                 raise ValueError("continuous manifest source must be clean")
+        validate_formal_preflights(store.root, experiment, manifest)
         lock = store.lock_experiment_campaign(manifest)
     else:
         try:
@@ -745,7 +752,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         except FileNotFoundError:
             lock = None
     if args.execute and lock is None:
-        raise ValueError("execution requires a preregistered --campaign-manifest lock")
+        raise ValueError(
+            "execution requires a preregistered --campaign-manifest lock"
+        )
+    if lock is not None and manifest_path is None:
+        validate_formal_preflights(store.root, experiment, lock.manifest)
     if lock is not None and lock.manifest.requires_rl:
         if not experiment.requires_rl or not experiment.rl_readiness_report:
             raise ValueError("RL campaign requires experiment readiness evidence")
@@ -867,6 +878,68 @@ def cmd_run(args: argparse.Namespace) -> int:
     if optimum is not None and optimum.policy == "stop":
         return 2
     return 0 if outcome.status == "completed" else 2
+
+
+def cmd_formalize(args: argparse.Namespace) -> int:
+    store = _store(args)
+    campaign = store.load_campaign()
+    matrix = _latest_formed_matrix(store)
+    assert matrix is not None
+    if args.experiment:
+        experiment = ExperimentSpec.model_validate_json(
+            args.experiment.read_text(encoding="utf-8")
+        )
+    else:
+        experiment = next(
+            item.experiment
+            for item in matrix.hypotheses
+            if item.experiment.experiment_id == matrix.recommended_experiment_id
+        )
+    _require_hypothesis_matrix(store, campaign, experiment)
+    if not experiment.formal_claims:
+        raise ValueError("experiment declares no formal claims")
+    rows: list[dict[str, object]] = []
+    required_blocked = False
+    deadline = time.monotonic() + float(campaign.budget.max_wall_minutes * 60)
+    for claim in experiment.formal_claims:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("formal preflight campaign budget exhausted")
+        preflight, obligation = run_formal_preflight(
+            campaign.campaign_id,
+            experiment,
+            claim,
+            timeout_seconds=remaining,
+        )
+        path = store.write_artifact("formal_preflights", preflight)
+        obligation = bind_preflight(obligation, path.stem)
+        event_type = (
+            "formal_hypothesis_refuted"
+            if preflight.status == "refuted"
+            else "formal_preflight_completed"
+        )
+        store.append_event(
+            event_type,
+            experiment_id=experiment.experiment_id,
+            status=preflight.status,
+            artifact_sha256=path.stem,
+            detail={
+                "obligation_id": obligation.obligation_id,
+                "template_id": obligation.template_id,
+                "policy": obligation.policy,
+            },
+        )
+        required_blocked |= (
+            obligation.policy == "required" and preflight.status != "proved"
+        )
+        rows.append(
+            {
+                "formal_obligation": obligation.model_dump(mode="json"),
+                "preflight": preflight.model_dump(mode="json"),
+            }
+        )
+    print(json.dumps({"results": rows}, indent=2))
+    return 2 if required_blocked else 0
 
 
 def cmd_diagnose(args: argparse.Namespace) -> int:
@@ -1180,6 +1253,15 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--evidence", type=Path)
     validate.add_argument("--sources", type=Path)
     validate.set_defaults(func=cmd_validate)
+
+    formalize = sub.add_parser("formalize")
+    formalize.add_argument("--campaign-id", required=True)
+    formalize.add_argument(
+        "--experiment",
+        type=Path,
+        help="Exact matrix member; defaults to the matrix recommendation.",
+    )
+    formalize.set_defaults(func=cmd_formalize)
 
     run = sub.add_parser("run")
     run.add_argument("--campaign-id", required=True)

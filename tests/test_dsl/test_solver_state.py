@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
     CompletionPath,
@@ -95,13 +97,7 @@ def test_fingerprint_changes_for_each_hard_field(changed) -> None:
 
 @pytest.mark.parametrize(
     "field",
-    [
-        "max_tokens",
-        "max_nodes",
-        "max_depth",
-        "max_backtracks",
-        "max_verifier_calls",
-    ],
+    case_values(__file__, "test_fingerprint_changes_for_each_bound"),
 )
 def test_fingerprint_changes_for_each_bound(field: str) -> None:
     base = state(hole("a", (value(1), value(2))))

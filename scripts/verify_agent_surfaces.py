@@ -177,6 +177,11 @@ OBLIGATIONS: tuple[Obligation, ...] = (
         requires=_on(PRIMARY_SURFACES, "verify_version_stamps"),
     ),
     Obligation(
+        id="test-cases.agent-refresh",
+        why="agents refresh committed cases while ordinary tests and CI stay read-only",
+        requires=_on(PRIMARY_SURFACES, "refresh_test_cases"),
+    ),
+    Obligation(
         id="dashboard.openui-parity",
         why="a page change that leaves interpreted mode wrong is incomplete work",
         requires=_on(PRIMARY_SURFACES, "dashboard-openui-parity"),
@@ -215,6 +220,7 @@ OBLIGATIONS: tuple[Obligation, ...] = (
             HOOK_CONFIGS + (".github/hooks/changed-tests.json",),
             "validate_page_dsl.py --changed",
             "scripts.verify_version_stamps --post-tool-use",
+            "scripts.refresh_test_cases --check --changed",
         ),
         scope="hooks",
     ),

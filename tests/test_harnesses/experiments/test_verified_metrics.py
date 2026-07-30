@@ -8,6 +8,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.autoresearch.experiment_campaign import (
     CampaignResultV1,
     campaign_manifest_sha256,
@@ -199,11 +201,7 @@ def test_band_evidence_binds_expectations_and_observations(tmp_path: Path) -> No
 
 @pytest.mark.parametrize(
     ("authority", "relation", "policy"),
-    [
-        ("assumption_backed", "in_band", "continue"),
-        ("assumption_backed", "above", "block_promotion_and_diagnose"),
-        ("theorem", "below", "stop"),
-    ],
+    case_values(__file__, "test_optimum_feedback_uses_tiered_policy"),
 )
 def test_optimum_feedback_uses_tiered_policy(
     tmp_path: Path, authority: str, relation: str, policy: str

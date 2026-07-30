@@ -64,6 +64,10 @@ def test_fixture_mode_emits_training_manifest(tmp_path: Path) -> None:
             "--arms",
             "canonical_greedy",
             "--emit-training-manifest",
+            "--design-json",
+            str(tmp_path / "iter.json"),
+            "--design-md",
+            str(tmp_path / "iter.md"),
         ]
     )
     assert rc == 0

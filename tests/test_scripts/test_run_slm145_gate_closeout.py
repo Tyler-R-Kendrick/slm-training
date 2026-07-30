@@ -10,6 +10,11 @@ import pytest
 from scripts.run_slm145_gate_closeout import main
 
 
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+
 @pytest.fixture
 def args(tmp_path: Path) -> list[str]:
     return ["--output-dir", str(tmp_path / "out")]

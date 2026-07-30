@@ -6,6 +6,8 @@ import hashlib
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.paraphrase_provenance import SamplingParamsV1
 from slm_training.dsl.semantic_frame import CAP1SchemaV1, derive_semantic_frame
 from slm_training.harnesses.train_data.frame_paraphrases import (
@@ -189,14 +191,7 @@ def test_detector_built_from_frame(frame) -> None:
 
 @pytest.mark.parametrize(
     "text,fragment",
-    [
-        ("Use Card( here", "dsl_syntax:Card("),
-        ("A TextContent( node", "dsl_syntax:TextContent("),
-        ("bare TextContent token", "dsl_component_token:TextContent"),
-        ("fill :ns.body with copy", "marker_surface::ns.body"),
-        ("bind $ns.body here", "marker_surface:$ns.body"),
-        ("see ast_path for details", "provenance_field:ast_path"),
-    ],
+    case_values(__file__, "test_detector_catches_leaks"),
 )
 def test_detector_catches_leaks(frame, text, fragment) -> None:
     ok, reasons = FrameLeakDetectorV1.from_frame(frame).check(text)

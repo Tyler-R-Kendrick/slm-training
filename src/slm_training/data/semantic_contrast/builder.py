@@ -33,7 +33,11 @@ from slm_training.data.semantic_plan.extract import OpenUISemanticPlanExtractor
 from slm_training.data.semantic_plan.canonicalize import plan_factor_fingerprints
 from slm_training.data.semantic_plan.seed import PlanSeedBuilder
 from slm_training.data.store import DataStore, write_common_manifest
-from slm_training.data.verify import VerificationContext, run_preview_verifier_many, verify_record
+from slm_training.data.verify import (
+    VerificationContext,
+    run_preview_verifier_many,
+    verify_record,
+)
 from slm_training.dsl.pack import get_pack
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
@@ -209,17 +213,26 @@ class SemanticContrastBuilder:
     def _build_sources(self) -> tuple[ProgramSpec, ...]:
         if self.wide_sources:
             groups = tuple(
-                tuple("Button" if (mask >> bit) & 1 else "TextContent" for bit in range(10))
+                tuple(
+                    "Button" if (mask >> bit) & 1 else "TextContent"
+                    for bit in range(10)
+                )
                 for mask in range(1 << 10)
             )
             generator = ProgramGenerator(
                 GeneratorConfig(
-                    components=("TextContent", "Button"), max_depth=2, max_width=10,
-                    selected_groups=groups, split="train",
-                ), seed=self.seed,
+                    components=("TextContent", "Button"),
+                    max_depth=2,
+                    max_width=10,
+                    selected_groups=groups,
+                    split="train",
+                ),
+                seed=self.seed,
             )
             result = generator.generate(self.source_count)
-            return tuple(self._with_opaque_markers(source) for source in result.programs)
+            return tuple(
+                self._with_opaque_markers(source) for source in result.programs
+            )
         config = GeneratorConfig(
             max_depth=2,
             max_width=3,
@@ -293,10 +306,15 @@ class SemanticContrastBuilder:
         after_factors = plan_factor_fingerprints(candidate.plan)
         semantic_delta = {
             name: {"before": before_factors[name], "after": after_factors[name]}
-            for name in before_factors if before_factors[name] != after_factors[name]
+            for name in before_factors
+            if before_factors[name] != after_factors[name]
         }
         declared_delta_count = len(set(semantic_delta) - {"exact"})
-        if self.strict_delta and family is not ContrastFamily.POSITIVE and declared_delta_count != 1:
+        if (
+            self.strict_delta
+            and family is not ContrastFamily.POSITIVE
+            and declared_delta_count != 1
+        ):
             return None
         if family is ContrastFamily.POSITIVE:
             # Positive controls keep the original surface so the control pair
@@ -361,9 +379,7 @@ class SemanticContrastBuilder:
             if family is ContrastFamily.POSITIVE
             else not bool(negative_score.get("verdict"))
         )
-        admitted = bool(
-            positive_score.get("verdict") and negative_has_expected_verdict
-        )
+        admitted = bool(positive_score.get("verdict") and negative_has_expected_verdict)
         pair_id = f"{source.id}_{transform_id}_{split}"
         return ContrastPair(
             pair_id=pair_id,
@@ -434,9 +450,7 @@ class SemanticContrastBuilder:
                 records.append(pair.negative)
 
         if self.require_runtime:
-            surfaces = tuple(
-                dict.fromkeys(record.record.openui for record in records)
-            )
+            surfaces = tuple(dict.fromkeys(record.record.openui for record in records))
             evidence = dict(zip(surfaces, run_preview_verifier_many(surfaces)))
             admitted_pairs: list[ContrastPair] = []
             records = []
@@ -447,34 +461,65 @@ class SemanticContrastBuilder:
                     report = verify_record(
                         row.record,
                         VerificationContext(
-                            source_kind="program", runtime=runtime,
+                            source_kind="program",
+                            runtime=runtime,
                             require_runtime=True,
                         ),
                     )
-                    sides.append(replace(
-                        row, verifier_ok=report.ok,
-                        verifier_tier=report.tier.value,
-                        meta={**row.meta, "runtime_evidence": runtime.to_dict(),
-                              "verification": report.to_dict()},
-                    ))
+                    sides.append(
+                        replace(
+                            row,
+                            verifier_ok=report.ok,
+                            verifier_tier=report.tier.value,
+                            meta={
+                                **row.meta,
+                                "runtime_evidence": runtime.to_dict(),
+                                "verification": report.to_dict(),
+                            },
+                        )
+                    )
                 checked = replace(
-                    pair, positive=sides[0], negative=sides[1],
-                    admitted=pair.admitted and sides[0].verifier_ok and sides[1].verifier_ok,
-                    admission_reason=(pair.admission_reason if pair.admitted else pair.admission_reason) or (
-                        None if sides[0].verifier_ok and sides[1].verifier_ok else "runtime_failed"),
+                    pair,
+                    positive=sides[0],
+                    negative=sides[1],
+                    admitted=pair.admitted
+                    and sides[0].verifier_ok
+                    and sides[1].verifier_ok,
+                    admission_reason=(
+                        pair.admission_reason
+                        if pair.admitted
+                        else pair.admission_reason
+                    )
+                    or (
+                        None
+                        if sides[0].verifier_ok and sides[1].verifier_ok
+                        else "runtime_failed"
+                    ),
                 )
                 if checked.admitted:
                     admitted_pairs.append(checked)
                     records.extend(sides)
                 else:
-                    rejected.append({"source_id": checked.source_program_id,
-                                     "transform_id": checked.transform_id,
-                                     "reason": checked.admission_reason or "runtime_failed"})
+                    rejected.append(
+                        {
+                            "source_id": checked.source_program_id,
+                            "transform_id": checked.transform_id,
+                            "reason": checked.admission_reason or "runtime_failed",
+                        }
+                    )
             pairs = admitted_pairs
 
-        mutation_classes = sorted({pair.transform_id for pair in pairs if pair.family is not ContrastFamily.POSITIVE})
+        mutation_classes = sorted(
+            {
+                pair.transform_id
+                for pair in pairs
+                if pair.family is not ContrastFamily.POSITIVE
+            }
+        )
         if len(pairs) < self.min_pairs:
-            raise RuntimeError(f"admitted pairs {len(pairs)} below required minimum {self.min_pairs}")
+            raise RuntimeError(
+                f"admitted pairs {len(pairs)} below required minimum {self.min_pairs}"
+            )
         if len(mutation_classes) < self.min_mutation_classes:
             raise RuntimeError(
                 f"mutation classes {len(mutation_classes)} below required minimum {self.min_mutation_classes}"
@@ -511,17 +556,36 @@ class SemanticContrastBuilder:
             json.dumps(summary, indent=2) + "\n", encoding="utf-8"
         )
         (self.output_dir / "source_manifest.json").write_text(
-            json.dumps({"seed": self.seed, "sources": [source.id for source in sources]}, indent=2) + "\n",
+            json.dumps(
+                {"seed": self.seed, "sources": [source.id for source in sources]},
+                indent=2,
+            )
+            + "\n",
             encoding="utf-8",
         )
         (self.output_dir / "quality_report.json").write_text(
-            json.dumps({"schema": "semantic_contrast_quality/v1", "pairs": len(pairs),
-                        "mutation_classes": mutation_classes, "warnings": []}, indent=2) + "\n",
+            json.dumps(
+                {
+                    "schema": "semantic_contrast_quality/v1",
+                    "pairs": len(pairs),
+                    "mutation_classes": mutation_classes,
+                    "warnings": [],
+                },
+                indent=2,
+            )
+            + "\n",
             encoding="utf-8",
         )
         (self.output_dir / "synthesis_feedback.json").write_text(
-            json.dumps({"schema": "synthesis_feedback/v1", "recommendations": [],
-                        "experiment_candidates": []}, indent=2) + "\n",
+            json.dumps(
+                {
+                    "schema": "synthesis_feedback/v1",
+                    "recommendations": [],
+                    "experiment_candidates": [],
+                },
+                indent=2,
+            )
+            + "\n",
             encoding="utf-8",
         )
 
@@ -587,13 +651,9 @@ class SemanticContrastBuilder:
                     false_negatives / len(negative_rows) if negative_rows else 0.0
                 )
                 reason_rows = negative_rows
-            mean_reasons = (
-                sum(
-                    len(r.meaningful_report.get("reason_codes", []))
-                    for r in reason_rows
-                )
-                / max(1, len(reason_rows))
-            )
+            mean_reasons = sum(
+                len(r.meaningful_report.get("reason_codes", [])) for r in reason_rows
+            ) / max(1, len(reason_rows))
             reasons = Counter(
                 reason
                 for r in reason_rows
