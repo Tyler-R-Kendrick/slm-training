@@ -71,6 +71,10 @@ Parity across harnesses is enforced by
   metric / gate / harness / matrix file requires a component bump (or a
   `no-bump:` history note) in `src/slm_training/resources/versions.json` —
   `python -m scripts.verify_version_stamps --check` enforces it.
+- **External test cases.** Agents edit mirrored JSON cases under
+  `src/slm_training/resources/test_cases/` and refresh snapshots with
+  `python -m scripts.refresh_test_cases <test-or-resource>`. Ordinary tests and
+  CI stay read-only; run `refresh_test_cases --check --changed` before finishing.
 - **Dashboard parity.** When you change a dashboard page
   (`src/apps/dashboard/src/pages/*.tsx`), keep its interpreted-mode
   `src/slm_training/web/static/openui/*.openui` program at parity and run

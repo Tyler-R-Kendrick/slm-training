@@ -516,6 +516,15 @@ which revision of the constraints produced it. Contract:
 
 ## Engineering norms
 
+- JSON-shaped pytest cases live in mirrored
+  `src/slm_training/resources/test_cases/<test path>.json` files. Agents change
+  inputs there and refresh snapshots with
+  `python -m scripts.refresh_test_cases <test-or-resource>`; ordinary tests and
+  CI are read-only. Before finishing, run
+  `python -m scripts.extract_test_cases` and
+  `python -m scripts.refresh_test_cases --check --changed`. Runtime eval/gate
+  policy belongs under `src/slm_training/resources/evals/`; never weaken ship
+  gates or edit a frozen eval version in place.
 - Prefer harness/script changes over one-off notebooks.
 - Preserve train/test isolation and structural leakage checks.
 - Never reintroduce silent `gold.placeholders` channels under

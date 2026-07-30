@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.harnesses.experiments.semantic_floor_gate import (
     SemanticFloorGateV1,
     build_semantic_floor_gate,
@@ -32,11 +34,7 @@ def test_current_sde5_bundle_is_inconclusive(repo_root: Path) -> None:
 
 @pytest.mark.parametrize(
     ("strict", "n", "proxy_moved", "expected"),
-    [
-        (None, 8, True, "inconclusive"),  # syntax-only / unmeasured
-        (0.0, 8, True, "proxy_only"),  # meaning-v1/proxy moved, strict stayed at floor
-        (0.2, 7, True, "inconclusive"),  # n < 8
-    ],
+    case_values(__file__, "test_nonqualifying_evidence_cannot_escape_floor"),
 )
 def test_nonqualifying_evidence_cannot_escape_floor(
     strict: float | None, n: int, proxy_moved: bool, expected: str
@@ -79,13 +77,18 @@ def test_gaming_and_unresolved_identity_fail_closed() -> None:
         agentv_contradiction=False,
         proxy_moved=True,
     )
-    assert decide_verdict(**common, identities_resolved=True, gaming_explains_gain=True) == "rejected"
+    assert (
+        decide_verdict(**common, identities_resolved=True, gaming_explains_gain=True)
+        == "rejected"
+    )
     assert decide_verdict(**common, identities_resolved=False) == "inconclusive"
 
 
 def test_gate_hash_changes_with_evidence_or_evaluator_version(repo_root: Path) -> None:
     gate = build_semantic_floor_gate(repo_root=repo_root)
-    changed_eval = replace(gate, evaluator_versions={**gate.evaluator_versions, "@agentv/core": "next"})
+    changed_eval = replace(
+        gate, evaluator_versions={**gate.evaluator_versions, "@agentv/core": "next"}
+    )
     changed_evidence = replace(
         gate,
         evidence=(replace(gate.evidence[0], sha256="0" * 64), *gate.evidence[1:]),
@@ -94,7 +97,9 @@ def test_gate_hash_changes_with_evidence_or_evaluator_version(repo_root: Path) -
     assert gate.gate_hash != changed_evidence.gate_hash
 
 
-def test_claim_authorization_blocks_semantics_but_allows_diagnostics(repo_root: Path) -> None:
+def test_claim_authorization_blocks_semantics_but_allows_diagnostics(
+    repo_root: Path,
+) -> None:
     gate = build_semantic_floor_gate(repo_root=repo_root)
     assert require_floor_gate(gate, "diagnostic") is gate
     for claim in ("semantic_prediction", "semantic_causal", "learned_latent"):
@@ -124,5 +129,7 @@ def test_reference_validator_detects_tamper(repo_root: Path, tmp_path: Path) -> 
     target = tmp_path / relative
     target.parent.mkdir(parents=True)
     target.write_text(json.dumps({"tampered": True}), encoding="utf-8")
-    failures = validate_gate_references(replace(gate, evidence=(gate.evidence[0],)), repo_root=tmp_path)
+    failures = validate_gate_references(
+        replace(gate, evidence=(gate.evidence[0],)), repo_root=tmp_path
+    )
     assert "SHA-256 mismatch" in failures[0]

@@ -5,6 +5,8 @@ from dataclasses import replace
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.dsl.operators import (
     ActionEffectV1,
     ApplicationProvenanceV1,
@@ -62,7 +64,9 @@ def _executor(state, arguments):
         source=state.source.replace(":hero.title", ":hero.body"),
         effect=ActionEffectV1(
             property_deltas=(
-                EffectDeltaV1(EffectDeltaKind.PROPERTY, ref, ":hero.title", ":hero.body"),
+                EffectDeltaV1(
+                    EffectDeltaKind.PROPERTY, ref, ":hero.title", ":hero.body"
+                ),
             ),
             compiler_coverage=CompilerCoverage.EXACT,
             estimated_completion_cost=1.0,
@@ -118,18 +122,14 @@ def test_ast_edit_turn_with_unrecognized_fingerprint_is_a_typed_error() -> None:
     library, application = _library_and_application()
     application = {**application, "operator_fingerprint": "0" * 64}
     with pytest.raises(OpsVocabConditioningError, match="operator fingerprint"):
-        resolve_turn_op_ids({"operation": "ast_edit", "application": application}, library)
+        resolve_turn_op_ids(
+            {"operation": "ast_edit", "application": application}, library
+        )
 
 
 @pytest.mark.parametrize(
     "operation, expected",
-    [
-        ("undo", "conversation.undo"),
-        ("redo", "conversation.redo"),
-        ("fork", "conversation.fork"),
-        ("checkout_state", "conversation.checkout_state"),
-        ("copy_state", "conversation.copy_state"),
-    ],
+    case_values(__file__, "test_history_operations_map_onto_their_reserved_id"),
 )
 def test_history_operations_map_onto_their_reserved_id(
     operation: str, expected: str

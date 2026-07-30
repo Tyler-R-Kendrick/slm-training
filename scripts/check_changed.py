@@ -32,7 +32,10 @@ GLOBAL_TEST_FILES = {
     "setup.cfg",
     "setup.py",
     "tests/conftest.py",
+    "tests/casefiles.py",
 }
+CASE_RESOURCE_PREFIX = "src/slm_training/resources/test_cases/"
+EVAL_RESOURCE_PREFIX = "src/slm_training/resources/evals/"
 NON_PYTHON_LOCKFILES = {
     "package-lock.json",
     "src/apps/dashboard/package-lock.json",
@@ -41,10 +44,16 @@ NON_PYTHON_LOCKFILES = {
 }
 SUITES_BY_PREFIX = (
     (".agents/skills/autotrain/", ("tests/test_scripts/test_slm_cli.py",)),
-    (".agents/skills/autoresearch/", ("tests/test_scripts/test_autoresearch_skill.py",)),
+    (
+        ".agents/skills/autoresearch/",
+        ("tests/test_scripts/test_autoresearch_skill.py",),
+    ),
     ("docs/brains/", ("tests/test_scripts/test_autoresearch_skill.py",)),
     ("gpu_multi_farm/", ("tests/test_gpu_multi_farm",)),
-    ("src/slm_training/dsl/grammars/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
+    (
+        "src/slm_training/dsl/grammars/",
+        ("tests/test_dsl", "tests/test_harnesses/model_build"),
+    ),
     (
         "scripts/build_train_data.py",
         ("tests/test_data", "tests/test_harnesses/train_data"),
@@ -65,7 +74,11 @@ SUITES_BY_PREFIX = (
     ),
     (
         "scripts/train_",
-        ("tests/test_harnesses/model_build", "tests/test_harnesses/quality", "tests/test_harnesses/rl"),
+        (
+            "tests/test_harnesses/model_build",
+            "tests/test_harnesses/quality",
+            "tests/test_harnesses/rl",
+        ),
     ),
     (
         "scripts/evaluate_",
@@ -99,7 +112,10 @@ SUITES_BY_PREFIX = (
     ),
     ("src/slm_training/autoresearch/", ("tests/test_autoresearch",)),
     ("src/slm_training/dsl/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
-    ("src/slm_training/evals/", ("tests/test_evals", "tests/test_harnesses/model_build")),
+    (
+        "src/slm_training/evals/",
+        ("tests/test_evals", "tests/test_harnesses/model_build"),
+    ),
     (
         "src/slm_training/harness_core/",
         (
@@ -160,7 +176,19 @@ SUITES_BY_PREFIX = (
     ("src/apps/dashboard/", ("tests/test_web",)),
     ("src/apps/openui_preview/", ("tests/test_web",)),
 )
-CODE_SUFFIXES = {".c", ".css", ".html", ".js", ".json", ".mjs", ".py", ".ts", ".tsx", ".yaml", ".yml"}
+CODE_SUFFIXES = {
+    ".c",
+    ".css",
+    ".html",
+    ".js",
+    ".json",
+    ".mjs",
+    ".py",
+    ".ts",
+    ".tsx",
+    ".yaml",
+    ".yml",
+}
 HOOK_TEST_FILE_LIMIT = 100
 
 
@@ -206,10 +234,29 @@ def select_tests(paths: list[str]) -> list[str]:
             if (ROOT / path).is_file():
                 targets.add(path)
             continue
+        if path.startswith(CASE_RESOURCE_PREFIX) and path.endswith(".json"):
+            relative = Path(path.removeprefix(CASE_RESOURCE_PREFIX)).with_suffix(".py")
+            test_path = Path("tests") / relative
+            if (ROOT / test_path).is_file():
+                targets.add(test_path.as_posix())
+            continue
+        if path == f"{EVAL_RESOURCE_PREFIX}openui_ship_gates_v5.json":
+            targets.update(
+                {
+                    "tests/test_harness_core/test_gate_engine_golden.py",
+                    "tests/test_harnesses/model_build/test_eval_gates.py",
+                }
+            )
+            continue
+        if path.startswith(EVAL_RESOURCE_PREFIX):
+            targets.update({"tests/test_evals", "tests/test_harnesses/model_build"})
+            continue
         if path == "src/slm_training/harnesses/model_build/ship_gates.py":
             targets.add("tests/test_harnesses/model_build/test_eval_gates.py")
             continue
-        matches = [suites for prefix, suites in SUITES_BY_PREFIX if path.startswith(prefix)]
+        matches = [
+            suites for prefix, suites in SUITES_BY_PREFIX if path.startswith(prefix)
+        ]
         if matches:
             targets.update(suite for suites in matches for suite in suites)
             continue
@@ -235,7 +282,10 @@ def select_changed_tests(paths: list[str]) -> list[str]:
     changed = {
         path
         for path in paths
-        if path.startswith("tests/") and path.endswith(".py") and (ROOT / path).is_file()
+        if path.startswith("tests/")
+        and path.endswith(".py")
+        and Path(path).name.startswith("test_")
+        and (ROOT / path).is_file()
     }
     return sorted(changed) if changed else select_tests(paths)
 
@@ -254,6 +304,7 @@ def check(
     staged: bool = False,
     test_shard_index: int = 0,
     test_shard_count: int = 1,
+    base_ref: str | None = None,
 ) -> int:
     policy_errors = validate_repository()
     if policy_errors:
@@ -266,14 +317,39 @@ def check(
         stamp_command.append("--staged")
     if _run(stamp_command):
         return 1
+    case_paths = [
+        path
+        for path in paths
+        if path.startswith(CASE_RESOURCE_PREFIX)
+        or path.startswith(EVAL_RESOURCE_PREFIX)
+    ]
+    if case_paths:
+        case_command = [
+            sys.executable,
+            "-m",
+            "scripts.refresh_test_cases",
+            "--check",
+        ]
+        if base_ref:
+            case_command.extend(["--base-ref", base_ref])
+        resource_cases = [
+            path for path in case_paths if path.startswith(CASE_RESOURCE_PREFIX)
+        ]
+        case_command.extend(resource_cases or ["--changed"])
+        if _run(case_command):
+            return 1
     # Cheap, no imports beyond stdlib: every configured harness must still
     # carry every repository law. Only re-checked when a surface changed.
     if any(path in AGENT_SURFACE_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_agent_surfaces"]):
             return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
-    python_paths = [path for path in paths if path.endswith(".py") and (ROOT / path).is_file()]
-    print(f"changed-check: {len(paths)} file(s), pytest targets: {', '.join(tests) or 'none'}")
+    python_paths = [
+        path for path in paths if path.endswith(".py") and (ROOT / path).is_file()
+    ]
+    print(
+        f"changed-check: {len(paths)} file(s), pytest targets: {', '.join(tests) or 'none'}"
+    )
     if changed_tests_only and len(paths) > HOOK_TEST_FILE_LIMIT:
         print(
             f"changed-check: pytest deferred for large diff ({len(paths)} > "
@@ -309,7 +385,9 @@ def _remove_nested_targets(targets: set[str]) -> list[str]:
     return sorted(
         target
         for target in targets
-        if not any(target.startswith(parent.rstrip("/") + "/") for parent in targets - {target})
+        if not any(
+            target.startswith(parent.rstrip("/") + "/") for parent in targets - {target}
+        )
     )
 
 
@@ -366,9 +444,7 @@ def _run_changed_tests_parallel(
     batch_count = min(len(nodes), workers * 2)
     batches = _shard_test_nodes(nodes, batch_count)
     commands = [
-        [sys.executable, "-m", "pytest", "-q", *batch]
-        for batch in batches
-        if batch
+        [sys.executable, "-m", "pytest", "-q", *batch] for batch in batches if batch
     ]
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=workers
@@ -454,7 +530,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         if result.returncode:
             detail = (result.stdout + result.stderr)[-8000:]
-            print(json.dumps({"decision": "block", "reason": f"Changed tests failed:\n{detail}"}))
+            print(
+                json.dumps(
+                    {"decision": "block", "reason": f"Changed tests failed:\n{detail}"}
+                )
+            )
         else:
             print(json.dumps({"decision": "allow"}))
         return 0
@@ -464,6 +544,7 @@ def main(argv: list[str] | None = None) -> int:
         staged=args.staged,
         test_shard_index=args.test_shard_index,
         test_shard_count=args.test_shard_count,
+        base_ref=args.base_ref,
     )
 
 

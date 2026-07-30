@@ -18,6 +18,7 @@ while verifying Phase 1 and is **not** fixed here — see its entry.
 | Guard | Covers |
 | --- | --- |
 | `python -m scripts.verify_agent_surfaces` | every repository law on every instruction surface, plus hook parity (B1–B3) |
+| `python -m scripts.refresh_test_cases --check` | external case schema, stable identities, frozen eval versions, and non-weakened gate policy |
 | `tests/test_dsl/test_tokenizer_grammar_invariants.py` | tokenizer layout, pinned without the Node bridge (A1, A2) |
 | `python -m scripts.verify_tokenizer_grammar_invariants` | full certificate incl. live-library agreement (A1) |
 | `scripts/repo_policy.py::validate_skill_mirrors` | skill mirrors in **both** directions (B6) |
@@ -180,7 +181,7 @@ check, and every one of them had drifted.** The table below is the state at
 audit time; every ❌ is now ✅ and certified.
 
 **Fixed.** `scripts/verify_agent_surfaces.py` owns a declarative
-obligation × surface matrix covering twelve laws plus hook parity;
+obligation × surface matrix covering thirteen laws plus hook parity;
 `verify_decode_invariants.check_agent_surfaces()` delegates to it rather than
 keeping a second copy. Missing laws were backfilled into `CLAUDE.md`,
 `GEMINI.md`, `.github/copilot-instructions.md`, a new
@@ -198,6 +199,7 @@ invariant section rather than a phantom id.
 | `organize-repository` + `git mv` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Model card + README summary | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Version stamps / component bump | ✅ | ✅ | ❌ | ⚠️¹ | ❌ |
+| Agent-owned external cases (`refresh_test_cases`) | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Dashboard OpenUI parity | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Preregistered campaign law | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Serena preference | ✅ | ✅ | ❌ | ❌ | ❌ |
@@ -232,12 +234,12 @@ act on (canonical AGENTS.md, decode invariants, run cap, iron law, model card).
 `README.md:379` claims *"Claude Code, Codex, and Copilot CLI hooks run the same
 changed-file checker automatically and reject raw `mv` for tracked paths."*
 
-| Harness | raw-`mv` block | changed-file checker | dashboard parity | version stamp |
-| --- | :-: | :-: | :-: | :-: |
-| Claude Code (`.claude/settings.json`) | ✅ | ❌ | ✅ | ✅ |
-| Codex (`.codex/hooks.json`) | ✅ | ❌ | ❌ | ❌ |
-| Copilot (`.github/hooks/`) | ✅ | ❌ | ❌ | ❌ |
-| Cursor | ❌ (no hook config) | ❌ | ❌ | ❌ |
+| Harness | raw-`mv` block | changed-file checker | dashboard parity | version stamp | case resources |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Claude Code (`.claude/settings.json`) | ✅ | ❌ | ✅ | ✅ | ✅ |
+| Codex (`.codex/hooks.json`) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Copilot (`.github/hooks/`) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Cursor | ❌ (no hook config) | ❌ | ❌ | ❌ | ❌ |
 
 The changed-file checker runs in **none** of them.
 `.github/hooks/changed-tests.json` — the file named for it — is an empty stub:
@@ -253,8 +255,9 @@ bump rule is enforced by "CI, pre-commit, **agent hooks**" — true only for
 Claude Code.
 
 **Fixed.** `.github/hooks/changed-tests.json` now carries the post-edit
-dashboard-parity and version-stamp hooks, and the same pair was mirrored into
-`.codex/hooks.json`, so all three hook-capable harnesses run the identical set.
+dashboard-parity, version-stamp, and external-case checks, and the same trio was
+mirrored into `.codex/hooks.json`, so all three hook-capable harnesses run the
+identical set.
 Hook parity is itself certified — `hooks.raw-mv-guard` and
 `hooks.post-edit-checks` are obligations in the matrix, so a one-sided hook edit
 fails CI. A Claude Code `SessionStart` hook arms `core.hooksPath .githooks` when
@@ -387,7 +390,7 @@ A3 was found during this phase's verification and is deliberately left open.
 ### Phase 2 — One enforcement mechanism for cross-surface parity (B1, B2, B6, B7) — done
 
 1. `scripts/verify_agent_surfaces.py` holds the declarative
-   obligation × surface matrix — twelve instruction laws plus two hook laws.
+   obligation × surface matrix — thirteen instruction laws plus two hook laws.
 2. `verify_decode_invariants.check_agent_surfaces()` delegates to it.
 3. Wired into `ci.yml`'s `python-static` job and into `check_changed.check()`,
    which re-certifies whenever any surface file changes.
@@ -404,7 +407,7 @@ A3 was found during this phase's verification and is deliberately left open.
 
 Both halves, not either/or: the hooks were implemented **and** the README claim
 corrected. `.github/hooks/changed-tests.json` and `.codex/hooks.json` now carry
-the same `PostToolUse` pair as `.claude/settings.json`; hook parity is itself
+the same `PostToolUse` trio as `.claude/settings.json`; hook parity is itself
 certified by the `hooks.raw-mv-guard` and `hooks.post-edit-checks` obligations,
 so a one-sided hook edit fails CI. A Claude Code `SessionStart` hook arms
 `core.hooksPath .githooks` when unset. `README.md` carries a per-harness

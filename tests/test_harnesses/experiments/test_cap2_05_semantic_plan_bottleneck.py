@@ -7,9 +7,13 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 torch = pytest.importorskip("torch")
 
-from slm_training.harnesses.experiments.cap2_bottleneck import build_matrix as build_cap2_02_matrix
+from slm_training.harnesses.experiments.cap2_bottleneck import (
+    build_matrix as build_cap2_02_matrix,
+)
 from slm_training.harnesses.experiments.cap2_semantic_plan_bottleneck import (
     build_matrix,
     evaluate_program_factor_arm,
@@ -39,15 +43,14 @@ def test_load_fixture_plans_is_deterministic() -> None:
 
 @pytest.mark.parametrize(
     "arm_id",
-    [
-        "plan_fsq_2_3_3_4_5",
-        "plan_lfq_d6",
-        "plan_vq_64_d8",
-        "plan_continuous_d6",
-        "plan_uniform_b2d6",
-    ],
+    case_values(
+        __file__,
+        "test_program_factor_arm_reconstructs_small_fixture_and_passes_no_bypass",
+    ),
 )
-def test_program_factor_arm_reconstructs_small_fixture_and_passes_no_bypass(arm_id: str) -> None:
+def test_program_factor_arm_reconstructs_small_fixture_and_passes_no_bypass(
+    arm_id: str,
+) -> None:
     plans = load_fixture_plans(count=12, seed=0)
     arms = {a.arm_id: a for a in build_matrix(arms_filter=(arm_id,))}
     arm = arms[arm_id]
@@ -123,4 +126,10 @@ def test_existing_cap2_bottleneck_matrix_is_unchanged() -> None:
     """CAP2-05 must not perturb the existing CAP2-01/02 oracle-state matrix."""
     arms = build_cap2_02_matrix(41)
     ids = {a.arm_id for a in arms}
-    assert {"fsq_2_3_3_4_5", "lfq_d6", "vq_64_d8", "continuous_d6", "uniform_b2d6"} <= ids
+    assert {
+        "fsq_2_3_3_4_5",
+        "lfq_d6",
+        "vq_64_d8",
+        "continuous_d6",
+        "uniform_b2d6",
+    } <= ids

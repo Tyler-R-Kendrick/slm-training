@@ -1,0 +1,98 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_models/test_adapter_spec.py",
+  "case_sets": {
+    "test_spec_validation_rejects_bad_configs": {
+      "parameters": [
+        "overrides",
+        "match"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            {
+              "rank": 0
+            },
+            "rank must be positive"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            {
+              "alpha": 0.0
+            },
+            "alpha must be positive"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            {
+              "dropout": 1.0
+            },
+            "dropout must be in \\[0, 1\\)"
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            {
+              "method": "dora"
+            },
+            "only method='low_rank'"
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            {
+              "train_bias": "all"
+            },
+            "only train_bias='none'"
+          ]
+        },
+        {
+          "id": "case-006",
+          "values": [
+            {
+              "target_modules": []
+            },
+            "must not be empty"
+          ]
+        },
+        {
+          "id": "case-007",
+          "values": [
+            {
+              "target_modules": [
+                "attn_q",
+                "attn_q"
+              ]
+            },
+            "must be unique"
+          ]
+        },
+        {
+          "id": "case-008",
+          "values": [
+            {
+              "base_checkpoint_sha": ""
+            },
+            "must be non-empty"
+          ]
+        },
+        {
+          "id": "case-009",
+          "values": [
+            {
+              "schema_version": 2
+            },
+            "unsupported adapter schema version"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -14,6 +14,8 @@ Keep one obvious owner for every tracked file. Before adding a path, search with
 | Runnable entrypoints and maintenance checks | `scripts/` |
 | Tests mirroring implementation domains | `tests/` |
 | Small committed inputs and expected artifacts | `src/slm_training/resources/` |
+| Mirrored external pytest cases (not shipped) | `src/slm_training/resources/test_cases/<test path>.json` |
+| Shipped eval and gate policy resources | `src/slm_training/resources/evals/` |
 | Git-published immutable model data | `src/slm_training/resources/data/<kind>/<id>/` |
 | Human-authored design, operations, and measured evidence | `docs/` |
 | OpenWiki-generated agent navigation | `docs/openwiki/` |
@@ -59,6 +61,22 @@ agent hooks block it when a tracked repository path is involved.
 - Do not add a second helper, schema, config, or guide for an existing concern;
   extend or relocate the current owner.
 
+## External test and eval resources
+
+Large JSON-shaped pytest tables mirror their test module below
+`src/slm_training/resources/test_cases/`. Agents edit inputs directly and use
+`python -m scripts.refresh_test_cases <test-or-resource>` for deterministic
+snapshot updates; ordinary pytest and CI never rewrite them. The extractor
+check (`python -m scripts.extract_test_cases`) prevents large eligible tables
+from drifting back inline. These test-only resources are excluded from wheels
+and Vercel uploads.
+
+Runtime loss suites and ship-gate policy live under
+`src/slm_training/resources/evals/`, remain wheel data, and follow component
+versioning. Frozen eval resources are replaced with a new versioned filename,
+never edited in place. Ship-gate changes may only preserve or tighten the
+committed policy.
+
 ## Enforcement
 
 Run the repository policy directly or through the existing changed-file check:
@@ -77,8 +95,9 @@ by `python -m scripts.verify_agent_surfaces`:
 
 - `PreToolUse` rejects raw moves of tracked paths (Claude Code, Codex,
   Copilot CLI).
-- `PostToolUse` runs `validate_page_dsl.py --changed` and
-  `verify_version_stamps --post-tool-use` (same three harnesses).
+- `PostToolUse` runs `validate_page_dsl.py --changed`,
+  `verify_version_stamps --post-tool-use`, and
+  `refresh_test_cases --check --changed` (same three harnesses).
 - Cursor and Gemini CLI have no hook mechanism configured; agents there run
   `python -m scripts.repo_policy` and `.githooks/check-changed` by hand.
 

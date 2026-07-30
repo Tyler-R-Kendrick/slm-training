@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 
 import pytest
+
+from tests.casefiles import case_values
 import torch
 
 from slm_training.dsl.abstract_plan import (
@@ -119,13 +121,7 @@ def test_role_span_valid_defaults() -> None:
 
 @pytest.mark.parametrize(
     "kwargs",
-    [
-        {"role": "Bad Role", "start": 0, "length": 1},
-        {"role": "intent", "start": -1, "length": 1},
-        {"role": "intent", "start": 0, "length": 0},
-        {"role": "intent", "start": 0, "length": 2, "max_length": 0},
-        {"role": "intent", "start": 0, "length": 2, "max_length": 3},
-    ],
+    case_values(__file__, "test_role_span_rejects_invalid_configurations"),
 )
 def test_role_span_rejects_invalid_configurations(kwargs: dict) -> None:
     with pytest.raises(ValueError):

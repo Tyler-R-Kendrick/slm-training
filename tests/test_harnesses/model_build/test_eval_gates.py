@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import fields
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from tests.casefiles import case_values
 
 from slm_training.data.leakage import (
     fingerprint_openui,
@@ -34,10 +37,28 @@ from slm_training.harnesses.model_build.plugin import GenerationRequest, StubMod
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
+    load_ship_gate_policy,
     write_ship_gates,
 )
 from slm_training.harnesses.preference import composite_reward
 from slm_training.models.decode_stats import DecodeStats
+
+
+def test_default_ship_gate_policy_is_external_and_strict(tmp_path: Path) -> None:
+    policy = load_ship_gate_policy()
+    assert policy["suites"] == DEFAULT_SHIP_GATES
+
+    policy["suites"].pop("rico_held")
+    path = tmp_path / "openui_ship_gates_v5.json"
+    path.write_text(json.dumps(policy), encoding="utf-8")
+    with pytest.raises(ValueError, match="all canonical ship suites"):
+        load_ship_gate_policy(path)
+
+    policy = load_ship_gate_policy()
+    policy["suites"]["smoke"].pop("reward_score")
+    path.write_text(json.dumps(policy), encoding="utf-8")
+    with pytest.raises(ValueError, match="canonical metrics"):
+        load_ship_gate_policy(path)
 
 
 def test_langsmith_evaluation_summary_excludes_per_example_details(
@@ -50,9 +71,7 @@ def test_langsmith_evaluation_summary_excludes_per_example_details(
             captured["name"] = name
             captured.update(kwargs)
 
-    monkeypatch.setattr(
-        "slm_training.runtime.telemetry.current_trace", lambda: Trace()
-    )
+    monkeypatch.setattr("slm_training.runtime.telemetry.current_trace", lambda: Trace())
     _record_langsmith_evaluation(
         SimpleNamespace(run_id="safe-summary"),
         suites={
@@ -127,12 +146,9 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
 
 @pytest.mark.parametrize(
     "unsafe",
-    [
-        {"grammar_constrained": False},
-        {"allow_unconstrained_fallback": True},
-        {"grammar_sample_decode": True},
-        {"grammar_uniform_at_unforced": True},
-    ],
+    case_values(
+        __file__, "test_new_model_build_config_rejects_unsafe_generation_flags"
+    ),
 )
 def test_new_model_build_config_rejects_unsafe_generation_flags(
     unsafe: dict[str, bool],
@@ -262,9 +278,7 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
         run_id="audit",
         model_name="stub",
     )
-    payload = evaluate_grammar_leakage_audit(
-        config, model=model, publish_agentv=False
-    )
+    payload = evaluate_grammar_leakage_audit(config, model=model, publish_agentv=False)
 
     assert model.calls == [True, True]
     assert model.config.grammar_constrained is True
@@ -275,8 +289,7 @@ def test_grammar_leakage_audit_runs_explicit_decode_variants(
         "constrained_compiler",
     }
     assert (
-        payload["strata"]["constrained_native"]["semantic_factor"]["content"]["n"]
-        == 1
+        payload["strata"]["constrained_native"]["semantic_factor"]["content"]["n"] == 1
     )
     assert Path(payload["output"]).is_file()
 
@@ -515,9 +528,7 @@ def test_certified_fallback_fails_when_unmeasured() -> None:
     del suites["smoke"]["fallback_count"]
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any(
-        "smoke:certified_fallback unmeasured" in f for f in result["failures"]
-    )
+    assert any("smoke:certified_fallback unmeasured" in f for f in result["failures"])
 
 
 def test_certified_fallback_fails_on_measured_fallbacks() -> None:
@@ -536,7 +547,9 @@ def test_ship_gates_fail_on_insufficient_suite_n() -> None:
     suites["smoke"]["n"] = 3
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any("smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"])
+    assert any(
+        "smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"]
+    )
     assert result["evidence_volume_failures"]
 
 
@@ -561,9 +574,7 @@ def test_ship_gate_runtime_failures_include_decode_timeouts() -> None:
     suites["smoke"]["decode_timeout_count"] = 1
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert result["runtime_failures"] == [
-        "smoke:decode_timeout_count actual=1 need=0"
-    ]
+    assert result["runtime_failures"] == ["smoke:decode_timeout_count actual=1 need=0"]
 
 
 @pytest.mark.parametrize(
@@ -605,9 +616,10 @@ def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
     first = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     second = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     policy = first["meaningful_metric_policy"]
-    assert policy["threshold_version"] == second["meaningful_metric_policy"][
-        "threshold_version"
-    ]
+    assert (
+        policy["threshold_version"]
+        == second["meaningful_metric_policy"]["threshold_version"]
+    )
     assert policy["threshold_version"].startswith("custom:")
     assert policy["meaningful_program_v1"]["thresholds"] == "request_thresholds"
     assert policy["binding_aware_meaningful_v2"]["thresholds"] is None
@@ -658,14 +670,18 @@ def test_write_ship_gates_binds_verdict_to_raw_agentevals_criteria(
         "criteria": {"pass": True, "results": results},
         "runner": {"name": "AgentV", "execution_errors": 0},
     }
-    assert write_ship_gates(
-        tmp_path / "valid", suites, evals_result=evals_result
-    )["pass"] is True
+    assert (
+        write_ship_gates(tmp_path / "valid", suites, evals_result=evals_result)["pass"]
+        is True
+    )
 
     results[0]["actual"] = 99
-    assert write_ship_gates(
-        tmp_path / "tampered", suites, evals_result=evals_result
-    )["pass"] is False
+    assert (
+        write_ship_gates(tmp_path / "tampered", suites, evals_result=evals_result)[
+            "pass"
+        ]
+        is False
+    )
 
 
 def test_write_ship_gates_binds_reachability_to_agentevals(
@@ -788,7 +804,9 @@ def test_evaluate_suites_scoreboard(
     assert metrics["meaningful_metric_primary"] == "meaningful_program_v1"
     assert metrics["binding_aware_meaningful_v2_rate_strict"] == 0.0
     assert metrics["binding_aware_meaningful_v2_coverage"] == 0.0
-    assert metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
+    assert (
+        metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
+    )
 
     monkeypatch.setattr(
         "slm_training.evals.agentv.publish_model_evaluation",

@@ -57,6 +57,11 @@
       "history": [
         {
           "version": "v30",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize the unchanged prohibited-lever regression table without changing cases, assertions, or lever behavior"
+        },
+        {
+          "version": "v30",
           "date": "2026-07-29T11:21:19-05:00",
           "note": "no-bump: expand hosted CI to eight exact-once external partitions while retaining four internal workers; lever behavior is unchanged."
         },
@@ -546,6 +551,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or runtime behavior"
+        },
+        {
+          "version": "v3",
           "date": "2026-07-26",
           "note": "AP-025 (SLM-318): add RoleSpanV1 (ordered, non-overlapping named codebook ranges with an optional per-role max_length budget), AbstractPlanV1.role_spans (mutually exclusive with role_metadata) plus role_for_slot/role_slot_indices/role_slot_token_ids/role_slot_mask helpers, and the new role_slot_probe module (swap_role/dropout_role/truncate_role cross-example interventions, run_role_probes/causal_effect_matrix orchestration) with a fixture-only wiring demo script"
         },
@@ -632,6 +642,11 @@
         "docs/design/dsh1-03-symbolic-harness-dsl-20260723.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or runtime behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -1472,6 +1487,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or runtime behavior"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-25",
           "note": "initial provider-neutral, content-addressed NL paraphrase request/response provenance contract: schema+frame-only sendable payload, replay cache, quarantine-before-promotion validation, and a deterministic offline fixture provider plus a structurally-wired never-invoked API-shaped stub with secret redaction"
         }
@@ -1806,11 +1826,16 @@
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/loss_suites.py",
-        "src/slm_training/evals/loss_suite_v1.json",
+        "src/slm_training/resources/evals/loss_suite_v1.json",
         "src/slm_training/evals/denoising_nll.py",
         "src/slm_training/evals/emptiness_probe.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: relocate the unchanged frozen loss-suite resource under the canonical packaged eval-resource directory"
+        },
         {
           "version": "v1",
           "date": "2026-07-19",
@@ -1915,6 +1940,11 @@
         "tests/test_evals/test_power_protocol.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or metric behavior"
+        },
         {
           "version": "v8",
           "date": "2026-07-25",
@@ -2299,9 +2329,15 @@
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/model_build/ship_gates.py",
-        "src/slm_training/harness_core/gate_engine.py"
+        "src/slm_training/harness_core/gate_engine.py",
+        "src/slm_training/resources/evals/openui_ship_gates_v5.json"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v5",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize the current v5 thresholds and provenance into a packaged resource and fail closed on malformed resource shapes; valid policy decisions are unchanged"
+        },
         {
           "version": "openui_ship_gates_v5",
           "date": "2026-07-30T10:18:42-05:00",
@@ -4315,6 +4351,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or gate behavior"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-23",
           "note": "normalize the component version and refresh registered identities while preserving the evidence timestamp"
         },
@@ -5823,6 +5864,11 @@
       "history": [
         {
           "version": "v5",
+          "date": "2026-07-30",
+          "note": "no-bump: exclude test-only external case resources from wheel and Vercel packaging without changing deployed behavior"
+        },
+        {
+          "version": "v5",
           "date": "2026-07-25",
           "note": "Regenerate the Vercel exclusion block from the restored canonical lever tuple after conflict resolution"
         },
@@ -6256,6 +6302,11 @@
         {
           "version": "v3",
           "date": "2026-07-30",
+          "note": "no-bump: document the post-edit external-case check in the existing agent-hook table; experiment behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-30",
           "note": "Require a preregistered metric-expectation digest and band-aware v2 LeverProof replay before model_cycle promotion"
         },
         {
@@ -6572,6 +6623,11 @@
         "docs/design/iter-slm232-latent-state-use-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or runtime behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -6988,6 +7044,11 @@
       "history": [
         {
           "version": "v9",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or runtime behavior"
+        },
+        {
+          "version": "v9",
           "date": "2026-07-30T10:18:42-05:00",
           "note": "no-bump: update the ship-gate integration fixture to satisfy the independently tightened production rico_held evidence floor; reachability analysis behavior is unchanged"
         },
@@ -7256,6 +7317,11 @@
         "docs/design/iter-slm365-frame-paraphrases-20260725.json"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or runtime behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -7554,6 +7620,11 @@
         "docs/design/var2-01-ops-vocab-first-consumer-20260726.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or runtime behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-26",
@@ -8301,6 +8372,11 @@
         {
           "version": "v2",
           "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or campaign behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-30",
           "note": "no-bump: scripts/autoresearch.py adds independent Lean optimum feedback handling; remine campaign behavior is unchanged"
         },
         {
@@ -8740,6 +8816,11 @@
         "docs/design/slm291-evidence-bar-adjudications-20260724.json"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or evidence behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
@@ -9522,6 +9603,11 @@
       "history": [
         {
           "version": "v19",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or model behavior"
+        },
+        {
+          "version": "v19",
           "date": "2026-07-25",
           "note": "no-bump: register the SLM-421 powered-rerun JSON/markdown (n=20 fresh seeds 2..21, min_pass_rate=0.5, disposition recursive_core_positive) produced by the v19 power_rule capability; no further code/behavior change"
         },
@@ -9761,6 +9847,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v268",
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or model behavior"
+        },
         {
           "version": "v268",
           "date": "2026-07-29",

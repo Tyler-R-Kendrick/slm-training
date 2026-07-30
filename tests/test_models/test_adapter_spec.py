@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.models.adapters import TwoTowerAdapterSpec
 
 
@@ -31,17 +33,7 @@ def test_spec_round_trips_through_dict() -> None:
 
 @pytest.mark.parametrize(
     "overrides,match",
-    [
-        ({"rank": 0}, "rank must be positive"),
-        ({"alpha": 0.0}, "alpha must be positive"),
-        ({"dropout": 1.0}, r"dropout must be in \[0, 1\)"),
-        ({"method": "dora"}, "only method='low_rank'"),
-        ({"train_bias": "all"}, "only train_bias='none'"),
-        ({"target_modules": ()}, "must not be empty"),
-        ({"target_modules": ("attn_q", "attn_q")}, "must be unique"),
-        ({"base_checkpoint_sha": ""}, "must be non-empty"),
-        ({"schema_version": 2}, "unsupported adapter schema version"),
-    ],
+    case_values(__file__, "test_spec_validation_rejects_bad_configs"),
 )
 def test_spec_validation_rejects_bad_configs(overrides, match) -> None:
     with pytest.raises(ValueError, match=match):

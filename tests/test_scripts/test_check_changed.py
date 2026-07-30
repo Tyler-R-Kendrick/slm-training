@@ -71,6 +71,7 @@ def test_hook_prefers_explicit_changed_regressions() -> None:
     assert select_changed_tests(
         [
             "src/slm_training/models/grammar.py",
+            "tests/casefiles.py",
             "tests/test_dsl/test_grammar_fastpath.py",
         ]
     ) == ["tests/test_dsl/test_grammar_fastpath.py"]
@@ -89,8 +90,28 @@ def test_version_registry_changes_run_versioning_suite() -> None:
     assert select_tests(["src/slm_training/resources/versions.json"]) == [
         "tests/test_versioning"
     ]
-    assert select_tests(["src/slm_training/versioning.py"]) == [
-        "tests/test_versioning"
+    assert select_tests(["src/slm_training/versioning.py"]) == ["tests/test_versioning"]
+
+
+def test_case_resource_selects_only_its_mirrored_test() -> None:
+    assert select_tests(
+        [
+            "src/slm_training/resources/test_cases/"
+            "test_harness_core/test_gate_engine_golden.json"
+        ]
+    ) == ["tests/test_harness_core/test_gate_engine_golden.py"]
+
+
+def test_runtime_eval_resources_select_their_consumers() -> None:
+    assert select_tests(["src/slm_training/resources/evals/loss_suite_v1.json"]) == [
+        "tests/test_evals",
+        "tests/test_harnesses/model_build",
+    ]
+    assert select_tests(
+        ["src/slm_training/resources/evals/openui_ship_gates_v5.json"]
+    ) == [
+        "tests/test_harness_core/test_gate_engine_golden.py",
+        "tests/test_harnesses/model_build/test_eval_gates.py",
     ]
 
 
