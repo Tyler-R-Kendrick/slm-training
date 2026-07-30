@@ -13,7 +13,14 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from slm_training.autoresearch.schemas import CampaignSpec, utc_now
+from slm_training.autoresearch.schemas import (
+    CampaignSpec,
+    Diagnosis,
+    ExperimentOutcome,
+    HypothesisFeedback,
+    HypothesisMatrix,
+    utc_now,
+)
 from slm_training.autoresearch.experiment_campaign import (
     CampaignDeviationV1,
     CampaignLockV1,
@@ -70,10 +77,15 @@ class CampaignStore:
             raise ValueError("campaign id does not match store")
         self.root.mkdir(parents=True, exist_ok=True)
         path = self.root / "campaign.json"
-        data = json.dumps(campaign.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
+        data = (
+            json.dumps(campaign.model_dump(mode="json"), indent=2, sort_keys=True)
+            + "\n"
+        )
         if path.exists():
             if path.read_text(encoding="utf-8") != data:
-                raise FileExistsError(f"campaign already exists with different spec: {path}")
+                raise FileExistsError(
+                    f"campaign already exists with different spec: {path}"
+                )
             return path
         self._atomic_new(path, data)
         artifact = self.write_artifact("campaign", campaign)
@@ -102,16 +114,12 @@ class CampaignStore:
     def _lock_experiment_campaign(
         self, manifest: ExperimentCampaignV1
     ) -> CampaignLockV1:
-        manifest = ExperimentCampaignV1.model_validate(
-            manifest.model_dump(mode="json")
-        )
+        manifest = ExperimentCampaignV1.model_validate(manifest.model_dump(mode="json"))
         if manifest.campaign_id != self.campaign_id:
             raise ValueError("campaign manifest belongs to a different campaign")
         events = self.verify_event_chain()
         experiment_events = [
-            row
-            for row in events
-            if row.get("experiment_id") == manifest.experiment_id
+            row for row in events if row.get("experiment_id") == manifest.experiment_id
         ]
         digest = campaign_manifest_sha256(manifest)
         locks = [
@@ -179,9 +187,7 @@ class CampaignStore:
             raise RuntimeError("campaign lock event digest mismatch")
         return lock
 
-    def append_campaign_deviation(
-        self, deviation: CampaignDeviationV1
-    ) -> Path:
+    def append_campaign_deviation(self, deviation: CampaignDeviationV1) -> Path:
         """Append an exploratory deviation without replacing the locked plan."""
         lock = self.load_experiment_campaign(deviation.experiment_id)
         if deviation.campaign_id != self.campaign_id:
@@ -217,13 +223,10 @@ class CampaignStore:
         )
         events = self.verify_event_chain()
         relevant = [
-            row
-            for row in events
-            if row.get("experiment_id") == result.experiment_id
+            row for row in events if row.get("experiment_id") == result.experiment_id
         ]
         if any(
-            row.get("event_type") == "campaign_deviation_appended"
-            for row in relevant
+            row.get("event_type") == "campaign_deviation_appended" for row in relevant
         ):
             failures.append("exploratory_deviations_present")
         starts = [
@@ -277,9 +280,7 @@ class CampaignStore:
                     else "campaign_deviations"
                 )
                 artifact_sha = str(event.get("artifact_sha256", ""))
-                artifact_path = (
-                    self.root / "artifacts" / kind / f"{artifact_sha}.json"
-                )
+                artifact_path = self.root / "artifacts" / kind / f"{artifact_sha}.json"
                 try:
                     artifact_payload = json.loads(
                         artifact_path.read_text(encoding="utf-8")
@@ -296,9 +297,7 @@ class CampaignStore:
                     CampaignDeviationV1.model_validate(artifact_payload)
         return events
 
-    def write_artifact(
-        self, kind: str, value: BaseModel | dict[str, Any]
-    ) -> Path:
+    def write_artifact(self, kind: str, value: BaseModel | dict[str, Any]) -> Path:
         payload = _payload(value)
         digest = _sha(payload)
         path = self.root / "artifacts" / kind / f"{digest}.json"
@@ -315,7 +314,9 @@ class CampaignStore:
             "content_sha256": digest,
             "written_at": utc_now(),
         }
-        self._append_line(self.root / "checksums.jsonl", canonical_json(checksum) + "\n")
+        self._append_line(
+            self.root / "checksums.jsonl", canonical_json(checksum) + "\n"
+        )
         return path
 
     def append_event(
@@ -356,7 +357,11 @@ class CampaignStore:
         events_path = self.root / "events.jsonl"
         events = []
         if events_path.exists():
-            events = [json.loads(line) for line in events_path.read_text().splitlines() if line]
+            events = [
+                json.loads(line)
+                for line in events_path.read_text().splitlines()
+                if line
+            ]
         return {
             "campaign_id": self.campaign_id,
             "root": str(self.root),
@@ -406,7 +411,9 @@ class CampaignStore:
         path.parent.mkdir(parents=True, exist_ok=True)
         new = not path.exists()
         with path.open("a", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=self.EVENT_COLUMNS, delimiter="\t")
+            writer = csv.DictWriter(
+                handle, fieldnames=self.EVENT_COLUMNS, delimiter="\t"
+            )
             if new:
                 writer.writeheader()
             row = {key: event.get(key, "") for key in self.EVENT_COLUMNS}
@@ -414,3 +421,473 @@ class CampaignStore:
             writer.writerow(row)
             handle.flush()
             os.fsync(handle.fileno())
+
+
+def loop_result_rows(
+    root: Path | str,
+    loop_id: str,
+    *,
+    last: int | None = None,
+) -> list[dict[str, Any]]:
+    """Derive one compact row per finished experiment from verified event chains."""
+    rows: list[dict[str, Any]] = []
+    for run in _loop_runs(root, loop_id, last=last):
+        campaign = run["campaign"]
+        outcome = run["outcome"]
+        feedback = run["feedback"]
+        optimum = feedback.optimum_feedback if feedback is not None else None
+        rows.append(
+            {
+                "cycle": campaign.cycle_index,
+                "upstream": (campaign.upstream_commit or "")[:8] or "—",
+                "integrated": (campaign.integration_commit or "")[:8] or "—",
+                "experiment": outcome.experiment_id,
+                "params": _metric_text(outcome.metrics, "trainable_params"),
+                "primary": _metric_text(outcome.metrics, campaign.primary_metric),
+                "metrics": _metrics_text(
+                    outcome.metrics,
+                    outcome.data_metrics,
+                    omit={
+                        "trainable_params",
+                        campaign.primary_metric,
+                        "ship_gates_pass",
+                        "gates.pass",
+                    },
+                ),
+                "lean": _lean_text(optimum),
+                "gates": _gate_text(outcome.metrics),
+                "status": outcome.status,
+                "campaign_id": campaign.campaign_id,
+            }
+        )
+    return sorted(
+        rows,
+        key=lambda row: (
+            int(row["cycle"] or 0),
+            str(row["campaign_id"]),
+            str(row["experiment"]),
+        ),
+    )
+
+
+def _loop_runs(
+    root: Path | str, loop_id: str, *, last: int | None
+) -> list[dict[str, Any]]:
+    root = Path(root)
+    campaigns = _loop_campaigns(root, loop_id, last=last)
+    runs: list[dict[str, Any]] = []
+    for campaign in campaigns:
+        store = CampaignStore(campaign.campaign_id, root)
+        events = store.verify_event_chain()
+        for finish in (
+            row for row in events if row.get("event_type") == "experiment_finished"
+        ):
+            experiment_id = str(finish.get("experiment_id", ""))
+            outcome = ExperimentOutcome.model_validate(
+                _event_payload(store, finish, "outcomes")
+            )
+            diagnosis_event = next(
+                (
+                    row
+                    for row in reversed(events)
+                    if row.get("event_type") == "outcome_diagnosed"
+                    and row.get("experiment_id") == experiment_id
+                ),
+                None,
+            )
+            feedback_event = next(
+                (
+                    row
+                    for row in reversed(events)
+                    if row.get("event_type") == "hypothesizer_feedback_recorded"
+                    and row.get("experiment_id") == experiment_id
+                ),
+                None,
+            )
+            runs.append(
+                {
+                    "campaign": campaign,
+                    "store": store,
+                    "events": events,
+                    "outcome": outcome,
+                    "diagnosis": (
+                        Diagnosis.model_validate(
+                            _event_payload(store, diagnosis_event, "diagnoses")
+                        )
+                        if diagnosis_event is not None
+                        else None
+                    ),
+                    "feedback": (
+                        HypothesisFeedback.model_validate(
+                            _event_payload(
+                                store, feedback_event, "hypothesizer_feedback"
+                            )
+                        )
+                        if feedback_event is not None
+                        else None
+                    ),
+                }
+            )
+    return sorted(
+        runs,
+        key=lambda run: (
+            int(run["campaign"].cycle_index or 0),
+            run["campaign"].campaign_id,
+            run["outcome"].experiment_id,
+        ),
+    )
+
+
+def _loop_campaigns(
+    root: Path, loop_id: str, *, last: int | None
+) -> list[CampaignSpec]:
+    campaigns = sorted(
+        (
+            CampaignSpec.model_validate_json(path.read_text(encoding="utf-8"))
+            for path in root.glob("*/campaign.json")
+        ),
+        key=lambda item: (item.cycle_index or 0, item.campaign_id),
+    )
+    campaigns = [item for item in campaigns if item.loop_id == loop_id]
+    for expected_cycle, campaign in enumerate(campaigns, start=1):
+        if campaign.cycle_index != expected_cycle:
+            raise RuntimeError("loop campaign cycles must be unique and contiguous")
+        expected_predecessor = (
+            campaigns[expected_cycle - 2].campaign_id if expected_cycle > 1 else None
+        )
+        if campaign.predecessor_campaign_id != expected_predecessor:
+            raise RuntimeError("loop campaign predecessor chain is broken")
+    if last is not None:
+        if last < 1:
+            raise ValueError("last must be at least one")
+        campaigns = campaigns[-last:]
+    return campaigns
+
+
+def loop_diagnostic_rows(
+    root: Path | str, loop_id: str, *, last: int | None = None
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for run in _loop_runs(root, loop_id, last=last):
+        campaign = run["campaign"]
+        outcome = run["outcome"]
+        diagnosis = run["diagnosis"]
+        feedback = run["feedback"]
+        if diagnosis is not None:
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "source": "diagnosis",
+                    "area": (
+                        f"harness/{diagnosis.harness_family}"
+                        if diagnosis.target == "harness"
+                        else diagnosis.target
+                    ),
+                    "signal": "; ".join(diagnosis.evidence) or "—",
+                    "authority": "observed",
+                    "confidence": f"{diagnosis.confidence:.2f}",
+                    "disposition": (
+                        diagnosis.recommended_actions[0]
+                        if diagnosis.recommended_actions
+                        else "monitor"
+                    ),
+                    "evidence": "—",
+                }
+            )
+        for signal in outcome.harness_signals:
+            reproduced = signal.reproduced_on_frozen_input
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "source": "harness",
+                    "area": signal.family,
+                    "signal": signal.code,
+                    "authority": "reproduced" if reproduced else "suspected",
+                    "confidence": "1.00" if reproduced else "—",
+                    "disposition": "repair before run" if reproduced else "observe",
+                    "evidence": signal.evidence_uri,
+                }
+            )
+        optimum = feedback.optimum_feedback if feedback is not None else None
+        if optimum is None:
+            continue
+        evidence = (
+            f"e:{optimum.metric_evidence_sha256[:8]} "
+            f"c:{optimum.metric_certificate_sha256[:8]}"
+        )
+        if not optimum.breaches:
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "source": "Lean",
+                    "area": "metric bands",
+                    "signal": optimum.policy,
+                    "authority": "verified",
+                    "confidence": "1.00",
+                    "disposition": optimum.policy,
+                    "evidence": evidence,
+                }
+            )
+        for breach in optimum.breaches:
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "source": "Lean",
+                    "area": breach.metric_id,
+                    "signal": breach.relation,
+                    "authority": breach.authority,
+                    "confidence": "1.00",
+                    "disposition": optimum.policy,
+                    "evidence": evidence,
+                }
+            )
+    return rows
+
+
+def loop_priority_rows(
+    root: Path | str, loop_id: str, *, last: int | None = None
+) -> list[dict[str, Any]]:
+    runs = _loop_runs(root, loop_id, last=last)
+    campaigns = {
+        campaign.campaign_id: campaign
+        for campaign in _loop_campaigns(Path(root), loop_id, last=last)
+    }
+    matrices: list[tuple[CampaignSpec, HypothesisMatrix]] = []
+    finished_ids = {run["outcome"].experiment_id for run in runs}
+    for campaign in campaigns.values():
+        store = CampaignStore(campaign.campaign_id, Path(root))
+        for event in store.verify_event_chain():
+            if event.get("event_type") != "hypothesis_matrix_formed":
+                continue
+            matrix = HypothesisMatrix.model_validate(
+                _event_payload(store, event, "hypothesis_matrices")
+            )
+            matrices.append((campaign, matrix))
+    predecessor_ids = {
+        matrix.predecessor_matrix_id
+        for _, matrix in matrices
+        if matrix.predecessor_matrix_id is not None
+    }
+    rows: list[dict[str, Any]] = []
+    for campaign, matrix in matrices:
+        if any(
+            candidate.experiment.experiment_id in finished_ids
+            for candidate in matrix.hypotheses
+        ):
+            continue
+        for priority in sorted(matrix.next_run_priorities, key=lambda item: item.rank):
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "rank": priority.rank,
+                    "area": priority.area,
+                    "hypothesis": priority.hypothesis,
+                    "authority": priority.authority,
+                    "confidence": f"{priority.confidence:.2f}",
+                    "evidence": ",".join(priority.evidence_ids),
+                    "experiment": priority.proposed_experiment_id or "—",
+                    "action": priority.disposition,
+                }
+            )
+    for run in runs:
+        feedback = run["feedback"]
+        if feedback is None or feedback.matrix_id in predecessor_ids:
+            continue
+        campaign = run["campaign"]
+        optimum = feedback.optimum_feedback
+        if optimum is not None and optimum.policy == "stop":
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "rank": 1,
+                    "area": "lean_model",
+                    "hypothesis": "Repair measurement or the formal model before training.",
+                    "authority": "lean_theorem",
+                    "confidence": "1.00",
+                    "evidence": feedback.feedback_id,
+                    "experiment": "—",
+                    "action": "stop_campaign",
+                }
+            )
+        elif optimum is not None and optimum.diagnosis_lanes:
+            for rank, lane in enumerate(optimum.diagnosis_lanes, start=1):
+                rows.append(
+                    {
+                        "cycle": campaign.cycle_index,
+                        "rank": rank,
+                        "area": lane,
+                        "hypothesis": f"Test the {lane} lane without assigning causality.",
+                        "authority": "lean_assumption",
+                        "confidence": "—",
+                        "evidence": feedback.feedback_id,
+                        "experiment": "—",
+                        "action": "block_promotion",
+                    }
+                )
+        elif feedback.diagnosis_target == "harness":
+            rows.append(
+                {
+                    "cycle": campaign.cycle_index,
+                    "rank": 1,
+                    "area": feedback.harness_family,
+                    "hypothesis": "Repair the reproduced canonical harness failure.",
+                    "authority": "reproduced_harness_signal",
+                    "confidence": "1.00",
+                    "evidence": feedback.feedback_id,
+                    "experiment": "—",
+                    "action": "repair_before_run",
+                }
+            )
+    return rows
+
+
+def render_loop_result_matrix(
+    root: Path | str, loop_id: str, *, last: int | None = None
+) -> str:
+    """Render three canonical between-run views from verified event chains."""
+    result_columns = (
+        ("cycle", "Cycle"),
+        ("upstream", "Upstream"),
+        ("integrated", "Integrated"),
+        ("experiment", "Experiment"),
+        ("params", "Params"),
+        ("primary", "Primary"),
+        ("metrics", "Metrics"),
+        ("lean", "Lean bands"),
+        ("gates", "Gates"),
+        ("status", "Status"),
+    )
+    diagnostic_columns = (
+        ("cycle", "Cycle"),
+        ("source", "Source"),
+        ("area", "Area"),
+        ("signal", "Signal"),
+        ("authority", "Authority"),
+        ("confidence", "Confidence"),
+        ("disposition", "Disposition"),
+        ("evidence", "Evidence"),
+    )
+    priority_columns = (
+        ("cycle", "Cycle"),
+        ("rank", "Rank"),
+        ("area", "Area"),
+        ("hypothesis", "Hypothesis"),
+        ("authority", "Authority"),
+        ("confidence", "Confidence"),
+        ("evidence", "Evidence"),
+        ("experiment", "Experiment"),
+        ("action", "Action"),
+    )
+    return "\n\n".join(
+        (
+            _render_table(
+                "Run Results",
+                result_columns,
+                loop_result_rows(root, loop_id, last=last),
+            ),
+            _render_table(
+                "Diagnostic Signals",
+                diagnostic_columns,
+                loop_diagnostic_rows(root, loop_id, last=last),
+            ),
+            _render_table(
+                "Speculative Next-Run Priorities",
+                priority_columns,
+                loop_priority_rows(root, loop_id, last=last),
+            ),
+        )
+    )
+
+
+def _render_table(
+    title: str,
+    columns: tuple[tuple[str, str], ...],
+    rows: list[dict[str, Any]],
+) -> str:
+    lines = [
+        title,
+        "| " + " | ".join(label for _, label in columns) + " |",
+        "|" + "|".join(" --- " for _ in columns) + "|",
+    ]
+    if not rows:
+        rows = [{key: "—" for key, _ in columns}]
+    lines.extend(
+        "| "
+        + " | ".join(_markdown_cell(row.get(key, "—")) for key, _ in columns)
+        + " |"
+        for row in rows
+    )
+    return "\n".join(lines)
+
+
+def _event_artifact(
+    store: CampaignStore,
+    event: dict[str, Any],
+    kind: str,
+) -> Path:
+    digest = str(event.get("artifact_sha256", ""))
+    return store.root / "artifacts" / kind / f"{digest}.json"
+
+
+def _event_payload(
+    store: CampaignStore,
+    event: dict[str, Any],
+    kind: str,
+) -> dict[str, Any]:
+    digest = str(event.get("artifact_sha256", ""))
+    payload = json.loads(
+        _event_artifact(store, event, kind).read_text(encoding="utf-8")
+    )
+    if _sha(payload) != digest:
+        raise RuntimeError(f"{kind} artifact content digest mismatch")
+    return payload
+
+
+def _metric_text(metrics: dict[str, float], name: str) -> str:
+    for key, value in metrics.items():
+        if key == name or key.endswith(f".{name}"):
+            return f"{value:g}"
+    return "—"
+
+
+def _metrics_text(
+    metrics: dict[str, float],
+    data_metrics: dict[str, float],
+    *,
+    omit: set[str],
+) -> str:
+    def omitted(name: str) -> bool:
+        return any(name == item or name.endswith(f".{item}") for item in omit)
+
+    values = [
+        f"{name}={value:g}"
+        for name, value in sorted(metrics.items())
+        if not omitted(name)
+    ]
+    values.extend(
+        f"data.{name}={value:g}" for name, value in sorted(data_metrics.items())
+    )
+    return ", ".join(values) or "—"
+
+
+def _lean_text(optimum: Any | None) -> str:
+    if optimum is None:
+        return "—"
+    if not optimum.breaches:
+        return optimum.policy
+    return ", ".join(
+        f"{item.metric_id}:{item.relation}[{item.authority}]"
+        for item in optimum.breaches
+    )
+
+
+def _gate_text(metrics: dict[str, float]) -> str:
+    for name in ("ship_gates_pass", "gates.pass"):
+        value = _metric_text(metrics, name)
+        if value != "—":
+            return "pass" if float(value) else "fail"
+    return "—"
+
+
+def _markdown_cell(value: Any) -> str:
+    return str(value).replace("|", r"\|").replace("\n", " ")

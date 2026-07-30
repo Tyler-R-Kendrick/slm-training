@@ -1,6 +1,6 @@
 # Autoresearch (self-improvement) phase
 
-Bounded self-improvement by accumulated evidence and policy iteration
+Each campaign is bounded; bare `/autotrain` chains campaigns continuously
 (`docs/design/autoresearch-autotraining.md`). Owner:
 `src/slm_training/autoresearch/`. Campaign methodology, provider rules, and
 evidence contracts: **`openui-autoresearch`** — follow it alongside this phase.
@@ -25,7 +25,7 @@ slm autoresearch diagnose --campaign-id <id>
 slm autoresearch status --campaign-id <id>
 slm autoresearch sync --campaign-id <id> [--push]
 
-# Self-evaluation (frozen benchmarks; human promotion only)
+# Self-evaluation (frozen benchmarks; automated meta-gated promotion)
 slm autoresearch evaluate-researcher ...
 slm autoresearch evaluate-hypothesizer ...
 
@@ -45,9 +45,9 @@ slm autoresearch propose|materialize-mixture ...
 - Matrices need ≥5 grounded, novelty-audited candidates; completed experiments
   become typed hypothesizer feedback for the next matrix.
 - The loop improves via evidence and typed feedback only — it never rewrites
-  its own code, frozen cases, or acceptance thresholds.
+  its own judge, frozen cases, or acceptance thresholds in the same campaign.
 - Self-improvement claims need frozen evaluation cases, held-out results, and
-  explicit human promotion.
+  the automated frozen meta-gate in [continuous.md](continuous.md).
 
 ## Close out
 

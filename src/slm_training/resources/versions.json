@@ -432,6 +432,11 @@
         {
           "version": "v3",
           "date": "2026-07-30",
+          "note": "no-bump: preserve opaque-marker projection and admitted-pair filtering while merging the formal-preflight data-builder update"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-30",
           "note": "Restore producer-side projection of every generated and transformed template marker to contiguous opaque slot ordinals before scoring or persistence; retain only admitted contrast pairs"
         },
         {
@@ -2480,20 +2485,43 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v8",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
         "src/slm_training/autoresearch/schemas.py",
         "src/slm_training/autoresearch/storage.py",
         "src/slm_training/autoresearch/engine.py",
+        "src/slm_training/autoresearch/researcher_eval.py",
+        "src/slm_training/autoresearch/hypothesizer_eval.py",
         "src/slm_training/autoresearch/providers.py",
         "src/slm_training/autoresearch/rl_gate.py",
         "src/slm_training/autoresearch/__init__.py",
+        ".agents/skills/autotrain/SKILL.md",
+        ".agents/skills/autotrain/references/continuous.md",
+        ".agents/skills/openui-autoresearch/SKILL.md",
+        ".grok/workflows/autotrain.rhai",
+        "docs/design/autoresearch-autotraining.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
-        "tests/test_autoresearch/test_harness.py"
+        "tests/test_autoresearch/test_harness.py",
+        "tests/test_scripts/test_slm_cli.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-30",
+          "note": "Merge required and advisory formal preflights with continuous fetched and integrated cycle provenance, cross-cycle priorities, harness signals, and verified three-table status output"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-30",
+          "note": "Bind continuous cycles to fetched and integrated commits, carry feedback across campaign boundaries, enforce typed evidence-linked next-run priorities including Lean and reproduced-harness authority, and render separate result, diagnostic, and steering tables"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-30",
+          "note": "Make bare autotrain a continuous local loop over bounded campaigns, route frozen reproduced signals to canonical harness owners, derive between-run matrices from verified event chains, and replace human promotion with automated frozen meta-gates"
+        },
         {
           "version": "v8",
           "date": "2026-07-30",
@@ -2545,10 +2573,14 @@
         "scripts/verify_formal_contracts.py",
         "tests/test_autoresearch/test_formal.py",
         "docs/design/formal-autoresearch.md",
-        "docs/design/autoresearch-autotraining.md",
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-30",
+          "note": "no-bump: keep the shared autoresearch-autotraining design document under its existing experiment-campaign component owner"
+        },
         {
           "version": "v2",
           "date": "2026-07-30",
@@ -4394,6 +4426,11 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: regenerate the unchanged inconclusive closeout after merging continuous-autotrain and formal-preflight histories"
+        },
         {
           "version": "v1",
           "date": "2026-07-30",
@@ -6247,6 +6284,16 @@
         {
           "version": "v4",
           "date": "2026-07-30",
+          "note": "no-bump: preserve the current-registry fixture assertion while merging the externalized-case update"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-30",
+          "note": "no-bump: make the fixture assertion follow the canonical component registry instead of a stale hard-coded version"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-30",
           "note": "no-bump: make fixture assertions follow the current component registry and keep generated design artifacts in pytest temporary paths"
         },
         {
@@ -6288,6 +6335,11 @@
         "docs/design/iter-slm215-spectral-atlas-20260721.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "no-bump: preserve the current-registry fixture assertion while merging the externalized-case update"
+        },
         {
           "version": "v3",
           "date": "2026-07-30",
@@ -6703,6 +6755,11 @@
         "docs/design/iter-slm230-recurrence-observability-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-30",
+          "note": "no-bump: preserve the opaque-slot recurrence fixture while merging the externalized-case update"
+        },
         {
           "version": "v12",
           "date": "2026-07-30",
@@ -8562,7 +8619,7 @@
       ]
     },
     "harness.preference.remine_campaign": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/remine_campaign.py",
@@ -8574,6 +8631,16 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "no-bump: scripts/autoresearch.py adds continuous commit provenance, cross-cycle priority steering, and three loop status tables; the remine campaign behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "Add continuous campaign lineage initialization and verified loop status matrix output while preserving the remine command"
+        },
         {
           "version": "v2",
           "date": "2026-07-30",

@@ -1,11 +1,11 @@
 ---
 name: autotrain
-description: Operate the OpenUI SLM training pipeline end to end — build train/test data, SFT, distillation, preference, RL, evaluation with honest ship gates, experiment matrices, checkpoints/promotion, benchmarks, annotations, and the bounded autoresearch self-improvement + hypothesis loop. Use when RUNNING any pipeline phase; to CHANGE harness code use improve-openui-harnesses instead; for the knowledge-driven research orchestration loop (brains/OpenWiki/Linear) use autoresearch.
+description: Operate the OpenUI SLM training pipeline end to end, including a continuous evidence-driven model and harness improvement loop. Bare /autotrain is continuous; an explicit phase or --once is finite.
 ---
 
 # Autotrain OpenUI SLMs
 
-Facade for **operating** the training pipeline with progressive disclosure:
+Facade for **operating and continuously improving** the training pipeline with progressive disclosure:
 this file routes; each phase's full instructions live in `references/` and are
 read only when that phase is being run. To modify a harness, use
 `improve-openui-harnesses`. For the higher-level, knowledge-driven research
@@ -14,16 +14,21 @@ discovery / Linear, use `autoresearch`.
 
 ## Workflow
 
-1. Pick the phase from the routing table below (`slm list` shows every
+1. A bare `/autotrain` invocation enters the continuous loop in
+   [references/continuous.md](references/continuous.md). An explicit phase or
+   `--once` performs one finite pass.
+2. Pick the phase from the routing table below (`slm list` shows every
    command; `slm guide <slug>` prints a reference from the terminal).
-2. Read `references/<slug>.md` — only the one you need — plus
+3. Read `references/<slug>.md` — only the one you need — plus
    [references/contracts.md](references/contracts.md) once per session.
-3. Run its `slm` commands (each ≡ `python -m scripts.<module>`); keep
+4. Run its `slm` commands (each ≡ `python -m scripts.<module>`); keep
    artifacts in the canonical roots it names.
-4. Close out: docs + model-card duties per contracts
+5. Close out: docs + model-card duties per contracts
    (`documenting-experiment-results`).
-5. Hand off: ship claims → `honest-ship-eval`; matrix methodology →
+6. Hand off: ship claims → `honest-ship-eval`; matrix methodology →
    `running-experiment-matrices`; campaign methodology → `openui-autoresearch`;
+   certified metric bands and Lean proof/assumption repairs →
+   `improve-lean-optimums`;
    knowledge-driven research orchestration (brains/OpenWiki/Linear) →
    `autoresearch`.
 
@@ -31,6 +36,7 @@ discovery / Linear, use `autoresearch`.
 
 | Phase | Command | Reference |
 | --- | --- | --- |
+| Continuous model + harness improvement | `slm autoresearch status --loop-id <id> --matrix` | [references/continuous.md](references/continuous.md) |
 | Build/publish training corpora | `slm data build-train` / `publish-train` / `store` | [references/train-data.md](references/train-data.md) |
 | Build held-out/adversarial/OOD suites | `slm data build-test` | [references/test-data.md](references/test-data.md) |
 | SFT / model build (Phase A) | `slm sft train` / `remote` / `hf-jobs` | [references/sft.md](references/sft.md) |

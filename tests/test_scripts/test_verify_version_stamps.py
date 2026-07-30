@@ -51,6 +51,7 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (repo / "src" / "comp_a.py").write_text("A = 1\n", encoding="utf-8")
     (repo / "src" / "pkg" / "mod.py").write_text("B = 1\n", encoding="utf-8")
     (repo / "src" / "pkg" / "other.py").write_text("C = 1\n", encoding="utf-8")
+    (repo / "src" / "pkg" / "extra.py").write_text("D = 1\n", encoding="utf-8")
     _write_registry(
         repo,
         {
@@ -146,6 +147,46 @@ def test_history_rewrite_fails(repo: Path, capsys: pytest.CaptureFixture) -> Non
     )
     assert vvs.run_check(base_arg=None, staged=False) == 1
     assert "append-only" in capsys.readouterr().out
+
+
+def test_staged_merge_preserves_divergent_histories(repo: Path) -> None:
+    initial = _git(repo, "rev-parse", "HEAD").strip()
+    _git(repo, "checkout", "-q", "-b", "feature")
+    (repo / "src" / "pkg" / "extra.py").write_text("D = 2\n", encoding="utf-8")
+    _bump(repo, "harness.pkg", "v2", "feature change")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "feature")
+
+    _git(repo, "checkout", "-q", "-b", "upstream", initial)
+    (repo / "src" / "pkg" / "other.py").write_text("C = 2\n", encoding="utf-8")
+    _bump(repo, "harness.pkg", "v2", "upstream change")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "upstream")
+    upstream = _git(repo, "rev-parse", "HEAD").strip()
+
+    _git(repo, "checkout", "-q", "feature")
+    merge = subprocess.run(
+        ["git", "merge", "--no-commit", "upstream"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    assert merge.returncode == 1
+    feature_registry = json.loads(_git(repo, "show", f"HEAD:{vvs.REGISTRY_PATH}"))
+    upstream_registry = json.loads(_git(repo, "show", f"upstream:{vvs.REGISTRY_PATH}"))
+    entry = feature_registry["components"]["harness.pkg"]
+    entry["version"] = "v3"
+    entry["history"] = [
+        {"version": "v3", "date": "2026-07-20", "note": "merge both changes"},
+        entry["history"][0],
+        upstream_registry["components"]["harness.pkg"]["history"][0],
+        entry["history"][1],
+    ]
+    _write_registry(repo, feature_registry["components"])
+    _git(repo, "add", "-A")
+    assert vvs.run_check(base_arg=None, staged=True) == 0
+    _git(repo, "commit", "-q", "-m", "merge")
+    assert vvs.run_check(base_arg=upstream, staged=False) == 0
 
 
 def test_new_result_doc_requires_stamp(repo: Path, capsys: pytest.CaptureFixture) -> None:

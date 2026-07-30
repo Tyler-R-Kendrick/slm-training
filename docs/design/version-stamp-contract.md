@@ -106,7 +106,9 @@ registry entry in the same change:**
   hatch: it is a reviewable file diff, survives squash-merges, and is
   greppable later.
 - History is append-only in every change — existing entries are never edited
-  or dropped.
+  or dropped. A merge of divergent prepends preserves each parent's complete
+  history in relative order; it cannot make both parent histories literal
+  suffixes of one linear merged list.
 
 When in doubt, bump: a false bump costs one registry line; a missed bump
 poisons every later comparison against the old numbers.

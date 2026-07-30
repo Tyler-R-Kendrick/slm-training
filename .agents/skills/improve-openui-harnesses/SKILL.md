@@ -46,8 +46,12 @@ of adding a parallel trainer, evaluator, artifact tree, or policy.
 - Preserve train/eval isolation, immutable data snapshots, honest slot contracts,
   checkpoint/model-card requirements, and fail-closed RL readiness.
 - Treat fixture/smoke evidence as wiring only. Never weaken gates to promote it.
-- Feed persisted outcomes and diagnoses back through evidence or typed feedback;
-  never let a harness rewrite its own code, frozen cases, or acceptance thresholds.
+- Feed persisted outcomes and diagnoses back through evidence or typed feedback.
+  A continuous controller may route a reproduced `HarnessSignalV1` here, but the
+  repair must touch the canonical owner and replay the identical frozen arm.
+- A harness may not rewrite its own judge, frozen cases, or thresholds in the
+  campaign it is trying to pass. Judge changes require a separate preregistered
+  meta-campaign with unchanged held-out controls and may never weaken a gate.
 - Add a new harness family only when no listed owner fits, then update the reference,
   repository guide, policy, docs, and tests in the same change.
 
@@ -56,7 +60,9 @@ of adding a parallel trainer, evaluator, artifact tree, or policy.
 An improvement is incomplete until the relevant invariant has a focused test and,
 when execution occurred, the canonical JSON plus markdown record states recipe,
 suite size, result, and honest pass/fail. A self-improvement claim additionally
-needs frozen evaluation cases, held-out results, and explicit human promotion.
+needs frozen evaluation cases, held-out results, and the automated frozen
+meta-gate. Passing evidence promotes locally; external delivery remains separately
+authorized.
 
 ## Parameter efficiency (harness edits may not make size free)
 

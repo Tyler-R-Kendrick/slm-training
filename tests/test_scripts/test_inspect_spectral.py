@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from scripts.inspect_spectral import main
+from slm_training.versioning import component_version
 
 pytest.importorskip("torch")
 
@@ -56,12 +57,9 @@ def test_fixture_writes_report_and_design_docs(tmp_path: Path) -> None:
     data = json.loads(run_json.read_text())
     assert data["status"] == "fixture"
     assert data["n_matrices"] > 0
-    assert (
-        data["version_stamp"]["components"][
-            "harness.experiments.slm214_spectral_snapshot"
-        ]
-        == "v4"
-    )
+    assert data["version_stamp"]["components"][
+        "harness.experiments.slm214_spectral_snapshot"
+    ] == component_version("harness.experiments.slm214_spectral_snapshot")
     assert design_json.is_file()
     assert design_md.is_file()
     assert "Honest caveats" in design_md.read_text()

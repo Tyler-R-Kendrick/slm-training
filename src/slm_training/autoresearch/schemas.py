@@ -10,6 +10,19 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 from slm_training.levers import MAX_RUN_MINUTES
 
+HarnessFamily = Literal[
+    "autoresearch",
+    "annotations",
+    "distill",
+    "experiments",
+    "model_build",
+    "preference",
+    "quality",
+    "rl",
+    "test_data",
+    "train_data",
+]
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -130,8 +143,44 @@ class CampaignSpec(StrictModel):
     evidence_roots: tuple[str, ...] = ("outputs",)
     allowed_knobs: frozenset[str] = DEFAULT_ALLOWED_KNOBS
     budget: CampaignBudget = Field(default_factory=CampaignBudget)
+    loop_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+    cycle_index: int | None = Field(default=None, ge=1)
+    predecessor_campaign_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+    upstream_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    integration_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
     created_at: str = Field(default_factory=utc_now)
     notes: str = ""
+
+    @model_validator(mode="after")
+    def validate_loop_lineage(self) -> CampaignSpec:
+        if self.loop_id is None:
+            if any(
+                value is not None
+                for value in (
+                    self.cycle_index,
+                    self.predecessor_campaign_id,
+                    self.upstream_commit,
+                    self.integration_commit,
+                )
+            ):
+                raise ValueError("cycle lineage requires loop_id")
+            return self
+        if self.cycle_index is None:
+            raise ValueError("loop_id requires cycle_index")
+        if self.upstream_commit is None or self.integration_commit is None:
+            raise ValueError(
+                "continuous cycle requires upstream_commit and integration_commit"
+            )
+        if self.cycle_index == 1 and self.predecessor_campaign_id is not None:
+            raise ValueError("first loop cycle cannot have a predecessor campaign")
+        if self.cycle_index > 1 and self.predecessor_campaign_id is None:
+            raise ValueError("later loop cycles require a predecessor campaign")
+        return self
+
 
 class ResearchSource(StrictModel):
     source_id: str
@@ -261,7 +310,10 @@ class ExperimentKnobs(StrictModel):
     mixture_weights: dict[str, float] | None = None
     mixture_sampling_policy: (
         Literal[
-            "with_replacement", "capacity_aware", "quota_capacity_aware", "exposure_targeted"
+            "with_replacement",
+            "capacity_aware",
+            "quota_capacity_aware",
+            "exposure_targeted",
         ]
         | None
     ) = None
@@ -561,6 +613,30 @@ DiagnosisLane = Literal[
     "assumptions",
 ]
 
+PriorityArea = Literal[
+    "data",
+    "researcher",
+    "model",
+    "infrastructure",
+    "evaluation",
+    "promotion",
+    "autoresearch",
+    "annotations",
+    "distill",
+    "experiments",
+    "model_build",
+    "preference",
+    "quality",
+    "rl",
+    "test_data",
+    "train_data",
+    "measurement_control",
+    "training_method",
+    "architecture",
+    "lean_model",
+    "assumptions",
+]
+
 
 class MetricBandBreachV1(StrictModel):
     metric_id: str = Field(min_length=1)
@@ -624,6 +700,53 @@ class HypothesisCandidate(StrictModel):
         return self
 
 
+class NextRunPriorityV1(StrictModel):
+    """Evidence-linked steering; authority is kept distinct from speculation."""
+
+    schema_version: Literal["NextRunPriorityV1"] = "NextRunPriorityV1"
+    rank: int = Field(ge=1)
+    area: PriorityArea
+    hypothesis: str = Field(min_length=12)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    confidence: float = Field(ge=0, le=1)
+    expected_information_gain: str = Field(min_length=8)
+    authority: Literal[
+        "lean_theorem",
+        "lean_assumption",
+        "reproduced_harness_signal",
+        "observed_result",
+        "speculative",
+    ]
+    disposition: Literal[
+        "stop_campaign",
+        "block_promotion",
+        "repair_before_run",
+        "experiment_next",
+        "monitor",
+    ]
+    proposed_experiment_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+
+    @model_validator(mode="after")
+    def validate_authority(self) -> NextRunPriorityV1:
+        if self.authority == "lean_theorem" and self.disposition != "stop_campaign":
+            raise ValueError(
+                "Lean theorem authority must stop the contradicted campaign"
+            )
+        if (
+            self.disposition == "stop_campaign"
+            and self.proposed_experiment_id is not None
+        ):
+            raise ValueError("stopped campaigns cannot nominate a training experiment")
+        if (
+            self.disposition == "experiment_next"
+            and self.proposed_experiment_id is None
+        ):
+            raise ValueError("experiment_next priority requires an experiment id")
+        return self
+
+
 class HypothesisMatrix(StrictModel):
     matrix_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     campaign_id: str
@@ -633,6 +756,7 @@ class HypothesisMatrix(StrictModel):
     selection_rationale: str = Field(min_length=12)
     predecessor_matrix_id: str | None = None
     feedback_ids: tuple[str, ...] = ()
+    next_run_priorities: tuple[NextRunPriorityV1, ...] = ()
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
@@ -661,6 +785,32 @@ class HypothesisMatrix(StrictModel):
             raise ValueError(
                 "matrix with a predecessor_matrix_id must acknowledge feedback_ids"
             )
+        if self.next_run_priorities:
+            ordered = sorted(self.next_run_priorities, key=lambda item: item.rank)
+            if [item.rank for item in ordered] != list(
+                range(1, len(self.next_run_priorities) + 1)
+            ):
+                raise ValueError("next-run priority ranks must be contiguous from one")
+            unknown = {
+                item.proposed_experiment_id
+                for item in ordered
+                if item.proposed_experiment_id is not None
+            } - set(ids)
+            if unknown:
+                raise ValueError(
+                    f"next-run priorities reference unknown experiments: {sorted(unknown)}"
+                )
+            experiment_priorities = [
+                item for item in ordered if item.disposition == "experiment_next"
+            ]
+            if (
+                experiment_priorities
+                and experiment_priorities[0].proposed_experiment_id
+                != self.recommended_experiment_id
+            ):
+                raise ValueError(
+                    "highest-ranked experiment priority must match the recommendation"
+                )
         return self
 
 
@@ -677,12 +827,31 @@ class HypothesisFeedback(StrictModel):
     metrics: dict[str, float] = Field(default_factory=dict)
     data_metrics: dict[str, float] = Field(default_factory=dict)
     diagnosis_target: Literal[
-        "data", "researcher", "model", "infrastructure", "none"
+        "data", "researcher", "model", "harness", "infrastructure", "none"
     ]
+    harness_family: HarnessFamily | None = None
     diagnosis_evidence: tuple[str, ...]
     recommended_actions: tuple[str, ...]
     optimum_feedback: OptimumFeedbackV1 | None = None
     created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_harness_family(self) -> HypothesisFeedback:
+        if self.diagnosis_target == "harness" and self.harness_family is None:
+            raise ValueError("harness feedback requires harness_family")
+        if self.diagnosis_target != "harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for harness feedback")
+        return self
+
+
+class HarnessSignalV1(StrictModel):
+    """Frozen-input evidence that a canonical harness, not a model arm, failed."""
+
+    family: HarnessFamily
+    code: str = Field(min_length=1)
+    evidence_uri: str = Field(min_length=1)
+    reproduced_on_frozen_input: bool
+    primary: bool = False
 
 
 class ExperimentOutcome(StrictModel):
@@ -698,20 +867,38 @@ class ExperimentOutcome(StrictModel):
     error: str | None = None
     wall_time_budget_seconds: float | None = Field(default=None, gt=0)
     stage_telemetry: tuple[dict[str, Any], ...] = ()
+    harness_signals: tuple[HarnessSignalV1, ...] = ()
     started_at: str | None = None
     finished_at: str | None = None
     campaign_manifest_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
 
+    @model_validator(mode="after")
+    def validate_harness_signals(self) -> ExperimentOutcome:
+        if sum(signal.primary for signal in self.harness_signals) > 1:
+            raise ValueError(
+                "experiment outcome may name at most one primary harness signal"
+            )
+        return self
+
 
 class Diagnosis(StrictModel):
     experiment_id: str
-    target: Literal["data", "researcher", "model", "infrastructure", "none"]
+    target: Literal["data", "researcher", "model", "harness", "infrastructure", "none"]
+    harness_family: HarnessFamily | None = None
     confidence: float = Field(ge=0, le=1)
     evidence: tuple[str, ...]
     recommended_actions: tuple[str, ...]
     created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_harness_family(self) -> Diagnosis:
+        if self.target == "harness" and self.harness_family is None:
+            raise ValueError("harness diagnosis requires harness_family")
+        if self.target != "harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for a harness diagnosis")
+        return self
 
 
 class RLReadinessReport(StrictModel):
@@ -740,6 +927,9 @@ class ResearcherBenchmarkReport(StrictModel):
     actionable_rate: float = Field(ge=0, le=1)
     pass_threshold: float = Field(ge=0, le=1)
     passed: bool
+    promotion_policy: Literal["human_review_v1", "automated_frozen_meta_gate_v1"] = (
+        "human_review_v1"
+    )
     human_approved: bool = False
     promotable: bool = False
     agentv: dict[str, Any] = Field(default_factory=dict)
@@ -757,6 +947,9 @@ class HypothesizerBenchmarkReport(StrictModel):
     feedback_lineage_rate: float = Field(ge=0, le=1)
     pass_threshold: float = Field(ge=0, le=1)
     passed: bool
+    promotion_policy: Literal["human_review_v1", "automated_frozen_meta_gate_v1"] = (
+        "human_review_v1"
+    )
     human_approved: bool = False
     promotable: bool = False
     agentv: dict[str, Any] = Field(default_factory=dict)

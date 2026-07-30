@@ -125,12 +125,16 @@ class AgentHypothesisProvider:
 class OpenAIResearchProvider:
     """Two-pass Responses researcher: web discovery, then strict experiment spec."""
 
-    def __init__(self, *, model: str = "gpt-5.6-sol", client: Any | None = None) -> None:
+    def __init__(
+        self, *, model: str = "gpt-5.6-sol", client: Any | None = None
+    ) -> None:
         if client is None:
             try:
                 from openai import OpenAI
             except ImportError as exc:  # pragma: no cover - dependency error
-                raise RuntimeError("install slm-training[research] for OpenAI research") from exc
+                raise RuntimeError(
+                    "install slm-training[research] for OpenAI research"
+                ) from exc
             client = OpenAI()
         self.client = client
         self.model = model
@@ -193,7 +197,9 @@ class OpenAIResearchProvider:
 class OpenAIProposalCompiler:
     """Compile a persisted cited memo into the only executable proposal schema."""
 
-    def __init__(self, *, model: str = "gpt-5.6-sol", client: Any | None = None) -> None:
+    def __init__(
+        self, *, model: str = "gpt-5.6-sol", client: Any | None = None
+    ) -> None:
         if client is None:
             try:
                 from openai import OpenAI
@@ -256,7 +262,9 @@ class OpenAIProposalCompiler:
 class OpenAIHypothesizer:
     """Compile research and prior evidence into a diverse experiment matrix."""
 
-    def __init__(self, *, model: str = "gpt-5.6-sol", client: Any | None = None) -> None:
+    def __init__(
+        self, *, model: str = "gpt-5.6-sol", client: Any | None = None
+    ) -> None:
         if client is None:
             try:
                 from openai import OpenAI
@@ -298,10 +306,12 @@ class OpenAIHypothesizer:
             memo = str(getattr(discovery, "output_text", ""))
             if not memo.strip():
                 raise ValueError("hypothesizer discovery returned an empty memo")
-            sources = list({
-                item.uri: item
-                for item in [*sources, *_extract_web_sources(discovery)]
-            }.values())
+            sources = list(
+                {
+                    item.uri: item
+                    for item in [*sources, *_extract_web_sources(discovery)]
+                }.values()
+            )
             context = _research_context(campaign, evidence, sources)
         prompt = (
             f"Return one HypothesisMatrix with at least {campaign.min_hypotheses} "
@@ -310,11 +320,18 @@ class OpenAIHypothesizer:
             "evidence paths and change only typed knobs. Seek high-information, "
             "falsifiable ideas not represented by prior knob-value signatures.\n\n"
             "Set recommended_experiment_id to the highest-information safe candidate "
-            "and explain the choice in selection_rationale. When feedback is supplied, "
-            "copy every feedback_id into feedback_ids and set predecessor_matrix_id "
-            "to the matrix_id shared by that feedback. If optimum_feedback carries "
-            "diagnosis_lanes, assign diagnosis_lane so the matrix covers each named "
-            "lane; do not infer a cause from the band miss alone.\n\n"
+            "and explain the choice in selection_rationale. For continuous campaigns, "
+            "rank evidence-linked NextRunPriorityV1 entries; the highest-ranked "
+            "experiment_next entry must nominate the recommended experiment. Label "
+            "hypotheses as speculative and preserve Lean or reproduced-harness "
+            "authority without turning it into a causal claim. When feedback is "
+            "supplied, copy every feedback_id into feedback_ids and priority "
+            "evidence_ids, then set predecessor_matrix_id to the matrix_id shared by "
+            "that feedback. If optimum_feedback carries diagnosis_lanes, assign "
+            "diagnosis_lane to candidates and emit one lean_assumption priority for "
+            "every named lane. Reproduced harness feedback requires a "
+            "repair_before_run priority for its canonical family. A lean_theorem stop "
+            "does not authorize another matrix or training run.\n\n"
             "For every hypothesis, apply arXiv:2606.01444 as an engineering audit: "
             "state the old schema, proposed schema, what old evidence transports, the "
             "transport/reachability analysis, claimed residual, preservation checks, "

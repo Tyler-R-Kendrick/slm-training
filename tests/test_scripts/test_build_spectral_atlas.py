@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from scripts.build_spectral_atlas import main
+from slm_training.versioning import component_version
 
 
 def test_describe_mode(capsys) -> None:
@@ -52,12 +53,9 @@ def test_fixture_writes_report_and_design_docs(tmp_path: Path) -> None:
     data = json.loads(run_json.read_text())
     assert data["status"] == "fixture"
     assert data["n_rows"] > 0
-    assert (
-        data["version_stamp"]["components"][
-            "harness.experiments.slm215_spectral_atlas"
-        ]
-        == "v3"
-    )
+    assert data["version_stamp"]["components"][
+        "harness.experiments.slm215_spectral_atlas"
+    ] == component_version("harness.experiments.slm215_spectral_atlas")
     assert design_json.is_file()
     assert design_md.is_file()
     assert "Honest caveats" in design_md.read_text()

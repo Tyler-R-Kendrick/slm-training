@@ -117,9 +117,11 @@ unknown fields forbidden:
   `formal_claims` bind versioned Lean preflight templates with `required` or
   `advisory` policy;
 - `HypothesisMatrix` requires at least five distinct candidates, a recommended
-  member, selection rationale, and feedback/predecessor lineage when revising. Each
-  candidate records how research, prior traces, and prior results informed it plus a
-  typed `CategoricalNoveltyAudit`;
+  member, selection rationale, and feedback/predecessor lineage when revising.
+  Continuous matrices also carry ranked `NextRunPriorityV1` steering that cites
+  its evidence and distinguishes Lean/reproduced-harness authority from speculative
+  hypotheses. Each candidate records how research, prior traces, and prior results
+  informed it plus a typed `CategoricalNoveltyAudit`;
 - `HypothesisFeedback` records the tested hypothesis/signature, terminal metrics,
   diagnosis evidence, recommended actions, and optional hash-bound Lean optimum
   feedback without inventing causal support;
@@ -295,6 +297,36 @@ ID uniqueness prevents run budgets and outcome lineage from aliasing an older
 candidate. Matrix candidates are reviewable plans; only uniquely started experiments
 consume `max_experiments`.
 
+Each campaign is bounded self-improvement by accumulated evidence and policy
+iteration. Bare `/autotrain` may chain those bounded campaigns under one persistent
+`loop_id`; it never creates an unbounded train process. `cycle_index`,
+`predecessor_campaign_id`, `upstream_commit`, and `integration_commit` preserve
+cross-cycle and merge provenance. The controller loads predecessor feedback across
+campaign stores, requires the locked manifest source to equal the clean integrated
+commit, and refuses a commit that does not contain the fetched `origin/main`.
+`autoresearch status --loop-id <id> --matrix --last 5` derives three between-run
+tables from verified event chains: results, diagnostic/harness/Lean signals, and
+ranked next-run priorities (`--all` shows complete history).
+
+An outcome may carry a typed `HarnessSignalV1`. Only a signal reproduced on the
+frozen input can diagnose `target=harness`, and it must identify one canonical
+harness family. The controller repairs that shared owner through
+`improve-openui-harnesses`, then replays the identical model/data arm. This keeps
+harness improvement attributable instead of allowing a model and judge to co-adapt.
+
+Lean optimum feedback crosses the same campaign boundary. A theorem-backed miss
+stops the contradicted campaign and leaves the persistent outer goal in
+measurement/formal-model repair. An assumption-backed miss blocks promotion and
+requires all five `measurement_control`, `training_method`, `architecture`,
+`lean_model`, and `assumptions` lanes in both the successor candidates and their
+ranked priorities. The signal never becomes a gradient term or causal claim.
+
+Ordinary researcher and hypothesizer changes promote locally when their frozen
+benchmark passes. A change to an evaluator, metric, threshold, gate, or frozen case
+requires a separate preregistered `ExperimentCampaignV1` meta-campaign with
+unchanged held-out controls. It may not lower/delete a gate, train on frozen cases,
+or change the meta-gate that judges itself.
+
 Formal preflights are structural filters, not predicted experiment outcomes. A
 locked `required` claim must have a fresh `proved` artifact; conditional,
 refuted, unknown, missing, or source-drifted evidence blocks execution. Advisory
@@ -303,10 +335,10 @@ templates, fixed-point/history example, proof scopes, and concrete-to-abstract
 trace contract are defined in
 [`formal-autoresearch.md`](formal-autoresearch.md).
 
-This is bounded self-improvement by accumulated evidence and policy iteration. It is
-not online weight training or permission to edit implementation, frozen evaluations,
-promotion policy, or ship gates. Hypothesizer implementation changes still require
-held-out evaluation and human approval before being treated as promoted behavior.
+This is not online weight training or permission to silently edit frozen
+evaluations, promotion policy, or ship gates. Hypothesizer implementation changes
+must clear the separate preregistered held-out meta-campaign above before the
+controller treats them as promoted behavior.
 
 ## Isolated researcher setup
 
@@ -416,8 +448,9 @@ Researcher changes are evaluated on
 `src/slm_training/resources/autoresearch/researcher_cases.json`. The benchmark measures strict-spec
 validity, grounded citations, distinct bounded knob signatures, and actionable
 expected-knob/stop coverage. It publishes AgentEvals JSONL through the pinned AgentV
-SDK. Promotion requires every score to clear the threshold, all cases to pass, and a
-separate human approval. Frozen benchmark cases are evaluation-only.
+SDK. Promotion requires every score to clear the automated frozen meta-gate and all
+cases to pass. Frozen benchmark cases are evaluation-only; judge changes use the
+separate meta-campaign described above.
 
 Hypothesizer changes use the parallel frozen matrix evaluation in
 `src/slm_training/resources/autoresearch/hypothesizer_cases.json`. It measures valid

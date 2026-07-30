@@ -65,6 +65,8 @@ reintroduce silent `gold.placeholders` channels under
 
 No paid GPU, remote job, or Hugging Face write without explicit user approval.
 `HF_TOKEN` is required for bucket/HF-context work and is never committed.
+Continuous `/autotrain` defaults to a local branch/worktree only. Pushes, PRs,
+merges, remote jobs, and paid services require new explicit authority.
 
 ## Quality/retrieval harness
 

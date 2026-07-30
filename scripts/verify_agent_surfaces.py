@@ -77,6 +77,32 @@ def _on(
 
 OBLIGATIONS: tuple[Obligation, ...] = (
     Obligation(
+        id="autotrain.continuous-harness-loop",
+        why="bare autotrain must keep improving models and evidence-implicated canonical harnesses",
+        requires=(
+            (
+                ".agents/skills/autotrain/SKILL.md",
+                (
+                    "continuous",
+                    "improve-openui-harnesses",
+                    "improve-lean-optimums",
+                    "--matrix",
+                ),
+            ),
+            (
+                ".grok/workflows/autotrain.rhai",
+                (
+                    "continuous",
+                    "improve-openui-harnesses",
+                    "improve-lean-optimums",
+                    "origin/main",
+                    "--matrix",
+                ),
+            ),
+        ),
+        scope="skills",
+    ),
+    Obligation(
         id="decode.invariants",
         why="constrained decoding is the product; a silent weakening is a regression",
         requires=(

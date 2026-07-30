@@ -55,15 +55,17 @@ from slm_training.autoresearch.schemas import (
     ExperimentKnobs,
     ExperimentOutcome,
     ExperimentSpec,
+    HarnessSignalV1,
     HypothesisCandidate,
     HypothesisFeedback,
     HypothesisMatrix,
+    NextRunPriorityV1,
     OpenDeepResearchConfig,
     OpenResearcherConfig,
     OptimumFeedbackV1,
     ResearchSource,
 )
-from slm_training.autoresearch.storage import CampaignStore
+from slm_training.autoresearch.storage import CampaignStore, render_loop_result_matrix
 
 
 def campaign() -> CampaignSpec:
@@ -139,9 +141,7 @@ def experiment_campaign(**overrides) -> ExperimentCampaignV1:
                 threshold=0,
             ),
         ),
-        "artifact_requirements": (
-            ArtifactRequirementV1(kind="version_stamp"),
-        ),
+        "artifact_requirements": (ArtifactRequirementV1(kind="version_stamp"),),
         "claim_class": "diagnostic",
         "source_commit": "c" * 40,
         "source_dirty": False,
@@ -226,6 +226,8 @@ def hypothesis_matrix(
     feedback_ids: tuple[str, ...] = (),
     offset: int = 0,
     diagnosis_lanes: tuple[str, ...] = (),
+    campaign_id: str = "test-campaign",
+    next_run_priorities: tuple[NextRunPriorityV1, ...] = (),
 ) -> HypothesisMatrix:
     citations = (
         "docs/design/research-lineage.md",
@@ -239,6 +241,7 @@ def hypothesis_matrix(
             HypothesisCandidate(
                 experiment=experiment(
                     experiment_id=f"hyp-{number}",
+                    campaign_id=campaign_id,
                     hypothesis=f"Distinct grounded hypothesis number {number} improves structure.",
                     citations=citations,
                     knobs=ExperimentKnobs(steps=100 + number),
@@ -286,13 +289,38 @@ def hypothesis_matrix(
         )
     return HypothesisMatrix(
         matrix_id=matrix_id,
-        campaign_id="test-campaign",
+        campaign_id=campaign_id,
         evidence_snapshot_id="evidence-matrix",
         hypotheses=tuple(candidates),
         recommended_experiment_id=f"hyp-{offset}",
         selection_rationale="Highest-information safe candidate in this matrix.",
         predecessor_matrix_id=predecessor_matrix_id,
         feedback_ids=feedback_ids,
+        next_run_priorities=next_run_priorities,
+    )
+
+
+def next_priority(
+    *,
+    experiment_id: str = "hyp-0",
+    evidence_ids: tuple[str, ...] = ("fixture://prior-run",),
+    area: str = "model",
+    authority: str = "speculative",
+    disposition: str = "experiment_next",
+    rank: int = 1,
+) -> NextRunPriorityV1:
+    return NextRunPriorityV1(
+        rank=rank,
+        area=area,
+        hypothesis=f"Test the {area} lane as the next bounded intervention.",
+        evidence_ids=evidence_ids,
+        confidence=0.5,
+        expected_information_gain="Distinguishes the leading failure mechanisms.",
+        authority=authority,
+        disposition=disposition,
+        proposed_experiment_id=(
+            experiment_id if disposition == "experiment_next" else None
+        ),
     )
 
 
@@ -590,7 +618,9 @@ def test_campaign_store_rejects_different_relock_and_artifact_mutation(
 
     with pytest.raises(FileExistsError, match="different content"):
         store.lock_experiment_campaign(
-            manifest.model_copy(update={"hypothesis": "A different preregistered hypothesis."})
+            manifest.model_copy(
+                update={"hypothesis": "A different preregistered hypothesis."}
+            )
         )
 
     lock_event = next(
@@ -655,13 +685,16 @@ def test_campaign_store_serializes_conflicting_locks(tmp_path: Path) -> None:
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(attempt, (first, second)))
     assert results.count("rejected") == 1
-    assert len(
-        [
-            event
-            for event in store.verify_event_chain()
-            if event["event_type"] == "experiment_campaign_locked"
-        ]
-    ) == 1
+    assert (
+        len(
+            [
+                event
+                for event in store.verify_event_chain()
+                if event["event_type"] == "experiment_campaign_locked"
+            ]
+        )
+        == 1
+    )
 
 
 def test_campaign_store_detects_event_chain_tampering(tmp_path: Path) -> None:
@@ -914,7 +947,9 @@ def test_agent_hypothesizer_persists_matrix_and_formation_event(
     )
     events = [
         json.loads(line)
-        for line in (store.root / "events.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in (store.root / "events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
     ]
     assert sum(row["event_type"] == "experiment_proposed" for row in events) == 5
     assert any(row["event_type"] == "hypothesis_matrix_formed" for row in events)
@@ -928,9 +963,7 @@ def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> 
     store.initialize(
         base_campaign.model_copy(
             update={
-                "budget": base_campaign.budget.model_copy(
-                    update={"max_experiments": 5}
-                )
+                "budget": base_campaign.budget.model_copy(update={"max_experiments": 5})
             }
         )
     )
@@ -979,7 +1012,10 @@ def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> 
     )
     formed = [
         row
-        for row in (json.loads(line) for line in store.root.joinpath("events.jsonl").read_text().splitlines())
+        for row in (
+            json.loads(line)
+            for line in store.root.joinpath("events.jsonl").read_text().splitlines()
+        )
         if row["event_type"] == "hypothesis_matrix_formed"
     ]
     assert len(formed) == 2
@@ -994,8 +1030,7 @@ def test_evidence_normalizes_feedback_telemetry_and_lineage(tmp_path: Path) -> N
     (outputs / "train_telemetry.json").write_text(json.dumps({"loss": 1.2}))
     (outputs / "human_feedback.jsonl").write_text('{"reward":0.5}\n')
     feedback_dir = (
-        tmp_path
-        / "outputs/autoresearch/prior/artifacts/hypothesizer_feedback"
+        tmp_path / "outputs/autoresearch/prior/artifacts/hypothesizer_feedback"
     )
     feedback_dir.mkdir(parents=True)
     feedback_dir.joinpath("feedback.json").write_text(
@@ -1248,7 +1283,9 @@ def test_openai_hypothesizer_discovers_memo_when_none_is_persisted() -> None:
     result = harness.propose(campaign(), matrix_evidence(), [], "")
     assert result.research_memo == "Cited discovery memo"
     assert result.telemetry["discovery_response_id"] == "resp-hypothesis-discovery"
-    assert any(source.uri == "https://example.com/new-paper" for source in result.sources)
+    assert any(
+        source.uri == "https://example.com/new-paper" for source in result.sources
+    )
 
 
 def test_hypothesizer_benchmark_scores_feedback_lineage(
@@ -1287,7 +1324,9 @@ def test_hypothesizer_benchmark_scores_feedback_lineage(
     )
     predictions_path = tmp_path / "predictions.jsonl"
     predictions_path.write_text(
-        json.dumps({"case_id": "feedback-case", "matrix": matrix.model_dump(mode="json")})
+        json.dumps(
+            {"case_id": "feedback-case", "matrix": matrix.model_dump(mode="json")}
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -1304,7 +1343,8 @@ def test_hypothesizer_benchmark_scores_feedback_lineage(
     )
     assert report.passed
     assert report.feedback_lineage_rate == 1.0
-    assert not report.promotable
+    assert report.promotable
+    assert report.promotion_policy == "automated_frozen_meta_gate_v1"
 
 
 def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
@@ -1323,8 +1363,14 @@ def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
                 "criteria": "Form a grounded candidate matrix.",
                 "evidence": [
                     {"uri": "docs/design/research-lineage.md", "role": "research"},
-                    {"uri": "outputs/runs/prior/run_insights.json", "role": "prior_trace"},
-                    {"uri": "outputs/runs/prior/scoreboard.json", "role": "prior_result"},
+                    {
+                        "uri": "outputs/runs/prior/run_insights.json",
+                        "role": "prior_trace",
+                    },
+                    {
+                        "uri": "outputs/runs/prior/scoreboard.json",
+                        "role": "prior_result",
+                    },
                 ],
                 "required_roles": ["research", "prior_trace", "prior_result"],
                 "expected_knobs": ["steps" if index == 0 else "lr"],
@@ -1333,7 +1379,10 @@ def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
             }
         )
         predictions.append(
-            {"case_id": f"case-{index}", "matrix": hypothesis_matrix().model_dump(mode="json")}
+            {
+                "case_id": f"case-{index}",
+                "matrix": hypothesis_matrix().model_dump(mode="json"),
+            }
         )
     cases_path = tmp_path / "cases.json"
     cases_path.write_text(json.dumps(cases), encoding="utf-8")
@@ -1571,6 +1620,581 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     assert "immutable data snapshot" in diagnosis.recommended_actions[0]
 
 
+def test_campaign_loop_lineage_is_strict() -> None:
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Continue a bounded evidence-driven campaign.",
+        primary_metric="score",
+        loop_id="continuous-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    assert first.predecessor_campaign_id is None
+    with pytest.raises(ValidationError, match="later loop cycles require"):
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Continue a bounded evidence-driven campaign.",
+            primary_metric="score",
+            loop_id="continuous-1",
+            cycle_index=2,
+            upstream_commit="a" * 40,
+            integration_commit="b" * 40,
+        )
+
+
+def test_continuous_matrix_requires_ranked_priorities() -> None:
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Continue a bounded evidence-driven campaign.",
+        primary_metric="score",
+        loop_id="continuous-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    without_priorities = hypothesis_matrix(campaign_id="cycle-1")
+    with pytest.raises(ValueError, match="next-run priorities"):
+        validate_hypothesis_matrix(
+            loop_campaign, without_priorities, matrix_evidence(), []
+        )
+
+    with_priorities = hypothesis_matrix(
+        campaign_id="cycle-1",
+        next_run_priorities=(next_priority(experiment_id="hyp-0"),),
+    )
+    validate_hypothesis_matrix(loop_campaign, with_priorities, matrix_evidence(), [])
+
+
+def test_continuous_commit_validation_requires_latest_integrated_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts import autoresearch
+
+    upstream = "a" * 40
+    integration = "b" * 40
+
+    def fake_git(*args: str, check: bool = True):
+        if args[:2] == ("rev-parse", "--verify"):
+            ref = args[2]
+            value = (
+                upstream
+                if ref in {f"{upstream}^{{commit}}", "origin/main^{commit}"}
+                else integration
+            )
+            return subprocess.CompletedProcess(args, 0, value + "\n", "")
+        if args[:2] == ("merge-base", "--is-ancestor"):
+            return subprocess.CompletedProcess(args, 0, "", "")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(autoresearch, "_git", fake_git)
+    autoresearch._validate_continuous_commits(upstream, integration)
+
+    def stale_git(*args: str, check: bool = True):
+        result = fake_git(*args, check=check)
+        if args == ("rev-parse", "--verify", "origin/main^{commit}"):
+            return subprocess.CompletedProcess(args, 0, "c" * 40 + "\n", "")
+        return result
+
+    monkeypatch.setattr(autoresearch, "_git", stale_git)
+    with pytest.raises(ValueError, match="stale"):
+        autoresearch._validate_continuous_commits(upstream, integration)
+
+
+def test_continuous_run_binds_manifest_to_integration_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from scripts import autoresearch
+
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Run from the exact fetched and integrated source revision.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    store = CampaignStore("cycle-1", tmp_path)
+    store.initialize(loop_campaign)
+    matrix = hypothesis_matrix(
+        campaign_id="cycle-1",
+        next_run_priorities=(next_priority(experiment_id="hyp-0"),),
+    )
+    matrix_path = store.write_artifact("hypothesis_matrices", matrix)
+    store.append_event("hypothesis_matrix_formed", artifact_sha256=matrix_path.stem)
+    manifest = experiment_campaign(
+        campaign_id="cycle-1",
+        experiment_id="hyp-0",
+        source_commit="c" * 40,
+    )
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(manifest.model_dump_json(), encoding="utf-8")
+    monkeypatch.setattr(
+        autoresearch, "_validate_continuous_commits", lambda *_args: None
+    )
+
+    with pytest.raises(ValueError, match="integration_commit"):
+        autoresearch.cmd_run(
+            SimpleNamespace(
+                campaign_id="cycle-1",
+                root=tmp_path,
+                experiment=None,
+                campaign_manifest=manifest_path,
+                execute=False,
+                trackio=False,
+            )
+        )
+
+
+def test_continuous_successor_accepts_cross_campaign_feedback(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import cmd_hypothesize
+
+    first_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Run the first bounded evidence-driven campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    first_store = CampaignStore("cycle-1", tmp_path)
+    first_store.initialize(first_campaign)
+    first = hypothesis_matrix(campaign_id="cycle-1")
+    first_path = first_store.write_artifact("hypothesis_matrices", first)
+    first_store.append_event(
+        "hypothesis_matrix_formed", artifact_sha256=first_path.stem
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="model",
+        diagnosis_evidence=("The matched run remained below its gate.",),
+        recommended_actions=("Test a bounded model repair.",),
+    )
+    feedback_path = first_store.write_artifact("hypothesizer_feedback", feedback)
+    first_store.append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id="hyp-0",
+        artifact_sha256=feedback_path.stem,
+    )
+
+    second_campaign = CampaignSpec(
+        campaign_id="cycle-2",
+        objective="Continue from the predecessor campaign feedback.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=2,
+        predecessor_campaign_id="cycle-1",
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    second_store = CampaignStore("cycle-2", tmp_path)
+    second_store.initialize(second_campaign)
+    second_store.write_artifact("evidence", matrix_evidence())
+    sources = second_store.write_artifact("research_sources", {"sources": []})
+    successor = hypothesis_matrix(
+        matrix_id="matrix-2",
+        campaign_id="cycle-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        next_run_priorities=(
+            next_priority(
+                experiment_id="hyp-10",
+                evidence_ids=(feedback.feedback_id,),
+            ),
+        ),
+    )
+    matrix_path = tmp_path / "successor.json"
+    matrix_path.write_text(successor.model_dump_json(), encoding="utf-8")
+
+    assert (
+        cmd_hypothesize(
+            SimpleNamespace(
+                campaign_id="cycle-2",
+                root=tmp_path,
+                evidence=None,
+                sources=sources,
+                provider="agent",
+                matrix=matrix_path,
+                model="unused",
+                memo=None,
+            )
+        )
+        == 0
+    )
+    formed = [
+        event
+        for event in second_store.verify_event_chain()
+        if event["event_type"] == "hypothesis_matrix_formed"
+    ]
+    assert len(formed) == 1
+
+
+def test_continuous_lean_miss_requires_five_priority_lanes() -> None:
+    first = hypothesis_matrix(campaign_id="cycle-1")
+    optimum = OptimumFeedbackV1(
+        policy="block_promotion_and_diagnose",
+        breaches=(
+            {
+                "metric_id": "latency",
+                "authority": "assumption_backed",
+                "relation": "above",
+            },
+        ),
+        diagnosis_lanes=(
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        ),
+        metric_evidence_sha256="a" * 64,
+        metric_certificate_sha256="b" * 64,
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="none",
+        diagnosis_evidence=("Latency exceeded its assumption-backed band.",),
+        recommended_actions=("Run all five controlled diagnosis lanes.",),
+        optimum_feedback=optimum,
+    )
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-2",
+        objective="Diagnose every lane implicated by the certified band miss.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=2,
+        predecessor_campaign_id="cycle-1",
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    priorities = tuple(
+        next_priority(
+            experiment_id="hyp-10",
+            evidence_ids=(feedback.feedback_id,),
+            area=lane,
+            authority="lean_assumption",
+            disposition="experiment_next" if rank == 1 else "block_promotion",
+            rank=rank,
+        )
+        for rank, lane in enumerate(optimum.diagnosis_lanes, start=1)
+    )
+    complete = hypothesis_matrix(
+        matrix_id="matrix-2",
+        campaign_id="cycle-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        diagnosis_lanes=optimum.diagnosis_lanes,
+        next_run_priorities=priorities,
+    )
+    validate_hypothesis_matrix(
+        loop_campaign,
+        complete,
+        matrix_evidence(),
+        [],
+        feedback=(feedback,),
+        previous_matrix=first,
+    )
+
+    missing_lane = complete.model_copy(update={"next_run_priorities": priorities[:-1]})
+    with pytest.raises(ValueError, match="Lean-assumption priority"):
+        validate_hypothesis_matrix(
+            loop_campaign,
+            missing_lane,
+            matrix_evidence(),
+            [],
+            feedback=(feedback,),
+            previous_matrix=first,
+        )
+
+
+def test_continuous_harness_feedback_requires_repair_priority() -> None:
+    first = hypothesis_matrix(campaign_id="cycle-1")
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="failed",
+        diagnosis_target="harness",
+        harness_family="model_build",
+        diagnosis_evidence=("Frozen replay reproduced the evaluator failure.",),
+        recommended_actions=("Repair the canonical evaluator and replay.",),
+    )
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-2",
+        objective="Repair the reproduced canonical harness failure.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=2,
+        predecessor_campaign_id="cycle-1",
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    wrong = hypothesis_matrix(
+        matrix_id="matrix-2",
+        campaign_id="cycle-2",
+        predecessor_matrix_id=first.matrix_id,
+        feedback_ids=(feedback.feedback_id,),
+        offset=10,
+        next_run_priorities=(
+            next_priority(
+                experiment_id="hyp-10",
+                evidence_ids=(feedback.feedback_id,),
+            ),
+        ),
+    )
+    with pytest.raises(ValueError, match="repair priority"):
+        validate_hypothesis_matrix(
+            loop_campaign,
+            wrong,
+            matrix_evidence(),
+            [],
+            feedback=(feedback,),
+            previous_matrix=first,
+        )
+
+    repair = wrong.model_copy(
+        update={
+            "next_run_priorities": (
+                next_priority(
+                    evidence_ids=(feedback.feedback_id,),
+                    area="model_build",
+                    authority="reproduced_harness_signal",
+                    disposition="repair_before_run",
+                ),
+            )
+        }
+    )
+    validate_hypothesis_matrix(
+        loop_campaign,
+        repair,
+        matrix_evidence(),
+        [],
+        feedback=(feedback,),
+        previous_matrix=first,
+    )
+
+
+def test_frozen_harness_signal_routes_one_canonical_owner() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="exp-1",
+            campaign_id="test-campaign",
+            status="failed",
+            error="evaluation crashed",
+            harness_signals=(
+                HarnessSignalV1(
+                    family="model_build",
+                    code="fixture-replay-crash",
+                    evidence_uri="outputs/repro/frozen.json",
+                    reproduced_on_frozen_input=True,
+                    primary=True,
+                ),
+            ),
+        )
+    )
+    assert diagnosis.target == "harness"
+    assert diagnosis.harness_family == "model_build"
+    assert "identical frozen model/data arm" in diagnosis.recommended_actions[1]
+
+    unconfirmed = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="exp-2",
+            campaign_id="test-campaign",
+            status="failed",
+            harness_signals=(
+                HarnessSignalV1(
+                    family="model_build",
+                    code="suspected-crash",
+                    evidence_uri="outputs/repro/unconfirmed.json",
+                    reproduced_on_frozen_input=False,
+                ),
+            ),
+        )
+    )
+    assert unconfirmed.target == "infrastructure"
+
+
+def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
+    tmp_path: Path,
+) -> None:
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Improve one declared metric with bounded evidence.",
+        primary_metric="held_out.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(loop_campaign.campaign_id, tmp_path)
+    store.initialize(loop_campaign)
+    manifest = experiment_campaign(
+        campaign_id="cycle-1",
+        experiment_id="hyp-0",
+        source_commit="d" * 40,
+    )
+    store.lock_experiment_campaign(manifest)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-0",
+        campaign_id="cycle-1",
+        status="completed",
+        metrics={
+            "held_out.structural_similarity": 0.75,
+            "trainable_params": 1234,
+            "ship_gates_pass": 1,
+        },
+    )
+    outcome_path = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        status="completed",
+        artifact_sha256=outcome_path.stem,
+        detail={"campaign_manifest_sha256": campaign_manifest_sha256(manifest)},
+    )
+    diagnosis = Diagnosis(
+        experiment_id="hyp-0",
+        target="none",
+        confidence=0.6,
+        evidence=("no defect",),
+        recommended_actions=("retain evidence",),
+    )
+    diagnosis_path = store.write_artifact("diagnoses", diagnosis)
+    store.append_event(
+        "outcome_diagnosed",
+        experiment_id="hyp-0",
+        status="none",
+        artifact_sha256=diagnosis_path.stem,
+    )
+
+    matrix = render_loop_result_matrix(tmp_path, "loop-1")
+    assert (
+        "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 0.75 | — | — | pass | completed |"
+    ) in matrix
+
+
+def test_loop_tables_surface_lean_authority_and_stop_priority(tmp_path: Path) -> None:
+    loop_campaign = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Classify a preregistered theorem-backed metric band.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    store = CampaignStore("cycle-1", tmp_path)
+    store.initialize(loop_campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-0",
+        campaign_id="cycle-1",
+        status="completed",
+        metrics={"score": 1.0},
+    )
+    outcome_path = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        artifact_sha256=outcome_path.stem,
+    )
+    optimum = OptimumFeedbackV1(
+        policy="stop",
+        breaches=(
+            {
+                "metric_id": "invalid_grammar_count",
+                "authority": "theorem",
+                "relation": "above",
+            },
+        ),
+        diagnosis_lanes=(
+            "measurement_control",
+            "training_method",
+            "architecture",
+            "lean_model",
+            "assumptions",
+        ),
+        metric_evidence_sha256="c" * 64,
+        metric_certificate_sha256="d" * 64,
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id="matrix-1",
+        experiment_id="hyp-0",
+        hypothesis="The exact grammar invariant remains inside its proved band.",
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="none",
+        diagnosis_evidence=("Lean replay found a theorem-backed contradiction.",),
+        recommended_actions=("Stop and repair the measurement or formal model.",),
+        optimum_feedback=optimum,
+    )
+    feedback_path = store.write_artifact("hypothesizer_feedback", feedback)
+    store.append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id="hyp-0",
+        artifact_sha256=feedback_path.stem,
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "Run Results" in rendered
+    assert "Diagnostic Signals" in rendered
+    assert "Speculative Next-Run Priorities" in rendered
+    assert "invalid_grammar_count:above[theorem]" in rendered
+    assert "e:cccccccc c:dddddddd" in rendered
+    assert "lean_theorem" in rendered
+    assert "stop_campaign" in rendered
+
+
+def test_loop_result_matrix_rejects_broken_predecessor_chain(tmp_path: Path) -> None:
+    CampaignStore("cycle-1", tmp_path).initialize(
+        CampaignSpec(
+            campaign_id="cycle-1",
+            objective="Run the first bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=1,
+            upstream_commit="a" * 40,
+            integration_commit="b" * 40,
+        )
+    )
+    CampaignStore("cycle-2", tmp_path).initialize(
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Run the next bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id="wrong-cycle",
+            upstream_commit="c" * 40,
+            integration_commit="d" * 40,
+        )
+    )
+    with pytest.raises(RuntimeError, match="predecessor chain"):
+        render_loop_result_matrix(tmp_path, "loop-1")
+
+
 def test_compile_resolves_canonical_published_train_version() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(
@@ -1623,17 +2247,35 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--compiler-alignment-stratified" in commands[0]
     assert commands[0][commands[0].index("--compiler-alignment-margin") + 1] == "1.0"
     assert "--compiler-alignment-semantic-exhaustive" in commands[0]
-    assert commands[0][commands[0].index("--component-inventory-loss-weight") + 1] == "1.0"
-    assert commands[0][commands[0].index("--component-inventory-decode-weight") + 1] == "0.75"
+    assert (
+        commands[0][commands[0].index("--component-inventory-loss-weight") + 1] == "1.0"
+    )
+    assert (
+        commands[0][commands[0].index("--component-inventory-decode-weight") + 1]
+        == "0.75"
+    )
     assert commands[0][commands[0].index("--component-plan-loss-weight") + 1] == "1.25"
     assert commands[0][commands[0].index("--component-plan-decode-weight") + 1] == "0.5"
     assert commands[0][commands[0].index("--component-edge-loss-weight") + 1] == "1.5"
-    assert commands[0][commands[0].index("--component-edge-alignment-loss-weight") + 1] == "1.75"
-    assert commands[0][commands[0].index("--component-edge-decode-weight") + 1] == "0.25"
-    assert commands[0][commands[0].index("--binder-component-plan-loss-weight") + 1] == "1.1"
-    assert commands[0][commands[0].index("--binder-component-plan-decode-weight") + 1] == "0.2"
+    assert (
+        commands[0][commands[0].index("--component-edge-alignment-loss-weight") + 1]
+        == "1.75"
+    )
+    assert (
+        commands[0][commands[0].index("--component-edge-decode-weight") + 1] == "0.25"
+    )
+    assert (
+        commands[0][commands[0].index("--binder-component-plan-loss-weight") + 1]
+        == "1.1"
+    )
+    assert (
+        commands[0][commands[0].index("--binder-component-plan-decode-weight") + 1]
+        == "0.2"
+    )
     assert commands[0][commands[0].index("--binder-topology-loss-weight") + 1] == "1.3"
-    assert commands[0][commands[0].index("--binder-topology-decode-weight") + 1] == "0.4"
+    assert (
+        commands[0][commands[0].index("--binder-topology-decode-weight") + 1] == "0.4"
+    )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
     assert "--schema-in-context" in commands[0]
@@ -1641,7 +2283,10 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--no-design-md-context" in commands[0]
     assert "--local-files-only" in commands[0]
     assert "--no-sync-checkpoints" in commands[0]
-    assert commands[0][commands[0].index("--mixture-sampling-policy") + 1] == "capacity_aware"
+    assert (
+        commands[0][commands[0].index("--mixture-sampling-policy") + 1]
+        == "capacity_aware"
+    )
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
     assert commands[-1][commands[-1].index("--compiler-search-mode") + 1] == "ptrm"
     assert commands[-1][commands[-1].index("--compiler-search-width") + 1] == "4"
@@ -1827,7 +2472,9 @@ def test_compile_action_alias_knobs() -> None:
         for command in compile_commands(campaign(), spec)
         if "scripts.train_model" in command
     )
-    assert train[train.index("--action-embedding-init") + 1] == "alias_aware_description"
+    assert (
+        train[train.index("--action-embedding-init") + 1] == "alias_aware_description"
+    )
     assert train[train.index("--action-embedding-train") + 1] == "frozen"
     assert train[train.index("--action-alias-mode") + 1] == "fixed"
     assert train[train.index("--action-alias-manifest") + 1] == "/tmp/alias_map.json"
