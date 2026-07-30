@@ -415,7 +415,7 @@
       ]
     },
     "data.semantic_contrast": {
-      "version": "v2",
+      "version": "v3",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/semantic_contrast/",
@@ -429,6 +429,11 @@
         "docs/design/iter-slm290-semantic-contrast-20260725.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "Restore producer-side projection of every generated and transformed template marker to contiguous opaque slot ordinals before scoring or persistence; retain only admitted contrast pairs"
+        },
         {
           "version": "v2",
           "date": "2026-07-25",
@@ -450,6 +455,11 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-30",
+          "note": "no-bump: make the test-data fixture assert the live registered component version instead of stale v10"
+        },
         {
           "version": "v6",
           "date": "2026-07-23",
@@ -2470,7 +2480,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2484,6 +2494,11 @@
         "tests/test_autoresearch/test_harness.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-30",
+          "note": "Add tiered formal obligations to ExperimentSpec and immutable ExperimentCampaignV1 locks; required proof claims now fail closed before execution unless their bound preflight is proved"
+        },
         {
           "version": "v7",
           "date": "2026-07-30",
@@ -2518,6 +2533,26 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "SLM-337 immutable preregistered campaigns, pre-start digest binding, exploratory deviations, complete promotion claims, and verified RL evidence"
+        }
+      ]
+    },
+    "harness.autoresearch.formal": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/autoresearch/formal.py",
+        "src/slm_training/formal/lean/",
+        "scripts/verify_formal_contracts.py",
+        "tests/test_autoresearch/test_formal.py",
+        "docs/design/formal-autoresearch.md",
+        "docs/design/autoresearch-autotraining.md",
+        ".github/workflows/ci.yml"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "Initial pinned Lean proof package, executable history-trace contract, content-addressed preflight artifacts, source-drift checks, and bounded CI audit"
         }
       ]
     },
@@ -4241,6 +4276,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v2",
           "date": "2026-07-21",
           "note": "no-bump: source the already-v2 wall budget from the canonical lever registry; emitted behavior is unchanged"
         },
@@ -4352,6 +4392,11 @@
         {
           "version": "v1",
           "date": "2026-07-30",
+          "note": "no-bump: republish the unchanged inconclusive gate against current evaluator-owner hashes and registered component identities"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-30",
           "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or gate behavior"
         },
         {
@@ -4378,6 +4423,11 @@
         "docs/design/iter-spv0-03-semantic-regret-20260719.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -4469,6 +4519,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -4549,6 +4604,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -4647,6 +4707,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -4716,6 +4781,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -4780,6 +4850,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -4836,6 +4911,11 @@
         "docs/design/iter-slm297-unified-rescore-20260724.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -4897,6 +4977,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -4951,6 +5036,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -4993,6 +5083,11 @@
         "docs/design/iter-slm158-mixer-comparison-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -5103,6 +5198,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v2",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5152,6 +5252,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5196,6 +5301,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5238,6 +5348,11 @@
         "docs/design/iter-slm165-interaction-factorial-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -5289,6 +5404,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5338,6 +5458,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5372,6 +5497,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5401,6 +5531,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5425,6 +5560,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
         },
@@ -5447,6 +5587,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-174 SDE2-07 action-alias generalization fixture harness"
         }
@@ -5464,6 +5609,11 @@
         "docs/design/iter-slm176-action-shortlist-rerank-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -5638,6 +5788,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-189 FFE2-01 bridge planner fixture harness"
         }
@@ -5652,6 +5807,11 @@
         "tests/test_scripts/test_run_exact_flow_fixture.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate plan-only test artifacts; exact-flow experiment behavior is unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
@@ -6000,6 +6160,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-07-30",
+          "note": "no-bump: propagate existing design-artifact path controls through the fixture wrapper; curriculum metrics are unchanged"
+        },
+        {
+          "version": "v3",
           "date": "2026-07-21",
           "note": "extend owner with SLM-210 SDE5FloorEscapeMatrixV1, weight-permuted exposure control, and plan/mass axis audit"
         },
@@ -6076,6 +6241,11 @@
       "history": [
         {
           "version": "v4",
+          "date": "2026-07-30",
+          "note": "no-bump: make fixture assertions follow the current component registry and keep generated design artifacts in pytest temporary paths"
+        },
+        {
+          "version": "v4",
           "date": "2026-07-23",
           "note": "expose canonical scale-invariant spectral trap projection for SLM-219 without a parallel SVD owner"
         },
@@ -6113,6 +6283,11 @@
         "docs/design/iter-slm215-spectral-atlas-20260721.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "no-bump: make the fixture assertion follow the canonical component registry instead of a stale hard-coded version"
+        },
         {
           "version": "v3",
           "date": "2026-07-23",
@@ -6299,6 +6474,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "no-bump: README links the independent formal-autoresearch preflight contract; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-07-30",
@@ -6520,6 +6700,11 @@
       "history": [
         {
           "version": "v12",
+          "date": "2026-07-30",
+          "note": "no-bump: migrate the tiny test-only record to the required opaque slot identity without changing recurrence behavior"
+        },
+        {
+          "version": "v12",
           "date": "2026-07-23",
           "note": "run reproduction AgentV publishing in a temporary directory so check mode never rewrites committed evidence artifacts"
         },
@@ -6641,7 +6826,7 @@
       ]
     },
     "harness.experiments.slm233_recursive_campaign": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm233_recursive_campaign.py",
@@ -6653,6 +6838,11 @@
         "docs/design/iter-slm233-recursive-campaign-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "Project immutable historical suite markers to request-local opaque ordinals at the campaign model boundary"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -7011,6 +7201,11 @@
         "docs/design/iter-slm296-verified-teacher-admission-20260725.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",
@@ -7725,7 +7920,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v67",
+      "version": "v68",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -7744,6 +7939,11 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v68",
+          "date": "2026-07-30",
+          "note": "Migrate the SLM-293 local factor-head control records to the required contiguous opaque slot contract"
+        },
         {
           "version": "v67",
           "date": "2026-07-30T10:18:42-05:00",
@@ -8372,6 +8572,11 @@
         {
           "version": "v2",
           "date": "2026-07-30",
+          "note": "no-bump: scripts/autoresearch.py adds the independent formalize command and formal-lock validation; remine campaign behavior is unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-30",
           "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or campaign behavior"
         },
         {
@@ -8476,6 +8681,11 @@
         "docs/design/iter-ldi4-02-sae-decision-state-diagnostic-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -8639,6 +8849,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-30",
+          "note": "no-bump: refresh the executable CAP0 fixture aliases to the current train-data, symbolic-surface, and ship-gate registry versions"
+        },
+        {
+          "version": "v2",
           "date": "2026-07-23",
           "note": "no-bump: refresh the executable CAP0 fixture to the v18 symbolic task materialization contract"
         },
@@ -8655,7 +8870,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -8670,6 +8885,11 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-30",
+          "note": "Restore the opt-in ProgramSpec natural-prompt CLI path and persist its resolved recipe setting"
+        },
         {
           "version": "v23",
           "date": "2026-07-25",
@@ -8840,6 +9060,11 @@
         "docs/design/iter-ldi4-03-intervention-unification-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -9147,6 +9372,11 @@
       "history": [
         {
           "version": "ffe2-02-v1",
+          "date": "2026-07-30",
+          "note": "no-bump: honor existing design-artifact path and disable options through the nested fixture runner; matrix calculations are unchanged"
+        },
+        {
+          "version": "ffe2-02-v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-190 FFE2-02 exact CTMC enumeration/path/sample/objective/lumpability fixture matrix"
         }
@@ -9206,6 +9436,11 @@
         "docs/design/iter-slm193-flow-caches-20260721.md"
       ],
       "history": [
+        {
+          "version": "ffe3-02-v1",
+          "date": "2026-07-30",
+          "note": "no-bump: honor existing design-artifact path and disable options through the nested fixture runner; cache measurements are unchanged"
+        },
         {
           "version": "ffe3-02-v1",
           "date": "2026-07-21",
@@ -9275,6 +9510,11 @@
         "docs/design/iter-slm212-debt-routing-20260721.md"
       ],
       "history": [
+        {
+          "version": "sde5-05-v1",
+          "date": "2026-07-30",
+          "note": "no-bump: honor existing design-artifact path controls through the nested fixture runner; routing calculations are unchanged"
+        },
         {
           "version": "sde5-05-v1",
           "date": "2026-07-21",
@@ -11503,6 +11743,11 @@
         "docs/design/iter-slm267-uniform-saturation-20260725.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-25",

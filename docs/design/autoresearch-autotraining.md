@@ -113,7 +113,9 @@ unknown fields forbidden:
   exact upstream repository/revision, request hash, memo, normalized sources,
   trajectory, timing, and non-secret process telemetry;
 - `ExperimentSpec` requires a hypothesis, expected effect, falsification and stop
-  criteria, citations, parent, and typed `ExperimentKnobs`;
+  criteria, citations, parent, and typed `ExperimentKnobs`; optional
+  `formal_claims` bind versioned Lean preflight templates with `required` or
+  `advisory` policy;
 - `HypothesisMatrix` requires at least five distinct candidates, a recommended
   member, selection rationale, and feedback/predecessor lineage when revising. Each
   candidate records how research, prior traces, and prior results informed it plus a
@@ -250,6 +252,7 @@ outputs/autoresearch/<campaign>/
     research_sources/<content-sha>.json  # normalized citation-valid source set
     experiments/<content-sha>.json       # compiler output after validation
     hypothesis_matrices/<content-sha>.json # >=5 candidates + novelty audits
+    formal_preflights/<content-sha>.json # proof/counterexample + source bindings
     hypothesizer_feedback/<content-sha>.json # terminal outcome + diagnosis lesson
     hypothesizer_telemetry/<content-sha>.json
   runs/<experiment>/...
@@ -278,6 +281,7 @@ python -m scripts.autoresearch init --campaign-id <id> \
   --objective "<falsifiable objective>" --primary-metric <metric>
 python -m scripts.autoresearch research --campaign-id <id>
 python -m scripts.autoresearch hypothesize --campaign-id <id>
+python -m scripts.autoresearch formalize --campaign-id <id>   # when claims exist
 python -m scripts.autoresearch run --campaign-id <id>          # inspect recommendation
 python -m scripts.autoresearch run --campaign-id <id> --execute
 ```
@@ -290,6 +294,14 @@ and cannot repeat any finished knob signature or campaign experiment ID. Campaig
 ID uniqueness prevents run budgets and outcome lineage from aliasing an older
 candidate. Matrix candidates are reviewable plans; only uniquely started experiments
 consume `max_experiments`.
+
+Formal preflights are structural filters, not predicted experiment outcomes. A
+locked `required` claim must have a fresh `proved` artifact; conditional,
+refuted, unknown, missing, or source-drifted evidence blocks execution. Advisory
+claims persist the same result without becoming an empirical quality gate. The
+templates, fixed-point/history example, proof scopes, and concrete-to-abstract
+trace contract are defined in
+[`formal-autoresearch.md`](formal-autoresearch.md).
 
 This is bounded self-improvement by accumulated evidence and policy iteration. It is
 not online weight training or permission to edit implementation, frozen evaluations,

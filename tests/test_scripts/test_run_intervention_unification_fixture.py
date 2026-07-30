@@ -10,6 +10,11 @@ import pytest
 from scripts.run_intervention_unification_fixture import main
 
 
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+
 @pytest.fixture
 def args(tmp_path: Path) -> list[str]:
     return [

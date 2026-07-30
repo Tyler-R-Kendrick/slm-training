@@ -5,7 +5,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+import scripts.run_slm160_spv_disposition as _runner_module
 from scripts.run_slm160_spv_disposition import main
+
+
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(_runner_module, "_DESIGN_JSON", str(tmp_path / "design.json"))
+    monkeypatch.setattr(_runner_module, "_DESIGN_MD", str(tmp_path / "design.md"))
 
 
 def test_plan_only_mode_writes_json(tmp_path) -> None:
@@ -33,11 +42,8 @@ def test_fixture_mode_writes_json_and_docs(tmp_path) -> None:
     assert data["cross_pack_summary"]
     assert data["canonical_architecture_recommendation"]
 
-    # Design artifacts are written relative to the repository root.
-
-    root = Path(__file__).resolve().parents[2]
-    design_json = root / "docs/design/iter-slm160-spv-disposition-20260720.json"
-    design_md = root / "docs/design/iter-slm160-spv-disposition-20260720.md"
+    design_json = tmp_path / "design.json"
+    design_md = tmp_path / "design.md"
     assert design_json.exists()
     assert design_md.exists()
     design_data = json.loads(design_json.read_text())

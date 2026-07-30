@@ -6,7 +6,14 @@ import json
 
 import pytest
 
+import scripts.run_slm158_mixer_comparison_fixture as _runner_module
 from scripts.run_slm158_mixer_comparison_fixture import main
+
+
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(_runner_module, "_DESIGN_JSON", str(tmp_path / "design.json"))
+    monkeypatch.setattr(_runner_module, "_DESIGN_MD", str(tmp_path / "design.md"))
 
 
 def test_plan_only_mode_writes_manifest(tmp_path) -> None:

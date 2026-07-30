@@ -4,7 +4,25 @@ from __future__ import annotations
 
 import json
 
-from scripts.run_slm157_flow_consistency_fixture import main
+import pytest
+
+from scripts import run_slm157_flow_consistency_fixture
+
+main = run_slm157_flow_consistency_fixture.main
+
+
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        run_slm157_flow_consistency_fixture,
+        "_DESIGN_JSON",
+        str(tmp_path / "design.json"),
+    )
+    monkeypatch.setattr(
+        run_slm157_flow_consistency_fixture,
+        "_DESIGN_MD",
+        str(tmp_path / "design.md"),
+    )
 
 
 def test_plan_only_mode_writes_manifest(tmp_path) -> None:

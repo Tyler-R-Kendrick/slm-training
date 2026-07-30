@@ -17,7 +17,15 @@ def test_describe_mode_prints_schema(capsys) -> None:
 
 def test_plan_only_writes_manifest(tmp_path) -> None:
     out = tmp_path / "out"
-    rc = main(["--mode", "plan-only", "--output-dir", str(out)])
+    rc = main(
+        [
+            "--mode",
+            "plan-only",
+            "--output-dir",
+            str(out),
+            "--no-write-design-docs",
+        ]
+    )
     assert rc == 0
     report_json = out / "slm190_exact_flow_report.json"
     assert report_json.exists()

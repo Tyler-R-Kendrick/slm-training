@@ -115,6 +115,8 @@ def _build_payload(
     manifest = run_flow_cache_fixture(
         output_dir=output_dir,
         write_design_docs=argv_flags.get("write_design_docs", True),
+        design_json=argv_flags.get("design_json"),
+        design_md=argv_flags.get("design_md"),
     )
     payload = manifest.to_dict()
     command = "python -m scripts.bench_flow_caches --fixture"
@@ -224,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
 
     flags = {
         "write_design_docs": args.write_design_docs,
+        "design_json": args.design_json,
+        "design_md": args.design_md,
     }
     payload, command = _build_payload(mode, output_dir, flags)
     payload["timestamp"] = _now()

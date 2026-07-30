@@ -118,6 +118,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--programspec-count", type=int, default=16)
     parser.add_argument("--programspec-seed", type=int, default=0)
     parser.add_argument(
+        "--programspec-natural-prompts",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Render generated ProgramSpec prompts as natural 'Create a ...' "
+            "requests instead of the stable program-family instruction."
+        ),
+    )
+    parser.add_argument(
         "--language-contract",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -462,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
         programspec_path=args.programspec_path,
         programspec_count=args.programspec_count,
         programspec_seed=args.programspec_seed,
+        programspec_natural_prompts=args.programspec_natural_prompts,
         include_language_contract=args.language_contract,
         documentize_expressions=args.documentize_expressions,
         target_kinds=(

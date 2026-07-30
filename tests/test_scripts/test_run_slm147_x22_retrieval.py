@@ -5,11 +5,23 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts import run_slm147_x22_retrieval
 
 
-def _repo_root() -> Path:
-    return Path(run_slm147_x22_retrieval.__file__).resolve().parents[1]
+@pytest.fixture(autouse=True)
+def _isolate_design_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        run_slm147_x22_retrieval,
+        "_DESIGN_JSON",
+        str(tmp_path / "design.json"),
+    )
+    monkeypatch.setattr(
+        run_slm147_x22_retrieval,
+        "_DESIGN_MD",
+        str(tmp_path / "design.md"),
+    )
 
 
 def test_plan_only_cli_writes_json(tmp_path: Path) -> None:
@@ -46,8 +58,8 @@ def test_fixture_cli_writes_json_and_design_artifacts(tmp_path: Path) -> None:
     assert "A_minimal_seed" in ids
     assert "G_oracle_nearest" in ids
 
-    design_json = _repo_root() / "docs/design/iter-slm147-x22-retrieval-20260720.json"
-    design_md = _repo_root() / "docs/design/iter-slm147-x22-retrieval-20260720.md"
+    design_json = tmp_path / "design.json"
+    design_md = tmp_path / "design.md"
     assert design_json.exists()
     assert design_md.exists()
 
