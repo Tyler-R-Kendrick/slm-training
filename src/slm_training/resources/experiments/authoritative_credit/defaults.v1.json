@@ -1,0 +1,15 @@
+{
+  "schema": "authoritative_credit_defaults/v1",
+  "version": "v1",
+  "description": "Volatile statistical defaults for authoritative credit recomputation. Credit engine loads these; change thresholds without rewriting recompute logic.",
+  "required_observation_kinds": ["observation_table"],
+  "required_plan_kinds": ["analysis_plan"],
+  "required_credit_kinds": ["credit_report"],
+  "default_holm_alpha": 0.05,
+  "default_z_for_lcb": 1.96,
+  "underpowered_when_n_below": 2,
+  "score_once_splits": ["seal", "ship"],
+  "caller_stats_tolerance": 1e-9,
+  "promotion_requires_credit": true,
+  "governance_cannot_clear_sufficient_evidence": true
+}

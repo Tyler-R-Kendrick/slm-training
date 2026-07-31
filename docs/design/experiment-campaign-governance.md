@@ -38,6 +38,22 @@ require the canonical full-suite ship gates. RL campaigns remain locked until
 the readiness report is recomputed from its referenced evaluation bytes and
 both digests match the campaign lock.
 
+## Authoritative credit (promotion / ship)
+
+Promotion_candidate and ship_gate results require content-addressed
+`observation_table`, `analysis_plan`, and `credit_report` artifacts.
+`credit_engine.compute_credit_report` recomputes paired effects, Holm rows,
+promotion/rollback gate outcomes, and empirical promotability from observation
+rows under a locked analysis plan. Recomputed endpoint values are keyed by
+**manifest `endpoint_id`** (signed paired effect for the primary), not metric
+name. Caller-supplied `endpoint_values` / Holm rows that disagree—or invent
+values not recomputed—fail closed. Kind-only placeholder observation JSON is
+rejected. Structural campaign governance **must not** clear a sole
+`sufficient_evidence` failure (`promotion.py` / HTTP evaluate).
+
+See `docs/design/authoritative-credit-one-shot-agent-prompt.md` and
+`resources/experiments/authoritative_credit/defaults.v1.json`.
+
 ## Hill-climb evidence governance
 
 Consistent autotrain progress is an evidence problem, not a smarter optimizer.

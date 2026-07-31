@@ -97,8 +97,20 @@ Every arrow writes a content-addressed artifact and an append-only event.
 Hill-climb progress is gated by claim class, locked held-out identity, multi-seed
 primary LCB, exhausted-knob ledger, synthesis-feedback clearance before SFT, and
 `EG_params` on capacity growth. Pure predicates live in
-`src/slm_training/autoresearch/hillclimb.py`; the governance table is in
+`src/slm_training/autoresearch/hillclimb.py`. Continuous-loop **volatile** knobs
+(primaries, cadence, identity fields, recipe-null caps) are externalized in
+`resources/experiments/autotrain_climb/policy.v1.json` via
+`climb_policy.py` — see [`autotrain-climb-policy.md`](autotrain-climb-policy.md)
+and the governance table in
 [`experiment-campaign-governance.md`](experiment-campaign-governance.md#hill-climb-evidence-governance).
+
+Promotion and ship claims further require **authoritative credit**: immutable
+`observation_table` + locked `analysis_plan` + recomputed `credit_report`
+artifacts. `credit_engine.compute_credit_report` owns paired effects, Holm rows,
+and empirical promotability; structural campaign governance cannot clear a sole
+`sufficient_evidence` failure. See
+[`experiment-campaign-governance.md`](experiment-campaign-governance.md#authoritative-credit-promotion--ship)
+and `resources/experiments/authoritative_credit/defaults.v1.json`.
 
 ## Schemas and safety
 

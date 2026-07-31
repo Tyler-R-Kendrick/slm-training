@@ -1326,15 +1326,22 @@ def main(argv: list[str] | None = None) -> int:
     else:
         args.train_dir = data_store.resolve_path("train", args.train_dir)
     if not args.allow_open_synthesis_feedback:
+        from slm_training.autoresearch.climb_policy import load_climb_policy
         from slm_training.autoresearch.hillclimb import (
             HillClimbError,
             assert_synthesis_feedback_cleared_for_sft,
         )
 
         try:
+            policy = load_climb_policy()
+            synth = policy.synthesis_loop
+            names = tuple(str(x) for x in (synth.get("action_filenames") or ())) or None
+            waiver = synth.get("allow_global_waiver_code", "*")
             assert_synthesis_feedback_cleared_for_sft(
                 Path(args.train_dir),
                 allow_missing_feedback=True,
+                action_filenames=names,
+                allow_global_waiver_code=str(waiver) if waiver is not None else "*",
             )
         except HillClimbError as exc:
             parser.error(str(exc))

@@ -124,6 +124,9 @@ def _manifest_payload(*, locked_eval_manifest_sha256: str) -> dict[str, Any]:
                 "holm_family",
                 "agentevals",
                 "agentv",
+                "observation_table",
+                "analysis_plan",
+                "credit_report",
             )
         ],
         "claim_class": "promotion_candidate",

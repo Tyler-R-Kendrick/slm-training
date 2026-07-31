@@ -230,29 +230,57 @@ def _classify_positive(
     primary_metric: str,
     control_id: str,
     candidate_id: str,
+    role: str = "screening",
+    baseline_trainable_params: int | None = None,
+    candidate_trainable_params: int | None = None,
+    eg_params_by_seed: list[float] | None = None,
+    policy_path: str | None = None,
 ) -> dict[str, Any]:
     """Classify cycle for SDLC Phase A stack-layer gate.
 
-    Positive requires a quality-aware win (latency+held meaning, quality with
-    bounded latency cost, efficiency, or executable unblock with quality floor).
-    Fixture insufficient_n / missing metrics / null deltas → non-positive.
+    Combines versioned climb policy (role primary, EG_params, fixture rules)
+    with quality-aware latency/meaning tradeoffs: pure latency blips with empty
+    meaning are not positive; quality may spend a bounded latency budget.
+    Fixture insufficient_n / missing metrics / null deltas / uncharged capacity
+    growth → non-positive.
     """
+    from slm_training.autoresearch.climb_policy import (
+        classify_positive_metrics,
+        load_climb_policy,
+        primary_for_role,
+    )
+
+    policy = load_climb_policy(policy_path)
+    # Prefer policy primary for the cycle role; allow CLI override of metric id
+    # only when it matches the configured leaf/id for that role.
+    role_primary = primary_for_role(policy, role)
+    effective_metric = str(role_primary.get("metric") or primary_metric)
+    if primary_metric and primary_metric != effective_metric:
+        # Keep caller metric if it is an explicit override of the same leaf.
+        if primary_metric.split(".")[-1] == effective_metric.split(".")[-1]:
+            effective_metric = primary_metric
+
     control = _run_metrics(camp_dir, control_id)
     candidate = _run_metrics(camp_dir, candidate_id)
-    reasons: list[str] = []
-    positive = False
+    # Merge full primary metric keys when leaf-only maps were collected.
+    if effective_metric not in control and control.get(effective_metric.split(".")[-1]) is not None:
+        control = {**control, effective_metric: control[effective_metric.split(".")[-1]]}
+    if effective_metric not in candidate and candidate.get(effective_metric.split(".")[-1]) is not None:
+        candidate = {
+            **candidate,
+            effective_metric: candidate[effective_metric.split(".")[-1]],
+        }
 
-    # Wall / missing scoreboard
+    reasons_pre: list[str] = []
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     for path in outcomes:
         out = _read_json(path)
         err = str(out.get("error") or "")
         if "wall-time" in err or "wall time" in err.lower():
-            reasons.append(f"wall_timeout:{path.stem}")
+            reasons_pre.append(f"wall_timeout:{path.stem}")
         if out.get("metrics") == {} and err:
-            reasons.append(f"empty_metrics:{path.stem}")
+            reasons_pre.append(f"empty_metrics:{path.stem}")
 
-    # Ship gates: fixture insufficient_n is never positive alone
     gate_files = list((camp_dir / "runs").glob("*/gates.json"))
     fixture_only_fails = 0
     for gpath in gate_files:
@@ -261,21 +289,17 @@ def _classify_positive(
         vol = gates.get("evidence_volume_failures") or []
         if isinstance(vol, list) and any("insufficient_n" in str(x) for x in vol):
             fixture_only_fails += 1
-            reasons.append(f"fixture_insufficient_n:{gpath.parent.name}")
+            reasons_pre.append(f"fixture_insufficient_n:{gpath.parent.name}")
         if isinstance(fails, list) and fails and not vol:
-            # non-volume quality fail without a metric win stays non-positive
-            reasons.append(f"gate_failures:{gpath.parent.name}:{len(fails)}")
+            reasons_pre.append(f"gate_failures:{gpath.parent.name}:{len(fails)}")
 
+    # Quality/latency tradeoff (PR #1234) — rejects empty-meaning latency blips.
     tradeoff_positive, tradeoff_reasons = _classify_metric_tradeoff(
         control=control,
         candidate=candidate,
-        primary_metric=primary_metric,
+        primary_metric=effective_metric,
     )
-    reasons.extend(tradeoff_reasons)
-    positive = tradeoff_positive
 
-    # Executable unblock: control failed path-wise, candidate completed with
-    # quality above the smoke floor (not merely a latency number).
     control_outcome = next(
         (
             _read_json(p)
@@ -293,44 +317,87 @@ def _classify_positive(
         ),
         {},
     )
+
+    # Params from outcomes when present
+    def _params(outcome: dict[str, Any]) -> int | None:
+        metrics = outcome.get("metrics") or {}
+        if isinstance(metrics, dict) and metrics.get("trainable_params") is not None:
+            try:
+                return int(metrics["trainable_params"])
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    base_params = baseline_trainable_params
+    cand_params = candidate_trainable_params
+    if base_params is None:
+        base_params = _params(control_outcome)
+    if cand_params is None:
+        cand_params = _params(cand_outcome)
+
+    leaf = effective_metric.split(".")[-1]
     t_mpr = _finite_metric(candidate.get("meaningful_program_rate"))
-    if (
-        control_outcome.get("error")
-        and not cand_outcome.get("error")
-        and candidate.get("latency_ms_p50") is not None
-    ):
-        if t_mpr is not None and t_mpr + _EPS >= _MIN_MPR_FOR_LATENCY_WIN:
-            positive = True
-            reasons.append(
-                "executable_unblock:candidate_completed_after_control_error"
-            )
-        else:
-            reasons.append(
-                "executable_unblock_rejected_low_mpr:"
-                f"mpr={t_mpr}"
+    # Executable unblock only when candidate completes with quality floor.
+    executable_unblock = False
+    if control_outcome.get("error") and not cand_outcome.get("error"):
+        has_metric = (
+            candidate.get(leaf) is not None
+            or candidate.get(effective_metric) is not None
+            or candidate.get("latency_ms_p50") is not None
+        )
+        if has_metric and t_mpr is not None and t_mpr + _EPS >= _MIN_MPR_FOR_LATENCY_WIN:
+            executable_unblock = True
+        elif has_metric:
+            reasons_pre.append(
+                f"executable_unblock_rejected_low_mpr:mpr={t_mpr}"
             )
 
-    # Explicit: no quality-aware win reason → force non-positive
+    decision = classify_positive_metrics(
+        policy,
+        role=role,
+        control_metrics=control,
+        candidate_metrics=candidate,
+        baseline_trainable_params=base_params,
+        candidate_trainable_params=cand_params,
+        eg_params_by_seed=eg_params_by_seed,
+        executable_unblock=executable_unblock,
+        fixture_insufficient_n=bool(fixture_only_fails),
+    )
+
+    # Latency primary: tradeoff is authoritative for metric wins (blocks zero-mpr
+    # latency greening from direction-signed primary alone).
+    if leaf == "latency_ms_p50":
+        positive = bool(tradeoff_positive or executable_unblock)
+        # Preserve EG_params blocks from climb policy.
+        if any(str(r).startswith("eg_params_block:") for r in (decision.get("reasons") or [])):
+            positive = False
+        decision["positive"] = positive
+        decision["stack_layer"] = positive
+    elif tradeoff_positive:
+        decision["positive"] = True
+        decision["stack_layer"] = True
+
+    reasons = (
+        list(reasons_pre)
+        + list(tradeoff_reasons)
+        + list(decision.get("reasons") or [])
+    )
     if not any(
         reason.startswith(prefix)
         for reason in reasons
         for prefix in _WIN_REASON_PREFIXES
     ):
-        positive = False
+        decision["positive"] = False
+        decision["stack_layer"] = False
         if not reasons:
             reasons.append("no_positive_signal")
 
-    return {
-        "positive": positive,
-        "stack_layer": positive,
-        "reasons": reasons,
-        "control_metrics": control,
-        "candidate_metrics": candidate,
-        "primary_metric": primary_metric,
-        "control_id": control_id,
-        "candidate_id": candidate_id,
-        "fixture_volume_gate_hits": fixture_only_fails,
-    }
+    decision["reasons"] = reasons
+    decision["control_id"] = control_id
+    decision["candidate_id"] = candidate_id
+    decision["fixture_volume_gate_hits"] = fixture_only_fails
+    decision["primary_metric"] = effective_metric
+    return decision
 
 
 def _phase_a_delivery(
@@ -340,8 +407,16 @@ def _phase_a_delivery(
     loop_id: str,
     campaign_id: str,
     primary_metric: str,
+    cycle_index: int | None = None,
+    role: str | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
+    from slm_training.autoresearch.climb_policy import (
+        cycle_role_for_index,
+        load_climb_policy,
+    )
+
+    policy = load_climb_policy()
     camp_dir = root / campaign_id
     # Infer control / candidate ids from manifests or runs
     man_dir = camp_dir / "manifests"
@@ -373,12 +448,22 @@ def _phase_a_delivery(
     control_run = control_run or "unknown-control"
     candidate_run = candidate_run or control_run
 
+    if role is None:
+        if cycle_index is not None and cycle_index >= 1:
+            role = cycle_role_for_index(policy, cycle_index)
+        else:
+            role = "screening"
+
     decision = _classify_positive(
         camp_dir=camp_dir,
         primary_metric=primary_metric,
         control_id=control_run,
         candidate_id=candidate_run,
+        role=role,
     )
+    decision["cycle_role"] = role
+    decision["cycle_index"] = cycle_index
+    decision["climb_policy_sha256"] = policy.sha256
     # Stack only when positive AND there is something reviewable to ship.
     # Pure knob-only fixture cycles with a metric blip do not open empty PRs.
     porcelain = _git("status", "--porcelain", cwd=cwd) if cwd else ""
@@ -699,7 +784,92 @@ def _matrix(
     return payload
 
 
-def _manifest(campaign_id: str, experiment: dict, commit: str) -> ExperimentCampaignV1:
+def _manifest(
+    campaign_id: str,
+    experiment: dict,
+    commit: str,
+    *,
+    role: str = "screening",
+    policy: Any | None = None,
+) -> ExperimentCampaignV1:
+    from slm_training.autoresearch.climb_policy import (
+        load_climb_policy,
+        primary_for_role,
+        promotion_seed_floor,
+    )
+
+    pol = policy or load_climb_policy()
+    role_primary = primary_for_role(pol, role)
+    metric = str(role_primary["metric"])
+    direction = str(role_primary["direction"])  # type: ignore[assignment]
+    min_effect = float(role_primary.get("minimum_effect") or 0.0)
+    defaults = pol.defaults
+    if role == "promotion":
+        claim_class = str(defaults.get("claim_class_promotion") or "promotion_candidate")
+        min_seeds, require_ms = promotion_seed_floor(pol)
+        base_seed = int(experiment.get("knobs", {}).get("seed") or 7)
+        if require_ms and min_seeds >= 2:
+            seeds = tuple(base_seed + i for i in range(min_seeds))
+        else:
+            seeds = (base_seed,)
+        # Promotion-class needs causal shape fields.
+        mechanism_off = ("mechanism_off",)
+        kill_criteria = (
+            "primary_lcb_within_noise",
+            "fixture_insufficient_n_alone",
+        )
+        controls = (
+            CampaignControlV1(
+                control_id="matched-positive",
+                description="Size-matched baseline without the candidate mechanism.",
+                kind="positive",
+            ),
+            CampaignControlV1(
+                control_id="matched-control",
+                description="Destructive negative / unchanged baseline.",
+                kind="negative",
+            ),
+        )
+        negative_controls = ("matched-control",)
+        artifact_requirements = tuple(
+            ArtifactRequirementV1(kind=k)
+            for k in (
+                "version_stamp",
+                "seed_result",
+                "paired_examples",
+                "endpoint_result",
+                "holm_family",
+                "agentevals",
+                "agentv",
+                # Authoritative credit TCB (required for promotion_candidate)
+                "observation_table",
+                "analysis_plan",
+                "credit_report",
+            )
+        )
+        locked_eval = "e" * 64  # placeholder digest; real lock verified at promotion
+        # Prefer eval_version from knobs as identity string for locked field when present
+        knobs_pre = experiment.get("knobs") or {}
+        if knobs_pre.get("eval_version"):
+            locked_eval = hashlib.sha256(
+                str(knobs_pre["eval_version"]).encode("utf-8")
+            ).hexdigest()
+    else:
+        claim_class = str(defaults.get("claim_class_screening") or "diagnostic")
+        seeds = (int(experiment.get("knobs", {}).get("seed") or 7),)
+        mechanism_off = ()
+        kill_criteria = ()
+        controls = (
+            CampaignControlV1(
+                control_id="matched-control",
+                description="Matched fixture baseline with grammar levers off.",
+                kind="negative",
+            ),
+        )
+        negative_controls = ("matched-control",)
+        artifact_requirements = (ArtifactRequirementV1(kind="version_stamp"),)
+        locked_eval = None
+
     knobs = experiment["knobs"]
     cfg = hashlib.sha256(json.dumps(knobs, sort_keys=True).encode()).hexdigest()
     ctrl = hashlib.sha256(
@@ -712,35 +882,53 @@ def _manifest(campaign_id: str, experiment: dict, commit: str) -> ExperimentCamp
             sort_keys=True,
         ).encode()
     ).hexdigest()
+    arms = [
+        CampaignArmV1(arm_id="control", role="control", config_sha256=ctrl),
+        CampaignArmV1(arm_id="candidate", role="candidate", config_sha256=cfg),
+    ]
+    if mechanism_off:
+        arms.insert(
+            1,
+            CampaignArmV1(
+                arm_id="mechanism_off",
+                role="candidate",
+                config_sha256=hashlib.sha256(b"mechanism_off").hexdigest(),
+            ),
+        )
+    # Gate operators depend on direction
+    if direction == "decrease":
+        promote_op, promote_thr = "le", -abs(min_effect) if min_effect else -1.0
+        rollback_op, rollback_thr = "gt", 1e9
+    else:
+        promote_op, promote_thr = "ge", abs(min_effect)
+        rollback_op, rollback_thr = "lt", 0.0
+
     return ExperimentCampaignV1(
         campaign_id=campaign_id,
         experiment_id=experiment["experiment_id"],
         hypothesis=experiment["hypothesis"],
-        decision="Attribute continuous fixture decode metrics only under published eval suites.",
+        decision=(
+            "Promotion-class continuous cycle under locked held-out primary."
+            if role == "promotion"
+            else "Attribute continuous fixture decode metrics only under published eval suites."
+        ),
         endpoints=(
             CampaignEndpointV1(
                 endpoint_id="primary",
-                metric="smoke.latency_ms_p50",
+                metric=metric,
                 role="primary",
-                direction="decrease",
-                minimum_effect=1.0,
+                direction=direction,  # type: ignore[arg-type]
+                minimum_effect=min_effect,
             ),
         ),
-        arms=(
-            CampaignArmV1(arm_id="control", role="control", config_sha256=ctrl),
-            CampaignArmV1(arm_id="candidate", role="candidate", config_sha256=cfg),
-        ),
-        seeds=(int(knobs.get("seed") or 7),),
+        arms=tuple(arms),
+        seeds=seeds,
         budget=CampaignBudget(max_experiments=1, max_wall_minutes=MAX_RUN_MINUTES),
-        stopping_rules=("Stop after the declared seed finishes or the wall cap is hit.",),
-        controls=(
-            CampaignControlV1(
-                control_id="matched-control",
-                description="Matched fixture baseline with grammar levers off.",
-                kind="negative",
-            ),
-        ),
-        negative_controls=("matched-control",),
+        stopping_rules=("Stop after the declared seeds finish or the wall cap is hit.",),
+        controls=controls,
+        negative_controls=negative_controls,
+        mechanism_off_arm_ids=mechanism_off,
+        executable_kill_criteria=kill_criteria,
         multiplicity_families=(
             MultiplicityFamilyV1(
                 family_id="primary-family", hypothesis_ids=("primary",), alpha=0.05
@@ -750,20 +938,21 @@ def _manifest(campaign_id: str, experiment: dict, commit: str) -> ExperimentCamp
             CampaignGateV1(
                 gate_id="promote-primary",
                 endpoint_id="primary",
-                operator="le",
-                threshold=-1.0,
+                operator=promote_op,  # type: ignore[arg-type]
+                threshold=promote_thr,
             ),
         ),
         rollback_gates=(
             CampaignGateV1(
                 gate_id="rollback-primary",
                 endpoint_id="primary",
-                operator="gt",
-                threshold=1e9,
+                operator=rollback_op,  # type: ignore[arg-type]
+                threshold=rollback_thr,
             ),
         ),
-        artifact_requirements=(ArtifactRequirementV1(kind="version_stamp"),),
-        claim_class="diagnostic",
+        artifact_requirements=artifact_requirements,
+        claim_class=claim_class,  # type: ignore[arg-type]
+        locked_eval_manifest_sha256=locked_eval,
         source_commit=commit,
         source_dirty=False,
         author="autotrain-continuous-driver",
@@ -780,6 +969,18 @@ def run_cycle(
     objective: str,
     primary_metric: str,
 ) -> str:
+    from slm_training.autoresearch.climb_policy import (
+        assert_cycle_cadence,
+        cycle_role_for_index,
+        load_climb_policy,
+        primary_for_role,
+    )
+
+    policy = load_climb_policy()
+    # Defaults from external policy when caller still uses legacy pins.
+    if train_version == "wf_smoke_v2":
+        train_version = str(policy.defaults.get("train_version") or train_version)
+
     _run(["git", "fetch", "origin", "main"], cwd=cwd)
     _run(["git", "merge", "--no-edit", "origin/main"], cwd=cwd)
     if _git("status", "--porcelain", cwd=cwd):
@@ -792,6 +993,24 @@ def run_cycle(
 
     idx, pred = _latest_cycle(root, loop_id)
     cycle = idx + 1
+    role = cycle_role_for_index(policy, cycle)
+    claim_for_role = (
+        str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
+        if role == "promotion"
+        else str(policy.defaults.get("claim_class_screening") or "diagnostic")
+    )
+    assert_cycle_cadence(
+        policy,
+        cycle_index=cycle,
+        claimed_role=role,
+        claim_class=claim_for_role if role == "promotion" else claim_for_role,
+    )
+    role_primary = primary_for_role(policy, role)
+    # Screening uses policy screening primary; promotion uses held-out quality.
+    # CLI primary_metric overrides only when it matches the role leaf (compat).
+    effective_primary = str(role_primary["metric"])
+    if primary_metric and primary_metric.split(".")[-1] == effective_primary.split(".")[-1]:
+        effective_primary = primary_metric
     campaign_id = f"continuous-loop-{time.strftime('%Y%m%d')}-c{cycle}"
     py = sys.executable
     ar = [py, "-m", "scripts.autoresearch", "--root", str(root)]
@@ -811,7 +1030,7 @@ def run_cycle(
         "--objective",
         objective,
         "--primary-metric",
-        primary_metric,
+        effective_primary,
         "--track",
         "twotower",
         "--max-experiments",
@@ -944,7 +1163,7 @@ def run_cycle(
             continue
         seen.add(eid)
         exp = json.loads(by_id[eid].read_text(encoding="utf-8"))
-        man = _manifest(campaign_id, exp, integration)
+        man = _manifest(campaign_id, exp, integration, role=role, policy=policy)
         man_path = camp_dir / "manifests" / f"{eid}.json"
         man_path.parent.mkdir(parents=True, exist_ok=True)
         man_path.write_text(man.model_dump_json(indent=2) + "\n", encoding="utf-8")
@@ -981,9 +1200,14 @@ def run_cycle(
         root=root,
         loop_id=loop_id,
         campaign_id=campaign_id,
-        primary_metric=primary_metric,
+        primary_metric=effective_primary,
+        cycle_index=cycle,
+        role=role,
     )
-    print(f"CYCLE_COMPLETE {campaign_id} positive={delivery['positive']}", flush=True)
+    print(
+        f"CYCLE_COMPLETE {campaign_id} role={role} positive={delivery['positive']}",
+        flush=True,
+    )
     return campaign_id
 
 

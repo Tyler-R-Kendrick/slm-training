@@ -92,6 +92,8 @@ def climb_step_eligibility(
     minimum_effect: float = 0.0,
     label_as_climb: bool = True,
     direction: MetricDirection = "increase",
+    min_seeds: int | None = None,
+    require_multi_seed: bool = True,
 ) -> ClimbStepEligibility:
     """Return whether an outcome may be recorded as a hill-climb step.
 
@@ -99,9 +101,13 @@ def climb_step_eligibility(
     Promotion-class requires locked held-out identity and multi-seed primary.
     ``direction`` signs the primary so both higher-is-better and lower-is-better
     metrics use the same improvement ≥ minimum_effect rule.
+    ``min_seeds`` / ``require_multi_seed`` come from external climb policy when set.
     """
 
     failures: list[str] = []
+    seed_floor = int(min_seeds) if min_seeds is not None else MIN_CLIMB_SEEDS
+    if seed_floor < 1:
+        seed_floor = MIN_CLIMB_SEEDS
     if not label_as_climb:
         return ClimbStepEligibility(
             eligible=False,
@@ -115,15 +121,15 @@ def climb_step_eligibility(
     if claim_class in CLIMB_CLAIM_CLASSES:
         if not locked_eval_manifest_sha256:
             failures.append("locked_eval_manifest_sha256_missing")
-        if len(tuple(seeds)) < MIN_CLIMB_SEEDS:
-            failures.append(f"insufficient_seeds:{len(tuple(seeds))}<{MIN_CLIMB_SEEDS}")
+        if require_multi_seed and len(tuple(seeds)) < seed_floor:
+            failures.append(f"insufficient_seeds:{len(tuple(seeds))}<{seed_floor}")
         # Multi-seed primary values are mandatory for climb eligibility — seeds
         # alone never prove an LCB (fail closed when omitted).
-        if primary_endpoint_seed_values is None:
+        if require_multi_seed and primary_endpoint_seed_values is None:
             failures.append("primary_seed_values_missing")
-        else:
+        elif primary_endpoint_seed_values is not None:
             vals = [float(v) for v in primary_endpoint_seed_values]
-            if len(vals) < MIN_CLIMB_SEEDS:
+            if require_multi_seed and len(vals) < seed_floor:
                 failures.append("primary_seed_values_incomplete")
             elif any(not math.isfinite(v) for v in vals):
                 failures.append("primary_seed_values_non_finite")
@@ -168,14 +174,42 @@ def assert_climb_label_allowed(
 
 def validate_causal_campaign_shape(
     campaign: ExperimentCampaignV1,
+    *,
+    min_seeds: int | None = None,
+    require_multi_seed: bool | None = None,
 ) -> tuple[str, ...]:
-    """Promotion-class campaigns must declare causal arm shape + kill criteria."""
+    """Promotion-class campaigns must declare causal arm shape + kill criteria.
+
+    Seed floor comes from external climb policy when ``min_seeds`` /
+    ``require_multi_seed`` are omitted (``promotion_primary.min_seeds`` /
+    ``require_multi_seed``). Explicit kwargs override for tests.
+    """
 
     if campaign.claim_class not in CLIMB_CLAIM_CLASSES:
         return ()
+    seed_floor = MIN_CLIMB_SEEDS
+    require_ms = True
+    if min_seeds is not None or require_multi_seed is not None:
+        seed_floor = int(min_seeds) if min_seeds is not None else MIN_CLIMB_SEEDS
+        require_ms = True if require_multi_seed is None else bool(require_multi_seed)
+    else:
+        try:
+            from slm_training.autoresearch.climb_policy import (
+                load_climb_policy,
+                promotion_seed_floor,
+            )
+
+            seed_floor, require_ms = promotion_seed_floor(load_climb_policy())
+        except Exception:  # noqa: BLE001 — policy optional for pure unit fixtures
+            seed_floor, require_ms = MIN_CLIMB_SEEDS, True
+    if not require_ms:
+        seed_floor = max(1, int(seed_floor) if seed_floor else 1)
+    elif seed_floor < 1:
+        seed_floor = MIN_CLIMB_SEEDS
+
     failures: list[str] = []
-    if len(campaign.seeds) < MIN_CLIMB_SEEDS:
-        failures.append(f"insufficient_seeds:{len(campaign.seeds)}<{MIN_CLIMB_SEEDS}")
+    if len(campaign.seeds) < seed_floor:
+        failures.append(f"insufficient_seeds:{len(campaign.seeds)}<{seed_floor}")
     if not campaign.locked_eval_manifest_sha256:
         failures.append("locked_eval_manifest_sha256_missing")
     arm_ids = {arm.arm_id for arm in campaign.arms}
@@ -203,8 +237,15 @@ def validate_causal_campaign_shape(
     return tuple(failures)
 
 
-def assert_causal_campaign_shape(campaign: ExperimentCampaignV1) -> None:
-    failures = validate_causal_campaign_shape(campaign)
+def assert_causal_campaign_shape(
+    campaign: ExperimentCampaignV1,
+    *,
+    min_seeds: int | None = None,
+    require_multi_seed: bool | None = None,
+) -> None:
+    failures = validate_causal_campaign_shape(
+        campaign, min_seeds=min_seeds, require_multi_seed=require_multi_seed
+    )
     if failures:
         raise HillClimbError(
             "promotion-class campaign missing causal shape: "
@@ -347,12 +388,14 @@ def record_null_outcome(
     data_eval_identity: str,
     claim_class: str,
     reason: str = "primary_lcb_within_noise",
+    note: str = "",
 ) -> ExhaustedKnobEntry:
     return ledger.record_null(
         knob_signature_sha256=knob_signature_sha256(knobs),
         data_eval_identity=data_eval_identity,
         claim_class=claim_class,
         reason=reason,
+        note=note,
     )
 
 
@@ -436,6 +479,8 @@ def assert_synthesis_feedback_cleared_for_sft(
     *,
     action_path: Path | None = None,
     allow_missing_feedback: bool = True,
+    action_filenames: Sequence[str] | None = None,
+    allow_global_waiver_code: str | None = "*",
 ) -> SynthesisGateResult:
     """Refuse SFT when synthesis_feedback has open recommendations and no action.
 
@@ -446,9 +491,11 @@ def assert_synthesis_feedback_cleared_for_sft(
           "waivers": [{"code": "...", "reason": "..."}]
         }
 
-    A **waiver** entry with matching ``code`` (or ``"*"``) clears the gate
-    without claiming the synthesizer was fixed. Action rows must name concrete
-    codes — ``"*"`` is only valid on waivers.
+    A **waiver** entry with matching ``code`` (or the configured global waiver
+    code, default ``"*"``) clears the gate without claiming the synthesizer was
+    fixed. Action rows must name concrete codes — the global waiver code is only
+    valid on waivers. ``action_filenames`` / ``allow_global_waiver_code`` come
+    from external climb policy when set.
     """
 
     train_dir = Path(train_dir)
@@ -468,9 +515,15 @@ def assert_synthesis_feedback_cleared_for_sft(
         return SynthesisGateResult(
             allowed=True, open_recommendations=(), reason="no_open_recommendations"
         )
+    names = tuple(action_filenames) if action_filenames else _SYNTHESIS_ACTION_NAMES
+    waiver_star = (
+        str(allow_global_waiver_code)
+        if allow_global_waiver_code is not None
+        else "*"
+    )
     action_file = action_path
     if action_file is None:
-        for name in _SYNTHESIS_ACTION_NAMES:
+        for name in names:
             candidate = train_dir / name
             if candidate.is_file():
                 action_file = candidate
@@ -483,10 +536,10 @@ def assert_synthesis_feedback_cleared_for_sft(
             if not isinstance(row, Mapping) or not row.get("code"):
                 continue
             code = str(row["code"])
-            if code == "*":
+            if code == waiver_star:
                 raise HillClimbError(
-                    "synthesis_feedback_actions: actions may not use code '*'; "
-                    "put global clearances under waivers only"
+                    "synthesis_feedback_actions: actions may not use global waiver "
+                    f"code {waiver_star!r}; put global clearances under waivers only"
                 )
             acted_codes.add(code)
         for row in actions_doc.get("waivers") or []:
@@ -494,7 +547,7 @@ def assert_synthesis_feedback_cleared_for_sft(
                 continue
             code = str(row["code"])
             acted_codes.add(code)
-            if code == "*":
+            if code == waiver_star:
                 global_waiver = True
     if global_waiver:
         return SynthesisGateResult(
@@ -836,6 +889,7 @@ def record_null_from_knob_signature_json(
     data_eval_identity: str,
     claim_class: str,
     reason: str = "primary_lcb_within_noise",
+    note: str = "",
 ) -> ExhaustedKnobEntry | None:
     """Record exhaustion from the stored knob_signature JSON blob.
 
@@ -855,4 +909,5 @@ def record_null_from_knob_signature_json(
         data_eval_identity=data_eval_identity,
         claim_class=claim_class,
         reason=reason,
+        note=note,
     )

@@ -1,0 +1,89 @@
+{
+  "schema": "autotrain_climb_policy/v1",
+  "version": "v1",
+  "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers.",
+  "screening_primary": {
+    "metric": "smoke.latency_ms_p50",
+    "direction": "decrease",
+    "minimum_effect": 0.0,
+    "require_non_regression_metrics": [
+      {
+        "metric_leaf": "parse_rate",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      }
+    ]
+  },
+  "promotion_primary": {
+    "metric": "held_out.structural_similarity",
+    "direction": "increase",
+    "minimum_effect": 0.01,
+    "require_locked_eval": true,
+    "require_multi_seed": true,
+    "min_seeds": 2
+  },
+  "defaults": {
+    "train_version": "wf_smoke_v2",
+    "eval_version_resolve": "published_smoke",
+    "claim_class_screening": "diagnostic",
+    "claim_class_promotion": "promotion_candidate",
+    "exploratory_claim_class": "fixture"
+  },
+  "cadence": {
+    "screening_cycles_per_promotion": 3,
+    "first_cycle_role": "screening",
+    "promotion_requires_prior_screening_win": false
+  },
+  "exhausted_identity_fields": [
+    "claim_class",
+    "train_version",
+    "eval_version",
+    "primary_metric",
+    "direction",
+    "data_manifest_sha256"
+  ],
+  "recipe_tweak_knobs": [
+    "steps",
+    "lr",
+    "batch_size",
+    "seed",
+    "grad_accum",
+    "noise_rate"
+  ],
+  "recipe_null_cap": {
+    "max_nulls_per_family": 2,
+    "require_regime_transition_after_cap": true
+  },
+  "positive_classification": {
+    "allow_executable_unblock": true,
+    "fixture_insufficient_n_alone_not_positive": true,
+    "require_size_match_or_eg_params": true,
+    "eg_params_lcb_min": 1.0,
+    "stack_requires_tracked_delta": true
+  },
+  "synthesis_loop": {
+    "block_sft_on_open_recommendations": true,
+    "action_filenames": [
+      "synthesis_feedback_actions.json",
+      "synthesis_feedback_action.json"
+    ],
+    "allow_global_waiver_code": "*",
+    "prefer_data_rebuild_before_sft": true
+  },
+  "rung_gates": {
+    "enabled": false,
+    "current_rung": "grammar_2_ast",
+    "order": [
+      "ast_2_ast",
+      "grammar_2_ast",
+      "grammar_ops_2_ast",
+      "simplified_nl_2_ast",
+      "complex_nl_2_ast"
+    ],
+    "block_promotion_if_prior_rung_unmet": true
+  },
+  "loop_ledger": {
+    "relative_path_template": "loops/{loop_id}/exhausted_knob_ledger.json",
+    "schema": "exhausted_knob_ledger/v1"
+  }
+}
