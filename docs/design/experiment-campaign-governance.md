@@ -38,6 +38,23 @@ require the canonical full-suite ship gates. RL campaigns remain locked until
 the readiness report is recomputed from its referenced evaluation bytes and
 both digests match the campaign lock.
 
+## Hill-climb evidence governance
+
+Consistent autotrain progress is an evidence problem, not a smarter optimizer.
+`src/slm_training/autoresearch/hillclimb.py` owns the pure predicates; campaign
+and train entrypoints enforce them fail-closed.
+
+| Gate | Rule |
+| --- | --- |
+| Climb vs non-climb | `validate_result_claim` **always** applies climb eligibility for `promotion_candidate` / `ship_gate` (locked held-out digest + multi-seed primary values for LCB). Seeds alone are insufficient (`primary_seed_values_missing`). Fixture / wiring / diagnostic / screening never count as climb progress; `label_as_climb=True` fails them closed. |
+| Causal campaign shape | Promotion-class manifests require a control arm, positive matched control, destructive negative control, `mechanism_off_arm_ids`, and `executable_kill_criteria` (plus ≥2 seeds). |
+| Exhausted knobs | `scripts/autoresearch.py` loads `exhausted_knob_ledger.json` into `validate_hypothesis_matrix` and auto-records null-measured signatures after feedback. Effects are **direction-signed** (`increase` → candidate−baseline, `decrease` → baseline−candidate) so continuous default `smoke.latency_ms_p50` (lower better) and quality metrics share one null rule: improvement ≤ minimum_effect. Absolute scores alone are never null. Same knob signature + claim class + data/eval identity is rejected until identity or claim class changes. |
+| Synthesis → SFT | `scripts/train_model.py` refuses SFT when `synthesis_feedback.json` has open recommendations without a matching action/waiver in `synthesis_feedback_actions.json` (escape: `--allow-open-synthesis-feedback`, diagnostic only). |
+| Capacity charge | `evaluate_promotion` / HTTP `/promotion/evaluate` pass trainable params + `EG_params` into `validate_result_claim`. Growth without `EG_params` LCB ≥ 1 fails closed; result objects may also carry the fields. |
+
+See also `docs/design/autoresearch-autotraining.md` for the closed-loop harness
+boundary.
+
 ## Endpoint transition
 
 Binding-aware meaning-v2 is not the default until AP-001 supplies a

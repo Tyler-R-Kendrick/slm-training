@@ -2275,6 +2275,11 @@
       "history": [
         {
           "version": "v12",
+          "date": "2026-07-31",
+          "note": "no-bump: promotion evaluate fixture gains causal-shape fields required by ExperimentCampaignV1; HTTP route behavior unchanged"
+        },
+        {
+          "version": "v12",
           "date": "2026-07-30T10:18:42-05:00",
           "note": "Expose parameter-efficiency samples, counts, and threshold through the existing promotion-evaluation API"
         },
@@ -2546,10 +2551,11 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
+        "src/slm_training/autoresearch/hillclimb.py",
         "src/slm_training/autoresearch/schemas.py",
         "src/slm_training/autoresearch/storage.py",
         "src/slm_training/autoresearch/engine.py",
@@ -2563,12 +2569,24 @@
         ".agents/skills/openui-autoresearch/SKILL.md",
         ".grok/workflows/autotrain.rhai",
         "docs/design/autoresearch-autotraining.md",
+        "docs/design/experiment-campaign-governance.md",
         "tests/test_autoresearch/test_experiment_campaign.py",
+        "tests/test_autoresearch/test_hillclimb.py",
         "tests/test_autoresearch/test_harness.py",
         "tests/test_scripts/test_slm_cli.py",
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-31",
+          "note": "Hill-climb production wiring: auto-enforce climb LCB on promotion claims, require primary seed values, load/record exhausted-knob ledger on autoresearch matrix path, surface EG_params from result fields"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-31",
+          "note": "Hill-climb evidence governance: climb vs fixture claim-class gates, multi-seed LCB, exhausted-knob ledger, synthesis-feedback SFT hard gate, causal campaign shape, EG_params fail-closed"
+        },
         {
           "version": "v15",
           "date": "2026-07-30",
@@ -2986,7 +3004,7 @@
       ]
     },
     "harness.experiments": {
-      "version": "v143",
+      "version": "v144",
       "kind": "harness",
       "paths": [
         "scripts/run_slm298_capacity_context_curriculum.py",
@@ -2998,6 +3016,11 @@
         "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py"
       ],
       "history": [
+        {
+          "version": "v144",
+          "date": "2026-07-31",
+          "note": "evaluate_promotion passes trainable params and EG_params into validate_result_claim for fail-closed capacity growth on climb governance"
+        },
         {
           "version": "v143",
           "date": "2026-07-30T10:18:42-05:00",
@@ -8747,6 +8770,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-07-31",
+          "note": "no-bump: scripts/autoresearch.py loads/records exhausted-knob ledger for hill-climb matrix validation; remine campaign behavior unchanged"
+        },
+        {
+          "version": "v3",
           "date": "2026-07-30",
           "note": "no-bump: scripts/autoresearch.py adds continuous commit provenance, cross-cycle priority steering, and three loop status tables; the remine campaign behavior is unchanged"
         },
@@ -10235,7 +10263,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v268",
+      "version": "v269",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10278,6 +10306,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v269",
+          "date": "2026-07-31",
+          "note": "train_model refuses SFT when synthesis_feedback has open recommendations without action/waiver (--allow-open-synthesis-feedback diagnostic escape only)"
+        },
         {
           "version": "v268",
           "date": "2026-07-30",

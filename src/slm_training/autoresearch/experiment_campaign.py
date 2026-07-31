@@ -6,7 +6,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Sequence
 
 from pydantic import Field, StrictInt, field_validator, model_validator
 
@@ -156,6 +156,9 @@ class ExperimentCampaignV1(StrictModel):
     metric_expectations_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    # Climb / causal shape (required for promotion_candidate and ship_gate).
+    mechanism_off_arm_ids: tuple[str, ...] = ()
+    executable_kill_criteria: tuple[str, ...] = ()
 
     @field_validator("seeds", mode="before")
     @classmethod
@@ -249,6 +252,24 @@ class ExperimentCampaignV1(StrictModel):
                 raise ValueError(
                     f"promotion artifact requirements missing: {sorted(missing_kinds)}"
                 )
+            # Causal shape for climb (size-matched control, mechanism-off,
+            # destructive negative, executable kill criteria, multi-seed).
+            from slm_training.autoresearch.hillclimb import (
+                MIN_CLIMB_SEEDS,
+                validate_causal_campaign_shape,
+            )
+
+            if len(self.seeds) < MIN_CLIMB_SEEDS:
+                raise ValueError(
+                    f"promotion campaigns require at least {MIN_CLIMB_SEEDS} seeds "
+                    "for primary LCB (multi-seed)"
+                )
+            causal_failures = validate_causal_campaign_shape(self)
+            if causal_failures:
+                raise ValueError(
+                    "promotion campaigns require causal shape: "
+                    + ", ".join(causal_failures)
+                )
         if self.requires_rl and (
             not self.rl_readiness_report_sha256 or not self.rl_evaluation_sha256
         ):
@@ -307,6 +328,12 @@ class CampaignResultV1(StrictModel):
     arm_seed_results: tuple[tuple[str, StrictInt], ...] = ()
     paired_example_ids: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     endpoint_values: dict[str, float] = Field(default_factory=dict)
+    # Per-seed primary endpoint values for climb multi-seed LCB (required for
+    # promotion_candidate / ship_gate climb eligibility).
+    primary_endpoint_seed_values: tuple[float, ...] = ()
+    baseline_trainable_params: int | None = None
+    candidate_trainable_params: int | None = None
+    eg_params_by_seed: tuple[float, ...] = ()
     holm_results: tuple[HolmResultV1, ...] = ()
     artifacts: tuple[CampaignArtifactV1, ...] = ()
     exploratory: bool = False
@@ -373,6 +400,12 @@ def validate_result_claim(
     *,
     artifact_root: Path | None = None,
     locked_manifest_path: Path | None = None,
+    label_as_climb: bool | None = None,
+    primary_seed_values: Sequence[float] | None = None,
+    baseline_primary: float | None = None,
+    baseline_trainable_params: int | None = None,
+    candidate_trainable_params: int | None = None,
+    eg_params_by_seed: Sequence[float] | None = None,
 ) -> tuple[str, ...]:
     """Return fail-closed governance failures for a claimed result.
 
@@ -383,6 +416,12 @@ def validate_result_claim(
     built a manifest file are unaffected; promotion/ship call sites should
     pass the canonical path (``locked_eval_manifest.canonical_manifest_path``)
     to get the stronger, content-addressed check.
+
+    Climb eligibility is always enforced for ``promotion_candidate`` /
+    ``ship_gate`` results (multi-seed primary LCB + locked eval). Setting
+    ``label_as_climb=True`` additionally fails fixture/wiring results that try
+    to brand non-climb work as progress. ``label_as_climb=None`` (default)
+    auto-selects True for promotion-class claims.
     """
     failures: list[str] = []
     expected_sha = campaign_manifest_sha256(manifest)
@@ -394,6 +433,36 @@ def validate_result_claim(
         failures.append("manifest_sha256_mismatch")
     if result.claim_class != manifest.claim_class:
         failures.append("claim_class_mismatch")
+    climb_claim = result.claim_class in {"promotion_candidate", "ship_gate"}
+    apply_climb = climb_claim if label_as_climb is None else bool(label_as_climb)
+    if apply_climb:
+        from slm_training.autoresearch.hillclimb import climb_step_eligibility
+
+        primary = next(
+            (e for e in manifest.endpoints if e.role == "primary"), None
+        )
+        seed_vals = primary_seed_values
+        if seed_vals is None and result.primary_endpoint_seed_values:
+            seed_vals = result.primary_endpoint_seed_values
+        direction = "increase"
+        if primary is not None and getattr(primary, "direction", None) in {
+            "increase",
+            "decrease",
+        }:
+            direction = primary.direction  # type: ignore[assignment]
+        climb = climb_step_eligibility(
+            claim_class=result.claim_class,
+            locked_eval_manifest_sha256=result.locked_eval_manifest_sha256
+            or manifest.locked_eval_manifest_sha256,
+            seeds=manifest.seeds,
+            primary_endpoint_seed_values=seed_vals,
+            baseline_primary=baseline_primary,
+            minimum_effect=float(primary.minimum_effect) if primary else 0.0,
+            label_as_climb=True,
+            direction=direction,  # type: ignore[arg-type]
+        )
+        if not climb.eligible:
+            failures.extend(f"climb:{f}" for f in climb.failures)
     if result.claim_class not in {"promotion_candidate", "ship_gate"}:
         return tuple(failures)
     if not result.locked_eval_manifest_sha256:
@@ -481,6 +550,37 @@ def validate_result_claim(
                 failures.append(f"artifact_digest_mismatch:{artifact.kind}")
     if result.claim_class == "ship_gate" and not result.ship_gates_passed:
         failures.append("ship_gates_not_passed")
+    # Capacity growth must pay for itself on climb/promotion paths.
+    # Prefer explicit kwargs; fall back to fields carried on the result.
+    base_params = (
+        baseline_trainable_params
+        if baseline_trainable_params is not None
+        else result.baseline_trainable_params
+    )
+    cand_params = (
+        candidate_trainable_params
+        if candidate_trainable_params is not None
+        else result.candidate_trainable_params
+    )
+    eg_seeds: Sequence[float] | None
+    if eg_params_by_seed is not None:
+        eg_seeds = eg_params_by_seed
+    elif result.eg_params_by_seed:
+        eg_seeds = result.eg_params_by_seed
+    else:
+        eg_seeds = None
+    if base_params is not None or cand_params is not None or eg_seeds is not None:
+        from slm_training.autoresearch.hillclimb import assert_capacity_growth_allowed
+        from slm_training.autoresearch.hillclimb import HillClimbError
+
+        try:
+            assert_capacity_growth_allowed(
+                baseline_params=base_params,
+                candidate_params=cand_params,
+                eg_params_by_seed=eg_seeds,
+            )
+        except HillClimbError as exc:
+            failures.append(f"eg_params:{exc}")
     return tuple(failures)
 
 

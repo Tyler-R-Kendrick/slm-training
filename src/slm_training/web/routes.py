@@ -1424,6 +1424,9 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
             governed_result,
             artifact_root=payload.campaign_artifact_root,
             locked_manifest_path=locked_manifest_path,
+            baseline_trainable_params=payload.baseline_trainable_params,
+            candidate_trainable_params=payload.candidate_trainable_params,
+            eg_params_by_seed=payload.eg_params_by_seed,
         )
         if campaign_store is None or payload.campaign_artifact_root is None:
             governance_failures = (*governance_failures, "campaign_store_missing")

@@ -98,6 +98,10 @@ def validate_hypothesis_matrix(
     prior_experiment_ids: frozenset[str] = frozenset(),
     feedback: tuple[HypothesisFeedback, ...] = (),
     previous_matrix: HypothesisMatrix | None = None,
+    *,
+    exhausted_knob_ledger: object | None = None,
+    exhausted_data_eval_identity: str | None = None,
+    exhausted_claim_class: str = "fixture",
 ) -> None:
     if matrix.campaign_id != campaign.campaign_id:
         raise ValueError("hypothesis matrix campaign_id does not match campaign")
@@ -210,6 +214,31 @@ def validate_hypothesis_matrix(
         raise ValueError(
             f"hypothesis matrix repeats previously run knob signatures: {repeated}"
         )
+    # Optional exhausted-knob ledger (hill-climb governance): same knob signature
+    # + claim_class + data/eval identity after a measured null is rejected.
+    if exhausted_knob_ledger is not None and exhausted_data_eval_identity:
+        from slm_training.autoresearch.hillclimb import (
+            HillClimbError,
+            assert_matrix_knobs_not_exhausted,
+            knob_signature_sha256,
+        )
+
+        try:
+            assert_matrix_knobs_not_exhausted(
+                knob_signatures=[
+                    knob_signature_sha256(
+                        candidate.experiment.knobs.model_dump(
+                            exclude_none=True, mode="json"
+                        )
+                    )
+                    for candidate in matrix.hypotheses
+                ],
+                ledger=exhausted_knob_ledger,  # type: ignore[arg-type]
+                data_eval_identity=exhausted_data_eval_identity,
+                claim_class=exhausted_claim_class,
+            )
+        except HillClimbError as exc:
+            raise ValueError(str(exc)) from exc
 
     citation_roles: dict[str, set[str]] = {}
     for source in sources:

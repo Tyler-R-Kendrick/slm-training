@@ -219,6 +219,8 @@ class CampaignStore:
                 result,
                 artifact_root=artifact_root,
                 locked_manifest_path=locked_manifest_path,
+                # Default climb enforcement for promotion-class claims; result
+                # may carry primary_endpoint_seed_values + EG_params fields.
             )
         )
         events = self.verify_event_chain()
