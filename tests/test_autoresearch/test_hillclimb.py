@@ -209,6 +209,28 @@ def test_exhausted_ledger_roundtrip(tmp_path: Path) -> None:
     )
 
 
+def test_wf_smoke_v2_published_synthesis_actions_clear_sft_gate() -> None:
+    """Continuous fixture train_version must have recorded synthesis actions."""
+    import slm_training
+
+    train_dir = (
+        Path(slm_training.__file__).resolve().parent
+        / "resources"
+        / "data"
+        / "train"
+        / "wf_smoke_v2"
+    )
+    assert (train_dir / "synthesis_feedback.json").is_file()
+    assert (train_dir / "synthesis_feedback_actions.json").is_file()
+    result = assert_synthesis_feedback_cleared_for_sft(train_dir)
+    assert result.allowed
+    assert result.reason in {
+        "actions_recorded",
+        "global_waiver",
+        "no_open_recommendations",
+    }
+
+
 def test_synthesis_gate_blocks_open_recommendations(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     train_dir.mkdir()
