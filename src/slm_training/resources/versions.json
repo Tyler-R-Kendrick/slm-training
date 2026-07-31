@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -22,6 +22,11 @@
         "docs/design/adr-constrained-diffusion-topology-proofs.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-31",
+          "note": "Semantic-factor frontier claim cores: score-key subset, singleton zero residual work, soft-token collision example, restart contraction factor bound."
+        },
         {
           "version": "v3",
           "date": "2026-07-30",
@@ -1145,6 +1150,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-31",
+          "note": "no-bump: cross-link semantic-factor-frontier design/results from topology ADR; kernel behavior unchanged."
+        },
         {
           "version": "v4",
           "date": "2026-07-30",
@@ -12138,6 +12148,61 @@
           "version": "v1",
           "date": "2026-07-31",
           "note": "BEq analogues for AST/grammar pairs and certificate digests used as ship-gate semantic fidelity"
+        }
+      ]
+    },
+    "harness.experiments.anti_e237_semantic_factor_frontier": {
+      "version": "v5",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/data/progspec/semantic_evidence.py",
+        "src/slm_training/models/semantic_factor_propagation.py",
+        "src/slm_training/models/semantic_residual_scorer.py",
+        "src/slm_training/harnesses/experiments/anti_e237_semantic_factor_frontier.py",
+        "scripts/run_semantic_factor_frontier.py",
+        "tests/test_dsl/test_semantic_evidence.py",
+        "tests/test_models/test_semantic_factor_propagation.py",
+        "tests/test_models/test_semantic_residual_scorer.py",
+        "tests/test_harnesses/experiments/test_anti_e237_semantic_factor_frontier.py",
+        "docs/design/semantic-factor-frontier.md",
+        "docs/design/semantic-factor-frontier-results.md",
+        "docs/design/semantic-factor-frontier-results.json",
+        "src/slm_training/harnesses/experiments/semantic_factor_claims.py",
+        "tests/test_harnesses/experiments/test_semantic_factor_claims.py",
+        "src/slm_training/harnesses/experiments/semantic_factor_metrics.py",
+        "tests/test_harnesses/experiments/test_semantic_factor_metrics.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/metrics.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/scorer_params.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/campaign.v1.json",
+        "src/slm_training/harnesses/experiments/semantic_factor_config.py",
+        "src/slm_training/harnesses/experiments/semantic_factor_metric_engine.py",
+        "tests/test_harnesses/experiments/test_semantic_factor_config.py"
+      ],
+      "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-31",
+          "note": "External versioned SFF configs: metrics.v1.json (sff_metrics/v1), scorer_params.v1.json (sff_scorer_params/v1), campaign.v1.json (sff_campaign/v1). Metric inventory/formulas and scorer alphas/role weights live in resources; harness dispatches by formula type only. Scoreboards record config_resources identities."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-31",
+          "note": "Fail-closed SFF metrics contract (semantic_factor_metrics/v1, scoreboard v3): required wall_ms_*/quality_per_ms fields; campaign must lock wall_ms_mean+quality_per_ms endpoints; validate_scoreboard_metrics before durable write."
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-31",
+          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17\u2013C19 efficiency gates."
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-31",
+          "note": "Measured SFF suite n_ranked=78 (26\u00d73 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class."
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-31",
+          "note": "Default-off advisory semantic-factor frontier: role-ported factors, HyCE-style restart diffusion, residual scorer with singleton zero-work, anti-E237 fixture campaign SFF-anti-e237-v1 (wiring-only). RL/spectral/topology-authority/recurrent-SHIFT not implemented."
         }
       ]
     }

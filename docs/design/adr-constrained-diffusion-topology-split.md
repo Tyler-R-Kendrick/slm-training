@@ -210,3 +210,4 @@ until executor parity (E1) and anti-E237 contracts pass.**
 | Γ overlay | `dsl/grammar/fastpath/semantic_state.py` |
 | Tests | `tests/test_dsl/test_static_control_domain.py`, `test_residual_support.py` |
 | **Lean claim-core proofs** | [`adr-constrained-diffusion-topology-proofs.md`](adr-constrained-diffusion-topology-proofs.md) · `src/leverproof_lean/LeverProofLean/ConstrainedDiffusion.lean` |
+| **Advisory semantic-factor frontier (anti-E237)** | [`semantic-factor-frontier.md`](semantic-factor-frontier.md) · fixture results [`semantic-factor-frontier-results.md`](semantic-factor-frontier-results.md) |
