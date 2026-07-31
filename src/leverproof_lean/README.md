@@ -60,6 +60,22 @@ observation disappears during classification; the classifier theorems
 characterize all three positions exactly, and `relation_inBand_iff` proves
 that in-band is equivalent to having no below/above samples.
 
+## Core formal claims (Mathlib-free)
+
+Self-contained axiomatized theories for the structural safety layer (no Mathlib):
+
+| Module | Claims |
+| --- | --- |
+| `Forest` | certified closure is monotone, idempotent, history-preserving, never adds live candidates; lossy history is refuted |
+| `Trace` | accepted steps apply certified removals and prefix-extend history |
+| `StructuralMetrics` | recall / structural-similarity / means are monotone under declared inequalities |
+| `ExactClosure` | VSS exact-closure removes only replay-valid UNSUPPORTED; passes only shrink |
+| `DecodeInvariants` | I1/I2/I6 commit rules: singleton bypass, empty=dead-end, ranker ⊆ legal |
+| `EcosystemTier` | production-core vs ecosystem-library formal partition; core success ignores library size |
+
+Design notes: [`docs/design/core-formal-claims.md`](../../docs/design/core-formal-claims.md),
+[`docs/design/ecosystem-tier.md`](../../docs/design/ecosystem-tier.md).
+
 ## Trust boundary
 
 Lean checks the arithmetic and selection propositions. Measurement truth,

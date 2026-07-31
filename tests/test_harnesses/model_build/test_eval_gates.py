@@ -9,8 +9,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from tests.casefiles import case_values
-
 from slm_training.data.leakage import (
     fingerprint_openui,
     fingerprint_openui_structure,
@@ -42,6 +40,7 @@ from slm_training.harnesses.model_build.ship_gates import (
 )
 from slm_training.harnesses.preference import composite_reward
 from slm_training.models.decode_stats import DecodeStats
+from tests.casefiles import case_values
 
 
 def test_default_ship_gate_policy_is_external_and_strict(tmp_path: Path) -> None:
@@ -49,7 +48,7 @@ def test_default_ship_gate_policy_is_external_and_strict(tmp_path: Path) -> None
     assert policy["suites"] == DEFAULT_SHIP_GATES
 
     policy["suites"].pop("rico_held")
-    path = tmp_path / "openui_ship_gates_v5.json"
+    path = tmp_path / "openui_ship_gates_v6.json"
     path.write_text(json.dumps(policy), encoding="utf-8")
     with pytest.raises(ValueError, match="all canonical ship suites"):
         load_ship_gate_policy(path)
@@ -461,6 +460,8 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
             "syntax_parse_rate": 1.0,
             "structural_similarity": 0.9,
             "component_type_recall": 0.9,
+            "ast_beq_rate": 0.9,
+            "canonical_beq_rate": 0.9,
             "placeholder_fidelity": 0.9,
             "reward_score": 0.9,
             # Measured (zero) fallback telemetry: certified_fallback requires
@@ -479,6 +480,12 @@ def test_semantic_density_floor_present_for_every_suite() -> None:
     for suite, mins in DEFAULT_SHIP_GATES.items():
         assert "component_type_recall" in mins, suite
         assert mins["component_type_recall"] <= mins["structural_similarity"]
+        # v6: BEq-analogue floors on every suite; exact equality is harder than
+        # soft structure, so floors must not exceed structural_similarity.
+        assert "ast_beq_rate" in mins, suite
+        assert "canonical_beq_rate" in mins, suite
+        assert mins["ast_beq_rate"] <= mins["structural_similarity"]
+        assert mins["canonical_beq_rate"] <= mins["ast_beq_rate"]
 
 
 def test_ship_gates_fail_on_shorter_but_emptier_output() -> None:
@@ -497,6 +504,47 @@ def test_ship_gates_pass_when_density_met() -> None:
     result = evaluate_ship_gates(_full_suite_metrics())
     assert result["pass"] is True
     assert not result["failures"]
+
+
+def test_ship_gates_fail_on_syntax_alone() -> None:
+    # High syntax/parse-adjacent rates without BEq or density cannot promote.
+    suites = _full_suite_metrics(
+        meaningful_program_rate=0.95,
+        structural_similarity=0.9,
+        component_type_recall=0.0,
+        ast_beq_rate=0.0,
+        canonical_beq_rate=0.0,
+    )
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any(":ast_beq_rate" in f or ":component_type_recall" in f for f in result["failures"])
+
+
+def test_ship_gates_fail_when_ast_beq_collapses() -> None:
+    suites = _full_suite_metrics(ast_beq_rate=0.0, canonical_beq_rate=0.0)
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any(":ast_beq_rate" in f for f in result["failures"])
+    assert any(":canonical_beq_rate" in f for f in result["failures"])
+
+
+def test_certificate_equivalence_integrity_when_present() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["certificates_compared"] = 4
+    suites["smoke"]["certificate_equivalence_rate"] = 0.5
+    suites["smoke"]["certificate_replay_failures"] = 1
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("certificate_equivalence_rate" in f for f in result["failures"])
+    assert any("certificate_replay_failures" in f for f in result["failures"])
+    assert result["measurement_integrity_failures"]
+
+
+def test_certificate_equivalence_not_required_when_absent() -> None:
+    # No certificates compared → integrity gate does not fire.
+    result = evaluate_ship_gates(_full_suite_metrics())
+    assert result["pass"] is True
+    assert not any("certificate" in f for f in result["failures"])
 
 
 def test_rico_ship_gate_requires_full_production_suite() -> None:
@@ -648,6 +696,7 @@ def test_write_ship_gates_stamps_payload(tmp_path: Path) -> None:
         "gates.ship",
         "harness.core",
         "evals.meaningful_program",
+        "evals.semantic_fidelity",
     }
     on_disk = json.loads((tmp_path / "gates.json").read_text(encoding="utf-8"))
     assert on_disk["version_stamp"]["stamp_schema"] == "version_stamp/v1"

@@ -4,3 +4,11 @@ import LeverProofLean.Band
 import LeverProofLean.Resource
 import LeverProofLean.Certificate
 import LeverProofLean.Protocol
+-- Core formal claims (Mathlib-free axiomatized theories)
+import LeverProofLean.ListSet
+import LeverProofLean.Forest
+import LeverProofLean.Trace
+import LeverProofLean.StructuralMetrics
+import LeverProofLean.ExactClosure
+import LeverProofLean.DecodeInvariants
+import LeverProofLean.EcosystemTier
