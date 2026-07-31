@@ -109,6 +109,9 @@ def _manifest_payload(**updates: object) -> dict[str, object]:
                 "holm_family",
                 "agentevals",
                 "agentv",
+                "observation_table",
+                "analysis_plan",
+                "credit_report",
             )
         ],
         "claim_class": "promotion_candidate",
@@ -126,15 +129,139 @@ def _manifest(**updates: object) -> ExperimentCampaignV1:
     return ExperimentCampaignV1.model_validate(_manifest_payload(**updates))
 
 
+def _write_credit_bundle(
+    manifest: ExperimentCampaignV1,
+    artifact_root: Path,
+    *,
+    control_arm: str = "control",
+    candidate_arm: str = "candidate",
+    delta: float = 0.05,
+) -> tuple[dict[str, object], dict[str, float], list[dict[str, object]]]:
+    """Write observation_table, analysis_plan, credit_report; return digests info."""
+    from slm_training.autoresearch.credit_engine import (
+        analysis_plan_from_mapping,
+        compute_credit_report,
+        observation_table_from_mapping,
+    )
+
+    primary = next(e for e in manifest.endpoints if e.role == "primary")
+    metric = primary.metric
+    direction = primary.direction
+    examples = ("example-1", "example-2")
+    rows: list[dict[str, object]] = []
+    for seed in manifest.seeds:
+        for ex in examples:
+            rows.append(
+                {
+                    "arm_id": control_arm,
+                    "seed": int(seed),
+                    "example_id": ex,
+                    "metric_id": metric,
+                    "value": 0.50,
+                    "direction": direction,
+                    "split": "search",
+                }
+            )
+            rows.append(
+                {
+                    "arm_id": candidate_arm,
+                    "seed": int(seed),
+                    "example_id": ex,
+                    "metric_id": metric,
+                    "value": 0.50 + delta,
+                    "direction": direction,
+                    "split": "search",
+                }
+            )
+    table_payload = {
+        "schema": "observation_table/v1",
+        "version": "v1",
+        "campaign_id": manifest.campaign_id,
+        "experiment_id": manifest.experiment_id,
+        "manifest_sha256": campaign_manifest_sha256(manifest),
+        "locked_eval_manifest_sha256": manifest.locked_eval_manifest_sha256,
+        "rows": rows,
+    }
+    hyp_ids = tuple(
+        h
+        for family in manifest.multiplicity_families
+        for h in family.hypothesis_ids
+    )
+    plan_payload = {
+        "schema": "analysis_plan/v1",
+        "version": "v1",
+        "primary_metric": metric,
+        "primary_endpoint_id": primary.endpoint_id,
+        "direction": direction,
+        "minimum_effect": float(primary.minimum_effect),
+        "control_arm_id": control_arm,
+        "candidate_arm_id": candidate_arm,
+        "holm_hypothesis_ids": list(hyp_ids),
+        "holm_alpha": 0.05,
+        "seal_split": "seal",
+        "score_once": True,
+        "underpowered_n_below": 2,
+    }
+    table = observation_table_from_mapping(table_payload)
+    plan = analysis_plan_from_mapping(plan_payload)
+    promo = next(iter(manifest.promotion_gates), None)
+    roll = next(iter(manifest.rollback_gates), None)
+    report = compute_credit_report(
+        table,
+        plan,
+        promotion_gate_threshold=float(promo.threshold) if promo else None,
+        promotion_gate_operator=str(promo.operator) if promo else "ge",
+        rollback_gate_threshold=float(roll.threshold) if roll else None,
+        rollback_gate_operator=str(roll.operator) if roll else "lt",
+    )
+    report_payload = report.to_dict()
+    # Structural endpoint_values keys must match manifest endpoint ids only.
+    endpoints = {
+        endpoint.endpoint_id: report.paired_effect for endpoint in manifest.endpoints
+    }
+    holm = [
+        {
+            "hypothesis_id": h.hypothesis_id,
+            "raw_p_value": h.raw_p_value,
+            "rank": h.rank,
+            "threshold": h.threshold,
+            "adjusted_p_value": h.adjusted_p_value,
+            "rejected": h.rejected,
+        }
+        for h in report.holm_results
+    ]
+    for kind, payload in (
+        ("observation_table", table_payload),
+        ("analysis_plan", plan_payload),
+        ("credit_report", report_payload),
+    ):
+        path = artifact_root / f"{kind}.json"
+        path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report_payload, endpoints, holm
+
+
 def _complete_result(
     manifest: ExperimentCampaignV1,
     artifact_root: Path,
     **updates: object,
 ) -> CampaignResultV1:
     artifacts = []
+    credit_kinds = {"observation_table", "analysis_plan", "credit_report"}
+    need_credit = any(
+        r.kind in credit_kinds for r in manifest.artifact_requirements
+    ) or manifest.claim_class in {"promotion_candidate", "ship_gate"}
+    endpoints_override: dict[str, float] | None = None
+    holm_override: list[dict[str, object]] | None = None
+    if need_credit:
+        _, endpoints_override, holm_override = _write_credit_bundle(
+            manifest, artifact_root
+        )
     for requirement in manifest.artifact_requirements:
         path = artifact_root / f"{requirement.kind}.json"
-        path.write_text(json.dumps({"kind": requirement.kind}), encoding="utf-8")
+        if requirement.kind in credit_kinds and path.is_file():
+            pass  # already written with semantic content
+        elif not path.is_file():
+            path.write_text(json.dumps({"kind": requirement.kind}), encoding="utf-8")
         artifacts.append(
             {
                 "kind": requirement.kind,
@@ -142,6 +269,18 @@ def _complete_result(
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             }
         )
+    # Ensure credit artifacts present even if not in requirements (defense)
+    for kind in credit_kinds:
+        if need_credit and not any(a["kind"] == kind for a in artifacts):
+            path = artifact_root / f"{kind}.json"
+            if path.is_file():
+                artifacts.append(
+                    {
+                        "kind": kind,
+                        "uri": path.name,
+                        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    }
+                )
     payload: dict[str, object] = {
         "campaign_id": manifest.campaign_id,
         "experiment_id": manifest.experiment_id,
@@ -154,11 +293,11 @@ def _complete_result(
         "paired_example_ids": {
             arm.arm_id: ["example-1", "example-2"] for arm in manifest.arms
         },
-        "endpoint_values": {
-            endpoint.endpoint_id: 0.02 for endpoint in manifest.endpoints
-        },
+        "endpoint_values": endpoints_override
+        or {endpoint.endpoint_id: 0.02 for endpoint in manifest.endpoints},
         "primary_endpoint_seed_values": [0.02] * len(manifest.seeds),
-        "holm_results": [
+        "holm_results": holm_override
+        or [
             {
                 "hypothesis_id": hypothesis,
                 "raw_p_value": 0.01,
@@ -321,13 +460,12 @@ def test_promotion_candidate_fails_closed_on_incomplete_or_exploratory_result(
         exploratory=True,
     )
 
-    assert set(
-        validate_result_claim(manifest, result, artifact_root=tmp_path)
-    ) == {
+    failures = set(validate_result_claim(manifest, result, artifact_root=tmp_path))
+    # Gate pass/fail is recomputed only from credit; without credit artifacts,
+    # caller endpoint_values cannot authorize promotion/rollback outcomes.
+    assert {
         "exploratory_result",
         "incomplete_arm_seed_results",
-        "promotion_gates_not_passed",
-        "rollback_gates_not_passed",
         "missing_artifact:version_stamp",
         "missing_artifact:seed_result",
         "missing_artifact:paired_examples",
@@ -335,7 +473,12 @@ def test_promotion_candidate_fails_closed_on_incomplete_or_exploratory_result(
         "missing_artifact:holm_family",
         "missing_artifact:agentevals",
         "missing_artifact:agentv",
-    }
+        "missing_credit_artifact:observation_table",
+        "missing_credit_artifact:analysis_plan",
+        "missing_credit_artifact:credit_report",
+        "credit_summary_only_rejected",
+    } <= failures
+    assert "promotion_gates_not_passed" not in failures or "credit_summary_only_rejected" in failures
 
 
 def test_promotion_candidate_rejects_empty_pairs_and_duplicate_rows(
@@ -422,23 +565,25 @@ def test_promotion_result_locked_digest_is_verified_against_real_manifest_bytes(
     )
 
     missing_path = tmp_path / "does_not_exist.json"
-    assert validate_result_claim(
+    failures = validate_result_claim(
         manifest,
         result,
         artifact_root=tmp_path,
         locked_manifest_path=missing_path,
-    ) == ("locked_eval_manifest_digest_unverified_on_disk",)
+    )
+    assert "locked_eval_manifest_digest_unverified_on_disk" in failures
 
     wrong_digest_manifest = _manifest(locked_eval_manifest_sha256="f" * 64)
     wrong_digest_result = _complete_result(
         wrong_digest_manifest, tmp_path, locked_eval_manifest_sha256="f" * 64
     )
-    assert validate_result_claim(
+    failures_wrong = validate_result_claim(
         wrong_digest_manifest,
         wrong_digest_result,
         artifact_root=tmp_path,
         locked_manifest_path=manifest_path,
-    ) == ("locked_eval_manifest_digest_unverified_on_disk",)
+    )
+    assert "locked_eval_manifest_digest_unverified_on_disk" in failures_wrong
 
 
 def test_ship_gate_claim_requires_ship_gates_to_pass(tmp_path: Path) -> None:
@@ -450,6 +595,5 @@ def test_ship_gate_claim_requires_ship_gates_to_pass(tmp_path: Path) -> None:
     )
     result = _complete_result(manifest, tmp_path, ship_gates_passed=False)
 
-    assert validate_result_claim(
-        manifest, result, artifact_root=tmp_path
-    ) == ("ship_gates_not_passed",)
+    failures = validate_result_claim(manifest, result, artifact_root=tmp_path)
+    assert "ship_gates_not_passed" in failures

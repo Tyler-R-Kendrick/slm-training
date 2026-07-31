@@ -1446,11 +1446,12 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
         "failures": list(governance_failures),
         "manifest_sha256": manifest_sha,
     }
+    # Structural governance must not replace missing empirical evidence.
     if not governance_failures and result.get("failures") == ["sufficient_evidence"]:
-        result["checks"].pop("sufficient_evidence", None)
-        result["checks"]["governed_campaign_evidence"] = {"pass": True}
-        result["failures"] = []
-        result["promotable"] = True
+        result["checks"]["governed_campaign_evidence"] = {
+            "pass": True,
+            "note": "structural governance ok; empirical evidence still required",
+        }
     if governance_failures:
         result["promotable"] = False
         result.setdefault("failures", []).extend(governance_failures)

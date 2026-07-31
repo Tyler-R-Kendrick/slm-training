@@ -219,11 +219,15 @@ def evaluate_promotion(
         "manifest_sha256": manifest_sha,
     }
     result.setdefault("checks", {})["campaign_governance"] = governance
+    # Structural campaign governance must never substitute for missing comparative
+    # / empirical evidence (authoritative credit TCB). Keep governance status
+    # visible but do not clear sufficient_evidence or force promotable=True.
     if not governance_failures and result.get("failures") == ["sufficient_evidence"]:
-        result["checks"].pop("sufficient_evidence", None)
-        result["checks"]["governed_campaign_evidence"] = {"pass": True}
-        result["failures"] = []
-        result["promotable"] = True
+        result["checks"]["governed_campaign_evidence"] = {
+            "pass": True,
+            "note": "structural governance ok; empirical evidence still required",
+        }
+        # Leave sufficient_evidence failure and promotable=False.
     if governance_failures:
         result["promotable"] = False
         result.setdefault("failures", []).extend(governance_failures)

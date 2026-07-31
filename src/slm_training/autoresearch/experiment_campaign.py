@@ -35,7 +35,14 @@ _PROMOTION_ARTIFACT_KINDS = frozenset(
         "holm_family",
         "agentevals",
         "agentv",
+        # Authoritative credit TCB: raw observations + locked plan + recomputed report
+        "observation_table",
+        "analysis_plan",
+        "credit_report",
     }
+)
+_CREDIT_ARTIFACT_KINDS = frozenset(
+    {"observation_table", "analysis_plan", "credit_report"}
 )
 
 
@@ -106,6 +113,9 @@ class ArtifactRequirementV1(StrictModel):
         "agentv",
         "ship_gates",
         "formal_preflight",
+        "observation_table",
+        "analysis_plan",
+        "credit_report",
     ]
     minimum_count: int = Field(default=1, ge=1)
 
@@ -259,12 +269,30 @@ class ExperimentCampaignV1(StrictModel):
                 validate_causal_campaign_shape,
             )
 
-            if len(self.seeds) < MIN_CLIMB_SEEDS:
+            seed_floor = MIN_CLIMB_SEEDS
+            require_ms = True
+            try:
+                from slm_training.autoresearch.climb_policy import (
+                    load_climb_policy,
+                    promotion_seed_floor,
+                )
+
+                seed_floor, require_ms = promotion_seed_floor(load_climb_policy())
+                if not require_ms:
+                    seed_floor = max(1, int(seed_floor) if seed_floor else 1)
+            except Exception:  # noqa: BLE001 — policy load must not block fixtures
+                seed_floor = MIN_CLIMB_SEEDS
+                require_ms = True
+            if len(self.seeds) < seed_floor:
                 raise ValueError(
-                    f"promotion campaigns require at least {MIN_CLIMB_SEEDS} seeds "
+                    f"promotion campaigns require at least {seed_floor} seeds "
                     "for primary LCB (multi-seed)"
                 )
-            causal_failures = validate_causal_campaign_shape(self)
+            # Pass the same policy seed floor into causal shape so the two
+            # checks cannot disagree (hardcoded MIN_CLIMB_SEEDS vs policy).
+            causal_failures = validate_causal_campaign_shape(
+                self, min_seeds=seed_floor, require_multi_seed=require_ms
+            )
             if causal_failures:
                 raise ValueError(
                     "promotion campaigns require causal shape: "
@@ -450,6 +478,17 @@ def validate_result_claim(
             "decrease",
         }:
             direction = primary.direction  # type: ignore[assignment]
+        min_seeds = None
+        require_multi = True
+        try:
+            from slm_training.autoresearch.climb_policy import (
+                load_climb_policy,
+                promotion_seed_floor,
+            )
+
+            min_seeds, require_multi = promotion_seed_floor(load_climb_policy())
+        except Exception:  # noqa: BLE001
+            min_seeds, require_multi = None, True
         climb = climb_step_eligibility(
             claim_class=result.claim_class,
             locked_eval_manifest_sha256=result.locked_eval_manifest_sha256
@@ -460,6 +499,8 @@ def validate_result_claim(
             minimum_effect=float(primary.minimum_effect) if primary else 0.0,
             label_as_climb=True,
             direction=direction,  # type: ignore[arg-type]
+            min_seeds=min_seeds,
+            require_multi_seed=require_multi,
         )
         if not climb.eligible:
             failures.extend(f"climb:{f}" for f in climb.failures)
@@ -516,16 +557,20 @@ def validate_result_claim(
         or set(ranks) != set(range(1, len(expected_holm) + 1))
     ):
         failures.append("incomplete_holm_family")
-    if any(
-        not _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
-        for gate in manifest.promotion_gates
-    ):
-        failures.append("promotion_gates_not_passed")
-    if any(
-        _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
-        for gate in manifest.rollback_gates
-    ):
-        failures.append("rollback_gates_not_passed")
+    # Promotion/ship gate outcomes are recomputed from observation_table +
+    # analysis_plan inside _validate_authoritative_credit. Caller-supplied
+    # endpoint_values must not authorize gate pass/fail for those claims.
+    if result.claim_class not in {"promotion_candidate", "ship_gate"}:
+        if any(
+            not _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
+            for gate in manifest.promotion_gates
+        ):
+            failures.append("promotion_gates_not_passed")
+        if any(
+            _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
+            for gate in manifest.rollback_gates
+        ):
+            failures.append("rollback_gates_not_passed")
     artifact_counts: dict[str, int] = {}
     artifact_keys: set[tuple[str, str, str]] = set()
     for artifact in result.artifacts:
@@ -550,6 +595,17 @@ def validate_result_claim(
                 failures.append(f"artifact_digest_mismatch:{artifact.kind}")
     if result.claim_class == "ship_gate" and not result.ship_gates_passed:
         failures.append("ship_gates_not_passed")
+    # Authoritative credit: recompute from observations; reject summary-only.
+    if result.claim_class in {"promotion_candidate", "ship_gate"}:
+        failures = list(failures)
+        failures.extend(
+            _validate_authoritative_credit(
+                manifest,
+                result,
+                artifact_root=artifact_root,
+            )
+        )
+        failures = list(dict.fromkeys(failures))
     # Capacity growth must pay for itself on climb/promotion paths.
     # Prefer explicit kwargs; fall back to fields carried on the result.
     base_params = (
@@ -580,8 +636,135 @@ def validate_result_claim(
                 eg_params_by_seed=eg_seeds,
             )
         except HillClimbError as exc:
-            failures.append(f"eg_params:{exc}")
+            failures = (*tuple(failures), f"eg_params:{exc}")
     return tuple(failures)
+
+
+def _validate_authoritative_credit(
+    manifest: ExperimentCampaignV1,
+    result: CampaignResultV1,
+    *,
+    artifact_root: Path | None,
+) -> tuple[str, ...]:
+    """Recompute credit from observation_table + analysis_plan; match report."""
+
+    from slm_training.autoresearch.credit_engine import (
+        CreditEngineError,
+        analysis_plan_from_mapping,
+        compute_credit_report,
+        credit_report_from_mapping,
+        load_json_artifact,
+        observation_table_from_mapping,
+        verify_credit_against_caller,
+    )
+
+    failures: list[str] = []
+    by_kind = {a.kind: a for a in result.artifacts}
+    for kind in sorted(_CREDIT_ARTIFACT_KINDS):
+        if kind not in by_kind:
+            failures.append(f"missing_credit_artifact:{kind}")
+    if failures:
+        # Summary-only promotion path
+        if not _CREDIT_ARTIFACT_KINDS.intersection(by_kind):
+            failures.append("credit_summary_only_rejected")
+        return tuple(failures)
+    if artifact_root is None:
+        return ("artifact_root_missing",)
+
+    root = artifact_root.resolve()
+    try:
+        table_art = by_kind["observation_table"]
+        plan_art = by_kind["analysis_plan"]
+        report_art = by_kind["credit_report"]
+        table_path = (root / table_art.uri).resolve()
+        plan_path = (root / plan_art.uri).resolve()
+        report_path = (root / report_art.uri).resolve()
+        for path, kind, art in (
+            (table_path, "observation_table", table_art),
+            (plan_path, "analysis_plan", plan_art),
+            (report_path, "credit_report", report_art),
+        ):
+            if root not in path.parents or not path.is_file():
+                failures.append(f"credit_artifact_unverified:{kind}")
+                continue
+            if hashlib.sha256(path.read_bytes()).hexdigest() != art.sha256:
+                failures.append(f"credit_artifact_digest_mismatch:{kind}")
+        if failures:
+            return tuple(failures)
+
+        table = observation_table_from_mapping(load_json_artifact(table_path))
+        plan = analysis_plan_from_mapping(load_json_artifact(plan_path))
+        claimed = credit_report_from_mapping(load_json_artifact(report_path))
+        if table.manifest_sha256 != result.manifest_sha256:
+            failures.append("observation_manifest_sha256_mismatch")
+        if table.campaign_id != result.campaign_id or table.experiment_id != result.experiment_id:
+            failures.append("observation_identity_mismatch")
+
+        # Gate thresholds from manifest primary promotion/rollback if present
+        promo = next((g for g in manifest.promotion_gates if g.endpoint_id), None)
+        roll = next((g for g in manifest.rollback_gates if g.endpoint_id), None)
+        recomputed = compute_credit_report(
+            table,
+            plan,
+            promotion_gate_threshold=float(promo.threshold) if promo else None,
+            promotion_gate_operator=str(promo.operator) if promo else "ge",
+            rollback_gate_threshold=float(roll.threshold) if roll else None,
+            rollback_gate_operator=str(roll.operator) if roll else "lt",
+        )
+        if recomputed.content_sha256() != claimed.content_sha256():
+            # Allow report to match recomputation field-wise with digest of claimed body
+            if (
+                recomputed.observation_table_sha256 != claimed.observation_table_sha256
+                or recomputed.analysis_plan_sha256 != claimed.analysis_plan_sha256
+                or abs(recomputed.paired_effect - claimed.paired_effect) > 1e-9
+                or recomputed.promotable_empirical != claimed.promotable_empirical
+                or recomputed.disposition != claimed.disposition
+            ):
+                failures.append("credit_report_recompute_mismatch")
+        if table.content_sha256() != claimed.observation_table_sha256:
+            failures.append("credit_report_table_digest_mismatch")
+        if plan.content_sha256() != claimed.analysis_plan_sha256:
+            failures.append("credit_report_plan_digest_mismatch")
+
+        # Caller summaries must match recomputation (or be absent of conflicts)
+        required_endpoint_ids = tuple(ep.endpoint_id for ep in manifest.endpoints)
+        caller_holm = [
+            {
+                "hypothesis_id": h.hypothesis_id,
+                "raw_p_value": h.raw_p_value,
+                "adjusted_p_value": h.adjusted_p_value,
+                "rejected": h.rejected,
+            }
+            for h in result.holm_results
+        ]
+        failures.extend(
+            verify_credit_against_caller(
+                recomputed,
+                caller_endpoints=result.endpoint_values,
+                caller_holm=caller_holm,
+                required_endpoint_ids=required_endpoint_ids,
+            )
+        )
+        # Gate outcomes from recomputed endpoint authority only.
+        for gate in manifest.promotion_gates:
+            if not _gate_matches(
+                gate, recomputed.endpoint_values.get(gate.endpoint_id)
+            ):
+                failures.append("promotion_gates_not_passed")
+                break
+        for gate in manifest.rollback_gates:
+            if _gate_matches(gate, recomputed.endpoint_values.get(gate.endpoint_id)):
+                failures.append("rollback_gates_not_passed")
+                break
+        if not recomputed.promotable_empirical:
+            failures.append("credit_not_promotable_empirical")
+        if recomputed.disposition == "inconclusive":
+            failures.append("credit_inconclusive_underpowered")
+        if not recomputed.sealed_score_once_ok:
+            failures.append("sealed_score_once_violation")
+    except CreditEngineError as exc:
+        failures.append(f"credit_engine:{exc}")
+    return tuple(dict.fromkeys(failures))
 
 
 def _gate_matches(gate: CampaignGateV1, value: float | None) -> bool:

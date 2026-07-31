@@ -652,10 +652,12 @@ def test_absolute_lookup_ignores_baseline_prefixed_keys() -> None:
 def test_feedback_path_latency_null_and_win(tmp_path: Path) -> None:
     """Shipped autoresearch path: continuous default latency polarity."""
     import scripts.autoresearch as autoresearch_cli
-    from slm_training.autoresearch.hillclimb import (
-        load_exhausted_ledger,
-        matrix_data_eval_identity,
+    from slm_training.autoresearch.climb_policy import (
+        infer_metric_direction,
+        load_climb_policy,
+        loop_data_eval_identity,
     )
+    from slm_training.autoresearch.hillclimb import load_exhausted_ledger
     from slm_training.autoresearch.schemas import (
         CampaignSpec,
         Diagnosis,
@@ -697,10 +699,13 @@ def test_feedback_path_latency_null_and_win(tmp_path: Path) -> None:
         recommended_actions=("do not retry this knob signature",),
     )
     autoresearch_cli._record_hypothesis_feedback(store, matrix, regression, diag)
-    identity = matrix_data_eval_identity(
-        evidence_snapshot_id=matrix.evidence_snapshot_id,
+    policy = load_climb_policy()
+    identity = loop_data_eval_identity(
+        policy,
+        claim_class=str(policy.defaults.get("exploratory_claim_class") or "fixture"),
         primary_metric=campaign.primary_metric,
-        claim_class="fixture",
+        direction=infer_metric_direction(campaign.primary_metric),
+        data_manifest_sha256=matrix.evidence_snapshot_id,
     )
     knobs0 = matrix.hypotheses[0].experiment.knobs.model_dump(
         exclude_none=True, mode="json"

@@ -418,18 +418,59 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             _load_memo(store, args.memo, required=False),
             feedback,
         )
-    from slm_training.autoresearch.hillclimb import (
-        load_exhausted_ledger,
-        matrix_data_eval_identity,
+    from slm_training.autoresearch.climb_policy import (
+        assert_recipe_null_regime_pressure,
+        infer_metric_direction,
+        load_climb_policy,
+        load_loop_exhausted_ledger,
+        loop_data_eval_identity,
+        train_eval_from_knobs,
     )
+    from slm_training.autoresearch.hillclimb import load_exhausted_ledger
 
-    # Hill-climb AC2: load the campaign exhausted-knob ledger so null-measured
-    # knob signatures cannot be re-proposed for the same data/eval identity.
-    exhausted_ledger = load_exhausted_ledger(store.root)
-    exhausted_identity = matrix_data_eval_identity(
-        evidence_snapshot_id=evidence.snapshot_id,
-        primary_metric=campaign.primary_metric,
-        claim_class="fixture",
+    policy = load_climb_policy()
+    claim_class = str(policy.defaults.get("exploratory_claim_class") or "fixture")
+    direction = infer_metric_direction(campaign.primary_metric)
+    proposed_knobs = [
+        candidate.experiment.knobs.model_dump(exclude_none=True, mode="json")
+        for candidate in result.matrix.hypotheses
+    ]
+    train_version, eval_version = train_eval_from_knobs(proposed_knobs)
+    # Prefer loop-scoped ledger when loop lineage exists; else campaign root.
+    loop_id = campaign.loop_id
+    if loop_id:
+        exhausted_ledger = load_loop_exhausted_ledger(store.root.parent, loop_id, policy)
+        exhausted_identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=train_version,
+            eval_version=eval_version,
+            primary_metric=campaign.primary_metric,
+            direction=direction,
+            data_manifest_sha256=evidence.snapshot_id,
+        )
+    else:
+        exhausted_ledger = load_exhausted_ledger(store.root)
+        exhausted_identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=train_version,
+            eval_version=eval_version,
+            primary_metric=campaign.primary_metric,
+            direction=direction,
+            data_manifest_sha256=evidence.snapshot_id,
+        )
+    has_regime = any(
+        item.novelty.transition_kind == "regime_transition_candidate"
+        for item in result.matrix.hypotheses
+    )
+    assert_recipe_null_regime_pressure(
+        policy,
+        ledger=exhausted_ledger,
+        data_eval_identity=exhausted_identity,
+        claim_class=claim_class,
+        matrix_has_regime_transition=has_regime,
+        proposed_knobs=proposed_knobs,
     )
     validate_hypothesis_matrix(
         campaign,
@@ -451,7 +492,7 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         previous_matrix=previous_matrix,
         exhausted_knob_ledger=exhausted_ledger,
         exhausted_data_eval_identity=exhausted_identity,
-        exhausted_claim_class="fixture",
+        exhausted_claim_class=claim_class,
     )
 
     proposed = {
@@ -1058,29 +1099,38 @@ def _record_hypothesis_feedback(
             artifact_sha256=path.stem,
             detail={"feedback_id": feedback.feedback_id, "matrix_id": matrix.matrix_id},
         )
-    # Hill-climb AC2: after a measured null, mark the knob signature exhausted
-    # so successor matrices cannot replay it under the same data/eval identity.
+    # After a measured null, mark the knob signature exhausted at loop scope
+    # (policy identity fields) so successor matrices cannot replay it.
     try:
         campaign = store.load_campaign()
         primary_metric = campaign.primary_metric
         evidence_snapshot_id = matrix.evidence_snapshot_id
+        loop_id = campaign.loop_id
         minimum_effect = 0.0
     except Exception:  # noqa: BLE001 — never block feedback on ledger errors
         primary_metric = "primary"
         evidence_snapshot_id = matrix.evidence_snapshot_id
+        loop_id = None
         minimum_effect = 0.0
+    from slm_training.autoresearch.climb_policy import (
+        is_recipe_tweak_knobs,
+        load_climb_policy,
+        load_loop_exhausted_ledger,
+        loop_data_eval_identity,
+        save_loop_exhausted_ledger,
+    )
     from slm_training.autoresearch.hillclimb import (
         infer_metric_direction,
         is_measured_null_feedback,
         load_exhausted_ledger,
-        matrix_data_eval_identity,
         record_null_from_knob_signature_json,
         resolve_baseline_primary,
         resolve_primary_effect,
         save_exhausted_ledger,
     )
 
-    # Prefer baseline carried on the outcome metrics; else prior control outcomes.
+    policy = load_climb_policy()
+    claim_class = str(policy.defaults.get("exploratory_claim_class") or "fixture")
     baseline = resolve_baseline_primary(
         feedback.metrics, primary_metric=primary_metric
     )
@@ -1090,10 +1140,7 @@ def _record_hypothesis_feedback(
             primary_metric=primary_metric,
             exclude_experiment_id=outcome.experiment_id,
         )
-    # Same polarity contract as continuous cycle classification / campaign
-    # endpoints: latency/loss leaves are decrease; else increase.
     direction = infer_metric_direction(primary_metric)
-    # Seed values when the outcome reported them under common keys.
     seed_values = None
     raw_seeds = feedback.metrics.get("primary_endpoint_seed_values")
     if isinstance(raw_seeds, (list, tuple)) and len(raw_seeds) >= 2:
@@ -1111,8 +1158,6 @@ def _record_hypothesis_feedback(
         baseline_primary=baseline,
         primary_seed_values=seed_values,
     )
-    # Diagnosis already classified a non-positive improvement — treat as null
-    # when an explicit delta is present (metrics must still carry the delta).
     if not null and diagnosis.target == "researcher":
         improvement, source = resolve_primary_effect(
             feedback.metrics,
@@ -1123,20 +1168,44 @@ def _record_hypothesis_feedback(
         if source == "explicit_delta" and improvement is not None and improvement <= 0:
             null = True
     if null:
-        ledger = load_exhausted_ledger(store.root)
-        identity = matrix_data_eval_identity(
-            evidence_snapshot_id=evidence_snapshot_id,
+        knobs_raw: dict = {}
+        try:
+            parsed = json.loads(feedback.knob_signature)
+            if isinstance(parsed, dict):
+                knobs_raw = parsed
+        except json.JSONDecodeError:
+            knobs_raw = {}
+        train_v = str(knobs_raw["train_version"]) if knobs_raw.get("train_version") else None
+        eval_v = str(knobs_raw["eval_version"]) if knobs_raw.get("eval_version") else None
+        identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=train_v,
+            eval_version=eval_v,
             primary_metric=primary_metric,
-            claim_class="fixture",
+            direction=direction,
+            data_manifest_sha256=evidence_snapshot_id,
         )
+        recipe = is_recipe_tweak_knobs(policy, knobs_raw)
+        reason = "recipe_null" if recipe else "primary_lcb_within_noise"
+        note = "recipe_family" if recipe else ""
+        if loop_id:
+            ledger = load_loop_exhausted_ledger(store.root.parent, loop_id, policy)
+        else:
+            ledger = load_exhausted_ledger(store.root)
         entry = record_null_from_knob_signature_json(
             ledger,
             knob_signature_json=feedback.knob_signature,
             data_eval_identity=identity,
-            claim_class="fixture",
+            claim_class=claim_class,
+            reason=reason,
+            note=note,
         )
         if entry is not None:
-            save_exhausted_ledger(ledger, store.root)
+            if loop_id:
+                save_loop_exhausted_ledger(ledger, store.root.parent, loop_id, policy)
+            else:
+                save_exhausted_ledger(ledger, store.root)
             store.append_event(
                 "exhausted_knob_recorded",
                 experiment_id=outcome.experiment_id,
@@ -1144,8 +1213,11 @@ def _record_hypothesis_feedback(
                 detail={
                     "knob_signature_sha256": entry.knob_signature_sha256,
                     "data_eval_identity": identity,
-                    "claim_class": "fixture",
+                    "claim_class": claim_class,
                     "baseline_primary": baseline,
+                    "reason": reason,
+                    "loop_id": loop_id,
+                    "policy_sha256": policy.sha256,
                 },
             )
     return path
