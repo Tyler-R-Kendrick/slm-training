@@ -81,6 +81,149 @@ def _run_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
     }
 
 
+# Phase A positive classification: latency is never a free win over quality.
+_EPS = 1e-12
+# Smoke fixture n≈3 → one meaningful program is ~1/3. Below that a latency
+# blip is not a real win (parse-only / empty-meaning arms).
+_MIN_MPR_FOR_LATENCY_WIN = 1.0 / 3.0 - 1e-9
+# Quality improvements may pay up to this latency regression (relative or abs).
+_LATENCY_REGRESSION_BUDGET = 0.15
+_LATENCY_REGRESSION_ABS_MS = 750.0
+# ~12s wall-band noise must not mint positives.
+_TIMEOUT_BAND_LO_MS = 11900.0
+_TIMEOUT_BAND_HI_MS = 12150.0
+_WIN_REASON_PREFIXES = (
+    "primary_metric_win:",
+    "quality_metric_win:",
+    "efficiency_win:",
+    "executable_unblock:",
+)
+
+
+def _finite_metric(value: object) -> float | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
+def _in_timeout_band(latency_ms: float | None) -> bool:
+    return (
+        latency_ms is not None
+        and _TIMEOUT_BAND_LO_MS <= latency_ms <= _TIMEOUT_BAND_HI_MS
+    )
+
+
+def _classify_metric_tradeoff(
+    *,
+    control: dict[str, float | None],
+    candidate: dict[str, float | None],
+    primary_metric: str,
+) -> tuple[bool, list[str]]:
+    """Score control vs candidate with quality/latency tradeoffs.
+
+    A pure latency improvement with empty meaning is **not** positive. A quality
+    improvement that spends a bounded latency budget **is** positive even when
+    the declared primary is latency. Efficiency (mpr / latency) is also a win
+    path when meaning stays above the smoke floor.
+    """
+    reasons: list[str] = []
+    positive = False
+    metric_leaf = primary_metric.split(".")[-1]
+
+    c_lat = _finite_metric(control.get("latency_ms_p50"))
+    t_lat = _finite_metric(candidate.get("latency_ms_p50"))
+    c_pr = _finite_metric(control.get("parse_rate"))
+    t_pr = _finite_metric(candidate.get("parse_rate"))
+    c_mpr = _finite_metric(control.get("meaningful_program_rate"))
+    t_mpr = _finite_metric(candidate.get("meaningful_program_rate"))
+
+    parse_held = t_pr is None or c_pr is None or t_pr + _EPS >= c_pr
+    mpr_held = t_mpr is None or c_mpr is None or t_mpr + _EPS >= c_mpr
+    mpr_improved = (
+        t_mpr is not None and c_mpr is not None and t_mpr > c_mpr + _EPS
+    )
+    lat_improved = (
+        t_lat is not None and c_lat is not None and t_lat + _EPS < c_lat
+    )
+    if t_lat is not None and c_lat is not None and c_lat > 0:
+        lat_within_tradeoff = t_lat <= c_lat * (
+            1.0 + _LATENCY_REGRESSION_BUDGET
+        ) or t_lat <= c_lat + _LATENCY_REGRESSION_ABS_MS
+    else:
+        # Missing latency must not veto a quality win.
+        lat_within_tradeoff = True
+
+    both_timeout_band = _in_timeout_band(c_lat) and _in_timeout_band(t_lat)
+
+    # Path 1: latency primary win — only with held quality and non-empty meaning.
+    if metric_leaf == "latency_ms_p50":
+        if c_lat is None or t_lat is None:
+            reasons.append("primary_metric_unavailable")
+        elif lat_improved and parse_held and mpr_held:
+            if both_timeout_band:
+                reasons.append(
+                    "latency_win_rejected_timeout_band:"
+                    f"control={c_lat} candidate={t_lat}"
+                )
+            elif t_mpr is None:
+                reasons.append("latency_win_rejected_unmeasured_mpr")
+            elif t_mpr + _EPS < _MIN_MPR_FOR_LATENCY_WIN:
+                reasons.append(
+                    "latency_win_rejected_low_mpr:"
+                    f"mpr={t_mpr}<{_MIN_MPR_FOR_LATENCY_WIN + 1e-9:g}"
+                )
+            else:
+                positive = True
+                reasons.append(
+                    f"primary_metric_win:{primary_metric}:{c_lat}->{t_lat}"
+                )
+                reasons.append(f"quality_held:parse={t_pr} mpr={t_mpr}")
+        else:
+            reasons.append(
+                f"primary_metric_null_or_worse:{primary_metric}:"
+                f"control={c_lat} candidate={t_lat} "
+                f"parse={c_pr}->{t_pr} mpr={c_mpr}->{t_mpr}"
+            )
+
+    # Path 2: quality win may spend a bounded latency budget (even under a
+    # latency primary). Prevents "naive latency primary" from failing better
+    # meaning at a small latency cost.
+    if mpr_improved and parse_held and lat_within_tradeoff:
+        positive = True
+        reasons.append(
+            "quality_metric_win:meaningful_program_rate:"
+            f"{c_mpr}->{t_mpr}:lat={c_lat}->{t_lat}"
+        )
+    elif mpr_improved and parse_held and not lat_within_tradeoff:
+        reasons.append(
+            "quality_win_rejected_latency_budget:"
+            f"mpr={c_mpr}->{t_mpr} lat={c_lat}->{t_lat}"
+        )
+
+    # Path 3: efficiency (meaningful programs per ms) with a meaning floor.
+    # Still respects the latency tradeoff budget so a 2× slowdown cannot mint a
+    # free win from mpr 0→ε alone.
+    if (
+        t_mpr is not None
+        and c_mpr is not None
+        and t_lat is not None
+        and c_lat is not None
+        and t_lat > 0
+        and c_lat > 0
+        and parse_held
+        and lat_within_tradeoff
+        and t_mpr + _EPS >= _MIN_MPR_FOR_LATENCY_WIN
+        and not both_timeout_band
+    ):
+        c_eff = c_mpr / c_lat
+        t_eff = t_mpr / t_lat
+        if t_eff > c_eff + _EPS:
+            positive = True
+            reasons.append(f"efficiency_win:mpr_per_ms:{c_eff:.8g}->{t_eff:.8g}")
+
+    return positive, reasons
+
+
 def _classify_positive(
     *,
     camp_dir: Path,
@@ -90,7 +233,8 @@ def _classify_positive(
 ) -> dict[str, Any]:
     """Classify cycle for SDLC Phase A stack-layer gate.
 
-    Positive only for primary-metric win (or ship/unblock signals when present).
+    Positive requires a quality-aware win (latency+held meaning, quality with
+    bounded latency cost, efficiency, or executable unblock with quality floor).
     Fixture insufficient_n / missing metrics / null deltas → non-positive.
     """
     control = _run_metrics(camp_dir, control_id)
@@ -122,33 +266,16 @@ def _classify_positive(
             # non-volume quality fail without a metric win stays non-positive
             reasons.append(f"gate_failures:{gpath.parent.name}:{len(fails)}")
 
-    # Primary metric: smoke.latency_ms_p50 → lower is better
-    metric_leaf = primary_metric.split(".")[-1]
-    c_lat = control.get("latency_ms_p50") if metric_leaf == "latency_ms_p50" else None
-    t_lat = candidate.get("latency_ms_p50") if metric_leaf == "latency_ms_p50" else None
-    c_pr = control.get("parse_rate")
-    t_pr = candidate.get("parse_rate")
+    tradeoff_positive, tradeoff_reasons = _classify_metric_tradeoff(
+        control=control,
+        candidate=candidate,
+        primary_metric=primary_metric,
+    )
+    reasons.extend(tradeoff_reasons)
+    positive = tradeoff_positive
 
-    if c_lat is not None and t_lat is not None:
-        # Require strict improvement and non-regression on parse_rate when both present
-        improved = t_lat < c_lat
-        parse_ok = True
-        if c_pr is not None and t_pr is not None:
-            parse_ok = t_pr + 1e-12 >= c_pr
-        if improved and parse_ok:
-            positive = True
-            reasons.append(
-                f"primary_metric_win:{primary_metric}:{c_lat}->{t_lat}"
-            )
-        else:
-            reasons.append(
-                f"primary_metric_null_or_worse:{primary_metric}:"
-                f"control={c_lat} candidate={t_lat} parse={c_pr}->{t_pr}"
-            )
-    else:
-        reasons.append("primary_metric_unavailable")
-
-    # Executable unblock: control failed path-wise, candidate completed with metrics
+    # Executable unblock: control failed path-wise, candidate completed with
+    # quality above the smoke floor (not merely a latency number).
     control_outcome = next(
         (
             _read_json(p)
@@ -166,25 +293,29 @@ def _classify_positive(
         ),
         {},
     )
+    t_mpr = _finite_metric(candidate.get("meaningful_program_rate"))
     if (
         control_outcome.get("error")
         and not cand_outcome.get("error")
         and candidate.get("latency_ms_p50") is not None
     ):
-        positive = True
-        reasons.append("executable_unblock:candidate_completed_after_control_error")
+        if t_mpr is not None and t_mpr + _EPS >= _MIN_MPR_FOR_LATENCY_WIN:
+            positive = True
+            reasons.append(
+                "executable_unblock:candidate_completed_after_control_error"
+            )
+        else:
+            reasons.append(
+                "executable_unblock_rejected_low_mpr:"
+                f"mpr={t_mpr}"
+            )
 
-    if fixture_only_fails and not any(r.startswith("primary_metric_win") for r in reasons):
-        # fixture n alone cannot make positive even if noise moves a metric
-        if not any(r.startswith("executable_unblock") for r in reasons):
-            if any(r.startswith("primary_metric_win") for r in reasons):
-                pass
-            # Keep metric wins; only block positivity that rests solely on gates green
-            # when those gates are volume-insufficient on fixture smoke.
-            pass
-
-    # Explicit: insufficient_n without metric win → force non-positive
-    if not any(r.startswith("primary_metric_win") or r.startswith("executable_unblock") for r in reasons):
+    # Explicit: no quality-aware win reason → force non-positive
+    if not any(
+        reason.startswith(prefix)
+        for reason in reasons
+        for prefix in _WIN_REASON_PREFIXES
+    ):
         positive = False
         if not reasons:
             reasons.append("no_positive_signal")
