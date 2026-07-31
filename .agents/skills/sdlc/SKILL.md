@@ -7,11 +7,11 @@ description: >
   bottom-up with rubber-duck adversarial review, comment resolution, CI
   repair, and squash-merge. Also covers Scalar enlistments, sparse-checkout,
   worktrees/workspaces for humans and agents, and autotrain iteration
-  delivery (incremental commits + stacked PR between training runs; full
-  bottom-up closeout when training stops). Use for multi-phase tasks, stacked
-  PR workflows, PR closeout, workspace setup, scalar/sparse checkout,
-  autotrain/code-fix delivery during training, or whenever work spans more
-  than one reviewable layer.
+  delivery (incremental commits always; stacked PR only after positive-result
+  training runs; full bottom-up closeout when training stops). Use for
+  multi-phase tasks, stacked PR workflows, PR closeout, workspace setup,
+  scalar/sparse checkout, autotrain/code-fix delivery during training, or
+  whenever work spans more than one reviewable layer.
 ---
 
 # SDLC — how work ships in this repo
@@ -102,7 +102,7 @@ Load references on demand:
 | 2+ sequential concerns, phases, or independent review units | **Stack** — one layer per concern |
 | Parallel independent efforts | Separate stacks (or separate PRs), not one tangled stack |
 | Experiment / matrix run | Follow `running-experiment-matrices` / `documenting-experiment-results`; stack the *code* changes, not the raw `outputs/` |
-| Autotrain continuous or multi-run training | **During training:** incremental commits + stacked PR layer between runs; get latest / resolve conflicts. **When training stops:** full bottom-up closeout. See [`references/autotrain-iteration-delivery.md`](references/autotrain-iteration-delivery.md) |
+| Autotrain continuous or multi-run training | **During training:** incremental commits always; **stacked PR only after positive-result runs**; get latest / resolve conflicts every cycle. **When training stops:** full bottom-up closeout of open (positive) layers. See [`references/autotrain-iteration-delivery.md`](references/autotrain-iteration-delivery.md) |
 
 ## Autotrain (training-active vs training-stopped)
 
@@ -110,12 +110,13 @@ Load references on demand:
 
 | Phase | When | Delivery |
 | --- | --- | --- |
-| **A — training active** | Continuous loop or multi-run finite train | Incremental commits while fixing code for an iteration; **stacked PR open/update between every training run**; fetch/merge latest and resolve conflicts before the next run. Do **not** default to full-stack squash-merge mid-loop. |
-| **B — training stopped** | User stop, hard block, or loop end | Full existing closeout **bottom → top** ([`references/closeout-review.md`](references/closeout-review.md)): rubber-duck + adversarial review, comments, CI, squash-merge, `gh stack sync` |
+| **A — training active** | Continuous loop or multi-run finite train | Incremental commits while fixing code for an iteration; document every run; **open/update a stacked PR layer only when the run is positive** (primary-metric win, ship-quality win, or proven executable unblock — see autotrain-iteration-delivery). Non-positive cycles stay local commits + docs only. Always fetch/merge latest before the next run. Do **not** default to full-stack squash-merge mid-loop. |
+| **B — training stopped** | User stop, hard block, or loop end | Full existing closeout **bottom → top** ([`references/closeout-review.md`](references/closeout-review.md)) for open positive layers: rubber-duck + adversarial review, comments, CI, squash-merge, `gh stack sync` |
 
 Local-only still means: no paid GPU / HF write without authority, and never PR
-raw `outputs/` blobs. It does **not** mean "never open stacked PRs for harness
-and design-doc fixes." Full procedure:
+raw `outputs/` blobs. It does **not** mean "never open stacked PRs after real
+wins." Fixture fails and null deltas do **not** earn a stack layer. Full
+procedure:
 [`references/autotrain-iteration-delivery.md`](references/autotrain-iteration-delivery.md).
 `autotrain` must load and follow that reference; this skill owns the process.
 
@@ -276,8 +277,9 @@ work**, same class of failure as missing experiment docs.
 | Merge commits / non-squash land | Use `--squash` for this repo's agent-landed stacks |
 | Sparse-checkout on shared worktree blanks another agent | Separate worktree + cone per task |
 | Skills only installed for one harness | Canonical copy under `.agents/skills/sdlc` + discovery symlinks |
-| Autotrain runs for hours with uncommitted harness fixes | Phase A incremental commits + stack layer between runs |
-| Training stopped and agent only pastes a resume recipe | Phase B bottom-up closeout is mandatory |
+| Autotrain runs for hours with uncommitted harness fixes | Phase A incremental commits every cycle |
+| Stacked PR for every fixture-fail / null cycle | Stack **only** after positive results |
+| Training stopped and agent only pastes a resume recipe | Phase B bottom-up closeout of open positive layers is mandatory |
 
 ## Done means
 

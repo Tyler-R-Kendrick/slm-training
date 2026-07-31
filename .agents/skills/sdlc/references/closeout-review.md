@@ -3,9 +3,9 @@
 **When:** Parent agent has finished implementing (via subagents) and opened
 one or more PRs / a stack — **or** just pushed commits that are meant to land
 — **or** an `autotrain` loop has **stopped** (user stop, hard block, session
-end) and stacked iteration layers still need to land. Autotrain mid-loop uses
-Phase A (open/update stack between runs); Phase B (this closeout) runs after
-training stops — see
+end) and stacked **positive-result** layers still need to land. Autotrain
+mid-loop uses Phase A (local commits every cycle; stack layer **only** after a
+positive run); Phase B (this closeout) runs after training stops — see
 [autotrain-iteration-delivery.md](autotrain-iteration-delivery.md).
 
 Closeout is **required** before the task is done. Opening the PR is part of

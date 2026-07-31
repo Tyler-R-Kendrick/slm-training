@@ -5,10 +5,11 @@ interface:
     Use $autotrain in continuous mode with zero user intervention between
     cycles: chain bounded campaigns, self-heal path and harness failures from
     evidence, print the verified result matrix between runs, and immediately
-    start the next cycle. While training is active: incremental commits for
-    iteration code/docs, open/update a stacked PR layer between every training
-    run (sdlc autotrain-iteration-delivery), fetch/merge latest and resolve
-    conflicts before the next run. When training stops: full bottom-up sdlc
-    closeout (rubber-duck review, CI, squash-merge). No paid GPU/HF write
-    without prior authority. Use one finite pass only when I name a phase or
-    say --once.
+    start the next cycle. While training is active: incremental commits every
+    cycle; open/update a stacked PR only after a positive-result run (primary
+    metric win, ship-quality win, or proven executable unblock — never for
+    fixture fails or null deltas); fetch/merge latest and resolve conflicts
+    before the next run. When training stops: full bottom-up sdlc closeout of
+    open positive layers (rubber-duck review, CI, squash-merge). No paid
+    GPU/HF write without prior authority. Use one finite pass only when I name
+    a phase or say --once.

@@ -5,6 +5,7 @@ interface:
     Use $sdlc for multi-phase work: plan layers, spawn subagents with
     incremental check-ins, manage official gh stack PRs, and close every PR
     bottom-up with rubber-duck adversarial review, comment resolution, CI
-    fixes, and squash-merge. For autotrain: incremental commits and stacked
-    PRs between training runs; when training stops, full bottom-up closeout
-    (see references/autotrain-iteration-delivery.md).
+    fixes, and squash-merge. For autotrain: incremental commits every cycle;
+    stacked PRs only after positive-result runs; when training stops, full
+    bottom-up closeout of open positive layers (see
+    references/autotrain-iteration-delivery.md).

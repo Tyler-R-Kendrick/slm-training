@@ -2491,7 +2491,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2514,6 +2514,11 @@
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-07-30",
+          "note": "Stacked PRs only after positive-result autotrain runs (primary-metric win, ship-quality win, or proven executable unblock); non-positive cycles keep local commits + docs only; still get latest between cycles and Phase B closeout of open positive layers"
+        },
         {
           "version": "v12",
           "date": "2026-07-30",

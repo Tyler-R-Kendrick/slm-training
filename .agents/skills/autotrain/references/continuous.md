@@ -25,11 +25,13 @@ persistence is the host goal and the append-only campaign event chains.
    fixture n, null lever deltas, timeouts) **never** stop the loop.
 5. **Remote compute is opt-in.** No paid GPU, remote job, or HF write unless
    the user already granted that authority in this session.
-6. **Code delivery is not local-only.** While the loop is active, follow
-   `sdlc` Phase A for every training iteration and every code fix that enables
-   one: incremental commits, stacked PR open/update **between** runs, get
-   latest, resolve conflicts. When the loop **stops**, run `sdlc` Phase B
-   bottom-up closeout. Binding reference:
+6. **Code delivery is not local-only, but stack layers are selective.** While
+   the loop is active, follow `sdlc` Phase A: incremental commits every cycle,
+   document every run, **open/update a stacked PR only after a positive-result
+   run**, get latest, resolve conflicts. Non-positive cycles (fixture gate
+   fails, null deltas, timeouts without a win) stay local commits + docs.
+   When the loop **stops**, run `sdlc` Phase B bottom-up closeout on open
+   positive layers. Binding reference:
    [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md).
 
 ## Preferred hands-off driver
@@ -114,12 +116,17 @@ For each cycle, run the full body without pausing:
    `preference`, `quality`, `rl`, `test_data`, or `train_data`. Route through
    `improve-openui-harnesses`, repair, replay the identical arm. Never mix
    harness and model changes in one attribution arm.
-9. **SDLC Phase A — iteration delivery (required when code/docs changed).**
+9. **SDLC Phase A — iteration delivery.**
    While fixing for this cycle and before the next train:
    - Incremental commits of green units (never leave harness WIP uncommitted).
-   - Stack layer for this iteration's tracked code + `docs/design/` results:
-     `gh stack add` / commit / `gh stack submit --open` (or push to the open
-     layer if the same concern continues).
+   - Classify **positive** vs not (primary-metric win vs control/predecessor,
+     ship-quality win, or proven executable unblock — see
+     autotrain-iteration-delivery). Fixture `insufficient_n` / null deltas
+     alone are **not** positive.
+   - **If positive:** stack layer for that iteration's tracked code +
+     `docs/design/` results (`gh stack add` / `gh stack submit --open`, or
+     push to the open positive layer if the same concern continues).
+   - **If not positive:** no new stack layer; keep local commits and continue.
    - Never PR raw `outputs/` or weight blobs.
    Full checklist:
    [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md).
@@ -144,7 +151,7 @@ Owner skills (invoke; do not reimplement):
 | Evaluation/readiness interpretation | `honest-ship-eval` |
 | Run evidence and closeout | `documenting-experiment-results` |
 | Prior-work/knowledge refresh when needed | `autoresearch` |
-| Iteration commits, stacked PRs, get-latest, stop closeout | `sdlc` (+ autotrain-iteration-delivery) |
+| Iteration commits, positive-only stacked PRs, get-latest, stop closeout | `sdlc` (+ autotrain-iteration-delivery) |
 
 ### Continuous recipe defaults (fail closed)
 
@@ -177,7 +184,8 @@ controls. Never lower gates, train on frozen cases, or weaken decode invariants.
 Any of: user stop/pause, thrice-repeated hard block, session end of the loop.
 
 1. Stop starting new train/eval cycles.
-2. Inventory open autotrain stack layers (`gh stack view`).
+2. Inventory open autotrain stack layers (`gh stack view`) — these should only
+   be positive-result layers.
 3. Run **full** `sdlc` closeout **bottom → top** — rubber-duck + adversarial
    review, resolve comments, fix CI, squash-merge, `gh stack sync` — exactly
    as documented in
@@ -198,6 +206,7 @@ Do **not** end with only a resume command or “branch is ready when you are.”
 - Skipping docs closeout to go faster
 - Remote/HF/paid compute without prior authority
 - Days of uncommitted harness/docs fixes while cycles run
-- Skipping stacked PR open/update between runs that changed code/docs
+- Opening a stacked PR for a non-positive cycle (fixture fail / null delta)
+- Skipping stacked PR after a **positive** run that changed code/docs
 - Stacking or committing raw `outputs/` / checkpoint blobs
-- Training stopped without bottom-up `sdlc` closeout of the stack
+- Training stopped without bottom-up `sdlc` closeout of open positive layers
