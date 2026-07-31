@@ -11,9 +11,10 @@ persistence is the host goal and the append-only campaign event chains.
 1. **Never stop for user confirmation** between cycles. Never ask "continue?",
    never wait for another `/autotrain`, never treat a finished cycle as done.
 2. **Never end a bare `/autotrain` turn with only a resume command.** After
-   every cycle: print the matrix, then **immediately start the next cycle** in
-   the same turn (or the next agent step without user input when the host
-   supports autonomous continuation / persistent goals).
+   every cycle: **print the three-table matrix to the user**, then
+   **immediately start the next cycle** in the same turn (or the next agent
+   step without user input when the host supports autonomous continuation /
+   persistent goals).
 3. **Self-heal failures.** Path errors, missing suites, dirty trees, merge
    conflicts, bad matrices, and failed gates are inputs to the next cycle — not
    reasons to yield. Repair when evidence names a canonical harness family;
@@ -33,6 +34,33 @@ persistence is the host goal and the append-only campaign event chains.
    When the loop **stops**, run `sdlc` Phase B bottom-up closeout on open
    positive layers. Binding reference:
    [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md).
+7. **Never kill a live continuous driver or its train/eval children** to ship
+   docs, fix CI, open PRs, “clean the worktree,” or restart for convenience.
+   Use a separate worktree/branch for side work. The only legal stop is the
+   user stop / hard-block / session-end Phase B path.
+8. **Prove liveness from process truth, not the host UI.** Grok/Codex
+   “background operations” panels are **not** the continuous loop. Always
+   report from `/tmp/autotrain-loop-status.txt` or `bash /tmp/autotrain-report.sh`
+   (driver_state, PID, top child, latest campaign) plus the matrix.
+
+## User-facing report (mandatory whenever you talk about the loop)
+
+Agents **must** paste this into chat after each cycle and whenever the user
+asks if training is running:
+
+```bash
+bash /tmp/autotrain-report.sh
+# writes:
+#   /tmp/autotrain-loop-status.txt      # liveness
+#   /tmp/autotrain-loop-matrix.md       # three-table matrix
+#   /tmp/autotrain-loop-dashboard.md    # combined dashboard
+```
+
+Minimum paste: **Run Results** table (last 5 cycles) + one-line liveness
+(`driver_state=RUNNING pid=… latest=… top_child=…`). Diagnostic/priorities
+tables follow when non-empty and truncated if huge.
+
+Do **not** say “it’s running” with only a remembered PID or a Grok UI icon.
 
 ## Preferred hands-off driver
 
@@ -220,3 +248,6 @@ Do **not** end with only a resume command or “branch is ready when you are.”
 - Skipping stacked PR after a **positive** run that changed code/docs
 - Stacking or committing raw `outputs/` / checkpoint blobs
 - Training stopped without bottom-up `sdlc` closeout of open positive layers
+- **Killing** `run_autotrain_continuous` / train / eval to land unrelated work
+- Claiming the loop is running from Grok/Codex background UI alone
+- Reporting cycle progress **without** pasting the skill matrix tables
