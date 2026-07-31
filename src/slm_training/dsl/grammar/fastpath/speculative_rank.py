@@ -3,9 +3,12 @@
 Decode invariant I3 (`docs/design/decode-invariants.md`): symbol tables are
 computed *before* the model. At a non-singleton branch point, the choice among
 already-legal candidates may be made by a **deterministic** scorer instead of a
-neural forward, and a run of such choices may be committed as one speculative
-span — lookahead-then-verify (arXiv:2602.00612), with the grammar oracle as the
-verifier (intersection-witness completions, arXiv:2508.10111).
+neural forward, and a run of such choices may be committed as one
+**forest-verified speculative** span — draft only from the complete legal
+forest / domain, re-derive domain each step, verify with the grammar oracle
+before commit (intersection-witness completions, arXiv:2508.10111; bounded-hole
+dead ends, arXiv:2602.00612). This is not LAVE-as-primary recovery rewrite;
+see ``docs/design/adr-constrained-diffusion-topology-split.md``.
 
 Two rules hold without exception:
 

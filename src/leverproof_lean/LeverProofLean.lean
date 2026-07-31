@@ -12,3 +12,5 @@ import LeverProofLean.StructuralMetrics
 import LeverProofLean.ExactClosure
 import LeverProofLean.DecodeInvariants
 import LeverProofLean.EcosystemTier
+-- Constrained diffusion × topology ADR claim cores
+import LeverProofLean.ConstrainedDiffusion

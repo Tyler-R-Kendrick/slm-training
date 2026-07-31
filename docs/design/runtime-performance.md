@@ -81,10 +81,13 @@ retained in
 [`completion-kernel-perf-agentv-20260729-reconciled/`](completion-kernel-perf-agentv-20260729-reconciled/).
 
 After moving only the new fixture behind the unchanged upstream measurements,
-the clean v7 successor passed 17/17. Warm hard-prefix reuse measured 89.81x,
-choice cold bounded-distance 22.01x, solver 1.032x, and equivalent-row compiler
-wall/compiler time 31.06x/566.22x; singleton decode still made zero neural
-forwards. Cold empty and `root` passed at 0.902x and 0.957x.
+the clean v7 successor passed 17/17. Warm hard-prefix reuse measured 89.81×
+and is labeled **`request_local_memo_reuse` only (E9)** — not AOT cold; see
+[adr-constrained-diffusion-topology-split.md](adr-constrained-diffusion-topology-split.md)
+and the `classification` field on `warm_card_open_comma` in the results JSON.
+Choice cold bounded-distance was 22.01×, solver 1.032×, and equivalent-row
+compiler wall/compiler time 31.06×/566.22×; singleton decode still made zero
+neural forwards. Cold empty and `root` passed at 0.902× and 0.957×.
 
 The batch-two path preserved exact output and row volume while reducing neural
 calls from 10 to 5. On this CPU fixture, compact execution was 2,743.42 ms

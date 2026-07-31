@@ -76,6 +76,25 @@ Self-contained axiomatized theories for the structural safety layer (no Mathlib)
 Design notes: [`docs/design/core-formal-claims.md`](../../docs/design/core-formal-claims.md),
 [`docs/design/ecosystem-tier.md`](../../docs/design/ecosystem-tier.md).
 
+### Constrained diffusion × topology claim cores
+
+`LeverProofLean/ConstrainedDiffusion.lean` proves pure set/ranking/status laws
+for the ADR in
+[`docs/design/adr-constrained-diffusion-topology-split.md`](../../docs/design/adr-constrained-diffusion-topology-split.md)
+(map:
+[`docs/design/adr-constrained-diffusion-topology-proofs.md`](../../docs/design/adr-constrained-diffusion-topology-proofs.md)):
+
+- Γ / production domains only tighten candidates (I6);
+- E1 multiset parity and no silent UNKNOWN→UNSUPPORTED collapse;
+- residual ranking skips illegal scores; soft legality is never well-formed when true;
+- forced macros exclude literal-boundary tokens; incomplete coverage is not a forced edge;
+- valid singleton ⇒ neural-forward *optimum* is 0 (I2 law, not a wall-clock proof);
+- E9 honest warm claim is memo reuse under fixture/scratch, not AOT cold;
+- ordered stack ranks: never put circuit (6) before executor (1);
+- forest-verified draft ⊆ legal domain (I3 branding).
+
+These are calculation laws. Live OpenUI/Lark parity remains in Python E1–E8 tests.
+
 ## Trust boundary
 
 Lean checks the arithmetic and selection propositions. Measurement truth,
