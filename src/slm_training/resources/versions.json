@@ -2551,7 +2551,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2577,6 +2577,11 @@
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-07-31",
+          "note": "Hill-climb fail-closed follow-ups: corrupt synthesis_feedback blocks SFT; waiver-only global *; direction-aware LCB/UCB; baseline-prefix exclusion; atomic exhausted ledger write"
+        },
         {
           "version": "v16",
           "date": "2026-07-31",

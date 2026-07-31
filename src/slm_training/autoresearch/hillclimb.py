@@ -324,11 +324,14 @@ class ExhaustedKnobLedger:
         return cls(entries=entries)
 
     def save(self, path: Path) -> None:
+        """Atomically write the ledger (temp file + replace)."""
+
+        path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        payload = json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(payload, encoding="utf-8")
+        tmp.replace(path)
 
     @classmethod
     def load(cls, path: Path) -> ExhaustedKnobLedger:
@@ -411,13 +414,21 @@ def open_synthesis_recommendations(
 
 
 def _load_json(path: Path) -> dict[str, Any] | None:
+    """Return a dict from JSON, or None if the path is missing.
+
+    Corrupt / non-object JSON raises :class:`HillClimbError` (fail closed)
+    rather than looking like a missing artifact.
+    """
+
     if not path.is_file():
         return None
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return None
-    return raw if isinstance(raw, dict) else None
+    except json.JSONDecodeError as exc:
+        raise HillClimbError(f"corrupt JSON at {path}: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise HillClimbError(f"expected JSON object at {path}, got {type(raw).__name__}")
+    return raw
 
 
 def assert_synthesis_feedback_cleared_for_sft(
@@ -435,8 +446,9 @@ def assert_synthesis_feedback_cleared_for_sft(
           "waivers": [{"code": "...", "reason": "..."}]
         }
 
-    A waiver entry with matching ``code`` (or ``"*"``) clears the gate without
-    claiming the synthesizer was fixed.
+    A **waiver** entry with matching ``code`` (or ``"*"``) clears the gate
+    without claiming the synthesizer was fixed. Action rows must name concrete
+    codes — ``"*"`` is only valid on waivers.
     """
 
     train_dir = Path(train_dir)
@@ -465,16 +477,26 @@ def assert_synthesis_feedback_cleared_for_sft(
                 break
     actions_doc = _load_json(action_file) if action_file else None
     acted_codes: set[str] = set()
+    global_waiver = False
     if actions_doc:
         for row in actions_doc.get("actions") or []:
-            if isinstance(row, Mapping) and row.get("code"):
-                acted_codes.add(str(row["code"]))
+            if not isinstance(row, Mapping) or not row.get("code"):
+                continue
+            code = str(row["code"])
+            if code == "*":
+                raise HillClimbError(
+                    "synthesis_feedback_actions: actions may not use code '*'; "
+                    "put global clearances under waivers only"
+                )
+            acted_codes.add(code)
         for row in actions_doc.get("waivers") or []:
-            if isinstance(row, Mapping) and row.get("code"):
-                acted_codes.add(str(row["code"]))
-                if row.get("code") == "*":
-                    acted_codes.add("*")
-    if "*" in acted_codes:
+            if not isinstance(row, Mapping) or not row.get("code"):
+                continue
+            code = str(row["code"])
+            acted_codes.add(code)
+            if code == "*":
+                global_waiver = True
+    if global_waiver:
         return SynthesisGateResult(
             allowed=True,
             open_recommendations=open_recs,
@@ -576,20 +598,43 @@ def _as_finite_float(value: Any) -> float | None:
     return number
 
 
-def _metric_lookup(metrics: Mapping[str, Any], *names: str) -> float | None:
+def _metric_lookup(
+    metrics: Mapping[str, Any],
+    *names: str,
+    allow_suffix: bool = True,
+    exclude_key_prefixes: Sequence[str] = (),
+) -> float | None:
+    """Look up a metric value by exact key, then optional safe suffix match.
+
+    Suffix matches skip keys whose dotted path starts with an excluded prefix
+    (e.g. ``baseline.`` / ``control.``) so baseline rows never shadow the
+    candidate absolute when resolving the primary metric itself.
+    """
+
     for name in names:
         if name in metrics:
             parsed = _as_finite_float(metrics[name])
             if parsed is not None:
                 return parsed
-    # Suffix match: smoke.structural_similarity ends with structural_similarity.
+    if not allow_suffix:
+        return None
+    excluded = tuple(exclude_key_prefixes)
     for name in names:
         suffix = f".{name}"
         for key, raw in metrics.items():
-            if key == name or str(key).endswith(suffix):
-                parsed = _as_finite_float(raw)
-                if parsed is not None:
-                    return parsed
+            key_s = str(key)
+            if key_s != name and not key_s.endswith(suffix):
+                continue
+            if any(key_s == p.rstrip(".") or key_s.startswith(p) for p in excluded):
+                continue
+            # Also skip baseline/control when the match is only via a longer name
+            # that embeds those roles (baseline.smoke.latency_ms_p50).
+            head = key_s.split(".", 1)[0]
+            if head in {"baseline", "control", "matched_control"}:
+                continue
+            parsed = _as_finite_float(raw)
+            if parsed is not None:
+                return parsed
     return None
 
 
@@ -710,24 +755,37 @@ def resolve_primary_effect(
                     "seed_bound_vs_baseline",
                 )
 
-    # 3) Explicit primary bound vs baseline (caller must supply conservative side).
-    bound = _metric_lookup(
-        metrics,
-        f"{primary_metric}_lcb",
-        f"{primary_metric}_ucb",
-        "primary_lcb",
-        "primary_ucb",
-        "lcb",
-        "ucb",
-    )
+    # 3) Explicit primary bound vs baseline — pick the conservative side for
+    # the metric direction (LCB for increase, UCB for decrease).
+    if direction == "increase":
+        bound = _metric_lookup(
+            metrics,
+            f"{primary_metric}_lcb",
+            "primary_lcb",
+            "lcb",
+            allow_suffix=False,
+        )
+    else:
+        bound = _metric_lookup(
+            metrics,
+            f"{primary_metric}_ucb",
+            "primary_ucb",
+            "ucb",
+            allow_suffix=False,
+        )
     if bound is not None and baseline is not None:
         return (
             improvement_signed(bound - baseline, direction),
             "primary_bound_vs_baseline",
         )
 
-    # 4) Absolute primary vs baseline (never absolute alone).
-    absolute = _metric_lookup(metrics, primary_metric)
+    # 4) Absolute primary vs baseline (never absolute alone). Exclude
+    # baseline/control-prefixed keys so they cannot double as the candidate.
+    absolute = _metric_lookup(
+        metrics,
+        primary_metric,
+        exclude_key_prefixes=("baseline.", "control.", "matched_control."),
+    )
     if absolute is not None and baseline is not None:
         return (
             improvement_signed(absolute - baseline, direction),

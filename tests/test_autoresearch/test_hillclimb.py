@@ -286,6 +286,29 @@ def test_synthesis_gate_allows_missing_feedback(tmp_path: Path) -> None:
     assert result.reason == "no_feedback_artifact"
 
 
+def test_synthesis_gate_fails_closed_on_corrupt_feedback(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    (train_dir / "synthesis_feedback.json").write_text("{not-json", encoding="utf-8")
+    with pytest.raises(HillClimbError, match="corrupt JSON"):
+        assert_synthesis_feedback_cleared_for_sft(train_dir)
+
+
+def test_synthesis_gate_rejects_star_in_actions(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    (train_dir / "synthesis_feedback.json").write_text(
+        json.dumps({"recommendations": [{"code": "low_yield"}]}),
+        encoding="utf-8",
+    )
+    (train_dir / "synthesis_feedback_actions.json").write_text(
+        json.dumps({"actions": [{"code": "*"}]}),
+        encoding="utf-8",
+    )
+    with pytest.raises(HillClimbError, match="waivers only"):
+        assert_synthesis_feedback_cleared_for_sft(train_dir)
+
+
 def test_open_synthesis_recommendations_skips_closed() -> None:
     open_recs = open_synthesis_recommendations(
         {
@@ -606,6 +629,24 @@ def test_measured_null_polarity_table(
         minimum_effect=minimum_effect,
     )
     assert got is expect_null, f"{label}: expected null={expect_null}, got {got}"
+
+
+def test_absolute_lookup_ignores_baseline_prefixed_keys() -> None:
+    """baseline.smoke.latency_ms_p50 must not be read as the candidate absolute."""
+    from slm_training.autoresearch.hillclimb import resolve_primary_effect
+
+    improvement, source = resolve_primary_effect(
+        {
+            "smoke.latency_ms_p50": 10.0,
+            "baseline.smoke.latency_ms_p50": 11.0,
+            "baseline_primary": 11.0,
+        },
+        primary_metric="smoke.latency_ms_p50",
+        direction="decrease",
+    )
+    assert source == "absolute_vs_baseline"
+    # Win: 10 vs 11 → improvement +1
+    assert improvement == pytest.approx(1.0)
 
 
 def test_feedback_path_latency_null_and_win(tmp_path: Path) -> None:
