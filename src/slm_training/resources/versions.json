@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-31",
+          "note": "Continuous follow-up: thrash lever bank rotation (bounds/canvas/both/steps/batch1) with skip of recent queue arms; confirmed champions promote on cadence (control+-promote) to promoted/promotion_failed"
+        },
         {
           "version": "v21",
           "date": "2026-07-31",

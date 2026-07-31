@@ -317,3 +317,116 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     assert ctrl["grammar_completion_bounds"] is False
     assert cand["seed"] == ctrl["seed"] == 100_000 + 9
     assert cand["steps"] == 81
+
+
+def test_select_recommended_slug_rotates_and_skips() -> None:
+    # cycle 1 → first bank arm (bounds)
+    assert _mod._select_recommended_slug(1) == "bounds"
+    assert _mod._select_recommended_slug(2) == "canvas"
+    assert _mod._select_recommended_slug(3) == "both"
+    # skip bounds → canvas even on cycle 1
+    assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
+    # all skipped → still returns rotated head
+    all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    assert _mod._select_recommended_slug(1, skip=all_slugs) == "bounds"
+
+
+def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c2",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=2,
+        role="screening",
+        recommended_slug="canvas",
+    )
+    HypothesisMatrix.model_validate(matrix)
+    assert matrix["recommended_experiment_id"] == "c20260731-c2-canvas"
+    ids = [h["experiment"]["experiment_id"] for h in matrix["hypotheses"]]
+    assert "c20260731-c2-batch1" in ids
+    assert "c20260731-c2-bounds" in ids
+
+
+def test_matrix_promote_path_confirmed_knobs() -> None:
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-20260731-c8",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=8,
+        role="promotion",
+        promote_levers={
+            "grammar_completion_bounds": True,
+            "compact_active_canvas": False,
+            "steps": 81,
+            "batch_size": 2,
+            "train_version": "wf_smoke_v2",
+        },
+    )
+    HypothesisMatrix.model_validate(matrix)
+    assert matrix["recommended_experiment_id"] == "c20260731-c8-promote"
+    cand = matrix["hypotheses"][1]["experiment"]["knobs"]
+    assert cand["grammar_completion_bounds"] is True
+    assert cand["steps"] == 81
+
+
+def test_resolve_promotion_promoted_vs_failed(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-promo"
+    path = _mod._champion_queue_path(root, loop_id)
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-p",
+        "status": "promoting",
+        "knobs": {"grammar_completion_bounds": True},
+        "knobs_fingerprint": "abc",
+    }
+    _mod._write_champion_queue(path, [entry])
+    ok = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={
+            "positive": True,
+            "reasons": [
+                "quality_metric_win:meaningful_program_rate:0->0.5",
+                "primary_metric_win:held_out.structural_similarity:0->0.1",
+            ],
+        },
+        campaign_id="c-promo",
+        cycle_index=4,
+    )
+    assert ok is not None
+    assert ok["status"] == "promoted"
+    # failed path
+    entry2 = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-p2",
+        "status": "promoting",
+        "knobs": {"compact_active_canvas": True},
+        "knobs_fingerprint": "def",
+    }
+    entries = _mod._load_champion_queue(path)
+    entries.append(entry2)
+    _mod._write_champion_queue(path, entries)
+    fail = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry2,
+        delivery={"positive": False, "reasons": ["primary_metric_unavailable"]},
+        campaign_id="c-promo2",
+        cycle_index=8,
+    )
+    assert fail is not None
+    assert fail["status"] == "promotion_failed"
