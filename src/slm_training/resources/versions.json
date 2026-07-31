@@ -12,16 +12,24 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
         "scripts/leverproof_metrics.py",
         "docs/design/leverproof-integration.md",
         "src/leverproof_lean/LeverProofLean/ConstrainedDiffusion.lean",
-        "docs/design/adr-constrained-diffusion-topology-proofs.md"
+        "docs/design/adr-constrained-diffusion-topology-proofs.md",
+        "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean",
+        "src/leverproof_lean/LeverProofLean.lean",
+        "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-31",
+          "note": "Add AdvisoryResidual non-vacuous scorer/membership/golden incidence cores for SFF."
+        },
         {
           "version": "v4",
           "date": "2026-07-31",
@@ -12152,7 +12160,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -12180,9 +12188,22 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/claims.v1.json",
         "src/slm_training/resources/experiments/semantic_factor_frontier/suite.v1.json",
         "src/slm_training/resources/experiments/semantic_factor_frontier/projection.v1.json",
-        "src/slm_training/resources/experiments/semantic_factor_frontier/math_probes.v1.json"
+        "src/slm_training/resources/experiments/semantic_factor_frontier/math_probes.v1.json",
+        "src/slm_training/harnesses/experiments/semantic_factor_formal.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/golden_vectors.v1.json",
+        "tests/test_harnesses/experiments/test_semantic_factor_formal.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_advisory-singleton-zero-work.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_advisory-keys-legal.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_factor-membership-roundtrip.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_soft-token-collision.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_golden-incidence-degrees.json"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-31",
+          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python\u2194Lean bridges; hollow residual theorems documented as ADR sketches."
+        },
         {
           "version": "v6",
           "date": "2026-07-31",

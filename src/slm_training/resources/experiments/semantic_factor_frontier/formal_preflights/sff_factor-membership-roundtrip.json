@@ -1,0 +1,21 @@
+{
+  "campaign_id": "SFF-anti-e237-v1",
+  "checker": "make -C src/leverproof_lean proofs",
+  "claim": "Factor-node incidence reconstructs membership for the golden fixture.",
+  "evidence_scope": "universal",
+  "experiment_id": "semantic_factor_frontier_measured",
+  "lean_project": "src/leverproof_lean",
+  "obligation_id": "formal-834b3dc316ce9f09",
+  "policy": "required",
+  "proof_sha256": "ac7dd92374d370c9753d8b88d3735317f544459563644725aad07c289c37439b",
+  "proof_target": "LeverProofLean.AdvisoryResidual",
+  "schema_version": "FormalPreflightV1",
+  "source_digests": {
+    "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean": "8b8ed0a8a1e0e5ba0786e35512fc9fb6ed2b4c5080629bb71eb9a94a60809113",
+    "src/slm_training/data/progspec/semantic_evidence.py": "013974eb841f97e35d227e5b4b5807cfe543b32f0b55aa96f1cd8c16ed723842"
+  },
+  "status": "proved",
+  "template_id": "sff.factor-membership-roundtrip",
+  "template_version": "v1",
+  "theorem": "LeverProofLean.AdvisoryResidual.reconstruct_encode_example"
+}

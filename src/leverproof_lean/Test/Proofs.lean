@@ -88,6 +88,22 @@ open LeverProofLean
 #print axioms ConstrainedDiffusion.soft_token_collision_example
 #print axioms ConstrainedDiffusion.restart_contraction_factor_le_one
 
+-- Advisory residual plane (non-vacuous scorer control + membership)
+#print axioms AdvisoryResidual.singleton_is_zero_work
+#print axioms AdvisoryResidual.incomplete_not_scored
+#print axioms AdvisoryResidual.stale_digest_rejects_example
+#print axioms AdvisoryResidual.legal_mismatch_rejects_example
+#print axioms AdvisoryResidual.filterLegal_subset
+#print axioms AdvisoryResidual.filterLegal_drops_illegal
+#print axioms AdvisoryResidual.scored_keys_are_filter_example
+#print axioms AdvisoryResidual.scored_decode_off_zero_apps_example
+#print axioms AdvisoryResidual.decode_off_zero_apps_non_singleton
+#print axioms AdvisoryResidual.reconstruct_encode_example
+#print axioms AdvisoryResidual.golden_degrees
+#print axioms AdvisoryResidual.golden_S_column_masses
+#print axioms AdvisoryResidual.soft_token_collision
+#print axioms AdvisoryResidual.contraction_factor_lt_one
+
 #guard digestValid (String.ofList (List.replicate 64 'a'))
 #guard !(digestValid (String.ofList (List.replicate 63 'a')))
 #guard Workload.valid ⟨1, 9⟩
@@ -98,3 +114,11 @@ open LeverProofLean
 #guard ConstrainedDiffusion.rankInsideLegal [1, 9] [false, false] == none
 #guard ConstrainedDiffusion.ForwardsOptimum
   { domain := { status := .complete, candidates := [[0]] }, forcedToken := some 0 } == 0
+
+-- Advisory residual executable guards (bridged to golden_vectors.v1.json)
+#guard AdvisoryResidual.filterLegal [0, 1, 2] [0, 9, 1, 7] == [0, 1]
+#guard AdvisoryResidual.decodeOffZeroApps [0, 1, 2] [0, 9] == true
+#guard AdvisoryResidual.decodeOffZeroApps [0] [0, 1] == true
+#guard AdvisoryResidual.colDegrees AdvisoryResidual.goldenB == [2, 2]
+#guard AdvisoryResidual.rowDegrees AdvisoryResidual.goldenB == [2, 1, 1]
+#guard AdvisoryResidual.softToken [1, 0, 0] [7, 7, 3] == AdvisoryResidual.softToken [0, 1, 0] [7, 7, 3]

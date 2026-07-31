@@ -1,0 +1,22 @@
+{
+  "campaign_id": "SFF-anti-e237-v1",
+  "checker": "make -C src/leverproof_lean proofs",
+  "claim": "Golden incidence B degrees match the harness math probe.",
+  "evidence_scope": "universal",
+  "experiment_id": "semantic_factor_frontier_measured",
+  "lean_project": "src/leverproof_lean",
+  "obligation_id": "formal-a5362bf9474b058a",
+  "policy": "advisory",
+  "proof_sha256": "afad856a0aa12339a0ce73a3e61fc1950f50bb9afe5c689220583fd613c0483b",
+  "proof_target": "LeverProofLean.AdvisoryResidual",
+  "schema_version": "FormalPreflightV1",
+  "source_digests": {
+    "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean": "8b8ed0a8a1e0e5ba0786e35512fc9fb6ed2b4c5080629bb71eb9a94a60809113",
+    "src/slm_training/models/semantic_factor_propagation.py": "895fb23bebf3dd1ad8633da47e6734dfbddfbe4962234900a1349b52466f68e7",
+    "src/slm_training/resources/experiments/semantic_factor_frontier/golden_vectors.v1.json": "ce244348a67f81c887e958c79b840be95f71905ce4c703383defba0ef174b89a"
+  },
+  "status": "proved",
+  "template_id": "sff.golden-incidence-degrees",
+  "template_version": "v1",
+  "theorem": "LeverProofLean.AdvisoryResidual.golden_degrees"
+}

@@ -26,6 +26,14 @@ metric of an existing formula type, a claim of an existing rule type, suite
 examples, α / role weights, or kill rules is a resource edit only — harness
 code stays put.
 
+### Formal obligations (v7+)
+
+Campaign lock includes non-empty `formal_obligations` bound to
+`LeverProofLean.AdvisoryResidual` cores (singleton zero-work, keys⊆legal,
+membership round-trip, soft-token collision, golden incidence degrees) via
+committed preflight digests under `resources/.../formal_preflights/`. Golden
+vectors in `golden_vectors.v1.json` bridge Lean `#guard`s to Python tests.
+
 ## Suite
 
 | Quantity | Value |

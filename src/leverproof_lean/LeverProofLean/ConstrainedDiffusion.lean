@@ -439,7 +439,16 @@ theorem artifact_not_sole_executor
     r.isSoleExecutionSubstrate = false :=
   h.2
 
-/-! ### Advisory residual: legal support preservation + singleton zero-work -/
+/-! ### Advisory residual: legal support preservation + singleton zero-work
+
+  **Non-vacuous scorer model:** `LeverProofLean.AdvisoryResidual` defines the
+  control-plane `score` function matching `SemanticResidualScorerV1` and proves
+  singleton zero-work, incomplete UNKNOWN preserve, digest/legal rejects, and
+  `filterLegal` key subset from the definition (not a policy hypothesis).
+
+  The statements below remain as lightweight Domain-level sketches for ADR
+  linkage; prefer AdvisoryResidual for harness refinement.
+-/
 
 /-- Advisory score map may only key existing legal candidates. -/
 def ScoreKeysLegal (legal : List Candidate) (keys : List Candidate) : Prop :=
@@ -451,7 +460,11 @@ theorem score_keys_subset
     k ∈ legal :=
   h k hk
 
-/-- Complete singleton forbids residual/neural work (counts are Nat optima). -/
+/-- Complete singleton forbids residual/neural work (counts are Nat optima).
+
+  Policy-form retained for ADR docs; harness-refined theorem is
+  `AdvisoryResidual.singleton_is_zero_work`.
+-/
 structure ResidualWorkCounts where
   factorCalls : Nat
   propagationCalls : Nat

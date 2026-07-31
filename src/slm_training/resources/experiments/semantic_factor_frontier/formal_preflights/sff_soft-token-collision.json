@@ -1,0 +1,21 @@
+{
+  "campaign_id": "SFF-anti-e237-v1",
+  "checker": "make -C src/leverproof_lean proofs",
+  "claim": "Soft-token map is not injective on the finite SHIFT counterexample.",
+  "evidence_scope": "universal",
+  "experiment_id": "semantic_factor_frontier_measured",
+  "lean_project": "src/leverproof_lean",
+  "obligation_id": "formal-c91863d557a045ba",
+  "policy": "required",
+  "proof_sha256": "da0488194c5a3ff2825b13636101fdc257b6d6fc8bb1e60b36b5dc2b4c547453",
+  "proof_target": "LeverProofLean.AdvisoryResidual",
+  "schema_version": "FormalPreflightV1",
+  "source_digests": {
+    "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean": "8b8ed0a8a1e0e5ba0786e35512fc9fb6ed2b4c5080629bb71eb9a94a60809113",
+    "src/slm_training/resources/experiments/semantic_factor_frontier/math_probes.v1.json": "fe7669a88074dafc2185515ea9260a7b091cfcd8271ad4b43866bc9838c4845c"
+  },
+  "status": "proved",
+  "template_id": "sff.soft-token-collision",
+  "template_version": "v1",
+  "theorem": "LeverProofLean.AdvisoryResidual.soft_token_collision"
+}

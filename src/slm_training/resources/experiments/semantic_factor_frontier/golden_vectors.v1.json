@@ -1,0 +1,52 @@
+{
+  "schema": "sff_golden_vectors/v1",
+  "version": "v1",
+  "description": "Executable bridges between LeverProofLean.AdvisoryResidual and Python harnesses. Cases match Test/Proofs.lean #guard values.",
+  "lean_module": "LeverProofLean.AdvisoryResidual",
+  "filter_legal": {
+    "legal": [0, 1, 2],
+    "keys_in": [0, 9, 1, 7],
+    "keys_out": [0, 1]
+  },
+  "decode_off_zero_apps": {
+    "non_singleton_legal": [0, 1, 2],
+    "non_singleton_keys": [0, 9],
+    "non_singleton_expected_apps": 0,
+    "singleton_legal": [0],
+    "singleton_keys": [0, 1],
+    "singleton_outcome": "singletonZeroWork"
+  },
+  "scored_filter": {
+    "legal": [0, 1, 2],
+    "keys_in": [0, 9, 1],
+    "keys_out": [0, 1],
+    "applications_decode_on": 1,
+    "applications_decode_off": 0
+  },
+  "membership_roundtrip": {
+    "factors": [
+      {"factor_id": 0, "nodes": [1, 2]},
+      {"factor_id": 1, "nodes": [2, 3]}
+    ]
+  },
+  "incidence_golden_B": {
+    "columns": [[1, 1, 0], [1, 0, 1]],
+    "col_degrees": [2, 2],
+    "row_degrees": [2, 1, 1],
+    "note": "Matches AdvisoryResidual.goldenB and math_probes.column_stochastic.incidence_B (as rows)."
+  },
+  "soft_token": {
+    "a": [1, 0, 0],
+    "b": [0, 1, 0],
+    "coeffs": [7, 7, 3],
+    "collision": true
+  },
+  "rank_inside_legal": {
+    "scores": [1, 9, 2],
+    "legal_mask": [true, false, true],
+    "winner_index": 2,
+    "all_illegal_scores": [1, 9],
+    "all_illegal_mask": [false, false],
+    "all_illegal_winner": null
+  }
+}

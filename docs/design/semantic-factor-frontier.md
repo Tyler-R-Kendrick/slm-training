@@ -6,6 +6,30 @@
 **Related:** [adr-constrained-diffusion-topology-split.md](adr-constrained-diffusion-topology-split.md),
 E236/E237/E729 topology failures, HyCE-RAG / SHIFT / Search-R1 research transfer notes below.
 
+## Formal cores (harness-refined)
+
+Non-vacuous Lean module:
+`src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean`.
+
+| Property | Theorem / guard |
+| --- | --- |
+| Singleton residual zero-work | `singleton_is_zero_work` |
+| Incomplete → not scored (UNKNOWN) | `incomplete_not_scored` |
+| Stale digest / legal mismatch reject | `*_rejects_example` |
+| filterLegal keys ⊆ legal | `filterLegal_subset` |
+| Decode-off applications = 0 | `decode_off_zero_apps_*` |
+| Factor-node membership round-trip | `reconstruct_encode_example` |
+| Golden incidence degrees | `golden_degrees` |
+| Soft-token collision | `soft_token_collision` |
+
+Campaign locks **`formal_obligations`** + `formal_preflight` artifact (see
+`semantic_factor_formal.py` and `resources/.../formal_preflights/`). Golden
+vectors: `golden_vectors.v1.json` (Python tests must match Lean `#guard`s).
+
+**Honest limit:** restart *operator* column-stochasticity for arbitrary graphs
+remains NumPy property tests + golden B; Lean proves degrees/mass identity for
+the golden probe and the abstract contraction factor, not full continuum LA.
+
 ## Thesis
 
 `slm-training` learns neither ordinary free symbol completion nor an opaque
