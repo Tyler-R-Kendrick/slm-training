@@ -2517,6 +2517,11 @@
         {
           "version": "v14",
           "date": "2026-07-30",
+          "note": "no-bump: stack_layer also requires a tracked code/docs delta so pure knob-only metric blips do not open empty stacked PRs"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-30",
           "note": "Continuous driver enforces SDLC Phase A: after each cycle classify positive vs non-positive, write sdlc_delivery.json + ledger, log stack_layer intent; stack PR only when positive"
         },
         {

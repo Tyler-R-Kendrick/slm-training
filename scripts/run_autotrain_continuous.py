@@ -248,6 +248,23 @@ def _phase_a_delivery(
         control_id=control_run,
         candidate_id=candidate_run,
     )
+    # Stack only when positive AND there is something reviewable to ship.
+    # Pure knob-only fixture cycles with a metric blip do not open empty PRs.
+    porcelain = _git("status", "--porcelain", cwd=cwd) if cwd else ""
+    has_tracked_delta = bool(porcelain.strip())
+    stack_layer = bool(decision["positive"] and has_tracked_delta)
+    if decision["positive"] and not has_tracked_delta:
+        stack_action = "positive_no_tracked_delta_skip_stack"
+        agent_required = (
+            "metric win recorded; no code/docs delta — skip stack PR; continue loop"
+        )
+    elif stack_layer:
+        stack_action = "open_or_update_stacked_pr"
+        agent_required = "gh stack add/submit --open for this positive layer"
+    else:
+        stack_action = "no_stack_layer_non_positive"
+        agent_required = "continue loop; local commits/docs only"
+
     record = {
         "schema": "autotrain_sdlc_delivery/v1",
         "loop_id": loop_id,
@@ -255,17 +272,10 @@ def _phase_a_delivery(
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "sdlc_phase": "A",
         "positive": decision["positive"],
-        "stack_layer": decision["stack_layer"],
-        "stack_action": (
-            "open_or_update_stacked_pr"
-            if decision["stack_layer"]
-            else "no_stack_layer_non_positive"
-        ),
-        "agent_required": (
-            "gh stack add/submit --open for this positive layer"
-            if decision["stack_layer"]
-            else "continue loop; local commits/docs only"
-        ),
+        "stack_layer": stack_layer,
+        "has_tracked_delta": has_tracked_delta,
+        "stack_action": stack_action,
+        "agent_required": agent_required,
         **{k: v for k, v in decision.items() if k not in {"positive", "stack_layer"}},
     }
     out_path = camp_dir / "sdlc_delivery.json"
