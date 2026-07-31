@@ -150,6 +150,44 @@ def test_climb_policy_measurement_helpers() -> None:
     assert eval_suites_for_role(policy, "screening") == ("smoke",)
 
 
+def test_knobs_fingerprint_excludes_steps_jitter() -> None:
+    a = {"grammar_completion_bounds": True, "batch_size": 2, "steps": 80}
+    b = {"grammar_completion_bounds": True, "batch_size": 2, "steps": 81}
+    assert _mod._knobs_fingerprint(a) == _mod._knobs_fingerprint(b)
+    c = {"grammar_completion_bounds": True, "batch_size": 1, "steps": 80}
+    assert _mod._knobs_fingerprint(a) != _mod._knobs_fingerprint(c)
+
+
+def test_confirm_attempts_bound_rejects_queue_head(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-attempts"
+    path = _mod._champion_queue_path(root, loop_id)
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-a",
+        "status": "queued",
+        "confirm_attempts": _mod._MAX_CONFIRM_ATTEMPTS,
+        "knobs": {"grammar_completion_bounds": True},
+        "knobs_fingerprint": "x",
+    }
+    _mod._write_champion_queue(path, [entry])
+    # Simulate the drop path used when attempts already at max before bump exceeds.
+    attempts = _mod._bump_champion_attempt(
+        root=root, loop_id=loop_id, entry_id="champ-a", field="confirm_attempts"
+    )
+    assert attempts == _mod._MAX_CONFIRM_ATTEMPTS + 1
+    _mod._update_champion_status(
+        root=root,
+        loop_id=loop_id,
+        entry_id="champ-a",
+        status="rejected",
+        resolve_reasons=[f"confirm_attempts_exceeded:{attempts}"],
+    )
+    rows = _mod._load_champion_queue(path)
+    assert rows[0]["status"] == "rejected"
+    assert rows[0]["confirm_attempts"] == _mod._MAX_CONFIRM_ATTEMPTS + 1
+
+
 def test_should_enqueue_champion_requires_quality_held() -> None:
     assert _mod._should_enqueue_champion(
         {

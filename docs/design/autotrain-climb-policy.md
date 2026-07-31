@@ -48,10 +48,10 @@ so sticky knobs get a confirmatory retest before more thrash.
 | Ledger | `outputs/autoresearch/loops/<loop_id>/champion_queue.jsonl` |
 | Schema | `autotrain_champion_queue/v1` |
 | Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) with a real lever (`grammar_completion_bounds` or `compact_active_canvas`) |
-| Confirm | Next cycle matrix is control + `-confirm` — **same levers, new seed** (cadence role/suites unchanged) |
-| Promote | On **promotion cadence**, a `confirmed` head becomes control + `-promote` under promotion suites/seeds; resolve → `promoted` or `promotion_failed` |
+| Confirm | Next cycle matrix is control + `-confirm` — **same levers, new seed** (cadence role/suites unchanged); max **2** confirm attempts then `rejected` |
+| Promote | On **promotion cadence**, a `confirmed` head becomes control + `-promote` under promotion suites/seeds; resolve → `promoted` or `promotion_failed` (max **2** promote attempts) |
 | Resolve | Confirm re-holds quality → `confirmed`; else `rejected`. Promote needs positive + quality/primary win |
-| Dedup | Same lever fingerprint already `queued`/`confirming`/`confirmed` is not re-enqueued |
+| Dedup | Same lever fingerprint already `queued`/`confirming`/`confirmed` is not re-enqueued; fingerprint **excludes** cycle-local `steps` jitter |
 
 `cycle_intent` on `sdlc_delivery.json` is `confirm` / `promote` / `screening` /
 `promotion` (cadence `cycle_role` remains `screening`|`promotion`). Pure latency
