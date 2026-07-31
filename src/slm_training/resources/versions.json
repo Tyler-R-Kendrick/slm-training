@@ -2595,6 +2595,11 @@
         {
           "version": "v23",
           "date": "2026-07-31",
+          "note": "no-bump: regression test that published wf_smoke_v2 synthesis_feedback_actions clear the SFT gate (behavior-neutral harness coverage)"
+        },
+        {
+          "version": "v23",
+          "date": "2026-07-31",
           "note": "Champion-queue closeout: fingerprint excludes steps jitter for dedup; bound confirm/promote attempts (max 2) so stuck heads cannot block the queue forever"
         },
         {
