@@ -20,11 +20,14 @@ from slm_training.harnesses.experiments.anti_e237_semantic_factor_frontier impor
     build_campaign,
     lock_campaign,
 )
+from slm_training.autoresearch.schemas import FormalPreflightV1
 from slm_training.harnesses.experiments.semantic_factor_formal import (
+    SFF_FORMAL_DIR,
     SFF_FORMAL_TEMPLATES,
     SFFFormalError,
     load_or_build_sff_formal_obligations,
     load_sff_formal_obligations,
+    validate_committed_preflights,
     verify_sff_formal_sources,
 )
 from slm_training.models.semantic_factor_propagation import column_stochastic_S
@@ -60,6 +63,22 @@ def test_formal_obligations_nonempty_and_lockable() -> None:
     assert lock.manifest_sha256
 
 
+def test_committed_preflights_are_formal_preflight_v1() -> None:
+    preflights = validate_committed_preflights()
+    assert len(preflights) == len(SFF_FORMAL_TEMPLATES)
+    for pf in preflights:
+        assert isinstance(pf, FormalPreflightV1)
+        assert pf.status == "proved"
+        assert pf.mathlib_version == "none"
+        assert pf.lean_version
+        assert len(pf.build_output_sha256) == 64
+        assert pf.checker_contract and "leverproof" in pf.checker_contract
+        # Round-trip raw JSON through the schema.
+        path = SFF_FORMAL_DIR / f"{pf.template_id.replace('.', '_')}.json"
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        FormalPreflightV1.model_validate(raw)
+
+
 def test_formal_sources_present() -> None:
     report = verify_sff_formal_sources(run_lean=False)
     assert len(report["templates"]) == len(SFF_FORMAL_TEMPLATES)
@@ -78,6 +97,18 @@ def test_stale_preflight_raises(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(sff, "SFF_FORMAL_DIR", tmp_path)
     with pytest.raises(SFFFormalError, match="missing formal preflight"):
         sff.load_sff_formal_obligations()
+
+
+def test_invalid_preflight_schema_raises(tmp_path, monkeypatch) -> None:
+    from slm_training.harnesses.experiments import semantic_factor_formal as sff
+
+    monkeypatch.setattr(sff, "SFF_FORMAL_DIR", tmp_path)
+    # Write a minimal invalid file for the first template id.
+    tid = SFF_FORMAL_TEMPLATES[0]["template_id"]
+    path = tmp_path / f"{tid.replace('.', '_')}.json"
+    path.write_text('{"schema_version": "FormalPreflightV1"}\n', encoding="utf-8")
+    with pytest.raises(SFFFormalError, match="FormalPreflightV1"):
+        sff.validate_committed_preflights()
 
 
 def test_golden_filter_legal_matches_lean_guard() -> None:

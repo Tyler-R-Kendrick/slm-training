@@ -89,18 +89,24 @@ open LeverProofLean
 #print axioms ConstrainedDiffusion.restart_contraction_factor_le_one
 
 -- Advisory residual plane (non-vacuous scorer control + membership)
+-- Every theorem in AdvisoryResidual is listed for axiom-certification parity.
 #print axioms AdvisoryResidual.singleton_is_zero_work
 #print axioms AdvisoryResidual.incomplete_not_scored
 #print axioms AdvisoryResidual.stale_digest_rejects_example
 #print axioms AdvisoryResidual.legal_mismatch_rejects_example
+#print axioms AdvisoryResidual.decode_off_zero_apps_non_singleton
+#print axioms AdvisoryResidual.decode_off_zero_apps_singleton
 #print axioms AdvisoryResidual.filterLegal_subset
 #print axioms AdvisoryResidual.filterLegal_drops_illegal
+#print axioms AdvisoryResidual.filterLegal_example
 #print axioms AdvisoryResidual.scored_keys_are_filter_example
 #print axioms AdvisoryResidual.scored_decode_off_zero_apps_example
-#print axioms AdvisoryResidual.decode_off_zero_apps_non_singleton
 #print axioms AdvisoryResidual.reconstruct_encode_example
+#print axioms AdvisoryResidual.reconstruct_encode_singleton
+#print axioms AdvisoryResidual.zipRolesOnto_preserves_nodes
 #print axioms AdvisoryResidual.role_shuffle_preserves_membership
 #print axioms AdvisoryResidual.role_shuffle_example
+#print axioms AdvisoryResidual.role_shuffle_preserves_role_multiset_example
 #print axioms AdvisoryResidual.golden_degrees
 #print axioms AdvisoryResidual.golden_S_column_masses_from_B
 #print axioms AdvisoryResidual.soft_token_collision
@@ -124,3 +130,15 @@ open LeverProofLean
 #guard AdvisoryResidual.colDegrees AdvisoryResidual.goldenB == [2, 2]
 #guard AdvisoryResidual.rowDegrees AdvisoryResidual.goldenB == [2, 1, 1]
 #guard AdvisoryResidual.softToken [1, 0, 0] [7, 7, 3] == AdvisoryResidual.softToken [0, 1, 0] [7, 7, 3]
+#guard AdvisoryResidual.goldenSColumnSumNums.all (· = AdvisoryResidual.sColumnSumTarget AdvisoryResidual.goldenB) == true
+#guard AdvisoryResidual.membership
+  (AdvisoryResidual.shuffleRoles
+    [{ role := 1, node := 10 }, { role := 2, node := 20 }, { role := 3, node := 30 }] 1) ==
+  [10, 20, 30]
+#guard (AdvisoryResidual.shuffleRoles
+  [{ role := 1, node := 10 }, { role := 2, node := 20 }, { role := 3, node := 30 }] 1).map
+  (·.role) == [2, 3, 1]
+#guard AdvisoryResidual.reconstruct [0, 1]
+  (AdvisoryResidual.encodeIncidence
+    [{ factorId := 0, nodes := [1, 2] }, { factorId := 1, nodes := [2, 3] }]) ==
+  [{ factorId := 0, nodes := [1, 2] }, { factorId := 1, nodes := [2, 3] }]

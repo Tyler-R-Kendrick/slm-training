@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-31",
+          "note": "Proofs.lean: complete AdvisoryResidual axiom print + golden #guards."
+        },
         {
           "version": "v6",
           "date": "2026-07-31",
@@ -12165,7 +12170,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -12205,6 +12210,11 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-31",
+          "note": "FormalPreflightV1-compliant SFF preflights (lean_version/mathlib_version/build_output_sha256); full AdvisoryResidual #print axioms + #guards; scoreboard formal_preflights summary; fail-closed schema validation."
+        },
         {
           "version": "v8",
           "date": "2026-07-31",
