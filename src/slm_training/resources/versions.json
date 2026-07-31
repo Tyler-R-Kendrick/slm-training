@@ -2491,7 +2491,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2514,6 +2514,11 @@
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-07-30",
+          "note": "Continuous driver enforces SDLC Phase A: after each cycle classify positive vs non-positive, write sdlc_delivery.json + ledger, log stack_layer intent; stack PR only when positive"
+        },
         {
           "version": "v13",
           "date": "2026-07-30",

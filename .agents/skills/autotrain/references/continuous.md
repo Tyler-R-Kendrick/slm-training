@@ -53,6 +53,16 @@ python -m scripts.run_autotrain_continuous \
 suites, null deltas) do **not** stop the driver. Agents may also chain cycles
 manually, but must still obey the Absolute loop law above.
 
+After each cycle the driver runs **SDLC Phase A classification** and writes:
+
+- `<campaign>/sdlc_delivery.json` — positive?, stack_layer?, reasons, metrics
+- `outputs/autoresearch/sdlc_delivery_ledger.jsonl` — append-only ledger
+- log lines `SDLC_PHASE_A POSITIVE|NON_POSITIVE …`
+
+**Stacked PRs only when `stack_layer=true` (positive).** The driver does not
+open PRs itself; the agent must `gh stack` positive layers. Non-positive
+cycles stay local (no new stack layer).
+
 ## Start or resume (automatic)
 
 1. Prefer a dedicated local branch/worktree. Keep the continuous loop tree
