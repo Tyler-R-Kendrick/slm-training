@@ -374,6 +374,9 @@
       "budget": 32,
       "candidate_count": 12,
       "digest": "e38519a65e2f73ff0cab779699a9b4cdf5a1174b2b49342afdedb51ae4ebeb7a",
+      "classification": "request_local_memo_reuse",
+      "not_aot_cold": true,
+      "claim_note": "E9: warm ~89.8x / ~8ms is request-local memo reuse after priming (edges_built=0, domain/transition cache hits). Not AOT cold; claim_class remains fixture_or_scratch. See adr-constrained-diffusion-topology-split.md.",
       "v1": {
         "samples_ns": [
           687764847,

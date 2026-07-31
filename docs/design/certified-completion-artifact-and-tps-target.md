@@ -161,6 +161,22 @@ leakage, profile mixing, and circular calibration from observations. The current
 format/checker rejects the first five, structurally excludes dynamic facts,
 separates profiles, and keeps observed metrics outside the target function.
 
+## Claim-family split (executor vs circuit vs topology heads)
+
+Architecture disposition for constrained diffusion and topology lives in
+[adr-constrained-diffusion-topology-split.md](adr-constrained-diffusion-topology-split.md).
+This artifact doc remains the certificate/TPS home; the ADR owns:
+
+- **Family A (engine executor):** certified static control + Γ leaf filters,
+  E1 multiset parity, E4 forced macros, E8 zero-forward, E9 memo-reuse labeling;
+- **Family B (diffusion circuit):** residual multi-hole *predicate* later —
+  not a first milestone for this artifact;
+- **Family C (model-facing topology heads):** frozen pending anti-E237.
+
+Production domains for E1 are exposed via
+`slm_training.dsl.grammar.fastpath.static_control_domain`. Warm hard-prefix
+~89.8× is **`request_local_memo_reuse`** only — never AOT cold.
+
 ## Remaining work
 
 - Add an explicit target-profile registry for named CPU/GPU serving classes;
@@ -168,9 +184,10 @@ separates profiles, and keeps observed metrics outside the target function.
 - Tag future performance evidence `single_stream` or `aggregate` at its writer
   so gap analysis becomes comparable.
 - Measure artifact load and checker overhead in a preregistered performance run
-  before claiming a speedup. This change proves reuse and authority parity, not
-  a whole-model latency win.
-- Consider consuming the certified control table directly only after a
-  separately checked parser adapter proves identical accept/reduce behavior.
+  before claiming a speedup (E3). This change proves reuse and authority parity,
+  not a whole-model latency win.
+- Consume the certified control table directly only after a separately checked
+  parser adapter proves identical accept/reduce behavior **and** E1 stays green
+  (executable static control successor — not a rebrand of today's loader).
 - Escalate to a proof assistant only if the checker or artifact language grows
   beyond this auditable finite relation.

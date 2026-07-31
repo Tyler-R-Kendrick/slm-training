@@ -141,9 +141,13 @@ or batch and occupy O(unique packed states/prefixes); they have no
 process-global arbitrary-prefix forest cache. The request-independent LALR
 control relation and tokenizer-to-terminal projection are compiled into the
 checked artifact described in
-[certified-completion-artifact-and-tps-target.md](certified-completion-artifact-and-tps-target.md).
+[certified-completion-artifact-and-tps-target.md](certified-completion-artifact-and-tps-target.md)
+and the claim-family split in
+[adr-constrained-diffusion-topology-split.md](adr-constrained-diffusion-topology-split.md).
 The decoder consumes only the projection after exact live equivalence passes;
-scope and semantic state are never serialized. `TimeoutError` is checked before
+scope and semantic state are never serialized. E1 production snapshots live in
+`static_control_domain.py`; warm ~89.8× hard-prefix is `request_local_memo_reuse`
+only. `TimeoutError` is checked before
 cache reuse and after forest/closure construction and propagates through
 parser, witness, and solver loops. Native OpenUI production uses the packed
 path. The prefix-oriented reference remains a differential oracle and the

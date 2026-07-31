@@ -56,7 +56,41 @@ open LeverProofLean
 #print axioms EcosystemTier.library_growth_preserves_core_success
 #print axioms EcosystemTier.all_true_core_succeeds
 
+-- Constrained diffusion × topology (ADR claim cores)
+#print axioms ConstrainedDiffusion.gamma_only_tightens
+#print axioms ConstrainedDiffusion.production_subset_static
+#print axioms ConstrainedDiffusion.production_is_gamma_filter
+#print axioms ConstrainedDiffusion.e1_parity_components
+#print axioms ConstrainedDiffusion.no_silent_unknown_to_unsupported
+#print axioms ConstrainedDiffusion.e1_parity_transitive
+#print axioms ConstrainedDiffusion.rankInsideLegal_length_guard
+#print axioms ConstrainedDiffusion.rank_single_legal
+#print axioms ConstrainedDiffusion.rank_single_illegal
+#print axioms ConstrainedDiffusion.rank_skips_illegal_higher_score
+#print axioms ConstrainedDiffusion.legalScored_only_from_true
+#print axioms ConstrainedDiffusion.soft_legality_forbidden
+#print axioms ConstrainedDiffusion.honest_overapprox_preserves_admit
+#print axioms ConstrainedDiffusion.forced_macro_no_literals
+#print axioms ConstrainedDiffusion.forced_macro_append
+#print axioms ConstrainedDiffusion.incomplete_cannot_be_forced_edge
+#print axioms ConstrainedDiffusion.singleton_forwards_optimum_zero
+#print axioms ConstrainedDiffusion.singleton_forwards_optimum_is_minimum
+#print axioms ConstrainedDiffusion.e9_honest_not_aot
+#print axioms ConstrainedDiffusion.never_put_six_before_one
+#print axioms ConstrainedDiffusion.circuit_has_max_rank
+#print axioms ConstrainedDiffusion.executor_has_min_rank
+#print axioms ConstrainedDiffusion.forest_verified_cannot_add
+#print axioms ConstrainedDiffusion.predicate_before_circuit
+#print axioms ConstrainedDiffusion.freeze_topology_preserves_executor_pass
+#print axioms ConstrainedDiffusion.artifact_not_sole_executor
+
 #guard digestValid (String.ofList (List.replicate 64 'a'))
 #guard !(digestValid (String.ofList (List.replicate 63 'a')))
 #guard Workload.valid ⟨1, 9⟩
 #guard !(Workload.valid ⟨0, 0⟩)
+
+-- Executable residual ranking guards
+#guard ConstrainedDiffusion.rankInsideLegal [1, 9, 2] [true, false, true] == some 2
+#guard ConstrainedDiffusion.rankInsideLegal [1, 9] [false, false] == none
+#guard ConstrainedDiffusion.ForwardsOptimum
+  { domain := { status := .complete, candidates := [[0]] }, forcedToken := some 0 } == 0

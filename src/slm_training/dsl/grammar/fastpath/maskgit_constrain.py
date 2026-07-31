@@ -1,4 +1,11 @@
-"""MaskGIT hole-admissibility (constrained-diffusion-inspired)."""
+"""MaskGIT hole-admissibility (constrained-diffusion-inspired).
+
+Boolean residual support only (Mündler *predicate*, arXiv:2508.10111) — not a
+semiring all-hole circuit. Prefer
+``residual_support.joint_multi_hole_support`` when an honest over-approx label
+is required (Γ as leaf filters). See
+``docs/design/adr-constrained-diffusion-topology-split.md``.
+"""
 
 from __future__ import annotations
 

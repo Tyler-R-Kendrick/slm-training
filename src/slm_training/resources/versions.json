@@ -12,14 +12,21 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
         "scripts/leverproof_metrics.py",
-        "docs/design/leverproof-integration.md"
+        "docs/design/leverproof-integration.md",
+        "src/leverproof_lean/LeverProofLean/ConstrainedDiffusion.lean",
+        "docs/design/adr-constrained-diffusion-topology-proofs.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-30",
+          "note": "ConstrainedDiffusion.lean: machine-checked claim cores for topology\u00d7diffusion ADR (\u0393 tighten, E1 parity, residual ranking, forced-macro no-literal, singleton forwards optimum 0, E9 memo\u2260AOT, stack order, forest-verified subset). Map in adr-constrained-diffusion-topology-proofs.md."
+        },
         {
           "version": "v2",
           "date": "2026-07-30T10:18:42-05:00",
@@ -503,7 +510,7 @@
       ]
     },
     "decode.invariants": {
-      "version": "v7",
+      "version": "v8",
       "kind": "gate",
       "paths": [
         "docs/design/decode-invariants.md",
@@ -511,6 +518,11 @@
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-30",
+          "note": "I3 rebranded to forest-verified speculative completion (not LAVE-as-primary); cross-link ADR constrained-diffusion topology split"
+        },
         {
           "version": "v7",
           "date": "2026-07-25",
@@ -1106,7 +1118,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1125,9 +1137,24 @@
         "src/slm_training/resources/decode/openui_completion_v1.safetensors",
         "src/slm_training/resources/decode/openui_completion_v1.manifest.json",
         "docs/design/grammar-fastpath.md",
-        "docs/design/certified-completion-artifact-and-tps-target.md"
+        "docs/design/certified-completion-artifact-and-tps-target.md",
+        "src/slm_training/dsl/grammar/fastpath/static_control_domain.py",
+        "src/slm_training/dsl/grammar/fastpath/residual_support.py",
+        "tests/test_dsl/test_static_control_domain.py",
+        "tests/test_dsl/test_residual_support.py",
+        "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-30",
+          "note": "no-bump: E4 walk_static_forced_macro is independent of forced_closure (cross-impl match); E8 tests drive real greedy LTR collect_decode_stats zero-forward. Same v4 component surface."
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-30",
+          "note": "static_control_domain + residual_support (E1/E4/E9 claim family A/B); ADR split; E9 request_local_memo_reuse label on warm hard-prefix"
+        },
         {
           "version": "v3",
           "date": "2026-07-29",
@@ -9303,7 +9330,7 @@
       ]
     },
     "matrix.perf": {
-      "version": "v7",
+      "version": "v8",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py",
@@ -9314,6 +9341,11 @@
         "docs/design/runtime-performance.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-30",
+          "note": "E9: warm_card_open_comma labeled request_local_memo_reuse (not AOT cold); ADR cross-link claim class fixture_or_scratch retained"
+        },
         {
           "version": "v7",
           "date": "2026-07-29",
@@ -10206,6 +10238,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v268",
+          "date": "2026-07-30",
+          "note": "no-bump: I3 docstring rebrand only (forest-verified speculative completion; not LAVE-as-primary). Behavior unchanged."
+        },
         {
           "version": "v268",
           "date": "2026-07-30",
