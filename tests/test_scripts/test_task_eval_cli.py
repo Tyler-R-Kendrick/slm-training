@@ -12,7 +12,17 @@ from slm_training.dsl.schema import ExampleRecord, write_jsonl
 PROGRAM = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
-def test_evaluate_tasks_cli_writes_scoreboard(tmp_path: Path) -> None:
+def test_evaluate_tasks_cli_writes_scoreboard(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Wiring test: do not require a live AgentV node_modules install in CI shards.
+    def _fake_publish(run_dir, **kwargs):  # noqa: ANN001
+        del run_dir, kwargs
+        return {"sdk": "@agentv/core", "status": "fixture"}
+
+    monkeypatch.setattr(
+        "scripts.evaluate_tasks.publish_agentv_evaluation", _fake_publish
+    )
     cases = tmp_path / "cases.jsonl"
     cases.write_text(
         json.dumps(
