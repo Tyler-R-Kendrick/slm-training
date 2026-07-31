@@ -94,6 +94,12 @@ repo lineage + HF Daily Papers + web + prior artifacts
 
 Every arrow writes a content-addressed artifact and an append-only event.
 
+Hill-climb progress is gated by claim class, locked held-out identity, multi-seed
+primary LCB, exhausted-knob ledger, synthesis-feedback clearance before SFT, and
+`EG_params` on capacity growth. Pure predicates live in
+`src/slm_training/autoresearch/hillclimb.py`; the governance table is in
+[`experiment-campaign-governance.md`](experiment-campaign-governance.md#hill-climb-evidence-governance).
+
 ## Schemas and safety
 
 `src/slm_training/autoresearch/schemas.py` defines strict Pydantic models with

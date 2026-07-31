@@ -41,6 +41,11 @@ def _manifest_payload(**updates: object) -> dict[str, object]:
         "arms": [
             {"arm_id": "control", "role": "control", "config_sha256": "c" * 64},
             {
+                "arm_id": "mechanism_off",
+                "role": "candidate",
+                "config_sha256": "a" * 64,
+            },
+            {
                 "arm_id": "candidate",
                 "role": "candidate",
                 "config_sha256": "d" * 64,
@@ -55,12 +60,22 @@ def _manifest_payload(**updates: object) -> dict[str, object]:
         "stopping_rules": ["Stop after the declared seeds finish."],
         "controls": [
             {
+                "control_id": "matched-baseline",
+                "description": "Size-matched baseline without the mechanism.",
+                "kind": "positive",
+            },
+            {
                 "control_id": "unchanged-baseline",
                 "description": "Unchanged baseline must reproduce.",
                 "kind": "negative",
-            }
+            },
         ],
         "negative_controls": ["unchanged-baseline"],
+        "mechanism_off_arm_ids": ["mechanism_off"],
+        "executable_kill_criteria": [
+            "applications_without_choice_changes",
+            "quality_decreased_with_choice_changes",
+        ],
         "multiplicity_families": [
             {
                 "family_id": "primary",
@@ -142,6 +157,7 @@ def _complete_result(
         "endpoint_values": {
             endpoint.endpoint_id: 0.02 for endpoint in manifest.endpoints
         },
+        "primary_endpoint_seed_values": [0.02] * len(manifest.seeds),
         "holm_results": [
             {
                 "hypothesis_id": hypothesis,

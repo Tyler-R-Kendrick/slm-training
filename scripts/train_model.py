@@ -1307,6 +1307,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Load the adapter as frozen (no adapter parameters train).",
     )
+    parser.add_argument(
+        "--allow-open-synthesis-feedback",
+        action="store_true",
+        help=(
+            "Diagnostic escape: allow SFT when synthesis_feedback.json still has "
+            "open recommendations without an action/waiver record. Never a fix."
+        ),
+    )
     args = parser.parse_args(argv)
     data_store = DataStore()
     if args.train_version:
@@ -1317,6 +1325,19 @@ def main(argv: list[str] | None = None) -> int:
             args.mixture_manifest = version_mixture
     else:
         args.train_dir = data_store.resolve_path("train", args.train_dir)
+    if not args.allow_open_synthesis_feedback:
+        from slm_training.autoresearch.hillclimb import (
+            HillClimbError,
+            assert_synthesis_feedback_cleared_for_sft,
+        )
+
+        try:
+            assert_synthesis_feedback_cleared_for_sft(
+                Path(args.train_dir),
+                allow_missing_feedback=True,
+            )
+        except HillClimbError as exc:
+            parser.error(str(exc))
     if args.test_dir is not None:
         args.test_dir = data_store.resolve_path("eval", args.test_dir)
     if (args.eval_every > 0 or args.loss_eval_every > 0) and not args.test_dir:

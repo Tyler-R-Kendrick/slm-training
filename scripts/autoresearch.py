@@ -418,6 +418,19 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             _load_memo(store, args.memo, required=False),
             feedback,
         )
+    from slm_training.autoresearch.hillclimb import (
+        load_exhausted_ledger,
+        matrix_data_eval_identity,
+    )
+
+    # Hill-climb AC2: load the campaign exhausted-knob ledger so null-measured
+    # knob signatures cannot be re-proposed for the same data/eval identity.
+    exhausted_ledger = load_exhausted_ledger(store.root)
+    exhausted_identity = matrix_data_eval_identity(
+        evidence_snapshot_id=evidence.snapshot_id,
+        primary_metric=campaign.primary_metric,
+        claim_class="fixture",
+    )
     validate_hypothesis_matrix(
         campaign,
         result.matrix,
@@ -436,6 +449,9 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         ),
         feedback=feedback,
         previous_matrix=previous_matrix,
+        exhausted_knob_ledger=exhausted_ledger,
+        exhausted_data_eval_identity=exhausted_identity,
+        exhausted_claim_class="fixture",
     )
 
     proposed = {
@@ -962,6 +978,62 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+def _baseline_primary_from_store(
+    store: CampaignStore,
+    *,
+    primary_metric: str,
+    exclude_experiment_id: str = "",
+) -> float | None:
+    """Best-effort matched-control primary from prior completed outcomes.
+
+    Prefers experiment ids that look like controls/baselines; otherwise uses
+    metrics that already name a baseline. Absolute candidate scores alone are
+    never treated as the baseline of themselves.
+    """
+    import math
+
+    from slm_training.autoresearch.hillclimb import resolve_baseline_primary
+
+    outcomes_dir = store.root / "artifacts" / "outcomes"
+    if not outcomes_dir.is_dir():
+        return None
+    control_values: list[float] = []
+    embedded: list[float] = []
+    for path in sorted(outcomes_dir.glob("*.json")):
+        try:
+            prior = ExperimentOutcome.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except Exception:  # noqa: BLE001
+            continue
+        if prior.experiment_id == exclude_experiment_id:
+            continue
+        if prior.status != "completed":
+            continue
+        from_metrics = resolve_baseline_primary(
+            prior.metrics, primary_metric=primary_metric
+        )
+        if from_metrics is not None:
+            embedded.append(from_metrics)
+        primary_value = prior.metrics.get(primary_metric)
+        if primary_value is None:
+            continue
+        try:
+            number = float(primary_value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(number):
+            continue
+        exp_id = prior.experiment_id.lower()
+        if any(token in exp_id for token in ("control", "baseline", "matched")):
+            control_values.append(number)
+    if control_values:
+        return control_values[-1]
+    if embedded:
+        return embedded[-1]
+    return None
+
+
 def _record_hypothesis_feedback(
     store: CampaignStore,
     matrix: HypothesisMatrix,
@@ -986,6 +1058,96 @@ def _record_hypothesis_feedback(
             artifact_sha256=path.stem,
             detail={"feedback_id": feedback.feedback_id, "matrix_id": matrix.matrix_id},
         )
+    # Hill-climb AC2: after a measured null, mark the knob signature exhausted
+    # so successor matrices cannot replay it under the same data/eval identity.
+    try:
+        campaign = store.load_campaign()
+        primary_metric = campaign.primary_metric
+        evidence_snapshot_id = matrix.evidence_snapshot_id
+        minimum_effect = 0.0
+    except Exception:  # noqa: BLE001 — never block feedback on ledger errors
+        primary_metric = "primary"
+        evidence_snapshot_id = matrix.evidence_snapshot_id
+        minimum_effect = 0.0
+    from slm_training.autoresearch.hillclimb import (
+        infer_metric_direction,
+        is_measured_null_feedback,
+        load_exhausted_ledger,
+        matrix_data_eval_identity,
+        record_null_from_knob_signature_json,
+        resolve_baseline_primary,
+        resolve_primary_effect,
+        save_exhausted_ledger,
+    )
+
+    # Prefer baseline carried on the outcome metrics; else prior control outcomes.
+    baseline = resolve_baseline_primary(
+        feedback.metrics, primary_metric=primary_metric
+    )
+    if baseline is None:
+        baseline = _baseline_primary_from_store(
+            store,
+            primary_metric=primary_metric,
+            exclude_experiment_id=outcome.experiment_id,
+        )
+    # Same polarity contract as continuous cycle classification / campaign
+    # endpoints: latency/loss leaves are decrease; else increase.
+    direction = infer_metric_direction(primary_metric)
+    # Seed values when the outcome reported them under common keys.
+    seed_values = None
+    raw_seeds = feedback.metrics.get("primary_endpoint_seed_values")
+    if isinstance(raw_seeds, (list, tuple)) and len(raw_seeds) >= 2:
+        try:
+            seed_values = tuple(float(v) for v in raw_seeds)
+        except (TypeError, ValueError):
+            seed_values = None
+
+    null = is_measured_null_feedback(
+        outcome_status=feedback.outcome_status,
+        metrics=feedback.metrics,
+        primary_metric=primary_metric,
+        direction=direction,
+        minimum_effect=minimum_effect,
+        baseline_primary=baseline,
+        primary_seed_values=seed_values,
+    )
+    # Diagnosis already classified a non-positive improvement — treat as null
+    # when an explicit delta is present (metrics must still carry the delta).
+    if not null and diagnosis.target == "researcher":
+        improvement, source = resolve_primary_effect(
+            feedback.metrics,
+            primary_metric=primary_metric,
+            direction=direction,
+            baseline_primary=baseline,
+        )
+        if source == "explicit_delta" and improvement is not None and improvement <= 0:
+            null = True
+    if null:
+        ledger = load_exhausted_ledger(store.root)
+        identity = matrix_data_eval_identity(
+            evidence_snapshot_id=evidence_snapshot_id,
+            primary_metric=primary_metric,
+            claim_class="fixture",
+        )
+        entry = record_null_from_knob_signature_json(
+            ledger,
+            knob_signature_json=feedback.knob_signature,
+            data_eval_identity=identity,
+            claim_class="fixture",
+        )
+        if entry is not None:
+            save_exhausted_ledger(ledger, store.root)
+            store.append_event(
+                "exhausted_knob_recorded",
+                experiment_id=outcome.experiment_id,
+                status="null",
+                detail={
+                    "knob_signature_sha256": entry.knob_signature_sha256,
+                    "data_eval_identity": identity,
+                    "claim_class": "fixture",
+                    "baseline_primary": baseline,
+                },
+            )
     return path
 
 

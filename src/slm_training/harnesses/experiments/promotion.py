@@ -189,6 +189,11 @@ def evaluate_promotion(
             governed_result,
             artifact_root=artifact_root,
             locked_manifest_path=locked_manifest_path,
+            # Promotion path always applies climb rules for promotion-class
+            # claims (default) and always surfaces capacity for EG_params.
+            baseline_trainable_params=baseline_trainable_params,
+            candidate_trainable_params=candidate_trainable_params,
+            eg_params_by_seed=eg_params_by_seed,
         )
         if campaign_store is None or artifact_root is None:
             governance_failures = (*governance_failures, "campaign_store_missing")
