@@ -12046,6 +12046,11 @@
         {
           "version": "v1",
           "date": "2026-07-31",
+          "note": "no-bump: rewrite score lambda as nested def to satisfy ruff E731; structural mono law unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-31",
           "note": "Export VSS SupportCertificates and Lean claims as formal_object/v1 with multi-prover checkers"
         }
       ]
