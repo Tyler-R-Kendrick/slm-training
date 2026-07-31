@@ -2340,14 +2340,20 @@
       ]
     },
     "gates.ship": {
-      "version": "openui_ship_gates_v5",
+      "version": "openui_ship_gates_v6",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/model_build/ship_gates.py",
         "src/slm_training/harness_core/gate_engine.py",
-        "src/slm_training/resources/evals/openui_ship_gates_v5.json"
+        "src/slm_training/resources/evals/openui_ship_gates_v5.json",
+        "src/slm_training/resources/evals/openui_ship_gates_v6.json"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v6",
+          "date": "2026-07-31",
+          "note": "First-class semantic-fidelity BEq ship floors (ast_beq_rate, canonical_beq_rate) and conditional certificate digest equivalence; policy resource openui_ship_gates_v6.json"
+        },
         {
           "version": "openui_ship_gates_v5",
           "date": "2026-07-30",
@@ -7993,7 +7999,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v68",
+      "version": "v69",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8012,6 +8018,11 @@
         "tests/test_harnesses/model_build/test_decode_deadline.py"
       ],
       "history": [
+        {
+          "version": "v69",
+          "date": "2026-07-31",
+          "note": "Emit ast_beq_rate, canonical_beq_rate, and certificate_equivalence_rate on the eval scoreboard for semantic-fidelity ship gates"
+        },
         {
           "version": "v68",
           "date": "2026-07-30",
@@ -11945,6 +11956,109 @@
           "version": "v1",
           "date": "2026-07-27",
           "note": "SLM-418 (DSH5-10): final issue-level disposition. Publishes OperatorEventMemoryReportV1-style final report + disposition invoking the issue's own falsification/stop rule: fixture-scale ablation (8 sessions, 40 rows, 25 context-view x turn-depth cells) showed no held-out benefit over the current_state_only baseline (ceiling 1.0 everywhere), so the conversation event DAG is retained for runtime/evaluation only and no preference training complexity is added. Successor conditions (real argument-bound corpus build showing benefit over derived_only baselines, per the VAR3-04/05 pattern) are recorded for re-opening."
+        }
+      ]
+    },
+    "dsl.ecosystem_tier": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/ecosystem_tier.py",
+        "src/slm_training/resources/ecosystem_tier_registry.json",
+        "docs/design/ecosystem-tier.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-31",
+          "note": "no-bump: classify ship-gated BEq fidelity rates as production_core generation metrics; classification constants otherwise unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "Classify OpenUI components/roles/operators as production-core vs ecosystem-library and pin the registry"
+        }
+      ]
+    },
+    "evals.ecosystem_tier_scoreboard": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/ecosystem_tier_scoreboard.py",
+        "scripts/measure_ecosystem_tier.py",
+        "docs/design/ecosystem-tier-scoreboard.json",
+        "docs/design/ecosystem-tier-scoreboard.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "Split generation metrics and formal preflight success by ecosystem tier, independent of production core"
+        }
+      ]
+    },
+    "formal.leverproof.ecosystem_tier": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/leverproof_lean/LeverProofLean/EcosystemTier.lean"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-30",
+          "note": "Prove core formal modules are disjoint from ecosystem modules and that core success ignores library size"
+        }
+      ]
+    },
+    "formal.objects": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/__init__.py",
+        "src/slm_training/formal/objects.py",
+        "src/slm_training/formal/checkers.py",
+        "src/slm_training/formal/structural.py",
+        "src/slm_training/resources/formal_object.schema.json",
+        "docs/design/formal-objects-multi-prover.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-31",
+          "note": "Export VSS SupportCertificates and Lean claims as formal_object/v1 with multi-prover checkers"
+        }
+      ]
+    },
+    "formal.loop": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/loop.py",
+        "scripts/verify_formal_objects.py",
+        "docs/design/formal-loop-report.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-31",
+          "note": "Close formal loop via multi-backend agreement; reject single Lean-kernel reliance"
+        }
+      ]
+    },
+    "evals.semantic_fidelity": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/semantic_fidelity.py",
+        "docs/design/semantic-fidelity-ship-gates.md",
+        "tests/test_evals/test_semantic_fidelity.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-31",
+          "note": "BEq analogues for AST/grammar pairs and certificate digests used as ship-gate semantic fidelity"
         }
       ]
     }

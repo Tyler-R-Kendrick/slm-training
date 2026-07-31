@@ -16,14 +16,17 @@ from slm_training.harness_core.gate_engine import (
 )
 
 _POLICY_PATH = (
-    Path(__file__).resolve().parents[2] / "resources/evals/openui_ship_gates_v5.json"
+    Path(__file__).resolve().parents[2] / "resources/evals/openui_ship_gates_v6.json"
 )
 _REQUIRED_SUITES = {"smoke", "held_out", "adversarial", "ood", "rico_held"}
+_BEQ_METRICS = {"ast_beq_rate", "canonical_beq_rate"}
 _REQUIRED_METRICS = {
     "smoke": {
         "meaningful_program_rate",
         "structural_similarity",
         "component_type_recall",
+        "ast_beq_rate",
+        "canonical_beq_rate",
         "placeholder_fidelity",
         "reward_score",
     },
@@ -31,24 +34,35 @@ _REQUIRED_METRICS = {
         "meaningful_program_rate",
         "structural_similarity",
         "component_type_recall",
+        "ast_beq_rate",
+        "canonical_beq_rate",
         "placeholder_fidelity",
     },
     "adversarial": {
         "meaningful_program_rate",
         "structural_similarity",
         "component_type_recall",
+        "ast_beq_rate",
+        "canonical_beq_rate",
     },
     "ood": {
         "meaningful_program_rate",
         "structural_similarity",
         "component_type_recall",
+        "ast_beq_rate",
+        "canonical_beq_rate",
     },
     "rico_held": {
         "meaningful_program_rate",
         "structural_similarity",
         "component_type_recall",
+        "ast_beq_rate",
+        "canonical_beq_rate",
     },
 }
+
+# When certificates are present, require digest BEq agreement.
+CERTIFICATE_EQUIVALENCE_FLOOR = 1.0
 
 
 def load_ship_gate_policy(path: Path | str = _POLICY_PATH) -> dict[str, Any]:
@@ -95,6 +109,14 @@ def load_ship_gate_policy(path: Path | str = _POLICY_PATH) -> dict[str, Any]:
                 or not 0.0 <= float(threshold) <= 1.0
             ):
                 raise ValueError(f"{source}: invalid threshold {suite}.{metric}")
+        # Exact BEq floors must not exceed soft structural similarity.
+        struct = float(thresholds["structural_similarity"])
+        if float(thresholds["ast_beq_rate"]) > struct:
+            raise ValueError(f"{source}: {suite}.ast_beq_rate cannot exceed structural")
+        if float(thresholds["canonical_beq_rate"]) > float(thresholds["ast_beq_rate"]):
+            raise ValueError(
+                f"{source}: {suite}.canonical_beq_rate cannot exceed ast_beq_rate"
+            )
     meaningful = value.get("meaningful_metric_policy")
     if (
         not isinstance(meaningful, dict)
@@ -109,6 +131,8 @@ def load_ship_gate_policy(path: Path | str = _POLICY_PATH) -> dict[str, Any]:
         is not None
         or (meaningful.get("binding_aware_meaningful_v2") or {}).get("status")
         != "candidate_pending_calibration"
+        or not isinstance(meaningful.get("semantic_fidelity"), dict)
+        or (meaningful.get("semantic_fidelity") or {}).get("version") is None
     ):
         raise ValueError(f"{source}: invalid meaningful-metric provenance")
     return value
@@ -123,7 +147,7 @@ MEANINGFUL_METRIC_POLICY: dict[str, Any] = _POLICY["meaningful_metric_policy"]
 def _meaningful_metric_policy(
     policy: dict[str, dict[str, float]], *, custom: bool
 ) -> dict[str, Any]:
-    policy_id = "openui_ship_gates_v5"
+    policy_id = str(MEANINGFUL_METRIC_POLICY.get("threshold_version") or "openui_ship_gates_v6")
     source = "DEFAULT_SHIP_GATES"
     if custom:
         encoded = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
@@ -163,6 +187,9 @@ def _slim_suite(metrics: Mapping[str, Any]) -> dict[str, Any]:
         "placeholder_validity": metrics.get("placeholder_validity"),
         "structural_similarity": metrics.get("structural_similarity"),
         "component_type_recall": metrics.get("component_type_recall"),
+        "ast_beq_rate": metrics.get("ast_beq_rate", metrics.get("exact_match")),
+        "canonical_beq_rate": metrics.get("canonical_beq_rate"),
+        "certificate_equivalence_rate": metrics.get("certificate_equivalence_rate"),
         "reward_score": metrics.get("reward_score"),
     }
     if (
@@ -172,7 +199,57 @@ def _slim_suite(metrics: Mapping[str, Any]) -> dict[str, Any]:
         # Historical scoreboards used parse_rate for meaningful-program
         # quality. New scoreboards persist both metrics explicitly.
         slim["meaningful_program_rate"] = metrics.get("parse_rate")
+    # Historical scoreboards used exact_match for structure BEq.
+    if slim["ast_beq_rate"] is None and metrics.get("exact_match") is not None:
+        slim["ast_beq_rate"] = metrics.get("exact_match")
     return slim
+
+
+def _certificates_present(metrics: Mapping[str, Any]) -> bool:
+    for key in ("certificates_compared", "certificates_emitted"):
+        raw = metrics.get(key)
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool) and raw > 0:
+            return True
+    return False
+
+
+def _certificate_integrity_failures(
+    suites: Mapping[str, Mapping[str, Any]],
+    *,
+    floor: float = CERTIFICATE_EQUIVALENCE_FLOOR,
+) -> list[str]:
+    """Conditional integrity: certificate BEq when certificates were compared."""
+
+    failures: list[str] = []
+    for suite_name, metrics in suites.items():
+        if not _certificates_present(metrics):
+            continue
+        replay_failures = metrics.get("certificate_replay_failures")
+        if (
+            isinstance(replay_failures, (int, float))
+            and not isinstance(replay_failures, bool)
+            and replay_failures > 0
+        ):
+            failures.append(
+                f"{suite_name}:certificate_replay_failures "
+                f"actual={int(replay_failures)} need==0"
+            )
+        rate = metrics.get("certificate_equivalence_rate")
+        if rate is None:
+            failures.append(
+                f"{suite_name}:certificate_equivalence_rate "
+                f"actual=None need>={floor}"
+            )
+        elif not (
+            isinstance(rate, (int, float))
+            and not isinstance(rate, bool)
+            and float(rate) >= floor
+        ):
+            failures.append(
+                f"{suite_name}:certificate_equivalence_rate "
+                f"actual={rate} need>={floor}"
+            )
+    return failures
 
 
 def evaluate_ship_gates(
@@ -188,13 +265,10 @@ def evaluate_ship_gates(
     reported as `missing_suite` failures (cannot claim pass without evidence).
 
     When `suite_reachability` is provided (SLM-299 edit-space reachability
-    audit: suite name → fraction of decided cases proven reachable from the
-    X22 seed), any gated suite whose fraction is below 1.0 adds a blocking
-    `reachability_unproven:<suite>` measurement-integrity failure — model
-    quality on that suite is partially unmeasurable by the decode space, so
-    model-quality claims are blocked. Suites absent from the map are
-    unaffected (backwards compatible); UNKNOWN_BUDGET cases are never counted
-    as unreachable by the audit that produces the map.
+    audit), gated suites below 1.0 reachable fail as measurement integrity.
+
+    When a suite reports compared/emitted certificates, certificate digest
+    equivalence (BEq on certificates) and zero replay failures are required.
     """
     policy = thresholds or DEFAULT_SHIP_GATES
     actual, checks, failures, categorized = run_gate_checks(
@@ -204,6 +278,19 @@ def evaluate_ship_gates(
         default_min_n=DEFAULT_MIN_SUITE_N,
         suite_reachability=suite_reachability,
     )
+    cert_failures = _certificate_integrity_failures(suites)
+    if cert_failures:
+        failures = list(failures) + cert_failures
+        categorized = {
+            **categorized,
+            "measurement_integrity_failures": list(
+                categorized.get("measurement_integrity_failures") or []
+            )
+            + cert_failures,
+        }
+        for item in cert_failures:
+            gate_id = item.split(" actual=")[0]
+            checks[gate_id] = False
     return {
         "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
         "policy": policy,
@@ -216,15 +303,18 @@ def evaluate_ship_gates(
         **categorized,
         "pass": all(checks.values()) if checks else False,
         "note": (
-            "Honest ship gates require all policy suites and score structure only "
-            "(meaningful_program_rate / structural_similarity / component_type_recall "
-            "/ placeholder_fidelity / reward_score). component_type_recall is the "
-            "semantic-density floor: shorter-but-emptier output cannot pass on "
-            "syntax alone. Syntax parse is reported separately and is not a "
-            "learned-quality substitute. DESIGN.md style lint is never a ship gate. "
-            "When suite_reachability is supplied, gated suites below 1.0 reachable "
-            "fail as reachability_unproven (measurement integrity). "
-            "See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
+            "Honest ship gates require all policy suites and score structure + "
+            "semantic fidelity only (meaningful_program_rate / structural_similarity / "
+            "component_type_recall / ast_beq_rate / canonical_beq_rate / "
+            "placeholder_fidelity / reward_score). component_type_recall is the "
+            "semantic-density floor; ast_beq_rate and canonical_beq_rate are BEq "
+            "analogues on AST/grammar pairs — soft similarity or syntax parse alone "
+            "cannot promote. When certificates are compared, certificate_equivalence "
+            "must hold (digest BEq) with zero replay failures. DESIGN.md style lint "
+            "is never a ship gate. When suite_reachability is supplied, gated suites "
+            "below 1.0 reachable fail as reachability_unproven (measurement integrity). "
+            "See docs/design/adversarial-review.md, docs/design/structure-only-eval.md, "
+            "and docs/design/semantic-fidelity-ship-gates.md."
         ),
     }
 
@@ -253,6 +343,27 @@ def write_ship_gates(
         default_min_n=DEFAULT_MIN_SUITE_N,
         suite_reachability=suite_reachability,
     )
+    for suite_name, metrics in suites.items():
+        if not _certificates_present(metrics):
+            continue
+        raw_criteria.append(
+            {
+                "id": f"{suite_name}:certificate_equivalence_rate",
+                "suite": suite_name,
+                "actual": metrics.get("certificate_equivalence_rate"),
+                "operator": "gte",
+                "expected": CERTIFICATE_EQUIVALENCE_FLOOR,
+            }
+        )
+        raw_criteria.append(
+            {
+                "id": f"{suite_name}:certificate_replay_failures",
+                "suite": suite_name,
+                "actual": metrics.get("certificate_replay_failures", 0),
+                "operator": "eq",
+                "expected": 0,
+            }
+        )
     observed = {
         str(item.get("id")): item
         for item in (evals_result.get("criteria") or {}).get("results", [])
@@ -300,6 +411,7 @@ def write_ship_gates(
         "gates.ship",
         "harness.core",
         "evals.meaningful_program",
+        "evals.semantic_fidelity",
     )
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)

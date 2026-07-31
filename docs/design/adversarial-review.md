@@ -50,15 +50,16 @@ Rubber-duck / red-team audit of what shipped under `twotower_v1_ship` and the su
 
 ## Honest ship gate policy
 
-All evaluated suites must be checked. Defaults (CLI `--ship-gates`):
+All evaluated suites must be checked. Defaults (CLI `--ship-gates`,
+`openui_ship_gates_v6`):
 
-| Suite | meaningful program | structural | component recall | placeholder_fidelity | reward |
-| --- | --- | --- | --- | --- | --- |
-| smoke | ≥ 0.66 | ≥ 0.35 | ≥ 0.35 | ≥ 0.25 | ≥ 0.30 |
-| held_out | ≥ 0.40 | ≥ 0.30 | ≥ 0.30 | ≥ 0.15 | — |
-| adversarial | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | — | — |
-| ood | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | — | — |
-| rico_held | ≥ 0.10 | ≥ 0.20 | ≥ 0.15 | — | — |
+| Suite | meaningful program | structural | component recall | ast BEq | canonical BEq | placeholder_fidelity | reward |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| smoke | ≥ 0.66 | ≥ 0.35 | ≥ 0.35 | ≥ 0.20 | ≥ 0.10 | ≥ 0.25 | ≥ 0.30 |
+| held_out | ≥ 0.40 | ≥ 0.30 | ≥ 0.30 | ≥ 0.15 | ≥ 0.08 | ≥ 0.15 | — |
+| adversarial | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | ≥ 0.08 | ≥ 0.04 | — | — |
+| ood | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | ≥ 0.08 | ≥ 0.04 | — | — |
+| rico_held | ≥ 0.10 | ≥ 0.20 | ≥ 0.15 | ≥ 0.05 | ≥ 0.02 | — | — |
 
 Smoke is a **canary**, not proof of generalization. Ship pass requires held_out + adversarial + ood + rico_held bars as well.
 
@@ -78,6 +79,13 @@ the gold's component types the prediction recovers. It collapses toward 0 for
 the trivial/empty program, so a compression- or decode-driven change cannot
 green these gates with shorter-but-emptier output on syntax alone. The floors
 sit at or below the structural bars and only make the policy stricter.
+
+`ast_beq_rate` / `canonical_beq_rate` are **semantic-fidelity BEq floors**
+(v6): Boolean equality analogues on structure-normalized AST pairs and full
+D2-canonical forms (see [semantic-fidelity-ship-gates.md](semantic-fidelity-ship-gates.md)).
+Soft structural similarity alone cannot promote. When certificates are
+compared, certificate digest equivalence (and zero replay failures) is a
+measurement-integrity requirement.
 
 `parse_rate` now means syntactic OpenUI parse and is reported separately.
 `meaningful_program_rate` is the learned-quality gate above; historical

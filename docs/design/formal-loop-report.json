@@ -1,0 +1,327 @@
+{
+  "closed": true,
+  "min_backends": 2,
+  "objects": [
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:Forest.close_monotone",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:Forest.close_idempotent",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:Forest.close_history_preserved",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:ExactClosure.closePass_subset",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:ExactClosure.honest_when_no_accepted_unsupported",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:DecodeInvariants.singleton_bypasses_ranker",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:EcosystemTier.core_success_ignores_library_size",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "lean_claim",
+      "object_id": "lean-claim:StructuralMetrics.structural_similarity_mono",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "closure_law",
+      "object_id": "closure-law:removable_only_replay_valid_unsupported",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "closure_law",
+      "object_id": "closure-law:close_pass_only_shrinks",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    },
+    {
+      "accepted": true,
+      "backends_failed": [],
+      "backends_ok": [
+        "python_structural",
+        "python_reference"
+      ],
+      "backends_skipped": [],
+      "checker_results": [
+        {
+          "backend": "python_structural",
+          "checker_id": "python_structural",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        },
+        {
+          "backend": "python_reference",
+          "checker_id": "python_reference",
+          "detail": "ok",
+          "ok": true,
+          "skipped": false
+        }
+      ],
+      "kind": "closure_law",
+      "object_id": "closure-law:fixed_point_when_no_removals",
+      "reason": "multi-backend agreement: python_structural, python_reference"
+    }
+  ],
+  "schema": "formal_loop_report/v1",
+  "single_kernel_reliance": false,
+  "summary": "formal loop CLOSED: 11/11 objects accepted (min_backends=2, lean=off)",
+  "version_stamp": {
+    "code_commit": "2581bf49f0eee452b61ed9419f004cf2c65f59be",
+    "code_dirty": true,
+    "components": {
+      "formal.loop": "v1",
+      "formal.objects": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-31T00:04:36.204543+00:00"
+  }
+}

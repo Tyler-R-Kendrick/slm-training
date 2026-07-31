@@ -1,0 +1,61 @@
+{
+  "core_component_names": [
+    "Button",
+    "Card",
+    "Form",
+    "Image",
+    "ImageBlock",
+    "Input",
+    "Stack",
+    "TextContent",
+    "TextInput"
+  ],
+  "core_formal_modules": [
+    "LeverProofLean.ListSet",
+    "LeverProofLean.Forest",
+    "LeverProofLean.Trace",
+    "LeverProofLean.ExactClosure",
+    "LeverProofLean.DecodeInvariants"
+  ],
+  "core_generation_metrics": [
+    "parse_rate",
+    "syntax_parse_rate",
+    "raw_syntax_validity",
+    "meaningful_program_rate",
+    "ast_beq_rate",
+    "canonical_beq_rate",
+    "certificate_equivalence_rate"
+  ],
+  "core_local_operator_ids": [
+    "openui.add_child",
+    "openui.remove_node",
+    "openui.reorder_children",
+    "openui.replace_node",
+    "openui.set_property",
+    "openui.unset_property"
+  ],
+  "core_role_names": [
+    "child",
+    "children",
+    "content",
+    "items",
+    "label",
+    "name",
+    "text",
+    "title",
+    "value"
+  ],
+  "ecosystem_formal_modules": [
+    "LeverProofLean.StructuralMetrics",
+    "LeverProofLean.EcosystemTier"
+  ],
+  "ecosystem_generation_metrics": [
+    "component_type_recall",
+    "structural_similarity",
+    "tree_edit_similarity",
+    "placeholder_fidelity",
+    "reward_score"
+  ],
+  "fingerprint": "2f9f7c6740bcab8f88ae4b380aa975d9102a1784554bb2fe14058d86b20a540f",
+  "schema": "ecosystem_tier/v1"
+}

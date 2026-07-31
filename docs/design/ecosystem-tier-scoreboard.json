@@ -1,0 +1,185 @@
+{
+  "ecosystem_library": {
+    "formal_preflight": {
+      "module_count": 2,
+      "modules": {
+        "LeverProofLean.EcosystemTier": "proved",
+        "LeverProofLean.StructuralMetrics": "proved"
+      },
+      "proved_count": 2,
+      "rollup": "proved"
+    },
+    "generation_metrics": {
+      "component_type_recall": 0.45,
+      "placeholder_fidelity": 0.4,
+      "reward_score": 0.48,
+      "structural_similarity": 0.52
+    }
+  },
+  "formal_module_partition": {
+    "ecosystem_library": [
+      "LeverProofLean.StructuralMetrics",
+      "LeverProofLean.EcosystemTier"
+    ],
+    "production_core": [
+      "LeverProofLean.ListSet",
+      "LeverProofLean.Forest",
+      "LeverProofLean.Trace",
+      "LeverProofLean.ExactClosure",
+      "LeverProofLean.DecodeInvariants"
+    ]
+  },
+  "honesty": {
+    "fixture_demo": true,
+    "note": "Tier split is diagnostic/measurement only. Ship gates remain the multi-suite policy in ship_gates.py; ecosystem growth never greens production-core formal preflight.",
+    "ship_claim": false
+  },
+  "inventory": {
+    "components": {
+      "ecosystem_library": [
+        "CheckBoxItem",
+        "DatePicker",
+        "Modal",
+        "RadioItem",
+        "Slider",
+        "SwitchItem",
+        "Tabs"
+      ],
+      "production_core": [
+        "Button",
+        "Card",
+        "Form",
+        "ImageBlock",
+        "Input",
+        "Stack",
+        "TextContent"
+      ]
+    },
+    "counts": {
+      "components_core": 7,
+      "components_ecosystem": 7,
+      "formal_modules_core": 5,
+      "formal_modules_ecosystem": 2,
+      "operators_core": 6,
+      "operators_ecosystem": 14,
+      "roles_core": 9,
+      "roles_ecosystem": 0
+    },
+    "fingerprint": "0e70c931db5c36ccf12d394e59ed9764fb620596a8895e3e5ca5d2fa1a4a2866",
+    "formal_modules": {
+      "ecosystem_library": [
+        "LeverProofLean.StructuralMetrics",
+        "LeverProofLean.EcosystemTier"
+      ],
+      "production_core": [
+        "LeverProofLean.ListSet",
+        "LeverProofLean.Forest",
+        "LeverProofLean.Trace",
+        "LeverProofLean.ExactClosure",
+        "LeverProofLean.DecodeInvariants"
+      ]
+    },
+    "generation_metrics": {
+      "ecosystem_library": [
+        "component_type_recall",
+        "structural_similarity",
+        "tree_edit_similarity",
+        "placeholder_fidelity",
+        "reward_score"
+      ],
+      "production_core": [
+        "parse_rate",
+        "syntax_parse_rate",
+        "raw_syntax_validity",
+        "meaningful_program_rate"
+      ]
+    },
+    "operators": {
+      "ecosystem_library": [
+        "conversation.ast_edit",
+        "conversation.checkout_state",
+        "conversation.copy_state",
+        "conversation.fork",
+        "conversation.redo",
+        "conversation.transaction_commit",
+        "conversation.undo",
+        "openui.contract_subtree",
+        "openui.duplicate_subtree",
+        "openui.expand_template",
+        "openui.move_node",
+        "openui.reparent_node",
+        "openui.unwrap_node",
+        "openui.wrap_node"
+      ],
+      "production_core": [
+        "openui.add_child",
+        "openui.remove_node",
+        "openui.reorder_children",
+        "openui.replace_node",
+        "openui.set_property",
+        "openui.unset_property"
+      ]
+    },
+    "roles": {
+      "ecosystem_library": [],
+      "production_core": [
+        "child",
+        "children",
+        "content",
+        "items",
+        "label",
+        "name",
+        "text",
+        "title",
+        "value"
+      ]
+    },
+    "schema": "ecosystem_tier/v1"
+  },
+  "production_core": {
+    "formal_preflight": {
+      "module_count": 5,
+      "modules": {
+        "LeverProofLean.DecodeInvariants": "proved",
+        "LeverProofLean.ExactClosure": "proved",
+        "LeverProofLean.Forest": "proved",
+        "LeverProofLean.ListSet": "proved",
+        "LeverProofLean.Trace": "proved"
+      },
+      "proved_count": 5,
+      "rollup": "proved"
+    },
+    "generation_metrics": {
+      "meaningful_program_rate": 0.7,
+      "parse_rate": 0.92,
+      "syntax_parse_rate": 0.92
+    }
+  },
+  "recipe": {
+    "fixture_demo": true,
+    "metrics_path": "metrics.json",
+    "probe_lean": false,
+    "rows_path": null
+  },
+  "schema": "ecosystem_tier_scoreboard/v1",
+  "separation": {
+    "core_formal_ok": true,
+    "ecosystem_library_size": 21,
+    "library_grew": false,
+    "note": "Core formal preflight is evaluated on CORE_FORMAL_MODULES only; ecosystem inventory size is recorded but never consulted as a core pass condition.",
+    "previous_ecosystem_library_size": null,
+    "separation_holds": true
+  },
+  "tier_schema": "ecosystem_tier/v1",
+  "unassigned_generation_metrics": {},
+  "version_stamp": {
+    "code_commit": "2581bf49f0eee452b61ed9419f004cf2c65f59be",
+    "code_dirty": true,
+    "components": {
+      "dsl.ecosystem_tier": "v1",
+      "evals.ecosystem_tier_scoreboard": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-30T23:41:07.505748+00:00"
+  }
+}

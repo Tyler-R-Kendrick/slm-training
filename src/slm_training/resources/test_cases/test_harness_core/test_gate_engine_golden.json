@@ -50,6 +50,8 @@
                 "meaningful_program_rate": 0.66,
                 "structural_similarity": 0.35,
                 "component_type_recall": 0.35,
+                "ast_beq_rate": 0.2,
+                "canonical_beq_rate": 0.1,
                 "placeholder_fidelity": 0.25,
                 "reward_score": 0.3
               },
@@ -57,28 +59,36 @@
                 "meaningful_program_rate": 0.4,
                 "structural_similarity": 0.3,
                 "component_type_recall": 0.3,
+                "ast_beq_rate": 0.15,
+                "canonical_beq_rate": 0.08,
                 "placeholder_fidelity": 0.15
               },
               "adversarial": {
                 "meaningful_program_rate": 0.25,
                 "structural_similarity": 0.25,
-                "component_type_recall": 0.2
+                "component_type_recall": 0.2,
+                "ast_beq_rate": 0.08,
+                "canonical_beq_rate": 0.04
               },
               "ood": {
                 "meaningful_program_rate": 0.25,
                 "structural_similarity": 0.25,
-                "component_type_recall": 0.2
+                "component_type_recall": 0.2,
+                "ast_beq_rate": 0.08,
+                "canonical_beq_rate": 0.04
               },
               "rico_held": {
                 "min_n": 1500,
                 "meaningful_program_rate": 0.1,
                 "structural_similarity": 0.2,
-                "component_type_recall": 0.15
+                "component_type_recall": 0.15,
+                "ast_beq_rate": 0.05,
+                "canonical_beq_rate": 0.02
               }
             },
             "meaningful_metric_policy": {
               "active_primary": "meaningful_program_v1",
-              "threshold_version": "openui_ship_gates_v5",
+              "threshold_version": "openui_ship_gates_v6",
               "meaningful_program_v1": {
                 "version": "1.0.0",
                 "wire_field": "meaningful_program_rate",
@@ -88,6 +98,15 @@
                 "version": "2.13.0",
                 "thresholds": null,
                 "status": "candidate_pending_calibration"
+              },
+              "semantic_fidelity": {
+                "version": "1.0.0",
+                "fields": [
+                  "ast_beq_rate",
+                  "canonical_beq_rate",
+                  "certificate_equivalence_rate"
+                ],
+                "note": "BEq analogues: structure-normalized AST equality, D2-canonical equality, and certificate digest equality when certificates exist"
               }
             },
             "actual": {
@@ -104,6 +123,9 @@
                 "placeholder_validity": 0.87,
                 "structural_similarity": 0.52,
                 "component_type_recall": 0.48,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": 0.41
               },
               "held_out": {
@@ -119,6 +141,9 @@
                 "placeholder_validity": 0.87,
                 "structural_similarity": 0.11,
                 "component_type_recall": 0.48,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": 0.41
               }
             },
@@ -128,6 +153,8 @@
               "smoke:meaningful_program_rate": true,
               "smoke:structural_similarity": true,
               "smoke:component_type_recall": true,
+              "smoke:ast_beq_rate": false,
+              "smoke:canonical_beq_rate": false,
               "smoke:placeholder_fidelity": true,
               "smoke:reward_score": true,
               "held_out:certified_fallback": true,
@@ -135,19 +162,25 @@
               "held_out:meaningful_program_rate": true,
               "held_out:structural_similarity": false,
               "held_out:component_type_recall": true,
+              "held_out:ast_beq_rate": false,
+              "held_out:canonical_beq_rate": false,
               "held_out:placeholder_fidelity": true,
               "adversarial:missing_suite": false,
               "ood:missing_suite": false,
               "rico_held:missing_suite": false
             },
             "failures": [
+              "smoke:ast_beq_rate actual=None need>=0.2",
+              "smoke:canonical_beq_rate actual=None need>=0.1",
               "held_out:structural_similarity actual=0.11 need>=0.3",
+              "held_out:ast_beq_rate actual=None need>=0.15",
+              "held_out:canonical_beq_rate actual=None need>=0.08",
               "adversarial:missing_suite",
               "ood:missing_suite",
               "rico_held:missing_suite"
             ],
             "pass": false,
-            "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
+            "note": "Honest ship gates require all policy suites and score structure + semantic fidelity only (meaningful_program_rate / structural_similarity / component_type_recall / ast_beq_rate / canonical_beq_rate / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor; ast_beq_rate and canonical_beq_rate are BEq analogues on AST/grammar pairs — soft similarity or syntax parse alone cannot promote. When certificates are compared, certificate_equivalence must hold (digest BEq) with zero replay failures. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md, docs/design/structure-only-eval.md, and docs/design/semantic-fidelity-ship-gates.md."
           },
           "invariant": {
             "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
@@ -237,6 +270,8 @@
                 "meaningful_program_rate": 0.66,
                 "structural_similarity": 0.35,
                 "component_type_recall": 0.35,
+                "ast_beq_rate": 0.2,
+                "canonical_beq_rate": 0.1,
                 "placeholder_fidelity": 0.25,
                 "reward_score": 0.3
               },
@@ -244,28 +279,36 @@
                 "meaningful_program_rate": 0.4,
                 "structural_similarity": 0.3,
                 "component_type_recall": 0.3,
+                "ast_beq_rate": 0.15,
+                "canonical_beq_rate": 0.08,
                 "placeholder_fidelity": 0.15
               },
               "adversarial": {
                 "meaningful_program_rate": 0.25,
                 "structural_similarity": 0.25,
-                "component_type_recall": 0.2
+                "component_type_recall": 0.2,
+                "ast_beq_rate": 0.08,
+                "canonical_beq_rate": 0.04
               },
               "ood": {
                 "meaningful_program_rate": 0.25,
                 "structural_similarity": 0.25,
-                "component_type_recall": 0.2
+                "component_type_recall": 0.2,
+                "ast_beq_rate": 0.08,
+                "canonical_beq_rate": 0.04
               },
               "rico_held": {
                 "min_n": 1500,
                 "meaningful_program_rate": 0.1,
                 "structural_similarity": 0.2,
-                "component_type_recall": 0.15
+                "component_type_recall": 0.15,
+                "ast_beq_rate": 0.05,
+                "canonical_beq_rate": 0.02
               }
             },
             "meaningful_metric_policy": {
               "active_primary": "meaningful_program_v1",
-              "threshold_version": "openui_ship_gates_v5",
+              "threshold_version": "openui_ship_gates_v6",
               "meaningful_program_v1": {
                 "version": "1.0.0",
                 "wire_field": "meaningful_program_rate",
@@ -275,6 +318,15 @@
                 "version": "2.13.0",
                 "thresholds": null,
                 "status": "candidate_pending_calibration"
+              },
+              "semantic_fidelity": {
+                "version": "1.0.0",
+                "fields": [
+                  "ast_beq_rate",
+                  "canonical_beq_rate",
+                  "certificate_equivalence_rate"
+                ],
+                "note": "BEq analogues: structure-normalized AST equality, D2-canonical equality, and certificate digest equality when certificates exist"
               }
             },
             "actual": {
@@ -291,6 +343,9 @@
                 "placeholder_validity": 0.87,
                 "structural_similarity": 0.52,
                 "component_type_recall": 0.48,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": 0.41
               },
               "held_out": {
@@ -306,6 +361,9 @@
                 "placeholder_validity": 0.87,
                 "structural_similarity": 0.52,
                 "component_type_recall": 0.48,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": 0.41
               },
               "adversarial": {
@@ -321,6 +379,9 @@
                 "placeholder_validity": null,
                 "structural_similarity": null,
                 "component_type_recall": null,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": null
               },
               "ood": {
@@ -336,6 +397,9 @@
                 "placeholder_validity": 0.87,
                 "structural_similarity": 0.52,
                 "component_type_recall": 0.48,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": 0.41
               },
               "rico_held": {
@@ -351,6 +415,9 @@
                 "placeholder_validity": 0.87,
                 "structural_similarity": 0.52,
                 "component_type_recall": 0.48,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": 0.41
               }
             },
@@ -360,6 +427,8 @@
               "smoke:meaningful_program_rate": true,
               "smoke:structural_similarity": true,
               "smoke:component_type_recall": true,
+              "smoke:ast_beq_rate": false,
+              "smoke:canonical_beq_rate": false,
               "smoke:placeholder_fidelity": true,
               "smoke:reward_score": true,
               "held_out:certified_fallback": false,
@@ -367,34 +436,52 @@
               "held_out:meaningful_program_rate": true,
               "held_out:structural_similarity": true,
               "held_out:component_type_recall": true,
+              "held_out:ast_beq_rate": false,
+              "held_out:canonical_beq_rate": false,
               "held_out:placeholder_fidelity": true,
               "adversarial:certified_fallback": true,
               "adversarial:insufficient_n": false,
               "adversarial:meaningful_program_rate": true,
               "adversarial:structural_similarity": false,
               "adversarial:component_type_recall": false,
+              "adversarial:ast_beq_rate": false,
+              "adversarial:canonical_beq_rate": false,
               "ood:certified_fallback": true,
               "ood:insufficient_n": false,
               "ood:meaningful_program_rate": true,
               "ood:structural_similarity": true,
               "ood:component_type_recall": true,
+              "ood:ast_beq_rate": false,
+              "ood:canonical_beq_rate": false,
               "rico_held:certified_fallback": true,
               "rico_held:insufficient_n": false,
               "rico_held:meaningful_program_rate": true,
               "rico_held:structural_similarity": true,
-              "rico_held:component_type_recall": true
+              "rico_held:component_type_recall": true,
+              "rico_held:ast_beq_rate": false,
+              "rico_held:canonical_beq_rate": false
             },
             "failures": [
               "smoke:certified_fallback unmeasured (fallback_count absent) need=0 for learned-quality claims",
+              "smoke:ast_beq_rate actual=None need>=0.2",
+              "smoke:canonical_beq_rate actual=None need>=0.1",
               "held_out:certified_fallback actual=3 need=0 for learned-quality claims",
+              "held_out:ast_beq_rate actual=None need>=0.15",
+              "held_out:canonical_beq_rate actual=None need>=0.08",
               "adversarial:insufficient_n actual=4 need>=20",
               "adversarial:structural_similarity actual=None need>=0.25",
               "adversarial:component_type_recall actual=None need>=0.2",
+              "adversarial:ast_beq_rate actual=None need>=0.08",
+              "adversarial:canonical_beq_rate actual=None need>=0.04",
               "ood:insufficient_n actual=None need>=20",
-              "rico_held:insufficient_n actual=25 need>=1500"
+              "ood:ast_beq_rate actual=None need>=0.08",
+              "ood:canonical_beq_rate actual=None need>=0.04",
+              "rico_held:insufficient_n actual=25 need>=1500",
+              "rico_held:ast_beq_rate actual=None need>=0.05",
+              "rico_held:canonical_beq_rate actual=None need>=0.02"
             ],
             "pass": false,
-            "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
+            "note": "Honest ship gates require all policy suites and score structure + semantic fidelity only (meaningful_program_rate / structural_similarity / component_type_recall / ast_beq_rate / canonical_beq_rate / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor; ast_beq_rate and canonical_beq_rate are BEq analogues on AST/grammar pairs — soft similarity or syntax parse alone cannot promote. When certificates are compared, certificate_equivalence must hold (digest BEq) with zero replay failures. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md, docs/design/structure-only-eval.md, and docs/design/semantic-fidelity-ship-gates.md."
           },
           "invariant": {
             "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
@@ -457,6 +544,15 @@
                 "version": "2.13.0",
                 "thresholds": null,
                 "status": "candidate_pending_calibration"
+              },
+              "semantic_fidelity": {
+                "version": "1.0.0",
+                "fields": [
+                  "ast_beq_rate",
+                  "canonical_beq_rate",
+                  "certificate_equivalence_rate"
+                ],
+                "note": "BEq analogues: structure-normalized AST equality, D2-canonical equality, and certificate digest equality when certificates exist"
               }
             },
             "actual": {
@@ -473,6 +569,9 @@
                 "placeholder_validity": 0.87,
                 "structural_similarity": 0.52,
                 "component_type_recall": 0.48,
+                "ast_beq_rate": null,
+                "canonical_beq_rate": null,
+                "certificate_equivalence_rate": null,
                 "reward_score": 0.41
               }
             },
@@ -487,7 +586,7 @@
               "extra_suite:missing_suite"
             ],
             "pass": false,
-            "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
+            "note": "Honest ship gates require all policy suites and score structure + semantic fidelity only (meaningful_program_rate / structural_similarity / component_type_recall / ast_beq_rate / canonical_beq_rate / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor; ast_beq_rate and canonical_beq_rate are BEq analogues on AST/grammar pairs — soft similarity or syntax parse alone cannot promote. When certificates are compared, certificate_equivalence must hold (digest BEq) with zero replay failures. DESIGN.md style lint is never a ship gate. When suite_reachability is supplied, gated suites below 1.0 reachable fail as reachability_unproven (measurement integrity). See docs/design/adversarial-review.md, docs/design/structure-only-eval.md, and docs/design/semantic-fidelity-ship-gates.md."
           },
           "invariant": {
             "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
