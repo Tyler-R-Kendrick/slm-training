@@ -2491,7 +2491,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v11",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2514,6 +2514,26 @@
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-07-30",
+          "note": "no-bump: stack_layer also requires a tracked code/docs delta so pure knob-only metric blips do not open empty stacked PRs"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-30",
+          "note": "Continuous driver enforces SDLC Phase A: after each cycle classify positive vs non-positive, write sdlc_delivery.json + ledger, log stack_layer intent; stack PR only when positive"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-30",
+          "note": "Stacked PRs only after positive-result autotrain runs (primary-metric win, ship-quality win, or proven executable unblock); non-positive cycles keep local commits + docs only; still get latest between cycles and Phase B closeout of open positive layers"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-30",
+          "note": "Bind continuous autotrain to sdlc two-phase delivery: incremental commits and stacked PRs between training runs (get latest/resolve conflicts); full bottom-up squash-merge closeout when training stops; paid remote compute remains opt-in"
+        },
         {
           "version": "v11",
           "date": "2026-07-30",
@@ -12023,6 +12043,11 @@
         "docs/design/formal-objects-multi-prover.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-31",
+          "note": "no-bump: rewrite score lambda as nested def to satisfy ruff E731; structural mono law unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-31",

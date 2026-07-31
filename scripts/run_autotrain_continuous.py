@@ -5,6 +5,11 @@ Bare /autotrain agents should keep calling this (or re-enter continuous.md)
 without user prompts. Each invocation can run one or many bounded cycles.
 Never an infinite shell without MAX_RUN_MINUTES on child commands — wall is
 enforced by campaign budgets and levers.
+
+SDLC Phase A (autotrain-iteration-delivery): after every cycle the driver
+classifies positive vs non-positive, records a delivery ledger, and only
+signals stack-layer intent for positive results. Stacked PRs are still opened
+by the agent (gh stack); this driver never opens PRs for non-positive cycles.
 """
 
 from __future__ import annotations
@@ -16,6 +21,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 from slm_training.autoresearch.engine import default_eval_version
 from slm_training.autoresearch.experiment_campaign import (
@@ -31,13 +37,280 @@ from slm_training.autoresearch.schemas import CampaignBudget, HypothesisMatrix
 from slm_training.levers import MAX_RUN_MINUTES
 
 
-def _git(*args: str) -> str:
-    return subprocess.check_output(["git", *args], text=True).strip()
+def _git(*args: str, cwd: Path | None = None) -> str:
+    return subprocess.check_output(
+        ["git", *args], text=True, cwd=str(cwd) if cwd else None
+    ).strip()
 
 
 def _run(cmd: list[str], *, cwd: Path) -> None:
     print("+", " ".join(cmd), flush=True)
     subprocess.check_call(cmd, cwd=cwd)
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _metric_from_eval(path: Path, key: str) -> float | None:
+    data = _read_json(path)
+    if key in data and isinstance(data[key], (int, float)):
+        return float(data[key])
+    metrics = data.get("metrics")
+    if isinstance(metrics, dict) and isinstance(metrics.get(key), (int, float)):
+        return float(metrics[key])
+    suite = data.get("smoke")
+    if isinstance(suite, dict) and isinstance(suite.get(key), (int, float)):
+        return float(suite[key])
+    return None
+
+
+def _run_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
+    run_dir = camp_dir / "runs" / run_id
+    smoke = run_dir / "eval_smoke.json"
+    if not smoke.exists():
+        smoke = run_dir / "eval.json"
+    return {
+        "latency_ms_p50": _metric_from_eval(smoke, "latency_ms_p50"),
+        "parse_rate": _metric_from_eval(smoke, "parse_rate"),
+        "meaningful_program_rate": _metric_from_eval(smoke, "meaningful_program_rate"),
+    }
+
+
+def _classify_positive(
+    *,
+    camp_dir: Path,
+    primary_metric: str,
+    control_id: str,
+    candidate_id: str,
+) -> dict[str, Any]:
+    """Classify cycle for SDLC Phase A stack-layer gate.
+
+    Positive only for primary-metric win (or ship/unblock signals when present).
+    Fixture insufficient_n / missing metrics / null deltas → non-positive.
+    """
+    control = _run_metrics(camp_dir, control_id)
+    candidate = _run_metrics(camp_dir, candidate_id)
+    reasons: list[str] = []
+    positive = False
+
+    # Wall / missing scoreboard
+    outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
+    for path in outcomes:
+        out = _read_json(path)
+        err = str(out.get("error") or "")
+        if "wall-time" in err or "wall time" in err.lower():
+            reasons.append(f"wall_timeout:{path.stem}")
+        if out.get("metrics") == {} and err:
+            reasons.append(f"empty_metrics:{path.stem}")
+
+    # Ship gates: fixture insufficient_n is never positive alone
+    gate_files = list((camp_dir / "runs").glob("*/gates.json"))
+    fixture_only_fails = 0
+    for gpath in gate_files:
+        gates = _read_json(gpath)
+        fails = gates.get("failures") or gates.get("quality_threshold_failures") or []
+        vol = gates.get("evidence_volume_failures") or []
+        if isinstance(vol, list) and any("insufficient_n" in str(x) for x in vol):
+            fixture_only_fails += 1
+            reasons.append(f"fixture_insufficient_n:{gpath.parent.name}")
+        if isinstance(fails, list) and fails and not vol:
+            # non-volume quality fail without a metric win stays non-positive
+            reasons.append(f"gate_failures:{gpath.parent.name}:{len(fails)}")
+
+    # Primary metric: smoke.latency_ms_p50 → lower is better
+    metric_leaf = primary_metric.split(".")[-1]
+    c_lat = control.get("latency_ms_p50") if metric_leaf == "latency_ms_p50" else None
+    t_lat = candidate.get("latency_ms_p50") if metric_leaf == "latency_ms_p50" else None
+    c_pr = control.get("parse_rate")
+    t_pr = candidate.get("parse_rate")
+
+    if c_lat is not None and t_lat is not None:
+        # Require strict improvement and non-regression on parse_rate when both present
+        improved = t_lat < c_lat
+        parse_ok = True
+        if c_pr is not None and t_pr is not None:
+            parse_ok = t_pr + 1e-12 >= c_pr
+        if improved and parse_ok:
+            positive = True
+            reasons.append(
+                f"primary_metric_win:{primary_metric}:{c_lat}->{t_lat}"
+            )
+        else:
+            reasons.append(
+                f"primary_metric_null_or_worse:{primary_metric}:"
+                f"control={c_lat} candidate={t_lat} parse={c_pr}->{t_pr}"
+            )
+    else:
+        reasons.append("primary_metric_unavailable")
+
+    # Executable unblock: control failed path-wise, candidate completed with metrics
+    control_outcome = next(
+        (
+            _read_json(p)
+            for p in outcomes
+            if control_id in str(p) or _read_json(p).get("experiment_id") == control_id
+        ),
+        {},
+    )
+    cand_outcome = next(
+        (
+            _read_json(p)
+            for p in outcomes
+            if candidate_id in str(p)
+            or _read_json(p).get("experiment_id") == candidate_id
+        ),
+        {},
+    )
+    if (
+        control_outcome.get("error")
+        and not cand_outcome.get("error")
+        and candidate.get("latency_ms_p50") is not None
+    ):
+        positive = True
+        reasons.append("executable_unblock:candidate_completed_after_control_error")
+
+    if fixture_only_fails and not any(r.startswith("primary_metric_win") for r in reasons):
+        # fixture n alone cannot make positive even if noise moves a metric
+        if not any(r.startswith("executable_unblock") for r in reasons):
+            if any(r.startswith("primary_metric_win") for r in reasons):
+                pass
+            # Keep metric wins; only block positivity that rests solely on gates green
+            # when those gates are volume-insufficient on fixture smoke.
+            pass
+
+    # Explicit: insufficient_n without metric win → force non-positive
+    if not any(r.startswith("primary_metric_win") or r.startswith("executable_unblock") for r in reasons):
+        positive = False
+        if not reasons:
+            reasons.append("no_positive_signal")
+
+    return {
+        "positive": positive,
+        "stack_layer": positive,
+        "reasons": reasons,
+        "control_metrics": control,
+        "candidate_metrics": candidate,
+        "primary_metric": primary_metric,
+        "control_id": control_id,
+        "candidate_id": candidate_id,
+        "fixture_volume_gate_hits": fixture_only_fails,
+    }
+
+
+def _phase_a_delivery(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    primary_metric: str,
+) -> dict[str, Any]:
+    """Record SDLC Phase A decision; never open stacked PR for non-positive."""
+    camp_dir = root / campaign_id
+    # Infer control / candidate ids from manifests or runs
+    man_dir = camp_dir / "manifests"
+    control_run = None
+    candidate_run = None
+    if man_dir.exists():
+        for path in sorted(man_dir.glob("*.json")):
+            eid = path.stem
+            if eid.endswith("-control") or "control" in eid:
+                control_run = eid
+            elif "bounds" in eid or "canvas" in eid or "combined" in eid:
+                if candidate_run is None:
+                    candidate_run = eid
+    runs_dir = camp_dir / "runs"
+    if runs_dir.exists():
+        run_ids = sorted(p.name for p in runs_dir.iterdir() if p.is_dir())
+        for rid in run_ids:
+            if rid.endswith("-control") or rid.endswith("-control".replace("-", "_")):
+                control_run = control_run or rid
+            elif "control" not in rid:
+                candidate_run = candidate_run or rid
+        if control_run is None and run_ids:
+            control_run = run_ids[0]
+        if candidate_run is None and len(run_ids) > 1:
+            candidate_run = run_ids[1]
+        elif candidate_run is None:
+            candidate_run = control_run
+
+    control_run = control_run or "unknown-control"
+    candidate_run = candidate_run or control_run
+
+    decision = _classify_positive(
+        camp_dir=camp_dir,
+        primary_metric=primary_metric,
+        control_id=control_run,
+        candidate_id=candidate_run,
+    )
+    # Stack only when positive AND there is something reviewable to ship.
+    # Pure knob-only fixture cycles with a metric blip do not open empty PRs.
+    porcelain = _git("status", "--porcelain", cwd=cwd) if cwd else ""
+    has_tracked_delta = bool(porcelain.strip())
+    stack_layer = bool(decision["positive"] and has_tracked_delta)
+    if decision["positive"] and not has_tracked_delta:
+        stack_action = "positive_no_tracked_delta_skip_stack"
+        agent_required = (
+            "metric win recorded; no code/docs delta — skip stack PR; continue loop"
+        )
+    elif stack_layer:
+        stack_action = "open_or_update_stacked_pr"
+        agent_required = "gh stack add/submit --open for this positive layer"
+    else:
+        stack_action = "no_stack_layer_non_positive"
+        agent_required = "continue loop; local commits/docs only"
+
+    record = {
+        "schema": "autotrain_sdlc_delivery/v1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "sdlc_phase": "A",
+        "positive": decision["positive"],
+        "stack_layer": stack_layer,
+        "has_tracked_delta": has_tracked_delta,
+        "stack_action": stack_action,
+        "agent_required": agent_required,
+        **{k: v for k, v in decision.items() if k not in {"positive", "stack_layer"}},
+    }
+    out_path = camp_dir / "sdlc_delivery.json"
+    out_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    ledger = root / "sdlc_delivery_ledger.jsonl"
+    with ledger.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
+
+    tag = "POSITIVE" if record["positive"] else "NON_POSITIVE"
+    print(
+        f"SDLC_PHASE_A {tag} campaign={campaign_id} "
+        f"stack_layer={record['stack_layer']} action={record['stack_action']}",
+        flush=True,
+    )
+    for reason in record.get("reasons") or []:
+        print(f"SDLC_PHASE_A reason={reason}", flush=True)
+
+    # Optional design-doc closeout for the cycle (iron law); keep under campaign
+    # root so the git worktree stays clean for the next fetch/merge.
+    note_path = camp_dir / "measured-results-continuous.md"
+    note = (
+        f"# Continuous cycle {campaign_id}\n\n"
+        f"- loop_id: `{loop_id}`\n"
+        f"- primary_metric: `{primary_metric}`\n"
+        f"- positive: **{record['positive']}**\n"
+        f"- stack_layer: **{record['stack_layer']}**\n"
+        f"- action: `{record['stack_action']}`\n"
+        f"- reasons: {', '.join(record.get('reasons') or [])}\n"
+        f"- control: `{control_run}` metrics={record.get('control_metrics')}\n"
+        f"- candidate: `{candidate_run}` metrics={record.get('candidate_metrics')}\n\n"
+        "Non-positive cycles do not open stacked PRs "
+        "(sdlc autotrain-iteration-delivery).\n"
+    )
+    note_path.write_text(note, encoding="utf-8")
+    return record
 
 
 def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
@@ -378,10 +651,10 @@ def run_cycle(
 ) -> str:
     _run(["git", "fetch", "origin", "main"], cwd=cwd)
     _run(["git", "merge", "--no-edit", "origin/main"], cwd=cwd)
-    if _git("status", "--porcelain"):
+    if _git("status", "--porcelain", cwd=cwd):
         raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
-    upstream = _git("rev-parse", "origin/main")
-    integration = _git("rev-parse", "HEAD")
+    upstream = _git("rev-parse", "origin/main", cwd=cwd)
+    integration = _git("rev-parse", "HEAD", cwd=cwd)
     if upstream != integration:
         # merge should have equalized; if not, still require ancestor
         _run(["git", "merge-base", "--is-ancestor", upstream, integration], cwd=cwd)
@@ -572,7 +845,14 @@ def run_cycle(
         ],
         cwd=cwd,
     )
-    print(f"CYCLE_COMPLETE {campaign_id}", flush=True)
+    delivery = _phase_a_delivery(
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        primary_metric=primary_metric,
+    )
+    print(f"CYCLE_COMPLETE {campaign_id} positive={delivery['positive']}", flush=True)
     return campaign_id
 
 

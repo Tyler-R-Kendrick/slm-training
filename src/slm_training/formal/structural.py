@@ -142,8 +142,11 @@ def law_structural_similarity_mono(
 ) -> bool:
     if j1 > j2 or d1 > d2:
         return True  # antecedent false
-    s = lambda j, d: (7 * j + 3 * d) // 10
-    return s(j1, d1) <= s(j2, d2)
+
+    def score(j: int, d: int) -> int:
+        return (7 * j + 3 * d) // 10
+
+    return score(j1, d1) <= score(j2, d2)
 
 
 def law_recall_mono(a: int, b: int, gold: int) -> bool:

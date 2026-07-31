@@ -4,6 +4,9 @@ description: >
   Operate the OpenUI SLM training pipeline end to end, including a continuous
   hands-off model and harness improvement loop. Bare /autotrain is non-terminating
   and must not stop for user confirmation; an explicit phase or --once is finite.
+  Code fixes during training use incremental commits every cycle and stacked
+  PRs only after positive-result runs (sdlc autotrain-iteration-delivery);
+  when training stops, full bottom-up SDLC closeout of open positive layers.
 ---
 
 # Autotrain OpenUI SLMs
@@ -14,6 +17,11 @@ read only when that phase is being run. To modify a harness, use
 `improve-openui-harnesses`. For the higher-level, knowledge-driven research
 loop that *coordinates* this pipeline with brains / OpenWiki / literature
 discovery / Linear, use `autoresearch`.
+
+**Delivery process** for code and durable docs during training is owned by
+`sdlc` — read
+[`../sdlc/references/autotrain-iteration-delivery.md`](../sdlc/references/autotrain-iteration-delivery.md)
+before continuous or multi-run work.
 
 ## Workflow
 
@@ -30,7 +38,8 @@ discovery / Linear, use `autoresearch`.
    the `slm` commands, and close out docs/model-card duties.
 4. Hand off (when those claims appear): ship → `honest-ship-eval`; matrices →
    `running-experiment-matrices`; campaigns → `openui-autoresearch`; Lean
-   bands → `improve-lean-optimums`; brains/OpenWiki/Linear → `autoresearch`.
+   bands → `improve-lean-optimums`; brains/OpenWiki/Linear → `autoresearch`;
+   multi-layer land → `sdlc`.
 
 ## Continuous mode (bare `/autotrain`) — non-negotiable
 
@@ -41,10 +50,16 @@ discovery / Linear, use `autoresearch`.
 | Self-heal | Fix path/knob/harness failures from evidence; re-run |
 | Soft failures | Fixture ship-gate fails / null deltas / single timeouts → next cycle |
 | Hard block only | Same unrecoverable blocker 3× with no new info → report blocked |
-| Local default | No push/PR/remote/HF write without prior user authority |
+| Incremental commits | Commit green code/docs units every cycle while working on an iteration or fix |
+| Stacked PR (positive only) | Open/update a `gh stack` layer **only** after a positive-result run (metric win, ship-quality win, or proven executable unblock) |
+| Non-positive cycles | Docs + local commits only — **no** new stack layer for fixture fails / null deltas |
+| Get latest between runs | `git fetch` + `gh stack sync` / merge `origin/main`; resolve conflicts |
+| Remote compute default | No paid GPU / HF write without prior user authority |
+| Training stopped | Full `sdlc` bottom-up closeout of open positive layers (review → CI → squash-merge) — not a resume paste |
 | Matrix between cycles | `slm autoresearch status --loop-id <id> --matrix --last 5` |
 
-Full procedure: [references/continuous.md](references/continuous.md).
+Full procedure: [references/continuous.md](references/continuous.md).  
+Delivery: [`../sdlc/references/autotrain-iteration-delivery.md`](../sdlc/references/autotrain-iteration-delivery.md).
 
 ## Phase routing
 
