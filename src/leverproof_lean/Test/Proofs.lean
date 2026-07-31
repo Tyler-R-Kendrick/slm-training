@@ -99,8 +99,10 @@ open LeverProofLean
 #print axioms AdvisoryResidual.scored_decode_off_zero_apps_example
 #print axioms AdvisoryResidual.decode_off_zero_apps_non_singleton
 #print axioms AdvisoryResidual.reconstruct_encode_example
+#print axioms AdvisoryResidual.role_shuffle_preserves_membership
+#print axioms AdvisoryResidual.role_shuffle_example
 #print axioms AdvisoryResidual.golden_degrees
-#print axioms AdvisoryResidual.golden_S_column_masses
+#print axioms AdvisoryResidual.golden_S_column_masses_from_B
 #print axioms AdvisoryResidual.soft_token_collision
 #print axioms AdvisoryResidual.contraction_factor_lt_one
 

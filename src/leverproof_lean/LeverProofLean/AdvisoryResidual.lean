@@ -184,11 +184,85 @@ theorem reconstruct_encode_singleton :
       [{ factorId := 7, nodes := [3, 3, 5] }] := by
   native_decide
 
-/-- Role shuffle preserves membership lists (roles are not part of FactorMem). -/
-theorem role_shuffle_preserves_membership (nodes : List CandId) :
-    SetEq nodes nodes :=
-  SetEq.refl nodes
+/-! ### Role shuffle preserves membership (models Python `shuffle_port_roles`)
 
+  Ports carry (role, node). Shuffle reassigns roles by left-rotation of the
+  role list while **keeping each index's node fixed**. Membership is the node
+  list; it is therefore invariant by construction of `shuffleRoles`.
+-/
+
+structure Port where
+  role : Nat
+  node : CandId
+  deriving Repr, DecidableEq
+
+def membership (ports : List Port) : List CandId :=
+  ports.map (·.node)
+
+/-- Rotate a list left by `k` (mod length). -/
+def rotateLeft (xs : List Nat) (k : Nat) : List Nat :=
+  match xs with
+  | [] => []
+  | _ :: _ =>
+    let kk := k % xs.length
+    xs.drop kk ++ xs.take kk
+
+/-- Reassign roles from `roles'` by index; always keep the original node. -/
+def zipRolesOnto (roles' : List Nat) : List Port → List Port
+  | [] => []
+  | p :: ps =>
+    match roles' with
+    | [] => { role := p.role, node := p.node } :: zipRolesOnto [] ps
+    | r :: rs => { role := r, node := p.node } :: zipRolesOnto rs ps
+
+/-- Role shuffle: rotate role multiset; nodes stay fixed in place. -/
+def shuffleRoles (ports : List Port) (k : Nat) : List Port :=
+  zipRolesOnto (rotateLeft (ports.map (fun p : Port => p.role)) k) ports
+
+theorem zipRolesOnto_preserves_nodes (roles' : List Nat) (ports : List Port) :
+    membership (zipRolesOnto roles' ports) = membership ports := by
+  induction ports generalizing roles' with
+  | nil => rfl
+  | cons p ps ih =>
+    cases roles' with
+    | nil =>
+      simp [zipRolesOnto, membership]
+      exact ih []
+    | cons r rs =>
+      simp [zipRolesOnto, membership]
+      exact ih rs
+
+/-- Membership ignores roles; zipRolesOnto keeps `node := p.node`. -/
+theorem role_shuffle_preserves_membership (ports : List Port) (k : Nat) :
+    membership (shuffleRoles ports k) = membership ports := by
+  simpa [shuffleRoles] using zipRolesOnto_preserves_nodes
+    (rotateLeft (ports.map (fun p : Port => p.role)) k) ports
+
+/-- Roles move under a non-trivial rotation; nodes do not. -/
+theorem role_shuffle_example :
+    let ports : List Port := [
+      { role := 1, node := 10 },
+      { role := 2, node := 20 },
+      { role := 3, node := 30 }
+    ]
+    membership (shuffleRoles ports 1) = [10, 20, 30] ∧
+    (shuffleRoles ports 1).map (·.role) = [2, 3, 1] ∧
+    membership (shuffleRoles ports 1) = membership ports ∧
+    (shuffleRoles ports 1).map (·.role) ≠ ports.map (·.role) := by
+  native_decide
+
+/-- Role multiset is preserved by rotation (sorted roles equal). -/
+def sortedRoles (ports : List Port) : List Nat :=
+  (ports.map (·.role)).mergeSort (· ≤ ·)
+
+theorem role_shuffle_preserves_role_multiset_example :
+    let ports : List Port := [
+      { role := 1, node := 10 },
+      { role := 2, node := 20 },
+      { role := 3, node := 30 }
+    ]
+    sortedRoles (shuffleRoles ports 1) = sortedRoles ports := by
+  native_decide
 /-! ### Golden incidence degrees (matches NumPy probe B) -/
 
 /-- B columns: factor0 → vertices [1,1,0], factor1 → [1,0,1]. -/
@@ -210,11 +284,45 @@ theorem golden_degrees :
     colDegrees goldenB = [2, 2] ∧ rowDegrees goldenB = [2, 1, 1] := by
   native_decide
 
-/-- Scaled column masses of S for golden B equal 1000/1000 (stochastic). -/
-def goldenSColumnMassScaled : List Nat := [1000, 1000, 1000]
+/-- Product of a list of Nats (empty → 1). -/
+def listProd (xs : List Nat) : Nat :=
+  xs.foldl (· * ·) 1
 
-theorem golden_S_column_masses :
-    goldenSColumnMassScaled.all (· = 1000) = true := by
+/-- Product of all entries except index `idx` (empty-safe). -/
+def omitProd (xs : List Nat) (idx : Nat) : Nat :=
+  listProd ((List.range xs.length).filterMap fun i =>
+    if i = idx then none else some (xs.getD i 1))
+
+/--
+  Numerator of S_ij * (∏ d_e) * (∏ d_v) under
+  S = B D_e^{-1} Bᵀ D_v^{-1} with B stored as list-of-columns.
+  S_ij = Σ_k B_ik B_jk / (d_e_k · d_v_j).
+-/
+def sEntryNum (B : List (List Nat)) (i j : Nat) : Nat :=
+  let de := colDegrees B
+  let dv := rowDegrees B
+  (List.range de.length).foldl (fun acc k =>
+    let bik := (B.getD k []).getD i 0
+    let bjk := (B.getD k []).getD j 0
+    acc + bik * bjk * omitProd de k * omitProd dv j) 0
+
+/-- Column-j mass of S as numerator over (∏ d_e)·(∏ d_v). -/
+def sColumnSumNum (B : List (List Nat)) (j : Nat) : Nat :=
+  let nRows := (B.headD []).length
+  (List.range nRows).foldl (fun acc i => acc + sEntryNum B i j) 0
+
+/-- Target numerator for column-stochastic S (each column sums to 1). -/
+def sColumnSumTarget (B : List (List Nat)) : Nat :=
+  listProd (colDegrees B) * listProd (rowDegrees B)
+
+/-- Derived from goldenB via the S formula — not a hand-written mass list. -/
+def goldenSColumnSumNums : List Nat :=
+  (List.range 3).map fun j => sColumnSumNum goldenB j
+
+theorem golden_S_column_masses_from_B :
+    let target := sColumnSumTarget goldenB
+    goldenSColumnSumNums.all (· = target) = true ∧
+    target = 2 * 2 * 2 * 1 * 1 := by
   native_decide
 
 /-- Soft-token non-injectivity (SHIFT correction, finite model). -/

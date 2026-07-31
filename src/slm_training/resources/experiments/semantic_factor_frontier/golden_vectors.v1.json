@@ -4,49 +4,201 @@
   "description": "Executable bridges between LeverProofLean.AdvisoryResidual and Python harnesses. Cases match Test/Proofs.lean #guard values.",
   "lean_module": "LeverProofLean.AdvisoryResidual",
   "filter_legal": {
-    "legal": [0, 1, 2],
-    "keys_in": [0, 9, 1, 7],
-    "keys_out": [0, 1]
+    "legal": [
+      0,
+      1,
+      2
+    ],
+    "keys_in": [
+      0,
+      9,
+      1,
+      7
+    ],
+    "keys_out": [
+      0,
+      1
+    ]
   },
   "decode_off_zero_apps": {
-    "non_singleton_legal": [0, 1, 2],
-    "non_singleton_keys": [0, 9],
+    "non_singleton_legal": [
+      0,
+      1,
+      2
+    ],
+    "non_singleton_keys": [
+      0,
+      9
+    ],
     "non_singleton_expected_apps": 0,
-    "singleton_legal": [0],
-    "singleton_keys": [0, 1],
+    "singleton_legal": [
+      0
+    ],
+    "singleton_keys": [
+      0,
+      1
+    ],
     "singleton_outcome": "singletonZeroWork"
   },
   "scored_filter": {
-    "legal": [0, 1, 2],
-    "keys_in": [0, 9, 1],
-    "keys_out": [0, 1],
+    "legal": [
+      0,
+      1,
+      2
+    ],
+    "keys_in": [
+      0,
+      9,
+      1
+    ],
+    "keys_out": [
+      0,
+      1
+    ],
     "applications_decode_on": 1,
     "applications_decode_off": 0
   },
   "membership_roundtrip": {
     "factors": [
-      {"factor_id": 0, "nodes": [1, 2]},
-      {"factor_id": 1, "nodes": [2, 3]}
-    ]
+      {
+        "factor_id": 0,
+        "nodes": [
+          1,
+          2
+        ]
+      },
+      {
+        "factor_id": 1,
+        "nodes": [
+          2,
+          3
+        ]
+      }
+    ],
+    "encode_incidence": [
+      [
+        1,
+        0
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        3,
+        1
+      ]
+    ],
+    "reconstructed_nodes": {
+      "0": [
+        1,
+        2
+      ],
+      "1": [
+        2,
+        3
+      ]
+    }
   },
   "incidence_golden_B": {
-    "columns": [[1, 1, 0], [1, 0, 1]],
-    "col_degrees": [2, 2],
-    "row_degrees": [2, 1, 1],
-    "note": "Matches AdvisoryResidual.goldenB and math_probes.column_stochastic.incidence_B (as rows)."
+    "columns": [
+      [
+        1,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        1
+      ]
+    ],
+    "col_degrees": [
+      2,
+      2
+    ],
+    "row_degrees": [
+      2,
+      1,
+      1
+    ],
+    "note": "Matches AdvisoryResidual.goldenB (columns). S column sums derived via sColumnSumNum / sColumnSumTarget (not a hand-written mass list).",
+    "s_column_sum_target": 8,
+    "s_column_sum_nums": [
+      8,
+      8,
+      8
+    ]
   },
   "soft_token": {
-    "a": [1, 0, 0],
-    "b": [0, 1, 0],
-    "coeffs": [7, 7, 3],
+    "a": [
+      1,
+      0,
+      0
+    ],
+    "b": [
+      0,
+      1,
+      0
+    ],
+    "coeffs": [
+      7,
+      7,
+      3
+    ],
     "collision": true
   },
   "rank_inside_legal": {
-    "scores": [1, 9, 2],
-    "legal_mask": [true, false, true],
+    "scores": [
+      1,
+      9,
+      2
+    ],
+    "legal_mask": [
+      true,
+      false,
+      true
+    ],
     "winner_index": 2,
-    "all_illegal_scores": [1, 9],
-    "all_illegal_mask": [false, false],
+    "all_illegal_scores": [
+      1,
+      9
+    ],
+    "all_illegal_mask": [
+      false,
+      false
+    ],
     "all_illegal_winner": null
+  },
+  "role_shuffle": {
+    "ports": [
+      {
+        "role": 1,
+        "node": 10
+      },
+      {
+        "role": 2,
+        "node": 20
+      },
+      {
+        "role": 3,
+        "node": 30
+      }
+    ],
+    "k": 1,
+    "membership_after": [
+      10,
+      20,
+      30
+    ],
+    "roles_after": [
+      2,
+      3,
+      1
+    ]
   }
 }

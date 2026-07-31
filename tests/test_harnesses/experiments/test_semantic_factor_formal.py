@@ -6,9 +6,14 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from slm_training.data.progspec.semantic_evidence import (
+    FactorRepresentation,
+    build_factor_representation,
+    project_program_factors,
     reconstruct_membership,
+    shuffle_port_roles,
 )
 from slm_training.dsl.grammar.fastpath.residual_support import rank_inside_legal_residual
 from slm_training.harnesses.experiments.anti_e237_semantic_factor_frontier import (
@@ -17,7 +22,9 @@ from slm_training.harnesses.experiments.anti_e237_semantic_factor_frontier impor
 )
 from slm_training.harnesses.experiments.semantic_factor_formal import (
     SFF_FORMAL_TEMPLATES,
+    SFFFormalError,
     load_or_build_sff_formal_obligations,
+    load_sff_formal_obligations,
     verify_sff_formal_sources,
 )
 from slm_training.models.semantic_factor_propagation import column_stochastic_S
@@ -25,10 +32,6 @@ from slm_training.models.semantic_residual_scorer import (
     SemanticResidualScorerConfig,
     SemanticResidualScorerV1,
     assert_score_keys_legal,
-)
-from slm_training.data.progspec.semantic_evidence import (
-    FactorRepresentation,
-    project_program_factors,
 )
 
 _GOLDEN = (
@@ -47,7 +50,7 @@ def _golden() -> dict:
 
 
 def test_formal_obligations_nonempty_and_lockable() -> None:
-    obligations = load_or_build_sff_formal_obligations(write_if_missing=True)
+    obligations = load_sff_formal_obligations()
     assert len(obligations) == len(SFF_FORMAL_TEMPLATES)
     assert len({o.template_id for o in obligations}) == len(obligations)
     campaign = build_campaign(source_commit="a" * 40, source_dirty=False)
@@ -62,6 +65,21 @@ def test_formal_sources_present() -> None:
     assert len(report["templates"]) == len(SFF_FORMAL_TEMPLATES)
 
 
+def test_load_or_build_alias_is_fail_closed() -> None:
+    # write_if_missing must not silently re-stamp proved without Lean.
+    obs = load_or_build_sff_formal_obligations(write_if_missing=True)
+    assert len(obs) == len(SFF_FORMAL_TEMPLATES)
+
+
+def test_stale_preflight_raises(tmp_path, monkeypatch) -> None:
+    from slm_training.harnesses.experiments import semantic_factor_formal as sff
+
+    # Point formal dir at empty temp → missing preflight.
+    monkeypatch.setattr(sff, "SFF_FORMAL_DIR", tmp_path)
+    with pytest.raises(SFFFormalError, match="missing formal preflight"):
+        sff.load_sff_formal_obligations()
+
+
 def test_golden_filter_legal_matches_lean_guard() -> None:
     g = _golden()["filter_legal"]
     legal = set(g["legal"])
@@ -73,7 +91,6 @@ def test_golden_filter_legal_matches_lean_guard() -> None:
 
 def test_golden_scorer_control_plane() -> None:
     g = _golden()
-    # Singleton zero work
     scorer = SemanticResidualScorerV1(
         SemanticResidualScorerConfig(
             representation=FactorRepresentation.NONE,
@@ -97,7 +114,6 @@ def test_golden_scorer_control_plane() -> None:
     assert out.singleton_skip
     assert out.applications == 0
 
-    # Incomplete preserves unknown
     out2 = scorer.score(
         legal_candidate_ids=("a", "b"),
         coverage="incomplete",
@@ -108,7 +124,6 @@ def test_golden_scorer_control_plane() -> None:
     assert out2.unknown_preserved
     assert out2.applications == 0
 
-    # Decode-off zero apps on multi-legal
     scorer_off = SemanticResidualScorerV1(
         SemanticResidualScorerConfig(
             representation=FactorRepresentation.DIRECT_FACTORS,
@@ -135,7 +150,6 @@ def test_golden_scorer_control_plane() -> None:
 
 def test_golden_incidence_degrees_and_column_stochastic() -> None:
     g = _golden()["incidence_golden_B"]
-    # goldenB is stored as columns; NumPy B is rows×cols (vertices×factors).
     cols = g["columns"]
     B = np.array(cols, dtype=np.float64).T
     assert B.shape == (3, 2)
@@ -143,6 +157,10 @@ def test_golden_incidence_degrees_and_column_stochastic() -> None:
     d_v = B.sum(axis=1)
     assert list(d_e.astype(int)) == g["col_degrees"]
     assert list(d_v.astype(int)) == g["row_degrees"]
+    # Derived target matches Lean sColumnSumTarget = ∏d_e · ∏d_v
+    target = int(np.prod(d_e) * np.prod(d_v))
+    assert target == g["s_column_sum_target"]
+    assert g["s_column_sum_nums"] == [target] * B.shape[0]
     S, col_sums, _ = column_stochastic_S(B)
     assert np.allclose(col_sums, 1.0, atol=1e-9)
     assert np.allclose(S.sum(axis=0), 1.0, atol=1e-9)
@@ -166,9 +184,27 @@ def test_golden_rank_inside_legal_matches_lean_guard() -> None:
     assert none_w is g["all_illegal_winner"]
 
 
-def test_membership_roundtrip_matches_golden_factors() -> None:
-    g = _golden()["membership_roundtrip"]["factors"]
-    # Build snapshot-like factors via project + factor_node view.
+def test_membership_roundtrip_matches_golden_encode_reconstruct() -> None:
+    """Assert the exact Lean reconstruct_encode_example fixture."""
+
+    g = _golden()["membership_roundtrip"]
+    factors = g["factors"]
+    # Pure encode: (node, factor_id) pairs in factor order.
+    enc: list[list[int]] = []
+    for f in factors:
+        for n in f["nodes"]:
+            enc.append([int(n), int(f["factor_id"])])
+    assert enc == g["encode_incidence"]
+    # Pure reconstruct from incidence.
+    reconstructed: dict[str, list[int]] = {}
+    for node, fid in enc:
+        reconstructed.setdefault(str(fid), []).append(int(node))
+    assert reconstructed == g["reconstructed_nodes"]
+    for f in factors:
+        assert reconstructed[str(f["factor_id"])] == f["nodes"]
+
+
+def test_membership_roundtrip_via_factor_node_view() -> None:
     components = (("1", "A"), ("2", "B"), ("3", "C"))
     snap = project_program_factors(
         program_id="rt",
@@ -177,8 +213,6 @@ def test_membership_roundtrip_matches_golden_factors() -> None:
         legal_candidate_ids=("1", "2", "3"),
         coverage="complete",
     )
-    from slm_training.data.progspec.semantic_evidence import build_factor_representation
-
     view = build_factor_representation(
         snap, FactorRepresentation.FACTOR_NODE, seed=0
     )
@@ -186,5 +220,28 @@ def test_membership_roundtrip_matches_golden_factors() -> None:
     reconstructed = reconstruct_membership(view)
     expected = {f.factor_id: f.membership() for f in snap.factors}
     assert reconstructed == expected
-    # Golden structure is a simplified 2-factor membership used in Lean.
-    assert len(g) == 2
+
+
+def test_role_shuffle_preserves_membership_like_lean() -> None:
+    g = _golden()["role_shuffle"]
+    # Lean model: rotate roles, nodes fixed.
+    ports = list(g["ports"])
+    k = int(g["k"])
+    roles = [p["role"] for p in ports]
+    nodes = [p["node"] for p in ports]
+    kk = k % len(roles)
+    roles_after = roles[kk:] + roles[:kk]
+    assert roles_after == g["roles_after"]
+    assert nodes == g["membership_after"]
+    # Python harness shuffle_port_roles preserves membership multiset.
+    snap = project_program_factors(
+        program_id="sh",
+        components=(("a", "A"), ("b", "B"), ("c", "C")),
+        binder_edges=(("a", "b", "USE"), ("b", "c", "DEFINITION")),
+        legal_candidate_ids=("a", "b", "c"),
+        coverage="complete",
+    )
+    before = {f.factor_id: f.membership() for f in snap.factors}
+    shuffled = shuffle_port_roles(snap.factors, seed=1)
+    after = {f.factor_id: f.membership() for f in shuffled}
+    assert before == after

@@ -19,16 +19,21 @@ Non-vacuous Lean module:
 | filterLegal keys ⊆ legal | `filterLegal_subset` |
 | Decode-off applications = 0 | `decode_off_zero_apps_*` |
 | Factor-node membership round-trip | `reconstruct_encode_example` |
+| Role shuffle preserves membership | `role_shuffle_preserves_membership` (nodes fixed; roles rotate) |
 | Golden incidence degrees | `golden_degrees` |
+| Golden S column sums from B | `golden_S_column_masses_from_B` (formula on B, not a literal mass list) |
 | Soft-token collision | `soft_token_collision` |
 
 Campaign locks **`formal_obligations`** + `formal_preflight` artifact (see
-`semantic_factor_formal.py` and `resources/.../formal_preflights/`). Golden
-vectors: `golden_vectors.v1.json` (Python tests must match Lean `#guard`s).
+`semantic_factor_formal.py` and `resources/.../formal_preflights/`). Preflights
+are **fail-closed**: digests must match and `lean_ok` must be true; never
+re-stamped `proved` without `regenerate_sff_formal_preflights()` after a green
+`make proofs`. Golden vectors: `golden_vectors.v1.json`.
 
 **Honest limit:** restart *operator* column-stochasticity for arbitrary graphs
-remains NumPy property tests + golden B; Lean proves degrees/mass identity for
-the golden probe and the abstract contraction factor, not full continuum LA.
+remains NumPy property tests + golden B; Lean derives S column-sum numerators
+for the golden probe from the incidence formula and proves the abstract
+contraction factor, not full continuum LA for all graphs.
 
 ## Thesis
 
