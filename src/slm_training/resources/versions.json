@@ -2491,7 +2491,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2514,6 +2514,11 @@
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-30",
+          "note": "Bind continuous autotrain to sdlc two-phase delivery: incremental commits and stacked PRs between training runs (get latest/resolve conflicts); full bottom-up squash-merge closeout when training stops; paid remote compute remains opt-in"
+        },
         {
           "version": "v11",
           "date": "2026-07-30",

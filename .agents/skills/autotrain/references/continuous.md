@@ -23,9 +23,14 @@ persistence is the host goal and the append-only campaign event chains.
    (e.g. missing credentials the agent cannot obtain, theorem contradiction
    unrepaired after three formal attempts). Soft failures (ship gates fail on
    fixture n, null lever deltas, timeouts) **never** stop the loop.
-5. **Local-only by default.** No push, PR, merge to shared main, paid GPU,
-   remote job, or HF write unless the user already granted that authority in
-   this session.
+5. **Remote compute is opt-in.** No paid GPU, remote job, or HF write unless
+   the user already granted that authority in this session.
+6. **Code delivery is not local-only.** While the loop is active, follow
+   `sdlc` Phase A for every training iteration and every code fix that enables
+   one: incremental commits, stacked PR open/update **between** runs, get
+   latest, resolve conflicts. When the loop **stops**, run `sdlc` Phase B
+   bottom-up closeout. Binding reference:
+   [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md).
 
 ## Preferred hands-off driver
 
@@ -109,8 +114,23 @@ For each cycle, run the full body without pausing:
    `preference`, `quality`, `rl`, `test_data`, or `train_data`. Route through
    `improve-openui-harnesses`, repair, replay the identical arm. Never mix
    harness and model changes in one attribution arm.
-9. **Immediately** fetch/merge main again and start the next cycle with
-   incremented `cycle_index` and `predecessor_campaign_id`.
+9. **SDLC Phase A — iteration delivery (required when code/docs changed).**
+   While fixing for this cycle and before the next train:
+   - Incremental commits of green units (never leave harness WIP uncommitted).
+   - Stack layer for this iteration's tracked code + `docs/design/` results:
+     `gh stack add` / commit / `gh stack submit --open` (or push to the open
+     layer if the same concern continues).
+   - Never PR raw `outputs/` or weight blobs.
+   Full checklist:
+   [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md).
+10. **Immediately** get latest and start the next cycle with incremented
+    `cycle_index` and `predecessor_campaign_id`:
+
+    ```bash
+    git fetch origin main
+    gh stack sync    # when a stack is active; else: git merge --no-edit origin/main
+    # resolve conflicts on the owning layer; re-check policy/tests
+    ```
 
 Owner skills (invoke; do not reimplement):
 
@@ -124,6 +144,7 @@ Owner skills (invoke; do not reimplement):
 | Evaluation/readiness interpretation | `honest-ship-eval` |
 | Run evidence and closeout | `documenting-experiment-results` |
 | Prior-work/knowledge refresh when needed | `autoresearch` |
+| Iteration commits, stacked PRs, get-latest, stop closeout | `sdlc` (+ autotrain-iteration-delivery) |
 
 ### Continuous recipe defaults (fail closed)
 
@@ -151,6 +172,23 @@ harness changes promote only after frozen benchmarks pass. Judge/threshold
 changes need a separate preregistered meta-campaign with unchanged held-out
 controls. Never lower gates, train on frozen cases, or weaken decode invariants.
 
+## When training stops (SDLC Phase B — mandatory)
+
+Any of: user stop/pause, thrice-repeated hard block, session end of the loop.
+
+1. Stop starting new train/eval cycles.
+2. Inventory open autotrain stack layers (`gh stack view`).
+3. Run **full** `sdlc` closeout **bottom → top** — rubber-duck + adversarial
+   review, resolve comments, fix CI, squash-merge, `gh stack sync` — exactly
+   as documented in
+   [`../../sdlc/references/closeout-review.md`](../../sdlc/references/closeout-review.md)
+   and
+   [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md)
+   Phase B.
+4. Report merged PR URLs + SHAs + residual risks.
+
+Do **not** end with only a resume command or “branch is ready when you are.”
+
 ## Forbidden continuous-mode behaviors
 
 - Stopping after one cycle to “report status and wait”
@@ -158,4 +196,8 @@ controls. Never lower gates, train on frozen cases, or weaken decode invariants.
 - Treating ship-gate fails on fixture `n` as terminal
 - Leaving the loop because an experiment failed once
 - Skipping docs closeout to go faster
-- Remote/HF/paid actions without prior authority
+- Remote/HF/paid compute without prior authority
+- Days of uncommitted harness/docs fixes while cycles run
+- Skipping stacked PR open/update between runs that changed code/docs
+- Stacking or committing raw `outputs/` / checkpoint blobs
+- Training stopped without bottom-up `sdlc` closeout of the stack

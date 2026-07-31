@@ -24,7 +24,8 @@ symlinks back here.
 | `openui-autoresearch` | Evidence-grounded research, hypothesis matrices, feedback, execution, and RL readiness |
 | `improve-openui-harnesses` | Harness-family owners, invariants, outputs, improvement checks, and anti-sprawl rules |
 | `improve-lean-optimums` | Diagnose certified metric-band misses and improve the correct harness, model, Lean calculation, or assumption |
-| `autotrain` | Continuous local model+harness improvement by default; explicit phases/`--once` are finite |
+| `autotrain` | Continuous model+harness improvement by default; explicit phases/`--once` are finite; iteration delivery via `sdlc` (commits + stacked PRs between runs; closeout when stopped) |
+| `sdlc` | Multi-step delivery: subagents, official `gh stack`, Scalar/sparse worktrees, bottom-up rubber-duck closeout; autotrain iteration delivery reference |
 | `autoresearch` | Knowledge-driven research loop: read/update repo + personal brains (OpenWiki / OKF / Obsidian), prior-work discovery, autotrain hypothesis loop, and Linear issue/milestone/project emission; per-stage `references/*.md` load on demand |
 | `playwright-cli` | Browser / playground automation |
 | `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |
