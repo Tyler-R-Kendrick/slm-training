@@ -25,7 +25,7 @@ from tests.casefiles import (  # noqa: E402
 )
 
 REVIEW_SCHEMA = "case_resource_review/v1"
-GATE_POLICY = REPO_ROOT / "src/slm_training/resources/evals/openui_ship_gates_v5.json"
+GATE_POLICY = REPO_ROOT / "src/slm_training/resources/evals/openui_ship_gates_v6.json"
 EVAL_RESOURCE_ROOT = REPO_ROOT / "src/slm_training/resources/evals"
 
 

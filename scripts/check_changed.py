@@ -248,7 +248,10 @@ def select_tests(paths: list[str]) -> list[str]:
             if (ROOT / test_path).is_file():
                 targets.add(test_path.as_posix())
             continue
-        if path == f"{EVAL_RESOURCE_PREFIX}openui_ship_gates_v5.json":
+        if path in {
+            f"{EVAL_RESOURCE_PREFIX}openui_ship_gates_v5.json",
+            f"{EVAL_RESOURCE_PREFIX}openui_ship_gates_v6.json",
+        }:
             targets.update(
                 {
                     "tests/test_harness_core/test_gate_engine_golden.py",
