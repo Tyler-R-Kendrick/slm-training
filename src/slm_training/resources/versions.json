@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-31",
+          "note": "Champion-queue closeout: fingerprint excludes steps jitter for dedup; bound confirm/promote attempts (max 2) so stuck heads cannot block the queue forever"
+        },
         {
           "version": "v22",
           "date": "2026-07-31",

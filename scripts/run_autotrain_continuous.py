@@ -131,6 +131,11 @@ _QUALITY_ENQUEUE_PREFIXES = (
     "quality_held:",
     "quality_metric_win:",
 )
+# Dedup identity ignores cycle-local steps jitter (continuous does steps+(cycle%3)).
+_FINGERPRINT_EXCLUDE_KEYS = frozenset({"steps"})
+# Soft bound: confirm/promote attempts before the queue head is rejected.
+_MAX_CONFIRM_ATTEMPTS = 2
+_MAX_PROMOTE_ATTEMPTS = 2
 # Screening thrash bank — rotate recommended arm each cycle (Change B).
 # Each entry: (slug, hypothesis fragment, knob extras relative to control).
 # Special key "_steps_factor" multiplies base steps (depth confound).
@@ -192,7 +197,13 @@ def _lever_knobs(knobs: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def _knobs_fingerprint(levers: dict[str, Any]) -> str:
-    payload = json.dumps(levers, sort_keys=True, separators=(",", ":"), default=str)
+    """Identity hash for champion dedup (excludes steps cycle jitter)."""
+    stable = {
+        k: v
+        for k, v in (levers or {}).items()
+        if k not in _FINGERPRINT_EXCLUDE_KEYS
+    }
+    payload = json.dumps(stable, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
@@ -378,6 +389,8 @@ def _enqueue_champion(
         "source_reasons": list(delivery.get("reasons") or []),
         "confirm_campaign_id": None,
         "confirm_cycle_index": None,
+        "confirm_attempts": 0,
+        "promote_attempts": 0,
         "resolved_at": None,
         "resolve_reasons": None,
     }
@@ -389,6 +402,27 @@ def _enqueue_champion(
         flush=True,
     )
     return entry
+
+
+def _bump_champion_attempt(
+    *,
+    root: Path,
+    loop_id: str,
+    entry_id: str,
+    field: str,
+) -> int:
+    """Increment confirm_attempts / promote_attempts; return new value."""
+    path = _champion_queue_path(root, loop_id)
+    entries = _load_champion_queue(path)
+    value = 0
+    for row in entries:
+        if row.get("entry_id") != entry_id:
+            continue
+        value = int(row.get(field) or 0) + 1
+        row[field] = value
+        break
+    _write_champion_queue(path, entries)
+    return value
 
 
 def _update_champion_status(
@@ -414,7 +448,13 @@ def _update_champion_status(
             row["confirm_campaign_id"] = confirm_campaign_id
         if confirm_cycle_index is not None:
             row["confirm_cycle_index"] = confirm_cycle_index
-        if status in {"confirmed", "rejected", "skipped_duplicate"}:
+        if status in {
+            "confirmed",
+            "rejected",
+            "skipped_duplicate",
+            "promoted",
+            "promotion_failed",
+        }:
             row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             row["resolve_reasons"] = list(resolve_reasons or [])
         updated = row
@@ -1773,35 +1813,87 @@ def run_cycle(
         effective_primary = primary_metric
     campaign_id = f"continuous-loop-{time.strftime('%Y%m%d')}-c{cycle}"
     if open_champion is not None:
-        _update_champion_status(
+        attempts = _bump_champion_attempt(
             root=root,
             loop_id=loop_id,
             entry_id=str(open_champion["entry_id"]),
-            status="confirming",
-            confirm_campaign_id=campaign_id,
-            confirm_cycle_index=cycle,
+            field="confirm_attempts",
         )
-        print(
-            f"CHAMPION_CONFIRM_START entry_id={open_champion.get('entry_id')} "
-            f"fingerprint={open_champion.get('knobs_fingerprint')} "
-            f"campaign={campaign_id}",
-            flush=True,
-        )
+        if attempts > _MAX_CONFIRM_ATTEMPTS:
+            _update_champion_status(
+                root=root,
+                loop_id=loop_id,
+                entry_id=str(open_champion["entry_id"]),
+                status="rejected",
+                confirm_campaign_id=campaign_id,
+                confirm_cycle_index=cycle,
+                resolve_reasons=[
+                    f"confirm_attempts_exceeded:{attempts}>{_MAX_CONFIRM_ATTEMPTS}"
+                ],
+            )
+            print(
+                f"CHAMPION_CONFIRM_DROP entry_id={open_champion.get('entry_id')} "
+                f"attempts={attempts} max={_MAX_CONFIRM_ATTEMPTS}",
+                flush=True,
+            )
+            open_champion = None
+            cycle_intent = role
+        else:
+            _update_champion_status(
+                root=root,
+                loop_id=loop_id,
+                entry_id=str(open_champion["entry_id"]),
+                status="confirming",
+                confirm_campaign_id=campaign_id,
+                confirm_cycle_index=cycle,
+            )
+            print(
+                f"CHAMPION_CONFIRM_START entry_id={open_champion.get('entry_id')} "
+                f"fingerprint={open_champion.get('knobs_fingerprint')} "
+                f"attempt={attempts}/{_MAX_CONFIRM_ATTEMPTS} campaign={campaign_id}",
+                flush=True,
+            )
     elif promoting_champion is not None:
-        _update_champion_status(
+        attempts = _bump_champion_attempt(
             root=root,
             loop_id=loop_id,
             entry_id=str(promoting_champion["entry_id"]),
-            status="promoting",
-            confirm_campaign_id=campaign_id,
-            confirm_cycle_index=cycle,
+            field="promote_attempts",
         )
-        print(
-            f"CHAMPION_PROMOTE_START entry_id={promoting_champion.get('entry_id')} "
-            f"fingerprint={promoting_champion.get('knobs_fingerprint')} "
-            f"campaign={campaign_id}",
-            flush=True,
-        )
+        if attempts > _MAX_PROMOTE_ATTEMPTS:
+            _update_champion_status(
+                root=root,
+                loop_id=loop_id,
+                entry_id=str(promoting_champion["entry_id"]),
+                status="promotion_failed",
+                confirm_campaign_id=campaign_id,
+                confirm_cycle_index=cycle,
+                resolve_reasons=[
+                    f"promote_attempts_exceeded:{attempts}>{_MAX_PROMOTE_ATTEMPTS}"
+                ],
+            )
+            print(
+                f"CHAMPION_PROMOTE_DROP entry_id={promoting_champion.get('entry_id')} "
+                f"attempts={attempts} max={_MAX_PROMOTE_ATTEMPTS}",
+                flush=True,
+            )
+            promoting_champion = None
+            cycle_intent = role
+        else:
+            _update_champion_status(
+                root=root,
+                loop_id=loop_id,
+                entry_id=str(promoting_champion["entry_id"]),
+                status="promoting",
+                confirm_campaign_id=campaign_id,
+                confirm_cycle_index=cycle,
+            )
+            print(
+                f"CHAMPION_PROMOTE_START entry_id={promoting_champion.get('entry_id')} "
+                f"fingerprint={promoting_champion.get('knobs_fingerprint')} "
+                f"attempt={attempts}/{_MAX_PROMOTE_ATTEMPTS} campaign={campaign_id}",
+                flush=True,
+            )
     py = sys.executable
     ar = [py, "-m", "scripts.autoresearch", "--root", str(root)]
     if cycle_intent == "confirm":
