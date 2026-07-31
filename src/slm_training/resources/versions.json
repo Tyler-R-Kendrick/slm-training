@@ -2551,7 +2551,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2574,9 +2574,15 @@
         "tests/test_autoresearch/test_hillclimb.py",
         "tests/test_autoresearch/test_harness.py",
         "tests/test_scripts/test_slm_cli.py",
+        "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-31",
+          "note": "Phase A positive classification is quality-aware: reject pure latency blips with empty meaning; accept quality/efficiency wins under a bounded latency tradeoff so latency-primary does not fail better mpr arms"
+        },
         {
           "version": "v17",
           "date": "2026-07-31",

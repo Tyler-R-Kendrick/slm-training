@@ -89,7 +89,8 @@ After each cycle the driver runs **SDLC Phase A classification** and writes:
 
 **Stacked PRs only when `stack_layer=true` (positive).** The driver does not
 open PRs itself; the agent must `gh stack` positive layers. Non-positive
-cycles stay local (no new stack layer).
+cycles stay local (no new stack layer). Positive is **not** “cand latency
+lower”; it is a quality-aware win (see classification above).
 
 ## Start or resume (automatic)
 
@@ -157,10 +158,12 @@ For each cycle, run the full body without pausing:
 9. **SDLC Phase A — iteration delivery.**
    While fixing for this cycle and before the next train:
    - Incremental commits of green units (never leave harness WIP uncommitted).
-   - Classify **positive** vs not (primary-metric win vs control/predecessor,
-     ship-quality win, or proven executable unblock — see
-     autotrain-iteration-delivery). Fixture `insufficient_n` / null deltas
-     alone are **not** positive.
+   - Classify **positive** vs not with **quality-aware tradeoffs** (see
+     `scripts/run_autotrain_continuous._classify_metric_tradeoff`): a pure
+     latency blip with empty meaning is **not** positive; latency wins require
+     held parse/mpr and mpr ≥ ~1/3; quality/efficiency wins may spend a
+     bounded latency budget. Fixture `insufficient_n` / null deltas alone are
+     **not** positive.
    - **If positive:** stack layer for that iteration's tracked code +
      `docs/design/` results (`gh stack add` / `gh stack submit --open`, or
      push to the open positive layer if the same concern continues).
