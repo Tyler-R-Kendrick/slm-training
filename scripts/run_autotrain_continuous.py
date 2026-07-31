@@ -103,7 +103,16 @@ _WIN_REASON_PREFIXES = (
 # thrashing the fixed lever bank again. Ledger is loop-local (not git).
 _CHAMPION_QUEUE_SCHEMA = "autotrain_champion_queue/v1"
 _CHAMPION_STATUSES = frozenset(
-    {"queued", "confirming", "confirmed", "rejected", "skipped_duplicate"}
+    {
+        "queued",
+        "confirming",
+        "confirmed",
+        "rejected",
+        "skipped_duplicate",
+        "promoting",
+        "promoted",
+        "promotion_failed",
+    }
 )
 # Recipe levers that define "same knobs" for confirmatory retest. Measurement
 # knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
@@ -121,6 +130,36 @@ _LEVER_KNOB_KEYS = (
 _QUALITY_ENQUEUE_PREFIXES = (
     "quality_held:",
     "quality_metric_win:",
+)
+# Screening thrash bank — rotate recommended arm each cycle (Change B).
+# Each entry: (slug, hypothesis fragment, knob extras relative to control).
+# Special key "_steps_factor" multiplies base steps (depth confound).
+_SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
+    (
+        "bounds",
+        "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+        {"grammar_completion_bounds": True},
+    ),
+    (
+        "canvas",
+        "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+        {"compact_active_canvas": True},
+    ),
+    (
+        "both",
+        "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
+        {"grammar_completion_bounds": True, "compact_active_canvas": True},
+    ),
+    (
+        "steps",
+        "Doubling steps without levers only raises cost and does not improve unit decode latency.",
+        {"_steps_factor": 2},
+    ),
+    (
+        "batch1",
+        "Halving batch_size changes smoke latency vs matched control without lowering parse_rate.",
+        {"batch_size": 1},
+    ),
 )
 
 
@@ -189,6 +228,64 @@ def _queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
         if row.get("status") in {"queued", "confirming"}:
             return row
     return None
+
+
+def _queue_head_confirmed(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """First confirmed champion awaiting promotion (Change C)."""
+    for row in entries:
+        if row.get("status") == "confirmed":
+            return row
+    return None
+
+
+def _skip_arm_slugs(entries: list[dict[str, Any]]) -> set[str]:
+    """Arm slugs recently rejected/confirmed — deprioritize in thrash rotation."""
+    skip: set[str] = set()
+    for row in entries:
+        status = row.get("status")
+        if status not in {
+            "rejected",
+            "confirmed",
+            "promoting",
+            "promoted",
+            "promotion_failed",
+            "queued",
+            "confirming",
+        }:
+            continue
+        knobs = row.get("knobs") or {}
+        if knobs.get("grammar_completion_bounds") and knobs.get("compact_active_canvas"):
+            skip.add("both")
+        elif knobs.get("grammar_completion_bounds"):
+            skip.add("bounds")
+        elif knobs.get("compact_active_canvas"):
+            skip.add("canvas")
+        if knobs.get("batch_size") == 1:
+            skip.add("batch1")
+    return skip
+
+
+def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
+    """Rotate thrash recommendation; prefer arms not recently rejected/queued."""
+    bank = _SCREENING_ARM_BANK
+    n = len(bank)
+    start = (max(1, int(cycle)) - 1) % n
+    ordered = [bank[(start + i) % n][0] for i in range(n)]
+    skip = skip or set()
+    for slug in ordered:
+        if slug not in skip:
+            return slug
+    # All skipped — still rotate so thrash is not frozen on bounds forever.
+    return ordered[0]
+
+
+def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
+    """Materialize arm knob extras (handles _steps_factor)."""
+    out = {k: v for k, v in extras.items() if not str(k).startswith("_")}
+    factor = extras.get("_steps_factor")
+    if factor is not None:
+        out["steps"] = max(int(base_steps * float(factor)), base_steps + 10)
+    return out
 
 
 def _quality_held_reasons(reasons: list[str] | None) -> bool:
@@ -354,6 +451,49 @@ def _resolve_confirm_result(
         confirm_cycle_index=cycle_index,
         resolve_reasons=reasons,
     )
+
+
+def _resolve_promotion_result(
+    *,
+    root: Path,
+    loop_id: str,
+    entry: dict[str, Any],
+    delivery: dict[str, Any],
+    campaign_id: str,
+    cycle_index: int,
+) -> dict[str, Any] | None:
+    """Mark promotion of a confirmed champion as promoted or promotion_failed."""
+    reasons = list(delivery.get("reasons") or [])
+    # Promotion needs a real positive with quality or primary held-out signal —
+    # never pure latency greening under screening suites.
+    ok = bool(delivery.get("positive")) and (
+        _quality_held_reasons(reasons)
+        or any(
+            r.startswith("primary_metric_win:") or r.startswith("quality_metric_win:")
+            for r in reasons
+        )
+    )
+    status = "promoted" if ok else "promotion_failed"
+    updated = _update_champion_status(
+        root=root,
+        loop_id=loop_id,
+        entry_id=str(entry["entry_id"]),
+        status=status,
+        confirm_campaign_id=campaign_id,
+        confirm_cycle_index=cycle_index,
+        resolve_reasons=reasons,
+    )
+    # Stash promotion campaign id on the row for ledger readers.
+    if updated is not None:
+        path = _champion_queue_path(root, loop_id)
+        entries = _load_champion_queue(path)
+        for row in entries:
+            if row.get("entry_id") == entry.get("entry_id"):
+                row["promotion_campaign_id"] = campaign_id
+                row["promotion_cycle_index"] = cycle_index
+                break
+        _write_champion_queue(path, entries)
+    return updated
 
 
 def _classify_metric_tradeoff(
@@ -684,7 +824,16 @@ def _phase_a_delivery(
                 control_run = eid
             elif any(
                 token in eid
-                for token in ("-bounds", "-canvas", "-both", "-confirm", "-steps", "-combined")
+                for token in (
+                    "-bounds",
+                    "-canvas",
+                    "-both",
+                    "-confirm",
+                    "-promote",
+                    "-steps",
+                    "-batch1",
+                    "-combined",
+                )
             ):
                 if candidate_run is None:
                     candidate_run = eid
@@ -697,8 +846,10 @@ def _phase_a_delivery(
             if rid.endswith("-control") or rid.endswith("_control"):
                 control_run = control_run or rid
             elif "control" not in rid:
-                # Prefer confirm arm when present (champion queue retest).
-                if rid.endswith("-confirm") or "-confirm" in rid:
+                # Prefer promote/confirm arms when present (champion queue).
+                if "-promote" in rid:
+                    candidate_run = rid
+                elif "-confirm" in rid:
                     candidate_run = rid
                 elif candidate_run is None:
                     candidate_run = rid
@@ -827,6 +978,9 @@ def _matrix(
     role: str = "screening",
     policy: Any | None = None,
     confirm_levers: dict[str, Any] | None = None,
+    promote_levers: dict[str, Any] | None = None,
+    recommended_slug: str | None = None,
+    skip_slugs: set[str] | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -926,9 +1080,158 @@ def _matrix(
         }
 
     prefix = campaign_id.replace("continuous-loop-", "c")
+    # Promotion path (Change C): confirmed champion knobs under promotion suites.
+    if promote_levers:
+        promo_extra = {
+            k: v
+            for k, v in promote_levers.items()
+            if k
+            in {
+                "grammar_completion_bounds",
+                "compact_active_canvas",
+                "steps",
+                "batch_size",
+                "train_version",
+                "context_backend",
+                "sync_checkpoints",
+                "local_files_only",
+                "output_tokenizer",
+            }
+        }
+        promo_steps = int(promo_extra.pop("steps", steps) or steps)
+        control_knobs = knobs(steps=promo_steps)
+        cand_knobs = knobs(steps=promo_steps, **promo_extra)
+        candidates = [
+            {
+                "experiment": exp(
+                    f"{prefix}-control",
+                    "Matched control for promotion of a confirmed champion under held-out suites.",
+                    control_knobs,
+                    "Size-matched baseline for promotion cycle.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(0, "promote matched control"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-promote",
+                    "Promotion retest of confirmed champion levers under promotion primary/suites.",
+                    cand_knobs,
+                    "Champion queue promotion arm — multi-seed / held-out when policy requires.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(1, "promote confirmed knobs"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-bounds",
+                    "Monitor-only bounds pad deferred while confirmed champion is promoted.",
+                    knobs(grammar_completion_bounds=True, steps=promo_steps + 2000),
+                    "Schema pad — not executed while promote is recommended.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(2, "promote pad bounds"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-canvas",
+                    "Monitor-only canvas pad deferred while confirmed champion is promoted.",
+                    knobs(compact_active_canvas=True, steps=promo_steps + 2001),
+                    "Schema pad — not executed while promote is recommended.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(3, "promote pad canvas"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-both",
+                    "Monitor-only combined pad deferred while confirmed champion is promoted.",
+                    knobs(
+                        grammar_completion_bounds=True,
+                        compact_active_canvas=True,
+                        steps=promo_steps + 2002,
+                    ),
+                    "Schema pad — not executed while promote is recommended.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(4, "promote pad both"),
+            },
+        ]
+        rec = f"{prefix}-promote"
+        priorities = [
+            {
+                "rank": 1,
+                "area": "model",
+                "hypothesis": (
+                    "Confirmed champion levers hold under promotion primary and multi-seed."
+                ),
+                "evidence_ids": [research, prior],
+                "confidence": 0.8,
+                "expected_information_gain": "Promotion claim evidence from sticky knobs.",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": rec,
+            },
+            {
+                "rank": 2,
+                "area": "evaluation",
+                "hypothesis": "Matched control remains the size-matched baseline on promote.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.7,
+                "expected_information_gain": "Prevents false promotion from recipe drift.",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": f"{prefix}-control",
+            },
+            {
+                "rank": 3,
+                "area": "infrastructure",
+                "hypothesis": "Only confirmed queue heads enter promotion matrices.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.85,
+                "expected_information_gain": "Stops index-based empty promotion thrash.",
+                "authority": "observed_result",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+            {
+                "rank": 4,
+                "area": "model",
+                "hypothesis": "Pad arms stay monitor-only during promote.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.5,
+                "expected_information_gain": "Schema completeness without thrash spend.",
+                "authority": "speculative",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+            {
+                "rank": 5,
+                "area": "model_build",
+                "hypothesis": "After promote resolves, resume screening thrash with rotation.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.55,
+                "expected_information_gain": "Queue advances only after promote resolve.",
+                "authority": "speculative",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+        ]
+        payload = {
+            "matrix_id": f"{campaign_id}-m1-promote",
+            "campaign_id": campaign_id,
+            "evidence_snapshot_id": evidence_snapshot_id,
+            "hypotheses": candidates,
+            "recommended_experiment_id": rec,
+            "selection_rationale": (
+                "Champion-queue promotion matrix: confirmed levers under "
+                "promotion role suites/seeds; thrash deferred."
+            ),
+            "next_run_priorities": priorities,
+        }
     # Confirmatory path: same levers as a quality-held champion, new seed — not
     # another thrash of the fixed lever bank.
-    if confirm_levers:
+    elif confirm_levers:
         confirm_extra = {
             k: v
             for k, v in confirm_levers.items()
@@ -1088,6 +1391,13 @@ def _matrix(
             "next_run_priorities": priorities,
         }
     else:
+        # Change B: rotate recommended thrash arm; full bank always present.
+        rec_slug = recommended_slug or _select_recommended_slug(
+            cycle, skip=skip_slugs
+        )
+        bank_by_slug = {slug: (hyp, extras) for slug, hyp, extras in _SCREENING_ARM_BANK}
+        if rec_slug not in bank_by_slug:
+            rec_slug = _SCREENING_ARM_BANK[0][0]
         candidates = [
             {
                 "experiment": exp(
@@ -1098,118 +1408,91 @@ def _matrix(
                 ),
                 "evidence_uses": uses(),
                 "novelty": novelty(0, "matched control with published eval"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-bounds",
-                    "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-                    knobs(grammar_completion_bounds=True),
-                    "I1/I4 bounds lever on continuous default recipe.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(1, "grammar_completion_bounds"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-canvas",
-                    "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-                    knobs(compact_active_canvas=True),
-                    "Independent canvas compaction lever.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(2, "compact_active_canvas"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-both",
-                    "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
-                    knobs(grammar_completion_bounds=True, compact_active_canvas=True),
-                    "Interaction arm for continuous steering.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(3, "combined bounds and canvas"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-steps",
-                    "Doubling steps without levers only raises cost and does not improve unit decode latency.",
-                    knobs(steps=max(steps * 2, steps + 10)),
-                    "Depth confounds check.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(4, "depth-only confounds"),
-            },
+            }
         ]
-        rec = f"{prefix}-bounds"
+        for i, (slug, hyp, extras) in enumerate(_SCREENING_ARM_BANK, start=1):
+            arm_extra = _apply_arm_extras(steps, extras)
+            candidates.append(
+                {
+                    "experiment": exp(
+                        f"{prefix}-{slug}",
+                        hyp,
+                        knobs(**arm_extra),
+                        f"Continuous thrash arm '{slug}' (rotated recommendation).",
+                    ),
+                    "evidence_uses": uses(),
+                    "novelty": novelty(i, f"thrash arm {slug}"),
+                }
+            )
+        rec = f"{prefix}-{rec_slug}"
         priorities = [
             {
-                "rank": i + 1,
-                "area": area,
-                "hypothesis": hyp,
+                "rank": 1,
+                "area": "model",
+                "hypothesis": f"Test thrash arm '{rec_slug}' first under the published eval suite.",
                 "evidence_ids": [research, prior],
-                "confidence": conf,
-                "expected_information_gain": gain,
-                "authority": auth,
-                "disposition": disp,
-                "proposed_experiment_id": eid,
-            }
-            for i, (area, hyp, conf, gain, auth, disp, eid) in enumerate(
-                [
-                    (
-                        "model",
-                        "Test grammar_completion_bounds first under the published eval suite.",
-                        0.6,
-                        "Attributes decode latency vs matched control.",
-                        "speculative",
-                        "experiment_next",
-                        rec,
-                    ),
-                    (
-                        "evaluation",
-                        "Keep the matched control as the size-matched baseline every cycle.",
-                        0.7,
-                        "Prevents false positives from recipe drift.",
-                        "observed_result",
-                        "experiment_next",
-                        f"{prefix}-control",
-                    ),
-                    (
-                        "model",
-                        "Test compact_active_canvas as the next independent lever.",
-                        0.55,
-                        "Isolates canvas from bounds.",
-                        "speculative",
-                        "experiment_next",
-                        f"{prefix}-canvas",
-                    ),
-                    (
-                        "infrastructure",
-                        "Soft ship-gate fails on fixture n never stop the continuous loop.",
-                        0.8,
-                        "Preserves hands-off continuous operation.",
-                        "observed_result",
-                        "monitor",
-                        None,
-                    ),
-                    (
-                        "model_build",
-                        "Only after single levers, combine bounds and canvas.",
-                        0.45,
-                        "Detects interaction effects.",
-                        "speculative",
-                        "monitor",
-                        None,
-                    ),
-                ]
-            )
+                "confidence": 0.6,
+                "expected_information_gain": "Attributes decode metrics vs matched control.",
+                "authority": "speculative",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": rec,
+            },
+            {
+                "rank": 2,
+                "area": "evaluation",
+                "hypothesis": "Keep the matched control as the size-matched baseline every cycle.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.7,
+                "expected_information_gain": "Prevents false positives from recipe drift.",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": f"{prefix}-control",
+            },
+            {
+                "rank": 3,
+                "area": "model",
+                "hypothesis": "Rotate thrash recommendation across the lever bank (not bounds-only).",
+                "evidence_ids": [research, prior],
+                "confidence": 0.65,
+                "expected_information_gain": "Avoids single-lever thrash collapse.",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": rec,
+            },
+            {
+                "rank": 4,
+                "area": "infrastructure",
+                "hypothesis": "Soft ship-gate fails on fixture n never stop the continuous loop.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.8,
+                "expected_information_gain": "Preserves hands-off continuous operation.",
+                "authority": "observed_result",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+            {
+                "rank": 5,
+                "area": "model_build",
+                "hypothesis": "Confirmed champions promote under cadence; thrash only screens.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.55,
+                "expected_information_gain": "Separates screening diversity from promotion.",
+                "authority": "speculative",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
         ]
+        # Ensure ≥5 priorities with contiguous ranks (already 5).
         payload = {
             "matrix_id": f"{campaign_id}-m1",
             "campaign_id": campaign_id,
             "evidence_snapshot_id": evidence_snapshot_id,
             "hypotheses": candidates,
             "recommended_experiment_id": rec,
-            "selection_rationale": "Size-matched fixture continuous recipe with published eval defaults.",
+            "selection_rationale": (
+                f"Size-matched continuous thrash with rotated recommendation "
+                f"'{rec_slug}' (cycle {cycle})."
+            ),
             "next_run_priorities": priorities,
         }
     if feedback:
@@ -1442,10 +1725,35 @@ def run_cycle(
     idx, pred = _latest_cycle(root, loop_id)
     cycle = idx + 1
     role = cycle_role_for_index(policy, cycle)
-    # Champion queue overrides matrix shape (confirm same knobs) but keeps
-    # cadence claim role for measurement suites / claim_class legality.
-    open_champion = _queue_head_open(_load_champion_queue(_champion_queue_path(root, loop_id)))
-    cycle_intent = "confirm" if open_champion is not None else role
+    # Champion queue: confirm open heads; promote confirmed heads on promotion
+    # cadence; otherwise thrash with rotated levers (Change B/C). Cadence role
+    # stays screening|promotion for suites/claim_class legality.
+    queue_path = _champion_queue_path(root, loop_id)
+    queue_entries = _load_champion_queue(queue_path)
+    # Recover mid-cycle crash: promoting → confirmed so next promotion slot retries.
+    recovered = False
+    for row in queue_entries:
+        if row.get("status") == "promoting":
+            row["status"] = "confirmed"
+            recovered = True
+    if recovered:
+        _write_champion_queue(queue_path, queue_entries)
+    open_champion = _queue_head_open(queue_entries)
+    confirmed_champion: dict[str, Any] | None = None
+    promoting_champion: dict[str, Any] | None = None
+    if open_champion is not None:
+        cycle_intent = "confirm"
+    elif role == "promotion":
+        confirmed_champion = _queue_head_confirmed(queue_entries)
+        if confirmed_champion is not None:
+            cycle_intent = "promote"
+            promoting_champion = confirmed_champion
+        else:
+            # No confirmed champion — still run promotion measurement suite but
+            # thrash with rotation (policy: prefer prior screening win).
+            cycle_intent = "promotion"
+    else:
+        cycle_intent = "screening"
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
         if role == "promotion"
@@ -1479,16 +1787,38 @@ def run_cycle(
             f"campaign={campaign_id}",
             flush=True,
         )
+    elif promoting_champion is not None:
+        _update_champion_status(
+            root=root,
+            loop_id=loop_id,
+            entry_id=str(promoting_champion["entry_id"]),
+            status="promoting",
+            confirm_campaign_id=campaign_id,
+            confirm_cycle_index=cycle,
+        )
+        print(
+            f"CHAMPION_PROMOTE_START entry_id={promoting_champion.get('entry_id')} "
+            f"fingerprint={promoting_champion.get('knobs_fingerprint')} "
+            f"campaign={campaign_id}",
+            flush=True,
+        )
     py = sys.executable
     ar = [py, "-m", "scripts.autoresearch", "--root", str(root)]
-    notes = (
-        "Hands-off continuous driver cycle; local-only fixture scale."
-        if cycle_intent != "confirm"
-        else (
+    if cycle_intent == "confirm":
+        notes = (
             "Champion-queue confirmatory cycle: same levers as quality-held win, "
             "new seed; local-only fixture scale."
         )
-    )
+    elif cycle_intent == "promote":
+        notes = (
+            "Champion-queue promotion cycle: confirmed levers under promotion "
+            "primary/suites/seeds; local-only fixture scale."
+        )
+    else:
+        notes = (
+            "Hands-off continuous driver cycle; rotated thrash recommendation; "
+            "local-only fixture scale."
+        )
     init = [
         *ar,
         "init",
@@ -1594,6 +1924,7 @@ def run_cycle(
                 if item.get("matrix_id") == previous_matrix_id
             ]
     confirm_levers = None
+    promote_levers = None
     if open_champion is not None:
         confirm_levers = _lever_knobs(open_champion.get("knobs") or {})
         if not confirm_levers:
@@ -1610,6 +1941,23 @@ def run_cycle(
             open_champion = None
             cycle_intent = role
             confirm_levers = None
+    elif promoting_champion is not None:
+        promote_levers = _lever_knobs(promoting_champion.get("knobs") or {})
+        if not promote_levers:
+            _update_champion_status(
+                root=root,
+                loop_id=loop_id,
+                entry_id=str(promoting_champion["entry_id"]),
+                status="promotion_failed",
+                confirm_campaign_id=campaign_id,
+                confirm_cycle_index=cycle,
+                resolve_reasons=["promote_missing_knobs"],
+            )
+            promoting_champion = None
+            cycle_intent = role
+            promote_levers = None
+    skip_slugs = _skip_arm_slugs(queue_entries)
+    rec_slug = _select_recommended_slug(cycle, skip=skip_slugs)
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
@@ -1624,7 +1972,15 @@ def run_cycle(
         role=role,
         policy=policy,
         confirm_levers=confirm_levers,
+        promote_levers=promote_levers,
+        recommended_slug=rec_slug if promote_levers is None and confirm_levers is None else None,
+        skip_slugs=skip_slugs,
     )
+    if promote_levers is None and confirm_levers is None:
+        print(
+            f"THRASH_ROTATE cycle={cycle} recommended={rec_slug} skip={sorted(skip_slugs)}",
+            flush=True,
+        )
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
     matrix_path.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
@@ -1710,13 +2066,24 @@ def run_cycle(
             campaign_id=campaign_id,
             cycle_index=cycle,
         )
-    else:
-        _enqueue_champion(
+    elif promoting_champion is not None:
+        _resolve_promotion_result(
             root=root,
             loop_id=loop_id,
+            entry=promoting_champion,
             delivery=delivery,
-            camp_dir=camp_dir,
+            campaign_id=campaign_id,
+            cycle_index=cycle,
         )
+    else:
+        # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
+        if cycle_intent in {"screening", "promotion"}:
+            _enqueue_champion(
+                root=root,
+                loop_id=loop_id,
+                delivery=delivery,
+                camp_dir=camp_dir,
+            )
     print(
         f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
         f"positive={delivery['positive']}",
