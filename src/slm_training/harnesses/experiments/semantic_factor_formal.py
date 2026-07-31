@@ -1,8 +1,9 @@
 """SFF formal obligations bound to LeverProofLean.AdvisoryResidual cores.
 
 Campaign locks non-empty ``formal_obligations`` with content digests of Lean
-sources + golden vectors. **Never** rewrites a committed preflight as
-``status: proved`` without a successful Lean proof run.
+sources + golden vectors. Committed preflights must validate as
+``FormalPreflightV1``. Regeneration requires a successful Lean proof run and
+never stamps ``status: proved`` without ``lean_ok``.
 """
 
 from __future__ import annotations
@@ -10,10 +11,11 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import time
 from pathlib import Path
 from typing import Any, Mapping
 
-from slm_training.autoresearch.schemas import FormalObligationV1
+from slm_training.autoresearch.schemas import FormalObligationV1, FormalPreflightV1
 from slm_training.lineage.records import canonical_json
 
 __all__ = [
@@ -22,6 +24,7 @@ __all__ = [
     "load_sff_formal_obligations",
     "regenerate_sff_formal_preflights",
     "verify_sff_formal_sources",
+    "validate_committed_preflights",
     "SFFFormalError",
 ]
 
@@ -108,6 +111,10 @@ def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def _source_digests(paths: tuple[str, ...]) -> dict[str, str]:
     out: dict[str, str] = {}
     for rel in paths:
@@ -134,43 +141,69 @@ def _preflight_path(template_id: str) -> Path:
     return SFF_FORMAL_DIR / f"{template_id.replace('.', '_')}.json"
 
 
-def _preflight_payload(
+def _lean_version() -> str:
+    proc = subprocess.run(
+        ["lake", "env", "lean", "--version"],
+        cwd=_LEAN_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    text = (proc.stdout or proc.stderr or "").strip()
+    return text or "unknown"
+
+
+def _proof_sha256(template: Mapping[str, Any], digests: Mapping[str, str]) -> str:
+    payload = {
+        "theorem": template["theorem"],
+        "template_id": template["template_id"],
+        "source_digests": dict(digests),
+        "lean_project": "src/leverproof_lean",
+    }
+    return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def _build_preflight_model(
     template: Mapping[str, Any],
     *,
     lean_ok: bool,
-    lean_log_tail: str = "",
-) -> dict[str, Any]:
+    lean_version: str,
+    build_output: str,
+    duration_seconds: float,
+) -> FormalPreflightV1:
     digests = _source_digests(tuple(template["source_paths"]))
     oid = _obligation_id(
         str(template["template_id"]),
         str(template["claim"]),
         str(template["policy"]),
     )
-    body: dict[str, Any] = {
-        "schema_version": "FormalPreflightV1",
-        "campaign_id": "SFF-anti-e237-v1",
-        "experiment_id": "semantic_factor_frontier_measured",
-        "obligation_id": oid,
-        "template_id": template["template_id"],
-        "template_version": "v1",
-        "claim": template["claim"],
-        "policy": template["policy"],
-        # Only "proved" when Lean checker succeeded in this regeneration.
-        "status": "proved" if lean_ok else "unknown",
-        "evidence_scope": "universal",
-        "theorem": template["theorem"],
-        "proof_target": "LeverProofLean.AdvisoryResidual",
-        "source_digests": digests,
-        "lean_project": "src/leverproof_lean",
-        "checker": "make -C src/leverproof_lean proofs",
-        "lean_ok": lean_ok,
-    }
-    if lean_log_tail:
-        body["lean_log_tail"] = lean_log_tail[-1500:]
-    body["proof_sha256"] = hashlib.sha256(
-        canonical_json(body).encode("utf-8")
-    ).hexdigest()
-    return body
+    status = "proved" if lean_ok else "unknown"
+    return FormalPreflightV1(
+        campaign_id="SFF-anti-e237-v1",
+        experiment_id="semantic_factor_frontier_measured",
+        obligation_id=oid,
+        template_id=str(template["template_id"]),
+        template_version="v1",
+        claim=str(template["claim"]),
+        policy=str(template["policy"]),  # type: ignore[arg-type]
+        status=status,  # type: ignore[arg-type]
+        evidence_scope="universal",
+        theorem=str(template["theorem"]),
+        proof_target="LeverProofLean.AdvisoryResidual",
+        checker_contract="make -C src/leverproof_lean proofs",
+        assumptions=(
+            "LeverProofLean Mathlib-free closed development",
+            "AdvisoryResidual theorems certified via make proofs",
+        ),
+        open_assumptions=(),
+        source_digests=dict(digests),
+        proof_sha256=_proof_sha256(template, digests),
+        lean_version=lean_version,
+        mathlib_version="none",  # leverproof project is Mathlib-free
+        build_output_sha256=_sha256_text(build_output),
+        counterexample=None,
+        duration_seconds=float(duration_seconds),
+    )
 
 
 def verify_sff_formal_sources(*, run_lean: bool = False) -> dict[str, Any]:
@@ -202,13 +235,12 @@ def verify_sff_formal_sources(*, run_lean: bool = False) -> dict[str, Any]:
 def regenerate_sff_formal_preflights(*, require_lean: bool = True) -> list[Path]:
     """Rewrite preflight JSON only after a successful Lean proof run.
 
-    Raises if Lean fails and ``require_lean`` is true. Never stamps
-    ``status: proved`` without ``lean_ok``.
+    Emits ``FormalPreflightV1``-valid artifacts. Raises if Lean fails and
+    ``require_lean`` is true. Never stamps ``status: proved`` without Lean OK.
     """
 
     SFF_FORMAL_DIR.mkdir(parents=True, exist_ok=True)
-    lean_ok = False
-    lean_log = ""
+    started = time.monotonic()
     proc = subprocess.run(
         ["make", "proofs"],
         cwd=_LEAN_ROOT,
@@ -216,88 +248,107 @@ def regenerate_sff_formal_preflights(*, require_lean: bool = True) -> list[Path]
         capture_output=True,
         text=True,
     )
+    duration = time.monotonic() - started
     lean_ok = proc.returncode == 0
-    lean_log = (proc.stderr or proc.stdout or "")[-2000:]
+    build_output = f"{proc.stdout or ''}\n{proc.stderr or ''}"
     if require_lean and not lean_ok:
         raise SFFFormalError(
-            "cannot regenerate formal preflights: Lean proofs failed:\n" + lean_log
+            "cannot regenerate formal preflights: Lean proofs failed:\n"
+            + build_output[-2000:]
         )
+    lean_version = _lean_version()
     written: list[Path] = []
     for template in SFF_FORMAL_TEMPLATES:
-        path = _preflight_path(str(template["template_id"]))
-        payload = _preflight_payload(
-            template, lean_ok=lean_ok, lean_log_tail=lean_log
+        preflight = _build_preflight_model(
+            template,
+            lean_ok=lean_ok,
+            lean_version=lean_version,
+            build_output=build_output,
+            duration_seconds=duration,
         )
-        if payload["status"] != "proved":
+        if preflight.status != "proved":
             raise SFFFormalError(
                 f"refusing to write non-proved preflight for {template['template_id']}"
             )
+        # Round-trip validate before write.
+        FormalPreflightV1.model_validate(preflight.model_dump())
+        path = _preflight_path(str(template["template_id"]))
         path.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            json.dumps(preflight.model_dump(mode="json"), indent=2, sort_keys=True)
+            + "\n",
+            encoding="utf-8",
         )
         written.append(path)
     return written
 
 
+def validate_committed_preflights() -> list[FormalPreflightV1]:
+    """Load and schema-validate every committed preflight (fail closed)."""
+
+    out: list[FormalPreflightV1] = []
+    for template in SFF_FORMAL_TEMPLATES:
+        tid = str(template["template_id"])
+        path = _preflight_path(tid)
+        if not path.is_file():
+            raise SFFFormalError(f"missing formal preflight for {tid}")
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            preflight = FormalPreflightV1.model_validate(raw)
+        except Exception as exc:
+            raise SFFFormalError(
+                f"formal preflight for {tid} is not FormalPreflightV1: {exc}"
+            ) from exc
+        expected = _source_digests(tuple(template["source_paths"]))
+        if dict(preflight.source_digests) != expected:
+            raise SFFFormalError(
+                f"formal preflight stale for {tid}: source digests drifted; "
+                "run regenerate_sff_formal_preflights() after make proofs"
+            )
+        if preflight.status != "proved":
+            raise SFFFormalError(
+                f"formal preflight for {tid} status is {preflight.status!r}, not proved"
+            )
+        if preflight.theorem != template["theorem"]:
+            raise SFFFormalError(
+                f"formal preflight theorem mismatch for {tid}: "
+                f"{preflight.theorem!r} != {template['theorem']!r}"
+            )
+        oid = _obligation_id(tid, str(template["claim"]), str(template["policy"]))
+        if preflight.obligation_id != oid:
+            raise SFFFormalError(
+                f"formal preflight obligation_id mismatch for {tid}"
+            )
+        out.append(preflight)
+    return out
+
+
 def load_sff_formal_obligations() -> tuple[FormalObligationV1, ...]:
-    """Load committed preflights; **fail closed** on missing or stale digests.
+    """Load committed preflights; **fail closed** on missing/stale/invalid.
 
     Does not rewrite files. Use :func:`regenerate_sff_formal_preflights` after
     Lean source changes (requires a green ``make proofs``).
     """
 
+    preflights = validate_committed_preflights()
     obligations: list[FormalObligationV1] = []
-    for template in SFF_FORMAL_TEMPLATES:
-        tid = str(template["template_id"])
-        path = _preflight_path(tid)
-        if not path.is_file():
-            raise SFFFormalError(
-                f"missing formal preflight for {tid}; run "
-                "regenerate_sff_formal_preflights() after Lean proofs pass"
-            )
-        stored = json.loads(path.read_text(encoding="utf-8"))
-        expected_digests = _source_digests(tuple(template["source_paths"]))
-        if stored.get("source_digests") != expected_digests:
-            raise SFFFormalError(
-                f"formal preflight stale for {tid}: source digests drifted; "
-                "run regenerate_sff_formal_preflights() after make proofs"
-            )
-        if stored.get("status") != "proved" or stored.get("lean_ok") is not True:
-            raise SFFFormalError(
-                f"formal preflight for {tid} is not a proved Lean result "
-                f"(status={stored.get('status')!r}, lean_ok={stored.get('lean_ok')!r})"
-            )
-        if stored.get("theorem") != template["theorem"]:
-            raise SFFFormalError(
-                f"formal preflight theorem mismatch for {tid}: "
-                f"{stored.get('theorem')!r} != {template['theorem']!r}"
-            )
-        oid = _obligation_id(tid, str(template["claim"]), str(template["policy"]))
-        if stored.get("obligation_id") != oid:
-            raise SFFFormalError(
-                f"formal preflight obligation_id mismatch for {tid}"
-            )
+    for template, preflight in zip(SFF_FORMAL_TEMPLATES, preflights, strict=True):
+        path = _preflight_path(str(template["template_id"]))
         preflight_sha = hashlib.sha256(path.read_bytes()).hexdigest()
         obligations.append(
             FormalObligationV1(
-                obligation_id=oid,
-                template_id=tid,
-                policy=str(template["policy"]),  # type: ignore[arg-type]
+                obligation_id=preflight.obligation_id,
+                template_id=preflight.template_id,
+                policy=preflight.policy,
                 preflight_sha256=preflight_sha,
             )
         )
     return tuple(obligations)
 
 
-# Back-compat alias used by older call sites during transition.
 def load_or_build_sff_formal_obligations(
     *, write_if_missing: bool = False
 ) -> tuple[FormalObligationV1, ...]:
-    """Deprecated: prefer ``load_sff_formal_obligations`` (fail-closed).
-
-    ``write_if_missing`` is ignored for safety — regeneration requires an
-    explicit :func:`regenerate_sff_formal_preflights` call with Lean green.
-    """
+    """Deprecated alias: always fail-closed load (never auto-writes)."""
 
     del write_if_missing
     return load_sff_formal_obligations()

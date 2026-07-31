@@ -1,15 +1,23 @@
 {
+  "assumptions": [
+    "LeverProofLean Mathlib-free closed development",
+    "AdvisoryResidual theorems certified via make proofs"
+  ],
+  "build_output_sha256": "e783d476e9cfb7a28c34b6f6760ab0bab72418cde8585e75ed7ffb1c1a0500cd",
   "campaign_id": "SFF-anti-e237-v1",
-  "checker": "make -C src/leverproof_lean proofs",
+  "checker_contract": "make -C src/leverproof_lean proofs",
   "claim": "Advisory filterLegal only retains candidates already in the legal set.",
+  "counterexample": null,
+  "created_at": "2026-07-31T15:20:18.575640Z",
+  "duration_seconds": 0.715739859995665,
   "evidence_scope": "universal",
   "experiment_id": "semantic_factor_frontier_measured",
-  "lean_log_tail": "AdvisoryResidual.scored_keys_are_filter_example' depends on axioms: [propext,\n Quot.sound,\n AdvisoryResidual.scored_keys_are_filter_example._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.scored_decode_off_zero_apps_example' depends on axioms: [propext,\n Quot.sound,\n AdvisoryResidual.scored_decode_off_zero_apps_example._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.decode_off_zero_apps_non_singleton' depends on axioms: [propext,\n Quot.sound,\n AdvisoryResidual.decode_off_zero_apps_non_singleton._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.reconstruct_encode_example' depends on axioms: [AdvisoryResidual.reconstruct_encode_example._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.role_shuffle_preserves_membership' depends on axioms: [propext]\n'LeverProofLean.AdvisoryResidual.role_shuffle_example' depends on axioms: [AdvisoryResidual.role_shuffle_example._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.golden_degrees' depends on axioms: [propext,\n AdvisoryResidual.golden_degrees._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.golden_S_column_masses_from_B' depends on axioms: [propext,\n AdvisoryResidual.golden_S_column_masses_from_B._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.soft_token_collision' depends on axioms: [AdvisoryResidual.soft_token_collision._native.native_decide.ax_1_1]\n'LeverProofLean.AdvisoryResidual.contraction_factor_lt_one' does not depend on any axioms\n",
-  "lean_ok": true,
-  "lean_project": "src/leverproof_lean",
+  "lean_version": "Lean (version 4.30.0, aarch64-unknown-linux-gnu, commit d024af099ca4bf2c86f649261ebf59565dc8c622, Release)",
+  "mathlib_version": "none",
   "obligation_id": "formal-5812f1cfff7287c2",
+  "open_assumptions": [],
   "policy": "required",
-  "proof_sha256": "076008075bffccf2ea5726c944c33aa2f99eec021ad65676a7754a2f456cf5a5",
+  "proof_sha256": "57e51be1218fd44756ec14c85fe3ec9d16fad1caaa83cf25db4dafc31c15d5ae",
   "proof_target": "LeverProofLean.AdvisoryResidual",
   "schema_version": "FormalPreflightV1",
   "source_digests": {

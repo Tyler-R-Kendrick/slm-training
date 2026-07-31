@@ -42,6 +42,7 @@ from slm_training.harnesses.experiments.semantic_factor_config import (
 )
 from slm_training.harnesses.experiments.semantic_factor_formal import (
     load_sff_formal_obligations,
+    validate_committed_preflights,
 )
 from slm_training.harnesses.experiments.semantic_factor_metric_engine import (
     apply_control_relative_metrics,
@@ -542,6 +543,18 @@ def run_semantic_factor_frontier(
             metrics_cfg.payload.get("metrics_contract_id") or "semantic_factor_metrics/v1"
         ),
         "config_resources": sff.resource_identity(),
+        "formal_preflights": [
+            {
+                "template_id": p.template_id,
+                "theorem": p.theorem,
+                "status": p.status,
+                "obligation_id": p.obligation_id,
+                "proof_sha256": p.proof_sha256,
+                "lean_version": p.lean_version,
+                "mathlib_version": p.mathlib_version,
+            }
+            for p in validate_committed_preflights()
+        ],
         "claim_class": str(sff.payload.get("claim_class") or "fixture"),
         "campaign_lock": {
             "manifest_sha256": lock.manifest_sha256,
