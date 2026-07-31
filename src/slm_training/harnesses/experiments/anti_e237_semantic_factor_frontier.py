@@ -40,6 +40,9 @@ from slm_training.harnesses.experiments.semantic_factor_config import (
     build_suite_from_config,
     load_sff_campaign,
 )
+from slm_training.harnesses.experiments.semantic_factor_formal import (
+    load_or_build_sff_formal_obligations,
+)
 from slm_training.harnesses.experiments.semantic_factor_metric_engine import (
     apply_control_relative_metrics,
     compute_arm_metrics,
@@ -161,8 +164,9 @@ def build_campaign(*, source_commit: str, source_dirty: bool) -> ExperimentCampa
             ArtifactRequirementV1(kind="version_stamp"),
             ArtifactRequirementV1(kind="seed_result"),
             ArtifactRequirementV1(kind="endpoint_result"),
+            ArtifactRequirementV1(kind="formal_preflight"),
         ),
-        formal_obligations=(),
+        formal_obligations=load_or_build_sff_formal_obligations(write_if_missing=True),
         claim_class=str(camp.get("claim_class") or "fixture"),  # type: ignore[arg-type]
         source_commit=source_commit,
         source_dirty=source_dirty,

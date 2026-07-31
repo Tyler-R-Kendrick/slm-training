@@ -1,0 +1,21 @@
+{
+  "campaign_id": "SFF-anti-e237-v1",
+  "checker": "make -C src/leverproof_lean proofs",
+  "claim": "Complete singleton residual scoring is zero-work independent of proposal.",
+  "evidence_scope": "universal",
+  "experiment_id": "semantic_factor_frontier_measured",
+  "lean_project": "src/leverproof_lean",
+  "obligation_id": "formal-20974ec36fc985d4",
+  "policy": "required",
+  "proof_sha256": "795dc7361f127ec302bd30476f1edf502f857e26fd5b31d7865c5f1f7fd943ef",
+  "proof_target": "LeverProofLean.AdvisoryResidual",
+  "schema_version": "FormalPreflightV1",
+  "source_digests": {
+    "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean": "8b8ed0a8a1e0e5ba0786e35512fc9fb6ed2b4c5080629bb71eb9a94a60809113",
+    "src/slm_training/models/semantic_residual_scorer.py": "76c39a3b8bb4d63552c69bafe3d2651024765e48f0f0b0e8bee1383c1def6d66"
+  },
+  "status": "proved",
+  "template_id": "sff.advisory-singleton-zero-work",
+  "template_version": "v1",
+  "theorem": "LeverProofLean.AdvisoryResidual.singleton_is_zero_work"
+}

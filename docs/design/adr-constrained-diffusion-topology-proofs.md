@@ -110,6 +110,26 @@ rankInsideLegal [1, 9] [false, false] == none
 ForwardsOptimum { complete, one candidate, forced some } == 0
 ```
 
+### Advisory residual plane (SFF harness-refined)
+
+Module: `LeverProofLean.AdvisoryResidual` (see also
+[semantic-factor-frontier.md](semantic-factor-frontier.md)).
+
+| Harness law | Non-vacuous theorem |
+| --- | --- |
+| Complete singleton → zero residual work | `singleton_is_zero_work` (from `score` def) |
+| Incomplete coverage → not scored | `incomplete_not_scored` |
+| filterLegal keys ⊆ legal | `filterLegal_subset` |
+| Factor-node membership round-trip | `reconstruct_encode_example` |
+| Golden incidence degrees | `golden_degrees` |
+| Soft-token collision | `soft_token_collision` |
+
+Bridges: `resources/experiments/semantic_factor_frontier/golden_vectors.v1.json` +
+`tests/test_harnesses/experiments/test_semantic_factor_formal.py`.
+
+ADR Domain-level `score_keys_subset` / `singleton_requires_zero_residual_work`
+remain lightweight sketches; prefer AdvisoryResidual for harness refinement.
+
 ## Relation to runtime tests
 
 | Lean law | Runtime evidence |
@@ -119,6 +139,8 @@ ForwardsOptimum { complete, one candidate, forced some } == 0
 | Forced macro no literals | `walk_static_forced_macro` + E4 tests |
 | Singleton forwards optimum 0 | E8 greedy LTR + `collect_decode_stats` |
 | E9 honest labels | `completion-kernel-perf-results.json` classification fields |
+| Advisory residual control plane | residual scorer unit tests + SFF golden vectors |
+| Factor-node membership | `test_factor_node_membership_roundtrip` + Lean encode/reconstruct |
 
 ## Rebuild
 

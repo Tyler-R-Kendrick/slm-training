@@ -1,0 +1,21 @@
+{
+  "campaign_id": "SFF-anti-e237-v1",
+  "checker": "make -C src/leverproof_lean proofs",
+  "claim": "Advisory filterLegal only retains candidates already in the legal set.",
+  "evidence_scope": "universal",
+  "experiment_id": "semantic_factor_frontier_measured",
+  "lean_project": "src/leverproof_lean",
+  "obligation_id": "formal-5812f1cfff7287c2",
+  "policy": "required",
+  "proof_sha256": "21bb99ab261cc8cb73004357422565f22df63f63409df91feec1858d137654ab",
+  "proof_target": "LeverProofLean.AdvisoryResidual",
+  "schema_version": "FormalPreflightV1",
+  "source_digests": {
+    "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean": "8b8ed0a8a1e0e5ba0786e35512fc9fb6ed2b4c5080629bb71eb9a94a60809113",
+    "src/slm_training/models/semantic_residual_scorer.py": "76c39a3b8bb4d63552c69bafe3d2651024765e48f0f0b0e8bee1383c1def6d66"
+  },
+  "status": "proved",
+  "template_id": "sff.advisory-keys-legal",
+  "template_version": "v1",
+  "theorem": "LeverProofLean.AdvisoryResidual.filterLegal_subset"
+}

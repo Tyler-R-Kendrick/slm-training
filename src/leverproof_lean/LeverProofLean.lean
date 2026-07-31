@@ -14,3 +14,5 @@ import LeverProofLean.DecodeInvariants
 import LeverProofLean.EcosystemTier
 -- Constrained diffusion × topology ADR claim cores
 import LeverProofLean.ConstrainedDiffusion
+-- Advisory residual plane (SFF scorer control + factor membership)
+import LeverProofLean.AdvisoryResidual
