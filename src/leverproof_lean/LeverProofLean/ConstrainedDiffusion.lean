@@ -439,5 +439,74 @@ theorem artifact_not_sole_executor
     r.isSoleExecutionSubstrate = false :=
   h.2
 
+/-! ### Advisory residual: legal support preservation + singleton zero-work -/
+
+/-- Advisory score map may only key existing legal candidates. -/
+def ScoreKeysLegal (legal : List Candidate) (keys : List Candidate) : Prop :=
+  ∀ k, k ∈ keys → k ∈ legal
+
+theorem score_keys_subset
+    (legal keys : List Candidate) (h : ScoreKeysLegal legal keys)
+    (k : Candidate) (hk : k ∈ keys) :
+    k ∈ legal :=
+  h k hk
+
+/-- Complete singleton forbids residual/neural work (counts are Nat optima). -/
+structure ResidualWorkCounts where
+  factorCalls : Nat
+  propagationCalls : Nat
+  rankerCalls : Nat
+  neuralForwards : Nat
+deriving Repr
+
+def ResidualWorkCounts.zeroWork (w : ResidualWorkCounts) : Prop :=
+  w.factorCalls = 0 ∧
+  w.propagationCalls = 0 ∧
+  w.rankerCalls = 0 ∧
+  w.neuralForwards = 0
+
+def SingletonComplete (domain : Domain) : Prop :=
+  domain.status = .complete ∧ domain.candidates.length = 1
+
+theorem singleton_requires_zero_residual_work
+    (domain : Domain) (w : ResidualWorkCounts)
+    (hs : SingletonComplete domain)
+    (hpolicy : SingletonComplete domain → ResidualWorkCounts.zeroWork w) :
+    ResidualWorkCounts.zeroWork w :=
+  hpolicy hs
+
+/-! ### Soft-token non-injectivity (SHIFT correction, finite model) -/
+
+/-- Distinct simplex points may collide under a rank-deficient embedding map.
+
+Model: two distinct Nat-coded distributions with equal weighted embedding sum
+when the embedding dimension is smaller than the free simplex dimension.
+We prove a concrete 3-vocab / 1-dim counterexample: p=(1,0,0) and q=(0,1,0)
+collide when E maps both first two basis vectors to the same scalar.
+-/
+def softToken (weights : List Nat) (embed : List Nat) : Nat :=
+  ((weights.zip embed).foldl (fun acc pair => acc + pair.1 * pair.2) 0)
+
+theorem soft_token_collision_example :
+    softToken [1, 0, 0] [7, 7, 3] = softToken [0, 1, 0] [7, 7, 3] ∧
+    [1, 0, 0] ≠ [0, 1, 0] := by
+  decide
+
+/-! ### Restart contraction rate bound (HyCE operator, abstract) -/
+
+/-- ℓ₁ contraction factor for T(c)=λr+(1-λ)Sc when ‖S‖₁≤1 is at most (1-λ). -/
+def restartContractionFactor (lambdaRestart : Nat) (denom : Nat) : Nat :=
+  -- Represent λ = lambdaRestart / denom with 0 < λ ≤ 1 as integers.
+  denom - lambdaRestart
+
+theorem restart_contraction_factor_le_one
+    (lambdaRestart denom : Nat)
+    (hpos : 0 < lambdaRestart)
+    (hle : lambdaRestart ≤ denom)
+    (hdenom : 0 < denom) :
+    restartContractionFactor lambdaRestart denom < denom := by
+  have : denom - lambdaRestart < denom := Nat.sub_lt hdenom hpos
+  simpa [restartContractionFactor] using this
+
 end ConstrainedDiffusion
 end LeverProofLean

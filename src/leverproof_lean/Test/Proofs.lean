@@ -83,6 +83,10 @@ open LeverProofLean
 #print axioms ConstrainedDiffusion.predicate_before_circuit
 #print axioms ConstrainedDiffusion.freeze_topology_preserves_executor_pass
 #print axioms ConstrainedDiffusion.artifact_not_sole_executor
+#print axioms ConstrainedDiffusion.score_keys_subset
+#print axioms ConstrainedDiffusion.singleton_requires_zero_residual_work
+#print axioms ConstrainedDiffusion.soft_token_collision_example
+#print axioms ConstrainedDiffusion.restart_contraction_factor_le_one
 
 #guard digestValid (String.ofList (List.replicate 64 'a'))
 #guard !(digestValid (String.ofList (List.replicate 63 'a')))
