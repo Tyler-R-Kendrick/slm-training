@@ -117,3 +117,34 @@ def test_mpr_regression_blocks_latency_win() -> None:
     )
     assert positive is False
     assert any("null_or_worse" in r or "low_mpr" in r for r in reasons)
+
+
+def test_missing_smoke_metrics_are_measurement_incomplete_not_quality_fail() -> None:
+    control, candidate = _arms(
+        c_lat=None,
+        t_lat=None,
+        c_pr=None,
+        t_pr=None,
+        c_mpr=None,
+        t_mpr=None,
+    )
+    positive, reasons = _classify(
+        control=control, candidate=candidate, primary_metric=_PRIMARY
+    )
+    assert positive is False
+    assert any(r.startswith("measurement_incomplete:") for r in reasons)
+    assert not any(r.startswith("primary_metric_null_or_worse:") for r in reasons)
+
+
+def test_climb_policy_measurement_helpers() -> None:
+    from slm_training.autoresearch.climb_policy import (
+        decode_timeout_seconds_for_role,
+        eval_suites_for_role,
+        load_climb_policy,
+        stage_wall_minutes_for_role,
+    )
+
+    policy = load_climb_policy()
+    assert stage_wall_minutes_for_role(policy, "screening") >= 8
+    assert decode_timeout_seconds_for_role(policy, "screening") >= 20
+    assert eval_suites_for_role(policy, "screening") == ("smoke",)

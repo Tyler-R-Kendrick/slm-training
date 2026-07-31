@@ -29,10 +29,18 @@
     "claim_class_promotion": "promotion_candidate",
     "exploratory_claim_class": "fixture"
   },
+  "measurement": {
+    "screening_stage_wall_minutes": 10,
+    "promotion_stage_wall_minutes": 12,
+    "screening_decode_timeout_seconds": 24,
+    "promotion_decode_timeout_seconds": 24,
+    "screening_suites": ["smoke"],
+    "promotion_suites": ["smoke", "held_out"]
+  },
   "cadence": {
     "screening_cycles_per_promotion": 3,
     "first_cycle_role": "screening",
-    "promotion_requires_prior_screening_win": false
+    "promotion_requires_prior_screening_win": true
   },
   "exhausted_identity_fields": [
     "claim_class",

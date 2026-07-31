@@ -3,8 +3,9 @@
 
 Bare /autotrain agents should keep calling this (or re-enter continuous.md)
 without user prompts. Each invocation can run one or many bounded cycles.
-Never an infinite shell without MAX_RUN_MINUTES on child commands — wall is
-enforced by campaign budgets and levers.
+Never an infinite shell without a stage wall on child commands — continuous
+stage wall minutes come from climb policy measurement (not the global CI
+MAX_RUN_MINUTES unless policy is absent).
 
 SDLC Phase A (autotrain-iteration-delivery): after every cycle the driver
 classifies positive vs non-positive, records a delivery ledger, and only
@@ -34,7 +35,6 @@ from slm_training.autoresearch.experiment_campaign import (
     MultiplicityFamilyV1,
 )
 from slm_training.autoresearch.schemas import CampaignBudget, HypothesisMatrix
-from slm_training.levers import MAX_RUN_MINUTES
 
 
 def _git(*args: str, cwd: Path | None = None) -> str:
@@ -157,7 +157,18 @@ def _classify_metric_tradeoff(
 
     # Path 1: latency primary win — only with held quality and non-empty meaning.
     if metric_leaf == "latency_ms_p50":
-        if c_lat is None or t_lat is None:
+        no_metrics = (
+            c_lat is None
+            and t_lat is None
+            and c_pr is None
+            and t_pr is None
+            and c_mpr is None
+            and t_mpr is None
+        )
+        if no_metrics:
+            # Incomplete stage/decode walls are not model quality failures.
+            reasons.append("measurement_incomplete:no_smoke_metrics")
+        elif c_lat is None or t_lat is None:
             reasons.append("primary_metric_unavailable")
         elif lat_improved and parse_held and mpr_held:
             if both_timeout_band:
@@ -559,11 +570,23 @@ def _matrix(
     cycle: int,
     feedback: list[dict] | None = None,
     previous_matrix_id: str | None = None,
+    role: str = "screening",
+    policy: Any | None = None,
 ) -> dict:
+    from slm_training.autoresearch.climb_policy import (
+        decode_timeout_seconds_for_role,
+        eval_suites_for_role,
+        load_climb_policy,
+    )
+
     research = role_citations.get("research") or cites[0]
     prior = role_citations.get("prior_result") or (cites[1] if len(cites) > 1 else cites[0])
-    seed = 7 + (cycle * 17) % 50
+    # Unique seed per cycle — (cycle*17)%50 only yields 50 seeds and thrash-rejects.
+    seed = 100_000 + int(cycle)
     steps = steps + (cycle % 3)  # slight variation avoids knob-signature collision
+    pol = policy or load_climb_policy()
+    decode_timeout = decode_timeout_seconds_for_role(pol, role)
+    eval_suites = ",".join(eval_suites_for_role(pol, role))
 
     def uses() -> list[dict]:
         out = []
@@ -621,6 +644,9 @@ def _matrix(
             "local_files_only": True,
             "grammar_completion_bounds": False,
             "compact_active_canvas": False,
+            # Measurement completeness: smoke-only screening + longer decode wall.
+            "decode_timeout_seconds": decode_timeout,
+            "eval_suites": eval_suites,
         }
         base.update(extra)
         return base
@@ -796,6 +822,7 @@ def _manifest(
         load_climb_policy,
         primary_for_role,
         promotion_seed_floor,
+        stage_wall_minutes_for_role,
     )
 
     pol = policy or load_climb_policy()
@@ -923,7 +950,10 @@ def _manifest(
         ),
         arms=tuple(arms),
         seeds=seeds,
-        budget=CampaignBudget(max_experiments=1, max_wall_minutes=MAX_RUN_MINUTES),
+        budget=CampaignBudget(
+            max_experiments=1,
+            max_wall_minutes=stage_wall_minutes_for_role(pol, role),
+        ),
         stopping_rules=("Stop after the declared seeds finish or the wall cap is hit.",),
         controls=controls,
         negative_controls=negative_controls,
@@ -974,6 +1004,7 @@ def run_cycle(
         cycle_role_for_index,
         load_climb_policy,
         primary_for_role,
+        stage_wall_minutes_for_role,
     )
 
     policy = load_climb_policy()
@@ -1036,7 +1067,7 @@ def run_cycle(
         "--max-experiments",
         "3",
         "--max-wall-minutes",
-        str(MAX_RUN_MINUTES),
+        str(stage_wall_minutes_for_role(policy, role)),
         "--notes",
         "Hands-off continuous driver cycle; local-only fixture scale.",
     ]
@@ -1129,6 +1160,8 @@ def run_cycle(
         cycle=cycle,
         feedback=feedback or None,
         previous_matrix_id=previous_matrix_id,
+        role=role,
+        policy=policy,
     )
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"

@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2588,9 +2588,15 @@
         "tests/test_autoresearch/test_harness.py",
         "tests/test_scripts/test_slm_cli.py",
         "tests/test_scripts/test_run_autotrain_continuous.py",
-        "scripts/run_autotrain_continuous.py"
+        "scripts/run_autotrain_continuous.py",
+        "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-31",
+          "note": "Continuous measurement completeness: policy stage wall (10/12m) + smoke-only screening suites + decode_timeout knobs; CampaignBudget wall le=60; measurement_incomplete classification; unique cycle seeds"
+        },
         {
           "version": "v19",
           "date": "2026-07-31",
