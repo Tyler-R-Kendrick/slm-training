@@ -37,6 +37,25 @@ numbers/inventory without re-authoring classifiers.
 | `scripts/autoresearch.py` feedback | Records nulls with policy identity + recipe_null reason when pure recipe |
 | `hillclimb.py` | Shared direction-signed effect, synthesis SFT gate, EG_params |
 
+## Champion queue (continuous learning path)
+
+Continuous screening used to thrash the same lever bank every cycle even after
+a quality-held Phase A win. The driver now keeps a **loop-local champion queue**
+so sticky knobs get a confirmatory retest before more thrash.
+
+| Field | Value |
+| --- | --- |
+| Ledger | `outputs/autoresearch/loops/<loop_id>/champion_queue.jsonl` |
+| Schema | `autotrain_champion_queue/v1` |
+| Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) with a real lever (`grammar_completion_bounds` or `compact_active_canvas`) |
+| Confirm | Next cycle matrix is control + `-confirm` only — **same levers, new seed** (cadence role/suites unchanged) |
+| Resolve | Confirm re-holds quality → `confirmed`; else `rejected` (queue head advances) |
+| Dedup | Same lever fingerprint already `queued`/`confirming`/`confirmed` is not re-enqueued |
+
+`cycle_intent` on `sdlc_delivery.json` is `confirm` during retests (cadence
+`cycle_role` remains `screening`|`promotion`). Pure latency greening without a
+quality hold never enters the queue.
+
 ## Content digest
 
 `climb_policy_content_digest(payload)` hashes the policy body so version stamps

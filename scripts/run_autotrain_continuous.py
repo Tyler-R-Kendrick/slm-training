@@ -99,6 +99,30 @@ _WIN_REASON_PREFIXES = (
     "executable_unblock:",
 )
 
+# Champion queue: quality-held wins retest with same levers, new seeds, before
+# thrashing the fixed lever bank again. Ledger is loop-local (not git).
+_CHAMPION_QUEUE_SCHEMA = "autotrain_champion_queue/v1"
+_CHAMPION_STATUSES = frozenset(
+    {"queued", "confirming", "confirmed", "rejected", "skipped_duplicate"}
+)
+# Recipe levers that define "same knobs" for confirmatory retest. Measurement
+# knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
+_LEVER_KNOB_KEYS = (
+    "grammar_completion_bounds",
+    "compact_active_canvas",
+    "steps",
+    "batch_size",
+    "train_version",
+    "context_backend",
+    "sync_checkpoints",
+    "local_files_only",
+    "output_tokenizer",
+)
+_QUALITY_ENQUEUE_PREFIXES = (
+    "quality_held:",
+    "quality_metric_win:",
+)
+
 
 def _finite_metric(value: object) -> float | None:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -110,6 +134,225 @@ def _in_timeout_band(latency_ms: float | None) -> bool:
     return (
         latency_ms is not None
         and _TIMEOUT_BAND_LO_MS <= latency_ms <= _TIMEOUT_BAND_HI_MS
+    )
+
+
+def _champion_queue_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "champion_queue.jsonl"
+
+
+def _lever_knobs(knobs: dict[str, Any] | None) -> dict[str, Any]:
+    """Stable lever subset for confirm retests (excludes seed / measurement)."""
+    if not isinstance(knobs, dict):
+        return {}
+    out: dict[str, Any] = {}
+    for key in _LEVER_KNOB_KEYS:
+        if key in knobs and knobs[key] is not None:
+            out[key] = knobs[key]
+    return out
+
+
+def _knobs_fingerprint(levers: dict[str, Any]) -> str:
+    payload = json.dumps(levers, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def _load_champion_queue(path: Path) -> list[dict[str, Any]]:
+    if not path.is_file():
+        return []
+    entries: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            entries.append(row)
+    return entries
+
+
+def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        for row in entries:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+    tmp.replace(path)
+
+
+def _queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """First entry still awaiting confirmatory retest (queued or in-flight)."""
+    for row in entries:
+        if row.get("status") in {"queued", "confirming"}:
+            return row
+    return None
+
+
+def _quality_held_reasons(reasons: list[str] | None) -> bool:
+    """True when Phase A reasons include a quality hold/win (not pure latency)."""
+    if not reasons:
+        return False
+    return any(
+        any(r.startswith(prefix) for prefix in _QUALITY_ENQUEUE_PREFIXES) for r in reasons
+    )
+
+
+def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
+    """Enqueue only quality-held positives (never empty-meaning latency blips)."""
+    if not delivery.get("positive"):
+        return False
+    reasons = list(delivery.get("reasons") or [])
+    if _quality_held_reasons(reasons):
+        return True
+    # Efficiency / primary latency win only when quality_held co-tagged.
+    if any(r.startswith("efficiency_win:") or r.startswith("primary_metric_win:") for r in reasons):
+        return _quality_held_reasons(reasons)
+    return False
+
+
+def _load_experiment_knobs(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
+    exp_path = camp_dir / "artifacts" / "experiments" / f"{experiment_id}.json"
+    if not exp_path.is_file():
+        # Some writers store experiment_id as stem without full path.
+        matches = list((camp_dir / "artifacts" / "experiments").glob("*.json"))
+        for path in matches:
+            data = _read_json(path)
+            if data.get("experiment_id") == experiment_id:
+                knobs = data.get("knobs")
+                return knobs if isinstance(knobs, dict) else {}
+        return {}
+    data = _read_json(exp_path)
+    knobs = data.get("knobs")
+    return knobs if isinstance(knobs, dict) else {}
+
+
+def _enqueue_champion(
+    *,
+    root: Path,
+    loop_id: str,
+    delivery: dict[str, Any],
+    camp_dir: Path,
+) -> dict[str, Any] | None:
+    """Append a queued champion when Phase A is a quality-held win."""
+    if not _should_enqueue_champion(delivery):
+        return None
+    candidate_id = str(delivery.get("candidate_id") or "")
+    if not candidate_id or candidate_id == delivery.get("control_id"):
+        return None
+    knobs = _lever_knobs(_load_experiment_knobs(camp_dir, candidate_id))
+    if not knobs:
+        return None
+    # Pure control / steps-only confounds are not champions — need a lever.
+    if not knobs.get("grammar_completion_bounds") and not knobs.get(
+        "compact_active_canvas"
+    ):
+        return None
+    fp = _knobs_fingerprint(knobs)
+    path = _champion_queue_path(root, loop_id)
+    entries = _load_champion_queue(path)
+    for row in entries:
+        if row.get("knobs_fingerprint") == fp and row.get("status") in {
+            "queued",
+            "confirming",
+            "confirmed",
+        }:
+            # Already open or confirmed — do not re-queue noise thrash.
+            return None
+    entry = {
+        "schema": _CHAMPION_QUEUE_SCHEMA,
+        "entry_id": f"champ-{loop_id}-{delivery.get('cycle_index')}-{fp}",
+        "loop_id": loop_id,
+        "status": "queued",
+        "enqueued_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "source_campaign_id": delivery.get("campaign_id"),
+        "source_cycle_index": delivery.get("cycle_index"),
+        "source_candidate_id": candidate_id,
+        "source_control_id": delivery.get("control_id"),
+        "source_role": delivery.get("cycle_role") or delivery.get("role"),
+        "knobs": knobs,
+        "knobs_fingerprint": fp,
+        "source_metrics": {
+            "control": delivery.get("control_metrics"),
+            "candidate": delivery.get("candidate_metrics"),
+        },
+        "source_reasons": list(delivery.get("reasons") or []),
+        "confirm_campaign_id": None,
+        "confirm_cycle_index": None,
+        "resolved_at": None,
+        "resolve_reasons": None,
+    }
+    entries.append(entry)
+    _write_champion_queue(path, entries)
+    print(
+        f"CHAMPION_ENQUEUE entry_id={entry['entry_id']} fingerprint={fp} "
+        f"candidate={candidate_id}",
+        flush=True,
+    )
+    return entry
+
+
+def _update_champion_status(
+    *,
+    root: Path,
+    loop_id: str,
+    entry_id: str,
+    status: str,
+    confirm_campaign_id: str | None = None,
+    confirm_cycle_index: int | None = None,
+    resolve_reasons: list[str] | None = None,
+) -> dict[str, Any] | None:
+    if status not in _CHAMPION_STATUSES:
+        raise ValueError(f"invalid champion status: {status!r}")
+    path = _champion_queue_path(root, loop_id)
+    entries = _load_champion_queue(path)
+    updated: dict[str, Any] | None = None
+    for row in entries:
+        if row.get("entry_id") != entry_id:
+            continue
+        row["status"] = status
+        if confirm_campaign_id is not None:
+            row["confirm_campaign_id"] = confirm_campaign_id
+        if confirm_cycle_index is not None:
+            row["confirm_cycle_index"] = confirm_cycle_index
+        if status in {"confirmed", "rejected", "skipped_duplicate"}:
+            row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            row["resolve_reasons"] = list(resolve_reasons or [])
+        updated = row
+        break
+    if updated is not None:
+        _write_champion_queue(path, entries)
+        print(
+            f"CHAMPION_STATUS entry_id={entry_id} status={status} "
+            f"campaign={confirm_campaign_id}",
+            flush=True,
+        )
+    return updated
+
+
+def _resolve_confirm_result(
+    *,
+    root: Path,
+    loop_id: str,
+    entry: dict[str, Any],
+    delivery: dict[str, Any],
+    campaign_id: str,
+    cycle_index: int,
+) -> dict[str, Any] | None:
+    """Mark confirmatory retest confirmed (quality re-holds) or rejected."""
+    reasons = list(delivery.get("reasons") or [])
+    ok = bool(delivery.get("positive")) and _quality_held_reasons(reasons)
+    status = "confirmed" if ok else "rejected"
+    return _update_champion_status(
+        root=root,
+        loop_id=loop_id,
+        entry_id=str(entry["entry_id"]),
+        status=status,
+        confirm_campaign_id=campaign_id,
+        confirm_cycle_index=cycle_index,
+        resolve_reasons=reasons,
     )
 
 
@@ -420,6 +663,7 @@ def _phase_a_delivery(
     primary_metric: str,
     cycle_index: int | None = None,
     role: str | None = None,
+    cycle_intent: str | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
     from slm_training.autoresearch.climb_policy import (
@@ -436,19 +680,28 @@ def _phase_a_delivery(
     if man_dir.exists():
         for path in sorted(man_dir.glob("*.json")):
             eid = path.stem
-            if eid.endswith("-control") or "control" in eid:
+            if eid.endswith("-control") or eid.endswith("_control"):
                 control_run = eid
-            elif "bounds" in eid or "canvas" in eid or "combined" in eid:
+            elif any(
+                token in eid
+                for token in ("-bounds", "-canvas", "-both", "-confirm", "-steps", "-combined")
+            ):
                 if candidate_run is None:
                     candidate_run = eid
+            elif "control" not in eid and candidate_run is None:
+                candidate_run = eid
     runs_dir = camp_dir / "runs"
     if runs_dir.exists():
         run_ids = sorted(p.name for p in runs_dir.iterdir() if p.is_dir())
         for rid in run_ids:
-            if rid.endswith("-control") or rid.endswith("-control".replace("-", "_")):
+            if rid.endswith("-control") or rid.endswith("_control"):
                 control_run = control_run or rid
             elif "control" not in rid:
-                candidate_run = candidate_run or rid
+                # Prefer confirm arm when present (champion queue retest).
+                if rid.endswith("-confirm") or "-confirm" in rid:
+                    candidate_run = rid
+                elif candidate_run is None:
+                    candidate_run = rid
         if control_run is None and run_ids:
             control_run = run_ids[0]
         if candidate_run is None and len(run_ids) > 1:
@@ -474,6 +727,7 @@ def _phase_a_delivery(
     )
     decision["cycle_role"] = role
     decision["cycle_index"] = cycle_index
+    decision["cycle_intent"] = cycle_intent or role
     decision["climb_policy_sha256"] = policy.sha256
     # Stack only when positive AND there is something reviewable to ship.
     # Pure knob-only fixture cycles with a metric blip do not open empty PRs.
@@ -572,6 +826,7 @@ def _matrix(
     previous_matrix_id: str | None = None,
     role: str = "screening",
     policy: Any | None = None,
+    confirm_levers: dict[str, Any] | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -671,130 +926,292 @@ def _matrix(
         }
 
     prefix = campaign_id.replace("continuous-loop-", "c")
-    candidates = [
-        {
-            "experiment": exp(
-                f"{prefix}-control",
-                "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
-                knobs(),
-                "Baseline for size-matched continuous attribution.",
-            ),
-            "evidence_uses": uses(),
-            "novelty": novelty(0, "matched control with published eval"),
-        },
-        {
-            "experiment": exp(
-                f"{prefix}-bounds",
-                "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-                knobs(grammar_completion_bounds=True),
-                "I1/I4 bounds lever on continuous default recipe.",
-            ),
-            "evidence_uses": uses(),
-            "novelty": novelty(1, "grammar_completion_bounds"),
-        },
-        {
-            "experiment": exp(
-                f"{prefix}-canvas",
-                "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-                knobs(compact_active_canvas=True),
-                "Independent canvas compaction lever.",
-            ),
-            "evidence_uses": uses(),
-            "novelty": novelty(2, "compact_active_canvas"),
-        },
-        {
-            "experiment": exp(
-                f"{prefix}-both",
-                "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
-                knobs(grammar_completion_bounds=True, compact_active_canvas=True),
-                "Interaction arm for continuous steering.",
-            ),
-            "evidence_uses": uses(),
-            "novelty": novelty(3, "combined bounds and canvas"),
-        },
-        {
-            "experiment": exp(
-                f"{prefix}-steps",
-                "Doubling steps without levers only raises cost and does not improve unit decode latency.",
-                knobs(steps=max(steps * 2, steps + 10)),
-                "Depth confounds check.",
-            ),
-            "evidence_uses": uses(),
-            "novelty": novelty(4, "depth-only confounds"),
-        },
-    ]
-    rec = f"{prefix}-bounds"
-    priorities = [
-        {
-            "rank": i + 1,
-            "area": area,
-            "hypothesis": hyp,
-            "evidence_ids": [research, prior],
-            "confidence": conf,
-            "expected_information_gain": gain,
-            "authority": auth,
-            "disposition": disp,
-            "proposed_experiment_id": eid,
+    # Confirmatory path: same levers as a quality-held champion, new seed — not
+    # another thrash of the fixed lever bank.
+    if confirm_levers:
+        confirm_extra = {
+            k: v
+            for k, v in confirm_levers.items()
+            if k
+            in {
+                "grammar_completion_bounds",
+                "compact_active_canvas",
+                "steps",
+                "batch_size",
+                "train_version",
+                "context_backend",
+                "sync_checkpoints",
+                "local_files_only",
+                "output_tokenizer",
+            }
         }
-        for i, (area, hyp, conf, gain, auth, disp, eid) in enumerate(
-            [
-                (
-                    "model",
-                    "Test grammar_completion_bounds first under the published eval suite.",
-                    0.6,
-                    "Attributes decode latency vs matched control.",
-                    "speculative",
-                    "experiment_next",
-                    rec,
-                ),
-                (
-                    "evaluation",
-                    "Keep the matched control as the size-matched baseline every cycle.",
-                    0.7,
-                    "Prevents false positives from recipe drift.",
-                    "observed_result",
-                    "experiment_next",
+        confirm_steps = int(confirm_extra.pop("steps", steps) or steps)
+        control_knobs = knobs(steps=confirm_steps)
+        # Drop lever defaults then re-apply champion levers on candidate.
+        cand_knobs = knobs(steps=confirm_steps, **confirm_extra)
+        # HypothesisMatrix requires ≥5 arms; only control + recommended execute.
+        # Pad with monitor-only thrash placeholders so schema stays closed.
+        candidates = [
+            {
+                "experiment": exp(
                     f"{prefix}-control",
+                    "Matched control (levers off) for confirmatory retest of a quality-held champion.",
+                    control_knobs,
+                    "Size-matched baseline for confirm cycle.",
                 ),
-                (
-                    "model",
-                    "Test compact_active_canvas as the next independent lever.",
-                    0.55,
-                    "Isolates canvas from bounds.",
-                    "speculative",
-                    "experiment_next",
+                "evidence_uses": uses(),
+                "novelty": novelty(0, "confirm matched control"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-confirm",
+                    "Confirmatory retest: same lever knobs as a quality-held screening win, new seed.",
+                    cand_knobs,
+                    "Champion queue confirmatory arm — must re-hold quality before promotion.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(1, "confirm same knobs new seed"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-bounds",
+                    "Monitor-only pad: bounds thrash deferred while champion confirm is open.",
+                    knobs(
+                        grammar_completion_bounds=True,
+                        # Distinct knob signature vs confirm (schema uniqueness).
+                        steps=confirm_steps + 1000,
+                    ),
+                    "Schema pad — not executed while confirm is recommended.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(2, "confirm pad bounds"),
+            },
+            {
+                "experiment": exp(
                     f"{prefix}-canvas",
+                    "Monitor-only pad: canvas thrash deferred while champion confirm is open.",
+                    knobs(
+                        compact_active_canvas=True,
+                        steps=confirm_steps + 1001,
+                    ),
+                    "Schema pad — not executed while confirm is recommended.",
                 ),
-                (
-                    "infrastructure",
-                    "Soft ship-gate fails on fixture n never stop the continuous loop.",
-                    0.8,
-                    "Preserves hands-off continuous operation.",
-                    "observed_result",
-                    "monitor",
-                    None,
+                "evidence_uses": uses(),
+                "novelty": novelty(3, "confirm pad canvas"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-both",
+                    "Monitor-only pad: combined thrash deferred while champion confirm is open.",
+                    knobs(
+                        grammar_completion_bounds=True,
+                        compact_active_canvas=True,
+                        steps=confirm_steps + 1002,
+                    ),
+                    "Schema pad — not executed while confirm is recommended.",
                 ),
-                (
-                    "model_build",
-                    "Only after single levers, combine bounds and canvas.",
-                    0.45,
-                    "Detects interaction effects.",
-                    "speculative",
-                    "monitor",
-                    None,
+                "evidence_uses": uses(),
+                "novelty": novelty(4, "confirm pad both"),
+            },
+        ]
+        rec = f"{prefix}-confirm"
+        priorities = [
+            {
+                "rank": 1,
+                "area": "model",
+                "hypothesis": (
+                    "Quality-held champion levers re-hold under a new seed before any "
+                    "promotion claim."
                 ),
-            ]
-        )
-    ]
-    payload = {
-        "matrix_id": f"{campaign_id}-m1",
-        "campaign_id": campaign_id,
-        "evidence_snapshot_id": evidence_snapshot_id,
-        "hypotheses": candidates,
-        "recommended_experiment_id": rec,
-        "selection_rationale": "Size-matched fixture continuous recipe with published eval defaults.",
-        "next_run_priorities": priorities,
-    }
+                "evidence_ids": [research, prior],
+                "confidence": 0.75,
+                "expected_information_gain": "Separates one-off smoke noise from sticky knobs.",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": rec,
+            },
+            {
+                "rank": 2,
+                "area": "evaluation",
+                "hypothesis": "Matched control remains the size-matched baseline on confirm.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.7,
+                "expected_information_gain": "Prevents false confirm from recipe drift.",
+                "authority": "observed_result",
+                "disposition": "experiment_next",
+                "proposed_experiment_id": f"{prefix}-control",
+            },
+            {
+                "rank": 3,
+                "area": "infrastructure",
+                "hypothesis": "Champion queue blocks thrash until confirm resolves.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.8,
+                "expected_information_gain": "Learning signal from sticky knobs, not cycle noise.",
+                "authority": "observed_result",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+            {
+                "rank": 4,
+                "area": "model",
+                "hypothesis": "Pad arms stay monitor-only during confirm.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.5,
+                "expected_information_gain": "Schema completeness without thrash spend.",
+                "authority": "speculative",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+            {
+                "rank": 5,
+                "area": "model_build",
+                "hypothesis": "After confirm resolves, resume lever thrash or promote.",
+                "evidence_ids": [research, prior],
+                "confidence": 0.55,
+                "expected_information_gain": "Queue head advances only after resolve.",
+                "authority": "speculative",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            },
+        ]
+        payload = {
+            "matrix_id": f"{campaign_id}-m1-confirm",
+            "campaign_id": campaign_id,
+            "evidence_snapshot_id": evidence_snapshot_id,
+            "hypotheses": candidates,
+            "recommended_experiment_id": rec,
+            "selection_rationale": (
+                "Champion-queue confirmatory matrix: same levers, new seed; "
+                "no thrash of the fixed lever bank."
+            ),
+            "next_run_priorities": priorities,
+        }
+    else:
+        candidates = [
+            {
+                "experiment": exp(
+                    f"{prefix}-control",
+                    "Matched fixture control with both grammar levers off completes smoke eval under the published suite.",
+                    knobs(),
+                    "Baseline for size-matched continuous attribution.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(0, "matched control with published eval"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-bounds",
+                    "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+                    knobs(grammar_completion_bounds=True),
+                    "I1/I4 bounds lever on continuous default recipe.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(1, "grammar_completion_bounds"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-canvas",
+                    "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+                    knobs(compact_active_canvas=True),
+                    "Independent canvas compaction lever.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(2, "compact_active_canvas"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-both",
+                    "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
+                    knobs(grammar_completion_bounds=True, compact_active_canvas=True),
+                    "Interaction arm for continuous steering.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(3, "combined bounds and canvas"),
+            },
+            {
+                "experiment": exp(
+                    f"{prefix}-steps",
+                    "Doubling steps without levers only raises cost and does not improve unit decode latency.",
+                    knobs(steps=max(steps * 2, steps + 10)),
+                    "Depth confounds check.",
+                ),
+                "evidence_uses": uses(),
+                "novelty": novelty(4, "depth-only confounds"),
+            },
+        ]
+        rec = f"{prefix}-bounds"
+        priorities = [
+            {
+                "rank": i + 1,
+                "area": area,
+                "hypothesis": hyp,
+                "evidence_ids": [research, prior],
+                "confidence": conf,
+                "expected_information_gain": gain,
+                "authority": auth,
+                "disposition": disp,
+                "proposed_experiment_id": eid,
+            }
+            for i, (area, hyp, conf, gain, auth, disp, eid) in enumerate(
+                [
+                    (
+                        "model",
+                        "Test grammar_completion_bounds first under the published eval suite.",
+                        0.6,
+                        "Attributes decode latency vs matched control.",
+                        "speculative",
+                        "experiment_next",
+                        rec,
+                    ),
+                    (
+                        "evaluation",
+                        "Keep the matched control as the size-matched baseline every cycle.",
+                        0.7,
+                        "Prevents false positives from recipe drift.",
+                        "observed_result",
+                        "experiment_next",
+                        f"{prefix}-control",
+                    ),
+                    (
+                        "model",
+                        "Test compact_active_canvas as the next independent lever.",
+                        0.55,
+                        "Isolates canvas from bounds.",
+                        "speculative",
+                        "experiment_next",
+                        f"{prefix}-canvas",
+                    ),
+                    (
+                        "infrastructure",
+                        "Soft ship-gate fails on fixture n never stop the continuous loop.",
+                        0.8,
+                        "Preserves hands-off continuous operation.",
+                        "observed_result",
+                        "monitor",
+                        None,
+                    ),
+                    (
+                        "model_build",
+                        "Only after single levers, combine bounds and canvas.",
+                        0.45,
+                        "Detects interaction effects.",
+                        "speculative",
+                        "monitor",
+                        None,
+                    ),
+                ]
+            )
+        ]
+        payload = {
+            "matrix_id": f"{campaign_id}-m1",
+            "campaign_id": campaign_id,
+            "evidence_snapshot_id": evidence_snapshot_id,
+            "hypotheses": candidates,
+            "recommended_experiment_id": rec,
+            "selection_rationale": "Size-matched fixture continuous recipe with published eval defaults.",
+            "next_run_priorities": priorities,
+        }
     if feedback:
         fb_ids = [str(item.get("feedback_id")) for item in feedback if item.get("feedback_id")]
         payload["feedback_ids"] = fb_ids
@@ -1025,6 +1442,10 @@ def run_cycle(
     idx, pred = _latest_cycle(root, loop_id)
     cycle = idx + 1
     role = cycle_role_for_index(policy, cycle)
+    # Champion queue overrides matrix shape (confirm same knobs) but keeps
+    # cadence claim role for measurement suites / claim_class legality.
+    open_champion = _queue_head_open(_load_champion_queue(_champion_queue_path(root, loop_id)))
+    cycle_intent = "confirm" if open_champion is not None else role
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
         if role == "promotion"
@@ -1043,8 +1464,31 @@ def run_cycle(
     if primary_metric and primary_metric.split(".")[-1] == effective_primary.split(".")[-1]:
         effective_primary = primary_metric
     campaign_id = f"continuous-loop-{time.strftime('%Y%m%d')}-c{cycle}"
+    if open_champion is not None:
+        _update_champion_status(
+            root=root,
+            loop_id=loop_id,
+            entry_id=str(open_champion["entry_id"]),
+            status="confirming",
+            confirm_campaign_id=campaign_id,
+            confirm_cycle_index=cycle,
+        )
+        print(
+            f"CHAMPION_CONFIRM_START entry_id={open_champion.get('entry_id')} "
+            f"fingerprint={open_champion.get('knobs_fingerprint')} "
+            f"campaign={campaign_id}",
+            flush=True,
+        )
     py = sys.executable
     ar = [py, "-m", "scripts.autoresearch", "--root", str(root)]
+    notes = (
+        "Hands-off continuous driver cycle; local-only fixture scale."
+        if cycle_intent != "confirm"
+        else (
+            "Champion-queue confirmatory cycle: same levers as quality-held win, "
+            "new seed; local-only fixture scale."
+        )
+    )
     init = [
         *ar,
         "init",
@@ -1069,7 +1513,7 @@ def run_cycle(
         "--max-wall-minutes",
         str(stage_wall_minutes_for_role(policy, role)),
         "--notes",
-        "Hands-off continuous driver cycle; local-only fixture scale.",
+        notes,
     ]
     if pred:
         init.extend(["--predecessor-campaign-id", pred])
@@ -1149,6 +1593,23 @@ def run_cycle(
                 for item in feedback
                 if item.get("matrix_id") == previous_matrix_id
             ]
+    confirm_levers = None
+    if open_champion is not None:
+        confirm_levers = _lever_knobs(open_champion.get("knobs") or {})
+        if not confirm_levers:
+            # Corrupt queue entry — reject and fall back to thrash matrix.
+            _update_champion_status(
+                root=root,
+                loop_id=loop_id,
+                entry_id=str(open_champion["entry_id"]),
+                status="rejected",
+                confirm_campaign_id=campaign_id,
+                confirm_cycle_index=cycle,
+                resolve_reasons=["confirm_missing_knobs"],
+            )
+            open_champion = None
+            cycle_intent = role
+            confirm_levers = None
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
@@ -1162,6 +1623,7 @@ def run_cycle(
         previous_matrix_id=previous_matrix_id,
         role=role,
         policy=policy,
+        confirm_levers=confirm_levers,
     )
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
@@ -1236,9 +1698,28 @@ def run_cycle(
         primary_metric=effective_primary,
         cycle_index=cycle,
         role=role,
+        cycle_intent=cycle_intent,
     )
+    camp_dir = root / campaign_id
+    if open_champion is not None:
+        _resolve_confirm_result(
+            root=root,
+            loop_id=loop_id,
+            entry=open_champion,
+            delivery=delivery,
+            campaign_id=campaign_id,
+            cycle_index=cycle,
+        )
+    else:
+        _enqueue_champion(
+            root=root,
+            loop_id=loop_id,
+            delivery=delivery,
+            camp_dir=camp_dir,
+        )
     print(
-        f"CYCLE_COMPLETE {campaign_id} role={role} positive={delivery['positive']}",
+        f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
+        f"positive={delivery['positive']}",
         flush=True,
     )
     return campaign_id
