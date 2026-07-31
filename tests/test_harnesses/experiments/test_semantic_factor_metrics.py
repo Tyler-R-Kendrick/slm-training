@@ -41,7 +41,15 @@ def test_live_run_scoreboard_passes_metrics_contract(tmp_path) -> None:
         for key in REQUIRED_ARM_RUNTIME_FIELDS:
             assert key in arm, key
     resources = payload["config_resources"]
-    for key in ("metrics", "scorer_params", "campaign"):
+    for key in (
+        "metrics",
+        "scorer_params",
+        "campaign",
+        "claims",
+        "suite",
+        "projection",
+        "math_probes",
+    ):
         assert resources[key]["schema"].startswith("sff_")
         assert resources[key]["sha256"]
         assert not str(resources[key]["path"]).startswith("/")

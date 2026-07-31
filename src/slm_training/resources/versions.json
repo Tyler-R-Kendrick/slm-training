@@ -12152,7 +12152,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -12176,9 +12176,18 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/campaign.v1.json",
         "src/slm_training/harnesses/experiments/semantic_factor_config.py",
         "src/slm_training/harnesses/experiments/semantic_factor_metric_engine.py",
-        "tests/test_harnesses/experiments/test_semantic_factor_config.py"
+        "tests/test_harnesses/experiments/test_semantic_factor_config.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/claims.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/suite.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/projection.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/math_probes.v1.json"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-31",
+          "note": "Externalize remaining SFF high-volatility surfaces: claims.v1, suite.v1, projection.v1, math_probes.v1; campaign kill_rules + paired_comparisons; metrics populations/numerics/promotion; wire efficiency/promotion into claim rules; CLI seeds from campaign."
+        },
         {
           "version": "v5",
           "date": "2026-07-31",

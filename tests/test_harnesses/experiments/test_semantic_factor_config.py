@@ -1,4 +1,4 @@
-"""External SFF metrics / scorer_params / campaign schema loaders."""
+"""External SFF metrics / scorer_params / campaign / claims / suite schema loaders."""
 
 from __future__ import annotations
 
@@ -9,9 +9,14 @@ import pytest
 from slm_training.harnesses.experiments.semantic_factor_config import (
     SFF_RESOURCE_DIR,
     SFFConfigError,
+    build_suite_from_config,
     load_sff_campaign,
+    load_sff_claims,
+    load_sff_math_probes,
     load_sff_metrics,
+    load_sff_projection,
     load_sff_scorer_params,
+    load_sff_suite,
 )
 from slm_training.harnesses.experiments.semantic_factor_metric_engine import (
     apply_control_relative_metrics,
@@ -25,6 +30,10 @@ def test_resources_exist_with_versioned_schemas() -> None:
         ("metrics.v1.json", "sff_metrics/v1"),
         ("scorer_params.v1.json", "sff_scorer_params/v1"),
         ("campaign.v1.json", "sff_campaign/v1"),
+        ("claims.v1.json", "sff_claims/v1"),
+        ("suite.v1.json", "sff_suite/v1"),
+        ("projection.v1.json", "sff_projection/v1"),
+        ("math_probes.v1.json", "sff_math_probes/v1"),
     ):
         path = SFF_RESOURCE_DIR / name
         assert path.is_file(), path
@@ -39,8 +48,11 @@ def test_load_metrics_and_scorer_params() -> None:
     assert "wall_ms_mean" in metrics.required_arm_fields
     assert "quality_per_ms" in metrics.required_arm_fields
     assert "wall_ms_mean" in metrics.required_campaign_runtime_endpoints
+    assert metrics.efficiency_gate["max_slowdown_without_quality_gain"] == 10.0
+    assert "ranked" in metrics.populations
     assert scorer.arm("train_on_decode_on_direct_factors")["alpha"] == 1.5
     assert scorer.is_decode_on("exact_typed_zero_parameter")
+    assert "tol" in scorer.defaults
 
 
 def test_scorer_config_from_external_params() -> None:
@@ -54,6 +66,7 @@ def test_scorer_config_from_external_params() -> None:
     assert cfg.decode_apply is True
     assert cfg.params is not None
     assert cfg.params["lambda_restart"] == 0.15
+    assert cfg.params["tol"] == 1e-8
 
 
 def test_metric_engine_adds_metric_from_file_without_harness_edit() -> None:
@@ -139,16 +152,38 @@ def test_campaign_loads_linked_resources() -> None:
     camp = load_sff_campaign()
     assert camp.metrics.version == "v1"
     assert camp.scorer.version == "v1"
+    assert camp.claims.version == "v1"
+    assert camp.suite.version == "v1"
     identity = camp.resource_identity()
-    assert "metrics" in identity
-    # Durable scoreboards record repo-relative paths, never machine absolutes.
-    metrics_path = identity["metrics"]["path"]
-    assert not metrics_path.startswith("/")
-    assert metrics_path.endswith(
-        "resources/experiments/semantic_factor_frontier/metrics.v1.json"
-    )
-    assert identity["metrics"]["schema"] == "sff_metrics/v1"
-    assert identity["scorer_params"]["schema"] == "sff_scorer_params/v1"
-    assert identity["campaign"]["schema"] == "sff_campaign/v1"
-    assert len(identity["metrics"]["sha256"]) == 64
-    assert len(identity["scorer_params"]["sha256"]) == 64
+    for key in (
+        "metrics",
+        "scorer_params",
+        "campaign",
+        "claims",
+        "suite",
+        "projection",
+        "math_probes",
+    ):
+        assert key in identity
+        assert not str(identity[key]["path"]).startswith("/")
+        assert len(identity[key]["sha256"]) == 64
+    assert len(camp.kill_rules) >= 3
+    assert len(camp.paired_comparisons) >= 1
+    assert camp.seeds == (0, 1, 2)
+
+
+def test_suite_builder_from_external() -> None:
+    suite = build_suite_from_config(load_sff_suite())
+    assert len(suite) >= 26
+    assert any(e["example_id"] == "singleton_root" for e in suite)
+    ranked = [e for e in suite if e["family"] in {"ranked", "adversarial"}]
+    assert len(ranked) >= 24
+
+
+def test_claims_and_math_probes_load() -> None:
+    claims = load_sff_claims()
+    assert any(c["claim_id"].startswith("SFF-C18") for c in claims.claims)
+    math = load_sff_math_probes()
+    assert "soft_token_collision" in math.payload
+    proj = load_sff_projection()
+    assert "target_role_aliases" in proj.payload

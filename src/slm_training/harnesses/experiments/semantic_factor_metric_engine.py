@@ -29,8 +29,28 @@ def _get(row: OutcomeRow, field: str) -> Any:
 
 
 def _population(
-    rows: Sequence[OutcomeRow], population: str
+    rows: Sequence[OutcomeRow],
+    population: str,
+    *,
+    populations: Mapping[str, Any] | None = None,
 ) -> list[OutcomeRow]:
+    specs = populations or {}
+    if population in specs:
+        spec = dict(specs[population] or {})
+        fams = spec.get("include_families")
+        require_correct = bool(spec.get("require_correct_not_null"))
+        exclude_flags = tuple(str(x) for x in spec.get("exclude_if_true") or ())
+        out: list[OutcomeRow] = []
+        for r in rows:
+            if fams is not None and _get(r, "family") not in set(fams):
+                continue
+            if require_correct and _get(r, "correct") is None:
+                continue
+            if any(bool(_get(r, flag)) for flag in exclude_flags):
+                continue
+            out.append(r)
+        return out
+    # Legacy fallbacks when metrics resource omits populations.
     if population == "all":
         return list(rows)
     if population == "ranked":
@@ -73,10 +93,18 @@ def _wilson_interval(successes: int, n: int, z: float = 1.96) -> list[float]:
 
 
 def _run_aggregate(
-    spec: Mapping[str, Any], rows: Sequence[OutcomeRow], *, wilson_z: float
+    spec: Mapping[str, Any],
+    rows: Sequence[OutcomeRow],
+    *,
+    wilson_z: float,
+    populations: Mapping[str, Any] | None = None,
 ) -> Any:
     kind = str(spec["type"])
-    pop = _population(rows, str(spec.get("population") or "all"))
+    pop = _population(
+        rows,
+        str(spec.get("population") or "all"),
+        populations=populations,
+    )
     field = str(spec.get("field") or "")
 
     if kind == "count":
@@ -130,9 +158,10 @@ def compute_arm_metrics(
         "trainable_parameters": int(trainable_parameters),
         "claim_class": claim_class,
     }
+    pops = metrics_cfg.populations
     for spec in metrics_cfg.aggregates:
         out[str(spec["id"])] = _run_aggregate(
-            spec, rows, wilson_z=metrics_cfg.wilson_z
+            spec, rows, wilson_z=metrics_cfg.wilson_z, populations=pops
         )
     # Derived metrics that do not need control (ratio of aggregates, wilson from rows).
     for spec in metrics_cfg.derived:
@@ -153,7 +182,9 @@ def compute_arm_metrics(
             else:
                 out[mid] = float(num or 0.0) / den_f
         elif kind == "wilson_ci":
-            out[mid] = _run_aggregate(spec, rows, wilson_z=metrics_cfg.wilson_z)
+            out[mid] = _run_aggregate(
+                spec, rows, wilson_z=metrics_cfg.wilson_z, populations=pops
+            )
         # control-relative types applied later
         elif kind in {
             "minus_control",
@@ -176,6 +207,10 @@ def apply_control_relative_metrics(
     """Fill control-relative derived metrics in place on arm rows."""
 
     control = next(r for r in arm_rows if r["arm_id"] == control_arm_id)
+    numerics = metrics_cfg.numerics
+    zero_eps = float(numerics.get("ratio_zero_eps", 1e-12))
+    acc_eps = float(numerics.get("dominance_acc_eps", 1e-12))
+    ms_eps = float(numerics.get("dominance_ms_eps", 1e-9))
     for row in arm_rows:
         for spec in metrics_cfg.derived:
             kind = str(spec["type"])
@@ -205,7 +240,7 @@ def apply_control_relative_metrics(
                     continue
                 delta = float(a_q) - float(b_q)
                 extra = a_ms - b_ms
-                if abs(extra) < 1e-12:
+                if abs(extra) < zero_eps:
                     row[mid] = None if delta == 0 else float("inf")
                 else:
                     row[mid] = delta / extra
@@ -219,8 +254,8 @@ def apply_control_relative_metrics(
                     continue
                 delta = float(a_q) - float(b_q)
                 ratio = a_ms / b_ms
-                faster_or_equal = ratio <= 1.0 + 1e-9
-                better = delta > 1e-12
-                same = abs(delta) <= 1e-12
-                faster = ratio < 1.0 - 1e-9
+                faster_or_equal = ratio <= 1.0 + ms_eps
+                better = delta > acc_eps
+                same = abs(delta) <= acc_eps
+                faster = ratio < 1.0 - ms_eps
                 row[mid] = bool((better and faster_or_equal) or (same and faster))

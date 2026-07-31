@@ -231,6 +231,43 @@ def digest_snapshot(snapshot: SemanticEvidenceSnapshotV1) -> str:
     return hashlib.sha256(canonical_json(payload)).hexdigest()
 
 
+def _load_projection_payload() -> dict[str, Any]:
+    """Optional external projection.v1.json; fall back to built-in aliases."""
+
+    try:
+        from slm_training.harnesses.experiments.semantic_factor_config import (
+            load_sff_projection,
+        )
+
+        return dict(load_sff_projection().payload)
+    except Exception:
+        return {
+            "extractor_version": "semantic_evidence_projector/v1",
+            "default_claim_class": "fixture_or_scratch",
+            "component_role": "COMPONENT",
+            "component_confidence": 1.0,
+            "binder_confidence": 1.0,
+            "source_role_aliases": {
+                "DEF": "DEFINITION",
+                "DEFINITION": "DEFINITION",
+                "default": "SOURCE",
+            },
+            "target_role_aliases": {
+                "USE": "USE",
+                "REF": "USE",
+                "REFERENCE": "USE",
+                "default": "TARGET",
+            },
+        }
+
+
+def _alias_role(role: str, aliases: Mapping[str, Any]) -> str:
+    key = str(role).upper()
+    if key in aliases:
+        return str(aliases[key])
+    return str(aliases.get("default") or role)
+
+
 def project_program_factors(
     *,
     program_id: str,
@@ -238,20 +275,34 @@ def project_program_factors(
     binder_edges: Sequence[tuple[str, str, str]] = (),
     legal_candidate_ids: Sequence[str],
     coverage: str = "complete",
-    extractor_version: str = "semantic_evidence_projector/v1",
+    extractor_version: str | None = None,
 ) -> SemanticEvidenceSnapshotV1:
     """Pure projection from structural program facts into advisory factors.
 
     ``components`` is ``(node_id, component_kind)``.
     ``binder_edges`` is ``(source_id, target_id, role)``.
+    Role aliases / confidences come from ``projection.v1.json`` when available.
     """
+
+    proj = _load_projection_payload()
+    extractor = str(
+        extractor_version
+        or proj.get("extractor_version")
+        or "semantic_evidence_projector/v1"
+    )
+    component_role = str(proj.get("component_role") or "COMPONENT")
+    component_conf = float(proj.get("component_confidence", 1.0))
+    binder_conf = float(proj.get("binder_confidence", 1.0))
+    source_aliases = dict(proj.get("source_role_aliases") or {})
+    target_aliases = dict(proj.get("target_role_aliases") or {})
+    claim_class = str(proj.get("default_claim_class") or "fixture_or_scratch")
 
     factors: list[AdvisoryEvidenceFactorV1] = []
     for index, (node_id, kind) in enumerate(components):
         ports = (
             FactorPortV1(
                 port_id=f"{program_id}:comp:{index}:self",
-                role="COMPONENT",
+                role=component_role,
                 node_id=str(node_id),
                 node_kind=str(kind),
                 direction=FactorPortDirection.UNORDERED,
@@ -267,14 +318,18 @@ def project_program_factors(
                 polarity=EvidencePolarity.SUPPORTS,
                 source_kind=EvidenceSourceKind.EXACT_STATE,
                 source_ref=f"component:{node_id}",
-                confidence=1.0,
+                confidence=component_conf,
             )
         )
     for index, (src, tgt, role) in enumerate(binder_edges):
+        # Source port uses source_aliases (DEF→DEFINITION, else SOURCE).
+        # Target port uses target_aliases (USE/REF→USE, else TARGET).
+        src_role = _alias_role(role, source_aliases)
+        tgt_role = _alias_role(role, target_aliases)
         ports = (
             FactorPortV1(
                 port_id=f"{program_id}:bind:{index}:src",
-                role="DEFINITION" if role.upper() in {"DEF", "DEFINITION"} else "SOURCE",
+                role=src_role,
                 node_id=str(src),
                 node_kind="binder",
                 direction=FactorPortDirection.OUTPUT,
@@ -282,7 +337,7 @@ def project_program_factors(
             ),
             FactorPortV1(
                 port_id=f"{program_id}:bind:{index}:tgt",
-                role="USE" if role.upper() in {"USE", "REF", "REFERENCE"} else "TARGET",
+                role=tgt_role,
                 node_id=str(tgt),
                 node_kind="binder",
                 direction=FactorPortDirection.INPUT,
@@ -298,7 +353,7 @@ def project_program_factors(
                 polarity=EvidencePolarity.SUPPORTS,
                 source_kind=EvidenceSourceKind.BINDER_GRAPH,
                 source_ref=f"edge:{src}->{tgt}:{role}",
-                confidence=1.0,
+                confidence=binder_conf,
             )
         )
     source = {
@@ -307,7 +362,7 @@ def project_program_factors(
         "binder_edges": list(binder_edges),
         "legal_candidate_ids": list(legal_candidate_ids),
         "coverage": coverage,
-        "extractor_version": extractor_version,
+        "extractor_version": extractor,
     }
     snapshot = SemanticEvidenceSnapshotV1(
         schema="semantic_evidence_snapshot/v1",
@@ -315,10 +370,11 @@ def project_program_factors(
         legal_candidate_ids=tuple(str(x) for x in legal_candidate_ids),
         coverage=str(coverage),
         factors=tuple(factors),
-        extractor_version=extractor_version,
-        claim_class="fixture_or_scratch",
+        extractor_version=extractor,
+        claim_class=claim_class,
     )
     return snapshot
+
 
 
 @dataclass(frozen=True)
