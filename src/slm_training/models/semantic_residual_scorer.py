@@ -362,6 +362,8 @@ class SemanticResidualScorerV1:
         cfg = PropagationConfig(
             lambda_restart=float(self.config.lambda_restart),
             max_steps=int(self.config.max_steps),
+            tol=float(self._p("tol", 1e-8)),
+            gamma_contradict=float(self._p("gamma_contradict", 1.0)),
         )
         restart_role_bonus = dict(
             self._p(

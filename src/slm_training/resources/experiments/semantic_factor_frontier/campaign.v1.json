@@ -1,7 +1,7 @@
 {
   "schema": "sff_campaign/v1",
   "version": "v1",
-  "description": "Campaign metadata for SFF-anti-e237. Arms and endpoints are resolved from scorer_params + metrics files.",
+  "description": "Campaign metadata for SFF-anti-e237. Arms/endpoints from scorer_params+metrics; kills/paired/claims/suite from linked resources.",
   "campaign_id": "SFF-anti-e237-v1",
   "experiment_id": "semantic_factor_frontier_measured",
   "hypothesis": "Role-aware advisory factors change legal ambiguous choices and improve ranking of gold continuations without altering legal support.",
@@ -19,6 +19,45 @@
     "legal domain differs across arms",
     "UNKNOWN becomes UNSUPPORTED"
   ],
+  "kill_rules": [
+    {
+      "id": "applications_without_choice_changes",
+      "type": "apps_without_choice",
+      "scope": "decode_on"
+    },
+    {
+      "id": "singleton_work_performed",
+      "type": "singleton_work",
+      "example_id": "singleton_root"
+    },
+    {
+      "id": "singleton_neural_forward",
+      "type": "singleton_neural",
+      "example_id": "singleton_root"
+    },
+    {
+      "id": "quality_decreased_with_choice_changes",
+      "type": "quality_decreased",
+      "scope": "decode_on",
+      "eps": 1e-12
+    }
+  ],
+  "paired_comparisons": [
+    {
+      "id": "role_ported_vs_control",
+      "treatment": "train_on_decode_on_role_ported",
+      "control": "control_none",
+      "families": ["ranked", "adversarial"],
+      "metric": "correct"
+    }
+  ],
+  "decode_off_arm_id": "train_on_decode_off_role_ported",
+  "mechanism_useful": {
+    "arm_id_prefix": "train_on_decode_on",
+    "require_choice_changes": true,
+    "require_no_kills": true,
+    "require_acc_gt_control": true
+  },
   "controls": [
     {
       "control_id": "matched_baseline",
@@ -45,7 +84,8 @@
       "gate_id": "anti_e237_bar",
       "endpoint_id": "ranking_accuracy",
       "operator": "ge",
-      "threshold": 0.1
+      "threshold": 0.1,
+      "min_n": 20
     }
   ],
   "rollback_gates": [
@@ -57,5 +97,9 @@
     }
   ],
   "metrics_resource": "metrics.v1.json",
-  "scorer_params_resource": "scorer_params.v1.json"
+  "scorer_params_resource": "scorer_params.v1.json",
+  "claims_resource": "claims.v1.json",
+  "suite_resource": "suite.v1.json",
+  "projection_resource": "projection.v1.json",
+  "math_probes_resource": "math_probes.v1.json"
 }

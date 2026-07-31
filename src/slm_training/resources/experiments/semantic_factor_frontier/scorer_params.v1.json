@@ -35,7 +35,12 @@
       "default": 1.0
     },
     "lossy_pairwise_edge_weight": 0.5,
-    "member_roles": ["MEMBER", "COMPONENT"]
+    "member_roles": [
+      "MEMBER",
+      "COMPONENT"
+    ],
+    "tol": 1e-08,
+    "gamma_contradict": 1.0
   },
   "arms": {
     "control_none": {
@@ -84,7 +89,12 @@
       "alpha": 1.5
     }
   },
-  "decode_on_arm_prefixes": ["train_on_decode_on_"],
-  "decode_on_arm_ids": ["exact_typed_zero_parameter", "oracle_diagnostic"],
+  "decode_on_arm_prefixes": [
+    "train_on_decode_on_"
+  ],
+  "decode_on_arm_ids": [
+    "exact_typed_zero_parameter",
+    "oracle_diagnostic"
+  ],
   "control_arm_id": "control_none"
 }

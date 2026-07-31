@@ -141,7 +141,15 @@ def validate_scoreboard_metrics(payload: Mapping[str, Any]) -> None:
     if not isinstance(resources, Mapping):
         errors.append("missing config_resources (external metrics/scorer_params bind)")
     else:
-        for key in ("metrics", "scorer_params", "campaign"):
+        for key in (
+            "metrics",
+            "scorer_params",
+            "campaign",
+            "claims",
+            "suite",
+            "projection",
+            "math_probes",
+        ):
             block = resources.get(key)
             if not isinstance(block, Mapping):
                 errors.append(f"config_resources.{key} missing")

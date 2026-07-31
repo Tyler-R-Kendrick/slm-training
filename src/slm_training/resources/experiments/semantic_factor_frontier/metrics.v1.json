@@ -267,5 +267,34 @@
       "minimum_effect": 0.0
     }
   ],
-  "required_campaign_runtime_endpoints": ["wall_ms_mean", "quality_per_ms"]
+  "required_campaign_runtime_endpoints": [
+    "wall_ms_mean",
+    "quality_per_ms"
+  ],
+  "populations": {
+    "all": {
+      "include_families": null
+    },
+    "ranked": {
+      "include_families": [
+        "ranked",
+        "adversarial"
+      ],
+      "require_correct_not_null": true,
+      "exclude_if_true": [
+        "incomplete_skip",
+        "singleton_skip"
+      ]
+    }
+  },
+  "numerics": {
+    "ratio_zero_eps": 1e-12,
+    "dominance_acc_eps": 1e-12,
+    "dominance_ms_eps": 1e-09
+  },
+  "promotion": {
+    "delta": 0.1,
+    "min_n": 20,
+    "endpoint_id": "ranking_accuracy"
+  }
 }

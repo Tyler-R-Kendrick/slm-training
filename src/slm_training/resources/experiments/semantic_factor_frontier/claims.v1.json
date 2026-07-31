@@ -1,0 +1,215 @@
+{
+  "schema": "sff_claims/v1",
+  "version": "v1",
+  "description": "SFF claim registry: inventory + rule params. Harness dispatches by rule type only.",
+  "thresholds": {
+    "promotion_delta": 0.1,
+    "promotion_min_n": 20,
+    "fixture_claim_classes": [
+      "fixture",
+      "wiring",
+      "fixture_or_scratch"
+    ],
+    "acc_eps": 1e-09,
+    "ms_eps": 1e-09,
+    "zero_eps": 1e-12,
+    "efficiency_max_slowdown_from": "metrics.efficiency_gate.max_slowdown_without_quality_gain"
+  },
+  "runtime_required_arm_fields": [
+    "wall_ms_mean",
+    "wall_ms_p50",
+    "wall_ms_p95",
+    "wall_ms_total",
+    "quality_per_ms",
+    "wall_ms_mean_vs_control"
+  ],
+  "unimplemented_required_keys": [
+    "rl",
+    "spectral_training",
+    "production_topology_authority",
+    "graph_pruning",
+    "recurrent_semantic_inference",
+    "faithful_shift_soft_tokens",
+    "search_r1_policy_training"
+  ],
+  "efficiency_skip_arm_ids": [
+    "control_none",
+    "train_on_decode_off_role_ported"
+  ],
+  "claims": [
+    {
+      "claim_id": "SFF-C1-support-preservation",
+      "statement": "Advisory residual never changes the exact legal candidate set.",
+      "kind": "safety",
+      "rule": "support_preservation",
+      "params": {}
+    },
+    {
+      "claim_id": "SFF-C2-singleton-zero-work",
+      "statement": "Complete singletons perform zero factor/propagation/ranker/neural work.",
+      "kind": "safety",
+      "rule": "singleton_zero_work",
+      "params": {
+        "kill_ids": [
+          "singleton_work_performed",
+          "singleton_neural_forward"
+        ]
+      }
+    },
+    {
+      "claim_id": "SFF-C3-unknown-preserved",
+      "statement": "Incomplete coverage never becomes UNSUPPORTED via residual scoring.",
+      "kind": "safety",
+      "rule": "unknown_preserved",
+      "params": {}
+    },
+    {
+      "claim_id": "SFF-C4-decode-off-identity",
+      "statement": "train-on/decode-off is behaviorally identical to control at decode.",
+      "kind": "causal",
+      "rule": "decode_off_identity",
+      "params": {}
+    },
+    {
+      "claim_id": "SFF-C5-factor-node-lossless",
+      "statement": "factor_node representation reconstructs factor membership exactly.",
+      "kind": "representation",
+      "rule": "membership_roundtrip",
+      "params": {}
+    },
+    {
+      "claim_id": "SFF-C6-role-ported-causal",
+      "statement": "role_ported_factor residual changes legal choices and improves ranking vs control.",
+      "kind": "causal",
+      "rule": "causal_improve",
+      "params": {
+        "arm_id": "train_on_decode_on_role_ported",
+        "require_choice_change": true,
+        "require_no_kills": true
+      }
+    },
+    {
+      "claim_id": "SFF-C7-factor-node-causal",
+      "statement": "factor_node residual (roles stripped) changes choices and improves ranking.",
+      "kind": "causal",
+      "rule": "causal_improve",
+      "params": {
+        "arm_id": "train_on_decode_on_factor_node",
+        "require_choice_change": true,
+        "require_no_kills": true
+      }
+    },
+    {
+      "claim_id": "SFF-C8-direct-factors-causal",
+      "statement": "direct_factors residual changes choices and improves ranking vs control.",
+      "kind": "causal",
+      "rule": "causal_improve",
+      "params": {
+        "arm_id": "train_on_decode_on_direct_factors",
+        "require_choice_change": true,
+        "require_no_kills": true
+      }
+    },
+    {
+      "claim_id": "SFF-C9-role-identity-load-bearing",
+      "statement": "role_ported beats role_shuffled on ranking when both apply residuals.",
+      "kind": "causal",
+      "rule": "beats_arm",
+      "params": {
+        "treatment_arm_id": "train_on_decode_on_role_ported",
+        "baseline_arm_id": "train_on_decode_on_role_shuffled",
+        "metric": "ranking_accuracy"
+      }
+    },
+    {
+      "claim_id": "SFF-C10-higher-order-identity",
+      "statement": "factor_node (lossless) beats lossy_pairwise on ranking under matched evidence.",
+      "kind": "causal",
+      "rule": "beats_arm",
+      "params": {
+        "treatment_arm_id": "train_on_decode_on_factor_node",
+        "baseline_arm_id": "train_on_decode_on_lossy_pairwise",
+        "metric": "ranking_accuracy"
+      }
+    },
+    {
+      "claim_id": "SFF-C11-exact-typed-baseline",
+      "statement": "exact_typed_zero_parameter is competitive with residual arms (zero params).",
+      "kind": "causal",
+      "rule": "competitive_with",
+      "params": {
+        "arm_id": "exact_typed_zero_parameter",
+        "peer_arm_id": "train_on_decode_on_direct_factors",
+        "metric": "ranking_accuracy"
+      }
+    },
+    {
+      "claim_id": "SFF-C12-apps-without-choice-is-fail",
+      "statement": "Any decode-on residual arm with applications>0 and choice_changes==0 is rejected.",
+      "kind": "causal",
+      "rule": "apps_without_choice_kill",
+      "params": {
+        "arm_id_prefix": "train_on_decode_on",
+        "kill_id": "applications_without_choice_changes"
+      }
+    },
+    {
+      "claim_id": "SFF-C13-propagation-column-stochastic",
+      "statement": "Reference S has column sums \u2248 1 on valid nonempty incidence (math property).",
+      "kind": "math",
+      "rule": "math_flag",
+      "params": {
+        "flag": "column_stochastic_ok"
+      }
+    },
+    {
+      "claim_id": "SFF-C14-soft-token-not-injective",
+      "statement": "Soft-token map p\u21a6E\u1d40p is not injective on the simplex (SHIFT video overclaim).",
+      "kind": "math",
+      "rule": "math_flag",
+      "params": {
+        "flag": "soft_token_collision_ok"
+      }
+    },
+    {
+      "claim_id": "SFF-C15-no-rl-no-spectral",
+      "statement": "RL and spectral training paths remain unimplemented in this delivery.",
+      "kind": "safety",
+      "rule": "unimplemented_forbidden",
+      "params": {}
+    },
+    {
+      "claim_id": "SFF-C16-anti-e237-promotion-bar",
+      "statement": "held_out meaningful \u2265 control+0.10 at n\u226520 (promotion bar).",
+      "kind": "causal",
+      "rule": "promotion_bar",
+      "params": {
+        "decode_on_prefix": "train_on_decode_on"
+      }
+    },
+    {
+      "claim_id": "SFF-C17-runtime-tracked",
+      "statement": "Every arm reports wall_ms_mean/p50/p95 and quality_per_ms (runtime is first-class).",
+      "kind": "causal",
+      "rule": "runtime_tracked",
+      "params": {}
+    },
+    {
+      "claim_id": "SFF-C18-efficiency-vs-quality",
+      "statement": "If a residual arm is >10\u00d7 slower than control mean wall_ms, it must improve accuracy by more than the noise floor or be efficiency-rejected.",
+      "kind": "causal",
+      "rule": "efficiency_gate",
+      "params": {}
+    },
+    {
+      "claim_id": "SFF-C19-exact-typed-efficiency",
+      "statement": "exact_typed_zero_parameter is not dominated on (accuracy, wall_ms_mean) by residual arms with equal-or-worse quality and higher runtime.",
+      "kind": "causal",
+      "rule": "exact_typed_efficiency",
+      "params": {
+        "arm_id": "exact_typed_zero_parameter",
+        "competitor_prefix": "train_on_decode_on"
+      }
+    }
+  ]
+}

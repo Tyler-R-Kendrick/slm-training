@@ -33,20 +33,28 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("docs/design/semantic-factor-frontier-results.json"),
     )
-    parser.add_argument("--seeds", type=int, nargs="+", default=[0, 1])
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Override campaign seeds (default: campaign.v1.json seeds).",
+    )
     args = parser.parse_args(argv)
 
     from slm_training.harnesses.experiments.anti_e237_semantic_factor_frontier import (
         run_semantic_factor_frontier,
     )
+    from slm_training.harnesses.experiments.semantic_factor_config import load_sff_campaign
     from slm_training.harnesses.experiments.semantic_factor_metrics import (
         ScoreboardMetricsError,
         validate_scoreboard_metrics,
     )
 
     sha, dirty = _git_sha()
+    seeds = tuple(args.seeds) if args.seeds is not None else load_sff_campaign().seeds
     payload = run_semantic_factor_frontier(
-        seeds=tuple(args.seeds),
+        seeds=seeds,
         out_dir=args.out_dir,
         source_commit=sha if len(sha) == 40 else "0" * 40,
         source_dirty=dirty,

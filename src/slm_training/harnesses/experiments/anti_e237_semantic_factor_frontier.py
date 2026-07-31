@@ -37,6 +37,7 @@ from slm_training.data.progspec.semantic_evidence import (
 )
 from slm_training.harnesses.experiments.semantic_factor_claims import evaluate_claims
 from slm_training.harnesses.experiments.semantic_factor_config import (
+    build_suite_from_config,
     load_sff_campaign,
 )
 from slm_training.harnesses.experiments.semantic_factor_metric_engine import (
@@ -67,103 +68,10 @@ __all__ = [
 
 
 def build_ranked_suite() -> tuple[dict[str, Any], ...]:
-    """Deterministic n≥24 complete-ambiguous suite + singleton + incomplete.
+    """Materialize suite from external suite.v1.json (generator + static examples)."""
 
-    Each example has a wrong baseline argmax and gold recoverable from binder
-    USE/TARGET structure so residual arms can be causally tested.
-    """
+    return build_suite_from_config(load_sff_campaign().suite)
 
-    examples: list[dict[str, Any]] = []
-    # Singleton + incomplete safety anchors (not counted in ranking n).
-    examples.append(
-        {
-            "example_id": "singleton_root",
-            "components": (("root", "Card"),),
-            "binder_edges": (),
-            "legal": ("=",),
-            "coverage": "complete",
-            "gold": "=",
-            "baseline": {"=": 1.0},
-            "family": "safety",
-        }
-    )
-    examples.append(
-        {
-            "example_id": "incomplete_unknown",
-            "components": (("Card", "Card"),),
-            "binder_edges": (),
-            "legal": ("b1", "b2"),
-            "coverage": "incomplete",
-            "gold": None,
-            "baseline": {"b1": 0.0, "b2": 0.0},
-            "family": "safety",
-        }
-    )
-    # 24 ranked ambiguous cases: gold is USE target; baseline prefers distractor.
-    kinds = ("TextContent", "Button", "Input", "List", "CardHeader", "Image")
-    for i in range(24):
-        gold = f"g{i}"
-        distractor = f"d{i}"
-        noise = f"n{i}"
-        root = f"r{i}"
-        kind = kinds[i % len(kinds)]
-        # Baseline wrongly ranks distractor highest.
-        baseline = {gold: 0.10, distractor: 0.40 + 0.01 * (i % 3), noise: 0.05}
-        examples.append(
-            {
-                "example_id": f"ranked_{i:02d}",
-                "components": (
-                    (root, "Card"),
-                    (gold, kind),
-                    (distractor, kinds[(i + 1) % len(kinds)]),
-                    (noise, "List"),
-                ),
-                "binder_edges": (
-                    (root, gold, "USE"),
-                    (root, distractor, "USE") if i % 5 == 0 else (noise, distractor, "USE"),
-                ),
-                "legal": (gold, distractor, noise),
-                "coverage": "complete",
-                "gold": gold,
-                "baseline": baseline,
-                "family": "ranked",
-            }
-        )
-    # Adversarial role/direction cases.
-    examples.append(
-        {
-            "example_id": "role_direction",
-            "components": (("src", "binder"), ("tgt", "binder"), ("alt", "binder")),
-            "binder_edges": (("src", "tgt", "DEFINITION"),),
-            "legal": ("src", "tgt", "alt"),
-            "coverage": "complete",
-            "gold": "tgt",
-            "baseline": {"src": 0.55, "tgt": 0.40, "alt": 0.10},
-            "family": "adversarial",
-        }
-    )
-    examples.append(
-        {
-            "example_id": "hub_noise",
-            "components": (
-                ("hub", "Card"),
-                ("a", "TextContent"),
-                ("b", "Button"),
-                ("noise", "List"),
-            ),
-            "binder_edges": (
-                ("hub", "a", "USE"),
-                ("noise", "b", "USE"),
-                ("noise", "a", "USE"),
-            ),
-            "legal": ("a", "b", "noise"),
-            "coverage": "complete",
-            "gold": "a",
-            "baseline": {"a": 0.05, "b": 0.10, "noise": 0.50},
-            "family": "adversarial",
-        }
-    )
-    return tuple(examples)
 
 
 def _arm_digest(arm_id: str, arm_payload: Mapping[str, Any] | None = None) -> str:
@@ -300,19 +208,25 @@ def _reciprocal_rank(ordered: Sequence[str], gold: str | None) -> float:
 
 
 def _math_properties() -> dict[str, Any]:
-    """Executable math checks that back SFF-C13/C14 (also Lean)."""
+    """Executable math checks from external math_probes.v1.json (C13/C14)."""
 
-    # Column-stochastic S on a simple incidence.
-    B = np.array([[1.0, 1.0], [1.0, 0.0], [0.0, 1.0]], dtype=np.float64)
+    probes = load_sff_campaign().math_probes.payload
+    cs = dict(probes.get("column_stochastic") or {})
+    B = np.array(cs.get("incidence_B") or [[1.0, 1.0], [1.0, 0.0], [0.0, 1.0]], dtype=np.float64)
     S, col, notes = column_stochastic_S(B)
-    col_ok = bool(np.allclose(col, 1.0, atol=1e-9))
-    r = np.array([1.0, 0.0, 0.0])
+    atol = float(cs.get("column_sum_atol", 1e-9))
+    mass_atol = float(cs.get("mass_atol", 1e-8))
+    col_ok = bool(np.allclose(col, 1.0, atol=atol))
+    r = np.array(cs.get("restart") or [1.0, 0.0, 0.0], dtype=np.float64)
     prop = propagate_restart(B, r)
-    mass_ok = abs(float(prop.confidence.sum()) - 1.0) < 1e-8
-    # Soft-token collision: E maps e0 and e1 to same scalar.
-    soft_a = 1 * 7 + 0 * 7 + 0 * 3
-    soft_b = 0 * 7 + 1 * 7 + 0 * 3
-    soft_ok = soft_a == soft_b and [1, 0, 0] != [0, 1, 0]
+    mass_ok = abs(float(prop.confidence.sum()) - 1.0) < mass_atol
+    st = dict(probes.get("soft_token_collision") or {})
+    a = list(st.get("a") or [1, 0, 0])
+    b = list(st.get("b") or [0, 1, 0])
+    coeffs = list(st.get("coeffs") or [7, 7, 3])
+    soft_a = sum(int(x) * int(c) for x, c in zip(a, coeffs, strict=False))
+    soft_b = sum(int(x) * int(c) for x, c in zip(b, coeffs, strict=False))
+    soft_ok = soft_a == soft_b and a != b
     return {
         "column_stochastic_ok": col_ok and mass_ok,
         "column_sums": [float(x) for x in col.tolist()],
@@ -322,6 +236,7 @@ def _math_properties() -> dict[str, Any]:
         "soft_token_values": [soft_a, soft_b],
         "notes": list(notes),
     }
+
 
 
 @dataclass
@@ -345,7 +260,7 @@ class _ExampleOutcome:
 
 def run_semantic_factor_frontier(
     *,
-    seeds: Sequence[int] = (0, 1, 2),
+    seeds: Sequence[int] | None = None,
     out_dir: Path | None = None,
     source_commit: str | None = None,
     source_dirty: bool = False,
@@ -353,6 +268,9 @@ def run_semantic_factor_frontier(
     """Execute the locked campaign and return metrics + claim verdicts."""
 
     commit = source_commit or ("0" * 40)
+    sff_early = load_sff_campaign()
+    if seeds is None:
+        seeds = sff_early.seeds
     campaign = build_campaign(source_commit=commit, source_dirty=source_dirty)
     lock = lock_campaign(campaign)
     suite = build_ranked_suite()
@@ -493,16 +411,28 @@ def run_semantic_factor_frontier(
         applications = sum(int(r["applications"]) for r in engine_rows)
         choice_changes = sum(1 for r in engine_rows if r["choice_changed"])
         kill: list[str] = []
-        if applications > 0 and choice_changes == 0 and scorer_cfg.is_decode_on(
-            arm.arm_id
-        ):
-            kill.append("applications_without_choice_changes")
-        for o in rows:
-            if o.example_id == "singleton_root":
-                if not o.result["singleton_skip"] or o.result["applications"] != 0:
-                    kill.append("singleton_work_performed")
-                if o.result["telemetry"].get("neural_forwards", 0) != 0:
-                    kill.append("singleton_neural_forward")
+        for rule in sff.kill_rules:
+            rtype = str(rule.get("type") or "")
+            rid = str(rule.get("id") or rtype)
+            scope = str(rule.get("scope") or "")
+            if rtype == "apps_without_choice":
+                if applications > 0 and choice_changes == 0:
+                    if scope != "decode_on" or scorer_cfg.is_decode_on(arm.arm_id):
+                        kill.append(rid)
+            elif rtype == "singleton_work":
+                ex_id = str(rule.get("example_id") or "singleton_root")
+                for o in rows:
+                    if o.example_id != ex_id:
+                        continue
+                    if not o.result["singleton_skip"] or o.result["applications"] != 0:
+                        kill.append(rid)
+            elif rtype == "singleton_neural":
+                ex_id = str(rule.get("example_id") or "singleton_root")
+                for o in rows:
+                    if o.example_id != ex_id:
+                        continue
+                    if o.result["telemetry"].get("neural_forwards", 0) != 0:
+                        kill.append(rid)
         row = compute_arm_metrics(
             metrics_cfg,
             arm_id=arm.arm_id,
@@ -522,43 +452,82 @@ def run_semantic_factor_frontier(
     control = next(r for r in arm_rows if r["arm_id"] == control_arm_id)
     control_acc = control.get("ranking_accuracy") or 0.0
     control_ms = float(control.get("wall_ms_mean") or 0.0)
+    zero_eps = float(metrics_cfg.numerics.get("ratio_zero_eps", 1e-12))
     for row in arm_rows:
         acc = row.get("ranking_accuracy")
-        if (
-            scorer_cfg.is_decode_on(str(row["arm_id"]))
-            and acc is not None
-            and int(row.get("choice_changes") or 0) > 0
-            and float(acc) + 1e-12 < float(control_acc)
-        ):
-            row["kill_criteria_hit"] = sorted(
-                set(row["kill_criteria_hit"]) | {"quality_decreased_with_choice_changes"}
-            )
+        for rule in sff.kill_rules:
+            if str(rule.get("type")) != "quality_decreased":
+                continue
+            rid = str(rule.get("id") or "quality_decreased_with_choice_changes")
+            eps = float(rule.get("eps", zero_eps))
+            scope = str(rule.get("scope") or "")
+            if scope == "decode_on" and not scorer_cfg.is_decode_on(str(row["arm_id"])):
+                continue
+            if (
+                acc is not None
+                and int(row.get("choice_changes") or 0) > 0
+                and float(acc) + eps < float(control_acc)
+            ):
+                row["kill_criteria_hit"] = sorted(
+                    set(row["kill_criteria_hit"]) | {rid}
+                )
 
-    # Paired per-example control vs role_ported accuracy delta.
-    paired_deltas: list[float] = []
-    control_by_key = {
-        (o.example_id, o.seed): o
-        for o in outcomes
-        if o.arm_id == "control_none" and o.family in {"ranked", "adversarial"}
+    # Paired comparisons from campaign resource.
+    paired_blocks: dict[str, Any] = {}
+    ranked_fams = set(
+        str(x)
+        for x in (sff.suite.payload.get("ranked_families") or ("ranked", "adversarial"))
+    )
+    for pair in sff.paired_comparisons:
+        pair_id = str(pair.get("id") or "paired")
+        treatment = str(pair["treatment"])
+        ctrl_id = str(pair.get("control") or control_arm_id)
+        families = set(str(x) for x in pair.get("families") or ranked_fams)
+        control_by_key = {
+            (o.example_id, o.seed): o
+            for o in outcomes
+            if o.arm_id == ctrl_id and o.family in families
+        }
+        deltas: list[float] = []
+        for o in outcomes:
+            if o.arm_id != treatment:
+                continue
+            if o.family not in families or o.correct is None:
+                continue
+            base = control_by_key.get((o.example_id, o.seed))
+            if base is None or base.correct is None:
+                continue
+            deltas.append(float(o.correct) - float(base.correct))
+        paired_blocks[pair_id] = {
+            "treatment": treatment,
+            "control": ctrl_id,
+            "n": len(deltas),
+            "mean_delta_accuracy": (
+                sum(deltas) / len(deltas) if deltas else None
+            ),
+            "n_improved": sum(1 for d in deltas if d > 0),
+            "n_regressed": sum(1 for d in deltas if d < 0),
+        }
+    # Back-compat alias used by older docs/tests.
+    primary_pair = next(iter(paired_blocks.values()), None)
+    paired_role_ported = primary_pair or {
+        "n": 0,
+        "mean_delta_accuracy": None,
+        "n_improved": 0,
+        "n_regressed": 0,
     }
-    for o in outcomes:
-        if o.arm_id != "train_on_decode_on_role_ported":
-            continue
-        if o.family not in {"ranked", "adversarial"} or o.correct is None:
-            continue
-        base = control_by_key.get((o.example_id, o.seed))
-        if base is None or base.correct is None:
-            continue
-        paired_deltas.append(float(o.correct) - float(base.correct))
 
+    decode_off_arm = str(
+        sff.payload.get("decode_off_arm_id") or "train_on_decode_off_role_ported"
+    )
     decode_off_identical = True
     control_sel = {
         (o.example_id, o.seed): o.selected
         for o in outcomes
-        if o.arm_id == "control_none"
+        if o.arm_id == control_arm_id
     }
     for o in outcomes:
-        if o.arm_id == "train_on_decode_off_role_ported":
+        if o.arm_id == decode_off_arm:
             if control_sel.get((o.example_id, o.seed)) != o.selected:
                 decode_off_identical = False
 
@@ -577,23 +546,21 @@ def run_semantic_factor_frontier(
         },
         "suite": {
             "n_examples": len(suite),
-            "n_ranked_design": sum(
-                1 for e in suite if e.get("family") in {"ranked", "adversarial"}
-            ),
+            "n_ranked_design": sum(1 for e in suite if e.get("family") in ranked_fams),
             "seeds": list(seeds),
+            "resource": sff.suite.resource_identity(),
         },
         "n_ranked_per_arm": n_ranked,
         "membership_roundtrip_ok": membership_roundtrip_ok,
         "support_preservation_ok": support_preservation_ok,
         "decode_off_identical_to_control": decode_off_identical,
         "math_properties": math_props,
+        "paired_comparisons": paired_blocks,
         "paired_role_ported_vs_control": {
-            "n": len(paired_deltas),
-            "mean_delta_accuracy": (
-                sum(paired_deltas) / len(paired_deltas) if paired_deltas else None
-            ),
-            "n_improved": sum(1 for d in paired_deltas if d > 0),
-            "n_regressed": sum(1 for d in paired_deltas if d < 0),
+            "n": paired_role_ported.get("n"),
+            "mean_delta_accuracy": paired_role_ported.get("mean_delta_accuracy"),
+            "n_improved": paired_role_ported.get("n_improved"),
+            "n_regressed": paired_role_ported.get("n_regressed"),
         },
         "arms": arm_rows,
         "outcomes": [
@@ -642,22 +609,29 @@ def run_semantic_factor_frontier(
             "Fixture/synthetic ranked suite (n_ranked design ≥24×seeds). "
             "Not held_out promotion. Anti-E237 bar requires held_out n≥20. "
             "Runtime is a first-class endpoint (wall_ms_mean, quality_per_ms). "
-            "Metrics and scorer params loaded from versioned resources "
-            "(config_resources)."
+            "Metrics, scorer params, claims, suite, projection, and math probes "
+            "loaded from versioned resources (config_resources)."
         ),
     }
-    claims = evaluate_claims(payload)
+    claims = evaluate_claims(
+        payload, claims_cfg=sff.claims, metrics_cfg=metrics_cfg
+    )
     payload["claims"] = [c.to_dict() for c in claims]
     payload["claims_summary"] = {
         "validated": sum(1 for c in claims if c.verdict == "validated"),
         "invalidated": sum(1 for c in claims if c.verdict == "invalidated"),
         "inconclusive": sum(1 for c in claims if c.verdict == "inconclusive"),
     }
+    mech = dict(sff.payload.get("mechanism_useful") or {})
+    prefix = str(mech.get("arm_id_prefix") or "train_on_decode_on")
     any_useful = any(
-        r["arm_id"].startswith("train_on_decode_on")
-        and r["choice_changes"] > 0
-        and not r["kill_criteria_hit"]
-        and (r["ranking_accuracy"] or 0) > control_acc
+        str(r["arm_id"]).startswith(prefix)
+        and (not mech.get("require_choice_changes", True) or r["choice_changes"] > 0)
+        and (not mech.get("require_no_kills", True) or not r["kill_criteria_hit"])
+        and (
+            not mech.get("require_acc_gt_control", True)
+            or (r["ranking_accuracy"] or 0) > control_acc
+        )
         for r in arm_rows
     )
     payload["mechanism_causally_useful"] = bool(

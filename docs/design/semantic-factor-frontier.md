@@ -90,19 +90,24 @@ control+0.10 at n≥20 under the accepted ADR bar.
 | SHIFT gate | **Not implemented** (would be advisory-only if added) |
 | Search-R1 | **Adapted** trajectory ownership idea only; no RL |
 
-## External versioned configs (metrics + parameters)
+## External versioned configs (metrics + parameters + claims + suite)
 
-Metric inventories, formula definitions, scorer hyperparameters, and campaign
-metadata live in **versioned external JSON** under
+Metric inventories, formulas, scorer hyperparameters, claims, fixture suite,
+projection aliases, math probes, and campaign metadata live in **versioned
+external JSON** under
 `src/slm_training/resources/experiments/semantic_factor_frontier/`. Harness Python
-dispatches by formula `type` and arm id; changing the number of metrics,
-endpoint list, alphas, or role weights should only edit the resource files.
+dispatches by formula `type`, kill `type`, and claim `rule`; changing knobs
+should only edit resource files.
 
 | File | Schema | Purpose |
 | --- | --- | --- |
-| `metrics.v1.json` | `sff_metrics/v1` | Aggregates, derived formulas, required fields, campaign endpoints, efficiency gate |
-| `scorer_params.v1.json` | `sff_scorer_params/v1` | Arm table (`representation`/`decode_apply`/`alpha`), defaults (restart λ, role multipliers, …) |
-| `campaign.v1.json` | `sff_campaign/v1` | Campaign id, seeds, budget, gates; links to the two resources above |
+| `metrics.v1.json` | `sff_metrics/v1` | Aggregates, derived formulas, populations, numerics, required fields, endpoints, efficiency + promotion thresholds |
+| `scorer_params.v1.json` | `sff_scorer_params/v1` | Arm table (`representation`/`decode_apply`/`alpha`), defaults (restart λ, role multipliers, `tol`, `gamma_contradict`, …) |
+| `campaign.v1.json` | `sff_campaign/v1` | Campaign id, seeds, budget, gates, **kill_rules**, **paired_comparisons**, links to all sibling resources |
+| `claims.v1.json` | `sff_claims/v1` | Claim inventory (C1–C19) + rule params (arm ids, thresholds); thresholds prefer metrics/campaign promotion + efficiency_gate |
+| `suite.v1.json` | `sff_suite/v1` | Fixture suite generator params + static safety/adversarial examples |
+| `projection.v1.json` | `sff_projection/v1` | Binder role aliases, default confidences, extractor_version |
+| `math_probes.v1.json` | `sff_math_probes/v1` | Incidence / soft-token probes for math claims C13/C14 |
 
 Each file requires `schema` + `version` at the root. Loaders:
 `semantic_factor_config.py`. Formula execution: `semantic_factor_metric_engine.py`
@@ -110,17 +115,21 @@ Each file requires `schema` + `version` at the root. Loaders:
 extension; new metrics of an existing type are file-only).
 
 Scoreboards bind the exact files used via `config_resources` (repo-relative
-`path`, `schema`, `version`, content `sha256`). Missing binds fail
-`validate_scoreboard_metrics`.
+`path`, `schema`, `version`, content `sha256`) for **all seven** resources.
+Missing binds fail `validate_scoreboard_metrics`.
 
 ### How to change parameters without harness edits
 
-1. Edit `scorer_params.v1.json` (new arm, different α, new role weight).
-2. Edit `metrics.v1.json` (add aggregate of type `mean`/`ratio`/…, extend
-   `required_arm_fields`, add endpoint).
-3. Bump the component in `resources/versions.json` (or `no-bump:` when
+1. Edit `scorer_params.v1.json` (new arm, different α, new role weight, tol).
+2. Edit `metrics.v1.json` (add aggregate of type `mean`/`ratio`/…, endpoints,
+   efficiency slowdown, populations).
+3. Edit `claims.v1.json` (new claim of an existing rule type, different arm id).
+4. Edit `suite.v1.json` (n ranked, baselines, adversarial templates).
+5. Edit `campaign.v1.json` (seeds, kill_rules, paired_comparisons).
+6. Bump the component in `resources/versions.json` (or `no-bump:` when
    behavior-neutral). Schema version (`sff_*/v1`) stays until the shape breaks.
-4. Re-run `python -m scripts.run_semantic_factor_frontier`.
+7. Re-run `python -m scripts.run_semantic_factor_frontier` (seeds default from
+   campaign resource).
 
 ## Metrics contract (required on every future run)
 
@@ -150,8 +159,8 @@ Owned by `metrics.v1.json` → `required_runtime_block`:
 
 ### Required `config_resources` bind
 
-`metrics` / `scorer_params` / `campaign` each with `path`, `schema`, `version`,
-`sha256`.
+`metrics` / `scorer_params` / `campaign` / `claims` / `suite` / `projection` /
+`math_probes` each with `path`, `schema`, `version`, `sha256`.
 
 Runtime is a **decision axis**, not a footnote: a slightly worse accuracy at
 ~100× lower `wall_ms_mean` can be preferred. Tests in

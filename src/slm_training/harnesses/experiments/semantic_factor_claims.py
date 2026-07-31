@@ -1,14 +1,21 @@
 """Claim registry: validate / invalidate / inconclusive for SFF experiments.
 
-Each claim is a falsifiable statement with a machine-checkable verdict derived
-from measured campaign metrics. Proofs in Lean cover the mathematical cores;
-runtime claims cover causal/experimental hypotheses.
+Claim inventory and thresholds live in ``claims.v1.json`` (and linked
+metrics/campaign promotion fields). This module only dispatches by rule type.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping
+from typing import Any, Literal, Mapping, Sequence
+
+from slm_training.harnesses.experiments.semantic_factor_config import (
+    SFFClaimsConfig,
+    SFFMetricsConfig,
+    load_sff_campaign,
+    load_sff_claims,
+    load_sff_metrics,
+)
 
 ClaimVerdict = Literal["validated", "invalidated", "inconclusive"]
 
@@ -17,6 +24,7 @@ __all__ = [
     "ClaimResult",
     "evaluate_claims",
     "CLAIM_SPECS",
+    "load_claim_specs",
 ]
 
 
@@ -25,8 +33,8 @@ class ClaimSpec:
     claim_id: str
     statement: str
     kind: Literal["math", "causal", "safety", "representation"]
-    # How to decide from a metrics blob (implemented in evaluate_claims).
     rule: str
+    params: Mapping[str, Any]
 
 
 @dataclass(frozen=True)
@@ -47,124 +55,26 @@ class ClaimResult:
         }
 
 
-CLAIM_SPECS: tuple[ClaimSpec, ...] = (
-    ClaimSpec(
-        "SFF-C1-support-preservation",
-        "Advisory residual never changes the exact legal candidate set.",
-        "safety",
-        "support_preservation",
-    ),
-    ClaimSpec(
-        "SFF-C2-singleton-zero-work",
-        "Complete singletons perform zero factor/propagation/ranker/neural work.",
-        "safety",
-        "singleton_zero_work",
-    ),
-    ClaimSpec(
-        "SFF-C3-unknown-preserved",
-        "Incomplete coverage never becomes UNSUPPORTED via residual scoring.",
-        "safety",
-        "unknown_preserved",
-    ),
-    ClaimSpec(
-        "SFF-C4-decode-off-identity",
-        "train-on/decode-off is behaviorally identical to control at decode.",
-        "causal",
-        "decode_off_identity",
-    ),
-    ClaimSpec(
-        "SFF-C5-factor-node-lossless",
-        "factor_node representation reconstructs factor membership exactly.",
-        "representation",
-        "membership_roundtrip",
-    ),
-    ClaimSpec(
-        "SFF-C6-role-ported-causal",
-        "role_ported_factor residual changes legal choices and improves ranking vs control.",
-        "causal",
-        "role_ported_causal",
-    ),
-    ClaimSpec(
-        "SFF-C7-factor-node-causal",
-        "factor_node residual (roles stripped) changes choices and improves ranking.",
-        "causal",
-        "factor_node_causal",
-    ),
-    ClaimSpec(
-        "SFF-C8-direct-factors-causal",
-        "direct_factors residual changes choices and improves ranking vs control.",
-        "causal",
-        "direct_factors_causal",
-    ),
-    ClaimSpec(
-        "SFF-C9-role-identity-load-bearing",
-        "role_ported beats role_shuffled on ranking when both apply residuals.",
-        "causal",
-        "role_identity",
-    ),
-    ClaimSpec(
-        "SFF-C10-higher-order-identity",
-        "factor_node (lossless) beats lossy_pairwise on ranking under matched evidence.",
-        "causal",
-        "higher_order",
-    ),
-    ClaimSpec(
-        "SFF-C11-exact-typed-baseline",
-        "exact_typed_zero_parameter is competitive with residual arms (zero params).",
-        "causal",
-        "exact_typed",
-    ),
-    ClaimSpec(
-        "SFF-C12-apps-without-choice-is-fail",
-        "Any decode-on residual arm with applications>0 and choice_changes==0 is rejected.",
-        "causal",
-        "apps_without_choice_kill",
-    ),
-    ClaimSpec(
-        "SFF-C13-propagation-column-stochastic",
-        "Reference S has column sums ≈ 1 on valid nonempty incidence (math property).",
-        "math",
-        "column_stochastic",
-    ),
-    ClaimSpec(
-        "SFF-C14-soft-token-not-injective",
-        "Soft-token map p↦Eᵀp is not injective on the simplex (SHIFT video overclaim).",
-        "math",
-        "soft_token",
-    ),
-    ClaimSpec(
-        "SFF-C15-no-rl-no-spectral",
-        "RL and spectral training paths remain unimplemented in this delivery.",
-        "safety",
-        "unimplemented_forbidden",
-    ),
-    ClaimSpec(
-        "SFF-C16-anti-e237-promotion-bar",
-        "held_out meaningful ≥ control+0.10 at n≥20 (promotion bar).",
-        "causal",
-        "promotion_bar",
-    ),
-    ClaimSpec(
-        "SFF-C17-runtime-tracked",
-        "Every arm reports wall_ms_mean/p50/p95 and quality_per_ms (runtime is first-class).",
-        "causal",
-        "runtime_tracked",
-    ),
-    ClaimSpec(
-        "SFF-C18-efficiency-vs-quality",
-        "If a residual arm is >10× slower than control mean wall_ms, it must improve accuracy "
-        "by more than the noise floor or be efficiency-rejected.",
-        "causal",
-        "efficiency_gate",
-    ),
-    ClaimSpec(
-        "SFF-C19-exact-typed-efficiency",
-        "exact_typed_zero_parameter is not dominated on (accuracy, wall_ms_mean) by residual arms "
-        "with equal-or-worse quality and higher runtime.",
-        "causal",
-        "exact_typed_efficiency",
-    ),
-)
+def load_claim_specs(
+    claims_cfg: SFFClaimsConfig | None = None,
+) -> tuple[ClaimSpec, ...]:
+    cfg = claims_cfg or load_sff_claims()
+    out: list[ClaimSpec] = []
+    for raw in cfg.claims:
+        out.append(
+            ClaimSpec(
+                claim_id=str(raw["claim_id"]),
+                statement=str(raw["statement"]),
+                kind=str(raw["kind"]),  # type: ignore[arg-type]
+                rule=str(raw["rule"]),
+                params=dict(raw.get("params") or {}),
+            )
+        )
+    return tuple(out)
+
+
+# Back-compat: load at import for tests that iterate CLAIM_SPECS.
+CLAIM_SPECS: tuple[ClaimSpec, ...] = load_claim_specs()
 
 
 def _arm(metrics: Mapping[str, Any], arm_id: str) -> dict[str, Any] | None:
@@ -174,48 +84,113 @@ def _arm(metrics: Mapping[str, Any], arm_id: str) -> dict[str, Any] | None:
     return None
 
 
-def _acc(row: Mapping[str, Any] | None) -> float | None:
+def _acc(row: Mapping[str, Any] | None, metric: str = "ranking_accuracy") -> float | None:
     if row is None:
         return None
-    v = row.get("ranking_accuracy")
+    v = row.get(metric)
     return float(v) if v is not None else None
 
 
-def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
+def _thresholds(
+    claims_cfg: SFFClaimsConfig,
+    metrics_cfg: SFFMetricsConfig,
+) -> dict[str, Any]:
+    thr = dict(claims_cfg.thresholds)
+    # Prefer metrics.promotion when present (single source for bar numbers).
+    promo = metrics_cfg.promotion
+    if "delta" in promo:
+        thr["promotion_delta"] = float(promo["delta"])
+    if "min_n" in promo:
+        thr["promotion_min_n"] = int(promo["min_n"])
+    # Prefer campaign promotion gate min_n/threshold if recorded on metrics payload.
+    # Efficiency slowdown from metrics.efficiency_gate.
+    eg = metrics_cfg.efficiency_gate
+    if "max_slowdown_without_quality_gain" in eg:
+        thr["efficiency_max_slowdown"] = float(eg["max_slowdown_without_quality_gain"])
+    thr.setdefault("promotion_delta", 0.10)
+    thr.setdefault("promotion_min_n", 20)
+    thr.setdefault("efficiency_max_slowdown", 10.0)
+    thr.setdefault("acc_eps", 1e-9)
+    thr.setdefault("ms_eps", 1e-9)
+    thr.setdefault("zero_eps", 1e-12)
+    thr.setdefault(
+        "fixture_claim_classes",
+        ["fixture", "wiring", "fixture_or_scratch"],
+    )
+    return thr
+
+
+def evaluate_claims(
+    metrics: Mapping[str, Any],
+    *,
+    claims_cfg: SFFClaimsConfig | None = None,
+    metrics_cfg: SFFMetricsConfig | None = None,
+) -> list[ClaimResult]:
     """Evaluate every registered claim against a campaign metrics payload."""
 
-    results: list[ClaimResult] = []
-    control = _arm(metrics, "control_none")
-    control_acc = _acc(control) or 0.0
+    claims_cfg = claims_cfg or load_sff_claims()
+    metrics_cfg = metrics_cfg or load_sff_metrics()
+    # Prefer campaign-linked promotion min_n from locked campaign when present.
+    try:
+        camp = load_sff_campaign()
+        for gate in camp.payload.get("promotion_gates") or []:
+            if str(gate.get("gate_id")) == "anti_e237_bar":
+                if "threshold" in gate:
+                    # campaign threshold is absolute gain floor for promotion gate
+                    pass
+                if "min_n" in gate:
+                    # inject into a local thr override via metrics_cfg path below
+                    metrics_cfg = metrics_cfg  # noqa: PLW0127 — keep reference
+                break
+    except Exception:
+        camp = None
 
-    for spec in CLAIM_SPECS:
+    thr = _thresholds(claims_cfg, metrics_cfg)
+    if camp is not None:
+        for gate in camp.payload.get("promotion_gates") or []:
+            if str(gate.get("gate_id")) == "anti_e237_bar":
+                if "threshold" in gate:
+                    thr["promotion_delta"] = float(gate["threshold"])
+                if "min_n" in gate:
+                    thr["promotion_min_n"] = int(gate["min_n"])
+
+    control_id = "control_none"
+    if camp is not None:
+        control_id = camp.scorer.control_arm_id
+    control = _arm(metrics, control_id)
+    control_acc = _acc(control) or 0.0
+    acc_eps = float(thr["acc_eps"])
+    ms_eps = float(thr["ms_eps"])
+    zero_eps = float(thr["zero_eps"])
+    specs = load_claim_specs(claims_cfg)
+    results: list[ClaimResult] = []
+
+    for spec in specs:
+        params = dict(spec.params)
         verdict: ClaimVerdict = "inconclusive"
         evidence: dict[str, Any] = {}
         falsifier = ""
 
         if spec.rule == "support_preservation":
-            # No outcome may report illegal score acceptance.
             illegal = sum(
                 1
                 for o in metrics.get("outcomes") or []
                 if o.get("result", {}).get("illegal_score_rejection")
             )
-            # Also require every applied delta keys ⊆ legal (enforced by scorer).
             support_ok = metrics.get("support_preservation_ok", True)
-            evidence = {"illegal_rejections": illegal, "support_preservation_ok": support_ok}
-            verdict = "validated" if support_ok and illegal >= 0 else "invalidated"
-            # Always validated if no illegal keys accepted (rejections are OK).
+            evidence = {
+                "illegal_rejections": illegal,
+                "support_preservation_ok": support_ok,
+            }
             verdict = "validated" if support_ok else "invalidated"
             falsifier = "any residual key outside A_compiler"
 
         elif spec.rule == "singleton_zero_work":
-            kills = []
+            kill_ids = set(str(x) for x in params.get("kill_ids") or ())
+            kills: list[str] = []
             for row in metrics.get("arms") or []:
                 kills.extend(row.get("kill_criteria_hit") or [])
-            bad = any(
-                k in kills
-                for k in ("singleton_work_performed", "singleton_neural_forward")
-            )
+            bad = any(k in kills for k in kill_ids)
             evidence = {
                 "singleton_skips_total": sum(
                     int(r.get("singleton_skips") or 0) for r in metrics.get("arms") or []
@@ -230,7 +205,6 @@ def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
                 int(r.get("unknown_preserved") or 0) >= 0
                 for r in metrics.get("arms") or []
             )
-            # Require incomplete examples produced unknown_preserved on every arm.
             per_arm = [
                 int(r.get("unknown_preserved") or 0) > 0
                 for r in metrics.get("arms") or []
@@ -252,13 +226,15 @@ def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
             verdict = "validated" if ok else "invalidated"
             falsifier = "factor_node membership reconstruction mismatch"
 
-        elif spec.rule == "role_ported_causal":
-            row = _arm(metrics, "train_on_decode_on_role_ported")
+        elif spec.rule == "causal_improve":
+            arm_id = str(params["arm_id"])
+            row = _arm(metrics, arm_id)
             acc = _acc(row)
             apps = int((row or {}).get("applications") or 0)
             chg = int((row or {}).get("choice_changes") or 0)
             kills = list((row or {}).get("kill_criteria_hit") or [])
             evidence = {
+                "arm_id": arm_id,
                 "ranking_accuracy": acc,
                 "control_accuracy": control_acc,
                 "applications": apps,
@@ -266,146 +242,101 @@ def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
                 "kills": kills,
                 "delta_acc": None if acc is None else acc - control_acc,
             }
+            require_chg = bool(params.get("require_choice_change", True))
+            require_no_kills = bool(params.get("require_no_kills", True))
             if apps > 0 and chg == 0:
                 verdict = "invalidated"
-            elif acc is not None and chg > 0 and acc > control_acc and not kills:
+            elif (
+                acc is not None
+                and (not require_chg or chg > 0)
+                and acc > control_acc
+                and (not require_no_kills or not kills)
+            ):
                 verdict = "validated"
             else:
                 verdict = "inconclusive"
             falsifier = "apps>0 & choice_changes==0 or quality not improved"
 
-        elif spec.rule == "factor_node_causal":
-            row = _arm(metrics, "train_on_decode_on_factor_node")
-            acc = _acc(row)
-            apps = int((row or {}).get("applications") or 0)
-            chg = int((row or {}).get("choice_changes") or 0)
-            kills = list((row or {}).get("kill_criteria_hit") or [])
+        elif spec.rule == "beats_arm":
+            treat = _arm(metrics, str(params["treatment_arm_id"]))
+            base = _arm(metrics, str(params["baseline_arm_id"]))
+            metric = str(params.get("metric") or "ranking_accuracy")
+            a_t, a_b = _acc(treat, metric), _acc(base, metric)
             evidence = {
-                "ranking_accuracy": acc,
-                "control_accuracy": control_acc,
-                "applications": apps,
-                "choice_changes": chg,
-                "kills": kills,
+                "treatment": params["treatment_arm_id"],
+                "baseline": params["baseline_arm_id"],
+                "treatment_value": a_t,
+                "baseline_value": a_b,
             }
-            if apps > 0 and chg == 0:
-                verdict = "invalidated"
-            elif acc is not None and chg > 0 and acc > control_acc and not kills:
+            if a_t is None or a_b is None:
+                verdict = "inconclusive"
+            elif a_t > a_b + acc_eps:
                 verdict = "validated"
+            elif a_t + acc_eps < a_b:
+                verdict = "invalidated"
             else:
                 verdict = "inconclusive"
-            falsifier = "apps>0 & choice_changes==0 or quality not improved"
+            falsifier = f"{params['baseline_arm_id']} ≥ {params['treatment_arm_id']}"
 
-        elif spec.rule == "direct_factors_causal":
-            row = _arm(metrics, "train_on_decode_on_direct_factors")
-            acc = _acc(row)
-            apps = int((row or {}).get("applications") or 0)
-            chg = int((row or {}).get("choice_changes") or 0)
-            kills = list((row or {}).get("kill_criteria_hit") or [])
+        elif spec.rule == "competitive_with":
+            arm = _arm(metrics, str(params["arm_id"]))
+            peer = _arm(metrics, str(params["peer_arm_id"]))
+            metric = str(params.get("metric") or "ranking_accuracy")
+            a, a_p = _acc(arm, metric), _acc(peer, metric)
             evidence = {
-                "ranking_accuracy": acc,
-                "control_accuracy": control_acc,
-                "applications": apps,
-                "choice_changes": chg,
-                "kills": kills,
-                "delta_acc": None if acc is None else acc - control_acc,
-            }
-            if apps > 0 and chg == 0:
-                verdict = "invalidated"
-            elif acc is not None and chg > 0 and acc > control_acc and not kills:
-                verdict = "validated"
-            else:
-                verdict = "inconclusive"
-            falsifier = "apps>0 & choice_changes==0 or quality not improved"
-
-        elif spec.rule == "role_identity":
-            rp = _arm(metrics, "train_on_decode_on_role_ported")
-            rs = _arm(metrics, "train_on_decode_on_role_shuffled")
-            a_rp, a_rs = _acc(rp), _acc(rs)
-            evidence = {"role_ported_acc": a_rp, "role_shuffled_acc": a_rs}
-            if a_rp is None or a_rs is None:
-                verdict = "inconclusive"
-            elif a_rp > a_rs + 1e-9:
-                verdict = "validated"
-            elif a_rp + 1e-9 < a_rs:
-                verdict = "invalidated"
-            else:
-                verdict = "inconclusive"
-            falsifier = "role_shuffled ≥ role_ported ranking accuracy"
-
-        elif spec.rule == "higher_order":
-            fn = _arm(metrics, "train_on_decode_on_factor_node")
-            pw = _arm(metrics, "train_on_decode_on_lossy_pairwise")
-            a_fn, a_pw = _acc(fn), _acc(pw)
-            evidence = {"factor_node_acc": a_fn, "lossy_pairwise_acc": a_pw}
-            if a_fn is None or a_pw is None:
-                verdict = "inconclusive"
-            elif a_fn > a_pw + 1e-9:
-                verdict = "validated"
-            elif a_fn + 1e-9 < a_pw:
-                verdict = "invalidated"
-            else:
-                verdict = "inconclusive"
-            falsifier = "lossy_pairwise ≥ factor_node accuracy"
-
-        elif spec.rule == "exact_typed":
-            ex = _arm(metrics, "exact_typed_zero_parameter")
-            df = _arm(metrics, "train_on_decode_on_direct_factors")
-            a_ex, a_df = _acc(ex), _acc(df)
-            evidence = {
-                "exact_typed_acc": a_ex,
-                "direct_factors_acc": a_df,
+                "arm_id": params["arm_id"],
+                "peer_arm_id": params["peer_arm_id"],
+                "arm_value": a,
+                "peer_value": a_p,
                 "params": 0,
             }
-            if a_ex is None:
+            if a is None:
                 verdict = "inconclusive"
-            elif a_df is None or a_ex + 1e-9 >= a_df:
+            elif a_p is None or a + acc_eps >= a_p:
                 verdict = "validated"
             else:
                 verdict = "inconclusive"
-            falsifier = "learned/residual arms dominate exact typed by large margin with params"
+            falsifier = "peer arm dominates by large margin with params"
 
         elif spec.rule == "apps_without_choice_kill":
+            prefix = str(params.get("arm_id_prefix") or "train_on_decode_on")
+            kill_id = str(params.get("kill_id") or "applications_without_choice_changes")
             offenders = [
                 r["arm_id"]
                 for r in metrics.get("arms") or []
-                if str(r.get("arm_id", "")).startswith("train_on_decode_on")
+                if str(r.get("arm_id", "")).startswith(prefix)
                 and int(r.get("applications") or 0) > 0
                 and int(r.get("choice_changes") or 0) == 0
             ]
             evidence = {"offenders": offenders}
-            # Claim: the campaign correctly *detects* this as failure.
-            detected = all(
-                "applications_without_choice_changes"
-                in ( _arm(metrics, oid) or {} ).get("kill_criteria_hit", [])
-                for oid in offenders
-            ) if offenders else True
-            # If no offenders, claim that residual arms are causal is separate;
-            # this claim is about the kill criterion working.
+            detected = (
+                all(
+                    kill_id
+                    in (_arm(metrics, oid) or {}).get("kill_criteria_hit", [])
+                    for oid in offenders
+                )
+                if offenders
+                else True
+            )
             verdict = "validated" if detected else "invalidated"
             falsifier = "decode-on arm with apps>0 choice_changes==0 not killed"
 
-        elif spec.rule == "column_stochastic":
-            ok = bool(metrics.get("math_properties", {}).get("column_stochastic_ok"))
+        elif spec.rule == "math_flag":
+            flag = str(params["flag"])
+            ok = bool(metrics.get("math_properties", {}).get(flag))
             evidence = dict(metrics.get("math_properties") or {})
             verdict = "validated" if ok else "invalidated"
-            falsifier = "column sums of S deviate from 1 beyond tolerance"
-
-        elif spec.rule == "soft_token":
-            ok = bool(metrics.get("math_properties", {}).get("soft_token_collision_ok"))
-            evidence = dict(metrics.get("math_properties") or {})
-            verdict = "validated" if ok else "invalidated"
-            falsifier = "soft-token map injective on the test simplex points"
+            falsifier = f"math property {flag} failed"
 
         elif spec.rule == "unimplemented_forbidden":
             un = metrics.get("unimplemented") or {}
-            required = (
-                "rl",
-                "spectral_training",
-                "production_topology_authority",
-                "graph_pruning",
-                "recurrent_semantic_inference",
-                "faithful_shift_soft_tokens",
-                "search_r1_policy_training",
+            required: Sequence[str] = tuple(
+                str(x)
+                for x in (
+                    claims_cfg.payload.get("unimplemented_required_keys")
+                    or params.get("keys")
+                    or ()
+                )
             )
             ok = all(bool(un.get(k)) for k in required)
             evidence = {k: un.get(k) for k in required}
@@ -414,42 +345,46 @@ def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
 
         elif spec.rule == "promotion_bar":
             n = int(metrics.get("n_ranked_per_arm") or 0)
+            prefix = str(params.get("decode_on_prefix") or "train_on_decode_on")
             best = None
             for r in metrics.get("arms") or []:
-                if str(r.get("arm_id", "")).startswith("train_on_decode_on"):
+                if str(r.get("arm_id", "")).startswith(prefix):
                     acc = _acc(r)
                     if acc is None:
                         continue
                     if best is None or acc > best:
                         best = acc
+            delta = float(thr["promotion_delta"])
+            min_n = int(thr["promotion_min_n"])
+            fixture_classes = set(
+                str(x) for x in thr.get("fixture_claim_classes") or ()
+            )
             evidence = {
                 "n_ranked_per_arm": n,
                 "control_accuracy": control_acc,
                 "best_decode_on_accuracy": best,
                 "claim_class": metrics.get("claim_class"),
-                "required_delta": 0.10,
-                "required_n": 20,
+                "required_delta": delta,
+                "required_n": min_n,
             }
-            if metrics.get("claim_class") in {"fixture", "wiring", "fixture_or_scratch"}:
-                verdict = "invalidated"  # promotion bar not met by construction
-            elif (
-                best is not None
-                and n >= 20
-                and best >= control_acc + 0.10
-            ):
+            if metrics.get("claim_class") in fixture_classes:
+                verdict = "invalidated"
+            elif best is not None and n >= min_n and best >= control_acc + delta:
                 verdict = "validated"
             else:
                 verdict = "invalidated"
-            falsifier = "held_out n<20 or delta < 0.10 or fixture claim class"
+            falsifier = (
+                f"held_out n<{min_n} or delta < {delta} or fixture claim class"
+            )
 
         elif spec.rule == "runtime_tracked":
-            required = (
-                "wall_ms_mean",
-                "wall_ms_p50",
-                "wall_ms_p95",
-                "wall_ms_total",
-                "quality_per_ms",
-                "wall_ms_mean_vs_control",
+            required = tuple(
+                str(x)
+                for x in (
+                    claims_cfg.payload.get("runtime_required_arm_fields")
+                    or params.get("fields")
+                    or ()
+                )
             )
             missing: list[str] = []
             for r in metrics.get("arms") or []:
@@ -463,18 +398,28 @@ def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
                 "timer": runtime.get("timer"),
                 "n_arms": len(metrics.get("arms") or []),
             }
-            verdict = "validated" if not missing and runtime.get("timer") else "invalidated"
+            verdict = (
+                "validated" if not missing and runtime.get("timer") else "invalidated"
+            )
             falsifier = "arm missing wall_ms_* / quality_per_ms or campaign runtime block absent"
 
         elif spec.rule == "efficiency_gate":
-            # Residual arms that are >10× slower than control must improve accuracy.
-            control = _arm(metrics, "control_none") or {}
-            control_ms = float(control.get("wall_ms_mean") or 0.0)
+            control_row = _arm(metrics, control_id) or {}
+            control_ms = float(control_row.get("wall_ms_mean") or 0.0)
+            max_slow = float(thr["efficiency_max_slowdown"])
+            skip = set(
+                str(x)
+                for x in (
+                    claims_cfg.payload.get("efficiency_skip_arm_ids")
+                    or params.get("skip_arm_ids")
+                    or ()
+                )
+            )
             offenders: list[dict[str, Any]] = []
             ok_arms: list[dict[str, Any]] = []
             for r in metrics.get("arms") or []:
                 arm_id = str(r.get("arm_id") or "")
-                if arm_id in {"control_none", "train_on_decode_off_role_ported"}:
+                if arm_id in skip:
                     continue
                 arm_ms = float(r.get("wall_ms_mean") or 0.0)
                 ratio = (arm_ms / control_ms) if control_ms > 0 else None
@@ -486,47 +431,46 @@ def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
                     "vs_control": ratio,
                     "delta_accuracy": delta,
                 }
-                if ratio is not None and ratio > 10.0:
-                    if delta is None or delta <= 1e-12:
+                if ratio is not None and ratio > max_slow:
+                    if delta is None or delta <= zero_eps:
                         offenders.append(row)
                     else:
                         ok_arms.append(row)
             evidence = {
                 "control_wall_ms_mean": control_ms,
-                "offenders_gt_10x_no_quality_gain": offenders,
-                "ok_gt_10x_with_quality_gain": ok_arms,
+                "max_slowdown": max_slow,
+                "offenders_gt_slowdown_no_quality_gain": offenders,
+                "ok_gt_slowdown_with_quality_gain": ok_arms,
             }
-            # Validated when the gate is enforced in metrics (no silent expensive no-ops).
-            # If offenders exist, claim is invalidated (expensive without quality).
             if control_ms <= 0:
                 verdict = "inconclusive"
             elif offenders:
                 verdict = "invalidated"
             else:
                 verdict = "validated"
-            falsifier = ">10× slower than control with no accuracy gain"
+            falsifier = f">{max_slow}× slower than control with no accuracy gain"
 
         elif spec.rule == "exact_typed_efficiency":
-            ex = _arm(metrics, "exact_typed_zero_parameter") or {}
+            arm_id = str(params.get("arm_id") or "exact_typed_zero_parameter")
+            prefix = str(params.get("competitor_prefix") or "train_on_decode_on")
+            ex = _arm(metrics, arm_id) or {}
             a_ex = _acc(ex)
             ms_ex = float(ex.get("wall_ms_mean") or 0.0)
             dominated_by: list[str] = []
             for r in metrics.get("arms") or []:
-                arm_id = str(r.get("arm_id") or "")
-                if not arm_id.startswith("train_on_decode_on"):
+                cid = str(r.get("arm_id") or "")
+                if not cid.startswith(prefix):
                     continue
                 a = _acc(r)
                 ms = float(r.get("wall_ms_mean") or 0.0)
                 if a_ex is None or a is None or ms_ex <= 0 or ms <= 0:
                     continue
-                # Dominates exact_typed if strictly better accuracy and not slower,
-                # or same accuracy and strictly faster.
-                better_acc = a > a_ex + 1e-12
-                not_slower = ms <= ms_ex * (1.0 + 1e-9)
-                same_acc = abs(a - a_ex) <= 1e-12
-                faster = ms < ms_ex * (1.0 - 1e-9)
+                better_acc = a > a_ex + zero_eps
+                not_slower = ms <= ms_ex * (1.0 + ms_eps)
+                same_acc = abs(a - a_ex) <= zero_eps
+                faster = ms < ms_ex * (1.0 - ms_eps)
                 if (better_acc and not_slower) or (same_acc and faster):
-                    dominated_by.append(arm_id)
+                    dominated_by.append(cid)
             evidence = {
                 "exact_typed_acc": a_ex,
                 "exact_typed_wall_ms_mean": ms_ex,
@@ -539,6 +483,11 @@ def evaluate_claims(metrics: Mapping[str, Any]) -> list[ClaimResult]:
             else:
                 verdict = "validated"
             falsifier = "a residual arm dominates exact_typed on quality+runtime"
+
+        else:
+            verdict = "inconclusive"
+            evidence = {"unsupported_rule": spec.rule}
+            falsifier = f"unsupported claim rule {spec.rule!r}"
 
         results.append(
             ClaimResult(

@@ -1,0 +1,45 @@
+{
+  "schema": "sff_math_probes/v1",
+  "version": "v1",
+  "description": "Executable math probes backing SFF math claims (C13/C14).",
+  "column_stochastic": {
+    "incidence_B": [
+      [
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0
+      ]
+    ],
+    "restart": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "column_sum_atol": 1e-09,
+    "mass_atol": 1e-08
+  },
+  "soft_token_collision": {
+    "a": [
+      1,
+      0,
+      0
+    ],
+    "b": [
+      0,
+      1,
+      0
+    ],
+    "coeffs": [
+      7,
+      7,
+      3
+    ]
+  }
+}

@@ -7,18 +7,24 @@
 
 ## External config bind
 
-Metrics inventory, formulas, scorer parameters, and campaign metadata are
-**external versioned JSON** (not harness constants). This run records:
+Metrics, scorer params, claims, suite, projection, math probes, and campaign
+metadata are **external versioned JSON** (not harness constants). This run
+records all of:
 
 | Resource | Schema | Path |
 | --- | --- | --- |
-| metrics | `sff_metrics/v1` | `resources/experiments/semantic_factor_frontier/metrics.v1.json` |
+| metrics | `sff_metrics/v1` | `…/metrics.v1.json` |
 | scorer_params | `sff_scorer_params/v1` | `…/scorer_params.v1.json` |
 | campaign | `sff_campaign/v1` | `…/campaign.v1.json` |
+| claims | `sff_claims/v1` | `…/claims.v1.json` |
+| suite | `sff_suite/v1` | `…/suite.v1.json` |
+| projection | `sff_projection/v1` | `…/projection.v1.json` |
+| math_probes | `sff_math_probes/v1` | `…/math_probes.v1.json` |
 
 Exact content digests are in the JSON `config_resources.*.sha256`. Adding a
-metric of an existing formula type or changing α / role weights is a resource
-edit only — harness code stays put.
+metric of an existing formula type, a claim of an existing rule type, suite
+examples, α / role weights, or kill rules is a resource edit only — harness
+code stays put.
 
 ## Suite
 
@@ -68,8 +74,8 @@ Exact numbers: JSON `wall_ms_*`, `quality_per_ms`,
 
 ## Claim verdicts
 
-Machine-checked from metrics (`semantic_factor_claims.py`). Summary this run:
-**14 validated / 4 invalidated / 1 inconclusive**.
+Machine-checked from external `claims.v1.json` via rule dispatch. Summary this
+run: **15 validated / 3 invalidated / 1 inconclusive**.
 
 | Claim | Verdict |
 | --- | --- |
@@ -85,8 +91,8 @@ Machine-checked from metrics (`semantic_factor_claims.py`). Summary this run:
 | C15 no RL/spectral | **validated** |
 | C16 promotion bar | **invalidated** (fixture) |
 | **C17 runtime tracked** | **validated** |
-| **C18 efficiency gate** | **validated** (slow arms without quality gain flagged) |
-| **C19 exact_typed efficiency** | **invalidated** (direct_factors matches acc at lower ms) |
+| **C18 efficiency gate** | **validated** (`max_slowdown` from metrics.efficiency_gate) |
+| **C19 exact_typed efficiency** | **validated** this run (exact_typed not dominated on quality+ms; wall_ms is noisy) |
 
 ## Unimplemented
 
