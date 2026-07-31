@@ -109,6 +109,24 @@ update are incomplete.
 - Readiness claims name the model size they hold at. A number produced by a
   wider geometry never transfers to the smaller one.
 
+## Timeouts are incompleteness, not quality zeros
+
+Decode budget walls (`decode_timeout_seconds`, cooperative deadline, SIGALRM)
+produce `runtime_timeout` outcomes. They **must not** dilute **any** quality or
+completed-latency metric — only fields that explicitly track timeouts/runtime
+incompleteness may include them:
+
+| Signal | Denominator / population |
+| --- | --- |
+| **All quality metrics** — parse / meaningful / syntax / BEq / fidelity / validity / contract / structural / tree-edit / recall / reward / topology composites / completed latency p50·p95 | **Completed** documents only (`completed_document_n`, `completed_latency_n`) |
+| `decode_timeout_count` / `decode_timeout_rate` / `incomplete_document_n` / `incomplete_latency_n` / `latency_ms_*_including_incomplete` / `decode_outcome_counts.runtime_timeout` | Runtime incompleteness (budget/interference) |
+| `empty_prediction_count` | Model abstention on **completed** attempts — **not** timeout stand-ins |
+| Ship gate `*:decode_timeout_count` | `runtime_failures` — fail closed on any timeout |
+
+If every document times out, quality rates and completed latency are **null
+(unmeasured)**, never fabricated `0.0`. Taxonomy: `decode_outcome.runtime_timeout`
+(SLM-303).
+
 ## Decode invariants (never gate on unconstrained output)
 
 `AGENTS.md` § Non-negotiable architecture invariants is goal law; canonical

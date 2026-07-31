@@ -8051,7 +8051,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v69",
+      "version": "v71",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -8067,9 +8067,21 @@
         "src/slm_training/runtime/telemetry/trace.py",
         "tests/test_runtime_trace.py",
         "tests/test_harnesses/model_build/test_eval_seed.py",
-        "tests/test_harnesses/model_build/test_decode_deadline.py"
+        "tests/test_harnesses/model_build/test_decode_deadline.py",
+        "tests/test_harnesses/model_build/test_eval_metric_semantics.py",
+        "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v71",
+          "date": "2026-07-31",
+          "note": "Exclude runtime_timeout from every quality/topology/completed-latency aggregate (not only parse); timeout walls stay under decode_timeout_* and latency_*_including_incomplete"
+        },
+        {
+          "version": "v70",
+          "date": "2026-07-31",
+          "note": "Exclude runtime_timeout from quality denominators; report decode_timeout_rate/completed_document_n separately so timeouts are incompleteness, not false parse failures"
+        },
         {
           "version": "v69",
           "date": "2026-07-31",
