@@ -672,6 +672,12 @@ def compile_commands(
         evaluate.extend(["--train-version", knobs.train_version])
     else:
         evaluate.extend(["--train-dir", str(train_dir)])
+    if knobs.eval_suites:
+        evaluate.extend(["--suites", str(knobs.eval_suites)])
+    if knobs.decode_timeout_seconds is not None:
+        evaluate.extend(
+            ["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)]
+        )
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])

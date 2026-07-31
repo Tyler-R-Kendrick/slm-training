@@ -559,4 +559,13 @@ def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
     )
     assert screen.claim_class == "diagnostic"
     assert screen.endpoints[0].metric == primary_for_role(policy, "screening")["metric"]
+    # Continuous screening wall is policy measurement budget, not global 3m CI cap.
+    from slm_training.autoresearch.climb_policy import stage_wall_minutes_for_role
+
+    assert screen.budget.max_wall_minutes == float(
+        stage_wall_minutes_for_role(policy, "screening")
+    )
+    assert man.budget.max_wall_minutes == float(
+        stage_wall_minutes_for_role(policy, "promotion")
+    )
     assert len(screen.seeds) == 1

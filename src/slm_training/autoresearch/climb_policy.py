@@ -42,6 +42,9 @@ __all__ = [
     "cycle_role_for_index",
     "assert_cycle_cadence",
     "primary_for_role",
+    "stage_wall_minutes_for_role",
+    "decode_timeout_seconds_for_role",
+    "eval_suites_for_role",
     "classify_positive_metrics",
     "assert_recipe_null_regime_pressure",
     "is_recipe_tweak_knobs",
@@ -122,6 +125,12 @@ class ClimbPolicy:
     @property
     def defaults(self) -> Mapping[str, Any]:
         return dict(self.payload["defaults"])
+
+    @property
+    def measurement(self) -> Mapping[str, Any]:
+        """Optional continuous measurement budgets (defaults if absent)."""
+        raw = self.payload.get("measurement")
+        return dict(raw) if isinstance(raw, Mapping) else {}
 
     @property
     def cadence(self) -> Mapping[str, Any]:
@@ -233,6 +242,56 @@ def primary_for_role(policy: ClimbPolicy, role: str) -> Mapping[str, Any]:
     if role == "screening":
         return policy.screening_primary
     raise ClimbPolicyError(f"unknown cycle role: {role!r}")
+
+
+def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
+    """Continuous-local stage wall (minutes) for campaign/eval; not global CI cap."""
+
+    measurement = policy.measurement
+    if role == "promotion":
+        key = "promotion_stage_wall_minutes"
+        default = 12
+    else:
+        key = "screening_stage_wall_minutes"
+        default = 10
+    value = measurement.get(key, default)
+    minutes = int(value)
+    if minutes < 1:
+        raise ClimbPolicyError(f"measurement.{key} must be >= 1, got {minutes}")
+    return minutes
+
+
+def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
+    """Per-record decode timeout for continuous eval arms."""
+
+    measurement = policy.measurement
+    if role == "promotion":
+        key = "promotion_decode_timeout_seconds"
+        default = 24.0
+    else:
+        key = "screening_decode_timeout_seconds"
+        default = 24.0
+    value = float(measurement.get(key, default))
+    if value <= 0:
+        raise ClimbPolicyError(f"measurement.{key} must be > 0, got {value}")
+    return value
+
+
+def eval_suites_for_role(policy: ClimbPolicy, role: str) -> tuple[str, ...]:
+    """Suites for continuous evaluate_model; screening defaults to smoke only."""
+
+    measurement = policy.measurement
+    if role == "promotion":
+        raw = measurement.get("promotion_suites")
+        default = ("smoke", "held_out")
+    else:
+        raw = measurement.get("screening_suites")
+        default = ("smoke",)
+    if raw is None:
+        return default
+    if not isinstance(raw, list) or not raw:
+        raise ClimbPolicyError(f"measurement suites for role {role!r} must be a non-empty list")
+    return tuple(str(x) for x in raw)
 
 
 def cycle_role_for_index(policy: ClimbPolicy, cycle_index: int) -> str:

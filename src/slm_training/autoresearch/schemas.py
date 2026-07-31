@@ -35,8 +35,10 @@ class StrictModel(BaseModel):
 class CampaignBudget(StrictModel):
     max_experiments: int = Field(default=12, ge=1, le=1000)
     max_gpu_hours: float = Field(default=0.0, ge=0)
+    # Continuous screening may use a longer local stage wall than the global
+    # CI MAX_RUN_MINUTES (policy measurement.*_stage_wall_minutes). Cap at 60m.
     max_wall_minutes: float = Field(
-        default=float(MAX_RUN_MINUTES), gt=0, le=float(MAX_RUN_MINUTES)
+        default=float(MAX_RUN_MINUTES), gt=0, le=60.0
     )
 
 
@@ -122,6 +124,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_equivalence_cache",
         "grammar_active_symbol_bitsets",
         "compact_active_canvas",
+        "decode_timeout_seconds",
+        "eval_suites",
         "action_embedding_init",
         "action_embedding_train",
         "action_alias_mode",
@@ -390,6 +394,13 @@ class ExperimentKnobs(StrictModel):
     grammar_equivalence_cache: bool | None = None
     grammar_active_symbol_bitsets: bool | None = None
     compact_active_canvas: bool | None = None
+    # Continuous measurement knobs (screening smoke-only + decode budget).
+    decode_timeout_seconds: float | None = Field(default=None, gt=0, le=600)
+    eval_suites: str | None = Field(
+        default=None,
+        description="Comma-separated evaluate_model --suites (e.g. smoke).",
+        pattern=r"^[A-Za-z0-9_,]+$",
+    )
     action_embedding_init: (
         Literal[
             "none",
