@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-31",
+          "note": "AdvisoryResidual: role-shuffle membership + S column sums from B formula."
+        },
         {
           "version": "v5",
           "date": "2026-07-31",
@@ -12160,7 +12165,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -12196,9 +12201,15 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_advisory-keys-legal.json",
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_factor-membership-roundtrip.json",
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_soft-token-collision.json",
-        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_golden-incidence-degrees.json"
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_golden-incidence-degrees.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-31",
+          "note": "CodeRabbit follow-ups: non-vacuous role_shuffle membership proof; S column masses derived from goldenB formula; fail-closed formal preflights (no silent proved re-stamp); membership/role golden tests."
+        },
         {
           "version": "v7",
           "date": "2026-07-31",
