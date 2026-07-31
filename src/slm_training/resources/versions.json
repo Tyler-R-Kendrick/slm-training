@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-31",
+          "note": "Continuous champion queue: quality-held Phase A wins enqueue lever knobs; next cycle runs confirmatory same-knobs/new-seed matrix before thrash; confirmed/rejected status on loop ledger"
+        },
         {
           "version": "v20",
           "date": "2026-07-31",
