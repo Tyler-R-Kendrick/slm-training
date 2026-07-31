@@ -56,10 +56,13 @@ before continuous or multi-run work.
 | Get latest between runs | `git fetch` + `gh stack sync` / merge `origin/main`; resolve conflicts |
 | Remote compute default | No paid GPU / HF write without prior user authority |
 | Training stopped | Full `sdlc` bottom-up closeout of open positive layers (review → CI → squash-merge) — not a resume paste |
-| Matrix between cycles | `slm autoresearch status --loop-id <id> --matrix --last 5` |
+| **Matrix to the user** | After every cycle (and whenever reporting status): paste the three-table matrix from `status --loop-id <id> --matrix --last 5` (or `/tmp/autotrain-report.sh` / `/tmp/autotrain-loop-dashboard.md`) into the chat. **Never** claim progress without it |
+| **Liveness proof** | Prove RUNNING with `driver_state` + PID + top child + latest campaign from `/tmp/autotrain-loop-status.txt` (or `autotrain-report.sh`). **Never** use Grok “background ops” UI as liveness |
+| **Never kill the loop** | Do **not** `kill`/`pkill`/`kill -9` `run_autotrain_continuous`, its children, or the continuous worktree processes to ship skills, fix CI, merge PRs, or “restart cleanly.” Side work uses another worktree/branch |
 
 Full procedure: [references/continuous.md](references/continuous.md).  
-Delivery: [`../sdlc/references/autotrain-iteration-delivery.md`](../sdlc/references/autotrain-iteration-delivery.md).
+Delivery: [`../sdlc/references/autotrain-iteration-delivery.md`](../sdlc/references/autotrain-iteration-delivery.md).  
+User-facing report (preferred): `bash /tmp/autotrain-report.sh` → updates `/tmp/autotrain-loop-dashboard.md`.
 
 ## Phase routing
 

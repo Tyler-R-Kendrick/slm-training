@@ -2491,7 +2491,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2514,6 +2514,11 @@
         "scripts/run_autotrain_continuous.py"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-30",
+          "note": "Continuous agent law: never kill live loop; mandatory matrix paste via autotrain-report; liveness from status file not host UI"
+        },
         {
           "version": "v14",
           "date": "2026-07-30",
