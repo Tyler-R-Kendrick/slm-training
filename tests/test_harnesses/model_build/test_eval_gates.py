@@ -956,6 +956,18 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     )
     metrics = evaluate(config, model=TimeoutModel(), publish_agentv=False)
     assert metrics["decode_timeout_count"] == 1
+    assert metrics["decode_timeout_document_count"] == 1
+    assert metrics["decode_timeout_rate"] == 1.0
+    assert metrics["completed_document_n"] == 0
+    assert metrics["incomplete_document_n"] == 1
+    # Timeout is incompleteness, not a quality zero: rates stay unmeasured.
+    assert metrics["parse_rate"] is None
+    assert metrics["meaningful_program_rate"] is None
+    assert metrics["syntax_parse_rate"] is None
+    assert metrics["empty_prediction_count"] == 0
+    assert metrics["details"][0]["decode_outcome"] == "runtime_timeout"
+    assert metrics["details"][0]["parse_ok"] is None
+    assert metrics["details"][0]["incomplete"] is True
     assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
 
 

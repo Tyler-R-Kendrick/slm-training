@@ -55,12 +55,16 @@ from slm_training.versioning import component_version
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 _LANGSMITH_METRIC_KEYS = (
     "n",
+    "completed_document_n",
+    "incomplete_document_n",
     "parse_rate",
     "placeholder_fidelity",
     "structural_similarity",
     "ast_beq_rate",
     "canonical_beq_rate",
     "reward_score",
+    "decode_timeout_count",
+    "decode_timeout_rate",
 )
 
 
@@ -1114,6 +1118,9 @@ def evaluate(
         return out, list(evidence)
 
     decode_timeout_count = 0
+    # Document rows that hit the budget wall. Quality rates use only completed
+    # documents so a timeout is incompleteness, never a false parse/quality 0.
+    decode_timeout_document_n = 0
     # SLM-303: per-chunk decode-outcome evidence (parallel to the chunk loop);
     # each entry carries the timeout fact plus the chunk's DecodeStats row (or
     # None when the plugin exposes no stats) so every scored record can be
@@ -1241,11 +1248,79 @@ def evaluate(
     ) -> None:
         nonlocal parse_ok, syntax_parse_ok, raw_syntax_ok
         nonlocal match_error_count, reward_error_count, empty_prediction_count
-        if not pred.strip():
-            empty_prediction_count += 1
+        nonlocal decode_timeout_document_n
+        timed_out = bool((decode_meta or {}).get("timed_out"))
         evidence = dict(prediction_evidence or {})
         if len(topology_target_evidence) > len(topology_evidence):
             evidence.update(topology_target_evidence[len(topology_evidence)])
+
+        # Runtime timeout is incompleteness: record the budget fact, leave
+        # quality fields unmeasured (None), and never count the empty stand-in
+        # prediction as abstention or parse/fidelity/structure/reward failure.
+        # Topology slot stays for index alignment but is marked incomplete so
+        # every quality aggregate skips it.
+        if timed_out:
+            if record.target_kind == "document":
+                decode_timeout_document_n += 1
+            lineage = prediction_lineage(pred)
+            incomplete_evidence = {"incomplete": True, "decode_timeout": True}
+            topology_evidence.append(incomplete_evidence)
+            details.append(
+                {
+                    "id": record.id,
+                    "target_kind": record.target_kind,
+                    "incomplete": True,
+                    "parse_ok": None,
+                    "meaningful_program_v1": None,
+                    "binding_aware_meaningful_v2": None,
+                    "syntax_parse_valid": None,
+                    "raw_syntax_valid": None,
+                    "error": "decode_timeout",
+                    "placeholder_fidelity": None,
+                    "placeholder_fidelity_normalized": None,
+                    "placeholder_validity": None,
+                    "contract_precision": None,
+                    "contract_recall": None,
+                    "binder_reference_f1": None,
+                    "exact_match": None,
+                    "ast_beq": None,
+                    "canonical_beq": None,
+                    "certificate_equivalent": None,
+                    "structural_similarity": None,
+                    "tree_edit_similarity": None,
+                    "component_type_recall": None,
+                    "reward_score": None,
+                    "gold_design_lint_score": None,
+                    "design_lint_score": None,
+                    "latency_ms": round(latency_ms, 2),
+                    "prediction": pred,
+                    "prediction_sha256": lineage["raw_prediction_sha256"],
+                    **lineage,
+                    "harness_provenance_id": harness_provenance_ref,
+                    "generation_request": _effective_request_for(record).to_dict(),
+                    "source_record_sha256": hashlib.sha256(
+                        json.dumps(
+                            record.to_dict(), sort_keys=True, separators=(",", ":")
+                        ).encode("utf-8")
+                    ).hexdigest(),
+                    # Do not attach precomputed target topology scores: those
+                    # would launder gold-side evidence into a timed-out row.
+                    "topology_evidence": None,
+                    "temporal_decode_evidence": _temporal_decode_evidence(
+                        (decode_meta or {}).get("stats"), record.id
+                    ),
+                    **_decode_outcome_fields(
+                        pred,
+                        parse_ok=None,
+                        error="decode_timeout",
+                        decode_meta=decode_meta,
+                    ),
+                }
+            )
+            return
+
+        if not pred.strip():
+            empty_prediction_count += 1
         if record.target_kind != "document":
             from slm_training.evals.task_scoreboard import score_output_targets
 
@@ -1501,6 +1576,7 @@ def evaluate(
             }
         )
 
+    incomplete_latencies: list[float] = []
     if batch_size > 1 and (
         callable(generate_batch_requests) or callable(generate_batch)
     ):
@@ -1509,10 +1585,14 @@ def evaluate(
             t0 = time.perf_counter()
             preds, evidence_rows = _generate_chunk(chunk)
             chunk_meta = chunk_decode_meta[-1] if chunk_decode_meta else None
+            timed_out = bool((chunk_meta or {}).get("timed_out"))
             elapsed = (time.perf_counter() - t0) * 1000.0
             per = elapsed / max(1, len(chunk))
             for index, (record, pred) in enumerate(zip(chunk, preds)):
-                latencies.append(per)
+                if timed_out:
+                    incomplete_latencies.append(per)
+                else:
+                    latencies.append(per)
                 evidence = evidence_rows[index] if index < len(evidence_rows) else None
                 _score_one(record, pred, per, evidence, chunk_meta)
     else:
@@ -1520,20 +1600,31 @@ def evaluate(
             t0 = time.perf_counter()
             predictions, evidence_rows = _generate_chunk([record])
             chunk_meta = chunk_decode_meta[-1] if chunk_decode_meta else None
+            timed_out = bool((chunk_meta or {}).get("timed_out"))
             pred = predictions[0]
-            latencies.append((time.perf_counter() - t0) * 1000.0)
+            elapsed_ms = (time.perf_counter() - t0) * 1000.0
+            if timed_out:
+                incomplete_latencies.append(elapsed_ms)
+            else:
+                latencies.append(elapsed_ms)
             _score_one(
                 record,
                 pred,
-                latencies[-1],
+                elapsed_ms,
                 evidence_rows[0] if evidence_rows else None,
                 chunk_meta,
             )
 
+    # Primary latency percentiles are completed attempts only so a budget wall
+    # does not look like "slow but finishing" quality. Timeout walls stay under
+    # incomplete_* / decode_timeout_* runtime fields.
     lat_sorted = sorted(latencies)
+    all_lat_sorted = sorted(latencies + incomplete_latencies)
 
     p50 = _nearest_rank(lat_sorted, 0.50)
     p95 = _nearest_rank(lat_sorted, 0.95)
+    p50_all = _nearest_rank(all_lat_sorted, 0.50)
+    p95_all = _nearest_rank(all_lat_sorted, 0.95)
     gold_design_mean = (
         sum(gold_design_scores) / len(gold_design_scores)
         if gold_design_scores
@@ -1584,8 +1675,12 @@ def evaluate(
             evidence_class=evidence_class,
         )
 
-    syntax_rate_evidence = _rate_evidence(syntax_parse_ok, document_n)
-    meaningful_rate_evidence = _rate_evidence(parse_ok, document_n)
+    # Quality denominators exclude runtime timeouts (incomplete), not full
+    # document_n. All-timeout suites report rates as null, never false 0.0.
+    completed_document_n = document_n - decode_timeout_document_n
+    syntax_rate_evidence = _rate_evidence(syntax_parse_ok, completed_document_n)
+    meaningful_rate_evidence = _rate_evidence(parse_ok, completed_document_n)
+    timeout_rate_evidence = _rate_evidence(decode_timeout_document_n, document_n)
     unmeasured_rate_evidence = {
         "schema": "binomial_rate_evidence/v1",
         "numerator": None,
@@ -1609,6 +1704,8 @@ def evaluate(
         "suite": config.suite,
         "n": n,
         "document_n": document_n,
+        "completed_document_n": completed_document_n,
+        "incomplete_document_n": decode_timeout_document_n,
         "fragment_n": n - document_n,
         "eval_limit": suite_limit,
         "eval_offset": suite_offset,
@@ -1621,14 +1718,20 @@ def evaluate(
         "evaluation_policy": evaluation_policy,
         "harness_provenance": harness_provenance.to_dict(),
         "harness_provenance_id": harness_provenance_ref,
-        # Rates are None (JSON null) when no document records were measured —
-        # "not measured" must never render as a fabricated 0.0.
-        "parse_rate": (syntax_parse_ok / document_n) if document_n else None,
-        "meaningful_program_rate": (parse_ok / document_n) if document_n else None,
-        "syntax_parse_rate": (
-            (syntax_parse_ok / document_n) if document_n else None
+        # Quality rates are over completed (non-timeout) documents only.
+        # None (JSON null) when nothing completed — never a fabricated 0.0.
+        "parse_rate": (
+            (syntax_parse_ok / completed_document_n) if completed_document_n else None
         ),
-        "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else None,
+        "meaningful_program_rate": (
+            (parse_ok / completed_document_n) if completed_document_n else None
+        ),
+        "syntax_parse_rate": (
+            (syntax_parse_ok / completed_document_n) if completed_document_n else None
+        ),
+        "raw_syntax_validity": (
+            (raw_syntax_ok / completed_document_n) if completed_document_n else None
+        ),
         "parse_rate_ci95": [
             round(float(bound), 4)
             for bound in (
@@ -1650,9 +1753,12 @@ def evaluate(
         "rate_evidence": {
             "parse_rate": syntax_rate_evidence,
             "syntax_parse_rate": syntax_rate_evidence,
-            "raw_syntax_validity": _rate_evidence(raw_syntax_ok, document_n),
+            "raw_syntax_validity": _rate_evidence(
+                raw_syntax_ok, completed_document_n
+            ),
             "meaningful_program_rate": meaningful_rate_evidence,
             "exact_match": _rate_evidence(int(sum(exact_vals)), len(exact_vals)),
+            "decode_timeout_rate": timeout_rate_evidence,
             "residual_mask_rate": unmeasured_rate_evidence,
             "oov_rate": unmeasured_rate_evidence,
         },
@@ -1701,8 +1807,18 @@ def evaluate(
         "gold_design_lint_score": gold_design_mean,
         # Alias kept for older dashboards; do not gate ship on this.
         "design_lint_score": gold_design_mean,
+        # Completed-only (quality/perf signal). Timeout walls live under
+        # latency_ms_*_including_incomplete and decode_timeout_*.
         "latency_ms_p50": round(p50, 2) if p50 is not None else None,
         "latency_ms_p95": round(p95, 2) if p95 is not None else None,
+        "latency_ms_p50_including_incomplete": (
+            round(p50_all, 2) if p50_all is not None else None
+        ),
+        "latency_ms_p95_including_incomplete": (
+            round(p95_all, 2) if p95_all is not None else None
+        ),
+        "completed_latency_n": len(latencies),
+        "incomplete_latency_n": len(incomplete_latencies),
         "checkpoint": str(loaded_checkpoint) if loaded_checkpoint else None,
         "checkpoint_sha256": checkpoint_sha256,
         "checkpoint_source": ("checkpoint" if loaded_checkpoint else "preloaded_model"),
@@ -1718,7 +1834,13 @@ def evaluate(
         "code_dirty": _git_dirty(),
         "evaluated_at": datetime.now(UTC).isoformat(),
         "failure_breakdown": failure_breakdown,
+        # Timeout is a runtime/completeness signal, not a quality rate. Ship
+        # gates already fail decode_timeout_count under runtime_failures.
         "decode_timeout_count": decode_timeout_count,
+        "decode_timeout_document_count": decode_timeout_document_n,
+        "decode_timeout_rate": (
+            (decode_timeout_document_n / document_n) if document_n else None
+        ),
         "decode_canvas_cap": canvas_cap,
         # SLM-303: per-taxonomy decode-outcome counts over details[] rows
         # (additive; every taxonomy key always present).
@@ -1764,7 +1886,9 @@ def evaluate(
     )
     metrics["rate_evidence"].update(
         {
-            "meaningful_program_v1_rate": _rate_evidence(parse_ok, document_n),
+            "meaningful_program_v1_rate": _rate_evidence(
+                parse_ok, completed_document_n
+            ),
             "binding_aware_meaningful_v2_rate_strict": _rate_evidence(
                 strict_positive_n, len(semantic_meaning_reports_v2)
             ),
@@ -1792,10 +1916,19 @@ def evaluate(
 
     metrics["ast_node_f1"] = _available_mean("ast_node_f1")
     metrics["ast_edge_f1"] = _available_mean("ast_edge_f1")
-    scope_contract_metrics = _aggregate_scope_contract_metrics(topology_evidence)
+    # Topology / scope aggregates exclude incomplete (timeout) rows so pre-scored
+    # target evidence never dilutes completed quality.
+    completed_topology_evidence = [
+        row
+        for row in topology_evidence
+        if not (isinstance(row, dict) and row.get("incomplete"))
+    ]
+    scope_contract_metrics = _aggregate_scope_contract_metrics(
+        completed_topology_evidence
+    )
     if scope_contract_metrics is not None:
         metrics["scope_contract_metrics"] = scope_contract_metrics
-    if topology_evidence and all(
+    if completed_topology_evidence and all(
         all(
             key in row
             for key in (
@@ -1806,12 +1939,12 @@ def evaluate(
                 "efficiency_score",
             )
         )
-        for row in topology_evidence
+        for row in completed_topology_evidence
     ):
 
         def mean(key: str) -> float:
-            return sum(float(row[key]) for row in topology_evidence) / len(
-                topology_evidence
+            return sum(float(row[key]) for row in completed_topology_evidence) / len(
+                completed_topology_evidence
             )
 
         quality_inputs = (
@@ -1861,11 +1994,13 @@ def evaluate(
                     ),
                     "topology_telemetry": {
                         key: mean(key)
-                        for key in topology_evidence[0]
-                        if isinstance(topology_evidence[0].get(key), (int, float))
+                        for key in completed_topology_evidence[0]
+                        if isinstance(
+                            completed_topology_evidence[0].get(key), (int, float)
+                        )
                         and all(
                             isinstance(row.get(key), (int, float))
-                            for row in topology_evidence
+                            for row in completed_topology_evidence
                         )
                     },
                 }
@@ -2078,16 +2213,28 @@ def evaluate_grammar_leakage_audit(
             grouped["complexity"].setdefault(
                 str((detail.get("complexity") or {}).get("bucket") or "unknown"), []
             ).append(detail)
+        def _completed_rate(rows: list[dict[str, Any]], key: str) -> float | None:
+            completed = [
+                row
+                for row in rows
+                if not row.get("incomplete") and row.get(key) is not None
+            ]
+            if not completed:
+                return None
+            return sum(bool(row.get(key)) for row in completed) / len(completed)
+
         return {
             axis: {
                 label: {
                     "n": len(rows),
-                    "meaningful_program_rate": sum(
-                        bool(row.get("binding_aware_meaningful_v2")) for row in rows
-                    )
-                    / len(rows),
-                    "parse_rate": sum(bool(row.get("parse_ok")) for row in rows)
-                    / len(rows),
+                    "completed_n": sum(
+                        1 for row in rows if not row.get("incomplete")
+                    ),
+                    "incomplete_n": sum(1 for row in rows if row.get("incomplete")),
+                    "meaningful_program_rate": _completed_rate(
+                        rows, "binding_aware_meaningful_v2"
+                    ),
+                    "parse_rate": _completed_rate(rows, "parse_ok"),
                 }
                 for label, rows in labels.items()
             }

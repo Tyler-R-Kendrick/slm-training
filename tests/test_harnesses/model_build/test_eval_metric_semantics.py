@@ -187,6 +187,167 @@ def test_measured_metrics_report_defined_counts_and_fallbacks(tmp_path: Path) ->
     assert "contract_precision" not in metrics["decoder_guaranteed"]
 
 
+def test_decode_timeout_does_not_degrade_quality_rates(tmp_path: Path) -> None:
+    """Timeouts are incompleteness metrics, never false parse/quality failures."""
+    from slm_training.models.decode_stats import DecodeStats
+
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    records = [
+        _record(id="ok-1", split="smoke", meta={"suite": "smoke"}),
+        _record(id="timeout-1", split="smoke", meta={"suite": "smoke"}),
+        _record(id="ok-2", split="smoke", meta={"suite": "smoke"}),
+    ]
+    write_jsonl(train_dir / "records.jsonl", [_record(id="train-1", split="train")])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", records)
+
+    class MixedTimeoutModel:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
+            self.calls += 1
+            if self.calls == 2:
+                error = TimeoutError("decode exceeded")
+                error.decode_stats = DecodeStats(tokens_emitted=3)  # type: ignore[attr-defined]
+                raise error
+            return _GOLD, DecodeStats(tokens_emitted=1)
+
+    def _config(run_id: str) -> ModelBuildConfig:
+        return ModelBuildConfig(
+            train_dir=train_dir,
+            test_dir=test_dir,
+            suite="smoke",
+            run_root=tmp_path / "runs",
+            run_id=run_id,
+            model_name="stub",
+            decode_timeout_seconds=1,
+        )
+
+    class AlwaysGold:
+        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
+            return _GOLD, DecodeStats(tokens_emitted=1)
+
+    metrics = evaluate(
+        _config("timeout-metric-semantics"),
+        model=MixedTimeoutModel(),
+        publish_agentv=False,
+    )
+    # Baseline: same gold echo with no timeouts — quality must match mixed.
+    baseline = evaluate(
+        _config("timeout-metric-baseline"),
+        model=AlwaysGold(),
+        publish_agentv=False,
+    )
+
+    assert metrics["document_n"] == 3
+    assert metrics["completed_document_n"] == 2
+    assert metrics["incomplete_document_n"] == 1
+    assert metrics["decode_timeout_count"] == 1
+    assert metrics["decode_timeout_document_count"] == 1
+    assert metrics["decode_timeout_rate"] == pytest.approx(1 / 3)
+    # Every quality metric is over completed rows only — match no-timeout gold.
+    quality_keys = (
+        "parse_rate",
+        "meaningful_program_rate",
+        "syntax_parse_rate",
+        "raw_syntax_validity",
+        "contract_precision",
+        "contract_recall",
+        "binder_reference_f1",
+        "placeholder_fidelity",
+        "placeholder_fidelity_normalized",
+        "placeholder_validity",
+        "exact_match",
+        "ast_beq_rate",
+        "canonical_beq_rate",
+        "structural_similarity",
+        "tree_edit_similarity",
+        "component_type_recall",
+        "reward_score",
+    )
+    for name in quality_keys:
+        assert metrics[name] is not None, name
+        assert metrics[name] == pytest.approx(baseline[name]), name
+    for name in quality_keys:
+        defined = metrics["metric_defined_n"].get(name)
+        if defined is None:
+            # rate-style keys share defined_n under related names
+            continue
+        assert defined == 2, name
+    assert metrics["metric_defined_n"]["placeholder_fidelity"] == 2
+    assert metrics["metric_defined_n"]["structural_similarity"] == 2
+    assert metrics["metric_defined_n"]["reward_score"] == 2
+    assert metrics["empty_prediction_count"] == 0
+    assert metrics["completed_latency_n"] == 2
+    assert metrics["incomplete_latency_n"] == 1
+    assert metrics["latency_ms_p50"] is not None
+    assert metrics["decode_outcome_counts"]["runtime_timeout"] == 1
+    assert metrics["decode_outcome_counts"]["model_valid"] == 2
+    timeout_rows = [row for row in metrics["details"] if row.get("incomplete")]
+    assert len(timeout_rows) == 1
+    assert timeout_rows[0]["parse_ok"] is None
+    assert timeout_rows[0]["structural_similarity"] is None
+    assert timeout_rows[0]["reward_score"] is None
+    assert timeout_rows[0]["decode_outcome"] == "runtime_timeout"
+    assert metrics["rate_evidence"]["decode_timeout_rate"]["denominator"] == 3
+    assert metrics["rate_evidence"]["parse_rate"]["denominator"] == 2
+
+
+def test_all_timeouts_leave_quality_rates_unmeasured(tmp_path: Path) -> None:
+    from slm_training.models.decode_stats import DecodeStats
+
+    config = _smoke_config(tmp_path)
+    config = ModelBuildConfig(
+        train_dir=config.train_dir,
+        test_dir=config.test_dir,
+        suite="smoke",
+        run_root=config.run_root,
+        run_id="all-timeout-metric-semantics",
+        model_name="stub",
+        decode_timeout_seconds=1,
+    )
+
+    class AlwaysTimeout:
+        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
+            error = TimeoutError("decode exceeded")
+            error.decode_stats = DecodeStats(tokens_emitted=1)  # type: ignore[attr-defined]
+            raise error
+
+    metrics = evaluate(config, model=AlwaysTimeout(), publish_agentv=False)
+    assert metrics["decode_timeout_rate"] == 1.0
+    assert metrics["completed_document_n"] == 0
+    assert metrics["incomplete_latency_n"] == 1
+    assert metrics["completed_latency_n"] == 0
+    # All quality fields unmeasured — not fabricated zeros.
+    for name in (
+        "parse_rate",
+        "meaningful_program_rate",
+        "syntax_parse_rate",
+        "raw_syntax_validity",
+        "contract_precision",
+        "contract_recall",
+        "placeholder_fidelity",
+        "placeholder_validity",
+        "exact_match",
+        "ast_beq_rate",
+        "canonical_beq_rate",
+        "structural_similarity",
+        "tree_edit_similarity",
+        "component_type_recall",
+        "reward_score",
+        "latency_ms_p50",
+        "latency_ms_p95",
+    ):
+        assert metrics[name] is None, name
+    assert metrics["empty_prediction_count"] == 0
+    # Runtime completeness metrics still report the wall.
+    assert metrics["latency_ms_p50_including_incomplete"] is not None
+    assert metrics["decode_timeout_count"] == 1
+
+
 def test_agentv_single_suite_publishes_one_case() -> None:
     suites = {
         "smoke": {
