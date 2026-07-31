@@ -61,9 +61,15 @@ def test_script_changes_include_their_domain_suite() -> None:
         "tests/test_harnesses/rl",
         "tests/test_scripts",
     ]
+    # Exact path ownership: listed script paths do not also pull scripts/.
     assert select_tests(["scripts/autoresearch.py"]) == [
         "tests/test_autoresearch",
-        "tests/test_scripts",
+    ]
+    assert select_tests(["scripts/verify_agent_surfaces.py"]) == [
+        "tests/test_scripts/test_verify_agent_surfaces.py",
+    ]
+    assert select_tests(["scripts/check_changed.py"]) == [
+        "tests/test_scripts/test_check_changed.py",
     ]
 
 

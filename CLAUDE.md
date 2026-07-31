@@ -62,6 +62,10 @@ Parity across harnesses is enforced by
   outcomes are visible.
 - **Repository organization.** Use `organize-repository` before changing
   tracked file placement and use `git mv` for every tracked relocation.
+- **SDLC / multi-step delivery.** Multi-phase work uses the `sdlc` skill:
+  subagents with incremental check-ins, official `gh stack` stacked PRs,
+  bottom-up rubber-duck adversarial closeout (comments, CI, squash-merge),
+  and Scalar/sparse/worktree workspaces.
 
 Serena MCP (semantic code tools) is configured for this repo — prefer Serena
 symbol tools over raw grep when navigating `src/` / `scripts/`. See `AGENTS.md`

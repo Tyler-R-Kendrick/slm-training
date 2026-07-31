@@ -29,6 +29,7 @@ symlinks back here.
 | `playwright-cli` | Browser / playground automation |
 | `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |
 | `organize-repository` | Canonical file placement, deduplication, and `git mv` workflow |
+| `sdlc` | Multi-step delivery: subagents, `gh stack` stacked PRs, Scalar/sparse worktrees, bottom-up closeout |
 | `rtk` | Prefer Rust Token Killer for verbose shell output ([`RTK.md`](../../RTK.md)) |
 
 Edit only here; discovery symlinks update every client automatically.

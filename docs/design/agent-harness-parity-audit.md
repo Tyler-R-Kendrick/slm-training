@@ -181,7 +181,8 @@ check, and every one of them had drifted.** The table below is the state at
 audit time; every ❌ is now ✅ and certified.
 
 **Fixed.** `scripts/verify_agent_surfaces.py` owns a declarative
-obligation × surface matrix covering thirteen laws plus hook parity;
+obligation × surface matrix covering instruction laws (including later
+`sdlc.delivery`) plus hook parity;
 `verify_decode_invariants.check_agent_surfaces()` delegates to it rather than
 keeping a second copy. Missing laws were backfilled into `CLAUDE.md`,
 `GEMINI.md`, `.github/copilot-instructions.md`, a new
@@ -394,7 +395,8 @@ A3 was found during this phase's verification and is deliberately left open.
 ### Phase 2 — One enforcement mechanism for cross-surface parity (B1, B2, B6, B7) — done
 
 1. `scripts/verify_agent_surfaces.py` holds the declarative
-   obligation × surface matrix — thirteen instruction laws plus two hook laws.
+   obligation × surface matrix — instruction laws (incl. `sdlc.delivery` for
+   multi-step stacked-PR delivery) plus two hook laws.
 2. `verify_decode_invariants.check_agent_surfaces()` delegates to it.
 3. Wired into `ci.yml`'s `python-static` job and into `check_changed.check()`,
    which re-certifies whenever any surface file changes.
