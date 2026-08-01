@@ -1,0 +1,50 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260801-c1",
+  "cycle_index": 1,
+  "source_commit": "24c20769c366aeb9e9f7a98eb72089b3a97859c7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 2709.07
+      },
+      "levers": {
+        "grammar_completion_bounds": false
+      }
+    },
+    "c20260801-c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 2756.66
+      },
+      "levers": {
+        "grammar_completion_bounds": true
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 47.59,
+  "conclusion": "grammar_completion_bounds did not reduce smoke p50 latency on this size-matched 20-step fixture (delta +47.59ms, bounds slower); parse_rate held at 1.0 and meaningful_program_rate stayed 0.0 for both arms. AgentV ship-gate publication path failed closed once (evaluate_model.py --ship-gates) with 'AgentV SDK is unavailable; run npm ci in the checkout' before the fix landed in cycle 2 environment setup; primary metrics for this cycle came from the campaign's own decode measurement, not the failed AgentV publish call.",
+  "next_priorities": [
+    "Run npm ci in the loop worktree before AgentV-backed ship-gate publication (fixed for cycle 2 onward)",
+    "Re-test grammar_completion_bounds only after a higher-step budget clears fixture insufficient_n",
+    "Do not promote; ship gates fail by design on fixture n"
+  ],
+  "recorded_at": "2026-08-01T02:32:01.771291+00:00"
+}

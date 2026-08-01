@@ -1,0 +1,52 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260801-c2",
+  "cycle_index": 2,
+  "source_commit": "24c20769c366aeb9e9f7a98eb72089b3a97859c7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 19905.0
+      },
+      "levers": {
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c2-canvas": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "latency_ms_p50": 22230.22
+      },
+      "levers": {
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 2325.22,
+  "conclusion": "compact_active_canvas did not reduce smoke p50 latency on this size-matched 20-step fixture (delta +2325.22ms, canvas slower); parse_rate held at 1.0, meaningful_program_rate stayed 0.0 for both arms, and smoke n=3 remains below the insufficient_n threshold (need>=20). AgentV ship-gate publication succeeded this cycle after `npm ci` (with NODE_OPTIONS override) resolved the 'AgentV SDK is unavailable' failure from cycle 1.",
+  "next_priorities": [
+    "Re-test compact_active_canvas only after a higher-step/higher-n budget clears fixture insufficient_n",
+    "Do not promote; ship gates fail by design on fixture n",
+    "NODE_OPTIONS in this environment ships a malformed quoted value ('--import tsx' as a literal string); override to --max-old-space-size=8192 before invoking npm/node in the loop worktree"
+  ],
+  "recorded_at": "2026-08-01T02:35:52.000000+00:00"
+}
