@@ -7,7 +7,7 @@ import signal
 import subprocess
 import tempfile
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -98,6 +98,9 @@ def run_bounded_process(
     cwd: str | os.PathLike[str] | None = None,
     env: Mapping[str, str] | None = None,
     max_output_bytes: int = 8_000,
+    on_start: Callable[[int], None] | None = None,
+    on_heartbeat: Callable[[int], None] | None = None,
+    heartbeat_interval_seconds: float = 1.0,
 ) -> BoundedProcessResult:
     """Run ``command``, stopping its process group when the budget expires.
 
@@ -115,6 +118,8 @@ def run_bounded_process(
         raise ValueError("kill_grace_seconds must be non-negative")
     if max_output_bytes <= 0:
         raise ValueError("max_output_bytes must be positive")
+    if heartbeat_interval_seconds <= 0:
+        raise ValueError("heartbeat_interval_seconds must be positive")
 
     started = time.monotonic()
     with (
@@ -145,10 +150,20 @@ def run_bounded_process(
         interrupted = False
         killed = False
         try:
-            process.wait(timeout=interrupt_after_seconds)
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            interrupted, killed = _stop_and_reap(process, kill_grace_seconds)
+            if on_start is not None:
+                on_start(process.pid)
+            interrupt_deadline = time.monotonic() + interrupt_after_seconds
+            while process.poll() is None:
+                remaining = interrupt_deadline - time.monotonic()
+                if remaining <= 0:
+                    timed_out = True
+                    interrupted, killed = _stop_and_reap(process, kill_grace_seconds)
+                    break
+                try:
+                    process.wait(timeout=min(heartbeat_interval_seconds, remaining))
+                except subprocess.TimeoutExpired:
+                    if on_heartbeat is not None:
+                        on_heartbeat(process.pid)
         except BaseException:
             _stop_and_reap(process, kill_grace_seconds)
             raise

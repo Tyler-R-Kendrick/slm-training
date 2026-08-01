@@ -19,6 +19,7 @@ from slm_training.autoresearch.schemas import (
     HypothesisMatrix,
     OptimumFeedbackV1,
     ResearchSource,
+    evaluation_measurement_incomplete,
     utc_now,
 )
 from slm_training.harness_core.bounded_process import (
@@ -767,7 +768,7 @@ def execute_commands(
             if remaining_seconds is not None
             else float(MAX_RUN_SECONDS),
         )
-        grace = min(float(KILL_GRACE_SECONDS), max(0.0, stage_total - 0.001))
+        grace = min(float(KILL_GRACE_SECONDS), stage_total * 0.1)
         interrupt_after = min(
             float(INTERRUPT_AFTER_SECONDS), max(0.001, stage_total - grace)
         )
@@ -961,6 +962,8 @@ def _expected_gate_rejection(
     evals = parsed.get("evals")
     suites = parsed.get("suites")
     runner = evals.get("runner") if isinstance(evals, dict) else None
+    if evaluation_measurement_incomplete(_numeric_metrics(parsed)):
+        return False
     return bool(
         isinstance(gates, dict)
         and gates.get("pass") is False
@@ -1023,7 +1026,7 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
             )
         )
         confidence = 0.95
-    elif _evaluation_measurement_incomplete(metrics):
+    elif evaluation_measurement_incomplete(metrics):
         target = "infrastructure"
         evidence.append(
             "evaluation measurement is incomplete; model attribution is unavailable"
@@ -1084,15 +1087,6 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
         evidence=tuple(evidence),
         recommended_actions=tuple(actions),
     )
-
-
-def _evaluation_measurement_incomplete(metrics: dict[str, float]) -> bool:
-    """Detect a scoreboard that contains bookkeeping but no completed decode."""
-
-    completed = _metric(metrics, "completed_document_n", default=-1)
-    timeouts = _metric(metrics, "decode_timeout_count", default=0)
-    execution_errors = _metric(metrics, "execution_error_count", default=0)
-    return completed == 0 and (timeouts > 0 or execution_errors > 0)
 
 
 def _metric(metrics: dict[str, float], *names: str, default: float) -> float:

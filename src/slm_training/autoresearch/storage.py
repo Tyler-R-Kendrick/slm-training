@@ -23,6 +23,7 @@ from slm_training.autoresearch.schemas import (
     ExperimentOutcome,
     HypothesisFeedback,
     HypothesisMatrix,
+    evaluation_measurement_incomplete,
     utc_now,
 )
 from slm_training.autoresearch.experiment_campaign import (
@@ -45,7 +46,14 @@ _OUTCOME_BOUNDARY_EVENTS = frozenset(
     }
 )
 _PREREQUISITE_ACTION_KINDS = frozenset(
-    {"repair_harness", "repair_formal", "rebuild_data", "document", "deliver_stack"}
+    {
+        "stop_campaign",
+        "repair_harness",
+        "repair_formal",
+        "rebuild_data",
+        "document",
+        "deliver_stack",
+    }
 )
 
 
@@ -970,19 +978,9 @@ def _measurement_text(outcome: ExperimentOutcome) -> str:
         stage.get("measurement_complete") is False for stage in outcome.stage_telemetry
     ):
         return "incomplete"
-    completed = _metric_value(outcome.metrics, "completed_document_n")
-    timeouts = _metric_value(outcome.metrics, "decode_timeout_count") or 0
-    errors = _metric_value(outcome.metrics, "execution_error_count") or 0
-    if completed == 0 and (timeouts > 0 or errors > 0):
+    if evaluation_measurement_incomplete(outcome.metrics):
         return "incomplete"
     return "complete"
-
-
-def _metric_value(metrics: dict[str, float], name: str) -> float | None:
-    for key, value in metrics.items():
-        if key == name or key.endswith(f".{name}"):
-            return value
-    return None
 
 
 def _event_artifact(

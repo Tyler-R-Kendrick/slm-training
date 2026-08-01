@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -19,6 +20,7 @@ from slm_training.autoresearch.experiment_campaign import (
 from slm_training.autoresearch.formal import (
     FORMAL_TEMPLATES,
     LEVERPROOF_ROOT,
+    _run as _run_formal,
     bind_preflight,
     check_formal_trace,
     formal_trace_from_closure,
@@ -39,6 +41,31 @@ from slm_training.harnesses.model_build.eval_runner import structural_similarity
 from slm_training.levers import MAX_RUN_MINUTES
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_formal_timeout_reaps_lean_process_tree(tmp_path: Path) -> None:
+    survivor = tmp_path / "lean-grandchild-survived"
+    grandchild = (
+        "import signal,time,pathlib; "
+        "signal.signal(signal.SIGINT, signal.SIG_IGN); "
+        "time.sleep(0.5); "
+        f"pathlib.Path({str(survivor)!r}).write_text('alive')"
+    )
+    parent = (
+        "import signal,subprocess,sys,time; "
+        "signal.signal(signal.SIGINT, lambda *_: sys.exit(23)); "
+        f"subprocess.Popen([sys.executable, '-c', {grandchild!r}]); "
+        "time.sleep(30)"
+    )
+
+    result = _run_formal(
+        [sys.executable, "-c", parent], cwd=tmp_path, timeout_seconds=0.3
+    )
+    time.sleep(0.3)
+
+    assert result.returncode == 124
+    assert "timed out" in result.stderr
+    assert not survivor.exists()
 
 
 def test_formal_verifier_loads_before_project_dependencies_are_installed() -> None:

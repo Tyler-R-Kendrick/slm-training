@@ -44,7 +44,9 @@ Bare `/autotrain` is owned by an unbudgeted host goal. The agent syncs Git and
 runs one bounded driver cycle with `--supervised --max-cycles 1`, then regains
 control for repairs, documentation, and delivery. Each cycle writes strict
 `AutotrainCycleHandoffV1` to `<campaign>/cycle_handoff.json`; heartbeat and
-resume state use `AutotrainLoopStateV1` at `loops/<loop_id>/state.json`. The
+resume state use `AutotrainLoopStateV1` at `loops/<loop_id>/state.json`. While an
+arm runs, start/heartbeat callbacks publish its process-group leader as
+`child_pid` plus `stage_started_at`, so the report reflects live process truth. The
 handoff separates climb from ship state and carries evidence-bound actions that
 name their owner skill. Three consecutive hard failures with the same fingerprint
 mark the loop blocked instead of printing and sleeping forever; timeouts, transient
@@ -52,9 +54,12 @@ fetch failures, and incomplete measurements remain retriable and never accumulat
 hard-block count.
 It also enumerates checkpoints created during the cycle and requires the
 supervisor to update the model card and README summary before continuing.
-Prerequisite actions are closed by append-only, action-digest-bound receipts;
-the next supervised campaign fails closed if required harness, Lean, data,
-documentation, or delivery evidence is absent.
+Prerequisite actions are closed by append-only, action-digest-bound receipts whose
+evidence resolves to an existing artifact or commit. A theorem-backed
+`stop_campaign` is itself a prerequisite. The next supervised campaign fails
+closed if required stop, harness, Lean, data, documentation, or merged-delivery
+evidence is absent. Partial eval scoreboards are infrastructure evidence and never
+enter model-quality comparison.
 
 One cycle still obeys the repository hard cap. Control and candidate receive equal
 wall shares, with a third share reserved for research, status, and durable handoff;

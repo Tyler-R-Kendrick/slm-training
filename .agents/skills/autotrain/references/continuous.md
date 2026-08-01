@@ -93,9 +93,12 @@ python -m scripts.autoresearch --root outputs/autoresearch ack-action \
   --status completed --evidence <durable-path-or-commit>
 ```
 
-Use `--status blocked` only with evidence of the real external blocker. Receipts
-are action-content-bound; editing/reordering a handoff cannot satisfy an old action.
-The driver enforces receipts for harness, Lean, data, docs, and delivery actions.
+Use `--status blocked` only with evidence of the real external blocker. Evidence
+must resolve to an existing durable artifact or Git commit; documentation must be
+tracked, and delivery must cite a commit already merged into `origin/main`.
+Receipts are action-content-bound; editing/reordering a handoff cannot satisfy an
+old action. The driver enforces receipts for theorem-backed stops, harness, Lean,
+data, docs, and delivery actions.
 `next_experiment`, `retry_measurement`, and `monitor` are execution/steering actions,
 so they are not predecessor prerequisites.
 
@@ -199,7 +202,7 @@ For each cycle, run the full body without pausing:
    - **If positive:** after documentation, stack layer for that iteration's tracked code +
      `docs/design/` results (`gh stack add` / `gh stack submit --open`, or
      push to the open positive layer if the same concern continues).
-     Acknowledge `deliver_stack` with the merged commit/PR evidence.
+   Acknowledge `deliver_stack` with the merged commit SHA.
    - **If not positive:** no new stack layer; keep local commits and continue.
    - Never PR raw `outputs/` or weight blobs.
    Full checklist:

@@ -28,6 +28,31 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def evaluation_measurement_incomplete(metrics: dict[str, float]) -> bool:
+    """Return whether typed eval metrics prove that measurement was partial."""
+
+    incomplete_leaves = {
+        "decode_timeout_count",
+        "incomplete_document_n",
+        "execution_error_count",
+        "execution_errors",
+    }
+    if any(
+        value > 0 and key.rsplit(".", 1)[-1] in incomplete_leaves
+        for key, value in metrics.items()
+    ):
+        return True
+    for key, completed in metrics.items():
+        if key.rsplit(".", 1)[-1] != "completed_document_n":
+            continue
+        prefix = key.rsplit(".", 1)[0] if "." in key else ""
+        sample_key = f"{prefix}.n" if prefix else "n"
+        sample_count = metrics.get(sample_key)
+        if sample_count is not None and completed < sample_count:
+            return True
+    return False
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

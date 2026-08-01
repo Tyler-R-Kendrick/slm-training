@@ -107,3 +107,21 @@ def test_captured_output_is_bounded_to_tail() -> None:
     assert result.stderr.endswith("ERRTAIL\n")
     assert result.stdout_truncated
     assert result.stderr_truncated
+
+
+def test_process_callbacks_expose_pid_and_refresh_heartbeat() -> None:
+    started: list[int] = []
+    heartbeats: list[int] = []
+    result = run_bounded_process(
+        [sys.executable, "-c", "import time; time.sleep(0.12)"],
+        interrupt_after_seconds=1,
+        kill_grace_seconds=0.1,
+        heartbeat_interval_seconds=0.03,
+        on_start=started.append,
+        on_heartbeat=heartbeats.append,
+    )
+
+    assert result.outcome is ProcessOutcome.COMPLETED
+    assert len(started) == 1
+    assert heartbeats
+    assert set(heartbeats) == set(started)

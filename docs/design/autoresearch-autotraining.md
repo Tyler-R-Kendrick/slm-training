@@ -22,8 +22,10 @@ different verdicts.
 
 Handoff coordination is enforced, not advisory. The supervisor records
 content-bound `AutotrainActionReceiptV1` entries with `autoresearch ack-action`;
-the successor refuses to initialize while predecessor harness, Lean, data, docs,
-or delivery prerequisites remain unacknowledged. Execution/steering actions
+receipt evidence must resolve to a durable artifact or Git commit, documentation
+must be tracked, and delivery commits must already be ancestors of `origin/main`.
+The successor refuses to initialize while predecessor theorem-stop, harness, Lean,
+data, docs, or delivery prerequisites remain unacknowledged. Execution/steering actions
 (`retry_measurement`, `next_experiment`, `monitor`) remain part of the next-cycle
 control flow rather than circular prerequisites.
 
@@ -164,9 +166,9 @@ unknown fields forbidden:
   diagnosis evidence, recommended actions, and optional hash-bound Lean optimum
   feedback without inventing causal support;
 - `ExperimentOutcome` and `Diagnosis` route failures to data, researcher, model, or
-  infrastructure remediation. A zero-completion scoreboard with decode timeouts or
-  execution errors is measurement-incomplete infrastructure evidence, never a model
-  quality result;
+  infrastructure remediation. Any partial scoreboard—timeouts, execution errors,
+  explicit incomplete documents, or `completed_document_n < n`—is
+  measurement-incomplete infrastructure evidence, never a model quality result;
 - `RLReadinessReport` is the only accepted RL capability token.
 
 `compile_commands` constructs argv arrays from typed fields. No provider-authored
@@ -183,8 +185,8 @@ reaps the group if needed; stdout/stderr are disk-backed and only bounded tails 
 retained. A nominally successful train is still incomplete unless its typed summary
 reports `stopped_on=steps`, the requested step count, and a present checkpoint.
 Conversely, `evaluate_model --ship-gates` exit 8 is a completed negative result only
-when a nonempty suite scoreboard and error-free AgentV runner record accompany the
-typed failed gate.
+when a nonempty, complete suite scoreboard and error-free AgentV runner record
+accompany the typed failed gate.
 
 ### Program experiments route through this loop (G1, SLM-46)
 

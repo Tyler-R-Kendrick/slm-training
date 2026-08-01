@@ -30,6 +30,7 @@ import re
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -125,16 +126,23 @@ def _run(cmd: list[str], *, cwd: Path, deadline: float | None = None) -> None:
 
 
 def _bounded_command(
-    cmd: list[str], *, cwd: Path, deadline: float | None = None
+    cmd: list[str],
+    *,
+    cwd: Path,
+    deadline: float | None = None,
+    on_start: Callable[[int], None] | None = None,
+    on_heartbeat: Callable[[int], None] | None = None,
 ) -> BoundedProcessResult:
     total = _remaining_timeout(deadline)
-    grace = min(float(KILL_GRACE_SECONDS), max(0.0, total - 0.001))
+    grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
     interrupt_after = min(float(INTERRUPT_AFTER_SECONDS), max(0.001, total - grace))
     return run_bounded_process(
         cmd,
         cwd=cwd,
         interrupt_after_seconds=interrupt_after,
         kill_grace_seconds=grace,
+        on_start=on_start,
+        on_heartbeat=on_heartbeat,
     )
 
 
@@ -385,7 +393,39 @@ def _set_active_stage(root: Path, loop_id: str, stage: str) -> None:
         return
     _write_loop_state(
         root,
-        state.model_copy(update={"active_stage": stage, "heartbeat_at": utc_now()}),
+        state.model_copy(
+            update={
+                "active_stage": stage,
+                "child_pid": None,
+                "stage_started_at": None,
+                "heartbeat_at": utc_now(),
+            }
+        ),
+    )
+
+
+def _set_stage_process(root: Path, loop_id: str, stage: str, child_pid: int) -> None:
+    path = _loop_state_path(root, loop_id)
+    if not path.is_file():
+        return
+    try:
+        state = AutotrainLoopStateV1.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return
+    now = utc_now()
+    started_at = state.stage_started_at if state.active_stage == stage else None
+    _write_loop_state(
+        root,
+        state.model_copy(
+            update={
+                "active_stage": stage,
+                "child_pid": child_pid,
+                "stage_started_at": started_at or now,
+                "heartbeat_at": now,
+            }
+        ),
     )
 
 
@@ -3881,8 +3921,19 @@ def run_cycle(
             "--execute",
         ]
         print("+", " ".join(cmd), flush=True)
-        _set_active_stage(root, loop_id, f"experiment:{eid}")
-        result = _bounded_command(cmd, cwd=cwd, deadline=deadline)
+        stage = f"experiment:{eid}"
+        _set_active_stage(root, loop_id, stage)
+        result = _bounded_command(
+            cmd,
+            cwd=cwd,
+            deadline=deadline,
+            on_start=lambda pid, stage=stage: _set_stage_process(
+                root, loop_id, stage, pid
+            ),
+            on_heartbeat=lambda pid, stage=stage: _set_stage_process(
+                root, loop_id, stage, pid
+            ),
+        )
         if result.stdout:
             print(
                 result.stdout,

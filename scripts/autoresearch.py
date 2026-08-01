@@ -1313,6 +1313,51 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def _validate_action_evidence(
+    *, action_kind: str, evidence_uris: tuple[str, ...], campaign_root: Path
+) -> None:
+    """Require receipts to reference existing durable files or Git commits."""
+
+    repo_root = ROOT.resolve()
+    artifact_root = campaign_root.resolve()
+    for evidence in evidence_uris:
+        if len(evidence) == 40 and all(char in "0123456789abcdef" for char in evidence):
+            if _git("cat-file", "-e", f"{evidence}^{{commit}}", check=False).returncode:
+                raise ValueError(f"receipt evidence is not a Git commit: {evidence}")
+            if (
+                action_kind == "deliver_stack"
+                and _git(
+                    "merge-base", "--is-ancestor", evidence, "origin/main", check=False
+                ).returncode
+            ):
+                raise ValueError(
+                    "deliver_stack evidence must be a commit merged into origin/main"
+                )
+            continue
+
+        candidates = (repo_root / evidence, artifact_root / evidence)
+        path = next((item.resolve() for item in candidates if item.is_file()), None)
+        if path is None or not any(
+            path.is_relative_to(root) for root in (repo_root, artifact_root)
+        ):
+            raise ValueError(
+                f"receipt evidence must be an existing durable path or commit: {evidence}"
+            )
+        if action_kind == "deliver_stack":
+            raise ValueError("deliver_stack evidence must be a merged Git commit")
+        if action_kind == "document":
+            try:
+                relative = path.relative_to(repo_root)
+            except ValueError as exc:
+                raise ValueError(
+                    "document evidence must be tracked in the repository"
+                ) from exc
+            if _git(
+                "ls-files", "--error-unmatch", str(relative), check=False
+            ).returncode:
+                raise ValueError("document evidence must be tracked in the repository")
+
+
 def cmd_ack_action(args: argparse.Namespace) -> int:
     handoff_path = args.root / args.campaign_id / "cycle_handoff.json"
     handoff = AutotrainCycleHandoffV1.model_validate_json(
@@ -1325,6 +1370,12 @@ def cmd_ack_action(args: argparse.Namespace) -> int:
     if args.action_index < 0 or args.action_index >= len(handoff.actions):
         raise ValueError("--action-index is outside the handoff action list")
     action = handoff.actions[args.action_index]
+    evidence_uris = tuple(args.evidence)
+    _validate_action_evidence(
+        action_kind=action.kind,
+        evidence_uris=evidence_uris,
+        campaign_root=args.root,
+    )
     receipt = AutotrainActionReceiptV1(
         loop_id=args.loop_id,
         campaign_id=args.campaign_id,
@@ -1332,7 +1383,7 @@ def cmd_ack_action(args: argparse.Namespace) -> int:
         action_sha256=autotrain_action_sha256(action),
         action_kind=action.kind,
         status=args.status,
-        evidence_uris=tuple(args.evidence),
+        evidence_uris=evidence_uris,
     )
     path = append_autotrain_action_receipt(args.root, receipt)
     print(

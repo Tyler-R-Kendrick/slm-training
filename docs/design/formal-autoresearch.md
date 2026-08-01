@@ -46,6 +46,9 @@ Autoresearch uses two pinned Lean 4.30.0 projects. The promotion-critical
 Mathlib-free `src/leverproof_lean/` package via `make test`; that same bounded
 run builds the certificate checker used later in promotion. The remaining
 templates stay in `src/slm_training/formal/lean/` with Mathlib `v4.30.0`.
+Every formal command runs in its own bounded process group; a timeout interrupts
+and, after the canonical grace, kills and reaps Lake/Lean descendants before the
+typed timeout result is returned.
 
 | Module | Established claim | Scope |
 | --- | --- | --- |

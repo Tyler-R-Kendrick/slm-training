@@ -1432,6 +1432,36 @@ def test_driver_lock_singleton(tmp_path: Path) -> None:
     fh2.close()
 
 
+def test_stage_process_updates_child_liveness(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-x"
+    _mod._write_loop_state(
+        root,
+        _mod.AutotrainLoopStateV1(
+            loop_id=loop,
+            state="RUNNING",
+            phase="running",
+            pid=123,
+            active_stage="orchestration",
+        ),
+    )
+
+    _mod._set_active_stage(root, loop, "experiment:arm")
+    _mod._set_stage_process(root, loop, "experiment:arm", 456)
+    first = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+    _mod._set_stage_process(root, loop, "experiment:arm", 456)
+    refreshed = _mod.AutotrainLoopStateV1.model_validate_json(
+        _mod._loop_state_path(root, loop).read_text()
+    )
+
+    assert first.child_pid == 456
+    assert first.stage_started_at is not None
+    assert refreshed.stage_started_at == first.stage_started_at
+    assert refreshed.heartbeat_at >= first.heartbeat_at
+
+
 def test_promote_formal_timeout_obeys_repository_cap() -> None:
     from slm_training.levers import MAX_RUN_SECONDS
 

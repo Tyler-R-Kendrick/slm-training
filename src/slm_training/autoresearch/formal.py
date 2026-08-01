@@ -25,7 +25,15 @@ from slm_training.autoresearch.schemas import (
     FormalProofStatus,
     FormalTraceStepV1,
 )
-from slm_training.levers import MAX_RUN_SECONDS
+from slm_training.harness_core.bounded_process import (
+    ProcessOutcome,
+    run_bounded_process,
+)
+from slm_training.levers import (
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
+    MAX_RUN_SECONDS,
+)
 from slm_training.lineage.records import canonical_json
 
 if TYPE_CHECKING:
@@ -293,22 +301,37 @@ def _proof_sources_are_total(template: FormalTemplate) -> bool:
 def _run(
     command: list[str], *, cwd: Path, timeout_seconds: float
 ) -> subprocess.CompletedProcess[str]:
-    try:
-        return subprocess.run(
-            command,
-            cwd=cwd,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
-    except subprocess.TimeoutExpired as exc:
+    total = min(float(MAX_RUN_SECONDS), max(0.001, timeout_seconds))
+    grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
+    interrupt_after = min(float(INTERRUPT_AFTER_SECONDS), max(0.001, total - grace))
+    result = run_bounded_process(
+        command,
+        cwd=cwd,
+        interrupt_after_seconds=interrupt_after,
+        kill_grace_seconds=grace,
+    )
+    if result.timed_out:
         return subprocess.CompletedProcess(
             command,
             124,
-            stdout=str(exc.stdout or ""),
-            stderr=f"formal command timed out after {timeout_seconds:.3f}s",
+            stdout=result.stdout,
+            stderr=(
+                f"{result.stderr}\nformal command timed out after {total:.3f}s"
+            ).strip(),
         )
+    if result.outcome is ProcessOutcome.LAUNCH_FAILED:
+        return subprocess.CompletedProcess(
+            command,
+            127,
+            stdout="",
+            stderr=result.launch_error or "formal command launch failed",
+        )
+    return subprocess.CompletedProcess(
+        command,
+        int(result.returncode or 0),
+        stdout=result.stdout,
+        stderr=result.stderr,
+    )
 
 
 def _is_timeout_result(proc: subprocess.CompletedProcess[str]) -> bool:

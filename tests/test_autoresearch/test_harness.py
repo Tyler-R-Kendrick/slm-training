@@ -1187,6 +1187,24 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
         "document"
     ]
 
+    invalid_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "0",
+            "--evidence",
+            "done",
+        ]
+    )
+    with pytest.raises(ValueError, match="existing durable path or commit"):
+        invalid_args.func(invalid_args)
+
     args = build_parser().parse_args(
         [
             "--root",
@@ -1204,6 +1222,22 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     )
     assert args.func(args) == 0
     assert pending_autotrain_actions(root, handoff) == ()
+
+    stopped_handoff = handoff.model_copy(
+        update={
+            "actions": (
+                AutotrainActionV1(
+                    kind="stop_campaign",
+                    owner="autotrain",
+                    reason="A theorem disproved the campaign assumption.",
+                    evidence_ids=(f"campaign:{campaign_id}",),
+                ),
+            )
+        }
+    )
+    assert [
+        action.kind for _, action in pending_autotrain_actions(root, stopped_handoff)
+    ] == ["stop_campaign"]
 
 
 def test_dynamic_symbol_source_manifest_is_complete() -> None:
@@ -2248,6 +2282,41 @@ def test_loop_result_matrix_marks_timeout_measurement_incomplete(
     assert "| incomplete | infrastructure |" in rendered
 
 
+def test_loop_result_matrix_marks_partial_measurement_incomplete(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-partial",
+        objective="Expose partial measurements without blaming the model.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-partial",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={
+            "smoke.n": 3,
+            "smoke.completed_document_n": 1,
+            "smoke.incomplete_document_n": 2,
+        },
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+
+    assert "incomplete" in render_loop_result_matrix(tmp_path, "loop-1")
+
+
 def test_loop_tables_surface_lean_authority_and_stop_priority(tmp_path: Path) -> None:
     loop_campaign = CampaignSpec(
         campaign_id="cycle-1",
@@ -2590,6 +2659,65 @@ def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
     assert outcome.stage_telemetry[-1]["expected_gate_rejection"] is True
 
 
+def test_execute_rejects_partial_ship_gate_scoreboard(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    checkpoint = tmp_path / "last.pt"
+    checkpoint.write_bytes(b"checkpoint")
+    replies = iter(
+        (
+            subprocess.CompletedProcess(
+                [],
+                0,
+                stdout=json.dumps(
+                    {
+                        "steps": 20,
+                        "stopped_on": "steps",
+                        "checkpoint": str(checkpoint),
+                    }
+                ),
+                stderr="",
+            ),
+            subprocess.CompletedProcess(
+                [],
+                8,
+                stdout=json.dumps(
+                    {
+                        "suites": {
+                            "smoke": {
+                                "n": 3,
+                                "completed_document_n": 1,
+                                "incomplete_document_n": 2,
+                                "decode_timeout_count": 2,
+                            }
+                        },
+                        "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
+                        "gates": {"pass": False},
+                    }
+                ),
+                stderr="",
+            ),
+        )
+    )
+    monkeypatch.setattr(
+        engine, "run_bounded_process", lambda *args, **kwargs: next(replies)
+    )
+
+    outcome = execute_commands(
+        experiment(),
+        [
+            ["python", "-m", "scripts.train_model", "--steps", "20"],
+            ["python", "-m", "scripts.evaluate_model", "--ship-gates"],
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "failed"
+    assert outcome.stage_telemetry[-1]["expected_gate_rejection"] is False
+
+
 def test_decode_timeout_scoreboard_routes_to_infrastructure() -> None:
     diagnosis = diagnose_outcome(
         ExperimentOutcome(
@@ -2607,6 +2735,24 @@ def test_decode_timeout_scoreboard_routes_to_infrastructure() -> None:
 
     assert diagnosis.target == "infrastructure"
     assert "model attribution is unavailable" in diagnosis.evidence[0]
+
+
+def test_partial_decode_scoreboard_routes_to_infrastructure() -> None:
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="partial-candidate",
+            campaign_id="partial-cycle",
+            status="completed",
+            metrics={
+                "suites.smoke.n": 3,
+                "suites.smoke.completed_document_n": 1,
+                "suites.smoke.incomplete_document_n": 2,
+                "gates.pass": 0,
+            },
+        )
+    )
+
+    assert diagnosis.target == "infrastructure"
 
 
 def test_train_version_and_data_build_are_mutually_exclusive() -> None:
