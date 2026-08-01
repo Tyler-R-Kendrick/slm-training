@@ -62,13 +62,14 @@ instead of `primary_metric_win`. Fully-completed comparisons (both arms
 
 ## Disposition for #1246 / #1247 / #1248 / #1250's steps-lever finding
 
-Per session 2's recommendation: the steps=42 vs steps=21 `held_out`
-comparison across all four PRs remains an **open question, not a result**.
-Re-run after this fix lands, at the same or larger `held_out` n, for a
-trustworthy delta — the completion gate will now surface
-`primary_metric_incomparable_partial_suite` instead of a silently-averaged
-number if the control arm still can't finish the suite inside the wall cap
-(in which case the wall cap itself, not just the classifier, needs revisiting).
+The post-fix replay is recorded in
+[`continuous-openui-20260801-s3-c3c4-results.md`](continuous-openui-20260801-s3-c3c4-results.md):
+both arms completed `held_out` 5/5 for the first time, and
+`held_out.structural_similarity` moved `0.38248 → 0.37006` (`-0.01242`) — a
+real regression, matching #1247's measurement exactly. #1246 and #1248's
+"positive" claims were both artifacts of the control arm completing only 1/5
+`held_out` documents in those runs; they should not be merged as steps-lever
+positive evidence.
 
 ## Honesty
 
