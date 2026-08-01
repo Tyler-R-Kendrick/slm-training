@@ -120,6 +120,55 @@
         "primary_metric_unavailable"
       ],
       "conclusion": "compact_active_canvas could not be evaluated: all 3 smoke-suite decodes hit the 24s decode timeout under the CPU/scratch fixture recipe, so no parse/mpr/latency signal was produced for either arm. This is a wall-clock-vs-fixture-scale mismatch, not evidence about the lever."
+    },
+    {
+      "campaign_id": "continuous-loop-20260801-c3",
+      "cycle_index": 3,
+      "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+      "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "batch_size": 2,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+      },
+      "arms": {
+        "c3-control": {
+          "lever": "baseline (thrash rotation)",
+          "status": "completed_eval_gates_failed",
+          "metrics": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.1725,
+            "latency_ms_p50": 10099.38
+          }
+        },
+        "c3-both": {
+          "lever": "grammar_completion_bounds=true, compact_active_canvas=true",
+          "status": "completed_eval_gates_failed",
+          "metrics": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.1725,
+            "latency_ms_p50": 10328.97
+          }
+        }
+      },
+      "primary_metric": "smoke.latency_ms_p50",
+      "primary_delta_ms": -229.59,
+      "positive": false,
+      "stack_layer": false,
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c3-both",
+        "fixture_insufficient_n:c20260801-c3-control",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=10099.38 candidate=10328.97 improvement=-229.59"
+      ],
+      "conclusion": "Combining grammar_completion_bounds and compact_active_canvas regressed smoke latency again, consistent with cycles 1-2 individually. Ran clean end-to-end (no AgentV crash) confirming the session-local NODE_OPTIONS environment fix held across cycles. structural_similarity moved to 0.1725 for both arms (vs. 0.0575 in cycle 1) -- identical for control and candidate, so this is checkpoint/seed variance across cycles, not a lever effect."
     }
   ],
   "executable_unblocking_replay": {
@@ -142,6 +191,7 @@
   "next_priorities": [
     "Land PR #1254's NODE_OPTIONS patch once the dsl grammar-backend serialization gap (LarkBackend.serialize() does not normalize whitespace) and the model_build lever_capability_compatibility validation failure are repaired -- these unblock check_changed's evals-mapped test scope for every future evals/agentv.py change, not just this one.",
     "Re-run compact_active_canvas at a larger step/token budget or a higher decode-timeout-seconds so the smoke suite can produce at least one non-timed-out decode before drawing a conclusion about the lever",
+    "Three arms (bounds, canvas, both) all regressed or produced no signal at this fixture scale -- rotate the next screening cycle onto an untested lever from allowed_knobs rather than re-testing this trio again",
     "Continue thrash rotation through remaining untested levers now that node_modules/@agentv/core is installed in this checkout for the remainder of this session"
   ]
 }

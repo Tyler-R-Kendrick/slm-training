@@ -1,13 +1,13 @@
-# Continuous autotrain loop `continuous-openui-20260801-gd1b0kaj` — cycles c1–c2
+# Continuous autotrain loop `continuous-openui-20260801-gd1b0kaj` — cycles c1–c3
 
-JSON: [`continuous-openui-20260801-gd1b0kaj-c1-c2-results.json`](continuous-openui-20260801-gd1b0kaj-c1-c2-results.json)
+JSON: [`continuous-openui-20260801-gd1b0kaj-c1-c3-results.json`](continuous-openui-20260801-gd1b0kaj-c1-c3-results.json)
 
 Honesty: `fixture_or_scratch`. **Not a ship claim.** Recipe: CPU, scratch
 context backend, `train_version=wf_smoke_v2`, `eval_version=e938_role_safe_all_targets_v2`,
 suite `smoke` (n=3), 20 train steps, `MAX_RUN_MINUTES`-capped stages,
-`--ship-gates` on. Both cycles: `positive=False`, `stack_layer=False`
+`--ship-gates` on. All three cycles: `positive=False`, `stack_layer=False`
 (sdlc autotrain-iteration-delivery — this doc is local-commit-only, no stack
-layer opened for either cycle).
+layer opened for any cycle).
 
 ## Cycle 1 (`continuous-loop-20260801-c1`) — control vs `grammar_completion_bounds`
 
@@ -39,6 +39,22 @@ All 3 smoke-suite decodes hit the 24s decode timeout in **both** arms —
 `compact_active_canvas` produced no usable signal; this is a decode-timeout
 wall-clock ceiling at this fixture scale, not evidence for or against the
 lever.**
+
+## Cycle 3 (`continuous-loop-20260801-c3`) — control vs `both` (bounds + canvas combined)
+
+| Arm | n | parse_rate | mpr | structural_similarity | latency_ms_p50 |
+| --- | --- | --- | --- | --- | --- |
+| c3-control | 3 | 1.0 | 0.0 | 0.1725 | 10099.38 |
+| c3-both | 3 | 1.0 | 0.0 | 0.1725 | 10328.97 |
+
+`smoke.latency_ms_p50` delta = **-229.59ms** (worse again). Ran clean end to
+end with no AgentV crash (the environment fix from cycles 1–2 held).
+`meaningful_program_rate` still 0.0 for both arms; `structural_similarity`
+moved to 0.1725 for both (vs. 0.0575 in cycle 1) — same for control and
+candidate, so this is checkpoint/seed variance across cycles, not a lever
+effect. **Conclusion: combining `grammar_completion_bounds` +
+`compact_active_canvas` does not improve smoke latency either; non-positive,
+consistent with cycles 1–2.**
 
 ## Harness signal: AgentV SDK publish crash under inherited `NODE_OPTIONS` (reconfirmed, not landed here)
 
@@ -99,6 +115,22 @@ and reconfirmed twice now.
   the truncated crash + `primary_metric_null_or_worse` (latency regressed).
 - Cycle 2: `positive=false`, `stack_layer=false`, reasons:
   `fixture_insufficient_n` + `primary_metric_unavailable` (decode timeouts).
+- Cycle 3: `positive=false`, `stack_layer=false`, reasons:
+  `fixture_insufficient_n` + `primary_metric_null_or_worse` (latency
+  regressed again, combined levers).
 
 Non-positive cycles do not open stacked PRs (sdlc autotrain-iteration-delivery).
 This PR is docs-only, local commits, no `gh stack` layer.
+
+## Next-run priorities (updated after cycle 3)
+
+Three consecutive cycles at this fixture scale (n=3, 20 steps) show
+`meaningful_program_rate` pinned at 0.0 regardless of lever combination
+(`bounds`, `canvas`, `both`) — the smoke fixture is not large/capable enough
+to discriminate between these levers on quality, only on latency, and every
+latency delta so far has been a regression. Recommend either: (a) scale the
+next screening cycle's `steps`/checkpoint past this smoke floor so `mpr`
+starts moving, or (b) rotate off `grammar_completion_bounds` /
+`compact_active_canvas` entirely toward an untested lever from
+`allowed_knobs` for the next cycle, since three arms have now agreed these
+two are not latency wins at this scale.
