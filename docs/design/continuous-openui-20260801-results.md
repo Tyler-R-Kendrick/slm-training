@@ -1,4 +1,4 @@
-# Continuous autotrain cycles 1–3 results (2026-08-01)
+# Continuous autotrain cycles 1–4 results (2026-08-01)
 
 **Honesty:** `fixture_or_scratch` only. **Not a ship claim.**
 
@@ -65,6 +65,15 @@ metrics (infra failures, self-healed via local environment repair, not a code
 change); cycle 3 has a null primary-metric delta plus fixture
 `insufficient_n`. No stack layer opened for any of the three per
 `autotrain-iteration-delivery` (stack only on positive results).
+
+## Cycle 4 (`continuous-loop-20260801-c4`) — timed out, soft failure
+
+`c4-control` (steps thrash arm) exceeded the per-stage wall budget
+(`TimeoutExpired` at 172.2s against the 180s cap) and was killed by the
+driver. No metrics recorded. Per `autotrain` continuous-loop law, a single
+wall timeout is a soft failure that never stops the loop or requires a code
+fix — treated as a data point for the next cycle's step/recipe choice, not a
+blocker.
 
 ## Diagnostics
 

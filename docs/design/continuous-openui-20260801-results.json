@@ -75,6 +75,14 @@
       "stack_layer": false
     }
   },
+  "cycle_4_addendum": {
+    "campaign_id": "continuous-loop-20260801-c4",
+    "cycle_index": 4,
+    "status": "timeout",
+    "arm": "c20260801-c4-control",
+    "reason": "TimeoutExpired at 172.2s against the 180s per-stage wall cap; no metrics recorded.",
+    "classification": "soft_failure_no_loop_stop"
+  },
   "next_priorities": [
     "Re-test grammar_completion_bounds / compact_active_canvas in isolation (not combined) once wall budget allows more than n=3 smoke examples",
     "Keep NODE_OPTIONS unset (or repaired) for any AgentV-backed eval in this container profile; a malformed inherited NODE_OPTIONS silently breaks every node invocation",
