@@ -1,0 +1,47 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "session_note": "third session, continued from s3-c1c2; cycle 4 is a promotion-role replay of the disputed steps=21-vs-42 held_out comparison, this time with both arms fully completing the suite under PR #1253's completion gate",
+  "campaigns": ["continuous-loop-20260801-c3", "continuous-loop-20260801-c4"],
+  "cycle_index": [3, 4],
+  "source_commit": "e2df9c52e6e226be9bc5a1e1d0e1fc65d9ab2e05",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps_configured": "20 (c3 control/both), 21 (c4-control) vs 42 (c4-steps)",
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c3-control": {"smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.1725, "latency_ms_p50": 7102.07}},
+    "c3-both": {"smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.1725, "latency_ms_p50": 6948.89}, "levers": {"grammar_completion_bounds": true, "compact_active_canvas": true}},
+    "c4-control": {
+      "smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333, "structural_similarity": 0.41667, "latency_ms_p50": 19408.23},
+      "held_out": {"n": 5, "completed_document_n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.38248, "latency_ms_p50": 20170.93},
+      "levers": {"steps": 21}
+    },
+    "c4-steps": {
+      "smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333, "structural_similarity": 0.51, "latency_ms_p50": 10833.24},
+      "held_out": {"n": 5, "completed_document_n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.37006, "latency_ms_p50": 10864.09},
+      "levers": {"steps": 42}
+    }
+  },
+  "primary_metric": "held_out.structural_similarity",
+  "primary_delta": -0.01242,
+  "cross_session_resolution": {
+    "claim": "This is the first observed run of this nominal 'cycle 4' recipe where BOTH arms fully complete held_out (5/5 each) -- every prior observation (#1246, #1248, session-2/#1250) had the control arm complete only 1/5. With full completion on both sides, held_out.structural_similarity is control=0.38248 -> candidate=0.37006, a REGRESSION (-0.0124), numerically identical to PR #1247's measurement (which also reported control=0.38248).",
+    "resolution": "The disagreement documented in docs/design/continuous-openui-20260801-s2-c4-results.md and model-build-partial-suite-completion-gate-20260801.md is now resolved: #1247's regression finding was correct; #1248's 'positive' claim and session 2's numerically-matching replication were both artifacts of the control arm only completing 1/5 held_out documents (giving an artificially low control value of 0.3417 that made steps=42 look like an improvement). Doubling steps does NOT improve held_out.structural_similarity at this recipe -- it is a real, small regression once both arms are measured on a comparable (fully-completed) basis.",
+    "recommendation": "PRs #1246 and #1248 should not be treated as ship-relevant positive evidence for the steps=42 lever; #1247's regression finding is the trustworthy one. No further stacking on the steps=42 direction from this recipe."
+  },
+  "conclusion": "c3: grammar_completion_bounds + compact_active_canvas combined shaved smoke p50 latency by 153ms (7102.07ms -> 6948.89ms) with structural_similarity unchanged (0.1725 both arms) -- latency_win_rejected_low_mpr, non-positive (same pattern as session 2's c3/c6/c7). c4: with full held_out completion on both arms for the first time, steps=42 vs steps=21 is a real regression (-0.0124), resolving the cross-session disagreement in favor of PR #1247.",
+  "next_priorities": [
+    "Do not merge #1246 or #1248 as steps-lever positive evidence; the underlying measurement was unreliable and the fully-completed comparison here (and in #1247) shows a regression",
+    "grammar_completion_bounds + compact_active_canvas remain latency-only at this fixture scale; not worth a dedicated matrix without a quality-moving lever"
+  ],
+  "recorded_at": "2026-08-01T09:52:00+00:00"
+}
