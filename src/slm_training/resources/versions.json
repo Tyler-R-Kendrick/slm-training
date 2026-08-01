@@ -10574,7 +10574,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v272",
+      "version": "v273",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10617,6 +10617,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v273",
+          "date": "2026-08-01",
+          "note": "Raise the automatic CPU compiler-tree prefill batch from four to sixteen exact states after the c1719 frozen-checkpoint probe showed higher state throughput without changing path choice"
+        },
         {
           "version": "v272",
           "date": "2026-08-01",
