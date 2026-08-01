@@ -1,0 +1,41 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c4",
+  "cycle_index": 6,
+  "source_commit": "0e4081f9a4faafaa674d79739a77aeceecefb45f",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "eval_suites": "smoke,held_out",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "cycle_role": "promotion",
+    "objective": "Rotate the thrash lever bank to 'steps' per cycle-5 handoff (bounds/canvas bank exhausted with 3x null quality delta)"
+  },
+  "arms": {
+    "c20260801-continuous-openui-202607-98199209-c4-control": {
+      "status": "infrastructure_timeout",
+      "reason": "evaluate_model exceeded the 3-minute MAX_RUN_MINUTES wall cap running suites=smoke,held_out; interrupted mid-decode"
+    },
+    "c20260801-continuous-openui-202607-98199209-c4-steps": {
+      "status": "infrastructure_timeout",
+      "reason": "evaluate_model exceeded the 3-minute MAX_RUN_MINUTES wall cap running suites=smoke,held_out; interrupted mid-decode"
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta": null,
+  "conclusion": "This cycle's driver-selected role is 'promotion' (not 'screening'), which evaluates suites=smoke,held_out instead of smoke alone. Both control and the 'steps' candidate hit the 3-minute wall cap again, unlike cycle 5's screening-role retry which completed cleanly in ~74s on smoke alone. This is the second wall-timeout in 3 driver invocations (cycle 4 and cycle 6), and both times the timeout coincided with a heavier suite set (cycle 4 used e938 default; cycle 6 adds held_out) -- worth tracking as a possible promotion-tier eval capacity issue on this CPU sandbox, not yet a reproduced HarnessSignalV1 (harness_signals=[] both times; no identical-arm replay proof yet).",
+  "next_priorities": [
+    "Retry the identical promotion-role control + steps arms once more before concluding anything about promotion-tier eval capacity",
+    "If a promotion-role cycle times out a second time on smoke+held_out specifically, file a model_build HarnessSignalV1 recommending either a higher wall cap for promotion-role evals or narrowing held_out suite n for CPU fixture cycles",
+    "Screening-role cycles (smoke only) have not reproduced any timeout after retry (cycle 5); do not conflate the two roles' evidence"
+  ],
+  "recorded_at": "2026-08-01T21:42:05+00:00"
+}
