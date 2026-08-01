@@ -83,6 +83,17 @@ noise, not a quality signal.
 `latency_win_rejected_low_mpr`). Local commits + docs only; no new stack
 layer for this cycle per the delivery law.
 
+## Cycle 4: promotion-intent screening
+
+| Arm | Metric | Value | Status |
+| --- | --- | --- | --- |
+| c4-control | `held_out.structural_similarity` | 0.4167 | completed |
+| c4-steps | `held_out.structural_similarity` | 0.37006 | `TimeoutError: decode exceeded 24s` on the candidate lever, empty metrics |
+
+Primary metric delta (steps - control): **-0.0466** (worse). Classification:
+`primary_metric_null_or_worse` + `fixture_insufficient_n_alone`. No stack
+layer opened; local commit + docs only per the delivery law.
+
 ## Next-run priorities
 
 1. **harness (evals):** finish the `:slot_N` canonicalization migration in

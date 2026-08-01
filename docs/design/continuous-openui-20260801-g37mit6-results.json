@@ -60,6 +60,33 @@
         "primary_metric_win:smoke.latency_ms_p50:8745.39->8551.94:improvement=193.4499999999989"
       ],
       "positive": false
+    },
+    {
+      "cycle": 4,
+      "campaign_id": "continuous-loop-20260801-c4",
+      "status": "completed",
+      "intent": "promotion",
+      "primary_metric": "held_out.structural_similarity",
+      "arms": [
+        {
+          "id": "c20260801-c4-control",
+          "structural_similarity": 0.4167
+        },
+        {
+          "id": "c20260801-c4-steps",
+          "status": "empty_metrics",
+          "blocker": "TimeoutError: decode exceeded 24s"
+        }
+      ],
+      "primary_metric_delta": -0.04664,
+      "classification": "primary_metric_null_or_worse",
+      "sdlc_phase_a_reasons": [
+        "empty_metrics:c20260801-c4-steps",
+        "fixture_insufficient_n:c20260801-c4-steps",
+        "primary_metric_null_or_worse:held_out.structural_similarity:control=0.4167 candidate=0.37006 improvement=-0.046640000000000015",
+        "fixture_insufficient_n_alone"
+      ],
+      "positive": false
     }
   ],
   "harness_fix_classification": {
