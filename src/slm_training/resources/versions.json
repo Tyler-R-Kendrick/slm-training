@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v38",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-08-01",
+          "note": "Select the newest terminal-feedback context across initialized-only interrupted cycles while keeping completed feedback gaps fail closed"
+        },
         {
           "version": "v38",
           "date": "2026-08-01",
@@ -8984,6 +8989,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: recover continuous autotrain feedback context without changing remine campaign behavior"
+        },
         {
           "version": "v3",
           "date": "2026-08-01",

@@ -373,8 +373,11 @@ iteration. Bare `/autotrain` may chain those bounded campaigns under one persist
 `loop_id`; it never creates an unbounded train process. `cycle_index`,
 `predecessor_campaign_id`, `upstream_commit`, and `integration_commit` preserve
 cross-cycle and merge provenance. The controller loads predecessor feedback across
-campaign stores, requires the locked manifest source to equal the clean integrated
-commit, and refuses a commit that does not contain the fetched `origin/main`.
+campaign stores. Initialized-only cycles with a matrix but no terminal feedback are
+skipped when selecting the newest earlier complete feedback context; the same state
+on a completed cycle fails closed. The controller requires the locked manifest source
+to equal the clean integrated commit and refuses a commit that does not contain the
+fetched `origin/main`.
 `autoresearch status --loop-id <id> --matrix --last 5` derives four between-run
 tables from verified event chains: liveness, results (including measurement
 completeness and diagnosis), diagnostic/harness/Lean signals, and ranked next-run
