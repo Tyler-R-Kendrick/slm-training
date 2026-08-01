@@ -581,9 +581,35 @@ def _lineage_stores(
         predecessor_campaign = predecessor.load_campaign()
         if predecessor_campaign.campaign_id in seen:
             raise RuntimeError("continuous campaign predecessor cycle detected")
+        if predecessor_campaign.loop_id != campaign.loop_id:
+            raise RuntimeError("continuous campaign predecessor lineage is invalid")
+        expected_index = (current.cycle_index or 0) - 1
+        predecessor_index = predecessor_campaign.cycle_index or 0
+        while expected_index > predecessor_index:
+            candidates: list[tuple[CampaignStore, CampaignSpec]] = []
+            for path in store.root.parent.glob("*/campaign.json"):
+                candidate_store = CampaignStore(path.parent.name, store.root.parent)
+                candidate = candidate_store.load_campaign()
+                if (
+                    candidate.loop_id == campaign.loop_id
+                    and candidate.cycle_index == expected_index
+                ):
+                    candidates.append((candidate_store, candidate))
+            if len(candidates) != 1:
+                raise RuntimeError("continuous campaign predecessor lineage is invalid")
+            skipped_store, skipped = candidates[0]
+            if (
+                skipped.campaign_id in seen
+                or (skipped_store.root / "cycle_handoff.json").is_file()
+            ):
+                raise RuntimeError("continuous campaign predecessor lineage is invalid")
+            seen.add(skipped.campaign_id)
+            stores.append(skipped_store)
+            current = skipped
+            expected_index -= 1
         if (
-            predecessor_campaign.loop_id != campaign.loop_id
-            or predecessor_campaign.cycle_index != (current.cycle_index or 0) - 1
+            predecessor_index != expected_index
+            or current.predecessor_campaign_id != predecessor_campaign.campaign_id
         ):
             raise RuntimeError("continuous campaign predecessor lineage is invalid")
         seen.add(predecessor_campaign.campaign_id)

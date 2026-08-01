@@ -106,9 +106,11 @@ hypothesis: after getting latest, the driver creates a new current-commit campai
 copies the frozen control/candidate recipe and preregistered endpoints, arms, seeds,
 gates, and stopping rules, links `replay_of_manifest_sha256`, and acknowledges the
 action only when both measurements complete. An initialized-only/crashed campaign
-does not replace the latest completed handoff as predecessor. Frozen manifests with
-formal obligations fail closed until a fresh Lean preflight is produced; old proof
-evidence is never carried across commits implicitly.
+does not replace the latest completed handoff as the execution/retry authority, but
+remains in the strict campaign lineage. A previously written gap is recoverable only
+through one unique chain of initialized-only campaigns; completed or ambiguous gaps
+fail closed. Frozen manifests with formal obligations fail closed until a fresh Lean
+preflight is produced; old proof evidence is never carried across commits implicitly.
 The legacy unsupervised executor cannot perform agent-owned handoff actions and
 therefore does not enforce their receipts; it is not the bare `/autotrain` path and
 cannot make supervised repair or delivery claims.

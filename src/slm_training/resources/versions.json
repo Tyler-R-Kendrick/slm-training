@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v37",
+      "version": "v38",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v38",
+          "date": "2026-08-01",
+          "note": "Separate latest initialized lineage from latest completed replay authority and recover only unique initialized-only predecessor gaps after interrupted continuous cycles"
+        },
         {
           "version": "v37",
           "date": "2026-08-01",
@@ -8979,6 +8984,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: recover continuous autotrain predecessor lineage without changing remine campaign behavior"
+        },
         {
           "version": "v3",
           "date": "2026-08-01",
