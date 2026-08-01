@@ -1,0 +1,59 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "gdkj7n31",
+  "upstream_commit": "41d874c76b9ed68f4c6d375366ea4398b95a0429",
+  "integration_commit": "814d6bdffd49f8b719ce5db3db2491fe1610e02b",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "cycles": {
+    "continuous-loop-20260801-c5": {
+      "cycle_index": 5,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "status": "completed_eval_gates_failed",
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c5-control",
+        "fixture_insufficient_n:c20260801-c5-batch1",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=3285.26 candidate=18549.83 parse=1.0->1.0 mpr=0.0->0.0",
+        "fixture_insufficient_n_alone"
+      ],
+      "finding": "batch_size=1 (vs control default) made smoke p50 latency ~5.6x worse (3285ms -> 18550ms) and structural_similarity worse (0.056 -> 0.018) at this fixed 20-step budget. Consistent with more, smaller optimizer steps costing more wall time per fixed step count on CPU at fixture scale; not evidence the lever is broken, just not worth pursuing at this budget.",
+      "control": {"id": "c20260801-c5-control", "smoke.latency_ms_p50": 3285.26, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0, "smoke.structural_similarity": 0.05625},
+      "candidate": {"id": "c20260801-c5-batch1", "smoke.latency_ms_p50": 18549.83, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0, "smoke.structural_similarity": 0.0184}
+    },
+    "continuous-loop-20260801-c6": {
+      "cycle_index": 6,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "status": "completed_eval_gates_failed",
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c6-control",
+        "fixture_insufficient_n:c20260801-c6-bounds",
+        "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+        "primary_metric_win:smoke.latency_ms_p50:2515.23->2379.55:improvement=135.68"
+      ],
+      "finding": "grammar_completion_bounds again shows a small smoke p50 latency win (135.7ms) at fixture scale, same direction as c1's bounds arm, but rejected as non-positive because meaningful_program_rate=0.0 (mpr) stays below the 1/3 floor required for a latency-only win to count (quality-aware tradeoff gate).",
+      "control": {"id": "c20260801-c6-control", "smoke.latency_ms_p50": 2515.23, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0, "smoke.structural_similarity": 0.0964},
+      "candidate": {"id": "c20260801-c6-bounds", "smoke.latency_ms_p50": 2379.55, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0, "smoke.structural_similarity": 0.0964}
+    }
+  },
+  "conclusion": "2 more fixture-scale screening cycles, both non-positive. c5 shows batch_size=1 clearly hurting smoke latency at this fixed step budget (not pursued further). c6 repeats the c1 pattern: grammar_completion_bounds trims smoke p50 latency slightly but meaningful_program_rate=0.0 blocks it from counting as a quality-aware win at fixture n=3 -- consistent with a lever that needs a real (non-fixture) training run before its quality effect can be measured, not a harness bug.",
+  "next_priorities": [
+    "Do not pursue batch_size=1 for latency at fixture scale (c5 finding)",
+    "Re-test grammar_completion_bounds once a non-fixture run can produce meaningful_program_rate>0 signal, to see if the small latency win holds under a real quality-held comparison",
+    "Merge PR #1254 (still open) for the AgentV NODE_OPTIONS fix"
+  ],
+  "recorded_at": "2026-08-01T16:05:00+00:00"
+}
