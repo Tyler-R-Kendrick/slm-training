@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v26",
+      "version": "v27",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v27",
+          "date": "2026-08-01",
+          "note": "Promote formal timeout 600s → timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
+        },
         {
           "version": "v26",
           "date": "2026-08-01",
@@ -2765,7 +2770,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2776,6 +2781,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "Caller-owned formal timeout; status timed_out on wall hit (not unknown); do not clamp to MAX_RUN_SECONDS"
+        },
         {
           "version": "v2",
           "date": "2026-07-30",

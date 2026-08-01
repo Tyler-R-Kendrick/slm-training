@@ -60,9 +60,10 @@ _FIVE_LANES = (
     "assumptions",
 )
 _CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
-# Promote formal preflight must not cold-build Mathlib for hours inside a cycle.
-# Cached `lake build OpenUIProofs` should finish well under this wall.
-_PROMOTE_FORMAL_TIMEOUT_S = 180.0
+# Promote Lean formal preflight wall (seconds). Timeouts are *inconclusive*
+# (incomplete measurement), never a proof rejection / promotion_failed.
+_PROMOTE_FORMAL_TIMEOUT_S = 600.0
+_FORMAL_TIMEOUT_STATUSES = frozenset({"timed_out"})
 _DRIVER_LOCK_BASENAME = "driver.lock"
 
 
@@ -176,6 +177,8 @@ _CHAMPION_STATUSES = frozenset(
         "promoting",
         "promoted",
         "promotion_failed",
+        # Formal wall / incomplete measurement — retryable, not a rejection.
+        "promotion_inconclusive",
     }
 )
 # Recipe levers that define "same knobs" for confirmatory retest. Measurement
@@ -352,9 +355,13 @@ def _queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def _queue_head_confirmed(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """First confirmed champion awaiting promotion (Change C)."""
+    """First confirmed/inconclusive champion awaiting promotion (Change C).
+
+    ``promotion_inconclusive`` (e.g. formal timed out) is retryable — not a
+    rejection — so it re-enters the promote slot on the next promotion cadence.
+    """
     for row in entries:
-        if row.get("status") == "confirmed":
+        if row.get("status") in {"confirmed", "promotion_inconclusive"}:
             return row
     return None
 
@@ -384,7 +391,13 @@ def _skip_arm_slugs(entries: list[dict[str, Any]]) -> set[str]:
     skip: set[str] = set()
     for row in entries:
         # Only skip arms currently in the funnel (not terminal failures).
-        if row.get("status") not in {"queued", "confirming", "confirmed", "promoting"}:
+        if row.get("status") not in {
+            "queued",
+            "confirming",
+            "confirmed",
+            "promoting",
+            "promotion_inconclusive",
+        }:
             continue
         knobs = row.get("knobs") or {}
         slug = _arm_slug_from_knobs(
@@ -497,8 +510,10 @@ def _enqueue_champion(
             "queued",
             "confirming",
             "confirmed",
+            "promoting",
+            "promotion_inconclusive",
         }:
-            # Already open or confirmed — do not re-queue noise thrash.
+            # Already open / confirmed / pending promote — do not re-queue thrash.
             return None
     entry = {
         "schema": _CHAMPION_QUEUE_SCHEMA,
@@ -588,6 +603,13 @@ def _update_champion_status(
         }:
             row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             row["resolve_reasons"] = list(resolve_reasons or [])
+        elif status == "promotion_inconclusive":
+            # Capture reasons but keep the head retriable (no permanent resolve).
+            row["last_inconclusive_at"] = time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+            )
+            row["resolve_reasons"] = list(resolve_reasons or [])
+            row.pop("resolved_at", None)
         updated = row
         break
     if updated is not None:
@@ -648,6 +670,12 @@ def locked_promote_expectations_sha256() -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _formal_status_is_timeout(status: str | None) -> bool:
+    return str(status or "") in _FORMAL_TIMEOUT_STATUSES or str(status or "").startswith(
+        "timed_out"
+    )
+
+
 def dispose_champion_promote(
     *,
     formal_preflight_status: str | None,
@@ -663,6 +691,10 @@ def dispose_champion_promote(
     ``optimum_feedback``) are required. Theorem misses fail closed without a
     five-lane matrix; assumption-backed misses fail closed and request five-lane
     successor diagnosis.
+
+    Formal **timeouts** are incomplete measurement: disposition
+    ``promotion_inconclusive`` (retryable), never ``promotion_failed`` /
+    ``rejected``.
     """
     from slm_training.harnesses.experiments.verified_metrics import optimum_feedback
 
@@ -671,6 +703,23 @@ def dispose_champion_promote(
         reasons.append("phase_a_positive")
     if phase_a_quality_held:
         reasons.append("phase_a_quality_held")
+
+    if _formal_status_is_timeout(formal_preflight_status):
+        reasons.append(
+            f"formal_preflight_timed_out:status={formal_preflight_status!r}:"
+            f"wall_s={_PROMOTE_FORMAL_TIMEOUT_S:g}"
+        )
+        reasons.append("measurement_incomplete:formal_timeout_not_rejection")
+        return {
+            "status": "promotion_inconclusive",
+            "reasons": reasons,
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+            "inconclusive": True,
+            "timeout": True,
+        }
 
     if formal_preflight_status != "proved":
         reasons.append(
@@ -1130,16 +1179,25 @@ def record_formal_preflight_status(
     status: str,
     template_id: str,
     reason: str | None = None,
+    timeout_seconds: float | None = None,
+    duration_seconds: float | None = None,
+    timed_out: bool | None = None,
 ) -> Path:
     camp_dir.mkdir(parents=True, exist_ok=True)
     path = camp_dir / "formal_preflight_status.json"
-    payload = {
+    payload: dict[str, Any] = {
         "schema": "autotrain_formal_preflight_status/v1",
         "status": status,
         "template_id": template_id,
         "reason": reason,
         "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    if timeout_seconds is not None:
+        payload["timeout_seconds"] = float(timeout_seconds)
+    if duration_seconds is not None:
+        payload["duration_seconds"] = float(duration_seconds)
+    if timed_out is not None:
+        payload["timed_out"] = bool(timed_out)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return path
 
@@ -1207,7 +1265,7 @@ def ensure_promote_formal_preflight(
             knobs=ExperimentKnobs(steps=1),
             formal_claims=(claim,),
         )
-        # Hard wall: never cold-build Mathlib for hours inside a promote cycle.
+        # Caller-owned wall (600s). Timeouts → status timed_out (inconclusive).
         preflight, _obligation = run_formal_preflight(
             campaign_id,
             exp,
@@ -1215,6 +1273,7 @@ def ensure_promote_formal_preflight(
             timeout_seconds=_PROMOTE_FORMAL_TIMEOUT_S,
         )
         status = str(preflight.status)
+        duration = float(getattr(preflight, "duration_seconds", 0.0) or 0.0)
         payload = preflight.model_dump(mode="json")
         content_sha = hashlib.sha256(
             canonical_json(payload).encode("utf-8")
@@ -1227,11 +1286,24 @@ def ensure_promote_formal_preflight(
             json.dumps(payload, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        timed_out = _formal_status_is_timeout(status)
+        if timed_out:
+            reason = (
+                f"formal_preflight_timed_out:wall_s={_PROMOTE_FORMAL_TIMEOUT_S:g}:"
+                f"duration_s={duration:.3f}"
+            )
+        elif status == "proved":
+            reason = None
+        else:
+            reason = f"preflight_status={status}"
         record_formal_preflight_status(
             camp_dir,
             status=status,
             template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-            reason=None if status == "proved" else f"preflight_status={status}",
+            reason=reason,
+            timeout_seconds=_PROMOTE_FORMAL_TIMEOUT_S,
+            duration_seconds=duration,
+            timed_out=timed_out,
         )
         # Persist sha for manifest binding.
         status_path = camp_dir / "formal_preflight_status.json"
@@ -1239,14 +1311,23 @@ def ensure_promote_formal_preflight(
         st["preflight_sha256"] = content_sha
         status_path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
         return status, content_sha
-    except Exception as exc:  # noqa: BLE001 — fail closed
+    except Exception as exc:  # noqa: BLE001 — fail closed for non-timeout errors
+        msg = str(exc)
+        timed_out = "timed out" in msg.lower() or "timeout" in msg.lower()
+        status = "timed_out" if timed_out else "unknown"
         record_formal_preflight_status(
             camp_dir,
-            status="unknown",
+            status=status,
             template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-            reason=f"formal_preflight_error:{exc}",
+            reason=(
+                f"formal_preflight_timed_out:wall_s={_PROMOTE_FORMAL_TIMEOUT_S:g}:{msg}"
+                if timed_out
+                else f"formal_preflight_error:{exc}"
+            ),
+            timeout_seconds=_PROMOTE_FORMAL_TIMEOUT_S,
+            timed_out=timed_out,
         )
-        return "unknown", None
+        return status, None
 
 
 def _resolve_promotion_result(
@@ -1359,6 +1440,13 @@ def _resolve_promotion_result(
                 row["promotion_cycle_index"] = cycle_index
                 row["cert_policy"] = disposition.get("cert_policy")
                 row["formal_preflight_status"] = formal_preflight_status
+                # Timeout/inconclusive is not a decisive promote attempt: refund
+                # so the head is not dropped as promote_attempts_exceeded.
+                if status == "promotion_inconclusive" or disposition.get("timeout"):
+                    attempts = int(row.get("promote_attempts") or 0)
+                    row["promote_attempts"] = max(0, attempts - 1)
+                    row["last_formal_timeout"] = True
+                    row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
                 break
         _write_champion_queue(path, entries)
         print(
@@ -2644,6 +2732,7 @@ def run_cycle(
     queue_path = _champion_queue_path(root, loop_id)
     queue_entries = _load_champion_queue(queue_path)
     # Recover mid-cycle crash: promoting → confirmed so next promotion slot retries.
+    # promotion_inconclusive already retriable via _queue_head_confirmed.
     recovered = False
     for row in queue_entries:
         if row.get("status") == "promoting":
@@ -2989,10 +3078,17 @@ def run_cycle(
             flush=True,
         )
         if promote_formal_status != "proved" or not promote_preflight_sha:
-            # Do not train; disposition will fail closed with formal reason.
+            # Do not train without a proved formal. Timeouts → inconclusive
+            # disposition (not promotion_failed); other unproved → fail closed.
+            kind = (
+                "TIMEOUT_INCONCLUSIVE"
+                if _formal_status_is_timeout(promote_formal_status)
+                else "BLOCK"
+            )
             print(
-                "PROMOTE_FORMAL_BLOCK skip_execute "
-                f"status={promote_formal_status}",
+                f"PROMOTE_FORMAL_{kind} skip_execute "
+                f"status={promote_formal_status} "
+                f"wall_s={_PROMOTE_FORMAL_TIMEOUT_S:g}",
                 flush=True,
             )
             order = []
