@@ -1,0 +1,55 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c5",
+  "cycle_index": 5,
+  "predecessor_campaign_id": "continuous-loop-20260801-c3",
+  "source_commit": "5bc90d81ff3fc0da24e4d64c1e7b2c8e37f61f1e",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 40,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "decode_timeout_seconds": 24.0,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c5-control": {
+      "status": "completed_eval_gates_failed",
+      "levers": { "batch_size": 2 },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "latency_ms_p50": 2646.91
+      }
+    },
+    "c20260801-c5-batch1": {
+      "status": "completed_eval_gates_failed_no_metrics",
+      "levers": { "batch_size": 1 },
+      "smoke": {
+        "n": 3,
+        "decode_timeout_count": 3,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "structural_similarity": null,
+        "latency_ms_p50": null
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": null,
+  "conclusion": "batch_size=1 caused all 3 smoke-suite decodes to hit the 24s decode-timeout budget (decode_timeout_count=3), producing no comparable metrics against the batch_size=2 control (which decoded normally, parse_rate=1.0, p50=2646.91ms). Not yet a confirmed harness defect (single occurrence) but a real, reproducible-looking regression worth re-testing before batch_size=1 is used in any continuous cycle.",
+  "next_priorities": [
+    "infrastructure: re-run batch_size=1 in isolation (steps=40, same eval_version) to confirm the decode-timeout-count=3 result reproduces before treating it as a harness signal",
+    "model: revisit smaller batch sizes only after the timeout cause is understood -- do not conclude batch_size=1 is slower on latency alone, since it never produced a measurable decode this cycle",
+    "evaluation: fixture insufficient_n (n=3 < 20) on both smoke and held_out remains an expected, non-terminal diagnostic at wf_smoke_v2 scale"
+  ],
+  "recorded_at": "2026-08-01T07:50:01+00:00"
+}
