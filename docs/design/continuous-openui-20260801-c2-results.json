@@ -1,0 +1,85 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c2",
+  "predecessor_campaign_id": "continuous-loop-20260801-c1",
+  "cycle_index": 4,
+  "source_commit": "4544f049b74e2c2b7cd60a4bbdc74768a4b8588e",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 122,
+    "batch_size": 2,
+    "seed": 100002,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "objective": "raise step budget on wf_smoke_v2 to try to clear meaningful_program_rate above 0 before re-attributing grammar_completion_bounds latency deltas to quality (c3 follow-up)",
+  "arms": {
+    "c20260801-c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1978,
+        "latency_ms_p50": 18184.97
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c2-canvas": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1978,
+        "latency_ms_p50": 19131.94
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 946.97,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c2-control",
+      "fixture_insufficient_n:c20260801-c2-canvas",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=18184.97 candidate=19131.94 parse=1.0->1.0 mpr=0.0->0.0",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=18184.97 candidate=19131.94 improvement=-946.9699999999975",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "diagnostics": [
+    "Bumping steps from 25 (c1) to 122 (c2, ~5x) still holds meaningful_program_rate at exactly 0.0 on both arms. structural_similarity improved (0.0575 -> 0.1978) so the model is learning something, but not enough within this fixture/step regime to emit a single 'meaningful' program in the 3-sample smoke suite.",
+    "The hypothesizer's top-ranked candidate this cycle was compact_active_canvas (not grammar_completion_bounds); it made p50 latency worse (+946.97ms), correctly classified primary_metric_null_or_worse -- no quality floor to even consider a latency-only win here since mpr=0.0 on both arms.",
+    "Absolute p50 latency roughly quadrupled vs c1 (25 steps: ~3-4.6s; 122 steps: ~18-19s) -- expected, more steps costs more decode-time compute per doc in this harness's measurement, not a regression signal by itself.",
+    "wall cap (3 min) was not hit; both arms plus overhead completed well within budget, so there is headroom to try steps=244 (the 'steps' candidate this cycle proposed but did not run) in a future cycle."
+  ],
+  "next_priorities": [
+    "model_build/train_data: mpr=0.0 held across 25->122 steps on wf_smoke_v2; try the unexplored 'steps=244' arm from this cycle's matrix, or move off the smoke fixture to a richer train_version, before continuing to attribute latency deltas between grammar_completion_bounds/compact_active_canvas to quality.",
+    "experiments: once mpr clears 0 on a control, replay grammar_completion_bounds vs control at the same step budget to re-check the c1 latency signal with a real quality floor.",
+    "harness: none this cycle -- both failures were expected fixture/quality gates, not a reproduced harness bug."
+  ],
+  "artifacts": {
+    "campaign_dir": "outputs/autoresearch/continuous-loop-20260801-c2/",
+    "runs": [
+      "outputs/autoresearch/continuous-loop-20260801-c2/runs/c20260801-c2-control/",
+      "outputs/autoresearch/continuous-loop-20260801-c2/runs/c20260801-c2-canvas/"
+    ]
+  },
+  "recorded_at": "2026-08-01T16:41:43Z"
+}
