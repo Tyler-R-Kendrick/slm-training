@@ -59,8 +59,8 @@ proof-driven:
 
 | Gate | Contract |
 | --- | --- |
-| Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes |
-| Formal preflight | Required template `metrics.structural_similarity_monotone`; train/promote execute only when status is `proved` (else `formal_preflight_unproved` + `promotion_failed`) |
+| Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes; dispose **fails closed** if digest missing/unreadable or mismatches the certificate |
+| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations; promote experiment carries matching `formal_claims`; train only when status is `proved` (else skip execute + `promotion_failed`) |
 | Certificate | LeverProof `metric_certificate/v2` loaded from the campaign; disposition via `optimum_feedback` |
 | `continue` (all in band) | only path to **`promoted`** |
 | `stop` (theorem miss) | `promotion_failed`; no five-lane thrash |

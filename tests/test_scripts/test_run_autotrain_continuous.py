@@ -486,10 +486,24 @@ def _v2_cert(*, exp_sha: str, authority: str = "assumption_backed", relation: st
     }
 
 
+def test_dispose_champion_promote_requires_locked_expectations_digest() -> None:
+    """Missing locked digest must fail closed (never promote)."""
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha="c" * 64),
+        locked_expectations_sha256=None,
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promotion_failed"
+    assert any("locked_expectations" in r for r in d["reasons"])
+
+
 def test_dispose_champion_promote_smoke_only_not_promoted() -> None:
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
         certificate=None,
+        locked_expectations_sha256="c" * 64,
         phase_a_positive=True,
         phase_a_quality_held=True,
     )
@@ -578,18 +592,21 @@ def test_five_lane_successor_matrix_shape() -> None:
     assert {h["lane"] for h in matrix["hypotheses"]} == set(_mod._FIVE_LANES)
 
 
-def test_promote_manifest_locks_expectations_and_formal(tmp_path: Path) -> None:
+def test_promote_manifest_locks_expectations_and_formal() -> None:
     exp = {
         "experiment_id": "c-promote",
         "hypothesis": "Confirmed champion levers hold under promotion primary.",
         "knobs": {"seed": 7, "eval_version": "e_test", "grammar_completion_bounds": True},
+        "formal_claims": [_mod.promote_formal_claim_dict()],
     }
+    preflight_sha = "ab" * 32  # 64 hex
     man = _mod._manifest(
         "continuous-loop-c1",
         exp,
         "a" * 40,
         role="promotion",
         cycle_intent="promote",
+        formal_preflight_sha256=preflight_sha,
     )
     assert man.metric_expectations_sha256 == _mod.locked_promote_expectations_sha256()
     assert man.metric_expectations_sha256 is not None
@@ -598,6 +615,27 @@ def test_promote_manifest_locks_expectations_and_formal(tmp_path: Path) -> None:
     assert man.formal_obligations
     assert man.formal_obligations[0].policy == "required"
     assert man.formal_obligations[0].template_id == _mod._PROMOTE_FORMAL_TEMPLATE_ID
+    assert man.formal_obligations[0].preflight_sha256 == preflight_sha
+    assert man.formal_obligations[0].preflight_sha256 != ("0" * 64)
+
+
+def test_promote_manifest_without_preflight_sha_has_no_placeholder_obligation() -> None:
+    """Never bind formal_obligations with zero-digest placeholders."""
+    exp = {
+        "experiment_id": "c-promote",
+        "hypothesis": "Confirmed champion levers hold under promotion primary.",
+        "knobs": {"seed": 7, "eval_version": "e_test"},
+    }
+    man = _mod._manifest(
+        "continuous-loop-c1",
+        exp,
+        "a" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256=None,
+    )
+    assert man.metric_expectations_sha256 == _mod.locked_promote_expectations_sha256()
+    assert man.formal_obligations == ()
 
 
 def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
@@ -682,3 +720,131 @@ def test_resolve_promotion_assumption_miss_writes_five_lane(tmp_path: Path) -> N
     data = __import__("json").loads(five.read_text(encoding="utf-8"))
     assert data["schema"] == "autotrain_five_lane_successor/v1"
     assert len(data["lanes"]) == 5
+
+
+def test_resolve_promotion_unreadable_locked_expectations_fail_closed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-no-lock"
+    camp = root / "c-nolock"
+    camp.mkdir(parents=True)
+    path = _mod._champion_queue_path(root, loop_id)
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-nolock",
+        "status": "promoting",
+        "knobs": {"grammar_completion_bounds": True},
+        "knobs_fingerprint": "fpnl",
+    }
+    _mod._write_champion_queue(path, [entry])
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    exp_sha = "d" * 64
+    (camp / "metric-certificate.json").write_text(
+        __import__("json").dumps(_v2_cert(exp_sha=exp_sha)), encoding="utf-8"
+    )
+
+    def _boom() -> str:
+        raise OSError("expectations missing")
+
+    monkeypatch.setattr(_mod, "locked_promote_expectations_sha256", _boom)
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={"positive": True, "reasons": ["quality_held:parse=1 mpr=1"]},
+        campaign_id="c-nolock",
+        cycle_index=1,
+        camp_dir=camp,
+    )
+    assert resolved is not None
+    assert resolved["status"] == "promotion_failed"
+    assert any(
+        "locked_expectations" in r for r in (resolved.get("resolve_reasons") or [])
+    )
+
+
+def test_promote_formal_claims_match_obligations_for_execute_binding() -> None:
+    """Promote experiment formal_claims must match campaign formal_obligations ids."""
+    from slm_training.autoresearch.formal import formal_obligation_id
+    from slm_training.autoresearch.schemas import FormalClaimV1
+
+    campaign_id = "continuous-loop-c1"
+    experiment_id = "c20260731-c1-promote"
+    claim = FormalClaimV1(**_mod.promote_formal_claim_dict())
+    exp = {
+        "experiment_id": experiment_id,
+        "hypothesis": "Confirmed champion levers hold under promotion primary.",
+        "knobs": {"seed": 7, "eval_version": "e_test"},
+        "formal_claims": [_mod.promote_formal_claim_dict()],
+    }
+    preflight_sha = "cd" * 32
+    man = _mod._manifest(
+        campaign_id,
+        exp,
+        "a" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256=preflight_sha,
+    )
+    claim_ids = {formal_obligation_id(campaign_id, experiment_id, claim)}
+    obligation_ids = {o.obligation_id for o in man.formal_obligations}
+    assert claim_ids == obligation_ids
+    assert man.formal_obligations[0].preflight_sha256 == preflight_sha
+
+
+def test_ensure_promote_formal_preflight_content_addressed_when_recorded(
+    tmp_path: Path,
+) -> None:
+    import hashlib
+    import json
+
+    from slm_training.lineage.records import canonical_json
+
+    camp = tmp_path / "camp"
+    camp.mkdir()
+    payload = {
+        "schema_version": "FormalPreflightV1",
+        "campaign_id": "c1",
+        "experiment_id": "e1",
+        "obligation_id": "formal-" + ("a" * 16),
+        "template_id": _mod._PROMOTE_FORMAL_TEMPLATE_ID,
+        "template_version": "v1",
+        "claim": _mod.promote_formal_claim_dict()["claim"],
+        "policy": "required",
+        "status": "proved",
+        "evidence_scope": "universal",
+        "theorem": "OpenUIProofs.Metrics.structural_similarity_mono",
+        "proof_target": "OpenUIProofs.Metrics",
+        "assumptions": [],
+        "open_assumptions": [],
+        "source_digests": {"x": "a" * 64},
+        "proof_sha256": "b" * 64,
+        "lean_version": "lean",
+        "mathlib_version": "mathlib",
+        "build_output_sha256": "c" * 64,
+        "duration_seconds": 0.1,
+        "created_at": "2026-07-31T00:00:00Z",
+    }
+    content_sha = hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+    art = camp / "artifacts" / "formal_preflights"
+    art.mkdir(parents=True)
+    (art / f"{content_sha}.json").write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    st = json.loads((camp / "formal_preflight_status.json").read_text(encoding="utf-8"))
+    st["preflight_sha256"] = content_sha
+    (camp / "formal_preflight_status.json").write_text(
+        json.dumps(st, indent=2) + "\n", encoding="utf-8"
+    )
+    status, sha = _mod.ensure_promote_formal_preflight(
+        camp_dir=camp, campaign_id="c1", experiment_id="e1", run_lean=False
+    )
+    assert status == "proved"
+    assert sha == content_sha
+    assert (art / f"{sha}.json").is_file()

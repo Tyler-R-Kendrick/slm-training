@@ -601,21 +601,31 @@ def dispose_champion_promote(
             "breaches": [],
         }
 
-    if locked_expectations_sha256:
-        cert_exp = certificate.get("metric_expectations_sha256")
-        if cert_exp != locked_expectations_sha256:
-            reasons.append(
-                "certificate_expectations_digest_mismatch:"
-                f"locked={locked_expectations_sha256[:12]} cert={str(cert_exp)[:12]}"
-            )
-            return {
-                "status": "promotion_failed",
-                "reasons": reasons,
-                "cert_policy": None,
-                "diagnosis_lanes": [],
-                "emit_five_lane_matrix": False,
-                "breaches": [],
-            }
+    # Fail closed: locked expectations digest is required (never optional).
+    if not locked_expectations_sha256:
+        reasons.append("promote_requires_locked_expectations_digest")
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+        }
+    cert_exp = certificate.get("metric_expectations_sha256")
+    if cert_exp != locked_expectations_sha256:
+        reasons.append(
+            "certificate_expectations_digest_mismatch:"
+            f"locked={str(locked_expectations_sha256)[:12]} cert={str(cert_exp)[:12]}"
+        )
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+        }
 
     try:
         feedback = optimum_feedback(certificate)
@@ -789,21 +799,37 @@ def record_formal_preflight_status(
     return path
 
 
+def promote_formal_claim_dict() -> dict[str, str]:
+    """Canonical required formal claim payload for promote experiment specs."""
+    return {
+        "template_id": _PROMOTE_FORMAL_TEMPLATE_ID,
+        "claim": (
+            "Structural similarity is monotone under declared component "
+            "inequalities for continuous promote."
+        ),
+        "policy": "required",
+    }
+
+
 def ensure_promote_formal_preflight(
     *,
     camp_dir: Path,
     campaign_id: str,
     experiment_id: str,
     run_lean: bool = False,
-) -> str:
-    """Ensure promote formal preflight status is recorded; return status.
+) -> tuple[str, str | None]:
+    """Record formal preflight; return ``(status, content_sha256|None)``.
 
-    When ``run_lean`` is True, attempt the real formalize path. On any failure
-    or when Lean is not run, status is not ``proved`` and promote fails closed.
+    When proved, writes a content-addressed artifact under
+    ``artifacts/formal_preflights/<sha>.json`` matching
+    ``validate_formal_preflights`` binding. Fail closed on any error.
     """
-    existing = _formal_preflight_status(camp_dir)
-    if existing is not None:
-        return existing
+    status_path = camp_dir / "formal_preflight_status.json"
+    if status_path.is_file():
+        data = _read_json(status_path)
+        status = str(data.get("status") or "missing")
+        sha = data.get("preflight_sha256")
+        return status, str(sha) if sha else None
 
     if not run_lean:
         record_formal_preflight_status(
@@ -812,7 +838,7 @@ def ensure_promote_formal_preflight(
             template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
             reason="formal_preflight_not_run",
         )
-        return "missing"
+        return "missing", None
 
     try:
         from slm_training.autoresearch.formal import run_formal_preflight
@@ -821,15 +847,9 @@ def ensure_promote_formal_preflight(
             ExperimentSpec,
             FormalClaimV1,
         )
+        from slm_training.lineage.records import canonical_json
 
-        claim = FormalClaimV1(
-            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-            claim=(
-                "Structural similarity is monotone under declared component "
-                "inequalities for continuous promote."
-            ),
-            policy="required",
-        )
+        claim = FormalClaimV1(**promote_formal_claim_dict())
         exp = ExperimentSpec(
             experiment_id=experiment_id,
             campaign_id=campaign_id,
@@ -844,17 +864,30 @@ def ensure_promote_formal_preflight(
         )
         preflight, _obligation = run_formal_preflight(campaign_id, exp, claim)
         status = str(preflight.status)
+        payload = preflight.model_dump(mode="json")
+        content_sha = hashlib.sha256(
+            canonical_json(payload).encode("utf-8")
+        ).hexdigest()
+        art = camp_dir / "artifacts" / "formal_preflights"
+        art.mkdir(parents=True, exist_ok=True)
+        # Content-addressed name required by validate_formal_preflights.
+        out = art / f"{content_sha}.json"
+        out.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
         record_formal_preflight_status(
             camp_dir,
             status=status,
             template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
             reason=None if status == "proved" else f"preflight_status={status}",
         )
-        art = camp_dir / "artifacts" / "formal_preflights"
-        art.mkdir(parents=True, exist_ok=True)
-        out = art / f"{preflight.obligation_id}.json"
-        out.write_text(preflight.model_dump_json(indent=2) + "\n", encoding="utf-8")
-        return status
+        # Persist sha for manifest binding.
+        status_path = camp_dir / "formal_preflight_status.json"
+        st = _read_json(status_path)
+        st["preflight_sha256"] = content_sha
+        status_path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
+        return status, content_sha
     except Exception as exc:  # noqa: BLE001 — fail closed
         record_formal_preflight_status(
             camp_dir,
@@ -862,7 +895,7 @@ def ensure_promote_formal_preflight(
             template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
             reason=f"formal_preflight_error:{exc}",
         )
-        return "unknown"
+        return "unknown", None
 
 
 def _resolve_promotion_result(
@@ -894,8 +927,26 @@ def _resolve_promotion_result(
     if locked_expectations_sha256 is None:
         try:
             locked_expectations_sha256 = locked_promote_expectations_sha256()
-        except OSError:
-            locked_expectations_sha256 = None
+        except OSError as exc:
+            # Fail closed: never promote without a readable locked digest.
+            disposition = {
+                "status": "promotion_failed",
+                "reasons": [f"promote_locked_expectations_unreadable:{exc}"],
+                "cert_policy": None,
+                "diagnosis_lanes": [],
+                "emit_five_lane_matrix": False,
+                "breaches": [],
+            }
+            resolve_reasons = list(disposition["reasons"]) + reasons_in
+            return _update_champion_status(
+                root=root,
+                loop_id=loop_id,
+                entry_id=str(entry["entry_id"]),
+                status="promotion_failed",
+                confirm_campaign_id=campaign_id,
+                confirm_cycle_index=cycle_index,
+                resolve_reasons=resolve_reasons,
+            )
 
     disposition = dispose_champion_promote(
         formal_preflight_status=formal_preflight_status,
@@ -2050,19 +2101,18 @@ def _manifest(
         ]
         # Proof driver: lock metric expectations on every promotion-role campaign.
         metric_expectations_sha = locked_promote_expectations_sha256()
-        # Required formal preflight only on champion-promote intent (not thrash).
-        if cycle_intent == "promote":
+        # Required formal preflight only on champion-promote *candidate* arm when
+        # a content-addressed preflight SHA is available (never placeholder zeros).
+        if (
+            cycle_intent == "promote"
+            and formal_preflight_sha256
+            and len(formal_preflight_sha256) == 64
+            and formal_preflight_sha256 != ("0" * 64)
+        ):
             artifact_kinds.append("formal_preflight")
             from slm_training.autoresearch.schemas import FormalClaimV1
 
-            claim = FormalClaimV1(
-                template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-                claim=(
-                    "Structural similarity is monotone under declared component "
-                    "inequalities for continuous promote."
-                ),
-                policy="required",
-            )
+            claim = FormalClaimV1(**promote_formal_claim_dict())
             oid = formal_obligation_id(
                 campaign_id, str(experiment["experiment_id"]), claim
             )
@@ -2071,7 +2121,7 @@ def _manifest(
                     obligation_id=oid,
                     template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
                     policy="required",
-                    preflight_sha256=formal_preflight_sha256 or ("0" * 64),
+                    preflight_sha256=formal_preflight_sha256,
                 ),
             )
         artifact_requirements = tuple(
@@ -2567,8 +2617,9 @@ def run_cycle(
     ]
     # Promote path: formal preflight must be proved before train executes.
     promote_formal_status: str | None = None
+    promote_preflight_sha: str | None = None
     if cycle_intent == "promote" and promoting_champion is not None:
-        promote_formal_status = ensure_promote_formal_preflight(
+        promote_formal_status, promote_preflight_sha = ensure_promote_formal_preflight(
             camp_dir=camp_dir,
             campaign_id=campaign_id,
             experiment_id=str(matrix["recommended_experiment_id"]),
@@ -2576,10 +2627,10 @@ def run_cycle(
         )
         print(
             f"PROMOTE_FORMAL_PREFLIGHT status={promote_formal_status} "
-            f"campaign={campaign_id}",
+            f"sha={promote_preflight_sha} campaign={campaign_id}",
             flush=True,
         )
-        if promote_formal_status != "proved":
+        if promote_formal_status != "proved" or not promote_preflight_sha:
             # Do not train; disposition will fail closed with formal reason.
             print(
                 "PROMOTE_FORMAL_BLOCK skip_execute "
@@ -2594,6 +2645,18 @@ def run_cycle(
             continue
         seen.add(eid)
         exp = json.loads(by_id[eid].read_text(encoding="utf-8"))
+        is_promote_arm = cycle_intent == "promote" and (
+            eid.endswith("-promote") or "-promote" in eid
+        )
+        # Bind formal_claims on the promote experiment so obligations match.
+        if is_promote_arm and promote_preflight_sha:
+            exp = {
+                **exp,
+                "formal_claims": [promote_formal_claim_dict()],
+            }
+            by_id[eid].write_text(
+                json.dumps(exp, indent=2) + "\n", encoding="utf-8"
+            )
         man = _manifest(
             campaign_id,
             exp,
@@ -2601,6 +2664,9 @@ def run_cycle(
             role=role,
             policy=policy,
             cycle_intent=cycle_intent,
+            formal_preflight_sha256=(
+                promote_preflight_sha if is_promote_arm else None
+            ),
         )
         man_path = camp_dir / "manifests" / f"{eid}.json"
         man_path.parent.mkdir(parents=True, exist_ok=True)
