@@ -13,7 +13,7 @@ import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
 from slm_training.autoresearch.schemas import (
@@ -56,12 +56,67 @@ class FormalTemplate:
     assumptions: tuple[str, ...]
     open_assumptions: tuple[str, ...]
     source_paths: tuple[str, ...]
-    lean_project: str = "openui_proofs"
+    lean_project: Literal["openui_proofs", "leverproof"] = "openui_proofs"
+    proof_digest_scope: Literal["project_bundle", "template_sources"] = "project_bundle"
     checker_contract: str | None = None
     counterexample: dict[str, Any] | None = None
 
 
+def _sff_template(template_id: str, theorem: str, *source_paths: str) -> FormalTemplate:
+    return FormalTemplate(
+        template_id=template_id,
+        version="v1",
+        theorem=theorem,
+        proof_target="LeverProofLean.AdvisoryResidual",
+        evidence_scope="universal",
+        status="proved",
+        assumptions=(
+            "LeverProofLean Mathlib-free closed development",
+            "AdvisoryResidual theorems certified via make proofs",
+        ),
+        open_assumptions=(),
+        source_paths=(
+            "src/leverproof_lean/LeverProofLean/AdvisoryResidual.lean",
+            *source_paths,
+        ),
+        lean_project="leverproof",
+        proof_digest_scope="template_sources",
+        checker_contract="make -C src/leverproof_lean proofs",
+    )
+
+
 FORMAL_TEMPLATES: dict[str, FormalTemplate] = {
+    "sff.advisory-keys-legal": _sff_template(
+        "sff.advisory-keys-legal",
+        "LeverProofLean.AdvisoryResidual.filterLegal_subset",
+        "src/slm_training/models/semantic_residual_scorer.py",
+    ),
+    "sff.advisory-singleton-zero-work": _sff_template(
+        "sff.advisory-singleton-zero-work",
+        "LeverProofLean.AdvisoryResidual.singleton_is_zero_work",
+        "src/slm_training/models/semantic_residual_scorer.py",
+    ),
+    "sff.factor-membership-roundtrip": _sff_template(
+        "sff.factor-membership-roundtrip",
+        "LeverProofLean.AdvisoryResidual.reconstruct_encode_example",
+        "src/slm_training/data/progspec/semantic_evidence.py",
+    ),
+    "sff.golden-incidence-degrees": _sff_template(
+        "sff.golden-incidence-degrees",
+        "LeverProofLean.AdvisoryResidual.golden_S_column_masses_from_B",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/golden_vectors.v1.json",
+        "src/slm_training/models/semantic_factor_propagation.py",
+    ),
+    "sff.role-shuffle-membership": _sff_template(
+        "sff.role-shuffle-membership",
+        "LeverProofLean.AdvisoryResidual.role_shuffle_preserves_membership",
+        "src/slm_training/data/progspec/semantic_evidence.py",
+    ),
+    "sff.soft-token-collision": _sff_template(
+        "sff.soft-token-collision",
+        "LeverProofLean.AdvisoryResidual.soft_token_collision",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/math_probes.v1.json",
+    ),
     "metrics.structural_similarity_monotone": FormalTemplate(
         template_id="metrics.structural_similarity_monotone",
         version="v2",
@@ -265,6 +320,14 @@ def _proof_paths(template: FormalTemplate) -> tuple[tuple[str, Path], ...]:
 
 
 def _proof_digest(template: FormalTemplate) -> str:
+    if template.proof_digest_scope == "template_sources":
+        payload = {
+            "theorem": template.theorem,
+            "template_id": template.template_id,
+            "source_digests": _source_digests(template),
+            "lean_project": "src/leverproof_lean",
+        }
+        return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
     digest = hashlib.sha256()
     for label, path in _proof_paths(template):
         digest.update(label.encode("utf-8"))

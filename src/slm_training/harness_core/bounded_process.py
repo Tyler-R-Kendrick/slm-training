@@ -79,9 +79,10 @@ def _stop_and_reap(
 ) -> tuple[bool, bool]:
     interrupted = _signal_process_group(process, signal.SIGINT)
     deadline = time.monotonic() + kill_grace_seconds
+    process.poll()
     while _process_group_exists(process.pid) and time.monotonic() < deadline:
-        process.poll()
         time.sleep(min(0.01, max(0.0, deadline - time.monotonic())))
+        process.poll()
     if not _process_group_exists(process.pid):
         process.wait()
         return interrupted, False

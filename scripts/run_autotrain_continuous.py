@@ -3442,6 +3442,7 @@ def run_cycle(
     primary_metric: str,
     sync_git: bool = True,
     startup_commit: str | None = None,
+    require_action_receipts: bool = True,
 ) -> str:
     from slm_training.autoresearch.climb_policy import (
         assert_cycle_cadence,
@@ -3482,7 +3483,8 @@ def run_cycle(
         )
 
     idx, pred = _latest_cycle(root, loop_id)
-    _require_predecessor_actions(root, loop_id, pred)
+    if require_action_receipts:
+        _require_predecessor_actions(root, loop_id, pred)
     cycle = idx + 1
     role = cycle_role_for_index(policy, cycle)
     arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
@@ -4179,6 +4181,7 @@ def main(argv: list[str] | None = None) -> int:
                     primary_metric=args.primary_metric,
                     sync_git=not args.supervised,
                     startup_commit=code_sha,
+                    require_action_receipts=args.supervised,
                 )
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)

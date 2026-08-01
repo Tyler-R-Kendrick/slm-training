@@ -929,7 +929,10 @@ def _incomplete_train_reason(
         return "training produced no typed summary"
     stopped_on = str(parsed.get("stopped_on") or "")
     requested_raw = _command_value(command, "--steps")
-    requested = int(requested_raw) if requested_raw is not None else None
+    try:
+        requested = int(requested_raw) if requested_raw is not None else None
+    except ValueError:
+        return f"training declared invalid --steps value {requested_raw!r}"
     completed = parsed.get("steps")
     if stopped_on != "steps":
         return f"training stopped_on={stopped_on or 'missing'} before declared steps"

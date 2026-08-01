@@ -2606,6 +2606,37 @@ def test_execute_rejects_partial_train_before_evaluation(
     assert outcome.stage_telemetry[0]["measurement_complete"] is False
 
 
+def test_execute_rejects_invalid_declared_training_steps(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    monkeypatch.setattr(
+        engine,
+        "run_bounded_process",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            [],
+            0,
+            stdout=json.dumps(
+                {
+                    "steps": 20,
+                    "stopped_on": "steps",
+                    "checkpoint": "unused.pt",
+                }
+            ),
+            stderr="",
+        ),
+    )
+    outcome = execute_commands(
+        experiment(),
+        [["python", "-m", "scripts.train_model", "--steps", "many"]],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    assert outcome.error == "training declared invalid --steps value 'many'"
+
+
 def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
     tmp_path: Path, monkeypatch
 ) -> None:

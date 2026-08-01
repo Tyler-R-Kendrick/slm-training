@@ -6,6 +6,7 @@ from pathlib import Path
 
 from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
+    _stop_and_reap,
     run_bounded_process,
 )
 
@@ -69,7 +70,7 @@ def test_timeout_kills_process_group_after_grace(tmp_path: Path) -> None:
     grandchild = (
         "import signal,time,pathlib; "
         "signal.signal(signal.SIGINT, signal.SIG_IGN); "
-        "time.sleep(0.4); "
+        "time.sleep(1.0); "
         f"pathlib.Path({str(survivor)!r}).write_text('alive')"
     )
     parent = (
@@ -84,7 +85,7 @@ def test_timeout_kills_process_group_after_grace(tmp_path: Path) -> None:
         interrupt_after_seconds=0.2,
         kill_grace_seconds=0.1,
     )
-    time.sleep(0.35)
+    time.sleep(0.8)
 
     assert result.outcome is ProcessOutcome.KILLED
     assert result.returncode == 23
@@ -92,6 +93,22 @@ def test_timeout_kills_process_group_after_grace(tmp_path: Path) -> None:
     assert result.interrupted
     assert result.killed
     assert not survivor.exists()
+
+
+def test_zero_grace_reaps_already_exited_child_without_kill() -> None:
+    import subprocess
+
+    process = subprocess.Popen(
+        [sys.executable, "-c", "pass"],
+        start_new_session=True,
+    )
+    time.sleep(0.1)
+
+    interrupted, killed = _stop_and_reap(process, 0)
+
+    assert interrupted
+    assert not killed
+    assert process.returncode == 0
 
 
 def test_captured_output_is_bounded_to_tail() -> None:

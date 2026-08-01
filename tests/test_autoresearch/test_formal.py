@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import subprocess
 import sys
 import time
@@ -34,11 +35,13 @@ from slm_training.autoresearch.schemas import (
     ExperimentSpec,
     FormalClaimV1,
     FormalObligationV1,
+    FormalPreflightV1,
     FormalTraceStepV1,
 )
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.model_build.eval_runner import structural_similarity
 from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.lineage.records import canonical_json
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -300,6 +303,35 @@ def test_metric_preflight_uses_mathlib_free_leverproof(
     assert preflight.status == "proved"
 
 
+def test_sff_preflights_resolve_through_canonical_formal_registry() -> None:
+    root = (
+        ROOT
+        / "src/slm_training/resources/experiments/semantic_factor_frontier"
+        / "formal_preflights"
+    )
+    for path in sorted(root.glob("sff_*.json")):
+        preflight = FormalPreflightV1.model_validate_json(path.read_text())
+        claim = FormalClaimV1(
+            template_id=preflight.template_id,
+            claim=preflight.claim,
+            policy=preflight.policy,
+        )
+        expected_sha = hashlib.sha256(
+            canonical_json(preflight.model_dump(mode="json")).encode("utf-8")
+        ).hexdigest()
+
+        assert (
+            validate_formal_preflight_artifact(
+                path,
+                campaign_id=preflight.campaign_id,
+                experiment_id=preflight.experiment_id,
+                claim=claim,
+                expected_sha256=expected_sha,
+            )
+            == preflight
+        )
+
+
 def test_cached_preflight_validator_rejects_template_binding_drift(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -326,15 +358,23 @@ def test_cached_preflight_validator_rejects_template_binding_drift(
         )
 
 
-def test_metric_template_is_the_only_leverproof_autoresearch_template() -> None:
-    assert FORMAL_TEMPLATES["metrics.structural_similarity_monotone"].lean_project == (
-        "leverproof"
-    )
-    assert all(
-        template.lean_project == "openui_proofs"
+def test_leverproof_templates_are_explicitly_routed() -> None:
+    expected = {
+        "metrics.structural_similarity_monotone",
+        "sff.advisory-keys-legal",
+        "sff.advisory-singleton-zero-work",
+        "sff.factor-membership-roundtrip",
+        "sff.golden-incidence-degrees",
+        "sff.role-shuffle-membership",
+        "sff.soft-token-collision",
+    }
+    actual = {
+        template_id
         for template_id, template in FORMAL_TEMPLATES.items()
-        if template_id != "metrics.structural_similarity_monotone"
-    )
+        if template.lean_project == "leverproof"
+    }
+
+    assert actual == expected
 
 
 def test_required_conditional_claim_blocks_execution_gate(

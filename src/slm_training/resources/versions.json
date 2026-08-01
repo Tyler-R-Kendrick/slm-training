@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-08-01",
+          "note": "Keep supervised predecessor receipts fail closed while allowing the legacy unsupervised executor to advance, and type malformed training step declarations as incomplete evidence"
+        },
         {
           "version": "v33",
           "date": "2026-08-01",
@@ -2806,7 +2811,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2817,6 +2822,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-01",
+          "note": "Register all six AdvisoryResidual SFF templates with theorem-specific source digests in the canonical formal validator"
+        },
         {
           "version": "v6",
           "date": "2026-08-01",
@@ -2915,12 +2925,17 @@
       ]
     },
     "harness.core": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-08-01",
+          "note": "Reap an already-exited process before process-group liveness checks so zero-grace cleanup does not report a false kill"
+        },
         {
           "version": "v14",
           "date": "2026-08-01",

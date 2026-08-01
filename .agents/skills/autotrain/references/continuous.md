@@ -101,6 +101,9 @@ old action. The driver enforces receipts for theorem-backed stops, harness, Lean
 data, docs, and delivery actions.
 `next_experiment`, `retry_measurement`, and `monitor` are execution/steering actions,
 so they are not predecessor prerequisites.
+The legacy unsupervised executor cannot perform agent-owned handoff actions and
+therefore does not enforce their receipts; it is not the bare `/autotrain` path and
+cannot make supervised repair or delivery claims.
 
 When `checkpoint_documentation_required` is true, update
 `docs/MODEL_CARD.md` and the README model-card summary for every path listed in

@@ -1478,20 +1478,27 @@ def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
     from slm_training.levers import MAX_HARNESS_WALL_SECONDS
 
     arm_minutes = _mod._arm_wall_minutes(3)
-    assert arm_minutes * 60 * 3 == pytest.approx(MAX_HARNESS_WALL_SECONDS)
-    assert _mod._arm_wall_minutes(0.5) == 0.5
+    expected = min(3.0, MAX_HARNESS_WALL_SECONDS / 3 / 60)
+    assert arm_minutes == pytest.approx(expected)
+    assert _mod._arm_wall_minutes(0.5) == pytest.approx(
+        min(0.5, MAX_HARNESS_WALL_SECONDS / 3 / 60)
+    )
 
 
 def test_driver_requires_room_for_both_arms_before_starting(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(_mod.time, "monotonic", lambda: 0.0)
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    arm_minutes = 0.75
+    required = 2 * arm_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
     _mod._require_symmetric_arm_budget(
-        deadline=120.0, arm_count=2, arm_wall_minutes=0.75
+        deadline=required + 1, arm_count=2, arm_wall_minutes=arm_minutes
     )
     with pytest.raises(subprocess.TimeoutExpired, match="symmetric decision-arm"):
         _mod._require_symmetric_arm_budget(
-            deadline=100.0, arm_count=2, arm_wall_minutes=0.75
+            deadline=required - 1, arm_count=2, arm_wall_minutes=arm_minutes
         )
 
 
@@ -1516,6 +1523,30 @@ def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
     assert _mod.main(["--supervised", "--max-cycles", "1"]) == 0
     assert len(calls) == 1
     assert calls[0]["sync_git"] is False
+    assert calls[0]["require_action_receipts"] is True
+
+
+def test_legacy_unsupervised_cycle_does_not_require_agent_receipts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[dict] = []
+    lock_handle = (tmp_path / "driver.lock").open("w+")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    monkeypatch.setattr(
+        _mod,
+        "acquire_driver_lock",
+        lambda *args, **kwargs: lock_handle,
+    )
+    monkeypatch.setattr(
+        _mod,
+        "run_cycle",
+        lambda **kwargs: calls.append(kwargs) or "cycle-1",
+    )
+
+    assert _mod.main(["--max-cycles", "1"]) == 0
+    assert calls[0]["sync_git"] is True
+    assert calls[0]["require_action_receipts"] is False
     assert calls[0]["startup_commit"] == "a" * 40
 
 

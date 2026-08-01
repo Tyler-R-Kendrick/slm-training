@@ -49,6 +49,10 @@ templates stay in `src/slm_training/formal/lean/` with Mathlib `v4.30.0`.
 Every formal command runs in its own bounded process group; a timeout interrupts
 and, after the canonical grace, kills and reaps Lake/Lean descendants before the
 typed timeout result is returned.
+The same canonical template registry includes the six Semantic Factor Frontier
+`AdvisoryResidual` obligations. Their proof digests bind the individual theorem and
+declared source set, so a cached SFF artifact is validated by the normal formal
+preflight path rather than an unknown-template side path.
 
 | Module | Established claim | Scope |
 | --- | --- | --- |
