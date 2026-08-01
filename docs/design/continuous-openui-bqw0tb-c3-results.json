@@ -1,0 +1,38 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-bqw0tb",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-bqw0tb-f852ac38-c3",
+  "cycle_index": 3,
+  "source_commit": "dc36646",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c3-control": {
+      "status": "failed",
+      "reason": "train completed (binder_reference_f1=0.7222 recovered from evaluate_suites before the failure), but scripts.evaluate_model crashed in publish_model_evaluation -> publish_agentv_evaluation -> _agentv_runtime with RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER'). Root cause: (1) node_modules/@agentv/core was never installed in this fresh container (no npm ci run yet) and (2) the sandbox sets a global NODE_OPTIONS='--import tsx ...' that node itself rejects ('--import tsx is not allowed in NODE_OPTIONS'), a known gap already called out in scripts/publish_cap2_operator_policy_rebase.py and scripts/run_rsc_a02_depth_aux_mode_factorial.py"
+    },
+    "c3-both": {
+      "status": "failed",
+      "reason": "identical AgentV SDK failure as c3-control"
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta_ms": null,
+  "conclusion": "Both arms trained successfully (binder_reference_f1=0.7222 on both, 0.0 delta per the driver's own partial capture before the eval crash) but eval publication failed identically on the AgentV SDK gap, not a model or lever result. Fixed by running `NODE_OPTIONS= npm ci` at the repo root (267 packages incl. @agentv/core installed) to unblock the node_modules half of the gap; the sandbox-global NODE_OPTIONS must still be cleared (NODE_OPTIONS=) for every node/npm subprocess this harness spawns.",
+  "next_priorities": [
+    "Replay the identical frozen c3-control/c3-both arms with node_modules/@agentv/core installed and NODE_OPTIONS sanitized",
+    "Consider hardening src/slm_training/evals/agentv.py's node/npm subprocess invocation to always sanitize NODE_OPTIONS itself (mirroring scripts/publish_cap2_operator_policy_rebase.py's existing workaround) so this class of sandbox gap self-heals without a manual npm ci step",
+    "Soft ship-gate/infra fails on fixture n never stop the continuous loop; proceed to the next cycle"
+  ],
+  "recorded_at": "2026-08-01T22:38:53.934359Z"
+}
