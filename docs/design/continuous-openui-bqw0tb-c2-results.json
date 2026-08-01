@@ -1,0 +1,59 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-bqw0tb",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-bqw0tb-f852ac38-c2",
+  "cycle_index": 2,
+  "source_commit": "88cafe52cf400da20404fd5fa7e9978519c19e16",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c2-control": {
+      "status": "completed_eval_gates_failed",
+      "levers": {"grammar_completion_bounds": false},
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 4838.87
+      }
+    },
+    "c2-bounds": {
+      "status": "completed_eval_gates_failed",
+      "levers": {"grammar_completion_bounds": true},
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 5872.59
+      }
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta_ms": null,
+  "conclusion": "This is the retry_measurement replay of the c1 arms (frozen manifest, torch now installed). Both arms completed train+eval this time. Primary metric binder_reference_f1 is bit-identical between control (0.6333) and bounds (0.6333): grammar_completion_bounds produced zero delta on this size-matched 21-step fixture, and also cost +1033.72ms p50 latency (control 4838.87ms vs bounds 5872.59ms). meaningful_program_rate is 0.0 on both arms and honest ship gates fail (expected at fixture n=3). Non-positive: null primary-metric delta, no ship-quality win, no unblocking beyond the already-acknowledged infra fix.",
+  "next_priorities": [
+    "Rotate the thrash recommendation across the lever bank (canvas compaction) rather than re-testing bounds-only, per the driver's ranked priorities",
+    "Keep the matched control as the size-matched baseline every cycle",
+    "Soft ship-gate fails on fixture n never stop the continuous loop; proceed to the next cycle"
+  ],
+  "recorded_at": "2026-08-01T22:33:36.193511Z"
+}
