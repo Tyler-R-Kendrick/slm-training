@@ -4988,6 +4988,29 @@ def test_completion_forest_only_parses_ast_at_terminal_states(monkeypatch) -> No
     assert tokenizer.eos_id in forest.candidate_ids
 
 
+def test_completion_forest_direct_feeds_reachable_candidates(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+
+    tokenizer = DSLNativeTokenizer.build()
+
+    def _unexpected_text_advance(
+        self: OpenUIIncrementalEngine, chunk: str
+    ) -> bool:
+        raise AssertionError(f"verified candidate unexpectedly re-lexed {chunk!r}")
+
+    monkeypatch.setattr(
+        OpenUIIncrementalEngine, "advance_checked", _unexpected_text_advance
+    )
+    prefix = tokenizer.encode("root=", add_special=False)
+    forest = compiler_draft.build_completion_forest(
+        tokenizer, prefix, slot_contract=[":slot_0"]
+    )
+
+    assert forest.paths
+    assert all(path.token_ids for path in forest.paths)
+
+
 def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 
