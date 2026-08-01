@@ -1,0 +1,36 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-bqw0tb",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-bqw0tb-f852ac38-c5",
+  "cycle_index": 5,
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c5-control": {
+      "status": "completed_eval_gates_failed",
+      "note": "control arm completed; ship gates fail on fixture insufficient_n as expected"
+    },
+    "c5-batch1": {
+      "status": "timed_out",
+      "reason": "scripts.evaluate_model exceeded the repository-wide MAX_RUN_MINUTES wall cap and was interrupted (KeyboardInterrupt) mid-decode inside build_completion_forest/terminal_witness for the batch_size=1 lever arm. Per the iron law, a timed-out/interrupted run is never evidence -- no metric for this arm."
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta_ms": null,
+  "conclusion": "Rotating the lever bank to batch_size=1 (per the driver's own rotation priority after two null-delta bounds/canvas cycles) triggered a wall-time timeout during decode for that arm; this is a soft failure (MAX_RUN_MINUTES cap), not a hard block, and never counts as evidence per the repository iron law. The control arm completed normally. The driver recorded a retry_measurement action against the frozen c5 manifests to replay the identical arms.",
+  "next_priorities": [
+    "Replay the identical frozen c5-control/c5-batch1 arms (retry_measurement already recorded)",
+    "If batch_size=1 continues to time out under the 3-minute wall cap, treat that as a soft/expected result of a slower decode path at this lever value rather than a harness defect, and consider a lever value less likely to blow the wall (e.g. revert batch_size, or rotate to a different lever entirely)",
+    "Soft ship-gate/timeout fails on fixture n never stop the continuous loop"
+  ],
+  "recorded_at": "2026-08-01T22:46:31.918689Z"
+}
