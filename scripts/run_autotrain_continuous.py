@@ -20,8 +20,10 @@ metric_certificate/v2 must dispose ``continue`` before a champion is marked
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import time
@@ -58,6 +60,10 @@ _FIVE_LANES = (
     "assumptions",
 )
 _CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
+# Promote formal preflight must not cold-build Mathlib for hours inside a cycle.
+# Cached `lake build OpenUIProofs` should finish well under this wall.
+_PROMOTE_FORMAL_TIMEOUT_S = 180.0
+_DRIVER_LOCK_BASENAME = "driver.lock"
 
 
 def _git(*args: str, cwd: Path | None = None) -> str:
@@ -86,22 +92,57 @@ def _metric_from_eval(path: Path, key: str) -> float | None:
     metrics = data.get("metrics")
     if isinstance(metrics, dict) and isinstance(metrics.get(key), (int, float)):
         return float(metrics[key])
-    suite = data.get("smoke")
-    if isinstance(suite, dict) and isinstance(suite.get(key), (int, float)):
-        return float(suite[key])
+    for suite_name in ("smoke", "held_out"):
+        suite = data.get(suite_name)
+        if isinstance(suite, dict) and isinstance(suite.get(key), (int, float)):
+            return float(suite[key])
     return None
 
 
-def _run_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
+_METRIC_LEAVES = (
+    "latency_ms_p50",
+    "parse_rate",
+    "meaningful_program_rate",
+    "structural_similarity",
+)
+
+
+def _run_metrics(
+    camp_dir: Path,
+    run_id: str,
+    *,
+    prefer_held_out: bool = False,
+) -> dict[str, float | None]:
+    """Load smoke (+ held_out when present) metrics for Phase A classification.
+
+    Screening primaries use smoke leaves. Promotion primaries use
+    ``held_out.*`` (policy ``held_out.structural_similarity``). When
+    ``prefer_held_out`` is true and held-out eval exists, leaf keys are filled
+    from held_out so climb_policy leaf lookup and tradeoff paths see the same
+    suite as the dotted primary.
+    """
     run_dir = camp_dir / "runs" / run_id
     smoke = run_dir / "eval_smoke.json"
     if not smoke.exists():
         smoke = run_dir / "eval.json"
-    return {
-        "latency_ms_p50": _metric_from_eval(smoke, "latency_ms_p50"),
-        "parse_rate": _metric_from_eval(smoke, "parse_rate"),
-        "meaningful_program_rate": _metric_from_eval(smoke, "meaningful_program_rate"),
-    }
+    held = run_dir / "eval_held_out.json"
+    out: dict[str, float | None] = {leaf: None for leaf in _METRIC_LEAVES}
+
+    if smoke.is_file():
+        for leaf in _METRIC_LEAVES:
+            val = _metric_from_eval(smoke, leaf)
+            if val is not None:
+                out[leaf] = val
+                out[f"smoke.{leaf}"] = val
+
+    if held.is_file():
+        for leaf in _METRIC_LEAVES:
+            val = _metric_from_eval(held, leaf)
+            if val is not None:
+                out[f"held_out.{leaf}"] = val
+                if prefer_held_out:
+                    out[leaf] = val
+    return out
 
 
 # Phase A positive classification: latency is never a free win over quality.
@@ -206,6 +247,52 @@ def _in_timeout_band(latency_ms: float | None) -> bool:
 
 def _champion_queue_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / "champion_queue.jsonl"
+
+
+def _driver_lock_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / _DRIVER_LOCK_BASENAME
+
+
+def acquire_driver_lock(
+    root: Path,
+    loop_id: str,
+    *,
+    code_sha: str | None = None,
+) -> Any:
+    """Exclusive flock for one continuous driver per loop_id.
+
+    Kernel releases the lock if the process dies — no stale-pid reclaim needed.
+    Second process raises ``RuntimeError`` with ``DRIVER_ALREADY_RUNNING``.
+    Returns an open file object the caller must keep alive for the process life.
+    """
+    path = _driver_lock_path(root, loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fh = path.open("a+", encoding="utf-8")
+    try:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as exc:
+        fh.seek(0)
+        existing = fh.read().strip() or "{}"
+        fh.close()
+        raise RuntimeError(
+            f"DRIVER_ALREADY_RUNNING loop_id={loop_id} lock={path} holder={existing}"
+        ) from exc
+    payload = {
+        "schema": "autotrain_driver_lock/v1",
+        "loop_id": loop_id,
+        "pid": os.getpid(),
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "code_sha": code_sha,
+    }
+    fh.seek(0)
+    fh.truncate()
+    fh.write(json.dumps(payload, sort_keys=True) + "\n")
+    fh.flush()
+    print(
+        f"DRIVER_LOCK_ACQUIRED loop_id={loop_id} pid={os.getpid()} path={path}",
+        flush=True,
+    )
+    return fh
 
 
 def _lever_knobs(knobs: dict[str, Any] | None) -> dict[str, Any]:
@@ -1120,7 +1207,13 @@ def ensure_promote_formal_preflight(
             knobs=ExperimentKnobs(steps=1),
             formal_claims=(claim,),
         )
-        preflight, _obligation = run_formal_preflight(campaign_id, exp, claim)
+        # Hard wall: never cold-build Mathlib for hours inside a promote cycle.
+        preflight, _obligation = run_formal_preflight(
+            campaign_id,
+            exp,
+            claim,
+            timeout_seconds=_PROMOTE_FORMAL_TIMEOUT_S,
+        )
         status = str(preflight.status)
         payload = preflight.model_dump(mode="json")
         content_sha = hashlib.sha256(
@@ -1435,8 +1528,15 @@ def _classify_positive(
         if primary_metric.split(".")[-1] == effective_metric.split(".")[-1]:
             effective_metric = primary_metric
 
-    control = _run_metrics(camp_dir, control_id)
-    candidate = _run_metrics(camp_dir, candidate_id)
+    # Promotion primary is held_out.*; load held_out leaves so Phase A is not
+    # permanently primary_metric_unavailable when eval_held_out.json exists.
+    prefer_held = (
+        role == "promotion"
+        or effective_metric.startswith("held_out.")
+        or "held_out" in effective_metric
+    )
+    control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
+    candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
     # Merge full primary metric keys when leaf-only maps were collected.
     if effective_metric not in control and control.get(effective_metric.split(".")[-1]) is not None:
         control = {**control, effective_metric: control[effective_metric.split(".")[-1]]}
@@ -3071,27 +3171,46 @@ def main(argv: list[str] | None = None) -> int:
     cwd = Path.cwd()
     root = args.root if args.root.is_absolute() else cwd / args.root
     root.mkdir(parents=True, exist_ok=True)
+    try:
+        code_sha = _git("rev-parse", "HEAD", cwd=cwd)
+    except (subprocess.CalledProcessError, OSError):
+        code_sha = None
+    try:
+        lock_fh = acquire_driver_lock(root, args.loop_id, code_sha=code_sha)
+    except RuntimeError as exc:
+        print(str(exc), flush=True)
+        return 2
     max_cycles = 1024 if args.max_cycles == 0 else max(1, args.max_cycles)
-    for i in range(max_cycles):
-        print(f"=== continuous cycle pass {i + 1}/{max_cycles} ===", flush=True)
+    try:
+        for i in range(max_cycles):
+            print(f"=== continuous cycle pass {i + 1}/{max_cycles} ===", flush=True)
+            try:
+                run_cycle(
+                    cwd=cwd,
+                    root=root,
+                    loop_id=args.loop_id,
+                    train_version=args.train_version,
+                    steps=args.steps,
+                    objective=args.objective,
+                    primary_metric=args.primary_metric,
+                )
+            except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
+                print(f"CYCLE_ERROR {exc!r}", flush=True)
+                # soft continue unless dirty tree
+                if "dirty" in str(exc).lower():
+                    return 2
+                time.sleep(1)
+                continue
+        return 0
+    finally:
         try:
-            run_cycle(
-                cwd=cwd,
-                root=root,
-                loop_id=args.loop_id,
-                train_version=args.train_version,
-                steps=args.steps,
-                objective=args.objective,
-                primary_metric=args.primary_metric,
-            )
-        except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
-            print(f"CYCLE_ERROR {exc!r}", flush=True)
-            # soft continue unless dirty tree
-            if "dirty" in str(exc).lower():
-                return 2
-            time.sleep(1)
-            continue
-    return 0
+            fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
+        except OSError:
+            pass
+        try:
+            lock_fh.close()
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":

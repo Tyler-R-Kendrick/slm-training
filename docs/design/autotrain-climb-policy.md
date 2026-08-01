@@ -60,8 +60,9 @@ proof-driven:
 | Gate | Contract |
 | --- | --- |
 | Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes; dispose **fails closed** if digest missing/unreadable or mismatches the certificate |
-| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations; promote experiment carries matching `formal_claims`; train only when status is `proved` (else skip execute + `promotion_failed`) |
+| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations; promote experiment carries matching `formal_claims`; train only when status is `proved` (else skip execute + `promotion_failed`). Continuous caps Lean at **180s** so a cold Mathlib rebuild cannot hang a cycle — pre-warm with `lake build OpenUIProofs` in the continuous worktree |
 | Certificate | Continuous **exports** LeverProof `metric-certificate.json` from control/candidate suite metrics (per-mille SS + parse) via in-repo `leverproof-lean check`; disposition via `optimum_feedback` |
+| Phase A metrics | Promotion role loads **`eval_held_out.json`** for the policy primary (`held_out.structural_similarity`); smoke-only maps no longer mint permanent `primary_metric_unavailable` when held_out exists |
 | Thrash skip | Only arms **currently open** in the champion funnel are deprioritized — rejected/promotion_failed do **not** permanently starve bounds/canvas |
 | `continue` (all in band) | only path to **`promoted`** |
 | `stop` (theorem miss) | `promotion_failed`; no five-lane thrash |
@@ -72,6 +73,22 @@ Learning events append to
 `loops/<loop_id>/learning_certificate_ledger.jsonl`. Screening thrash may still
 generate observations; it cannot authorize promotion. Ship gates and
 `fixture_insufficient_n_alone_not_positive` are unchanged.
+
+### Driver singleton (ops)
+
+Exactly **one** `run_autotrain_continuous` process may own a `loop_id`. Lock:
+`outputs/autoresearch/loops/<loop_id>/driver.lock` (fcntl exclusive). A second
+start prints `DRIVER_ALREADY_RUNNING` and exits 2. Reclaim is automatic when
+the owner process exits (kernel drops the flock). Do not dual-start the same
+loop; duplicate drivers race cycle indices and empty campaigns.
+
+### Model-build ladder (honest)
+
+| Level | What continuous does | What it does not |
+| --- | --- | --- |
+| L1 train checkpoint | `train_model` → `last.pt` under campaign runs | HF bucket sync (`sync_checkpoints:false`) |
+| L2 learn / promote lever | Champion queue + proof disposition | Ship gates / multi-suite n≥20 |
+| L3 ship model | Finite `slm sft train` / `hf_jobs_train` + MODEL_CARD | Not the continuous thrash loop |
 
 `cycle_intent` on `sdlc_delivery.json` is `confirm` / `promote` / `screening` /
 `promotion` (cadence `cycle_role` remains `screening`|`promotion`). Pure latency
