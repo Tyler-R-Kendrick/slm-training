@@ -2594,6 +2594,11 @@
       "history": [
         {
           "version": "v24",
+          "date": "2026-08-01",
+          "note": "no-bump: promote fail-closed locked expectations digest (required, never optional); content-addressed formal preflight SHA binding + formal_claims on promote experiment (fix placeholder 0*64 obligations)"
+        },
+        {
+          "version": "v24",
           "date": "2026-07-31",
           "note": "Proof-driven continuous promote: formal preflight required+proved, locked metric_expectations.promote.v1 digest, LeverProof v2 optimum_feedback disposition; Phase A smoke alone cannot promote; assumption miss emits five-lane successor matrix"
         },
