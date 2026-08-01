@@ -1,0 +1,170 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-202607-98199209-c1719",
+  "cycle_index": 1719,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "36775a848d95cebee1686589dc4d3d8a473b7f82",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "890c04856c3fd61c35ffc1074841440136db8e88a7d0a961ac67a685eb815ffe",
+  "arms": [
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1719-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": false,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1717",
+        "parameter_count": 1608962,
+        "manifest_lineage_depth": 2,
+        "checkpoint_sha256": "e38a18adafcf2812e30f9f4ef748962b43834dc08fe57a99b43851b5fa7c54ee",
+        "reuse_receipt": {
+          "source_train_summary": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/runs/c20260801-continuous-openui-202607-98199209-c1717-control/train_summary.json",
+          "source_train_summary_sha256": "aa12e7457dcfe34ec306870c081da02976d11b75142024cac77d3c196c707132",
+          "manifest_lineage": [
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1718/manifests/c20260801-continuous-openui-202607-98199209-c1718-control.json",
+              "sha256": "12509b29d2a37eb77b912210b9c05ea115bfcdcd775b509fde05428891827065"
+            },
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/manifests/c20260801-continuous-openui-202607-98199209-c1717-control.json",
+              "sha256": "dbacf79695aae96ebdaba6335a687d3fe5538a02b1c831fe7acf1e8045f3c42c"
+            }
+          ]
+        }
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.36556666666666665,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "latency_ms_p50": 4655.07
+      },
+      "decode_stats": {
+        "forwards_count_sum": 58,
+        "compiler_prefill_batches_sum": 58,
+        "compiler_prefill_states_sum": 58,
+        "backbone_ms_sum": 8407.304,
+        "compiler_ms_sum": 7483.36
+      },
+      "agentv_runner": {
+        "name": "AgentV",
+        "sdk": "@agentv/core",
+        "execution_errors": 0
+      },
+      "ship_gates_pass": false
+    },
+    {
+      "experiment_id": "c20260801-continuous-openui-202607-98199209-c1719-batch1",
+      "status": "stopped",
+      "training": {
+        "executed": false,
+        "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1716",
+        "parameter_count": 1608962,
+        "manifest_lineage_depth": 3,
+        "checkpoint_sha256": "3ef5056af61ed73d19b1ca90ef0ddb98f05389b2145a83e75f00360cad14dc64",
+        "reuse_receipt": {
+          "source_train_summary": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1716/runs/c20260801-continuous-openui-202607-98199209-c1716-batch1/train_summary.json",
+          "source_train_summary_sha256": "0d78ae3794c9228a46ab2345c6c407ed16c3dc2e0435cc9195675c3082494668",
+          "manifest_lineage": [
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1718/manifests/c20260801-continuous-openui-202607-98199209-c1718-batch1.json",
+              "sha256": "1ac8dc0acefc52f86ba7e5604045c2ada0b4a4e6623030921ccb74e6fb3e8779"
+            },
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/manifests/c20260801-continuous-openui-202607-98199209-c1717-batch1.json",
+              "sha256": "779b44e3c22b7ad840ad5e73212e3a92f63e107118b8fa0acab0c8e5b7999113"
+            },
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1716/manifests/c20260801-continuous-openui-202607-98199209-c1716-batch1.json",
+              "sha256": "422ce7ff5031fd20f801d99709d367274a694741931795f99527efc64335657b"
+            }
+          ]
+        }
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "agentv_runner": null,
+      "ship_gates_pass": null,
+      "stop_reason": "evaluation wall timeout during compiler-tree denoiser prefill"
+    }
+  ],
+  "diagnostic_signal": {
+    "target": "infrastructure",
+    "observed_stack": "_compiler_ltr_decode_batch -> _denoiser_hidden -> DenoiserTower.encode -> TransformerBlock.mlp -> Linear",
+    "authority": "observed_interrupt_trace",
+    "prior_failure_cone": "terminal_witness -> completion_forest -> advance_checked",
+    "disposition": "increase exact CPU forest-state prefill packing and replay the frozen arm"
+  },
+  "prefill_probe": {
+    "claim_class": "fixture_scratch_microbenchmark",
+    "checkpoint_sha256": "3ef5056af61ed73d19b1ca90ef0ddb98f05389b2145a83e75f00360cad14dc64",
+    "checkpoint_bytes": 6481116,
+    "parameter_count": 1608962,
+    "device": "cpu",
+    "torch_threads": 12,
+    "canvas_tokens": 256,
+    "context_tokens": 9,
+    "samples_per_batch": 5,
+    "rows": [
+      {"batch_states": 1, "median_ms": 197.764, "median_ms_per_state": 197.764},
+      {"batch_states": 2, "median_ms": 137.05, "median_ms_per_state": 68.525},
+      {"batch_states": 4, "median_ms": 145.031, "median_ms_per_state": 36.258},
+      {"batch_states": 8, "median_ms": 160.052, "median_ms_per_state": 20.006},
+      {"batch_states": 16, "median_ms": 221.46, "median_ms_per_state": 13.841}
+    ],
+    "four_to_sixteen_state_throughput_ratio": 2.6196,
+    "four_to_sixteen_batch_wall_ratio": 1.5269,
+    "claim_boundary": "Exact-checkpoint backbone microbenchmark only; not an end-to-end decode, suite latency, or tokens-per-second result."
+  },
+  "repair": {
+    "scope": "compiler_tree_cpu_prefill_auto_batch",
+    "automatic_batch_states_before": 4,
+    "automatic_batch_states_after": 16,
+    "explicit_user_bounds_preserved": true,
+    "grammar_authority_changed": false,
+    "model_parameters_changed": false,
+    "representative_path_choice_equal_across_batching": true,
+    "claim_boundary": "Scheduling-only implementation change; the next exact frozen evaluation is authoritative."
+  },
+  "disposition": {
+    "measurement_complete": false,
+    "climb_state": "inconclusive",
+    "ship_state": "blocked",
+    "promotion": "rejected_pending_complete_frozen_replay",
+    "next_run": "replay the identical evaluation manifests after CPU prefill packing repair"
+  },
+  "checkpoint_documentation_required": false,
+  "historical_eval_version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "36775a848d95cebee1686589dc4d3d8a473b7f82",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v71",
+      "harness.experiment_feature_flags": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v272"
+    },
+    "stamped_at": "2026-08-01T23:42:20.714317+00:00"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "36775a848d95cebee1686589dc4d3d8a473b7f82",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v71",
+      "model.twotower": "v273"
+    },
+    "stamped_at": "2026-08-01T18:52:02-05:00"
+  }
+}

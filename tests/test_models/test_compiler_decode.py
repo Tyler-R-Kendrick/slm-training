@@ -293,6 +293,55 @@ def test_compiler_tree_batches_only_ambiguous_prefills_with_bound(monkeypatch) -
     assert stats.compiler_prefill_tokens == 24
 
 
+def test_compiler_tree_cpu_default_batches_sixteen_states(monkeypatch) -> None:
+    model = _model()
+    a, b = sorted(model.tokenizer.kind_ids("component"))[:2]
+    paths = tuple(
+        CompletionPath(
+            tuple(a if bits & (1 << shift) else b for shift in range(5)),
+            "component",
+        )
+        for bits in range(32)
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+    original = model._denoiser_hidden
+    batch_sizes: list[int] = []
+
+    def hidden(ids, *args, **kwargs):
+        batch_sizes.append(int(ids.size(0)))
+        return original(ids, *args, **kwargs)
+
+    monkeypatch.setattr(model, "_denoiser_hidden", hidden)
+    with torch.no_grad():
+        selected_default = model._select_compiler_path(
+            [model.tokenizer.bos_id],
+            paths,
+            ctx,
+            ctx_pad,
+            8,
+            tree=True,
+            coverage="complete",
+        )
+
+    assert batch_sizes == [16, 15]
+
+    batch_sizes.clear()
+    model.config.compiler_prefill_max_states = 4
+    with torch.no_grad():
+        selected_four = model._select_compiler_path(
+            [model.tokenizer.bos_id],
+            paths,
+            ctx,
+            ctx_pad,
+            8,
+            tree=True,
+            coverage="complete",
+        )
+
+    assert batch_sizes == [4, 4, 4, 4, 4, 4, 4, 3]
+    assert selected_default == selected_four
+
+
 def test_compiler_empty_forest_records_bounded_dead_end_trace(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 

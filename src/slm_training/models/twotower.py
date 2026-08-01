@@ -10179,7 +10179,7 @@ class TwoTowerModel(nn.Module):
                 if len(parent) < length and len(child_ids) > 1
             ]
             device_type = str(self.device_name).split(":", 1)[0].lower()
-            auto_states = 4 if device_type == "cpu" else 32
+            auto_states = 16 if device_type == "cpu" else 32
             max_states = int(
                 getattr(self.config, "compiler_prefill_max_states", 0) or auto_states
             )
@@ -11405,7 +11405,7 @@ class TwoTowerModel(nn.Module):
                 row: {} for row in ranked_rows
             }
             device_type = str(self.device_name).split(":", 1)[0].lower()
-            auto_states = 4 if device_type == "cpu" else 32
+            auto_states = 16 if device_type == "cpu" else 32
             max_states = int(
                 getattr(self.config, "compiler_prefill_max_states", 0) or auto_states
             )
