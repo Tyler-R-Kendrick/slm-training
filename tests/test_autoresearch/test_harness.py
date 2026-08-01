@@ -859,6 +859,83 @@ def test_run_execution_requires_lock_and_dry_plan_binds_manifest(
     assert plan["campaign_manifest_sha256"] == campaign_manifest_sha256(manifest)
 
 
+def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import _command_flag, _prepare_reused_training
+
+    spec = experiment()
+    commands = compile_commands(campaign(), spec, output_root=tmp_path)
+    train = commands[0]
+    source_manifest = experiment_campaign(experiment_id="source-run")
+    source_manifest_path = tmp_path / "source-manifest.json"
+    source_manifest_path.write_text(
+        source_manifest.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    source_sha = hashlib.sha256(source_manifest_path.read_bytes()).hexdigest()
+    target_manifest = experiment_campaign(
+        experiment_id=spec.experiment_id,
+        replay_of_manifest_sha256=source_sha,
+        replay_reason="Retry only the incomplete evaluation stage.",
+    )
+    run_dir = tmp_path / "source-run"
+    checkpoint = run_dir / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    for suffix in (".meta.json", ".tokenizer.json", ".context.tokenizer.json"):
+        checkpoint.with_suffix(suffix).write_text("{}\n", encoding="utf-8")
+    summary = {
+        "run_id": "source-run",
+        "stopped_on": "steps",
+        "steps": int(_command_flag(train, "--steps")),
+        "checkpoint": str(checkpoint),
+        "version_stamp": {
+            "code_commit": source_manifest.source_commit,
+            "code_dirty": False,
+        },
+        "recipe": {
+            "steps_requested": int(_command_flag(train, "--steps")),
+            "batch_size": int(_command_flag(train, "--batch-size")),
+            "seed": int(_command_flag(train, "--seed")),
+            "learning_rate": float(_command_flag(train, "--lr")),
+        },
+    }
+    (run_dir / "train_summary.json").write_text(
+        json.dumps(summary), encoding="utf-8"
+    )
+
+    prepared, receipt = _prepare_reused_training(
+        campaign=campaign(),
+        experiment=spec,
+        target_manifest=target_manifest,
+        commands=commands,
+        source_run=run_dir,
+        lineage_paths=(source_manifest_path,),
+    )
+
+    assert len(prepared) == 1
+    assert "scripts.evaluate_model" in prepared[0]
+    assert prepared[0][prepared[0].index("--checkpoint") + 1] == str(
+        checkpoint.resolve()
+    )
+    assert receipt["stage_kind"] == "reused_training"
+    assert receipt["measurement_complete"] is True
+    assert receipt["checkpoint_sha256"] == hashlib.sha256(b"checkpoint").hexdigest()
+
+    bad_target = target_manifest.model_copy(
+        update={"replay_of_manifest_sha256": "0" * 64}
+    )
+    with pytest.raises(ValueError, match="lineage digest mismatch"):
+        _prepare_reused_training(
+            campaign=campaign(),
+            experiment=spec,
+            target_manifest=bad_target,
+            commands=commands,
+            source_run=run_dir,
+            lineage_paths=(source_manifest_path,),
+        )
+
+
 def test_execution_budget_counts_started_experiments_not_matrix_rows(
     tmp_path: Path,
 ) -> None:

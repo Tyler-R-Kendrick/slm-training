@@ -853,6 +853,120 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_flag(command: list[str], flag: str) -> str:
+    try:
+        return command[command.index(flag) + 1]
+    except (ValueError, IndexError) as exc:
+        raise ValueError(f"training command is missing required {flag}") from exc
+
+
+def _prepare_reused_training(
+    *,
+    campaign: CampaignSpec,
+    experiment: ExperimentSpec,
+    target_manifest: ExperimentCampaignV1,
+    commands: list[list[str]],
+    source_run: Path,
+    lineage_paths: tuple[Path, ...],
+) -> tuple[list[list[str]], dict[str, object]]:
+    """Replace a frozen replay's completed train stage with its bound checkpoint."""
+
+    if campaign.track != "twotower":
+        raise ValueError("training reuse currently supports only frozen TwoTower runs")
+    if (
+        target_manifest.campaign_id != experiment.campaign_id
+        or target_manifest.experiment_id != experiment.experiment_id
+    ):
+        raise ValueError("training reuse target does not match the locked experiment")
+    if not lineage_paths:
+        raise ValueError("training reuse requires at least one lineage manifest")
+    lineage: list[tuple[Path, ExperimentCampaignV1, str]] = []
+    expected_sha = target_manifest.replay_of_manifest_sha256
+    for path in lineage_paths:
+        resolved = path.resolve()
+        if not resolved.is_file():
+            raise ValueError(f"training reuse manifest is missing: {path}")
+        digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
+        if expected_sha != digest:
+            raise ValueError("training reuse manifest lineage digest mismatch")
+        manifest = ExperimentCampaignV1.model_validate_json(
+            resolved.read_text(encoding="utf-8")
+        )
+        if manifest.source_dirty:
+            raise ValueError("training reuse manifest source must be clean")
+        lineage.append((resolved, manifest, digest))
+        expected_sha = manifest.replay_of_manifest_sha256
+
+    source_run = source_run.resolve()
+    source_manifest = lineage[-1][1]
+    if source_manifest.experiment_id != source_run.name:
+        raise ValueError("training reuse run does not match source manifest")
+    summary_path = source_run / "train_summary.json"
+    if not summary_path.is_file():
+        raise ValueError("training reuse requires a completed train_summary.json")
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    if summary.get("run_id") != source_manifest.experiment_id:
+        raise ValueError("training reuse summary run_id does not match source manifest")
+    if summary.get("stopped_on") != "steps":
+        raise ValueError("training reuse source did not complete its declared steps")
+    source_stamp = summary.get("version_stamp") or {}
+    if (
+        source_stamp.get("code_dirty") is not False
+        or source_stamp.get("code_commit") != source_manifest.source_commit
+    ):
+        raise ValueError("training reuse summary is not bound to its clean source commit")
+
+    train_commands = [item for item in commands if "scripts.train_model" in item]
+    eval_commands = [item for item in commands if "scripts.evaluate_model" in item]
+    if len(train_commands) != 1 or len(eval_commands) != 1:
+        raise ValueError("training reuse requires one train and one evaluation stage")
+    train = train_commands[0]
+    recipe = summary.get("recipe") or {}
+    expected_recipe = {
+        "steps_requested": int(_command_flag(train, "--steps")),
+        "batch_size": int(_command_flag(train, "--batch-size")),
+        "seed": int(_command_flag(train, "--seed")),
+        "learning_rate": float(_command_flag(train, "--lr")),
+    }
+    for key, expected in expected_recipe.items():
+        if recipe.get(key) != expected:
+            raise ValueError(f"training reuse recipe mismatch: {key}")
+    if int(summary.get("steps") or -1) != expected_recipe["steps_requested"]:
+        raise ValueError("training reuse summary has incomplete steps")
+
+    checkpoint = Path(str(summary.get("checkpoint") or "")).resolve()
+    checkpoint_root = (source_run / "checkpoints").resolve()
+    if not checkpoint.is_file() or not checkpoint.is_relative_to(checkpoint_root):
+        raise ValueError("training reuse checkpoint is missing or outside its run")
+    for suffix in (".meta.json", ".tokenizer.json", ".context.tokenizer.json"):
+        sidecar = checkpoint.with_suffix(suffix)
+        if not sidecar.is_file():
+            raise ValueError(f"training reuse checkpoint sidecar is missing: {sidecar.name}")
+
+    evaluate = list(eval_commands[0])
+    if "--checkpoint" in evaluate:
+        raise ValueError("training reuse cannot override an existing checkpoint")
+    evaluate.extend(["--checkpoint", str(checkpoint)])
+    receipt: dict[str, object] = {
+        "stage_kind": "reused_training",
+        "measurement_complete": True,
+        "executed": False,
+        "command": train,
+        "source_run": str(source_run),
+        "source_train_summary": str(summary_path),
+        "source_train_summary_sha256": hashlib.sha256(
+            summary_path.read_bytes()
+        ).hexdigest(),
+        "checkpoint": str(checkpoint),
+        "checkpoint_sha256": sha256_file(checkpoint),
+        "manifest_lineage": [
+            {"path": str(path), "sha256": digest}
+            for path, _manifest, digest in lineage
+        ],
+    }
+    return [evaluate], receipt
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     store = _store(args)
     campaign = store.load_campaign()
@@ -924,11 +1038,31 @@ def cmd_run(args: argparse.Namespace) -> int:
             f"{campaign.budget.max_experiments}"
         )
     commands = compile_commands(campaign, experiment, output_root=args.root)
+    reuse_run = getattr(args, "reuse_train_run", None)
+    reuse_lineage = tuple(getattr(args, "reuse_train_manifest", ()) or ())
+    if bool(reuse_run) != bool(reuse_lineage):
+        raise ValueError(
+            "training reuse requires both --reuse-train-run and "
+            "--reuse-train-manifest"
+        )
+    reuse_receipt: dict[str, object] | None = None
+    if reuse_run is not None:
+        if not args.execute or lock is None:
+            raise ValueError("training reuse requires a locked execution")
+        commands, reuse_receipt = _prepare_reused_training(
+            campaign=campaign,
+            experiment=experiment,
+            target_manifest=lock.manifest,
+            commands=commands,
+            source_run=reuse_run,
+            lineage_paths=reuse_lineage,
+        )
     plan_path = store.write_artifact(
         "execution_plans",
         {
             "commands": commands,
             "execute": args.execute,
+            "reused_training": reuse_receipt,
             "campaign_manifest_sha256": (
                 lock.manifest_sha256 if lock is not None else None
             ),
@@ -960,6 +1094,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         timeout_seconds=_bounded_campaign_seconds(campaign),
         campaign_manifest_sha256=lock.manifest_sha256,
     )
+    if reuse_receipt is not None:
+        outcome = outcome.model_copy(
+            update={
+                "stage_telemetry": (reuse_receipt, *outcome.stage_telemetry),
+            }
+        )
     outcome_path = store.write_artifact("outcomes", outcome)
     store.append_event(
         "experiment_finished",
@@ -1678,6 +1818,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="ExperimentCampaignV1 JSON locked before --execute.",
     )
     run.add_argument("--trackio", action="store_true")
+    run.add_argument(
+        "--reuse-train-run",
+        type=Path,
+        help="Completed frozen-replay run whose checkpoint replaces retraining.",
+    )
+    run.add_argument(
+        "--reuse-train-manifest",
+        type=Path,
+        action="append",
+        help="Ordered replay lineage from the immediate predecessor to the reused run.",
+    )
     run.add_argument("--metric-evidence", type=Path)
     run.add_argument("--metric-certificate", type=Path)
     run.add_argument("--leverproof-bin", type=Path)

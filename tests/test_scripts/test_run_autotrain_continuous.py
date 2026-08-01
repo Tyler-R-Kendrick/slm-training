@@ -1948,6 +1948,81 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         _mod._require_automatic_replayable(formal_manifest)
 
 
+def test_frozen_replay_finds_completed_train_across_retry_lineage(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    source_campaign = "cycle-1"
+    retry_campaign = "cycle-2"
+    source_dir = root / source_campaign
+    retry_dir = root / retry_campaign
+    source_experiment = {
+        "experiment_id": "source-batch1",
+        "campaign_id": source_campaign,
+        "hypothesis": "A completed source train can be reused.",
+        "rationale": "Frozen replay preserves the exact training configuration.",
+        "expected_effect": "The successor starts at evaluation.",
+        "falsification_criteria": ["The manifest lineage does not verify."],
+        "stop_conditions": ["Stop after the bounded evaluation."],
+        "citations": ["fixture://source"],
+        "knobs": {"steps": 1, "batch_size": 1, "seed": 7},
+    }
+    source_manifest = _mod._manifest(
+        source_campaign, source_experiment, "a" * 40
+    )
+    source_path = source_dir / "manifests" / "source-batch1.json"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_text(source_manifest.model_dump_json(indent=2) + "\n")
+    source_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    retry_manifest = _mod._replay_successor_manifest(
+        source_manifest,
+        frozen_manifest_sha256=source_sha,
+        campaign_id=retry_campaign,
+        experiment_id="retry-batch1",
+        integration_commit="b" * 40,
+    )
+    retry_path = retry_dir / "manifests" / "retry-batch1.json"
+    retry_path.parent.mkdir(parents=True)
+    retry_path.write_text(retry_manifest.model_dump_json(indent=2) + "\n")
+    (retry_dir / "campaign.json").write_text(
+        _mod.CampaignSpec(
+                campaign_id=retry_campaign,
+                objective="fixture replay",
+                primary_metric="smoke.parse_rate",
+                loop_id="loop-1",
+                cycle_index=2,
+                predecessor_campaign_id=source_campaign,
+                upstream_commit="b" * 40,
+                integration_commit="b" * 40,
+            ).model_dump_json(indent=2)
+        + "\n"
+    )
+    checkpoint = source_dir / "runs" / "source-batch1" / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (checkpoint.parents[1] / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "run_id": "source-batch1",
+                "stopped_on": "steps",
+                "steps": 1,
+                "checkpoint": str(checkpoint),
+            }
+        )
+    )
+
+    reuse = _mod._completed_frozen_train_source(
+        root=root,
+        campaign_dir=retry_dir,
+        manifest=retry_manifest,
+        manifest_path=retry_path,
+    )
+
+    assert reuse is not None
+    assert reuse["run_dir"] == source_dir / "runs" / "source-batch1"
+    assert reuse["manifest_paths"] == (retry_path, source_path)
+
+
 def test_digestless_frozen_retry_does_not_stall_cycle(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

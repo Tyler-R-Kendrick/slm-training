@@ -50,6 +50,7 @@ from slm_training.autoresearch.schemas import (
     AutotrainCycleHandoffV1,
     AutotrainLoopStateV1,
     CampaignBudget,
+    CampaignSpec,
     FormalObligationV1,
     HypothesisMatrix,
     NextRunPriorityV1,
@@ -2854,7 +2855,7 @@ def _load_frozen_replay(
         control_path.read_text(encoding="utf-8")
     )
     _require_automatic_replayable(control_manifest)
-    return {
+    replay = {
         "handoff": handoff,
         "action_index": action_index,
         "action": action,
@@ -2873,6 +2874,63 @@ def _load_frozen_replay(
             "path": control_path,
         },
     }
+    for role in ("control", "candidate"):
+        item = replay[role]
+        item["train_reuse"] = _completed_frozen_train_source(
+            root=root,
+            campaign_dir=camp_dir,
+            manifest=item["manifest"],
+            manifest_path=item["path"],
+        )
+    return replay
+
+
+def _completed_frozen_train_source(
+    *,
+    root: Path,
+    campaign_dir: Path,
+    manifest: ExperimentCampaignV1,
+    manifest_path: Path,
+) -> dict[str, Any] | None:
+    """Find a completed train stage along a hash-linked frozen replay chain."""
+
+    lineage: list[Path] = []
+    visited: set[str] = set()
+    current_dir = campaign_dir
+    current_manifest = manifest
+    current_path = manifest_path
+    while True:
+        digest = hashlib.sha256(current_path.read_bytes()).hexdigest()
+        if digest in visited:
+            raise RuntimeError("frozen training replay lineage contains a cycle")
+        visited.add(digest)
+        lineage.append(current_path)
+        run_dir = current_dir / "runs" / current_manifest.experiment_id
+        summary_path = run_dir / "train_summary.json"
+        if summary_path.is_file():
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            checkpoint = Path(str(summary.get("checkpoint") or ""))
+            if (
+                summary.get("run_id") == current_manifest.experiment_id
+                and summary.get("stopped_on") == "steps"
+                and int(summary.get("steps") or -1) > 0
+                and checkpoint.is_file()
+            ):
+                return {
+                    "run_dir": run_dir,
+                    "manifest_paths": tuple(lineage),
+                }
+        replay_sha = current_manifest.replay_of_manifest_sha256
+        if replay_sha is None:
+            return None
+        campaign = CampaignSpec.model_validate_json(
+            (current_dir / "campaign.json").read_text(encoding="utf-8")
+        )
+        predecessor_id = campaign.predecessor_campaign_id
+        if predecessor_id is None:
+            return None
+        current_dir = root / predecessor_id
+        current_path, current_manifest = _manifest_with_sha(current_dir, replay_sha)
 
 
 def _apply_frozen_replay(
@@ -4312,6 +4370,17 @@ def run_cycle(
             str(man_path),
             "--execute",
         ]
+        reuse = replay_manifests.get(eid, {}).get("train_reuse")
+        if reuse is not None:
+            cmd.extend(["--reuse-train-run", str(reuse["run_dir"])])
+            for lineage_path in reuse["manifest_paths"]:
+                cmd.extend(["--reuse-train-manifest", str(lineage_path)])
+            print(
+                "FROZEN_TRAIN_REUSE "
+                f"experiment={eid} source_run={reuse['run_dir']} "
+                f"lineage={len(reuse['manifest_paths'])}",
+                flush=True,
+            )
         print("+", " ".join(cmd), flush=True)
         stage = f"experiment:{eid}"
         _set_active_stage(root, loop_id, stage)
