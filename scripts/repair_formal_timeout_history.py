@@ -1,30 +1,28 @@
 #!/usr/bin/env python3
-"""Reclassify historical formal-wall timeouts as inconclusive (not failed).
+"""Reclassify historical promote false-fails (formal timeout + harness).
 
-Before #1251, continuous promote formal preflight used a ~180s wall and recorded
-status ``unknown`` when Lean hit the wall. Disposition then wrote
-``promotion_failed`` / learning-ledger ``promotion_failed``. Those are incomplete
-measurements, not proof rejections.
+1. **Formal wall timeouts** (pre-#1251): ~180s wall → status ``unknown`` →
+   ``promotion_failed``. Reclass → ``promotion_inconclusive`` / ``timed_out``.
 
-This tool rewrites loop-local ledgers under::
+2. **Harness gaps** (matrix membership rewrite, missing promote run, cert
+   incomplete with no candidate metrics while formal proved): reclass →
+   ``harness_failure`` (not model ``promotion_failed``).
+
+Rewrites loop-local::
 
   <root>/loops/<loop_id>/champion_queue.jsonl
   <root>/loops/<loop_id>/learning_certificate_ledger.jsonl
 
-and annotates matching campaign ``formal_preflight_status.json`` files when a
-formal artifact duration is within ``duration_min_s`` of the old wall
-(default: ≥170s and <190s, or explicit formal_preflight_unproved:status='unknown').
-
-Does **not** rewrite content-addressed ``artifacts/formal_preflights/<sha>.json``
-blobs (immutable digests). Appends an audit trail::
+Appends audit::
 
   <root>/loops/<loop_id>/historical_reclassification.jsonl
+
+Does **not** rewrite content-addressed formal preflight digests.
 
 Usage::
 
   python -m scripts.repair_formal_timeout_history \\
     --root outputs/autoresearch --loop-id continuous-openui-20260730
-  python -m scripts.repair_formal_timeout_history --dry-run ...
 """
 
 from __future__ import annotations
@@ -269,12 +267,128 @@ def repair_loop(
             }
         )
 
+    # Pass 2: harness failures (formal proved / incomplete cert without promote run).
+    harness_queue = 0
+    harness_ledger = 0
+
+    def _looks_like_harness(reasons: list[str], formal: object, camp_id: object) -> bool:
+        joined = " ".join(reasons)
+        if any(str(r).startswith("harness_failure:") for r in reasons):
+            return True
+        if "incomplete_metrics" in joined and formal == "proved":
+            return True
+        if "promote_requires_certificate" in joined and formal == "proved":
+            # Certificate missing after proved formal was often promote-arm abort.
+            if camp_id:
+                camp = root / str(camp_id)
+                runs = camp / "runs"
+                if runs.is_dir():
+                    names = [p.name for p in runs.iterdir() if p.is_dir()]
+                    has_promo = any("-promote" in n for n in names)
+                    has_ctrl = any(n.endswith("-control") for n in names)
+                    if has_ctrl and not has_promo:
+                        return True
+                else:
+                    return True
+            return "primary_metric_unavailable" in joined
+        if "exact member of the latest hypothesis matrix" in joined:
+            return True
+        return False
+
+    def _harness_reasons(reasons: list[str]) -> list[str]:
+        out = [r for r in reasons if not str(r).startswith("historical_reclassification:")]
+        tags = [
+            "harness_failure:missing_promote_run",
+            "harness_failure:cert_export_no_candidate_metrics",
+            "measurement_incomplete:harness_not_model_reject",
+            "historical_reclassification:promotion_failed→harness_failure:matrix_or_missing_run",
+        ]
+        for t in tags:
+            if t not in out:
+                out.insert(0, t)
+        return out
+
+    for row in queue:
+        if row.get("status") != "promotion_failed":
+            continue
+        reasons = [str(r) for r in (row.get("resolve_reasons") or [])]
+        formal = row.get("formal_preflight_status")
+        camp_id = row.get("promotion_campaign_id") or row.get("confirm_campaign_id")
+        if not _looks_like_harness(reasons, formal, camp_id):
+            continue
+        before = {
+            "status": row.get("status"),
+            "formal_preflight_status": formal,
+            "resolve_reasons": list(reasons),
+            "promote_attempts": row.get("promote_attempts"),
+        }
+        row["status"] = "harness_failure"
+        row["resolve_reasons"] = _harness_reasons(reasons)
+        row["last_harness_failure_at"] = now
+        row["last_harness_failure"] = True
+        row["historical_reclassified_at"] = now
+        row["historical_reclassification"] = (
+            "promotion_failed→harness_failure:missing_promote_or_cert"
+        )
+        row.pop("resolved_at", None)
+        row["promote_attempts"] = 0
+        harness_queue += 1
+        audit_events.append(
+            {
+                "schema": "autotrain_historical_reclassification/v1",
+                "kind": "champion_queue",
+                "loop_id": loop_id,
+                "entry_id": row.get("entry_id"),
+                "campaign_id": camp_id,
+                "before": before,
+                "after_status": "harness_failure",
+                "reclassified_at": now,
+            }
+        )
+
+    for row in ledger:
+        if row.get("outcome") != "promotion_failed":
+            continue
+        reasons = [str(r) for r in (row.get("reasons") or [])]
+        formal = row.get("formal_preflight_status")
+        camp_id = row.get("campaign_id")
+        if not _looks_like_harness(reasons, formal, camp_id):
+            continue
+        before = {
+            "outcome": row.get("outcome"),
+            "formal_preflight_status": formal,
+            "reasons": list(reasons),
+        }
+        row["outcome"] = "harness_failure"
+        row["reasons"] = _harness_reasons(reasons)
+        row["harness_failure"] = True
+        row["historical_reclassified_at"] = now
+        row["historical_reclassification"] = (
+            "promotion_failed→harness_failure:missing_promote_or_cert"
+        )
+        harness_ledger += 1
+        audit_events.append(
+            {
+                "schema": "autotrain_historical_reclassification/v1",
+                "kind": "learning_certificate_ledger",
+                "loop_id": loop_id,
+                "entry_id": row.get("entry_id"),
+                "campaign_id": camp_id,
+                "cycle_index": row.get("cycle_index"),
+                "before": before,
+                "after_outcome": "harness_failure",
+                "reclassified_at": now,
+            }
+        )
+
     summary = {
         "loop_id": loop_id,
         "root": str(root),
         "dry_run": dry_run,
         "queue_reclassified": queue_changed,
         "ledger_reclassified": ledger_changed,
+        "harness_queue_reclassified": harness_queue,
+        "harness_ledger_reclassified": harness_ledger,
         "audit_events": len(audit_events),
         "old_wall_s": old_wall_s,
     }
@@ -283,9 +397,9 @@ def repair_loop(
         print(json.dumps({"summary": summary, "events": audit_events}, indent=2))
         return summary
 
-    if queue_changed:
+    if queue_changed or harness_queue:
         _write_jsonl(queue_path, queue)
-    if ledger_changed:
+    if ledger_changed or harness_ledger:
         _write_jsonl(ledger_path, ledger)
     if audit_events:
         audit_path.parent.mkdir(parents=True, exist_ok=True)

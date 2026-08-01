@@ -60,14 +60,20 @@ proof-driven:
 | Gate | Contract |
 | --- | --- |
 | Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes; dispose **fails closed** if digest missing/unreadable or mismatches the certificate |
-| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations; promote experiment carries matching `formal_claims`; train only when status is `proved`. Continuous Lean wall is **600s** (caller-owned). **Timeout → `timed_out` / queue `promotion_inconclusive`** (incomplete measurement, retryable) — **never** `promotion_failed` / `rejected`. Pre-warm with `lake build OpenUIProofs` when possible so proofs finish under the wall |
-| Certificate | Continuous **exports** LeverProof `metric-certificate.json` from control/candidate suite metrics (per-mille SS + parse) via in-repo `leverproof-lean check`; disposition via `optimum_feedback` |
-| Phase A metrics | Promotion role loads **`eval_held_out.json`** for the policy primary (`held_out.structural_similarity`); smoke-only maps no longer mint permanent `primary_metric_unavailable` when held_out exists |
-| Thrash skip | Only arms **currently open** in the champion funnel are deprioritized — rejected/promotion_failed do **not** permanently starve bounds/canvas |
-| `continue` (all in band) | only path to **`promoted`** |
-| `stop` (theorem miss) | `promotion_failed`; no five-lane thrash |
-| `block_promotion_and_diagnose` (assumption miss) | `promotion_failed` + `five_lane_successor_matrix.json` (measurement_control, training_method, architecture, lean_model, assumptions) |
-| Missing / v1 / digest mismatch | `promotion_failed` (`promote_requires_certificate…`) |
+| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations. Promote experiment carries `formal_claims` **inside the hypothesis matrix** (before lock) so execute membership stays exact — do **not** rewrite experiments post-hypothesize. Train only when formal status is `proved`. Continuous Lean wall is **600s**. **Timeout → `timed_out` / `promotion_inconclusive`**. Pre-warm OpenUIProofs when possible. |
+| Certificate | Continuous **exports** LeverProof `metric-certificate.json` from control **and** candidate suite metrics; disposition via `optimum_feedback` |
+| Phase A metrics | Promotion role loads **`eval_held_out.json`** for the policy primary |
+| Thrash skip | Only arms **currently open** in the funnel are deprioritized |
+
+### Promote dispositions (do not conflate)
+
+| Status | Meaning | Retry? |
+| --- | --- | --- |
+| `promoted` | Formal proved + cert v2 + `optimum_feedback=continue` | No (done) |
+| `promotion_failed` | Complete measurement; cert/policy or formal unproved (non-timeout) model/proof reject | Limited |
+| `promotion_inconclusive` | Formal **timeout** — incomplete measurement | Yes |
+| **`harness_failure`** | Matrix membership, execute abort, missing promote run, cert incomplete **because candidate never ran** — **not a model result** | Yes |
+| `rejected` | Confirm retest quality fail | No (confirm path) |
 
 Learning events append to
 `loops/<loop_id>/learning_certificate_ledger.jsonl`. Screening thrash may still
