@@ -1,0 +1,114 @@
+{
+  "schema": "autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_range": [1708, 1710],
+  "evidence_class": "fixture_scratch",
+  "claim_scope": "training completion and harness-failure diagnosis only; no evaluation, model-quality, promotion, or ship claim",
+  "source_commit": "ee4fa8b539fed9e485b594393811d9efe25e8c43",
+  "recipe": {
+    "device": "cpu",
+    "model": "twotower",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "train_version": "wf_smoke_v2",
+    "checkpoint_sync": "disabled",
+    "checkpoint_sync_reason": "continuous-loop fixture scratch"
+  },
+  "checkpoints": [
+    {
+      "cycle": 1708,
+      "run_id": "c20260801-continuous-openui-202607-98199209-c1708-both",
+      "arm": "both",
+      "steps": 81,
+      "batch_size": 2,
+      "last_loss": 4.05696439743042,
+      "elapsed_wall_seconds": 7.021026669011917,
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "aa9e12e7e7c7ad8da0105a96b42aeb020242fe7a996117a2ff395156e1228212"
+    },
+    {
+      "cycle": 1708,
+      "run_id": "c20260801-continuous-openui-202607-98199209-c1708-control",
+      "arm": "control",
+      "steps": 81,
+      "batch_size": 2,
+      "last_loss": 4.05696439743042,
+      "elapsed_wall_seconds": 10.843745905032847,
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "7d2a0b95a777fc90e6b04cbc758934185adff888cecc9ae24461a568abdeb755"
+    },
+    {
+      "cycle": 1709,
+      "run_id": "c20260801-continuous-openui-202607-98199209-c1709-control",
+      "arm": "control",
+      "steps": 82,
+      "batch_size": 2,
+      "last_loss": 12.319219589233398,
+      "elapsed_wall_seconds": 8.977574055024888,
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "f8f1aa06335b96271941c72eb6cce0c7dc0bacffd4533808b7532a85d28abcae"
+    },
+    {
+      "cycle": 1709,
+      "run_id": "c20260801-continuous-openui-202607-98199209-c1709-steps",
+      "arm": "steps",
+      "steps": 164,
+      "batch_size": 2,
+      "last_loss": 3.2810144424438477,
+      "elapsed_wall_seconds": 17.428588674985804,
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "a0b9172b3eec7ec80921576c8d3d58a65efb2c7512d5d4adf4c7ed5100b80be0"
+    },
+    {
+      "cycle": 1710,
+      "run_id": "c20260801-continuous-openui-202607-98199209-c1710-batch1",
+      "arm": "batch1",
+      "steps": 80,
+      "batch_size": 1,
+      "last_loss": 4.167370796203613,
+      "elapsed_wall_seconds": 6.741465781989973,
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "3ef5056af61ed73d19b1ca90ef0ddb98f05389b2145a83e75f00360cad14dc64"
+    },
+    {
+      "cycle": 1710,
+      "run_id": "c20260801-continuous-openui-202607-98199209-c1710-control",
+      "arm": "control",
+      "steps": 80,
+      "batch_size": 2,
+      "last_loss": 12.119722366333008,
+      "elapsed_wall_seconds": 9.50161355198361,
+      "trainable_params": 1608962,
+      "checkpoint_sha256": "e38a18adafcf2812e30f9f4ef748962b43834dc08fe57a99b43851b5fa7c54ee"
+    }
+  ],
+  "evaluation": {
+    "executed": false,
+    "suite_n": null,
+    "metrics": null,
+    "agentv": null,
+    "ship_gates": "unavailable",
+    "reason": "the campaign engine parsed an 8 KiB stdout tail instead of each complete train_summary.json and stopped before evaluation"
+  },
+  "outcome": {
+    "measurement_complete": false,
+    "diagnosis": "infrastructure",
+    "climb": "inconclusive",
+    "ship": "blocked",
+    "promotion": "not_eligible"
+  },
+  "next_run": {
+    "priority": "repair canonical stage-output resolution, then replay the identical frozen c1710 arms",
+    "frozen_manifest_sha256": "a43dee3a3b06fcbdaaf33f26e74bac1100f6329fd897a7a53bb7258d394f2ba3"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ee4fa8b539fed9e485b594393811d9efe25e8c43",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v34",
+      "harness.model_build.train": "v27"
+    },
+    "stamped_at": "2026-08-01T20:44:34+00:00"
+  }
+}

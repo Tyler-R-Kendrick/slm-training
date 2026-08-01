@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v34",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-08-01",
+          "note": "Resolve bounded stage results from current-attempt canonical train and eval artifacts when stdout is only a truncated log tail, reject unchanged artifacts from prior attempts, and report an absent host driver as dead instead of trusting stale running state"
+        },
         {
           "version": "v34",
           "date": "2026-08-01",
@@ -6837,6 +6842,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for six unrelated autotrain scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-07-30",
