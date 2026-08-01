@@ -1,0 +1,84 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_ids": ["continuous-loop-20260801-c2", "continuous-loop-20260801-c3"],
+  "cycle_indices": [2, 3],
+  "source_commit": "8a76f949796444d87bdf5369933e40fc89eebdc7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100003,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "eval_suites": "smoke",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "environment_setup": [
+    "Fresh scheduled session: python3.12 -m venv .venv + pip install -e '.[dev]'",
+    "npm ci with NODE_OPTIONS overridden on the command line (session default NODE_OPTIONS is malformed '\"--import tsx\" --max-old-space-size=8192', same symptom already fixed unmerged in PR #1264 -- not duplicated here)"
+  ],
+  "arms": {
+    "c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": null,
+        "meaningful_program_rate": null,
+        "decode_timeout_rate": 1.0,
+        "latency_ms_p50_including_incomplete": 24000.72
+      },
+      "note": "All 3 documents hit the 24s decode timeout under this cycle's host load; degenerate arm, not a regression (c3 re-ran the equivalent recipe cleanly)."
+    },
+    "c2-canvas": {
+      "status": "cycle_error_timeout",
+      "note": "Subprocess TimeoutExpired at 74.7s finishing the campaign's shared 3-minute wall budget after the control arm's full-timeout decode consumed most of it. Soft failure per continuous-mode policy; no handoff/sdlc_delivery written for cycle 2."
+    },
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.7222222222222222,
+        "latency_ms_p50": 10689.93
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c3-both": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.7222222222222222,
+        "latency_ms_p50": 10533.27
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta": 0.0,
+  "sdlc_phase_a": {
+    "cycle_2": "cycle_error (subprocess timeout, no handoff written)",
+    "cycle_3": "NON_POSITIVE stack_layer=false reasons=[fixture_insufficient_n:c20260801-c3-both, fixture_insufficient_n:c20260801-c3-control, primary_metric_null_or_worse:smoke.binder_reference_f1:control=0.7222222222222222 candidate=0.7222222222222222 improvement=0.0, fixture_insufficient_n_alone]"
+  },
+  "conclusion": "grammar_completion_bounds + compact_active_canvas combined ('both' thrash arm) produced an identical smoke.binder_reference_f1 to control (0.72222, delta 0.0) on this size-matched 20-step fixture; parse_rate held at 1.0, mpr stayed 0 in both arms. Decode latency at this host load ranged 10.5-10.7s (well under the 24s timeout), a large swing from cycle 2's degenerate all-timeout control arm -- consistent with prior sessions' documented host-load variance in this sandbox, not a lever effect. No stack layer opened (non-positive).",
+  "next_priorities": [
+    "Rotate the lever bank instead of repeating canvas/bounds screens -- steps and batch_size arms were already proposed in this cycle's hypothesis matrix (c3-steps, c3-batch1) but not selected under the 1-experiment-pair budget; run those next",
+    "Do not chase the cycle-2 decode-timeout arm further -- single-cycle host-load variance, not reproduced across cycles",
+    "Keep ship gates honest; smoke n=3 fails insufficient_n by construction at this fixture scale"
+  ],
+  "recorded_at": "2026-08-01T19:40:00+00:00"
+}
