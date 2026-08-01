@@ -69,6 +69,13 @@
     "eg_params_lcb_min": 1.0,
     "stack_requires_tracked_delta": true
   },
+  "promotion_dispose": {
+    "require_primary_win": true,
+    "require_cert_continue": true,
+    "require_dual_arm_metrics": true,
+    "require_parse_non_regression": true,
+    "ignore_ship_insufficient_n_for_climb": true
+  },
   "synthesis_loop": {
     "block_sft_on_open_recommendations": true,
     "action_filenames": [

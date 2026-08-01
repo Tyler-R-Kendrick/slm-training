@@ -12,9 +12,11 @@ classifies positive vs non-positive, records a delivery ledger, and only
 signals stack-layer intent for positive results. Stacked PRs are still opened
 by the agent (gh stack); this driver never opens PRs for non-positive cycles.
 
-Proof driver (promote path): formal preflight must be proved and a LeverProof
+Proof driver (promote path): formal preflight must be proved, dual-arm
+promotion primary must beat policy ``minimum_effect``, and a LeverProof
 metric_certificate/v2 must dispose ``continue`` before a champion is marked
-``promoted``. Phase A smoke quality-held alone never promotes.
+``promoted``. Cert continue is necessary but not sufficient. Phase A smoke
+quality-held alone never promotes.
 """
 
 from __future__ import annotations
@@ -693,26 +695,64 @@ def dispose_champion_promote(
     locked_expectations_sha256: str | None = None,
     phase_a_positive: bool = False,
     phase_a_quality_held: bool = False,
+    control_metrics: dict[str, float | None] | None = None,
+    candidate_metrics: dict[str, float | None] | None = None,
+    promotion_primary: dict[str, Any] | None = None,
+    promotion_dispose: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Authoritative promote disposition (proof driver).
+    """Authoritative promote disposition (proof + effect driver).
 
     Phase A smoke quality-held alone never yields ``promoted``. A proved formal
-    preflight and an in-band LeverProof metric_certificate/v2 (via
-    ``optimum_feedback``) are required. Theorem misses fail closed without a
-    five-lane matrix; assumption-backed misses fail closed and request five-lane
-    successor diagnosis.
+    preflight, dual-arm promotion-primary win (≥ policy ``minimum_effect``), and
+    an in-band LeverProof metric_certificate/v2 (``optimum_feedback`` →
+    ``continue``) are all required. Cert continue is necessary but not
+    sufficient. Theorem misses fail closed without a five-lane matrix;
+    assumption-backed misses fail closed and request five-lane successor
+    diagnosis.
 
     Formal **timeouts** are incomplete measurement: disposition
     ``promotion_inconclusive`` (retryable), never ``promotion_failed`` /
     ``rejected``.
     """
+    from slm_training.autoresearch.climb_policy import (
+        load_climb_policy,
+        promotion_primary_effect_met,
+    )
     from slm_training.harnesses.experiments.verified_metrics import optimum_feedback
 
     reasons: list[str] = []
+    primary_improvement: float | None = None
+    promotion_primary_met: bool | None = None
     if phase_a_positive:
         reasons.append("phase_a_positive")
     if phase_a_quality_held:
         reasons.append("phase_a_quality_held")
+
+    def _base(
+        *,
+        status: str,
+        cert_policy: str | None = None,
+        diagnosis_lanes: list[str] | None = None,
+        emit_five_lane_matrix: bool = False,
+        breaches: list[Any] | None = None,
+        inconclusive: bool = False,
+        timeout: bool = False,
+    ) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "status": status,
+            "reasons": reasons,
+            "cert_policy": cert_policy,
+            "diagnosis_lanes": list(diagnosis_lanes or []),
+            "emit_five_lane_matrix": emit_five_lane_matrix,
+            "breaches": list(breaches or []),
+            "primary_improvement": primary_improvement,
+            "promotion_primary_met": promotion_primary_met,
+        }
+        if inconclusive:
+            out["inconclusive"] = True
+        if timeout:
+            out["timeout"] = True
+        return out
 
     if _formal_status_is_timeout(formal_preflight_status):
         reasons.append(
@@ -720,92 +760,45 @@ def dispose_champion_promote(
             f"wall_s={_PROMOTE_FORMAL_TIMEOUT_S:g}"
         )
         reasons.append("measurement_incomplete:formal_timeout_not_rejection")
-        return {
-            "status": "promotion_inconclusive",
-            "reasons": reasons,
-            "cert_policy": None,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-            "inconclusive": True,
-            "timeout": True,
-        }
+        return _base(
+            status="promotion_inconclusive",
+            inconclusive=True,
+            timeout=True,
+        )
 
     if formal_preflight_status != "proved":
         reasons.append(
             f"formal_preflight_unproved:status={formal_preflight_status!r}"
         )
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": None,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-        }
+        return _base(status="promotion_failed")
 
     if certificate is None:
         reasons.append("promote_requires_certificate:phase_a_alone_insufficient")
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": None,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-        }
+        return _base(status="promotion_failed")
 
     if certificate.get("schema") != _CERTIFICATE_SCHEMA_V2:
         reasons.append(
             f"promote_requires_certificate_v2:got={certificate.get('schema')!r}"
         )
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": None,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-        }
+        return _base(status="promotion_failed")
 
     # Fail closed: locked expectations digest is required (never optional).
     if not locked_expectations_sha256:
         reasons.append("promote_requires_locked_expectations_digest")
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": None,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-        }
+        return _base(status="promotion_failed")
     cert_exp = certificate.get("metric_expectations_sha256")
     if cert_exp != locked_expectations_sha256:
         reasons.append(
             "certificate_expectations_digest_mismatch:"
             f"locked={str(locked_expectations_sha256)[:12]} cert={str(cert_exp)[:12]}"
         )
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": None,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-        }
+        return _base(status="promotion_failed")
 
     try:
         feedback = optimum_feedback(certificate)
     except Exception as exc:  # noqa: BLE001 — fail closed on bad certs
         reasons.append(f"certificate_invalid:{exc}")
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": None,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-        }
+        return _base(status="promotion_failed")
 
     policy = str(feedback.get("policy") or "")
     reasons.append(f"cert_policy:{policy}")
@@ -813,43 +806,56 @@ def dispose_champion_promote(
     breaches = list(feedback.get("breaches") or [])
 
     if policy == "continue":
-        return {
-            "status": "promoted",
-            "reasons": reasons,
-            "cert_policy": policy,
-            "diagnosis_lanes": [],
-            "emit_five_lane_matrix": False,
-            "breaches": [],
-        }
+        # Effect gate: cert continue alone never promotes.
+        climb = load_climb_policy()
+        dispose_cfg = dict(promotion_dispose or climb.promotion_dispose)
+        primary_spec = dict(promotion_primary or climb.promotion_primary)
+        require_primary = bool(dispose_cfg.get("require_primary_win", True))
+        if require_primary:
+            ok, effect_reasons, effect_delta = promotion_primary_effect_met(
+                control_metrics=control_metrics,
+                candidate_metrics=candidate_metrics,
+                promotion_primary=primary_spec,
+                require_dual_arm_metrics=bool(
+                    dispose_cfg.get("require_dual_arm_metrics", True)
+                ),
+                require_parse_non_regression=bool(
+                    dispose_cfg.get("require_parse_non_regression", True)
+                ),
+            )
+            reasons.extend(effect_reasons)
+            primary_improvement = effect_delta
+            promotion_primary_met = ok
+            if not ok:
+                return _base(status="promotion_failed", cert_policy=policy)
+        else:
+            promotion_primary_met = None
+            reasons.append("promote_primary_win_not_required_by_policy")
+        return _base(status="promoted", cert_policy=policy)
     if policy == "stop":
         reasons.append("theorem_backed_band_miss")
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": policy,
-            "diagnosis_lanes": lanes,
-            "emit_five_lane_matrix": False,
-            "breaches": breaches,
-        }
+        return _base(
+            status="promotion_failed",
+            cert_policy=policy,
+            diagnosis_lanes=lanes,
+            breaches=breaches,
+        )
     if policy == "block_promotion_and_diagnose":
         reasons.append("assumption_backed_band_miss")
-        return {
-            "status": "promotion_failed",
-            "reasons": reasons,
-            "cert_policy": policy,
-            "diagnosis_lanes": lanes or list(_FIVE_LANES),
-            "emit_five_lane_matrix": True,
-            "breaches": breaches,
-        }
+        return _base(
+            status="promotion_failed",
+            cert_policy=policy,
+            diagnosis_lanes=lanes or list(_FIVE_LANES),
+            emit_five_lane_matrix=True,
+            breaches=breaches,
+        )
     reasons.append(f"certificate_not_promotable:policy={policy!r}")
-    return {
-        "status": "promotion_failed",
-        "reasons": reasons,
-        "cert_policy": policy or None,
-        "diagnosis_lanes": lanes,
-        "emit_five_lane_matrix": False,
-        "breaches": breaches,
-    }
+    return _base(
+        status="promotion_failed",
+        cert_policy=policy or None,
+        diagnosis_lanes=lanes,
+        breaches=breaches,
+    )
 
 
 def build_five_lane_successor_matrix(
@@ -1514,12 +1520,29 @@ def _resolve_promotion_result(
                     resolve_reasons=resolve_reasons,
                 )
 
+        # Dual-arm held-out metrics for the promotion primary effect gate.
+        ctrl_metrics = delivery.get("control_metrics")
+        cand_metrics = delivery.get("candidate_metrics")
+        if not isinstance(ctrl_metrics, dict) or not isinstance(cand_metrics, dict):
+            ctrl_metrics = _run_metrics(
+                camp, control_id, prefer_held_out=True
+            ) if control_id else {}
+            cand_metrics = _run_metrics(
+                camp, candidate_id, prefer_held_out=True
+            ) if candidate_id else {}
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+
+        climb = load_climb_policy()
         disposition = dispose_champion_promote(
             formal_preflight_status=formal_preflight_status,
             certificate=certificate,
             locked_expectations_sha256=locked_expectations_sha256,
             phase_a_positive=phase_a_positive,
             phase_a_quality_held=phase_a_quality,
+            control_metrics=ctrl_metrics,  # type: ignore[arg-type]
+            candidate_metrics=cand_metrics,  # type: ignore[arg-type]
+            promotion_primary=dict(climb.promotion_primary),
+            promotion_dispose=dict(climb.promotion_dispose),
         )
         status = str(disposition["status"])
         resolve_reasons = list(disposition.get("reasons") or []) + reasons_in
@@ -1548,6 +1571,8 @@ def _resolve_promotion_result(
                     "cert_policy": disposition.get("cert_policy"),
                     "formal_preflight_status": formal_preflight_status,
                     "locked_expectations_sha256": locked_expectations_sha256,
+                    "primary_improvement": disposition.get("primary_improvement"),
+                    "promotion_primary_met": disposition.get("promotion_primary_met"),
                     "reasons": resolve_reasons,
                     "harness_failure": bool(disposition.get("harness_failure")),
                     "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -1575,6 +1600,8 @@ def _resolve_promotion_result(
                 row["promotion_cycle_index"] = cycle_index
                 row["cert_policy"] = disposition.get("cert_policy")
                 row["formal_preflight_status"] = formal_preflight_status
+                row["primary_improvement"] = disposition.get("primary_improvement")
+                row["promotion_primary_met"] = disposition.get("promotion_primary_met")
                 # Incomplete formal / harness: not a decisive promote attempt.
                 if (
                     status in {"promotion_inconclusive", "harness_failure"}
@@ -1593,7 +1620,9 @@ def _resolve_promotion_result(
         print(
             f"CHAMPION_PROMOTE_DISPOSE status={status} "
             f"cert_policy={disposition.get('cert_policy')} "
-            f"formal={formal_preflight_status}",
+            f"formal={formal_preflight_status} "
+            f"primary_delta={disposition.get('primary_improvement')} "
+            f"primary_met={disposition.get('promotion_primary_met')}",
             flush=True,
         )
     return updated

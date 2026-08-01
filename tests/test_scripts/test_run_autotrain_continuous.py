@@ -635,18 +635,99 @@ def test_dispose_champion_promote_invalid_cert_not_promoted() -> None:
     assert any("v2" in r for r in d["reasons"])
 
 
+def _held_out_win_metrics(
+    *, control_ss: float = 0.10, candidate_ss: float = 0.20
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Dual-arm metrics with held_out SS win above default min_effect 0.01."""
+    control = {
+        "structural_similarity": control_ss,
+        "held_out.structural_similarity": control_ss,
+        "parse_rate": 1.0,
+        "held_out.parse_rate": 1.0,
+    }
+    candidate = {
+        "structural_similarity": candidate_ss,
+        "held_out.structural_similarity": candidate_ss,
+        "parse_rate": 1.0,
+        "held_out.parse_rate": 1.0,
+    }
+    return control, candidate
+
+
 def test_dispose_champion_promote_in_band_v2_promotes() -> None:
     exp_sha = _mod.locked_promote_expectations_sha256()
+    control, candidate = _held_out_win_metrics()
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
         certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
         locked_expectations_sha256=exp_sha,
         phase_a_positive=True,
         phase_a_quality_held=True,
+        control_metrics=control,
+        candidate_metrics=candidate,
     )
     assert d["status"] == "promoted"
     assert d["cert_policy"] == "continue"
+    assert d["promotion_primary_met"] is True
+    assert d["primary_improvement"] is not None
+    assert float(d["primary_improvement"]) > 0.01
     assert d["emit_five_lane_matrix"] is False
+    assert any(r.startswith("promote_primary_win:") for r in d["reasons"])
+
+
+def test_dispose_champion_promote_null_primary_not_promoted() -> None:
+    """Cert continue + formal proved + null held_out delta must not promote."""
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    control, candidate = _held_out_win_metrics(control_ss=0.25, candidate_ss=0.25)
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
+        locked_expectations_sha256=exp_sha,
+        phase_a_positive=False,
+        control_metrics=control,
+        candidate_metrics=candidate,
+    )
+    assert d["status"] == "promotion_failed"
+    assert d["cert_policy"] == "continue"
+    assert d["promotion_primary_met"] is False
+    assert any("promote_primary_null_or_insufficient" in r for r in d["reasons"])
+
+
+def test_dispose_champion_promote_missing_primary_metrics_not_promoted() -> None:
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
+        locked_expectations_sha256=exp_sha,
+        control_metrics={},
+        candidate_metrics={},
+    )
+    assert d["status"] == "promotion_failed"
+    assert d["cert_policy"] == "continue"
+    assert any("promote_primary_metrics_missing" in r for r in d["reasons"])
+
+
+def test_dispose_champion_promote_parse_regression_not_promoted() -> None:
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    control = {
+        "structural_similarity": 0.1,
+        "held_out.structural_similarity": 0.1,
+        "parse_rate": 1.0,
+    }
+    candidate = {
+        "structural_similarity": 0.3,
+        "held_out.structural_similarity": 0.3,
+        "parse_rate": 0.5,
+    }
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
+        locked_expectations_sha256=exp_sha,
+        control_metrics=control,
+        candidate_metrics=candidate,
+    )
+    assert d["status"] == "promotion_failed"
+    assert any("promote_parse_regression" in r for r in d["reasons"])
 
 
 def test_dispose_champion_promote_assumption_miss_five_lane() -> None:
@@ -736,11 +817,37 @@ def test_promote_manifest_without_preflight_sha_has_no_placeholder_obligation() 
     assert man.formal_obligations == ()
 
 
+def _write_run_eval(
+    camp: Path,
+    run_id: str,
+    *,
+    structural_similarity: float,
+    parse_rate: float = 1.0,
+) -> None:
+    """Seed dual-arm eval artifacts so harness detection sees complete measurement."""
+    run_dir = camp / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "structural_similarity": structural_similarity,
+        "parse_rate": parse_rate,
+        "meaningful_program_rate": 0.5,
+        "latency_ms_p50": 100.0,
+    }
+    (run_dir / "eval_held_out.json").write_text(
+        __import__("json").dumps(payload), encoding="utf-8"
+    )
+    (run_dir / "eval_smoke.json").write_text(
+        __import__("json").dumps(payload), encoding="utf-8"
+    )
+
+
 def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     loop_id = "loop-cert"
     camp = root / "c-cert"
     camp.mkdir(parents=True)
+    _write_run_eval(camp, "c-control", structural_similarity=0.10)
+    _write_run_eval(camp, "c-promote", structural_similarity=0.20)
     exp_sha = _mod.locked_promote_expectations_sha256()
     cert = _v2_cert(exp_sha=exp_sha, relation="in_band")
     (camp / "metric-certificate.json").write_text(
@@ -760,6 +867,7 @@ def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
         "knobs_fingerprint": "fpok",
     }
     _mod._write_champion_queue(path, [entry])
+    control, candidate = _held_out_win_metrics()
     resolved = _mod._resolve_promotion_result(
         root=root,
         loop_id=loop_id,
@@ -767,10 +875,15 @@ def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
         delivery={
             "positive": True,
             "reasons": ["quality_held:parse=1.0 mpr=1.0"],
+            "control_id": "c-control",
+            "candidate_id": "c-promote",
+            "control_metrics": control,
+            "candidate_metrics": candidate,
         },
         campaign_id="c-cert",
         cycle_index=9,
         camp_dir=camp,
+        arm_exits={"c-control": 0, "c-promote": 0},
     )
     assert resolved is not None
     assert resolved["status"] == "promoted"
@@ -778,6 +891,55 @@ def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
     assert ledger.is_file()
     line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
     assert "promoted" in line
+    assert "promote_primary_win" in line or "primary_improvement" in line
+
+
+def test_resolve_promotion_null_primary_not_promoted(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-null-primary"
+    camp = root / "c-null"
+    camp.mkdir(parents=True)
+    _write_run_eval(camp, "ctrl", structural_similarity=0.40)
+    _write_run_eval(camp, "cand", structural_similarity=0.40)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    cert = _v2_cert(exp_sha=exp_sha, relation="in_band")
+    (camp / "metric-certificate.json").write_text(
+        __import__("json").dumps(cert), encoding="utf-8"
+    )
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    path = _mod._champion_queue_path(root, loop_id)
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-null",
+        "status": "promoting",
+        "knobs": {"grammar_completion_bounds": True},
+        "knobs_fingerprint": "fpnull",
+    }
+    _mod._write_champion_queue(path, [entry])
+    control, candidate = _held_out_win_metrics(control_ss=0.4, candidate_ss=0.4)
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "reasons": ["primary_metric_null_or_worse:held_out.structural_similarity"],
+            "control_metrics": control,
+            "candidate_metrics": candidate,
+            "control_id": "ctrl",
+            "candidate_id": "cand",
+        },
+        campaign_id="c-null",
+        cycle_index=11,
+        camp_dir=camp,
+        arm_exits={"ctrl": 0, "cand": 0},
+    )
+    assert resolved is not None
+    assert resolved["status"] == "promotion_failed"
+    reasons = resolved.get("resolve_reasons") or []
+    assert any("promote_primary_null_or_insufficient" in str(r) for r in reasons)
 
 
 def test_resolve_promotion_assumption_miss_writes_five_lane(tmp_path: Path) -> None:
@@ -1051,12 +1213,15 @@ def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
 
     fb = optimum_feedback(cert)
     assert fb["policy"] == "continue"
+    control, candidate = _held_out_win_metrics(control_ss=0.25, candidate_ss=0.50)
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
         certificate=cert,
         locked_expectations_sha256=_mod.locked_promote_expectations_sha256(),
         phase_a_positive=True,
         phase_a_quality_held=True,
+        control_metrics=control,
+        candidate_metrics=candidate,
     )
     assert d["status"] == "promoted"
 
