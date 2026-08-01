@@ -1,0 +1,47 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260801-c4",
+  "cycle_index": 4,
+  "source_commit": "24c20769c366aeb9e9f7a98eb72089b3a97859c7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps_control": 20,
+    "steps_candidate": 60,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c4-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.6666666666666666,
+        "latency_ms_p50": 11879.46
+      }
+    },
+    "c20260801-c4-steps": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "latency_ms_p50": 20430.57
+      }
+    }
+  },
+  "primary_metric": "held_out.structural_similarity",
+  "primary_metric_status": "unavailable_missing_suite",
+  "conclusion": "Primary metric held_out.structural_similarity was unavailable (held_out suite missing from e938_role_safe_all_targets_v2 at this eval snapshot) -- classified primary_metric_unavailable, non-positive regardless of smoke deltas. On smoke (informational only): control (20 steps) reached meaningful_program_rate=0.667 (2/3), the best of the four cycles run today; the higher-step candidate (60 steps, same wall cap) regressed to meaningful_program_rate=0.333 and roughly doubled p50 latency (20430.57ms vs 11879.46ms), consistent with the extra steps pushing the run closer to the 3-minute wall cap without a quality payoff at this fixture scale.",
+  "next_priorities": [
+    "Bind an eval_version/eval_suites combination that actually publishes a held_out suite before using held_out.structural_similarity as a continuous primary metric, or switch continuous primary_metric to a suite that is present (smoke)",
+    "Investigate why control's meaningful_program_rate jumped to 0.667 this cycle (seed/data-order effect at n=3, not yet a reproducible lever win)",
+    "Do not raise steps past the point where the wall cap starts truncating decode -- 60 steps degraded both quality and latency vs 20 steps under the same 3-minute cap"
+  ],
+  "recorded_at": "2026-08-01T02:41:00.000000+00:00"
+}
