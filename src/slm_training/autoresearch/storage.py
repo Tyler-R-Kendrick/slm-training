@@ -55,6 +55,9 @@ _PREREQUISITE_ACTION_KINDS = frozenset(
         "deliver_stack",
     }
 )
+_EXECUTION_ACTION_KINDS = frozenset(
+    {"retry_measurement", "next_experiment", "monitor"}
+)
 
 
 def autotrain_action_sha256(action: AutotrainActionV1) -> str:
@@ -79,8 +82,11 @@ def append_autotrain_action_receipt(
     return path
 
 
-def pending_autotrain_actions(
-    root: Path | str, handoff: AutotrainCycleHandoffV1
+def _pending_autotrain_actions(
+    root: Path | str,
+    handoff: AutotrainCycleHandoffV1,
+    *,
+    kinds: frozenset[str],
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
     path = Path(root) / "loops" / handoff.loop_id / "action_receipts.jsonl"
     completed: set[tuple[int, str]] = set()
@@ -98,9 +104,27 @@ def pending_autotrain_actions(
     return tuple(
         (index, action)
         for index, action in enumerate(handoff.actions)
-        if action.kind in _PREREQUISITE_ACTION_KINDS
+        if action.kind in kinds
         and (index, autotrain_action_sha256(action)) not in completed
     )
+
+
+def pending_autotrain_actions(
+    root: Path | str, handoff: AutotrainCycleHandoffV1
+) -> tuple[tuple[int, AutotrainActionV1], ...]:
+    """Return unacknowledged actions that block successor initialization."""
+
+    return _pending_autotrain_actions(
+        root, handoff, kinds=_PREREQUISITE_ACTION_KINDS
+    )
+
+
+def pending_autotrain_execution_actions(
+    root: Path | str, handoff: AutotrainCycleHandoffV1
+) -> tuple[tuple[int, AutotrainActionV1], ...]:
+    """Return unacknowledged steering actions for the successor cycle."""
+
+    return _pending_autotrain_actions(root, handoff, kinds=_EXECUTION_ACTION_KINDS)
 
 
 def _payload(value: BaseModel | dict[str, Any]) -> dict[str, Any]:

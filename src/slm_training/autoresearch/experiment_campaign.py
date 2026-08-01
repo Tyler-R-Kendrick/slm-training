@@ -166,6 +166,10 @@ class ExperimentCampaignV1(StrictModel):
     metric_expectations_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    replay_of_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    replay_reason: str | None = Field(default=None, min_length=8)
     # Climb / causal shape (required for promotion_candidate and ship_gate).
     mechanism_off_arm_ids: tuple[str, ...] = ()
     executable_kill_criteria: tuple[str, ...] = ()
@@ -181,6 +185,10 @@ class ExperimentCampaignV1(StrictModel):
 
     @model_validator(mode="after")
     def validate_contract(self) -> ExperimentCampaignV1:
+        if bool(self.replay_of_manifest_sha256) != bool(self.replay_reason):
+            raise ValueError(
+                "replay_of_manifest_sha256 and replay_reason must be declared together"
+            )
         endpoint_ids = tuple(item.endpoint_id for item in self.endpoints)
         arm_ids = tuple(item.arm_id for item in self.arms)
         control_ids = tuple(item.control_id for item in self.controls)

@@ -70,6 +70,7 @@ from slm_training.autoresearch.schemas import (
 from slm_training.autoresearch.storage import (
     CampaignStore,
     pending_autotrain_actions,
+    pending_autotrain_execution_actions,
     render_loop_result_matrix,
 )
 
@@ -1186,6 +1187,9 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     assert [action.kind for _, action in pending_autotrain_actions(root, handoff)] == [
         "document"
     ]
+    assert [
+        action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
 
     invalid_args = build_parser().parse_args(
         [
@@ -1222,6 +1226,9 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     )
     assert args.func(args) == 0
     assert pending_autotrain_actions(root, handoff) == ()
+    assert [
+        action.kind for _, action in pending_autotrain_execution_actions(root, handoff)
+    ] == ["next_experiment"]
 
     stopped_handoff = handoff.model_copy(
         update={

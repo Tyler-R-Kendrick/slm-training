@@ -1726,6 +1726,119 @@ def test_campaign_identity_is_loop_scoped() -> None:
     assert second.endswith("-c7")
 
 
+def test_latest_cycle_uses_highest_index_but_last_completed_predecessor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    for index in (10, 11):
+        campaign_id = f"cycle-{index}"
+        camp = root / campaign_id
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "loop_id": "loop-1",
+                    "campaign_id": campaign_id,
+                    "cycle_index": index,
+                }
+            )
+        )
+    (root / "cycle-10" / "cycle_handoff.json").write_text("{}\n")
+
+    assert _mod._latest_cycle(root, "loop-1") == (11, "cycle-10")
+
+
+def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> None:
+    old_campaign = "continuous-loop-20260801-loop-12345678-c1710"
+    new_campaign = "continuous-loop-20260801-loop-12345678-c1712"
+    matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-1",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        recommended_slug="batch1",
+    )
+    old_control = json.loads(
+        json.dumps(matrix["hypotheses"][0]["experiment"])
+    )
+    old_candidate = json.loads(
+        json.dumps(
+            next(
+                row["experiment"]
+                for row in matrix["hypotheses"]
+                if row["experiment"]["experiment_id"].endswith("-batch1")
+            )
+        )
+    )
+    old_control.update(
+        experiment_id="c20260801-loop-12345678-c1710-control",
+        campaign_id=old_campaign,
+    )
+    old_candidate.update(
+        experiment_id="c20260801-loop-12345678-c1710-batch1",
+        campaign_id=old_campaign,
+    )
+    old_control["knobs"].update(steps=80, seed=101710, batch_size=2)
+    old_candidate["knobs"].update(steps=80, seed=101710, batch_size=1)
+    old_commit = "a" * 40
+    control_manifest = _mod._manifest(old_campaign, old_control, old_commit)
+    candidate_manifest = _mod._manifest(old_campaign, old_candidate, old_commit)
+    replay = {
+        "control": {
+            "experiment": old_control,
+            "manifest": control_manifest,
+            "manifest_sha256": "b" * 64,
+        },
+        "candidate": {
+            "experiment": old_candidate,
+            "manifest": candidate_manifest,
+            "manifest_sha256": "c" * 64,
+        },
+    }
+
+    replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+    recommended = next(
+        row["experiment"]
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"]
+        == matrix["recommended_experiment_id"]
+    )
+    assert recommended["knobs"] == old_candidate["knobs"]
+    current_commit = "d" * 40
+    successor = _mod._replay_successor_manifest(
+        replay_manifests[matrix["recommended_experiment_id"]]["manifest"],
+        frozen_manifest_sha256="c" * 64,
+        campaign_id=new_campaign,
+        experiment_id=matrix["recommended_experiment_id"],
+        integration_commit=current_commit,
+    )
+    assert successor.source_commit == current_commit
+    assert successor.replay_of_manifest_sha256 == "c" * 64
+    assert successor.endpoints == candidate_manifest.endpoints
+    assert successor.arms == candidate_manifest.arms
+    assert successor.seeds == candidate_manifest.seeds
+    assert successor.stopping_rules == candidate_manifest.stopping_rules
+    assert successor.promotion_gates == candidate_manifest.promotion_gates
+    formal_manifest = _mod._manifest(
+        old_campaign,
+        old_candidate,
+        old_commit,
+        role="promotion",
+        cycle_intent="promote",
+        formal_preflight_sha256="e" * 64,
+    )
+    assert formal_manifest.formal_obligations
+    with pytest.raises(RuntimeError, match="fresh Lean preflight"):
+        _mod._require_automatic_replayable(formal_manifest)
+
+
 def test_continuous_evidence_is_bounded_to_predecessor_and_loop(tmp_path: Path) -> None:
     roots = _mod._continuous_evidence_roots(
         tmp_path / "autoresearch", "loop-1", "campaign-6"
