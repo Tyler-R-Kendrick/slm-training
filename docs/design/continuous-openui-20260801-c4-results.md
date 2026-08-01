@@ -52,3 +52,8 @@ metric**: `primary_metric_null_or_worse` (`held_out.structural_similarity`
 
 - Campaign: `outputs/autoresearch/continuous-loop-20260801-c4/`
 - JSON twin: `continuous-openui-20260801-c4-results.json`
+- AgentEvals JSONL (pinned `@agentv/core@4.42.4`):
+  - control: `outputs/autoresearch/continuous-loop-20260801-c4/runs/c20260801-c4-control/agentv/openui-model-ship-gates-2026-08-01t04-41-26-920736-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-41-26-920736-00-00`)
+  - steps: `outputs/autoresearch/continuous-loop-20260801-c4/runs/c20260801-c4-steps/agentv/openui-model-ship-gates-2026-08-01t04-43-39-205946-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-43-39-205946-00-00`)
+- Locked `ExperimentCampaignV1` manifests: `outputs/autoresearch/continuous-loop-20260801-c4/manifests/c20260801-c4-control.json` (`manifest_sha256=eba18b83bdea8e7e557cb53589a44e249af10a0e15ee7944c2685c4b9da662f9`), `.../c20260801-c4-steps.json` (`manifest_sha256=c994b7ef0632d7c9618639d111cbb3b63b0d0a0114760ec074fa7ba68c8cfa8f`)
+- Resolved candidate config: `steps` arm doubles training steps (control 20 → candidate 40, `step_multiplier=2`), no grammar levers changed

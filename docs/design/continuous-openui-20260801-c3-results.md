@@ -48,3 +48,6 @@ evidence of a real quality/latency tradeoff.
 
 - Campaign: `outputs/autoresearch/continuous-loop-20260801-c3/`
 - JSON twin: `continuous-openui-20260801-c3-results.json`
+- AgentEvals JSONL (pinned `@agentv/core@4.42.4`):
+  - control: `outputs/autoresearch/continuous-loop-20260801-c3/runs/c20260801-c3-control/agentv/openui-model-ship-gates-2026-08-01t04-39-26-867840-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-39-26-867840-00-00`)
+  - both: `outputs/autoresearch/continuous-loop-20260801-c3/runs/c20260801-c3-both/agentv/openui-model-ship-gates-2026-08-01t04-39-56-792765-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-39-56-792765-00-00`)

@@ -63,3 +63,6 @@ Primary delta (canvas − control) p50 latency: **-236.04 ms** (canvas faster).
 - Runs: `.../runs/c20260801-c2-control/`, `.../runs/c20260801-c2-canvas/`
 - JSON twin: `continuous-openui-20260801-c2-results.json`
 - SDLC Phase A ledger: `outputs/autoresearch/continuous-loop-20260801-c2/sdlc_delivery.json`
+- AgentEvals JSONL (pinned `@agentv/core@4.42.4`):
+  - control: `outputs/autoresearch/continuous-loop-20260801-c2/runs/c20260801-c2-control/agentv/openui-model-ship-gates-2026-08-01t04-34-32-704820-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-34-32-704820-00-00`)
+  - canvas: `outputs/autoresearch/continuous-loop-20260801-c2/runs/c20260801-c2-canvas/agentv/openui-model-ship-gates-2026-08-01t04-35-44-617261-00-00.eval.jsonl` (bundle `openui-model-ship-gates-2026-08-01t04-35-44-617261-00-00`)

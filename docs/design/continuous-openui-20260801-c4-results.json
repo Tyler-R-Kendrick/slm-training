@@ -3,7 +3,8 @@
   "loop_id": "continuous-openui-20260730",
   "campaign_id": "continuous-loop-20260801-c4",
   "cycle_index": 4,
-  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "source_commit": "409c517a2576e1d67e07ff1382f03b9ee6ca87f7",
+  "upstream_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
   "honesty": "fixture_or_scratch",
   "not_ship_claim": true,
   "recipe": {
@@ -23,14 +24,53 @@
     "c20260801-c4-control": {
       "status": "completed_eval_gates_failed",
       "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.4166666666666667, "latency_ms_p50": 18080.36},
-      "held_out": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.38248, "latency_ms_p50": 19175.31}
+      "held_out": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.38248, "latency_ms_p50": 19175.31},
+      "agentv": {
+        "sdk": "@agentv/core@4.42.4",
+        "spec": "outputs/autoresearch/continuous-loop-20260801-c4/runs/c20260801-c4-control/agentv/openui-model-ship-gates-2026-08-01t04-41-26-920736-00-00.eval.jsonl",
+        "run_bundle_id": "openui-model-ship-gates-2026-08-01t04-41-26-920736-00-00"
+      },
+      "campaign_manifest": {
+        "path": "outputs/autoresearch/continuous-loop-20260801-c4/manifests/c20260801-c4-control.json",
+        "manifest_sha256": "eba18b83bdea8e7e557cb53589a44e249af10a0e15ee7944c2685c4b9da662f9"
+      }
     },
     "c20260801-c4-steps": {
       "status": "completed_eval_gates_failed",
       "levers": {"steps_multiplier_candidate": true},
+      "resolved_config": {
+        "step_multiplier": 2,
+        "steps": 40,
+        "control_steps": 20,
+        "note": "manifest hypothesis: 'Doubling steps without levers only raises cost and does not improve unit decode latency.'"
+      },
       "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.51, "latency_ms_p50": 9919.48},
-      "held_out": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.37006, "latency_ms_p50": 9816.32}
+      "held_out": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.37006, "latency_ms_p50": 9816.32},
+      "agentv": {
+        "sdk": "@agentv/core@4.42.4",
+        "spec": "outputs/autoresearch/continuous-loop-20260801-c4/runs/c20260801-c4-steps/agentv/openui-model-ship-gates-2026-08-01t04-43-39-205946-00-00.eval.jsonl",
+        "run_bundle_id": "openui-model-ship-gates-2026-08-01t04-43-39-205946-00-00"
+      },
+      "campaign_manifest": {
+        "path": "outputs/autoresearch/continuous-loop-20260801-c4/manifests/c20260801-c4-steps.json",
+        "manifest_sha256": "c994b7ef0632d7c9618639d111cbb3b63b0d0a0114760ec074fa7ba68c8cfa8f"
+      }
     }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "409c517a2576e1d67e07ff1382f03b9ee6ca87f7",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v71",
+      "harness.experiment_feature_flags": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v269"
+    },
+    "note": "identical for both arms (same code_commit); per-arm stamped_at: control 2026-08-01T04:42:58.264201+00:00, steps 2026-08-01T04:44:27.788612+00:00"
   },
   "sdlc_phase_a": {
     "positive": false,

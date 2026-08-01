@@ -34,6 +34,8 @@
       "partial_latency_ms_p50": 2388.75
     }
   },
+  "version_stamp": null,
+  "version_stamp_note": "Both arms crashed inside publish_model_evaluation before scripts.evaluate_model wrote scoreboard.json, so no canonical-writer version_stamp/v1 was ever generated for this campaign. Recording code_commit only: 1bdfb14ebcf2393976a7c969e7bdd449fc5ada39 (matches source_commit above). Do not fabricate a stamp for a run that never reached the stamping step.",
   "primary_metric": "smoke.latency_ms_p50",
   "primary_delta_ms": null,
   "conclusion": "Both arms crashed inside evaluate_model's AgentV publish step (node_modules not installed in this fresh checkout) before ship gates could run; the c2 eval_version footgun from the 2026-07-30 cycle did not recur (eval_version resolved to a real published suite). Partial pre-crash latency numbers (2425.26ms control vs 2388.75ms bounds) are diagnostic only, not gate-passing evidence. Self-heal: ran `npm ci` (with NODE_OPTIONS unset, since --import tsx is rejected by this node build) and re-ran as campaign continuous-loop-20260801-c2.",
