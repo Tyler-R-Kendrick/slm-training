@@ -1151,6 +1151,80 @@ def test_driver_lock_singleton(tmp_path: Path) -> None:
     fh2.close()
 
 
-def test_promote_formal_timeout_constant_is_bounded() -> None:
-    # Continuous must not inherit multi-hour MAX_RUN_SECONDS for Mathlib cold builds.
-    assert 30.0 <= _mod._PROMOTE_FORMAL_TIMEOUT_S <= 600.0
+def test_promote_formal_timeout_constant_is_10_minutes() -> None:
+    # Continuous promote Lean wall is 10 minutes (timeouts are inconclusive).
+    assert _mod._PROMOTE_FORMAL_TIMEOUT_S == 600.0
+
+
+def test_dispose_champion_promote_formal_timeout_is_inconclusive_not_failed() -> None:
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="timed_out",
+        certificate=None,
+        locked_expectations_sha256="a" * 64,
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promotion_inconclusive"
+    assert d.get("timeout") is True
+    assert d.get("inconclusive") is True
+    assert any("formal_preflight_timed_out" in r for r in d["reasons"])
+    assert any("measurement_incomplete" in r for r in d["reasons"])
+    assert d["status"] != "promotion_failed"
+    assert d["status"] != "rejected"
+
+
+def test_resolve_promotion_formal_timeout_refunds_attempt_and_stays_retriable(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    camp = root / "camp-to"
+    camp.mkdir(parents=True)
+    entry = {
+        "entry_id": "champ-to-1",
+        "status": "promoting",
+        "knobs_fingerprint": "fp1",
+        "promote_attempts": 1,
+        "knobs": {"grammar_completion_bounds": True},
+    }
+    path = _mod._champion_queue_path(root, loop)
+    _mod._write_champion_queue(path, [entry])
+    _mod.record_formal_preflight_status(
+        camp,
+        status="timed_out",
+        template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
+        reason="formal_preflight_timed_out:wall_s=600",
+        timeout_seconds=600.0,
+        duration_seconds=600.1,
+        timed_out=True,
+    )
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "reasons": ["fixture_insufficient_n:arm"],
+        },
+        campaign_id="camp-to",
+        cycle_index=9,
+        camp_dir=camp,
+        formal_preflight_status="timed_out",
+        locked_expectations_sha256="b" * 64,
+    )
+    assert resolved is not None
+    assert resolved["status"] == "promotion_inconclusive"
+    rows = _mod._load_champion_queue(path)
+    assert rows[0]["status"] == "promotion_inconclusive"
+    # Attempt refunded so timeout is not a permanent rejection path.
+    assert int(rows[0].get("promote_attempts") or 0) == 0
+    assert rows[0].get("last_formal_timeout") is True
+    # Retriable head for next promotion cadence.
+    head = _mod._queue_head_confirmed(rows)
+    assert head is not None
+    assert head["entry_id"] == "champ-to-1"
+    # Ledger captures inconclusive outcome (not promotion_failed).
+    ledger = root / "loops" / loop / "learning_certificate_ledger.jsonl"
+    line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
+    assert "promotion_inconclusive" in line
+    assert "timed_out" in line

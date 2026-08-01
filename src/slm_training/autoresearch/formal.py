@@ -269,6 +269,15 @@ def _run(command: list[str], *, timeout_seconds: float) -> subprocess.CompletedP
         )
 
 
+def _is_timeout_result(proc: subprocess.CompletedProcess[str]) -> bool:
+    """True when a formal subprocess hit its wall (rc 124 or timeout stderr)."""
+    if int(getattr(proc, "returncode", 0) or 0) == 124:
+        return True
+    err = str(getattr(proc, "stderr", "") or "")
+    out = str(getattr(proc, "stdout", "") or "")
+    return "timed out after" in err or "timed out after" in out
+
+
 def run_formal_preflight(
     campaign_id: str,
     experiment: ExperimentSpec,
@@ -276,7 +285,12 @@ def run_formal_preflight(
     *,
     timeout_seconds: float = float(MAX_RUN_SECONDS),
 ) -> tuple[FormalPreflightV1, FormalObligationV1]:
-    """Build the pinned Lean project and emit a content-addressable result."""
+    """Build the pinned Lean project and emit a content-addressable result.
+
+    ``timeout_seconds`` is caller-owned (continuous promote uses 600s). A wall
+    hit records status ``timed_out`` — incomplete measurement, not a proof
+    rejection.
+    """
 
     template = FORMAL_TEMPLATES.get(claim.template_id)
     if template is None:
@@ -284,7 +298,9 @@ def run_formal_preflight(
     if experiment.campaign_id != campaign_id:
         raise ValueError("formal claim belongs to a different campaign")
     started = time.monotonic()
-    budget_seconds = min(timeout_seconds, float(MAX_RUN_SECONDS))
+    # Honor caller budget; do not clamp down to MAX_RUN_SECONDS (continuous
+    # promote needs a longer Lean wall than the default CI cap).
+    budget_seconds = max(0.001, float(timeout_seconds))
     command_deadline = started + max(0.001, budget_seconds - 1.0)
 
     def remaining() -> float:
@@ -294,14 +310,21 @@ def run_formal_preflight(
         ["lake", "build", "OpenUIProofs"],
         timeout_seconds=remaining(),
     )
+    build_timed_out = _is_timeout_result(build)
     audit = (
         _run(
             ["lake", "env", "lean", "OpenUIProofs/Axioms.lean"],
             timeout_seconds=remaining(),
         )
         if build.returncode == 0
-        else subprocess.CompletedProcess([], build.returncode, "", "build failed")
+        else subprocess.CompletedProcess(
+            [],
+            124 if build_timed_out else build.returncode,
+            "",
+            build.stderr or ("build timed out" if build_timed_out else "build failed"),
+        )
     )
+    audit_timed_out = build_timed_out or _is_timeout_result(audit)
     version = (
         _run(
             ["lake", "env", "lean", "--version"],
@@ -314,16 +337,17 @@ def run_formal_preflight(
         f"{build.stdout}\n{build.stderr}\n{audit.stdout}\n{audit.stderr}"
     )
     proof_total = _proof_sources_are_total()
-    status: FormalProofStatus = (
-        template.status
-        if (
-            build.returncode == 0
-            and audit.returncode == 0
-            and "sorryAx" not in output
-            and proof_total
-        )
-        else "unknown"
-    )
+    if audit_timed_out or build_timed_out:
+        status: FormalProofStatus = "timed_out"
+    elif (
+        build.returncode == 0
+        and audit.returncode == 0
+        and "sorryAx" not in output
+        and proof_total
+    ):
+        status = template.status
+    else:
+        status = "unknown"
     obligation_id = formal_obligation_id(campaign_id, experiment.experiment_id, claim)
     preflight = FormalPreflightV1(
         campaign_id=campaign_id,

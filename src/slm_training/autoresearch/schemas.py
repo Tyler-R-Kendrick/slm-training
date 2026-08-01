@@ -466,7 +466,10 @@ class ExperimentKnobs(StrictModel):
 
 
 FormalProofPolicy = Literal["required", "advisory"]
-FormalProofStatus = Literal["proved", "refuted", "conditional", "unknown"]
+# timed_out = wall exceeded (incomplete measurement, never a proof rejection)
+FormalProofStatus = Literal[
+    "proved", "refuted", "conditional", "unknown", "timed_out"
+]
 FormalEvidenceScope = Literal["universal", "bounded_instance", "conditional"]
 
 
