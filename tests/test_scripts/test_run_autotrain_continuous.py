@@ -848,3 +848,150 @@ def test_ensure_promote_formal_preflight_content_addressed_when_recorded(
     assert status == "proved"
     assert sha == content_sha
     assert (art / f"{sha}.json").is_file()
+
+
+def test_skip_arm_slugs_only_while_open() -> None:
+    entries = [
+        {
+            "status": "promotion_failed",
+            "knobs": {"grammar_completion_bounds": True},
+            "source_candidate_id": "c-bounds",
+        },
+        {
+            "status": "rejected",
+            "knobs": {"grammar_completion_bounds": True, "compact_active_canvas": True},
+            "source_candidate_id": "c-both",
+        },
+        {
+            "status": "queued",
+            "knobs": {"compact_active_canvas": True},
+            "source_candidate_id": "c-canvas",
+        },
+    ]
+    skip = _mod._skip_arm_slugs(entries)
+    assert "bounds" not in skip
+    assert "both" not in skip
+    assert "canvas" in skip
+
+
+def test_is_champion_lever_includes_steps_and_batch1() -> None:
+    assert _mod._is_champion_lever(
+        {"grammar_completion_bounds": True}, candidate_id="x-bounds"
+    )
+    assert _mod._is_champion_lever({"batch_size": 1}, candidate_id="x-batch1")
+    assert _mod._is_champion_lever(
+        {"grammar_completion_bounds": False, "compact_active_canvas": False, "steps": 160},
+        candidate_id="c20260731-c1-steps",
+    )
+    assert not _mod._is_champion_lever(
+        {
+            "grammar_completion_bounds": False,
+            "compact_active_canvas": False,
+            "batch_size": 2,
+        },
+        candidate_id="c-control",
+    )
+
+
+def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
+    """Real LeverProof path: evidence + certificate from suite metrics."""
+    camp = tmp_path / "camp"
+    # Control + candidate eval artifacts
+    for rid, lat, pr, mpr in (
+        ("c-control", 12000.0, 1.0, 0.33),
+        ("c-promote", 9000.0, 1.0, 0.5),
+    ):
+        d = camp / "runs" / rid
+        d.mkdir(parents=True)
+        (d / "eval_smoke.json").write_text(
+            __import__("json").dumps(
+                {
+                    "latency_ms_p50": lat,
+                    "parse_rate": pr,
+                    "meaningful_program_rate": mpr,
+                    "structural_similarity": mpr,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (camp / "artifacts" / "experiments").mkdir(parents=True, exist_ok=True)
+        (camp / "artifacts" / "experiments" / f"{rid}.json").write_text(
+            __import__("json").dumps(
+                {
+                    "experiment_id": rid,
+                    "knobs": {
+                        "grammar_completion_bounds": rid != "c-control",
+                        "compact_active_canvas": False,
+                        "batch_size": 2,
+                        "steps": 80,
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={"reasons": []},
+    )
+    assert err is None, err
+    assert path is not None and path.is_file()
+    cert = __import__("json").loads(path.read_text(encoding="utf-8"))
+    assert cert["schema"] == "metric_certificate/v2"
+    from slm_training.harnesses.experiments.verified_metrics import optimum_feedback
+
+    fb = optimum_feedback(cert)
+    assert fb["policy"] == "continue"
+    # dispose can promote with this cert
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=cert,
+        locked_expectations_sha256=_mod.locked_promote_expectations_sha256(),
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promoted"
+
+
+def test_enqueue_champion_accepts_steps_arm(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    camp = root / "c1"
+    exp_dir = camp / "artifacts" / "experiments"
+    exp_dir.mkdir(parents=True)
+    (exp_dir / "c1-steps.json").write_text(
+        __import__("json").dumps(
+            {
+                "experiment_id": "c1-steps",
+                "knobs": {
+                    "grammar_completion_bounds": False,
+                    "compact_active_canvas": False,
+                    "batch_size": 2,
+                    "steps": 160,
+                    "train_version": "wf_smoke_v2",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    delivery = {
+        "positive": True,
+        "campaign_id": "c1",
+        "cycle_index": 9,
+        "cycle_role": "screening",
+        "candidate_id": "c1-steps",
+        "control_id": "c1-control",
+        "control_metrics": {"latency_ms_p50": 10000, "meaningful_program_rate": 0.33},
+        "candidate_metrics": {"latency_ms_p50": 8000, "meaningful_program_rate": 0.33},
+        "reasons": [
+            "primary_metric_win:smoke.latency_ms_p50:10000->8000",
+            "quality_held:parse=1.0 mpr=0.33",
+        ],
+    }
+    entry = _mod._enqueue_champion(
+        root=root, loop_id=loop, delivery=delivery, camp_dir=camp
+    )
+    assert entry is not None
+    assert entry["status"] == "queued"

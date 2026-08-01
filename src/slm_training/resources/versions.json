@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-08-01",
+          "note": "Close promote funnel gap: enqueue all thrash levers (steps/batch1); skip only open champions; export LeverProof v2 cert from suite metrics on promote path"
+        },
         {
           "version": "v24",
           "date": "2026-08-01",

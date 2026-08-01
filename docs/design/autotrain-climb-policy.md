@@ -47,7 +47,7 @@ so sticky knobs get a confirmatory retest before more thrash.
 | --- | --- |
 | Ledger | `outputs/autoresearch/loops/<loop_id>/champion_queue.jsonl` |
 | Schema | `autotrain_champion_queue/v1` |
-| Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) with a real lever (`grammar_completion_bounds` or `compact_active_canvas`) |
+| Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) on any thrash lever (`bounds` / `canvas` / `both` / `steps` / `batch1`) — not pure matched control |
 | Confirm | Next cycle matrix is control + `-confirm` — **same levers, new seed** (cadence role/suites unchanged); max **2** confirm attempts then `rejected` |
 | Promote | On **promotion cadence**, a `confirmed` head becomes control + `-promote` under promotion suites/seeds |
 | Dedup | Same lever fingerprint already `queued`/`confirming`/`confirmed` is not re-enqueued; fingerprint **excludes** cycle-local `steps` jitter |
@@ -61,7 +61,8 @@ proof-driven:
 | --- | --- |
 | Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes; dispose **fails closed** if digest missing/unreadable or mismatches the certificate |
 | Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations; promote experiment carries matching `formal_claims`; train only when status is `proved` (else skip execute + `promotion_failed`) |
-| Certificate | LeverProof `metric_certificate/v2` loaded from the campaign; disposition via `optimum_feedback` |
+| Certificate | Continuous **exports** LeverProof `metric-certificate.json` from control/candidate suite metrics (per-mille SS + parse) via in-repo `leverproof-lean check`; disposition via `optimum_feedback` |
+| Thrash skip | Only arms **currently open** in the champion funnel are deprioritized — rejected/promotion_failed do **not** permanently starve bounds/canvas |
 | `continue` (all in band) | only path to **`promoted`** |
 | `stop` (theorem miss) | `promotion_failed`; no five-lane thrash |
 | `block_promotion_and_diagnose` (assumption miss) | `promotion_failed` + `five_lane_successor_matrix.json` (measurement_control, training_method, architecture, lean_model, assumptions) |
