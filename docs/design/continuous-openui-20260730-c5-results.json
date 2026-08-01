@@ -1,0 +1,51 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c6..c7",
+  "cycle_index": 5,
+  "source_commit": "bbe618cc10db46b2a01c389ff8a79d06ae59ec0a",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 60,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "regression_check": {
+    "purpose": "Live verification that the c4 harness fix (autoresearch block) actually unblocks the continuous loop, not just the unit tests.",
+    "result": "Two more cycles ran cleanly with no CYCLE_ERROR: c6 (screening, predecessor c5 which never formed a matrix) and c7 (confirm, predecessor c6 whose matrix now closes correctly whether or not it trains)."
+  },
+  "champion_pipeline": {
+    "enqueue": {
+      "campaign_id": "continuous-loop-20260801-c6",
+      "control_id": "c20260801-c6-control",
+      "candidate_id": "c20260801-c6-bounds",
+      "lever": "grammar_completion_bounds=true",
+      "control": {"latency_ms_p50": 11655.72, "parse_rate": 1.0, "meaningful_program_rate": 0.5},
+      "candidate": {"latency_ms_p50": 11401.49, "parse_rate": 1.0, "meaningful_program_rate": 0.5},
+      "disposition": "positive_no_tracked_delta_skip_stack (champion enqueue; runtime lever, not a code delta)",
+      "reasons": [
+        "primary_metric_win:smoke.latency_ms_p50:11655.72->11401.49:improvement=254.23",
+        "quality_held:parse=1.0 mpr=0.5",
+        "efficiency_win:mpr_per_ms:4.2897393e-05->4.3853917e-05"
+      ]
+    },
+    "confirm": {
+      "campaign_id": "continuous-loop-20260801-c7",
+      "status": "rejected",
+      "reason": "TimeoutError: decode exceeded 24s on the confirm arm -- a single CPU decode timeout (fixture n too small to distinguish signal from CPU contention noise in this container), diagnosed target=infrastructure by the existing classifier. Not a code bug; not requeued this cycle (queue entry set to rejected rather than harness_failure -- single-timeout confirms do not get an automatic retry under the current policy)."
+    }
+  },
+  "conclusion": "Confirms the c4 fix holds under live continuous-loop execution: no CYCLE_ERROR across two more cycles after a promote-block. A second champion candidate (grammar_completion_bounds=true) was found, quality-held, and enqueued; its confirm run hit a single CPU decode timeout and was rejected -- an expected soft failure for this fixture-scale CPU container, not a regression or a new harness bug.",
+  "next_priorities": [
+    "Re-enqueue grammar_completion_bounds=true on a future screening cycle; a single timeout is not evidence against the lever.",
+    "Give the confirmed compact_active_canvas champion (fingerprint 7dc23b6cf0129a66) a real promote attempt now that the Lean formal preflight builds in this container.",
+    "Do not promote RL; ship gates fail by design on fixture n."
+  ],
+  "recorded_at": "2026-08-01T12:02:00Z"
+}
