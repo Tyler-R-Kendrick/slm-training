@@ -4962,6 +4962,32 @@ def test_complete_ast_does_not_widen_authority_after_parse_rejection(
     assert not compiler_draft._generated_ast_is_complete("root = invalid")
 
 
+def test_completion_forest_only_parses_ast_at_terminal_states(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    tokenizer = DSLNativeTokenizer.build()
+    parsed: list[str] = []
+
+    def _complete(source: str) -> bool:
+        parsed.append(source)
+        return True
+
+    monkeypatch.setattr(compiler_draft, "_generated_ast_is_complete", _complete)
+
+    partial = tokenizer.encode("root=TextContent(", add_special=False)
+    build_completion_forest(tokenizer, partial, slot_contract=[":slot_0"])
+    assert parsed == []
+
+    complete = tokenizer.encode(
+        'root=TextContent(":slot_0")', add_special=False
+    )
+    forest = build_completion_forest(
+        tokenizer, complete, slot_contract=[":slot_0"]
+    )
+    assert parsed == ['root = TextContent(":sym0")']
+    assert tokenizer.eos_id in forest.candidate_ids
+
+
 def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 

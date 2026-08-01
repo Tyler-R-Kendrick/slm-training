@@ -6885,6 +6885,11 @@
         {
           "version": "v3",
           "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1716 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
           "note": "no-bump: add honest model-card provenance for two unrelated c1715 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -10554,7 +10559,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v270",
+      "version": "v271",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10597,6 +10602,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v271",
+          "date": "2026-08-01",
+          "note": "Invoke official AST completeness parsing only at grammar states where end-of-document is legal, preserving fail-closed terminal authority while removing nonterminal bridge round trips"
+        },
         {
           "version": "v270",
           "date": "2026-08-01",
