@@ -2355,10 +2355,10 @@ def _build_openui_completion_forest_direct(
         try:
             from slm_training.models.dsl_tokenizer import TokenKind
 
-            bind_ids = set(tokenizer.kind_ids(TokenKind.BIND))
-            state_ids = set(tokenizer.kind_ids(TokenKind.STATE))
-            builtin_ids = set(tokenizer.kind_ids(TokenKind.BUILTIN))
-            sym_ids = set(tokenizer.kind_ids(TokenKind.SYM))
+            bind_ids = tokenizer.kind_ids(TokenKind.BIND)
+            state_ids = tokenizer.kind_ids(TokenKind.STATE)
+            builtin_ids = tokenizer.kind_ids(TokenKind.BUILTIN)
+            sym_ids = tokenizer.kind_ids(TokenKind.SYM)
             declarations, references, active_declaration = _binder_scope_view()
             last = prefix_ids[-1] if prefix_ids else None
             # LTR/compiler prefixes include BOS, which is not a source token.

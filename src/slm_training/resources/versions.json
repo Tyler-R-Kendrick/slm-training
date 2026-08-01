@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v41",
+      "version": "v42",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v42",
+          "date": "2026-08-01",
+          "note": "Project legacy exit-8 outcomes as completed gate rejections only when their clean commit-bound AgentV scoreboard is complete"
+        },
         {
           "version": "v41",
           "date": "2026-08-01",
@@ -6880,6 +6885,11 @@
         {
           "version": "v3",
           "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for two unrelated c1715 scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
           "note": "no-bump: add honest model-card provenance for six unrelated autotrain scratch checkpoints; SLM-228 spectral-disposition behavior is unchanged"
         },
         {
@@ -10544,7 +10554,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v269",
+      "version": "v270",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10587,6 +10597,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v270",
+          "date": "2026-08-01",
+          "note": "Cache immutable tokenizer kind membership and remove redundant set copies from the terminal-witness completion-forest hot path"
+        },
         {
           "version": "v269",
           "date": "2026-07-31",
