@@ -1,0 +1,84 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c1",
+  "predecessor_campaign_id": "continuous-loop-20260730-c2",
+  "cycle_index": 3,
+  "source_commit": "41d874c76b9ed68f4c6d375366ea4398b95a0429",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 25,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "objective": "retest grammar_completion_bounds/compact_active_canvas effect on smoke p50 latency at a higher step budget with eval_version explicitly bound (post c2 default-eval-version fix; AgentV SDK now installed)",
+  "arms": {
+    "c20260801-c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "latency_ms_p50": 4650.74
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "latency_ms_p50": 3035.5
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": false
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -1615.24,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c1-bounds",
+      "fixture_insufficient_n:c20260801-c1-control",
+      "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+      "primary_metric_win:smoke.latency_ms_p50:4650.74->3035.5:improvement=1615.2399999999998"
+    ]
+  },
+  "diagnostics": [
+    "Prior c2 footgun (default eval_version resolving to a missing 'v1' suite) is fixed upstream: default_eval_version() now resolves e938_role_safe_all_targets_v2 by probing for a suites/smoke/records.jsonl on disk.",
+    "First driver attempt this cycle failed both arms on 'AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER' -- a sandbox setup gap (npm ci had not been run in this checkout), not a repo code bug. Repaired by running `npm ci` (with NODE_OPTIONS unset; the ambient NODE_OPTIONS='--import tsx' ... value breaks bare node/npm invocation in this sandbox) and re-running the identical spec.",
+    "grammar_completion_bounds=true (bounds arm) shows a large smoke p50 latency drop vs control (4650.74ms -> 3035.50ms, -1615.24ms) at steps=25, but meaningful_program_rate is 0.0 on both arms -- the SDLC Phase A classifier correctly rejects this as a non-positive 'latency win' because mpr (0.0) is below the required ~1/3 quality-hold threshold. A fast-but-meaningless decode is not evidence of a win.",
+    "Ship gates fail on both arms for expected fixture reasons: insufficient_n (n=3 < 20) and meaningful_program_rate below gate."
+  ],
+  "next_priorities": [
+    "model_build/train_data: 25 steps on wf_smoke_v2 is still far short of producing any meaningful programs (mpr=0.0 both arms); raise step budget or move to a richer train_version before re-attributing grammar_completion_bounds latency effects to quality.",
+    "evaluation: once mpr is nonzero and held between arms, re-run the bounds/canvas comparison to see if the latency delta survives with a quality floor.",
+    "infrastructure: document the `npm ci` + `NODE_OPTIONS` unset requirement for AgentV-backed evals in fresh checkouts so future continuous cycles do not need to rediscover it."
+  ],
+  "artifacts": {
+    "campaign_dir": "outputs/autoresearch/continuous-loop-20260801-c1/",
+    "runs": [
+      "outputs/autoresearch/continuous-loop-20260801-c1/runs/c20260801-c1-control/",
+      "outputs/autoresearch/continuous-loop-20260801-c1/runs/c20260801-c1-bounds/"
+    ]
+  },
+  "recorded_at": "2026-08-01T16:36:13Z"
+}
