@@ -103,7 +103,9 @@ def test_repair_reclassifies_formal_unknown_failed_as_inconclusive(tmp_path: Pat
     assert q[0]["promote_attempts"] == 0
     assert "resolved_at" not in q[0]
     assert any("formal_preflight_timed_out" in r for r in q[0]["resolve_reasons"])
-    assert q[1]["status"] == "promotion_failed"  # untouched
+    # Fixture-only / primary-unavailable without a real quality retest is not a
+    # model reject — reclassified as harness_failure (incomplete measurement).
+    assert q[1]["status"] == "harness_failure"
 
     led = [
         json.loads(line)
@@ -205,3 +207,51 @@ def test_repair_reclassifies_proved_missing_promote_as_harness_failure(
         if line.strip()
     ]
     assert led[0]["outcome"] == "harness_failure"
+
+
+def test_repair_reclassifies_incomplete_only_reject_as_harness_failure(
+    tmp_path: Path,
+) -> None:
+    """Empty-metrics / measurement-incomplete rejects are not quality rejects."""
+    root = tmp_path / "ar"
+    loop = "L"
+    loop_dir = root / "loops" / loop
+    loop_dir.mkdir(parents=True)
+    queue = [
+        {
+            "entry_id": "champ-empty",
+            "status": "rejected",
+            "confirm_campaign_id": "c-empty",
+            "resolve_reasons": [
+                "empty_metrics:abc",
+                "measurement_incomplete:no_smoke_metrics",
+                "primary_metric_unavailable",
+            ],
+            "resolved_at": "2026-08-01T00:00:00Z",
+        },
+        {
+            "entry_id": "champ-quality",
+            "status": "rejected",
+            "confirm_campaign_id": "c-q",
+            "resolve_reasons": [
+                "fixture_insufficient_n:c-q-confirm",
+                "primary_metric_null_or_worse:smoke.latency_ms_p50:control=100.0 candidate=200.0 improvement=-100.0",
+            ],
+            "resolved_at": "2026-08-01T00:00:00Z",
+        },
+    ]
+    (loop_dir / "champion_queue.jsonl").write_text(
+        "\n".join(__import__("json").dumps(r) for r in queue) + "\n",
+        encoding="utf-8",
+    )
+    (loop_dir / "learning_certificate_ledger.jsonl").write_text("", encoding="utf-8")
+    summary = _mod.repair_loop(root=root, loop_id=loop, dry_run=False)
+    assert summary.get("incomplete_queue_reclassified", 0) == 1
+    rows = [
+        __import__("json").loads(line)
+        for line in (loop_dir / "champion_queue.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    by_id = {r["entry_id"]: r for r in rows}
+    assert by_id["champ-empty"]["status"] == "harness_failure"
+    assert by_id["champ-quality"]["status"] == "rejected"
