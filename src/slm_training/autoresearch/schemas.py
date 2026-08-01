@@ -769,6 +769,7 @@ class AutotrainActionV1(StrictModel):
         "rebuild_data",
         "document",
         "deliver_stack",
+        "retry_measurement",
         "next_experiment",
         "monitor",
     ]
@@ -791,6 +792,12 @@ class AutotrainActionV1(StrictModel):
             raise ValueError("repair_harness action requires harness_family")
         if self.kind != "repair_harness" and self.harness_family is not None:
             raise ValueError("harness_family is only valid for repair_harness")
+        if self.kind not in {"repair_harness", "retry_measurement"} and (
+            self.frozen_manifest_sha256 is not None
+        ):
+            raise ValueError(
+                "frozen_manifest_sha256 is only valid for repair/retry actions"
+            )
         return self
 
 
@@ -833,6 +840,20 @@ class AutotrainCycleHandoffV1(StrictModel):
         return self
 
 
+class AutotrainActionReceiptV1(StrictModel):
+    """Append-only evidence that a supervisor executed one handoff action."""
+
+    schema_version: Literal["AutotrainActionReceiptV1"] = "AutotrainActionReceiptV1"
+    loop_id: str = Field(min_length=1)
+    campaign_id: str = Field(min_length=1)
+    action_index: int = Field(ge=0)
+    action_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    action_kind: str = Field(min_length=1)
+    status: Literal["completed", "blocked"]
+    evidence_uris: tuple[str, ...] = Field(min_length=1)
+    recorded_at: str = Field(default_factory=utc_now)
+
+
 class AutotrainLoopStateV1(StrictModel):
     """Small resumable state and heartbeat for one supervised loop."""
 
@@ -857,6 +878,10 @@ class AutotrainLoopStateV1(StrictModel):
     blocker_fingerprint: str | None = None
     blocker_count: int = Field(default=0, ge=0)
     pid: int | None = Field(default=None, ge=1)
+    active_stage: str | None = None
+    child_pid: int | None = Field(default=None, ge=1)
+    stage_started_at: str | None = None
+    integration_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
     heartbeat_at: str = Field(default_factory=utc_now)
 
 

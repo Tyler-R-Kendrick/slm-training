@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-08-01",
+          "note": "Fail-closed measurement integrity: process-tree bounded stages, symmetric arm budgets, partial-train rejection, typed gate-fail evidence, infrastructure rediagnosis, bounded evidence roots, loop-scoped campaigns, content-bound action receipts, stale-code re-exec, and completeness/liveness matrix signals"
+        },
         {
           "version": "v30",
           "date": "2026-08-01",
@@ -2802,6 +2807,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-01",
+          "note": "no-bump: document the cold and warm promotion-proof runtime reproduction without changing formal behavior"
+        },
         {
           "version": "v5",
           "date": "2026-08-01",
@@ -8914,6 +8924,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: explicit autoresearch evidence roots now replace the legacy outputs default while omitted roots preserve remine campaign behavior"
+        },
         {
           "version": "v3",
           "date": "2026-08-01",

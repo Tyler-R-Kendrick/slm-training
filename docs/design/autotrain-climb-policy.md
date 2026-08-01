@@ -46,10 +46,23 @@ control for repairs, documentation, and delivery. Each cycle writes strict
 `AutotrainCycleHandoffV1` to `<campaign>/cycle_handoff.json`; heartbeat and
 resume state use `AutotrainLoopStateV1` at `loops/<loop_id>/state.json`. The
 handoff separates climb from ship state and carries evidence-bound actions that
-name their owner skill. Three consecutive failures with the same fingerprint
-mark the loop blocked instead of printing and sleeping forever.
+name their owner skill. Three consecutive hard failures with the same fingerprint
+mark the loop blocked instead of printing and sleeping forever; timeouts, transient
+fetch failures, and incomplete measurements remain retriable and never accumulate a
+hard-block count.
 It also enumerates checkpoints created during the cycle and requires the
 supervisor to update the model card and README summary before continuing.
+Prerequisite actions are closed by append-only, action-digest-bound receipts;
+the next supervised campaign fails closed if required harness, Lean, data,
+documentation, or delivery evidence is absent.
+
+One cycle still obeys the repository hard cap. Control and candidate receive equal
+wall shares, with a third share reserved for research, status, and durable handoff;
+decision-bearing evaluation remains serialized so CPU contention cannot invalidate
+latency attribution. Scratch one-shot arms keep the serving checkpoint but skip the
+unused full optimizer/RNG state. A long-lived unsupervised driver that integrates a
+new HEAD re-executes itself before creating a campaign, preventing stale imported
+policy constants from poisoning later cycles.
 
 ## Champion queue (continuous learning path)
 
@@ -75,7 +88,7 @@ AgentEvals verdict:
 | Gate | Contract |
 | --- | --- |
 | Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes; dispose **fails closed** if digest missing/unreadable or mismatches the certificate |
-| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations. Promote experiment carries `formal_claims` inside the hypothesis matrix before lock. Train only when formal status is `proved`. The Lean wall is `MAX_RUN_SECONDS`; timeout remains inconclusive. |
+| Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations. Promote experiment carries `formal_claims` inside the hypothesis matrix before lock. Train only when formal status is `proved`. This template routes to the Mathlib-free LeverProof theorem and mandatory `make test` audit; cached artifacts must match the current bindings and source digest. The Lean wall is `MAX_RUN_SECONDS`; timeout remains inconclusive. |
 | **Primary effect** | Dual-arm policy `promotion_primary` (default `held_out.structural_similarity`) must improve by more than `minimum_effect` (default **0.01**). Parse non-regression when both arms measure parse_rate. Null / insufficient delta → `promotion_failed` (model/effect reject), not harness. Policy knobs: `promotion_dispose.*`. |
 | Certificate | Continuous exports LeverProof `metric-certificate.json` from control and candidate suite metrics; disposition uses `optimum_feedback`. `continue` alone never authorizes `climb_accepted` or ship. |
 | Phase A metrics | Promotion role loads **`eval_held_out.json`** for the policy primary |

@@ -60,6 +60,21 @@ proof placeholders and custom axioms in the Mathlib package. Both audit their
 exported theorems for Lean's `sorryAx`. The repository hard run cap is the
 timeout.
 
+### Measured promotion-proof runtime (2026-08-01)
+
+Durable results: [`autotrain-runtime-preflight-results.json`](autotrain-runtime-preflight-results.json).
+This is local CPU proof-harness evidence, not a model-quality or ship result.
+
+| Path | Cache | Command scope | Wall | Peak RSS | Result |
+| --- | --- | --- | ---: | ---: | --- |
+| LeverProof promotion path | cold (`.lake` excluded) | build + proof audit + protocol tests | 10.29 s | 875,944 KiB | pass |
+| LeverProof promotion path | warm | build replay + proof audit + protocol tests | 1.02 s | 800,632 KiB | pass |
+| Historical Mathlib package | warm | build only; diagnostic, not directly comparable | 4.58 s | 852,408 KiB | pass |
+
+The cold LeverProof path completes well inside the 180-second repository cap
+without fetching Mathlib. The comparator is intentionally not used as an exact
+speedup claim because it omits the source/proof audits included by `make test`.
+
 ## Typed campaign integration
 
 An `ExperimentSpec` may declare `formal_claims`. Each claim names one versioned

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import subprocess
@@ -1443,6 +1444,14 @@ def test_cycle_deadline_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
         _mod._remaining_timeout(9.0)
 
 
+def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
+    from slm_training.levers import MAX_HARNESS_WALL_SECONDS
+
+    arm_minutes = _mod._arm_wall_minutes(3)
+    assert arm_minutes * 60 * 3 == pytest.approx(MAX_HARNESS_WALL_SECONDS)
+    assert _mod._arm_wall_minutes(0.5) == 0.5
+
+
 def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1464,6 +1473,35 @@ def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
     assert _mod.main(["--supervised", "--max-cycles", "1"]) == 0
     assert len(calls) == 1
     assert calls[0]["sync_git"] is False
+    assert calls[0]["startup_commit"] == "a" * 40
+
+
+def test_cli_reexecs_after_integrating_new_driver_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    lock_handle = (tmp_path / "driver.lock").open("w+")
+    reexec: list[tuple[str, list[str]]] = []
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    monkeypatch.setattr(
+        _mod,
+        "acquire_driver_lock",
+        lambda *args, **kwargs: lock_handle,
+    )
+    monkeypatch.setattr(
+        _mod,
+        "run_cycle",
+        lambda **kwargs: (_ for _ in ()).throw(_mod._CodeUpdated("new head")),
+    )
+
+    def fake_execv(executable: str, argv: list[str]) -> None:
+        reexec.append((executable, argv))
+        raise SystemExit(0)
+
+    monkeypatch.setattr(_mod.os, "execv", fake_execv)
+    with pytest.raises(SystemExit):
+        _mod.main(["--max-cycles", "1"])
+    assert reexec and reexec[0][0] == _mod.sys.executable
 
 
 def _priority_matrix() -> dict:
@@ -1522,6 +1560,7 @@ def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None
     )
     assert {action.kind for action in handoff.actions} == {
         "document",
+        "deliver_stack",
         "next_experiment",
     }
     state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
@@ -1587,6 +1626,109 @@ def test_repeated_cycle_failure_blocks_on_third_identical_error(tmp_path: Path) 
     state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
     assert state["state"] == "BLOCKED"
     assert state["blocker_count"] == 3
+
+
+def test_repeated_timeouts_remain_soft_and_never_block(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    for _ in range(4):
+        count = _mod._record_cycle_failure(
+            root=root,
+            loop_id="loop-1",
+            exc=subprocess.TimeoutExpired("bounded-stage", 3),
+            cycle_index=2,
+        )
+        assert count == 0
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["state"] == "IDLE"
+    assert state["blocker_count"] == 0
+    assert state["next_action"] == "retry incomplete cycle"
+
+
+def test_campaign_identity_is_loop_scoped() -> None:
+    first = _mod._campaign_id("continuous-a", 7, date="20260801")
+    second = _mod._campaign_id("continuous-b", 7, date="20260801")
+    assert first != second
+    assert first.endswith("-c7")
+    assert second.endswith("-c7")
+
+
+def test_continuous_evidence_is_bounded_to_predecessor_and_loop(tmp_path: Path) -> None:
+    roots = _mod._continuous_evidence_roots(
+        tmp_path / "autoresearch", "loop-1", "campaign-6"
+    )
+    assert roots == (
+        tmp_path / "autoresearch" / "campaign-6",
+        tmp_path / "autoresearch" / "loops" / "loop-1",
+        tmp_path / "autoresearch" / "sdlc_delivery_ledger.jsonl",
+    )
+
+
+def test_predecessor_prerequisite_must_be_acknowledged(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="Persist the result before advancing.",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    path = root / campaign_id / "cycle_handoff.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(handoff.model_dump_json(indent=2) + "\n")
+
+    with pytest.raises(RuntimeError, match="0:document"):
+        _mod._require_predecessor_actions(root, campaign_id)
+    _mod._require_predecessor_actions(root, "historical-without-handoff")
+
+
+def test_cycle_handoff_marks_incomplete_measurement_for_frozen_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.binder_reference_f1",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": ["measurement_incomplete:no_smoke_metrics"],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+    assert handoff.climb_state == "inconclusive"
+    retry = next(
+        action for action in handoff.actions if action.kind == "retry_measurement"
+    )
+    assert retry.frozen_manifest_sha256 == hashlib.sha256(b"{}\n").hexdigest()
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
 
 
 def test_causal_family_saturates_per_integrated_code() -> None:

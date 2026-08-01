@@ -20,6 +20,18 @@ the successor. `AutotrainLoopStateV1` supplies a durable heartbeat and resumable
 phase. Fixture `climb_accepted` and full `ship_promoted` are intentionally
 different verdicts.
 
+Handoff coordination is enforced, not advisory. The supervisor records
+content-bound `AutotrainActionReceiptV1` entries with `autoresearch ack-action`;
+the successor refuses to initialize while predecessor harness, Lean, data, docs,
+or delivery prerequisites remain unacknowledged. Execution/steering actions
+(`retry_measurement`, `next_experiment`, `monitor`) remain part of the next-cycle
+control flow rather than circular prerequisites.
+
+Continuous evidence discovery is predecessor-bounded: explicit `--evidence-root`
+arguments replace the historical recursive `outputs/` default, and the driver
+passes only the predecessor campaign, loop ledger, and SDLC ledger. Omitting the
+flag retains the broad default for interactive compatibility.
+
 Research and proposal compilation are separate stages:
 
 1. a swappable `Researcher` implementation receives a bounded `ResearchRequest`
@@ -152,7 +164,9 @@ unknown fields forbidden:
   diagnosis evidence, recommended actions, and optional hash-bound Lean optimum
   feedback without inventing causal support;
 - `ExperimentOutcome` and `Diagnosis` route failures to data, researcher, model, or
-  infrastructure remediation;
+  infrastructure remediation. A zero-completion scoreboard with decode timeouts or
+  execution errors is measurement-incomplete infrastructure evidence, never a model
+  quality result;
 - `RLReadinessReport` is the only accepted RL capability token.
 
 `compile_commands` constructs argv arrays from typed fields. No provider-authored
@@ -162,6 +176,15 @@ may vary only the allowlisted topology action, structural-embedding,
 heterogeneous-noise, critic, buffer, and budget knobs. Causal-LM code or recipe
 changes stay on the agent-driven `model_cycle` path so immutable parents and base
 pins are preserved.
+
+Embedded stages execute in a fresh process group. The canonical interrupt budget
+sends `SIGINT` to the full tree, waits the canonical kill grace, then kills and
+reaps the group if needed; stdout/stderr are disk-backed and only bounded tails are
+retained. A nominally successful train is still incomplete unless its typed summary
+reports `stopped_on=steps`, the requested step count, and a present checkpoint.
+Conversely, `evaluate_model --ship-gates` exit 8 is a completed negative result only
+when a nonempty suite scoreboard and error-free AgentV runner record accompany the
+typed failed gate.
 
 ### Program experiments route through this loop (G1, SLM-46)
 
@@ -330,9 +353,10 @@ iteration. Bare `/autotrain` may chain those bounded campaigns under one persist
 cross-cycle and merge provenance. The controller loads predecessor feedback across
 campaign stores, requires the locked manifest source to equal the clean integrated
 commit, and refuses a commit that does not contain the fetched `origin/main`.
-`autoresearch status --loop-id <id> --matrix --last 5` derives three between-run
-tables from verified event chains: results, diagnostic/harness/Lean signals, and
-ranked next-run priorities (`--all` shows complete history).
+`autoresearch status --loop-id <id> --matrix --last 5` derives four between-run
+tables from verified event chains: liveness, results (including measurement
+completeness and diagnosis), diagnostic/harness/Lean signals, and ranked next-run
+priorities (`--all` shows complete history).
 
 An outcome may carry a typed `HarnessSignalV1`. Only a signal reproduced on the
 frozen input can diagnose `target=harness`, and it must identify one canonical
