@@ -1,0 +1,54 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c6",
+  "cycle_index": 6,
+  "source_commit": "2a64db996754d2ce25edcc0d82ee448f7843cd85",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 42,
+    "batch_size": 2,
+    "seed": 100006,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c6-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "latency_ms_p50": 3774.65},
+      "levers": {"grammar_completion_bounds": false, "compact_active_canvas": false}
+    },
+    "c20260801-c6-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "latency_ms_p50": 3854.77},
+      "levers": {"grammar_completion_bounds": true, "compact_active_canvas": false}
+    }
+  },
+  "unexecuted_hypotheses": ["c20260801-c6-canvas", "c20260801-c6-both", "c20260801-c6-steps", "c20260801-c6-batch1"],
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 80.11999999999989,
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c6-control",
+      "fixture_insufficient_n:c20260801-c6-bounds",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=3774.65 candidate=3854.77 parse=1.0->1.0 mpr=0.3333333333333333->0.3333333333333333",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "First clean isolation of grammar_completion_bounds alone (canvas off) at steps=42/seed=100006: a small latency regression (+80.12ms, control 3774.65 -> bounds 3854.77) with meaningful_program_rate held flat at 0.333 on both arms. bounds-only is not a latency win at this recipe -- combined with cycle 5 showing batch_size=1 is a clear loss, this narrows the rejected c3/c4 'bounds+canvas' champion's screening delta toward canvas or seed noise, not bounds.",
+  "next_priorities": [
+    "Still owed: canvas-only isolation at steps=42 (c20260801-c6-canvas was proposed, not executed) to complete the attribution",
+    "bounds-only reads as a wash-to-small-regression across two seeds now (c1 @steps=21 showed a quality-blind win, c6 @steps=42 shows a small quality-held loss) -- deprioritize bounds as a latency lever at this scale",
+    "steps-doubling (c20260801-c6-steps, 84 steps) remains unexplored as a quality lever"
+  ],
+  "recorded_at": "2026-08-01T00:49:30Z"
+}
