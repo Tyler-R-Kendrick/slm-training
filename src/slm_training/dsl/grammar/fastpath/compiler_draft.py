@@ -1903,7 +1903,13 @@ def _build_openui_completion_forest_direct(
         if newline_id is not None:
             candidates.discard(int(newline_id))
     _record_excluded(ConstraintStage.GRAMMAR, "grammar_newline_repeat", before_stage)
-    ast_complete = _generated_ast_is_complete(prefix_text)
+    # The official AST parser is terminal authority, so it is only relevant
+    # when the grammar can actually end at this state.  Terminal-witness search
+    # visits many nonterminal prefixes; parsing those prefixes cannot admit EOS
+    # and needlessly turns exact reachability into repeated bridge round trips.
+    ast_complete = (
+        _generated_ast_is_complete(prefix_text) if "$END" in terminals else False
+    )
     references_resolved = _references_resolved_view()
     # A4: withhold EOS while the layout has fewer than ``min_content`` components,
     # but only when the grammar still offers a non-EOS continuation (never create
