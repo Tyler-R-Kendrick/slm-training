@@ -115,6 +115,13 @@ If the newest crashed frozen-replay campaign already has verified
 `experiment_finished` events for both diagnostic decision arms, the next supervised
 invocation gets latest and then finishes its status, Phase A, and typed handoff from
 those artifacts instead of training again.
+When an arm's training completed but its evaluation did not, frozen replay resumes at
+evaluation instead of retraining. Reuse requires an ordered hash-valid replay-manifest
+lineage, a clean commit-bound `train_summary.json`, exact steps/batch/seed/learning-rate
+parity, an in-run checkpoint with tokenizer/meta sidecars, and checkpoint/summary
+digests in both the execution plan and outcome telemetry. Evaluation writes into the
+successor run namespace with an explicit `--checkpoint`; never rewrite a historical
+run. Any mismatch fails closed and leaves the retry pending.
 Recovery requires the exact control and recommended IDs from the committed matrix;
 partial arms and artifact-only remnants do not qualify. Evaluation stage recovery
 reads the complete `scoreboard.json` envelope so an exit-8 honest ship-gate rejection
