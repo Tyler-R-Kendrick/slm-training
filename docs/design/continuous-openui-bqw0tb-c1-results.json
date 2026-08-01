@@ -1,0 +1,39 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-bqw0tb",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-bqw0tb-f852ac38-c1",
+  "cycle_index": 1,
+  "source_commit": "b5134b90532986384fbd34c9fd609b2681bfe390",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c1-control": {
+      "status": "failed",
+      "reason": "ModuleNotFoundError: No module named 'torch' in scripts.train_model -> detect_device; fresh python3.12 venv had only the editable package + pinned lightweight deps (pytest/ruff/numpy/httpx/fastapi/lark/openfeature-sdk/pydantic/PyYAML) installed, no torch wheel"
+    },
+    "c1-bounds": {
+      "status": "failed",
+      "reason": "identical ModuleNotFoundError as c1-control; grammar_completion_bounds lever never exercised because train stage never started"
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta_ms": null,
+  "conclusion": "Both arms failed identically at the train stage before any model code ran: environment-setup gap (torch not installed alongside the editable slm-training install), not a model or lever result. No metrics were produced by either arm. torch==2.5.1+cpu was installed into the venv via `pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1+cpu` immediately after this failure; the identical frozen arms were replayed in the successor cycle.",
+  "next_priorities": [
+    "Replay the identical frozen c1-control/c1-bounds arms now that torch is installed (retry_measurement action already recorded by the driver)",
+    "Consider documenting the venv bootstrap (python3.12 -m venv + editable install + pinned deps + torch cpu wheel) as a repeatable setup step for fresh continuous-loop containers, mirroring .github/workflows/ci.yml's torch-wheel install",
+    "Soft ship-gate/infra fails on fixture n never stop the continuous loop; proceed to the next cycle"
+  ],
+  "recorded_at": "2026-08-01T22:29:36.296570Z"
+}
