@@ -87,17 +87,6 @@ adjusted p-values, and sequential decisions are retained for every member.
 Power inputs are prospective; an underpowered nonsignificant outcome remains
 inconclusive rather than becoming a supported negative claim.
 
-## Frozen retry successors
-
-An infrastructure-incomplete measurement is never rerun by pretending its old
-`source_commit` is current. Continuous autotrain creates a new locked successor
-whose `replay_of_manifest_sha256` names the exact prior manifest. The successor
-preserves the model/data recipe, endpoints, arms, seeds, budget, stopping rules,
-controls, multiplicity family, and gates while binding execution to clean current
-main. Both matched arms must complete before the retry action is acknowledged.
-Formal obligations are not portable proof receipts: a cross-commit retry with such
-obligations stops for a fresh Lean preflight.
-
 This adapts:
 
 - [OSF registrations](https://help.osf.io/article/330-welcome-to-registrations)
@@ -111,6 +100,17 @@ This adapts:
   [Hoenig and Heisey (2001)](https://doi.org/10.1198/000313001300339897) for
   prospective sample-size justification and rejection of observed-power
   reasoning.
+
+## Frozen retry successors
+
+An infrastructure-incomplete measurement is never rerun by pretending its old
+`source_commit` is current. Continuous autotrain creates a new locked successor
+whose `replay_of_manifest_sha256` names the exact prior manifest. The successor
+preserves the model/data recipe, endpoints, arms, seeds, budget, stopping rules,
+controls, multiplicity family, and gates while binding execution to clean current
+main. Both matched arms must complete before the retry action is acknowledged.
+Formal obligations are not portable proof receipts: a cross-commit retry with such
+obligations stops for a fresh Lean preflight.
 
 ## SLM-337 validation
 

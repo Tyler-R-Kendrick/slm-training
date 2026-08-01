@@ -1765,9 +1765,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
         cycle=1712,
         recommended_slug="batch1",
     )
-    old_control = json.loads(
-        json.dumps(matrix["hypotheses"][0]["experiment"])
-    )
+    old_control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
     old_candidate = json.loads(
         json.dumps(
             next(
@@ -1807,8 +1805,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
     recommended = next(
         row["experiment"]
         for row in matrix["hypotheses"]
-        if row["experiment"]["experiment_id"]
-        == matrix["recommended_experiment_id"]
+        if row["experiment"]["experiment_id"] == matrix["recommended_experiment_id"]
     )
     assert recommended["knobs"] == old_candidate["knobs"]
     current_commit = "d" * 40
@@ -1837,6 +1834,58 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> No
     assert formal_manifest.formal_obligations
     with pytest.raises(RuntimeError, match="fresh Lean preflight"):
         _mod._require_automatic_replayable(formal_manifest)
+
+
+def test_digestless_frozen_retry_does_not_stall_cycle(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="measurement incomplete but manifest was not written",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    path = root / campaign_id / "cycle_handoff.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(handoff.model_dump_json(indent=2) + "\n")
+
+    assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
+    assert (
+        "FROZEN_REPLAY_SKIP reason=missing_frozen_manifest_sha256"
+        in capsys.readouterr().out
+    )
+
+
+def test_measurement_completion_requires_both_arm_metrics_and_no_soft_failure() -> None:
+    complete = {
+        "control_metrics": {"parse_rate": 1.0},
+        "candidate_metrics": {"parse_rate": 1.0},
+        "reasons": ["primary_metric_null_or_worse:smoke.parse_rate"],
+    }
+    assert _mod._measurement_is_complete(complete)
+    assert not _mod._measurement_is_complete(
+        {**complete, "reasons": ["measurement_incomplete:no_smoke_metrics"]}
+    )
+    assert not _mod._measurement_is_complete(
+        {**complete, "candidate_metrics": {"parse_rate": None}}
+    )
 
 
 def test_continuous_evidence_is_bounded_to_predecessor_and_loop(tmp_path: Path) -> None:

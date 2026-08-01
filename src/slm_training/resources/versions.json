@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v36",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v37",
+          "date": "2026-08-01",
+          "note": "Acknowledge frozen retries only after both arms produce a complete measured delivery, and let digest-less legacy retries fall through to an ordinary successor cycle instead of stalling the supervisor"
+        },
         {
           "version": "v36",
           "date": "2026-08-01",
