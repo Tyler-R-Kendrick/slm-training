@@ -114,6 +114,11 @@ preflight is produced; old proof evidence is never carried across commits implic
 When initialized-only cycles contain a matrix but no terminal feedback, the successor
 uses the newest earlier matrix with complete feedback. A completed cycle with a
 feedback-less matrix remains invalid and fails closed.
+Novelty/exhaustion checks exempt only replay arm IDs whose current-campaign
+successor manifest arms match the frozen source, whose normalized matrix knobs
+match the frozen experiment, and whose `replay_of_manifest_sha256` resolves in
+that campaign lineage.
+Ordinary repeated knob signatures remain blocked.
 The legacy unsupervised executor cannot perform agent-owned handoff actions and
 therefore does not enforce their receipts; it is not the bare `/autotrain` path and
 cannot make supervised repair or delivery claims.

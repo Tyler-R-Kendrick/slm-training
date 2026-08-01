@@ -44,6 +44,10 @@ strict campaign lineage; an already-written gap is recovered only through one un
 chain of initialized-only campaigns, while completed or ambiguous gaps fail closed.
 Replay manifests carrying Lean formal obligations require a fresh formal preflight
 and otherwise fail closed.
+The novelty and exhausted-knob guards authorize only replay arm IDs whose successor
+manifest arms match the frozen source, whose normalized proposed knobs match the
+frozen experiment, and whose source digest resolves in campaign lineage. This is a
+content-bound retry exception, not permission to repeat an ordinary rejected recipe.
 
 Continuous evidence discovery is predecessor-bounded: explicit `--evidence-root`
 arguments replace the historical recursive `outputs/` default, and the driver

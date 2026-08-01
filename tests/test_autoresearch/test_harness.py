@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -15,6 +16,7 @@ from slm_training.autoresearch.engine import (
     create_hypothesis_feedback,
     diagnose_outcome,
     execute_commands,
+    normalized_knobs_sha256,
     validate_experiment,
     validate_hypothesis_matrix,
 )
@@ -483,6 +485,18 @@ def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:
             [],
             prior_experiments=(matrix.hypotheses[0].experiment,),
         )
+    validate_hypothesis_matrix(
+        campaign(),
+        matrix,
+        matrix_evidence(),
+        [],
+        prior_experiments=(matrix.hypotheses[0].experiment,),
+        authorized_replay_configs={
+            matrix.hypotheses[0].experiment.experiment_id: normalized_knobs_sha256(
+                matrix.hypotheses[0].experiment
+            )
+        },
+    )
     duplicate = matrix.hypotheses[0].model_copy(
         update={
             "experiment": matrix.hypotheses[0].experiment.model_copy(
@@ -2110,6 +2124,92 @@ def test_feedback_context_skips_only_initialized_incomplete_cycles(
     (stores[1].root / "cycle_handoff.json").write_text("{}\n")
     with pytest.raises(ValueError, match="no terminal feedback"):
         _feedback_context(stores[2], _lineage_stores(stores[2], third))
+
+
+def test_replay_config_authority_is_content_bound_to_lineage(tmp_path: Path) -> None:
+    from scripts.autoresearch import (
+        _authorized_replay_configs,
+        _lineage_stores,
+    )
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Start a bounded campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    second = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+            "integration_commit": "d" * 40,
+        }
+    )
+    first_store = CampaignStore("cycle-1", tmp_path)
+    first_store.initialize(first)
+    second_store = CampaignStore("cycle-2", tmp_path)
+    second_store.initialize(second)
+    source = experiment_campaign(campaign_id="cycle-1", experiment_id="old-arm")
+    source_experiment = hypothesis_matrix().hypotheses[0].experiment.model_copy(
+        update={"campaign_id": "cycle-1", "experiment_id": "old-arm"}
+    )
+    first_store.write_artifact("experiments", source_experiment)
+    source_path = first_store.root / "manifests" / "old-arm.json"
+    source_path.parent.mkdir()
+    source_path.write_text(source.model_dump_json(indent=2) + "\n")
+    source_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    successor = source.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "experiment_id": "new-arm",
+            "source_commit": second.integration_commit,
+            "replay_of_manifest_sha256": source_sha,
+            "replay_reason": "Retry the exact frozen arm on current main.",
+        }
+    )
+    successor_path = second_store.root / "manifests" / "new-arm.json"
+    successor_path.parent.mkdir()
+    successor_path.write_text(successor.model_dump_json(indent=2) + "\n")
+    args = SimpleNamespace(frozen_replay_manifest=[successor_path])
+    proposed = hypothesis_matrix(campaign_id="cycle-2")
+    replay_candidate = proposed.hypotheses[0].model_copy(
+        update={
+            "experiment": source_experiment.model_copy(
+                update={"campaign_id": "cycle-2", "experiment_id": "new-arm"}
+            )
+        }
+    )
+    proposed = proposed.model_copy(
+        update={
+            "hypotheses": (replay_candidate, *proposed.hypotheses[1:]),
+            "recommended_experiment_id": "new-arm",
+        }
+    )
+
+    assert _authorized_replay_configs(
+        args,
+        second_store,
+        second,
+        _lineage_stores(second_store, second),
+        proposed,
+    ) == {"new-arm": normalized_knobs_sha256(replay_candidate.experiment)}
+
+    forged = successor.model_copy(
+        update={"replay_of_manifest_sha256": "f" * 64}
+    )
+    successor_path.write_text(forged.model_dump_json(indent=2) + "\n")
+    with pytest.raises(ValueError, match="authority is invalid"):
+        _authorized_replay_configs(
+            args,
+            second_store,
+            second,
+            _lineage_stores(second_store, second),
+            proposed,
+        )
 
 
 def test_continuous_lean_miss_requires_five_priority_lanes() -> None:

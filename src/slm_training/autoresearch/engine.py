@@ -7,6 +7,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Mapping
 
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
@@ -102,6 +103,11 @@ def validate_experiment(
         assert_rl_ready(experiment.rl_readiness_report)
 
 
+def normalized_knobs_sha256(experiment: ExperimentSpec) -> str:
+    knobs = experiment.knobs.model_dump(exclude_none=True, mode="json")
+    return hashlib.sha256(json.dumps(knobs, sort_keys=True).encode("utf-8")).hexdigest()
+
+
 def validate_hypothesis_matrix(
     campaign: CampaignSpec,
     matrix: HypothesisMatrix,
@@ -115,6 +121,7 @@ def validate_hypothesis_matrix(
     exhausted_knob_ledger: object | None = None,
     exhausted_data_eval_identity: str | None = None,
     exhausted_claim_class: str = "fixture",
+    authorized_replay_configs: Mapping[str, str] | None = None,
 ) -> None:
     if matrix.campaign_id != campaign.campaign_id:
         raise ValueError("hypothesis matrix campaign_id does not match campaign")
@@ -214,15 +221,18 @@ def validate_hypothesis_matrix(
         )
         for experiment in prior_experiments
     }
-    repeated = [
-        candidate.experiment.experiment_id
-        for candidate in matrix.hypotheses
-        if json.dumps(
+    replay_configs = authorized_replay_configs or {}
+    repeated = []
+    for candidate in matrix.hypotheses:
+        signature = json.dumps(
             candidate.experiment.knobs.model_dump(exclude_none=True, mode="json"),
             sort_keys=True,
         )
-        in prior_signatures
-    ]
+        if signature not in prior_signatures:
+            continue
+        config_sha256 = normalized_knobs_sha256(candidate.experiment)
+        if replay_configs.get(candidate.experiment.experiment_id) != config_sha256:
+            repeated.append(candidate.experiment.experiment_id)
     if repeated:
         raise ValueError(
             f"hypothesis matrix repeats previously run knob signatures: {repeated}"
@@ -245,6 +255,8 @@ def validate_hypothesis_matrix(
                         )
                     )
                     for candidate in matrix.hypotheses
+                    if replay_configs.get(candidate.experiment.experiment_id)
+                    != normalized_knobs_sha256(candidate.experiment)
                 ],
                 ledger=exhausted_knob_ledger,  # type: ignore[arg-type]
                 data_eval_identity=exhausted_data_eval_identity,
