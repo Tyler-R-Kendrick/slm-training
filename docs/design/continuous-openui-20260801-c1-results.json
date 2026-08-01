@@ -1,0 +1,39 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c1",
+  "cycle_index": 1,
+  "source_commit": "24c20769c366aeb9e9f7a98eb72089b3a97859c7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c1-control": {
+      "status": "failed",
+      "reason": "infrastructure: AgentV SDK unavailable (missing node_modules/@agentv/core in this checkout); scripts.evaluate_model raised RuntimeError before any scoreboard was produced",
+      "exit_code": 1
+    },
+    "c1-bounds": {
+      "status": "failed",
+      "reason": "infrastructure: same AgentV SDK unavailable failure as c1-control (identical class, not a model/quality outcome)",
+      "exit_code": 1
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": null,
+  "conclusion": "Both arms hard-failed at eval-publish time with 'AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER' — this sandbox checkout never ran `npm ci`, so `node_modules/@agentv/core` was missing. No model/quality signal was produced. Self-healed in-session by running `npm ci` (with the sandbox's ambient NODE_OPTIONS=\"--import tsx\" unset for the child `node` invocation, which otherwise fails independently: `node: --import tsx is not allowed in NODE_OPTIONS`) and replayed as cycle 2, which completed and published real scoreboards — confirming the blocker was environment setup, not a harness defect.",
+  "next_priorities": [
+    "No code/harness change is warranted: this was a fresh-checkout setup gap (missing `npm ci`), not a reproducible harness defect — do not open a harness lane for it.",
+    "Continuous-driver operators in fresh sandboxes should run `npm ci` (Node deps for scripts.evaluate_model's AgentV publish step) before the first cycle.",
+    "Re-run bounds vs control once npm deps are present (done next as cycle 2, with the driver's own thrash rotation selecting a different arm)."
+  ],
+  "recorded_at": "2026-08-01T03:38:05.078108+00:00"
+}

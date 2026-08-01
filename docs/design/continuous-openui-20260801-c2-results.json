@@ -1,0 +1,65 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c2",
+  "cycle_index": 2,
+  "source_commit": "24c20769c366aeb9e9f7a98eb72089b3a97859c7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+  "arms": {
+    "c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "latency_ms_p50": 21665.04,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0
+      },
+      "levers": {
+        "compact_active_canvas": false
+      }
+    },
+    "c2-canvas": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "latency_ms_p50": 21863.33,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "decode_timeout_rate": 0.666667
+      },
+      "levers": {
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 198.29000000000087,
+  "conclusion": "compact_active_canvas did not reduce smoke p50 latency on this size-matched 20-step fixture (delta +198.29ms, candidate slower); parse_rate held at 1.0 on both arms but meaningful_program_rate stayed 0.0 and fixture n was insufficient on both arms (expected at smoke scale). Non-positive: no stack layer.",
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c2-control",
+      "fixture_insufficient_n:c20260801-c2-canvas",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=21665.04 candidate=21863.33 parse=1.0->1.0 mpr=0.0->0.0",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=21665.04 candidate=21863.33 improvement=-198.29000000000087",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "Do not promote compact_active_canvas from this screening arm; retest only after fixture n is raised past the volume gate.",
+    "Investigate the canvas arm's elevated decode_timeout_rate (0.667) as a candidate root cause for the latency regression before re-testing.",
+    "Continue the continuous loop with the driver's next thrash-rotation arm (bounds/both/steps/batch1)."
+  ],
+  "recorded_at": "2026-08-01T03:42:13Z"
+}
