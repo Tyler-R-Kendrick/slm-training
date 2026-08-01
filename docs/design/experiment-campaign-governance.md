@@ -101,6 +101,17 @@ This adapts:
   prospective sample-size justification and rejection of observed-power
   reasoning.
 
+## Frozen retry successors
+
+An infrastructure-incomplete measurement is never rerun by pretending its old
+`source_commit` is current. Continuous autotrain creates a new locked successor
+whose `replay_of_manifest_sha256` names the exact prior manifest. The successor
+preserves the model/data recipe, endpoints, arms, seeds, budget, stopping rules,
+controls, multiplicity family, and gates while binding execution to clean current
+main. Both matched arms must complete before the retry action is acknowledged.
+Formal obligations are not portable proof receipts: a cross-commit retry with such
+obligations stops for a fresh Lean preflight.
+
 ## SLM-337 validation
 
 The delivery is governance/fixture evidence, not a model-quality experiment

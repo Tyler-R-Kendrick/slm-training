@@ -33,6 +33,15 @@ data, docs, or delivery prerequisites remain unacknowledged. Execution/steering 
 (`retry_measurement`, `next_experiment`, `monitor`) remain part of the next-cycle
 control flow rather than circular prerequisites.
 
+Frozen retries cross code updates through a governed successor, never by weakening
+the current-main check. The successor copies the prior control/candidate recipe and
+locked endpoints, arms, seeds, gates, and stopping rules; changes only campaign and
+experiment identity plus the clean current source commit; and records
+`replay_of_manifest_sha256`. Both arms must complete before the execution action is
+acknowledged. A crashed campaign without a handoff remains append-only provenance
+but cannot shadow the latest completed predecessor. Replay manifests carrying Lean
+formal obligations require a fresh formal preflight and otherwise fail closed.
+
 Continuous evidence discovery is predecessor-bounded: explicit `--evidence-root`
 arguments replace the historical recursive `outputs/` default, and the driver
 passes only the predecessor campaign, loop ledger, and SDLC ledger. Omitting the

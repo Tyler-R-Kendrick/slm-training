@@ -125,6 +125,20 @@ def _manifest_payload(**updates: object) -> dict[str, object]:
     return payload
 
 
+def test_replay_manifest_requires_content_bound_reason() -> None:
+    with pytest.raises(ValidationError, match="must be declared together"):
+        ExperimentCampaignV1.model_validate(
+            _manifest_payload(replay_of_manifest_sha256=HEX_64)
+        )
+    replay = ExperimentCampaignV1.model_validate(
+        _manifest_payload(
+            replay_of_manifest_sha256=HEX_64,
+            replay_reason="Current-main successor of an incomplete frozen measurement.",
+        )
+    )
+    assert replay.replay_of_manifest_sha256 == HEX_64
+
+
 def _manifest(**updates: object) -> ExperimentCampaignV1:
     return ExperimentCampaignV1.model_validate(_manifest_payload(**updates))
 

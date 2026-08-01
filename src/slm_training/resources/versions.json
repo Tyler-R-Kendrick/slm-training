@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v35",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v37",
+          "date": "2026-08-01",
+          "note": "Acknowledge frozen retries only after both arms produce a complete measured delivery, and let digest-less legacy retries fall through to an ordinary successor cycle instead of stalling the supervisor"
+        },
+        {
+          "version": "v36",
+          "date": "2026-08-01",
+          "note": "Materialize pending frozen measurement retries as current-main successor campaigns with exact plan and recipe lineage, fresh-Lean fail-closed handling, completion-bound receipts, and recovery from initialized-only campaigns"
+        },
         {
           "version": "v35",
           "date": "2026-08-01",

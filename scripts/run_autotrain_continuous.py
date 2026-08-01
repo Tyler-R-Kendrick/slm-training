@@ -45,6 +45,7 @@ from slm_training.autoresearch.experiment_campaign import (
     MultiplicityFamilyV1,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
     AutotrainLoopStateV1,
@@ -54,7 +55,12 @@ from slm_training.autoresearch.schemas import (
     NextRunPriorityV1,
     utc_now,
 )
-from slm_training.autoresearch.storage import pending_autotrain_actions
+from slm_training.autoresearch.storage import (
+    append_autotrain_action_receipt,
+    autotrain_action_sha256,
+    pending_autotrain_actions,
+    pending_autotrain_execution_actions,
+)
 from slm_training.harness_core.bounded_process import (
     BoundedProcessResult,
     ProcessOutcome,
@@ -267,6 +273,30 @@ _WIN_REASON_PREFIXES = (
     "efficiency_win:",
     "executable_unblock:",
 )
+
+
+def _measurement_is_complete(decision: dict[str, Any]) -> bool:
+    incomplete_prefixes = (
+        "empty_metrics:",
+        "measurement_incomplete:",
+        "primary_metric_unavailable",
+        "wall_timeout:",
+    )
+    has_metrics = all(
+        any(_finite_metric(value) is not None for value in metrics.values())
+        for metrics in (
+            decision.get("control_metrics") or {},
+            decision.get("candidate_metrics") or {},
+        )
+    )
+    return bool(
+        has_metrics
+        and not any(
+            str(reason).startswith(incomplete_prefixes)
+            for reason in decision.get("reasons") or []
+        )
+    )
+
 
 # Champion queue: quality-held wins retest with same levers, new seeds, before
 # thrashing the fixed lever bank again. Ledger is loop-local (not git).
@@ -2282,6 +2312,7 @@ def _phase_a_delivery(
         candidate_id=candidate_run,
         role=role,
     )
+    decision["measurement_complete"] = _measurement_is_complete(decision)
     decision["cycle_role"] = role
     decision["cycle_index"] = cycle_index
     decision["cycle_intent"] = cycle_intent or role
@@ -2601,6 +2632,8 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     campaigns = sorted(root.glob("*/campaign.json"))
     best_idx = 0
     best_id: str | None = None
+    completed_idx = 0
+    completed_id: str | None = None
     for path in campaigns:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
@@ -2612,7 +2645,177 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
         if idx >= best_idx:
             best_idx = idx
             best_id = str(data.get("campaign_id"))
-    return best_idx, best_id
+        campaign_id = str(data.get("campaign_id"))
+        if (
+            idx >= completed_idx
+            and (root / campaign_id / "cycle_handoff.json").is_file()
+        ):
+            completed_idx = idx
+            completed_id = campaign_id
+    return best_idx, completed_id or best_id
+
+
+def _experiment_artifact(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
+    for path in (camp_dir / "artifacts" / "experiments").glob("*.json"):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("experiment_id") == experiment_id:
+            return payload
+    raise RuntimeError(f"frozen replay experiment is missing: {experiment_id}")
+
+
+def _manifest_with_sha(
+    camp_dir: Path, digest: str
+) -> tuple[Path, ExperimentCampaignV1]:
+    for path in (camp_dir / "manifests").glob("*.json"):
+        if hashlib.sha256(path.read_bytes()).hexdigest() == digest:
+            manifest = ExperimentCampaignV1.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+            return path, manifest
+    raise RuntimeError(f"frozen replay manifest is missing: {digest}")
+
+
+def _require_automatic_replayable(manifest: ExperimentCampaignV1) -> None:
+    if manifest.formal_obligations:
+        raise RuntimeError(
+            "frozen replay with formal obligations requires a fresh Lean preflight"
+        )
+
+
+def _load_frozen_replay(
+    root: Path, loop_id: str, predecessor_campaign_id: str | None
+) -> dict[str, Any] | None:
+    if not predecessor_campaign_id:
+        return None
+    handoff_path = root / predecessor_campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return None
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    retries = [
+        (index, action)
+        for index, action in pending_autotrain_execution_actions(root, handoff)
+        if action.kind == "retry_measurement"
+    ]
+    if not retries:
+        return None
+    if len(retries) != 1:
+        raise RuntimeError("exactly one frozen measurement retry may be active")
+    action_index, action = retries[0]
+    if action.frozen_manifest_sha256 is None:
+        print(
+            "FROZEN_REPLAY_SKIP reason=missing_frozen_manifest_sha256 "
+            f"campaign={predecessor_campaign_id} action_index={action_index}",
+            flush=True,
+        )
+        return None
+    camp_dir = root / predecessor_campaign_id
+    candidate_path, candidate_manifest = _manifest_with_sha(
+        camp_dir, action.frozen_manifest_sha256
+    )
+    _require_automatic_replayable(candidate_manifest)
+    matrix = json.loads((camp_dir / "matrix-proposal.json").read_text(encoding="utf-8"))
+    control_id = str(matrix["hypotheses"][0]["experiment"]["experiment_id"])
+    control_path = camp_dir / "manifests" / f"{control_id}.json"
+    if not control_path.is_file():
+        raise RuntimeError(f"frozen replay control manifest is missing: {control_id}")
+    control_manifest = ExperimentCampaignV1.model_validate_json(
+        control_path.read_text(encoding="utf-8")
+    )
+    _require_automatic_replayable(control_manifest)
+    return {
+        "handoff": handoff,
+        "action_index": action_index,
+        "action": action,
+        "candidate": {
+            "experiment": _experiment_artifact(
+                camp_dir, candidate_manifest.experiment_id
+            ),
+            "manifest": candidate_manifest,
+            "manifest_sha256": action.frozen_manifest_sha256,
+            "path": candidate_path,
+        },
+        "control": {
+            "experiment": _experiment_artifact(camp_dir, control_id),
+            "manifest": control_manifest,
+            "manifest_sha256": hashlib.sha256(control_path.read_bytes()).hexdigest(),
+            "path": control_path,
+        },
+    }
+
+
+def _apply_frozen_replay(
+    matrix: dict[str, Any], replay: dict[str, Any], campaign_id: str
+) -> dict[str, dict[str, Any]]:
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    old_candidate_id = str(replay["candidate"]["experiment"]["experiment_id"])
+    slug = old_candidate_id.rsplit("-", 1)[-1]
+    if slug not in {item[0] for item in _SCREENING_ARM_BANK}:
+        raise RuntimeError(f"unsupported automatic frozen replay arm: {slug}")
+    new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
+    for role, new_id in new_ids.items():
+        target = next(
+            (
+                item["experiment"]
+                for item in matrix["hypotheses"]
+                if item["experiment"]["experiment_id"] == new_id
+            ),
+            None,
+        )
+        if target is None:
+            raise RuntimeError(f"frozen replay target is absent from matrix: {new_id}")
+        frozen = replay[role]["experiment"]
+        for key in (
+            "hypothesis",
+            "rationale",
+            "expected_effect",
+            "falsification_criteria",
+            "stop_conditions",
+            "knobs",
+        ):
+            target[key] = frozen[key]
+    matrix["recommended_experiment_id"] = new_ids["candidate"]
+    matrix["selection_rationale"] = (
+        "Current-main successor replay of the incomplete frozen measurement; "
+        "model/data arms, seeds, endpoints, gates, and stopping rules are preserved."
+    )
+    matrix["next_run_priorities"][0].update(
+        {
+            "area": "infrastructure",
+            "hypothesis": "The repaired harness completes the identical frozen measurement.",
+            "authority": "observed_result",
+            "confidence": 0.95,
+            "proposed_experiment_id": new_ids["candidate"],
+        }
+    )
+    HypothesisMatrix.model_validate(matrix)
+    return {new_ids[role]: replay[role] for role in ("control", "candidate")}
+
+
+def _replay_successor_manifest(
+    frozen: ExperimentCampaignV1,
+    *,
+    frozen_manifest_sha256: str,
+    campaign_id: str,
+    experiment_id: str,
+    integration_commit: str,
+) -> ExperimentCampaignV1:
+    successor = frozen.model_copy(
+        update={
+            "campaign_id": campaign_id,
+            "experiment_id": experiment_id,
+            "source_commit": integration_commit,
+            "source_dirty": False,
+            "author": "autotrain-frozen-replay-successor",
+            "created_at": utc_now(),
+            "replay_of_manifest_sha256": frozen_manifest_sha256,
+            "replay_reason": (
+                "Current-main successor after an infrastructure-incomplete measurement."
+            ),
+        }
+    )
+    return ExperimentCampaignV1.model_validate(successor.model_dump(mode="json"))
 
 
 def _campaign_id(loop_id: str, cycle: int, *, date: str | None = None) -> str:
@@ -3485,8 +3688,15 @@ def run_cycle(
     idx, pred = _latest_cycle(root, loop_id)
     if require_action_receipts:
         _require_predecessor_actions(root, loop_id, pred)
+    replay = (
+        _load_frozen_replay(root, loop_id, pred) if require_action_receipts else None
+    )
     cycle = idx + 1
-    role = cycle_role_for_index(policy, cycle)
+    role = (
+        str(replay["handoff"].cycle_role)
+        if replay is not None
+        else cycle_role_for_index(policy, cycle)
+    )
     arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
     # Champion queue: confirm open heads; promote confirmed heads on promotion
     # cadence; otherwise thrash with rotated levers (Change B/C). Cadence role
@@ -3505,7 +3715,10 @@ def run_cycle(
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None
     promoting_champion: dict[str, Any] | None = None
-    if open_champion is not None:
+    if replay is not None:
+        open_champion = None
+        cycle_intent = "retry_measurement"
+    elif open_champion is not None:
         cycle_intent = "confirm"
     elif role == "promotion":
         confirmed_champion = _queue_head_confirmed(queue_entries)
@@ -3523,16 +3736,21 @@ def run_cycle(
         if role == "promotion"
         else str(policy.defaults.get("claim_class_screening") or "diagnostic")
     )
-    assert_cycle_cadence(
-        policy,
-        cycle_index=cycle,
-        claimed_role=role,
-        claim_class=claim_for_role if role == "promotion" else claim_for_role,
-    )
+    if replay is None:
+        assert_cycle_cadence(
+            policy,
+            cycle_index=cycle,
+            claimed_role=role,
+            claim_class=claim_for_role,
+        )
     role_primary = primary_for_role(policy, role)
     # Screening uses policy screening primary; promotion uses held-out quality.
     # CLI primary_metric overrides only when it matches the role leaf (compat).
-    effective_primary = str(role_primary["metric"])
+    effective_primary = (
+        str(replay["handoff"].primary_metric)
+        if replay is not None
+        else str(role_primary["metric"])
+    )
     if (
         primary_metric
         and primary_metric.split(".")[-1] == effective_primary.split(".")[-1]
@@ -3638,7 +3856,12 @@ def run_cycle(
             )
     py = sys.executable
     ar = [py, "-m", "scripts.autoresearch", "--root", str(root)]
-    if cycle_intent == "confirm":
+    if cycle_intent == "retry_measurement":
+        notes = (
+            "Current-main successor replay of an infrastructure-incomplete frozen "
+            "control/candidate measurement."
+        )
+    elif cycle_intent == "confirm":
         notes = (
             "Champion-queue confirmatory cycle: same levers as quality-held win, "
             "new seed; local-only fixture scale."
@@ -3813,7 +4036,17 @@ def run_cycle(
         else None,
         skip_slugs=skip_slugs,
     )
-    if promote_levers is None and confirm_levers is None:
+    replay_manifests: dict[str, dict[str, Any]] = {}
+    if replay is not None:
+        replay_manifests = _apply_frozen_replay(matrix, replay, campaign_id)
+        print(
+            "FROZEN_REPLAY "
+            f"source_campaign={replay['handoff'].campaign_id} "
+            f"manifest={replay['action'].frozen_manifest_sha256} "
+            f"successor_campaign={campaign_id}",
+            flush=True,
+        )
+    elif promote_levers is None and confirm_levers is None:
         print(
             f"THRASH_ROTATE cycle={cycle} recommended={rec_slug} skip={sorted(skip_slugs)}",
             flush=True,
@@ -3898,15 +4131,27 @@ def run_cycle(
         # formal_claims must already be on the matrix member (promote path in
         # _matrix). Do not rewrite the experiment after hypothesize — that
         # breaks exact matrix membership and aborts the promote arm (exit=1).
-        man = _manifest(
-            campaign_id,
-            exp,
-            integration,
-            role=role,
-            policy=policy,
-            cycle_intent=cycle_intent,
-            formal_preflight_sha256=(promote_preflight_sha if is_promote_arm else None),
-        )
+        if eid in replay_manifests:
+            frozen_replay = replay_manifests[eid]
+            man = _replay_successor_manifest(
+                frozen_replay["manifest"],
+                frozen_manifest_sha256=frozen_replay["manifest_sha256"],
+                campaign_id=campaign_id,
+                experiment_id=eid,
+                integration_commit=integration,
+            )
+        else:
+            man = _manifest(
+                campaign_id,
+                exp,
+                integration,
+                role=role,
+                policy=policy,
+                cycle_intent=cycle_intent,
+                formal_preflight_sha256=(
+                    promote_preflight_sha if is_promote_arm else None
+                ),
+            )
         man_path = camp_dir / "manifests" / f"{eid}.json"
         man_path.parent.mkdir(parents=True, exist_ok=True)
         man_path.write_text(man.model_dump_json(indent=2) + "\n", encoding="utf-8")
@@ -3983,6 +4228,41 @@ def run_cycle(
         cycle_intent=cycle_intent,
         deadline=deadline,
     )
+    if (
+        replay is not None
+        and set(arm_exits) == set(replay_manifests)
+        and all(code == 0 for code in arm_exits.values())
+        and delivery.get("measurement_complete") is True
+    ):
+        evidence = (
+            str(
+                (camp_dir / "sdlc_delivery.json").relative_to(cwd)
+                if (camp_dir / "sdlc_delivery.json").is_relative_to(cwd)
+                else camp_dir / "sdlc_delivery.json"
+            ),
+            *(
+                str(path.relative_to(cwd) if path.is_relative_to(cwd) else path)
+                for eid in sorted(arm_exits)
+                for path in (camp_dir / "manifests" / f"{eid}.json",)
+            ),
+        )
+        append_autotrain_action_receipt(
+            root,
+            AutotrainActionReceiptV1(
+                loop_id=loop_id,
+                campaign_id=replay["handoff"].campaign_id,
+                action_index=int(replay["action_index"]),
+                action_sha256=autotrain_action_sha256(replay["action"]),
+                action_kind="retry_measurement",
+                status="completed",
+                evidence_uris=evidence,
+            ),
+        )
+        print(
+            f"FROZEN_REPLAY_ACK source_campaign={replay['handoff'].campaign_id} "
+            f"successor_campaign={campaign_id}",
+            flush=True,
+        )
     camp_dir = root / campaign_id
     resolution: dict[str, Any] | None = None
     if open_champion is not None:
