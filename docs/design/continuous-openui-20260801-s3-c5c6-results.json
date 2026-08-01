@@ -1,0 +1,33 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "session_note": "third session, continued from s3-c3c4",
+  "campaigns": ["continuous-loop-20260801-c5", "continuous-loop-20260801-c6"],
+  "cycle_index": [5, 6],
+  "source_commit": "d99035b565ef8a8c6c8fb59f1c5949bd84fa482d",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size_configured": "2 (c5 control) vs 1 (c5-batch1)",
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c5-control": {"smoke": {"n": 3, "completed_document_n": 2, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.05625, "latency_ms_p50": 3169.32}},
+    "c5-batch1": {"smoke": {"n": 3, "completed_document_n": 1, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0184, "latency_ms_p50": 17440.55}, "levers": {"batch_size": 1}},
+    "c6-control": {"smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0964, "latency_ms_p50": 2457.93}},
+    "c6-bounds": {"smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0964, "latency_ms_p50": 2472.98}, "levers": {"grammar_completion_bounds": true}}
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "conclusion": "c5: batch_size=1 is unambiguously much slower (3169.32ms -> 17440.55ms) with no quality offset; also flagged primary_metric_incomparable_partial_suite (control 2/3, candidate 1/3 completed) by the new gate, but the direction is already unambiguous regardless -- non-positive, consistent with session 2's c5 finding (do not pursue batch_size=1). c6: grammar_completion_bounds alone is a small latency regression (2457.93ms -> 2472.98ms) with structural_similarity unchanged -- non-positive, consistent with session 2's c6 finding.",
+  "next_priorities": [
+    "batch_size=1 confirmed non-viable across two independent sessions now; deprioritize entirely",
+    "grammar_completion_bounds alone confirmed no benefit across two independent sessions now; deprioritize in isolation"
+  ],
+  "recorded_at": "2026-08-01T09:58:05+00:00"
+}
