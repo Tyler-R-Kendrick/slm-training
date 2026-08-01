@@ -1,0 +1,41 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "session_note": "third session, continued from s3-c5c6; c8 is a promotion-role replay with both arms fully completing held_out",
+  "campaigns": ["continuous-loop-20260801-c7", "continuous-loop-20260801-c8"],
+  "cycle_index": [7, 8],
+  "source_commit": "92a9cef7919c10b706d7eaebbd27b008d55bc291",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c7-control": {"smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0575, "latency_ms_p50": 2816.05}},
+    "c7-canvas": {"smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0575, "latency_ms_p50": 2761.13}, "levers": {"compact_active_canvas": true}},
+    "c8-control": {
+      "smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333, "structural_similarity": 0.17417, "latency_ms_p50": 2524.48},
+      "held_out": {"n": 5, "completed_document_n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.09758, "latency_ms_p50": 2562.82}
+    },
+    "c8-both": {
+      "smoke": {"n": 3, "completed_document_n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333, "structural_similarity": 0.17417, "latency_ms_p50": 2460.28},
+      "held_out": {"n": 5, "completed_document_n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.09758, "latency_ms_p50": 2510.26},
+      "levers": {"grammar_completion_bounds": true, "compact_active_canvas": true}
+    }
+  },
+  "primary_metric": "held_out.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "c7: compact_active_canvas alone shaved 54.9ms off smoke p50 latency with structural_similarity identical on both arms -- latency_win_rejected_low_mpr, non-positive, consistent with prior sessions' findings that this lever is latency-only. c8: a promotion-role replay of bounds+canvas combined with BOTH arms fully completing held_out (5/5 each) -- held_out.structural_similarity is bit-identical (0.09758) between control and candidate, a clean zero-effect result now that completion is matched on both sides. This is the kind of trustworthy null result the completion gate makes possible: no confound, just genuinely no measured effect at this recipe.",
+  "next_priorities": [
+    "compact_active_canvas confirmed latency-only (no quality movement) across three independent sessions now",
+    "bounds+canvas combined shows zero held_out effect when measurement is trustworthy (full completion both arms); do not prioritize a dedicated matrix for this pairing on quality grounds"
+  ],
+  "recorded_at": "2026-08-01T10:03:00+00:00"
+}
