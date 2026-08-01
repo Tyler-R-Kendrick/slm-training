@@ -1,0 +1,84 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "source_commit": "8a76f949796444d87bdf5369933e40fc89eebdc7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycles": {
+    "continuous-loop-20260801-c1": {
+      "cycle_index": 1,
+      "status": "failed_infra",
+      "reason": "ModuleNotFoundError: No module named 'torch' — scheduled session had no prior Python environment with torch installed.",
+      "repair": "Created a python3.12 venv, `pip install --no-deps -e .` plus dev deps, then installed the CI-pinned `torch==2.5.1+cpu` wheel from the PyTorch CPU index. Environment-only; no repo code changed.",
+      "arms": {
+        "c20260801-c1-control": {"status": "failed", "exit_code": 1},
+        "c20260801-c1-bounds": {"status": "failed", "exit_code": 1}
+      }
+    },
+    "continuous-loop-20260801-c2": {
+      "cycle_index": 2,
+      "status": "failed_infra",
+      "reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER. Root cause was a malformed inherited NODE_OPTIONS env var (`\"--import tsx\" --max-old-space-size=8192`, literal embedded quote) that made every `node` invocation fail.",
+      "repair": "Ran `npm ci` at repo root to install the AgentV SDK, and invoked subsequent driver runs with NODE_OPTIONS unset (`env -u NODE_OPTIONS`) to work around the malformed container-level env var. Environment-only; no repo code changed.",
+      "arms": {
+        "c20260801-c2-control": {"status": "failed", "exit_code": 1},
+        "c20260801-c2-canvas": {"status": "failed", "exit_code": 1}
+      }
+    },
+    "continuous-loop-20260801-c3": {
+      "cycle_index": 3,
+      "status": "completed_eval_gates_failed",
+      "recipe": {
+        "device": "cpu",
+        "steps": 20,
+        "batch_size": 2,
+        "context_backend": "scratch",
+        "train_version": "wf_smoke_v2",
+        "eval_version": "e938_role_safe_all_targets_v2",
+        "max_wall_minutes": 3,
+        "ship_gates": true
+      },
+      "arms": {
+        "c20260801-c3-control": {
+          "status": "completed_eval_gates_failed",
+          "levers": {"grammar_completion_bounds": false, "compact_active_canvas": false},
+          "smoke": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.1725,
+            "ast_beq_rate": 0.0,
+            "canonical_beq_rate": 0.0,
+            "binder_reference_f1": 0.7222222222222222,
+            "latency_ms_p50": 7950.66
+          }
+        },
+        "c20260801-c3-both": {
+          "status": "completed_eval_gates_failed",
+          "levers": {"grammar_completion_bounds": true, "compact_active_canvas": true},
+          "smoke": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.1725,
+            "ast_beq_rate": 0.0,
+            "canonical_beq_rate": 0.0,
+            "binder_reference_f1": 0.7222222222222222,
+            "latency_ms_p50": 8068.42
+          }
+        }
+      },
+      "primary_metric": "smoke.binder_reference_f1",
+      "primary_delta": 0.0,
+      "conclusion": "grammar_completion_bounds + compact_active_canvas together did not move smoke binder_reference_f1 or structural_similarity vs control at this fixture scale (n=3); p50 latency was slightly higher (+117.76ms) with both levers on. Ship gates fail on insufficient_n (need >=20) as expected for a wall-capped fixture cycle — not a promotion signal.",
+      "sdlc_phase_a": "NON_POSITIVE",
+      "stack_layer": false
+    }
+  },
+  "next_priorities": [
+    "Re-test grammar_completion_bounds / compact_active_canvas in isolation (not combined) once wall budget allows more than n=3 smoke examples",
+    "Keep NODE_OPTIONS unset (or repaired) for any AgentV-backed eval in this container profile; a malformed inherited NODE_OPTIONS silently breaks every node invocation",
+    "Do not promote from fixture insufficient_n; ship gates stay honest"
+  ],
+  "recorded_at": "2026-08-01T20:36:00+00:00"
+}
