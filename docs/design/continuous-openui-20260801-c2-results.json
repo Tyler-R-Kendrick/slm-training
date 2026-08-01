@@ -1,0 +1,74 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c2",
+  "cycle_index": 2,
+  "source_commit": "2a64db996754d2ce25edcc0d82ee448f7843cd85",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 42,
+    "batch_size": 2,
+    "seed": 100002,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 1.0,
+        "latency_ms_p50": 17947.37
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c2-canvas": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 1.0,
+        "latency_ms_p50": 19051.98
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "unexecuted_hypotheses": [
+    "c20260801-c2-bounds",
+    "c20260801-c2-both",
+    "c20260801-c2-steps",
+    "c20260801-c2-batch1"
+  ],
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 1104.6100000000006,
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c2-control",
+      "fixture_insufficient_n:c20260801-c2-canvas",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=17947.37 candidate=19051.98 parse=1.0->1.0 mpr=1.0->1.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "Doubling steps 21->42 clears the meaningful_program_rate floor entirely (0.0->1.0 on both arms) versus cycle 1, confirming the cycle-1 latency 'win' was quality-blind at 21 steps. At 42 steps compact_active_canvas is a clear latency regression (+1104.61ms) at held mpr=1.0/parse=1.0 -- not positive. grammar_completion_bounds (the cycle-1 candidate) was proposed but not executed this cycle (budget capped at control + 1 candidate; hypothesizer selected canvas).",
+  "next_priorities": [
+    "Run c20260801-c2-bounds (grammar_completion_bounds=true, steps=42) next cycle against this same control to see if bounds holds the cycle-1 latency benefit now that mpr=1.0 is held",
+    "Do not credit compact_active_canvas as a latency lever at this recipe; it added ~1.1s p50 with no quality upside",
+    "Fixture n=3 still blocks ship-quality claims regardless of latency direction"
+  ],
+  "recorded_at": "2026-08-01T00:37:15Z"
+}
