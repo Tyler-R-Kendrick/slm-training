@@ -1,0 +1,71 @@
+{
+  "schema_version": "continuous-loop-results/v1",
+  "loop_id": "continuous-openui-20260801-g37mit6",
+  "date": "2026-08-01",
+  "source_commit": "0199664091cdb9dfd0f8af49edc91ef925db7046",
+  "harness_commit": "4d433a6",
+  "honesty_mode": "fixture_or_scratch",
+  "is_ship_claim": false,
+  "cycles": [
+    {
+      "cycle": 1,
+      "campaign_id": "continuous-loop-20260801-c1",
+      "status": "harness_failure",
+      "blocker": "ModuleNotFoundError: No module named 'torch' -- fresh session venv had no torch/onnxruntime/npm deps installed",
+      "action": "installed torch==2.5.1+cpu, onnxruntime, transformers, and ran `npm ci` at repo root for the AgentV SDK",
+      "positive": false
+    },
+    {
+      "cycle": 2,
+      "campaign_id": "continuous-loop-20260801-c2",
+      "status": "harness_failure",
+      "blocker": "RuntimeError: AgentV SDK is unavailable -- node_modules/@agentv/core missing until `npm ci`; once installed, a session-injected NODE_OPTIONS (quoted --import tsx) still crashed the child node process (exit 9) inside publish_agentv_evaluation's subprocess.run",
+      "action": "fixed src/slm_training/evals/agentv.py to sanitize NODE_OPTIONS before spawning the AgentV runner subprocess (mirrors the existing graphql_js bridge sanitization); also fixed a pre-existing tests/test_evals/test_emptiness_probe.py fixture bug (named markers :hero.title/:hero.body/:cta.label instead of the opaque :slot_N identities required since #1167) that was blocking the pre-commit changed-test gate",
+      "positive": false
+    },
+    {
+      "cycle": 3,
+      "campaign_id": "continuous-loop-20260801-c3",
+      "status": "completed",
+      "primary_metric": "smoke.latency_ms_p50",
+      "arms": [
+        {
+          "id": "c20260801-c3-control",
+          "levers": "grammar_completion_bounds=off",
+          "smoke_n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.1725,
+          "latency_ms_p50": 8745.39,
+          "ship_gates_pass": false
+        },
+        {
+          "id": "c20260801-c3-both",
+          "levers": "grammar_completion_bounds=on",
+          "smoke_n": 3,
+          "parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "structural_similarity": 0.1725,
+          "latency_ms_p50": 8551.94,
+          "ship_gates_pass": false
+        }
+      ],
+      "primary_metric_delta_ms": -193.45,
+      "mpr_at_delta": 0.0,
+      "classification": "latency_win_rejected_low_mpr",
+      "sdlc_phase_a_reasons": [
+        "fixture_insufficient_n:c20260801-c3-both",
+        "fixture_insufficient_n:c20260801-c3-control",
+        "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+        "primary_metric_win:smoke.latency_ms_p50:8745.39->8551.94:improvement=193.4499999999989"
+      ],
+      "positive": false
+    }
+  ],
+  "harness_fix_classification": {
+    "positive": true,
+    "reason": "executable_unblocking",
+    "evidence": "Prior to this cycle's harness fixes, every autotrain experiment arm in this environment failed closed before reaching a scoreboard (ModuleNotFoundError then RuntimeError). After the fixes, the identical c3 arm spec (control + bounds) both completed the full train -> evaluate_model --ship-gates -> AgentV publish -> gates.json pipeline with real measured smoke metrics.",
+    "stack_layer": true
+  }
+}
