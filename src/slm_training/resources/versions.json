@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v29",
+      "version": "v30",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2589,9 +2589,15 @@
         "tests/test_scripts/test_slm_cli.py",
         "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py",
+        "scripts/report_autotrain_continuous.sh",
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v30",
+          "date": "2026-08-01",
+          "note": "Agent-supervised one-cycle handoff and heartbeat; typed harness/Lean/data actions; three-strike blockers; quality-primary screening; fail-closed rung evidence; canonical run caps; causal-family saturation; compact climb-vs-ship matrix"
+        },
         {
           "version": "v29",
           "date": "2026-08-01",
@@ -2780,7 +2786,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2791,6 +2797,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-08-01",
+          "note": "Clamp caller-requested formal execution to the canonical repository run cap while preserving typed timeout status"
+        },
         {
           "version": "v3",
           "date": "2026-08-01",
@@ -4656,6 +4667,11 @@
         "docs/design/semantic-floor-gate-v1.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-01",
+          "note": "no-bump: regenerate the unchanged inconclusive gate after updating its embedded harness component identities"
+        },
         {
           "version": "v1",
           "date": "2026-07-30",
@@ -8883,6 +8899,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: scripts/autoresearch.py clamps all campaign execution to the canonical run cap while preserving historical remine artifact readability"
+        },
         {
           "version": "v3",
           "date": "2026-07-31",

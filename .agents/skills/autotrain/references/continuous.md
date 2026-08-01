@@ -11,7 +11,7 @@ persistence is the host goal and the append-only campaign event chains.
 1. **Never stop for user confirmation** between cycles. Never ask "continue?",
    never wait for another `/autotrain`, never treat a finished cycle as done.
 2. **Never end a bare `/autotrain` turn with only a resume command.** After
-   every cycle: **print the three-table matrix to the user**, then
+   every cycle: **print the four-table liveness/result/diagnostic/priority view to the user**, then
    **immediately start the next cycle** in the same turn (or the next agent
    step without user input when the host supports autonomous continuation /
    persistent goals).
@@ -52,7 +52,7 @@ asks if training is running:
 bash /tmp/autotrain-report.sh
 # writes:
 #   /tmp/autotrain-loop-status.txt      # liveness
-#   /tmp/autotrain-loop-matrix.md       # three-table matrix
+#   /tmp/autotrain-loop-matrix.md       # compact four-table view
 #   /tmp/autotrain-loop-dashboard.md    # combined dashboard
 ```
 
@@ -62,29 +62,39 @@ tables follow when non-empty and truncated if huge.
 
 Do **not** say “it’s running” with only a remembered PID or a Grok UI icon.
 
-## Preferred hands-off driver
+## Preferred hands-off supervisor
 
-When available, run the bounded multi-cycle driver instead of hand-rolling
-each CLI step (it still uses the same `scripts.autoresearch` contracts):
+The host agent owns an **unbudgeted persistent goal** and runs one bounded cycle
+at a time. The agent must regain control between cycles to repair canonical
+harnesses, handle Lean dispositions, commit durable docs, and perform delivery:
 
 ```bash
 # local-only continuous loop worktree, clean tree required
 python -m scripts.run_autotrain_continuous \
   --loop-id continuous-openui-local \
-  --max-cycles 0 \
+  --supervised --max-cycles 1 \
   --train-version wf_smoke_v2 \
   --steps 20
 ```
 
-`--max-cycles 0` means keep going (cap 1024). Child train/eval still obey
-`MAX_RUN_MINUTES`. Soft failures (ship-gate fails, wall timeout on full
-suites, null deltas) do **not** stop the driver. Agents may also chain cycles
-manually, but must still obey the Absolute loop law above.
+The invocation writes `<campaign>/cycle_handoff.json` and refreshes
+`loops/<loop-id>/state.json`. Validate the handoff, execute every required
+owner skill, print the compact matrix, commit the cycle, get latest, and start
+the successor. `--max-cycles 0` remains a legacy unbounded executor; bare
+`/autotrain` does not use it because a blocking process cannot close repairs or
+delivery between cycles.
+
+When `checkpoint_documentation_required` is true, update
+`docs/MODEL_CARD.md` and the README model-card summary for every path listed in
+`checkpoint_paths` before the next cycle.
 
 After each cycle the driver runs **SDLC Phase A classification** and writes:
 
 - `<campaign>/sdlc_delivery.json` — positive?, stack_layer?, reasons, metrics
+- `<campaign>/cycle_handoff.json` — climb vs ship state, formal status, ranked
+  priorities, and evidence-bound supervisor actions
 - `outputs/autoresearch/sdlc_delivery_ledger.jsonl` — append-only ledger
+- `outputs/autoresearch/loops/<loop-id>/state.json` — heartbeat and resumable phase
 - log lines `SDLC_PHASE_A POSITIVE|NON_POSITIVE …`
 
 **Stacked PRs only when `stack_layer=true` (positive).** The driver does not
@@ -108,9 +118,9 @@ lower”; it is a quality-aware win (see classification above).
    Resolve conflicts; repair failing repo checks. Never rebase away experiment
    provenance. Never begin a run with unresolved conflicts or tracked dirt on
    the loop worktree.
-3. If the host supports persistent goals / autonomous continuation, create or
-   resume an **unbudgeted** goal whose only exit is the repeated-blocker rule.
-   Do **not** mark the goal complete when a cycle finishes.
+3. Create or resume an **unbudgeted** goal whose only exit is explicit user stop
+   or the repeated-blocker rule. Do **not** mark the goal complete when a cycle
+   finishes. Do not replace a missing goal with a blocking multi-cycle process.
 4. If no host goal API exists, **emulate it in-session**: after cycle N
    closeout, start cycle N+1 without user text. Keep going until the session
    is preempted or the repeated-blocker rule fires.
@@ -143,7 +153,7 @@ For each cycle, run the full body without pausing:
    comparative.
 5. **Diagnose** outcomes; write hypothesizer feedback.
 6. **Document** JSON + markdown under `docs/design/` (`documenting-experiment-results`).
-7. **Print** the three-table matrix:
+7. **Print** the compact four-table view:
 
    ```bash
    python -m scripts.autoresearch status --loop-id <loop-id> --matrix --last 5
@@ -155,6 +165,9 @@ For each cycle, run the full body without pausing:
    `preference`, `quality`, `rl`, `test_data`, or `train_data`. Route through
    `improve-openui-harnesses`, repair, replay the identical arm. Never mix
    harness and model changes in one attribution arm.
+   A `repair_harness` handoff action is executable: invoke its owner skill,
+   change the canonical owner, add a regression test, and replay the frozen arm
+   before any new model hypothesis.
 9. **SDLC Phase A — iteration delivery.**
    While fixing for this cycle and before the next train:
    - Incremental commits of green units (never leave harness WIP uncommitted).
@@ -179,6 +192,9 @@ For each cycle, run the full body without pausing:
     gh stack sync    # when a stack is active; else: git merge --no-edit origin/main
     # resolve conflicts on the owning layer; re-check policy/tests
     ```
+
+    The supervised driver verifies this integrated clean tree but does not
+    fetch, merge, commit, push, or open PRs itself.
 
 Owner skills (invoke; do not reimplement):
 

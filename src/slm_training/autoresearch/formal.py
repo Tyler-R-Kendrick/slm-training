@@ -236,7 +236,9 @@ def _proof_digest() -> str:
 
 
 def _mathlib_version() -> str:
-    manifest = json.loads((LEAN_ROOT / "lake-manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (LEAN_ROOT / "lake-manifest.json").read_text(encoding="utf-8")
+    )
     for package in manifest.get("packages", ()):
         if package.get("name") == "mathlib":
             return str(package.get("rev", "unknown"))
@@ -250,7 +252,9 @@ def _proof_sources_are_total() -> bool:
     return not any(_FORBIDDEN_PROOF_TOKENS.search(path.read_text()) for path in paths)
 
 
-def _run(command: list[str], *, timeout_seconds: float) -> subprocess.CompletedProcess[str]:
+def _run(
+    command: list[str], *, timeout_seconds: float
+) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             command,
@@ -287,7 +291,7 @@ def run_formal_preflight(
 ) -> tuple[FormalPreflightV1, FormalObligationV1]:
     """Build the pinned Lean project and emit a content-addressable result.
 
-    ``timeout_seconds`` is caller-owned (continuous promote uses 600s). A wall
+    ``timeout_seconds`` is caller-owned but repository-capped. A wall
     hit records status ``timed_out`` — incomplete measurement, not a proof
     rejection.
     """
@@ -298,9 +302,7 @@ def run_formal_preflight(
     if experiment.campaign_id != campaign_id:
         raise ValueError("formal claim belongs to a different campaign")
     started = time.monotonic()
-    # Honor caller budget; do not clamp down to MAX_RUN_SECONDS (continuous
-    # promote needs a longer Lean wall than the default CI cap).
-    budget_seconds = max(0.001, float(timeout_seconds))
+    budget_seconds = min(float(MAX_RUN_SECONDS), max(0.001, float(timeout_seconds)))
     command_deadline = started + max(0.001, budget_seconds - 1.0)
 
     def remaining() -> float:
@@ -333,9 +335,7 @@ def run_formal_preflight(
         if build.returncode == 0 and audit.returncode == 0
         else subprocess.CompletedProcess([], 1, "", "proof audit failed")
     )
-    output = (
-        f"{build.stdout}\n{build.stderr}\n{audit.stdout}\n{audit.stderr}"
-    )
+    output = f"{build.stdout}\n{build.stderr}\n{audit.stdout}\n{audit.stderr}"
     proof_total = _proof_sources_are_total()
     if audit_timed_out or build_timed_out:
         status: FormalProofStatus = "timed_out"
@@ -395,7 +395,9 @@ def validate_formal_preflights(
     """Verify every lock-bound artifact and enforce the tiered gate."""
 
     claims_by_id = {
-        formal_obligation_id(manifest.campaign_id, experiment.experiment_id, claim): claim
+        formal_obligation_id(
+            manifest.campaign_id, experiment.experiment_id, claim
+        ): claim
         for claim in experiment.formal_claims
     }
     obligations_by_id = {
