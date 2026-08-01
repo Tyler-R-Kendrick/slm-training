@@ -408,17 +408,7 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         )
     sources = _load_sources(source_path)
     lineage_stores = _lineage_stores(store, campaign)
-    previous_store = store
-    previous_matrix = _latest_formed_matrix(store, required=False)
-    if previous_matrix is None and len(lineage_stores) > 1:
-        previous_store = lineage_stores[1]
-        previous_matrix = _latest_formed_matrix(previous_store, required=False)
-    feedback = _hypothesis_feedback(previous_store, previous_matrix)
-    if previous_matrix is not None and not feedback:
-        raise ValueError(
-            "latest hypothesis matrix has no terminal feedback; run a matrix member "
-            "before forming its successor"
-        )
+    previous_store, previous_matrix, feedback = _feedback_context(store, lineage_stores)
     if args.provider == "agent":
         if not args.matrix:
             raise ValueError("--provider agent requires --matrix")
@@ -632,6 +622,24 @@ def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:
         if experiment.experiment_id in finished:
             found[experiment.experiment_id] = experiment
     return tuple(found.values())
+
+
+def _feedback_context(
+    store: CampaignStore, lineage_stores: tuple[CampaignStore, ...]
+) -> tuple[CampaignStore, HypothesisMatrix | None, tuple[HypothesisFeedback, ...]]:
+    for index, candidate_store in enumerate(lineage_stores):
+        matrix = _latest_formed_matrix(candidate_store, required=False)
+        if matrix is None:
+            continue
+        feedback = _hypothesis_feedback(candidate_store, matrix)
+        if feedback:
+            return candidate_store, matrix, feedback
+        if index == 0 or (candidate_store.root / "cycle_handoff.json").is_file():
+            raise ValueError(
+                "latest hypothesis matrix has no terminal feedback; run a matrix "
+                "member before forming its successor"
+            )
+    return store, None, ()
 
 
 def _latest_formed_matrix(

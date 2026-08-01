@@ -111,6 +111,9 @@ remains in the strict campaign lineage. A previously written gap is recoverable 
 through one unique chain of initialized-only campaigns; completed or ambiguous gaps
 fail closed. Frozen manifests with formal obligations fail closed until a fresh Lean
 preflight is produced; old proof evidence is never carried across commits implicitly.
+When initialized-only cycles contain a matrix but no terminal feedback, the successor
+uses the newest earlier matrix with complete feedback. A completed cycle with a
+feedback-less matrix remains invalid and fails closed.
 The legacy unsupervised executor cannot perform agent-owned handoff actions and
 therefore does not enforce their receipts; it is not the bare `/autotrain` path and
 cannot make supervised repair or delivery claims.

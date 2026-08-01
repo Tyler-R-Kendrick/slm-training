@@ -2031,6 +2031,87 @@ def test_lineage_recovers_only_an_interrupted_skipped_cycle(tmp_path: Path) -> N
         _lineage_stores(stores[-1], successor)
 
 
+def test_feedback_context_skips_only_initialized_incomplete_cycles(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import _feedback_context, _lineage_stores
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Start a bounded campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    second = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    third = first.model_copy(
+        update={
+            "campaign_id": "cycle-3",
+            "cycle_index": 3,
+            "predecessor_campaign_id": "cycle-2",
+        }
+    )
+    stores = []
+    for spec in (first, second, third):
+        campaign_store = CampaignStore(spec.campaign_id, tmp_path)
+        campaign_store.initialize(spec)
+        stores.append(campaign_store)
+
+    first_matrix = hypothesis_matrix(campaign_id="cycle-1")
+    first_matrix_path = stores[0].write_artifact(
+        "hypothesis_matrices", first_matrix
+    )
+    stores[0].append_event(
+        "hypothesis_matrix_formed", artifact_sha256=first_matrix_path.stem
+    )
+    feedback = HypothesisFeedback(
+        feedback_id="feedback-aaaaaaaaaaaaaaaa",
+        campaign_id="cycle-1",
+        matrix_id=first_matrix.matrix_id,
+        experiment_id="hyp-0",
+        hypothesis=first_matrix.hypotheses[0].experiment.hypothesis,
+        knob_signature='{"steps": 100}',
+        outcome_status="completed",
+        diagnosis_target="model",
+        diagnosis_evidence=("The bounded arm completed.",),
+        recommended_actions=("Replay the frozen measurement.",),
+    )
+    feedback_path = stores[0].write_artifact("hypothesizer_feedback", feedback)
+    stores[0].append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id="hyp-0",
+        artifact_sha256=feedback_path.stem,
+    )
+    interrupted_matrix = hypothesis_matrix(
+        matrix_id="matrix-2", campaign_id="cycle-2", offset=10
+    )
+    interrupted_path = stores[1].write_artifact(
+        "hypothesis_matrices", interrupted_matrix
+    )
+    stores[1].append_event(
+        "hypothesis_matrix_formed", artifact_sha256=interrupted_path.stem
+    )
+
+    context_store, context_matrix, context_feedback = _feedback_context(
+        stores[2], _lineage_stores(stores[2], third)
+    )
+    assert context_store.root.name == "cycle-1"
+    assert context_matrix == first_matrix
+    assert context_feedback == (feedback,)
+
+    (stores[1].root / "cycle_handoff.json").write_text("{}\n")
+    with pytest.raises(ValueError, match="no terminal feedback"):
+        _feedback_context(stores[2], _lineage_stores(stores[2], third))
+
+
 def test_continuous_lean_miss_requires_five_priority_lanes() -> None:
     first = hypothesis_matrix(campaign_id="cycle-1")
     optimum = OptimumFeedbackV1(
