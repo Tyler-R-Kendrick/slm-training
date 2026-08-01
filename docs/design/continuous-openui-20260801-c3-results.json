@@ -1,0 +1,88 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c3",
+  "cycle_index": 3,
+  "source_commit": "2a64db996754d2ce25edcc0d82ee448f7843cd85",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 42,
+    "batch_size": 2,
+    "seed": 100003,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c3-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "latency_ms_p50": 3933.91
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c3-both": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "latency_ms_p50": 3787.29
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "unexecuted_hypotheses": [
+    "c20260801-c3-bounds",
+    "c20260801-c3-canvas",
+    "c20260801-c3-steps",
+    "c20260801-c3-batch1"
+  ],
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -146.6199999999999,
+  "sdlc_delivery": {
+    "positive": true,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "action": "positive_no_tracked_delta_skip_stack",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c3-both",
+      "fixture_insufficient_n:c20260801-c3-control",
+      "primary_metric_win:smoke.latency_ms_p50:3933.91->3787.29",
+      "quality_held:parse=1.0 mpr=0.3333333333333333",
+      "efficiency_win:mpr_per_ms:8.473334e-05->8.8013681e-05"
+    ]
+  },
+  "champion_queue": {
+    "entry_id": "champ-continuous-openui-20260801-3-3ef2d4724c8df79e",
+    "knobs_fingerprint": "3ef2d4724c8df79e",
+    "status": "queued",
+    "source_candidate_id": "c20260801-c3-both",
+    "knobs": {
+      "grammar_completion_bounds": true,
+      "compact_active_canvas": true,
+      "steps": 42,
+      "batch_size": 2
+    }
+  },
+  "conclusion": "grammar_completion_bounds + compact_active_canvas together beat the matched control at steps=42/seed=100003: latency improved 146.62ms (3933.91->3787.29) with parse_rate and meaningful_program_rate both held (1.0 / 0.333). Quality-aware Phase A classifier marks this positive (primary metric win + quality held + mpr_per_ms efficiency win), but has_tracked_delta=false at classification time (docs not yet committed) so the driver skipped an automatic stack recommendation and instead enqueued the lever combo into the champion queue (champ-continuous-openui-20260801-3-3ef2d4724c8df79e, status=queued) for a same-levers/new-seed confirmatory retest before any promotion or stack layer.",
+  "next_priorities": [
+    "Run the confirmatory retest cycle (same bounds+canvas levers, new seed) so the champion queue entry can move queued -> confirmed",
+    "Only open a stacked PR once the champion is confirmed and, if applicable, promoted -- a single screening win is not enough per the champion-queue design",
+    "Individually test bounds-only and canvas-only at steps=42 to see whether the win is additive or driven by one lever"
+  ],
+  "recorded_at": "2026-08-01T00:39:23Z"
+}
