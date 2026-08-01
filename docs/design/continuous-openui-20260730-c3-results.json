@@ -1,0 +1,72 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c1",
+  "cycle_index": 3,
+  "source_commit": "c1c4eca349b66f05684975575a3640ced50051ea",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "latency_ms_p50": 2961.24,
+        "latency_ms_p95": 3582.26
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "latency_ms_p50": 2955.83,
+        "latency_ms_p95": null
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": false
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -5.41,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c1-bounds",
+      "fixture_insufficient_n:c20260801-c1-control",
+      "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+      "primary_metric_win:smoke.latency_ms_p50:2961.24->2955.83:improvement=5.41"
+    ]
+  },
+  "conclusion": "First real (non-infra-blocked) c-series cycle since c2: grammar_completion_bounds shows a small p50 latency win (-5.41ms) on this size-matched 21-step fixture, but the win is rejected as non-positive because meaningful_program_rate=0.0 on both arms (mpr=0.0 < 0.333333 floor) -- a latency delta with no held quality is not a real win. Ship gates fail honestly on fixture n=3 (insufficient_n, need>=20) plus missing held_out/adversarial/ood/rico_held suites, as expected for a wf_smoke_v2/steps=21 screening cycle. Two attempts before this one failed in this fresh container for setup reasons already documented in README (`pip install -e \".[dev,torch,web]\"`, `npm ci`), not harness bugs: (1) the venv had no torch yet (train_model.detect_device import), (2) `npm ci` had not been run yet, so evaluate_model's publish_agentv_evaluation could not find the AgentV SDK. Running the documented setup steps resolved both before re-running the identical cycle spec.",
+  "next_priorities": [
+    "Do not treat a latency-only delta as positive when meaningful_program_rate is 0 on both arms -- current classifier already rejects this correctly (latency_win_rejected_low_mpr); keep that gate.",
+    "Re-test grammar_completion_bounds vs control at a larger step budget once a cycle produces meaningful_program_rate > 0, so mpr has signal to gate on.",
+    "Do not promote RL; ship gates fail by design on fixture n."
+  ],
+  "recorded_at": "2026-08-01T11:34:03Z"
+}
