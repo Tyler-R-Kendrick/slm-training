@@ -44,6 +44,14 @@ strict campaign lineage; an already-written gap is recovered only through one un
 chain of initialized-only campaigns, while completed or ambiguous gaps fail closed.
 Replay manifests carrying Lean formal obligations require a fresh formal preflight
 and otherwise fail closed.
+Lineage validation is shared by status and feedback traversal so those surfaces cannot
+disagree about an initialized-only gap. When the newest handoff-less frozen replay
+already has verified terminal events for both diagnostic matrix decision arms, the
+next supervised run finishes status, Phase A classification, and its typed handoff
+without executing either arm again. Partial execution, non-diagnostic promotion
+campaigns, and stray artifacts do not qualify. Evaluation-stage
+recovery uses the complete `scoreboard.json` envelope, preserving exit-8 honest
+ship-gate rejection as completed model evidence rather than a harness failure.
 The novelty and exhausted-knob guards authorize only replay arm IDs whose successor
 manifest arms match the frozen source, whose normalized proposed knobs match the
 frozen experiment, and whose source digest resolves in campaign lineage. This is a

@@ -2041,7 +2041,7 @@ def test_lineage_recovers_only_an_interrupted_skipped_cycle(tmp_path: Path) -> N
     )
 
     (stores[1].root / "cycle_handoff.json").write_text("{}\n")
-    with pytest.raises(RuntimeError, match="predecessor lineage is invalid"):
+    with pytest.raises(RuntimeError, match="predecessor chain"):
         _lineage_stores(stores[-1], successor)
 
 
@@ -2650,6 +2650,49 @@ def test_loop_result_matrix_rejects_broken_predecessor_chain(tmp_path: Path) -> 
         render_loop_result_matrix(tmp_path, "loop-1")
 
 
+def test_loop_result_matrix_recovers_only_initialized_predecessor_gap(
+    tmp_path: Path,
+) -> None:
+    specs = (
+        CampaignSpec(
+            campaign_id="cycle-1",
+            objective="Run the first bounded continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=1,
+            upstream_commit="a" * 40,
+            integration_commit="b" * 40,
+        ),
+        CampaignSpec(
+            campaign_id="cycle-2",
+            objective="Initialize an interrupted continuous campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=2,
+            predecessor_campaign_id="cycle-1",
+            upstream_commit="c" * 40,
+            integration_commit="d" * 40,
+        ),
+        CampaignSpec(
+            campaign_id="cycle-3",
+            objective="Recover after the interrupted campaign.",
+            primary_metric="score",
+            loop_id="loop-1",
+            cycle_index=3,
+            predecessor_campaign_id="cycle-1",
+            upstream_commit="e" * 40,
+            integration_commit="f" * 40,
+        ),
+    )
+    for spec in specs:
+        CampaignStore(spec.campaign_id, tmp_path).initialize(spec)
+
+    assert "Run Results" in render_loop_result_matrix(tmp_path, "loop-1")
+    (tmp_path / "cycle-3" / "cycle_handoff.json").write_text("{}\n")
+    with pytest.raises(RuntimeError, match="predecessor chain"):
+        render_loop_result_matrix(tmp_path, "loop-1")
+
+
 def test_compile_resolves_canonical_published_train_version() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(
@@ -2908,7 +2951,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         artifact = (
             run_dir / "train_summary.json"
             if not (run_dir / "train_summary.json").exists()
-            else run_dir / "eval.json"
+            else run_dir / "scoreboard.json"
         )
         artifact.write_text(
             json.dumps(
@@ -2954,7 +2997,7 @@ def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
         run_dir / "train_summary.json"
     )
     assert outcome.stage_telemetry[1]["parsed_output_source"] == str(
-        run_dir / "eval.json"
+        run_dir / "scoreboard.json"
     )
 
 

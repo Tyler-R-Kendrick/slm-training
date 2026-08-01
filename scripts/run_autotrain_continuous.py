@@ -56,6 +56,7 @@ from slm_training.autoresearch.schemas import (
     utc_now,
 )
 from slm_training.autoresearch.storage import (
+    CampaignStore,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
     pending_autotrain_actions,
@@ -2672,6 +2673,118 @@ def _campaign_at_cycle(root: Path, loop_id: str, cycle_index: int) -> str | None
     return matches[0] if matches else None
 
 
+def _finalize_terminal_interrupted_replay(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    deadline: float,
+) -> str | None:
+    """Finish a terminal frozen replay whose process stopped before its handoff.
+
+    Recovery is deliberately narrower than cycle replay: both decision arms must
+    have terminal events in the verified campaign chain.  A partially executed
+    campaign therefore remains incomplete and cannot acquire a handoff merely
+    because a stray run artifact exists.
+    """
+
+    cycle_index, _predecessor = _latest_cycle(root, loop_id)
+    campaign_id = _campaign_at_cycle(root, loop_id, cycle_index)
+    if campaign_id is None:
+        return None
+    camp_dir = root / campaign_id
+    if (camp_dir / "cycle_handoff.json").is_file():
+        return None
+    matrix_path = camp_dir / "matrix-proposal.json"
+    if not matrix_path.is_file():
+        return None
+    matrix = _read_json(matrix_path)
+    hypotheses = matrix.get("hypotheses") or []
+    if not hypotheses or not isinstance(hypotheses[0], dict):
+        return None
+    control = str((hypotheses[0].get("experiment") or {}).get("experiment_id") or "")
+    candidate = str(matrix.get("recommended_experiment_id") or "")
+    expected = {control, candidate}
+    if "" in expected or len(expected) != 2:
+        return None
+    events = CampaignStore(campaign_id, root).verify_event_chain()
+    finished = {
+        str(event.get("experiment_id") or "")
+        for event in events
+        if event.get("event_type") == "experiment_finished"
+    }
+    if not expected.issubset(finished):
+        return None
+
+    campaign = _read_json(camp_dir / "campaign.json")
+    manifests = [
+        _read_json(camp_dir / "manifests" / f"{experiment_id}.json")
+        for experiment_id in sorted(expected)
+    ]
+    if not all(
+        item.get("replay_of_manifest_sha256")
+        and item.get("claim_class") == "diagnostic"
+        for item in manifests
+    ):
+        return None
+    role = "screening"
+    cycle_intent = "retry_measurement"
+    primary_metric = str(campaign.get("primary_metric") or "")
+    if not primary_metric:
+        raise RuntimeError(f"terminal interrupted campaign lacks primary metric: {campaign_id}")
+
+    _set_active_stage(root, loop_id, "recover-terminal-handoff")
+    _run(
+        [
+            sys.executable,
+            "-m",
+            "scripts.autoresearch",
+            "--root",
+            str(root),
+            "status",
+            "--loop-id",
+            loop_id,
+            "--matrix",
+            "--last",
+            "5",
+        ],
+        cwd=cwd,
+        deadline=deadline,
+    )
+    delivery = _phase_a_delivery(
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        primary_metric=primary_metric,
+        cycle_index=cycle_index,
+        role=role,
+        cycle_intent=cycle_intent,
+        deadline=deadline,
+    )
+    _write_cycle_handoff(
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        cycle_index=cycle_index,
+        upstream_commit=str(campaign.get("upstream_commit") or ""),
+        integration_commit=str(campaign.get("integration_commit") or ""),
+        role=role,
+        cycle_intent=cycle_intent,
+        primary_metric=primary_metric,
+        matrix=matrix,
+        delivery=delivery,
+        resolution=None,
+        formal_status=_formal_preflight_status(camp_dir),
+    )
+    print(
+        f"CYCLE_RECOVERED {campaign_id} role={role} intent={cycle_intent} "
+        f"positive={delivery['positive']}",
+        flush=True,
+    )
+    return campaign_id
+
+
 def _experiment_artifact(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
     for path in (camp_dir / "artifacts" / "experiments").glob("*.json"):
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -3701,6 +3814,15 @@ def run_cycle(
             cwd=cwd,
             deadline=deadline,
         )
+
+    recovered_campaign = _finalize_terminal_interrupted_replay(
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        deadline=deadline,
+    )
+    if recovered_campaign is not None:
+        return recovered_campaign
 
     idx, pred = _latest_cycle(root, loop_id)
     lineage_pred = _campaign_at_cycle(root, loop_id, idx)

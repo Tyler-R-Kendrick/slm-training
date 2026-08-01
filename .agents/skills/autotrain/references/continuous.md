@@ -111,6 +111,14 @@ remains in the strict campaign lineage. A previously written gap is recoverable 
 through one unique chain of initialized-only campaigns; completed or ambiguous gaps
 fail closed. Frozen manifests with formal obligations fail closed until a fresh Lean
 preflight is produced; old proof evidence is never carried across commits implicitly.
+If the newest crashed frozen-replay campaign already has verified
+`experiment_finished` events for both diagnostic decision arms, the next supervised
+invocation gets latest and then finishes its status, Phase A, and typed handoff from
+those artifacts instead of training again.
+Recovery requires the exact control and recommended IDs from the committed matrix;
+partial arms and artifact-only remnants do not qualify. Evaluation stage recovery
+reads the complete `scoreboard.json` envelope so an exit-8 honest ship-gate rejection
+remains a completed model measurement rather than an infrastructure failure.
 When initialized-only cycles contain a matrix but no terminal feedback, the successor
 uses the newest earlier matrix with complete feedback. A completed cycle with a
 feedback-less matrix remains invalid and fails closed.

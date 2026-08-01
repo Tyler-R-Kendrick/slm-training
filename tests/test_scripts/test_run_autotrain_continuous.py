@@ -1749,6 +1749,90 @@ def test_latest_cycle_uses_highest_index_but_last_completed_predecessor(
     assert _mod._campaign_at_cycle(root, "loop-1", 11) == "cycle-11"
 
 
+def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-1"
+    camp = root / campaign_id
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "campaign_id": campaign_id,
+                "cycle_index": 1,
+                "primary_metric": "smoke.binder_reference_f1",
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+            }
+        )
+    )
+    matrix = {
+        **_priority_matrix(),
+        "recommended_experiment_id": "candidate",
+        "hypotheses": [{"experiment": {"experiment_id": "control"}}],
+    }
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    for experiment_id in ("control", "candidate"):
+        (camp / "manifests" / f"{experiment_id}.json").write_text(
+            json.dumps(
+                {
+                    "replay_of_manifest_sha256": "c" * 64,
+                    "claim_class": "diagnostic",
+                }
+            )
+        )
+    store = _mod.CampaignStore(campaign_id, root)
+    store.append_event("experiment_finished", experiment_id="control")
+
+    subprocesses: list[list[str]] = []
+    handoffs: list[dict] = []
+    monkeypatch.setattr(
+        _mod, "_run", lambda command, **_kwargs: subprocesses.append(command)
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_phase_a_delivery",
+        lambda **_kwargs: {
+            "positive": False,
+            "candidate_id": "candidate",
+            "reasons": ["measurement_incomplete:no_smoke_metrics"],
+        },
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_write_cycle_handoff",
+        lambda **kwargs: handoffs.append(kwargs),
+    )
+
+    assert (
+        _mod._finalize_terminal_interrupted_replay(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            deadline=float("inf"),
+        )
+        is None
+    )
+    assert subprocesses == []
+
+    store.append_event("experiment_finished", experiment_id="candidate")
+    assert (
+        _mod._finalize_terminal_interrupted_replay(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            deadline=float("inf"),
+        )
+        == campaign_id
+    )
+    assert len(subprocesses) == 1
+    assert "run" not in subprocesses[0]
+    assert handoffs[0]["cycle_intent"] == "retry_measurement"
+    assert handoffs[0]["campaign_id"] == campaign_id
+
+
 def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> None:
     old_campaign = "continuous-loop-20260801-loop-12345678-c1710"
     new_campaign = "continuous-loop-20260801-loop-12345678-c1712"

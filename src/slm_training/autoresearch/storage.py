@@ -55,9 +55,7 @@ _PREREQUISITE_ACTION_KINDS = frozenset(
         "deliver_stack",
     }
 )
-_EXECUTION_ACTION_KINDS = frozenset(
-    {"retry_measurement", "next_experiment", "monitor"}
-)
+_EXECUTION_ACTION_KINDS = frozenset({"retry_measurement", "next_experiment", "monitor"})
 
 
 def autotrain_action_sha256(action: AutotrainActionV1) -> str:
@@ -114,9 +112,7 @@ def pending_autotrain_actions(
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
     """Return unacknowledged actions that block successor initialization."""
 
-    return _pending_autotrain_actions(
-        root, handoff, kinds=_PREREQUISITE_ACTION_KINDS
-    )
+    return _pending_autotrain_actions(root, handoff, kinds=_PREREQUISITE_ACTION_KINDS)
 
 
 def pending_autotrain_execution_actions(
@@ -575,7 +571,7 @@ def _loop_runs(
     root: Path | str, loop_id: str, *, last: int | None
 ) -> list[dict[str, Any]]:
     root = Path(root)
-    campaigns = _loop_campaigns(root, loop_id, last=last)
+    campaigns = loop_campaigns(root, loop_id, last=last)
     runs: list[dict[str, Any]] = []
     for campaign in campaigns:
         store = CampaignStore(campaign.campaign_id, root)
@@ -639,9 +635,7 @@ def _loop_runs(
     )
 
 
-def _loop_campaigns(
-    root: Path, loop_id: str, *, last: int | None
-) -> list[CampaignSpec]:
+def loop_campaigns(root: Path, loop_id: str, *, last: int | None) -> list[CampaignSpec]:
     campaigns = sorted(
         (
             CampaignSpec.model_validate_json(path.read_text(encoding="utf-8"))
@@ -650,14 +644,32 @@ def _loop_campaigns(
         key=lambda item: (item.cycle_index or 0, item.campaign_id),
     )
     campaigns = [item for item in campaigns if item.loop_id == loop_id]
+    positions = {
+        campaign.campaign_id: index for index, campaign in enumerate(campaigns)
+    }
     for expected_cycle, campaign in enumerate(campaigns, start=1):
         if campaign.cycle_index != expected_cycle:
             raise RuntimeError("loop campaign cycles must be unique and contiguous")
         expected_predecessor = (
             campaigns[expected_cycle - 2].campaign_id if expected_cycle > 1 else None
         )
-        if campaign.predecessor_campaign_id != expected_predecessor:
+        if campaign.predecessor_campaign_id == expected_predecessor:
+            continue
+        declared = positions.get(str(campaign.predecessor_campaign_id))
+        current = expected_cycle - 1
+        if declared is None or declared >= current - 1:
             raise RuntimeError("loop campaign predecessor chain is broken")
+        bridge = campaigns[declared + 1 : current]
+        prior = campaigns[declared].campaign_id
+        if not bridge or (root / campaign.campaign_id / "cycle_handoff.json").is_file():
+            raise RuntimeError("loop campaign predecessor chain is broken")
+        for interrupted in bridge:
+            if (
+                interrupted.predecessor_campaign_id != prior
+                or (root / interrupted.campaign_id / "cycle_handoff.json").is_file()
+            ):
+                raise RuntimeError("loop campaign predecessor chain is broken")
+            prior = interrupted.campaign_id
     if last is not None:
         if last < 1:
             raise ValueError("last must be at least one")
@@ -762,7 +774,7 @@ def loop_priority_rows(
     runs = _loop_runs(root, loop_id, last=last)
     campaigns = {
         campaign.campaign_id: campaign
-        for campaign in _loop_campaigns(Path(root), loop_id, last=last)
+        for campaign in loop_campaigns(Path(root), loop_id, last=last)
     }
     matrices: list[tuple[CampaignSpec, HypothesisMatrix]] = []
     for campaign in campaigns.values():
