@@ -13,10 +13,15 @@ No quality or latency comparison is authorized.
 | control | c1717 control, lineage depth 1, checkpoint `e38a18ad…7c54ee` | n=3; parse 1.0; binder F1 1.0; meaningful 0.3333; structure 0.3656; p50 4,357.37 ms | Complete AgentV run; honest gates fail on evidence volume, missing ship suites, and quality thresholds | Model evidence only; not ship |
 | batch1 | c1716 batch1, lineage depth 2, checkpoint `3ef5056a…14dc64` | No metrics | Evaluation timed out in terminal-witness completion-forest branch advance | Frozen replay required |
 
-Both reuse receipts include the source train-summary SHA, checkpoint SHA, ordered
-manifest paths/digests, and `executed=false`. Evaluation wrote only to c1718 run
-namespaces. The handoff remains `inconclusive`, `ship_state=blocked`, and binds its
-retry to manifest `1ac8dc0acefc52f86ba7e5604045c2ada0b4a4e6623030921ccb74e6fb3e8779`.
+Both immutable reuse receipts are embedded in the
+[machine-readable record](autotrain-cycle-1718-direct-feed-timeout.json) under
+`arms[].training.reuse_receipt`. The control receipt binds train summary
+`aa12e745…707132` to ordered manifest `dbacf796…f3c42c`; the batch1 receipt binds
+train summary `0d78ae37…494668` to ordered manifests
+`779b44e3…999113` then `422ce7ff…5657b`. Each arm also records its checkpoint SHA,
+lineage depth, and `executed=false`. Evaluation wrote only to c1718 run namespaces.
+The handoff remains `inconclusive`, `ship_state=blocked`, and binds its retry to
+manifest `1ac8dc0acefc52f86ba7e5604045c2ada0b4a4e6623030921ccb74e6fb3e8779`.
 
 ## Diagnostic signal and repair
 

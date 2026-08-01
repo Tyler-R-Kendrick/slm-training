@@ -19,7 +19,17 @@
         "executed": false,
         "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1717",
         "manifest_lineage_depth": 1,
-        "checkpoint_sha256": "e38a18adafcf2812e30f9f4ef748962b43834dc08fe57a99b43851b5fa7c54ee"
+        "checkpoint_sha256": "e38a18adafcf2812e30f9f4ef748962b43834dc08fe57a99b43851b5fa7c54ee",
+        "reuse_receipt": {
+          "source_train_summary": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/runs/c20260801-continuous-openui-202607-98199209-c1717-control/train_summary.json",
+          "source_train_summary_sha256": "aa12e7457dcfe34ec306870c081da02976d11b75142024cac77d3c196c707132",
+          "manifest_lineage": [
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/manifests/c20260801-continuous-openui-202607-98199209-c1717-control.json",
+              "sha256": "dbacf79695aae96ebdaba6335a687d3fe5538a02b1c831fe7acf1e8045f3c42c"
+            }
+          ]
+        }
       },
       "suite": "smoke",
       "suite_n": 3,
@@ -46,7 +56,21 @@
         "executed": false,
         "source_campaign": "continuous-loop-20260801-continuous-openui-202607-98199209-c1716",
         "manifest_lineage_depth": 2,
-        "checkpoint_sha256": "3ef5056af61ed73d19b1ca90ef0ddb98f05389b2145a83e75f00360cad14dc64"
+        "checkpoint_sha256": "3ef5056af61ed73d19b1ca90ef0ddb98f05389b2145a83e75f00360cad14dc64",
+        "reuse_receipt": {
+          "source_train_summary": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1716/runs/c20260801-continuous-openui-202607-98199209-c1716-batch1/train_summary.json",
+          "source_train_summary_sha256": "0d78ae3794c9228a46ab2345c6c407ed16c3dc2e0435cc9195675c3082494668",
+          "manifest_lineage": [
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/manifests/c20260801-continuous-openui-202607-98199209-c1717-batch1.json",
+              "sha256": "779b44e3c22b7ad840ad5e73212e3a92f63e107118b8fa0acab0c8e5b7999113"
+            },
+            {
+              "path": "outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1716/manifests/c20260801-continuous-openui-202607-98199209-c1716-batch1.json",
+              "sha256": "422ce7ff5031fd20f801d99709d367274a694741931795f99527efc64335657b"
+            }
+          ]
+        }
       },
       "suite_n": 0,
       "metrics": {},
