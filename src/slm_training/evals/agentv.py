@@ -116,9 +116,14 @@ def publish_agentv_evaluation(
     ]
     if trace_id is not None:
         command.extend(("--trace-id", trace_id, "--run-id", Path(run_dir).name))
+    # Session environments may inject NODE_OPTIONS entries (e.g. --import tsx)
+    # that this Node build rejects with exit 9, silently killing the runner.
+    env = dict(os.environ)
+    env["NODE_OPTIONS"] = ""
     completed = subprocess.run(
         command,
         cwd=runtime_root,
+        env=env,
         check=False,
         capture_output=True,
         text=True,
