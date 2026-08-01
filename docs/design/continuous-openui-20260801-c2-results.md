@@ -27,7 +27,7 @@ Primary metric unavailable on both arms (`primary_metric_unavailable`,
 
 `evaluate_model.py` raised:
 
-```
+```text
 RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER
 ```
 
@@ -57,7 +57,7 @@ local commit only, no stacked PR for this cycle.
 2. Consider a continuous-loop preflight check for
    `node_modules/@agentv/core/package.json` (and a sane `NODE_OPTIONS`) before
    the first AgentV-backed eval, so a bare checkout fails closed with one
-   clear message instead of silently producing empty-metric cycles.
+   clear message instead of producing empty-metric arm evaluations.
 
 ## Artifacts
 

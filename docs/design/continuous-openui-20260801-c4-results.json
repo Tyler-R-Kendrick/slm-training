@@ -9,7 +9,8 @@
   "not_ship_claim": true,
   "recipe": {
     "device": "cpu",
-    "steps": "20 (control) vs 40 (candidate, doubled-steps lever)",
+    "steps_configured": "20 (control) vs 40 (candidate, doubled-steps lever)",
+    "steps_observed": "21 (control) vs 42 (candidate) -- harness runs one extra step past the configured target",
     "batch_size": 2,
     "seed": 7,
     "context_backend": "scratch",
@@ -31,13 +32,13 @@
         "latency_ms_p95": 14313.98
       },
       "held_out": {
-        "n": 3,
+        "n": 5,
         "completed_document_n": 1,
         "parse_rate": 1.0,
         "meaningful_program_rate": 0.0,
-        "structural_similarity": 0.4167,
-        "latency_ms_p50": 14313.98,
-        "latency_ms_p95": 14313.98
+        "structural_similarity": 0.3417,
+        "latency_ms_p50": 19067.94,
+        "latency_ms_p95": 19067.94
       },
       "levers": {
         "steps": 21
@@ -70,13 +71,13 @@
         "latency_ms_p95": 15547.62
       },
       "held_out": {
-        "n": 3,
-        "completed_document_n": 3,
+        "n": 5,
+        "completed_document_n": 5,
         "parse_rate": 1.0,
-        "meaningful_program_rate": 0.3333333333333333,
-        "structural_similarity": 0.51,
-        "latency_ms_p50": 14783.49,
-        "latency_ms_p95": 15547.62
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.37006,
+        "latency_ms_p50": 14541.95,
+        "latency_ms_p95": 14907.65
       },
       "levers": {
         "steps": 42
@@ -99,12 +100,12 @@
     }
   },
   "primary_metric": "held_out.structural_similarity",
-  "primary_delta": 0.0933,
-  "conclusion": "Doubling train steps from ~21 to ~42 (still inside the 3-minute wall cap; control finished in 3.54s, candidate in 5.71s) raised held-out structural_similarity from 0.3417 to 0.37006 (+0.0284) and, on the smoke suite, raised meaningful_program_rate from 0.0 to 0.333 and structural_similarity from 0.4167 to 0.51 -- the first cycle in this session where a lever moved meaningful_program_rate off the floor. The driver classified this cycle SDLC-Phase-A positive (primary_metric_win, quality-aware) but with action=positive_no_tracked_delta_skip_stack: the win is a training recipe/knob finding, not a code change, so the driver itself opens no PR. Both arms also hit fixture_insufficient_n (smoke n=3; held-out control only completed 1/3 documents in the wall cap), so this is a screening-quality directional signal, not a ship claim -- ship gates still fail on n and volume.",
+  "primary_delta": 0.02836,
+  "conclusion": "Doubling train steps from ~21 to ~42 (still inside the 3-minute wall cap; control finished in 3.54s, candidate in 5.71s) raised held-out structural_similarity from 0.3417 to 0.37006 (+0.02836); held-out meaningful_program_rate stayed 0.0 on both arms. On the separate smoke suite (n=3, not held-out, n=5), the same steps lever raised meaningful_program_rate from 0.0 to 0.333 and structural_similarity from 0.4167 to 0.51 -- the first cycle in this session where a lever moved meaningful_program_rate off the floor, but that gain is scoped to the smoke suite only, not held-out. The driver classified this cycle SDLC-Phase-A positive (primary_metric_win, quality-aware, on held_out.structural_similarity) but with action=positive_no_tracked_delta_skip_stack: the win is a training recipe/knob finding, not a code change, so the driver itself opens no PR. Both suites also hit fixture_insufficient_n (smoke n=3, held-out n=5; held-out control only completed 1/5 documents in the wall cap), so this is a screening-quality directional signal, not a ship claim -- ship gates still fail on n and volume.",
   "next_priorities": [
     "Re-run the steps=42 vs steps=21 comparison at a larger held-out n (above the fixture_insufficient_n floor) to confirm the structural_similarity and meaningful_program_rate gains are not sampling noise.",
-    "Because c4-control only completed 1/3 held-out documents in the 3-minute wall cap while c4-steps (double the steps) completed 3/3, re-check whether control run variance (not step count) explains the incompleteness before crediting the steps lever with the full delta.",
-    "If the mpr gain replicates, this is the first lever this loop found that moves meaningful_program_rate off 0.0 -- prioritize a dedicated steps-budget matrix (running-experiment-matrices) over further single-cycle continuous screening."
+    "Because c4-control only completed 1/5 held-out documents in the 3-minute wall cap while c4-steps (double the steps) completed 5/5, re-check whether control run variance (not step count) explains the incompleteness before crediting the steps lever with the full held-out delta.",
+    "The smoke-suite mpr gain (0.0->0.333) did not carry over to held-out (mpr stayed 0.0 on both arms); if it does not replicate on held-out at larger n, treat it as a smoke-fixture artifact rather than a general lever."
   ],
   "sdlc_delivery": {
     "schema": "autotrain_sdlc_delivery/v1",

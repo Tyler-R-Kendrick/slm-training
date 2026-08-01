@@ -41,7 +41,7 @@
   "conclusion": "Both arms failed to complete any smoke document (0/3) inside the 3-minute wall cap: `evaluate_model.py` raised `RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER`. `node_modules/` had never been installed in this session's checkout, so `scripts/run_agentv_eval.mjs` could not import `@agentv/core`. Root cause fully diagnosed and repaired same-session: this session's `NODE_OPTIONS` environment variable is malformed (carries literal quote characters), which breaks bare `node`/`npm` invocations; running `npm ci` with `NODE_OPTIONS` unset installed the SDK cleanly and cycles c3/c4 (below) confirm the eval path now completes. Environment-setup failure, not a model or harness defect -- non-positive, no code change required.",
   "next_priorities": [
     "No repo change needed; this was a fresh-checkout `npm ci` gap, confirmed fixed in-session (see c3/c4).",
-    "Consider a continuous-loop preflight that checks `node_modules/@agentv/core` exists (and runs `npm ci` with a sane `NODE_OPTIONS`) before the first AgentV-backed eval, so a bare checkout fails closed with a clear message instead of two silent empty-metric cycles."
+    "Consider a continuous-loop preflight that checks `node_modules/@agentv/core` exists (and runs `npm ci` with a sane `NODE_OPTIONS`) before the first AgentV-backed eval, so a bare checkout fails closed with a clear message instead of two empty-metric arm evaluations."
   ],
   "sdlc_delivery": {
     "schema": "autotrain_sdlc_delivery/v1",

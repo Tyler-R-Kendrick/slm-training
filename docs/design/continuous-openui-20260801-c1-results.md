@@ -20,7 +20,7 @@
 | c1-control | bounds off | 3 | 1.0 | 0.0 | 3939.16 | eval completed; ship gates fail (insufficient n + quality) |
 | c1-bounds | bounds **on** | 3 | 1.0 | 0.0 | 3758.55 | eval completed; ship gates fail (same) |
 
-Primary delta (bounds − control) p50 latency: **-180.60 ms** (bounds faster).
+Primary delta (bounds − control) p50 latency: **-180.61 ms** (bounds faster).
 
 ## Diagnostics
 
