@@ -60,6 +60,7 @@ from slm_training.harness_core.bounded_process import (
     run_bounded_process,
 )
 from slm_training.levers import (
+    HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
     MAX_HARNESS_WALL_SECONDS,
@@ -161,6 +162,15 @@ def _arm_wall_minutes(policy_minutes: float) -> float:
 
     symmetric_minutes = float(MAX_HARNESS_WALL_SECONDS) / 3 / 60
     return min(float(policy_minutes), symmetric_minutes)
+
+
+def _require_symmetric_arm_budget(
+    *, deadline: float, arm_count: int, arm_wall_minutes: float
+) -> None:
+    required = arm_count * arm_wall_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    remaining = _remaining_timeout(deadline)
+    if remaining < required:
+        raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -2584,7 +2594,7 @@ def _continuous_evidence_roots(
 
 
 def _require_predecessor_actions(
-    root: Path, predecessor_campaign_id: str | None
+    root: Path, loop_id: str, predecessor_campaign_id: str | None
 ) -> None:
     if not predecessor_campaign_id:
         return
@@ -2594,6 +2604,8 @@ def _require_predecessor_actions(
     handoff = AutotrainCycleHandoffV1.model_validate_json(
         handoff_path.read_text(encoding="utf-8")
     )
+    if handoff.loop_id != loop_id or handoff.campaign_id != predecessor_campaign_id:
+        raise RuntimeError("predecessor handoff identity does not match loop lineage")
     pending = pending_autotrain_actions(root, handoff)
     if pending:
         detail = ", ".join(f"{index}:{action.kind}" for index, action in pending)
@@ -3430,9 +3442,10 @@ def run_cycle(
         )
 
     idx, pred = _latest_cycle(root, loop_id)
-    _require_predecessor_actions(root, pred)
+    _require_predecessor_actions(root, loop_id, pred)
     cycle = idx + 1
     role = cycle_role_for_index(policy, cycle)
+    arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
     # Champion queue: confirm open heads; promote confirmed heads on promotion
     # cadence; otherwise thrash with rotated levers (Change B/C). Cadence role
     # stays screening|promotion for suites/claim_class legality.
@@ -3620,7 +3633,7 @@ def run_cycle(
         "--max-experiments",
         "3",
         "--max-wall-minutes",
-        str(_arm_wall_minutes(stage_wall_minutes_for_role(policy, role))),
+        str(arm_wall_minutes),
         "--notes",
         notes,
     ]
@@ -3823,6 +3836,13 @@ def run_cycle(
             )
             order = []
 
+    arm_count = len({eid for eid in order if eid in by_id})
+    if arm_count:
+        _require_symmetric_arm_budget(
+            deadline=deadline,
+            arm_count=arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
     seen: set[str] = set()
     arm_exits: dict[str, int] = {}
     for eid in order:

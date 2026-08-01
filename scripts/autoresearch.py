@@ -1320,7 +1320,9 @@ def cmd_ack_action(args: argparse.Namespace) -> int:
     )
     if handoff.loop_id != args.loop_id:
         raise ValueError("handoff loop_id does not match --loop-id")
-    if args.action_index >= len(handoff.actions):
+    if handoff.campaign_id != args.campaign_id:
+        raise ValueError("handoff campaign_id does not match --campaign-id")
+    if args.action_index < 0 or args.action_index >= len(handoff.actions):
         raise ValueError("--action-index is outside the handoff action list")
     action = handoff.actions[args.action_index]
     receipt = AutotrainActionReceiptV1(

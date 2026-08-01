@@ -1452,6 +1452,19 @@ def test_arm_wall_budget_is_symmetric_and_reserves_orchestration() -> None:
     assert _mod._arm_wall_minutes(0.5) == 0.5
 
 
+def test_driver_requires_room_for_both_arms_before_starting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 0.0)
+    _mod._require_symmetric_arm_budget(
+        deadline=120.0, arm_count=2, arm_wall_minutes=0.75
+    )
+    with pytest.raises(subprocess.TimeoutExpired, match="symmetric decision-arm"):
+        _mod._require_symmetric_arm_budget(
+            deadline=100.0, arm_count=2, arm_wall_minutes=0.75
+        )
+
+
 def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1692,8 +1705,8 @@ def test_predecessor_prerequisite_must_be_acknowledged(tmp_path: Path) -> None:
     path.write_text(handoff.model_dump_json(indent=2) + "\n")
 
     with pytest.raises(RuntimeError, match="0:document"):
-        _mod._require_predecessor_actions(root, campaign_id)
-    _mod._require_predecessor_actions(root, "historical-without-handoff")
+        _mod._require_predecessor_actions(root, "loop-1", campaign_id)
+    _mod._require_predecessor_actions(root, "loop-1", "historical-without-handoff")
 
 
 def test_cycle_handoff_marks_incomplete_measurement_for_frozen_retry(
