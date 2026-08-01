@@ -529,6 +529,12 @@ class DSLNativeTokenizer:
     abstract_plan_slots: int = 0
     # Overflow counter (byte-path used when symbol table is full).
     overflow_count: int = 0
+    _kind_ids_cache: dict[str, frozenset[int]] = field(
+        default_factory=dict,
+        init=False,
+        repr=False,
+        compare=False,
+    )
 
     @property
     def pad_id(self) -> int:
@@ -563,7 +569,17 @@ class DSLNativeTokenizer:
 
     def kind_ids(self, kind: TokenKind | str) -> set[int]:
         want = kind.value if isinstance(kind, TokenKind) else str(kind)
-        return {i for i, k in self.id_to_kind.items() if k == want}
+        cache = getattr(self, "_kind_ids_cache", None)
+        if cache is None:  # checkpoints serialized before the cache field existed
+            cache = {}
+            self._kind_ids_cache = cache
+        cached = cache.get(want)
+        if cached is None:
+            cached = frozenset(
+                i for i, value in self.id_to_kind.items() if value == want
+            )
+            cache[want] = cached
+        return set(cached)
 
     def is_sym_id(self, tid: int) -> bool:
         return self.kind_of(tid) == TokenKind.SYM

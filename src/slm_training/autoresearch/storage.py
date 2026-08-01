@@ -528,6 +528,7 @@ def loop_result_rows(
                 handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 handoff = {}
+        gate_rejection = _completed_gate_rejection(root, campaign, outcome)
         rows.append(
             {
                 "cycle": campaign.cycle_index,
@@ -547,13 +548,17 @@ def loop_result_rows(
                     },
                 ),
                 "lean": _lean_text(optimum),
-                "gates": _gate_text(outcome.metrics),
-                "measurement": _measurement_text(outcome),
+                "gates": "fail" if gate_rejection else _gate_text(outcome.metrics),
+                "measurement": (
+                    "complete (gate reject)"
+                    if gate_rejection
+                    else _measurement_text(outcome)
+                ),
                 "diagnosis": diagnosis.target if diagnosis is not None else "—",
                 "evidence_class": handoff.get("evidence_class", "fixture"),
                 "climb": handoff.get("climb_state", "—"),
                 "ship": handoff.get("ship_state", "blocked"),
-                "status": outcome.status,
+                "status": "completed" if gate_rejection else outcome.status,
                 "campaign_id": campaign.campaign_id,
             }
         )
@@ -564,6 +569,50 @@ def loop_result_rows(
             str(row["campaign_id"]),
             str(row["experiment"]),
         ),
+    )
+
+
+def _completed_gate_rejection(
+    root: Path | str,
+    campaign: CampaignSpec,
+    outcome: ExperimentOutcome,
+) -> bool:
+    """Project a legacy exit-8 outcome from its complete canonical scoreboard."""
+
+    if (
+        outcome.status != "failed"
+        or outcome.exit_code != 8
+        or evaluation_measurement_incomplete(outcome.metrics)
+    ):
+        return False
+    path = (
+        Path(root)
+        / campaign.campaign_id
+        / "runs"
+        / outcome.experiment_id
+        / "scoreboard.json"
+    )
+    try:
+        scoreboard = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    gates = scoreboard.get("gates")
+    evals = scoreboard.get("evals")
+    runner = evals.get("runner") if isinstance(evals, dict) else None
+    stamp = scoreboard.get("version_stamp")
+    return bool(
+        scoreboard.get("run_id") == outcome.experiment_id
+        and isinstance(gates, dict)
+        and gates.get("authority") == "AgentEvals assertions"
+        and gates.get("pass") is False
+        and isinstance(runner, dict)
+        and runner.get("name") == "AgentV"
+        and runner.get("execution_errors") == 0
+        and isinstance(scoreboard.get("suites"), dict)
+        and scoreboard["suites"]
+        and isinstance(stamp, dict)
+        and stamp.get("code_commit") == campaign.integration_commit
+        and stamp.get("code_dirty") is False
     )
 
 

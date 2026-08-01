@@ -2514,6 +2514,70 @@ def test_loop_result_matrix_marks_timeout_measurement_incomplete(
     assert "| incomplete | infrastructure |" in rendered
 
 
+def test_loop_result_matrix_projects_complete_exit8_gate_rejection(
+    tmp_path: Path,
+) -> None:
+    commit = "d" * 40
+    campaign = CampaignSpec(
+        campaign_id="cycle-gate-reject",
+        objective="Keep a complete honest gate rejection as model evidence.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit=commit,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    outcome = ExperimentOutcome(
+        experiment_id="control",
+        campaign_id=campaign.campaign_id,
+        status="failed",
+        exit_code=8,
+        metrics={
+            "smoke.n": 3,
+            "smoke.completed_document_n": 3,
+            "smoke.incomplete_document_n": 0,
+            "smoke.parse_rate": 1,
+        },
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=outcome.experiment_id,
+        status=outcome.status,
+        artifact_sha256=artifact.stem,
+    )
+    run_dir = store.root / "runs" / outcome.experiment_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "run_id": outcome.experiment_id,
+                "gates": {
+                    "authority": "AgentEvals assertions",
+                    "pass": False,
+                },
+                "evals": {
+                    "runner": {
+                        "name": "AgentV",
+                        "execution_errors": 0,
+                    }
+                },
+                "suites": {"smoke": {"n": 3, "parse_rate": 1}},
+                "version_stamp": {
+                    "code_commit": commit,
+                    "code_dirty": False,
+                },
+            }
+        )
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "| fail | complete (gate reject) |" in rendered
+    assert "| blocked | completed |" in rendered
+
+
 def test_loop_result_matrix_marks_partial_measurement_incomplete(
     tmp_path: Path,
 ) -> None:
