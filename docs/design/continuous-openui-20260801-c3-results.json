@@ -1,0 +1,142 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c3",
+  "cycle_index": 3,
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "latency_ms_p50": 10111.73,
+        "latency_ms_p95": 10534.1
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v30",
+          "harness.model_build.eval": "v71",
+          "harness.experiment_feature_flags": "v3",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v22",
+          "model.twotower": "v269"
+        },
+        "stamped_at": "2026-08-01T06:39:34.800334+00:00"
+      }
+    },
+    "c3-both": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "latency_ms_p50": 9514.05,
+        "latency_ms_p95": 9890.19
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": true
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v30",
+          "harness.model_build.eval": "v71",
+          "harness.experiment_feature_flags": "v3",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v22",
+          "model.twotower": "v269"
+        },
+        "stamped_at": "2026-08-01T06:40:17.548907+00:00"
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -597.68,
+  "conclusion": "With the AgentV SDK fixed, both arms completed all 3 smoke documents. Combined bounds+canvas reduced p50 latency by 597.68ms (10111.73ms -> 9514.05ms) versus control, but meaningful_program_rate again held at 0.0 (mpr=0.0 < 0.333 floor), so the policy rejected this as a pure-latency win (`latency_win_rejected_low_mpr`). Also flagged `fixture_insufficient_n` on both arms (smoke n=3). Non-positive.",
+  "next_priorities": [
+    "Combined bounds+canvas now has two consistent latency-only wins (c1 single-lever, c3 combined); still gated on mpr=0 until a quality-moving lever is found.",
+    "Raise fixture n above the insufficient-n floor before treating any latency delta here as more than a screening signal."
+  ],
+  "sdlc_delivery": {
+    "schema": "autotrain_sdlc_delivery/v1",
+    "loop_id": "continuous-openui-20260801",
+    "campaign_id": "continuous-loop-20260801-c3",
+    "finished_at": "2026-08-01T06:40:23Z",
+    "sdlc_phase": "A",
+    "positive": false,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c3-both",
+      "fixture_insufficient_n:c20260801-c3-control",
+      "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+      "primary_metric_win:smoke.latency_ms_p50:10111.73->9514.05:improvement=597.6800000000003"
+    ],
+    "primary_metric": "smoke.latency_ms_p50",
+    "direction": "decrease",
+    "role": "screening",
+    "control_metrics": {
+      "latency_ms_p50": 10111.73,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1725,
+      "smoke.latency_ms_p50": 10111.73,
+      "smoke.parse_rate": 1.0,
+      "smoke.meaningful_program_rate": 0.0,
+      "smoke.structural_similarity": 0.1725
+    },
+    "candidate_metrics": {
+      "latency_ms_p50": 9514.05,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1725,
+      "smoke.latency_ms_p50": 9514.05,
+      "smoke.parse_rate": 1.0,
+      "smoke.meaningful_program_rate": 0.0,
+      "smoke.structural_similarity": 0.1725
+    },
+    "policy_sha256": "8f66292de6933ccba299f2ede05cbb9499129b3f4201b655952891a50911cb53",
+    "policy_version": "v1",
+    "control_id": "c20260801-c3-control",
+    "candidate_id": "c20260801-c3-both",
+    "fixture_volume_gate_hits": 2,
+    "cycle_role": "screening",
+    "cycle_index": 3,
+    "cycle_intent": "screening",
+    "climb_policy_sha256": "8f66292de6933ccba299f2ede05cbb9499129b3f4201b655952891a50911cb53"
+  },
+  "recorded_at": "2026-08-01T06:45:59+00:00"
+}

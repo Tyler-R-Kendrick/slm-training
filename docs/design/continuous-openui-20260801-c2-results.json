@@ -1,0 +1,89 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c2",
+  "cycle_index": 2,
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c2-control": {
+      "status": "eval_incomplete",
+      "reason": "0/3 smoke docs completed under 3-minute wall cap (AgentV SDK unavailable pre-npm-ci-fix)",
+      "n": 3,
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c2-canvas": {
+      "status": "eval_incomplete",
+      "reason": "0/3 smoke docs completed under 3-minute wall cap (AgentV SDK unavailable pre-npm-ci-fix)",
+      "n": 3,
+      "levers": {
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": null,
+  "conclusion": "Both arms failed to complete any smoke document (0/3) inside the 3-minute wall cap: `evaluate_model.py` raised `RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER`. `node_modules/` had never been installed in this session's checkout, so `scripts/run_agentv_eval.mjs` could not import `@agentv/core`. Root cause fully diagnosed and repaired same-session: this session's `NODE_OPTIONS` environment variable is malformed (carries literal quote characters), which breaks bare `node`/`npm` invocations; running `npm ci` with `NODE_OPTIONS` unset installed the SDK cleanly and cycles c3/c4 (below) confirm the eval path now completes. Environment-setup failure, not a model or harness defect -- non-positive, no code change required.",
+  "next_priorities": [
+    "No repo change needed; this was a fresh-checkout `npm ci` gap, confirmed fixed in-session (see c3/c4).",
+    "Consider a continuous-loop preflight that checks `node_modules/@agentv/core` exists (and runs `npm ci` with a sane `NODE_OPTIONS`) before the first AgentV-backed eval, so a bare checkout fails closed with a clear message instead of two silent empty-metric cycles."
+  ],
+  "sdlc_delivery": {
+    "schema": "autotrain_sdlc_delivery/v1",
+    "loop_id": "continuous-openui-20260801",
+    "campaign_id": "continuous-loop-20260801-c2",
+    "finished_at": "2026-08-01T06:37:02Z",
+    "sdlc_phase": "A",
+    "positive": false,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "empty_metrics:f4f4482c8863e0e607d0fdf026e068bb94bbc68f5495fd728773a40c9b234f47",
+      "empty_metrics:193486f12bb453beae351d3aae2dd51fc45a38848a783a02bc15b186995ec6b6",
+      "measurement_incomplete:no_smoke_metrics",
+      "primary_metric_unavailable"
+    ],
+    "primary_metric": "smoke.latency_ms_p50",
+    "direction": "decrease",
+    "role": "screening",
+    "control_metrics": {
+      "latency_ms_p50": null,
+      "parse_rate": null,
+      "meaningful_program_rate": null,
+      "structural_similarity": null
+    },
+    "candidate_metrics": {
+      "latency_ms_p50": null,
+      "parse_rate": null,
+      "meaningful_program_rate": null,
+      "structural_similarity": null
+    },
+    "policy_sha256": "8f66292de6933ccba299f2ede05cbb9499129b3f4201b655952891a50911cb53",
+    "policy_version": "v1",
+    "control_id": "c20260801-c2-control",
+    "candidate_id": "c20260801-c2-canvas",
+    "fixture_volume_gate_hits": 0,
+    "cycle_role": "screening",
+    "cycle_index": 2,
+    "cycle_intent": "screening",
+    "climb_policy_sha256": "8f66292de6933ccba299f2ede05cbb9499129b3f4201b655952891a50911cb53"
+  },
+  "recorded_at": "2026-08-01T06:45:59+00:00"
+}

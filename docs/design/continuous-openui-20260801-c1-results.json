@@ -1,0 +1,140 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c1",
+  "cycle_index": 1,
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "seed": 7,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "latency_ms_p50": 3939.16,
+        "latency_ms_p95": 4528.77
+      },
+      "levers": {
+        "grammar_completion_bounds": false
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v30",
+          "harness.model_build.eval": "v71",
+          "harness.experiment_feature_flags": "v3",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v22",
+          "model.twotower": "v269"
+        },
+        "stamped_at": "2026-08-01T06:33:26.641338+00:00"
+      }
+    },
+    "c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "latency_ms_p50": 3758.55,
+        "latency_ms_p95": 4433.46
+      },
+      "levers": {
+        "grammar_completion_bounds": true
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+        "code_dirty": false,
+        "components": {
+          "config.levers": "v30",
+          "harness.model_build.eval": "v71",
+          "harness.experiment_feature_flags": "v3",
+          "evals.meaningful_program": "2.13.0",
+          "evals.power_protocol": "v8",
+          "evals.scoring": "v22",
+          "model.twotower": "v269"
+        },
+        "stamped_at": "2026-08-01T06:33:51.854065+00:00"
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -180.61,
+  "conclusion": "grammar_completion_bounds reduced smoke p50 latency by 180.6ms (3939.16ms -> 3758.55ms) on this size-matched 20-step fixture, but meaningful_program_rate held at 0.0 (mpr=0.0 < 0.333 win floor), so the quality-aware Phase A policy correctly rejected the pure-latency win (`latency_win_rejected_low_mpr`). Non-positive.",
+  "next_priorities": [
+    "Re-test grammar_completion_bounds only once a lever also moves meaningful_program_rate above the mpr floor, or accept it as a latency-only diagnostic.",
+    "Confirm bounds' latency gain replicates at higher step budgets before treating it as a durable effect."
+  ],
+  "sdlc_delivery": {
+    "schema": "autotrain_sdlc_delivery/v1",
+    "loop_id": "continuous-openui-20260801",
+    "campaign_id": "continuous-loop-20260801-c1",
+    "finished_at": "2026-08-01T06:33:56Z",
+    "sdlc_phase": "A",
+    "positive": false,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "agent_required": "continue loop; local commits/docs only",
+    "reasons": [
+      "empty_metrics:e073dc72ed2ee0f9f08e0d7e38056cedb91dfd111dd4da078b41dfe53acbbace",
+      "empty_metrics:b5b7b5c93fdc605f8a67750dab027cd7b1db47841a85749001564816b2468cde",
+      "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+      "primary_metric_win:smoke.latency_ms_p50:3939.16->3758.55:improvement=180.60999999999967"
+    ],
+    "primary_metric": "smoke.latency_ms_p50",
+    "direction": "decrease",
+    "role": "screening",
+    "control_metrics": {
+      "latency_ms_p50": 3939.16,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.057499999999999996,
+      "smoke.latency_ms_p50": 3939.16,
+      "smoke.parse_rate": 1.0,
+      "smoke.meaningful_program_rate": 0.0,
+      "smoke.structural_similarity": 0.057499999999999996
+    },
+    "candidate_metrics": {
+      "latency_ms_p50": 3758.55,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.057499999999999996,
+      "smoke.latency_ms_p50": 3758.55,
+      "smoke.parse_rate": 1.0,
+      "smoke.meaningful_program_rate": 0.0,
+      "smoke.structural_similarity": 0.057499999999999996
+    },
+    "policy_sha256": "8f66292de6933ccba299f2ede05cbb9499129b3f4201b655952891a50911cb53",
+    "policy_version": "v1",
+    "control_id": "c20260801-c1-control",
+    "candidate_id": "c20260801-c1-bounds",
+    "fixture_volume_gate_hits": 0,
+    "cycle_role": "screening",
+    "cycle_index": 1,
+    "cycle_intent": "screening",
+    "climb_policy_sha256": "8f66292de6933ccba299f2ede05cbb9499129b3f4201b655952891a50911cb53"
+  },
+  "recorded_at": "2026-08-01T06:45:59+00:00"
+}
