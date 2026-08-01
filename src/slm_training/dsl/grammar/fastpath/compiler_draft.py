@@ -2494,9 +2494,13 @@ def _build_openui_completion_forest_direct(
                 crossed_literal_boundary = True
                 continue
             piece = _token_piece(tokenizer, int(token_id))
-            # Single-pass test-and-commit: same accept/reject outcome as the
-            # probe_chunk + advance pair, with one lex and one delta feed.
-            admitted = branch.advance_checked(piece)
+            # Prefer the checked static token→terminal map.  Ambiguous or
+            # unsupported junctions retain the canonical text path exactly;
+            # verified direct feeds avoid re-lexing every witness branch.
+            direct = branch.feed_token_id(tokenizer, int(token_id))
+            admitted = (
+                branch.advance_checked(piece) if direct is None else bool(direct)
+            )
             if not admitted:
                 break
             branch_text += piece
@@ -2524,7 +2528,11 @@ def _build_openui_completion_forest_direct(
                 break
             drafted.append(int(forced))
             piece = _token_piece(tokenizer, forced)
-            if not branch.advance_checked(piece):
+            direct = branch.feed_token_id(tokenizer, int(forced))
+            admitted = (
+                branch.advance_checked(piece) if direct is None else bool(direct)
+            )
+            if not admitted:
                 drafted.pop()
                 break
             branch_text += piece

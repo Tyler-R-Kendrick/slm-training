@@ -10574,7 +10574,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v271",
+      "version": "v272",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10617,6 +10617,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v272",
+          "date": "2026-08-01",
+          "note": "Use the checked static token-to-terminal map for completion-forest branch and forced-token feeds, retaining canonical text fallback at ambiguous junctions"
+        },
         {
           "version": "v271",
           "date": "2026-08-01",
