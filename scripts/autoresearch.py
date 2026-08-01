@@ -69,6 +69,7 @@ from slm_training.autoresearch.storage import (
     append_autotrain_action_receipt,
     autotrain_action_sha256,
     loop_result_rows,
+    loop_campaigns,
     render_loop_result_matrix,
 )
 from slm_training.autoresearch.telemetry import TrackioSink
@@ -568,49 +569,20 @@ def _events(store: CampaignStore) -> list[dict]:
 def _lineage_stores(
     store: CampaignStore, campaign: CampaignSpec
 ) -> tuple[CampaignStore, ...]:
-    stores = [store]
-    current = campaign
-    seen = {current.campaign_id}
-    while current.predecessor_campaign_id is not None:
-        predecessor = CampaignStore(current.predecessor_campaign_id, store.root.parent)
-        predecessor_campaign = predecessor.load_campaign()
-        if predecessor_campaign.campaign_id in seen:
-            raise RuntimeError("continuous campaign predecessor cycle detected")
-        if predecessor_campaign.loop_id != campaign.loop_id:
-            raise RuntimeError("continuous campaign predecessor lineage is invalid")
-        expected_index = (current.cycle_index or 0) - 1
-        predecessor_index = predecessor_campaign.cycle_index or 0
-        while expected_index > predecessor_index:
-            candidates: list[tuple[CampaignStore, CampaignSpec]] = []
-            for path in store.root.parent.glob("*/campaign.json"):
-                candidate_store = CampaignStore(path.parent.name, store.root.parent)
-                candidate = candidate_store.load_campaign()
-                if (
-                    candidate.loop_id == campaign.loop_id
-                    and candidate.cycle_index == expected_index
-                ):
-                    candidates.append((candidate_store, candidate))
-            if len(candidates) != 1:
-                raise RuntimeError("continuous campaign predecessor lineage is invalid")
-            skipped_store, skipped = candidates[0]
-            if (
-                skipped.campaign_id in seen
-                or (skipped_store.root / "cycle_handoff.json").is_file()
-            ):
-                raise RuntimeError("continuous campaign predecessor lineage is invalid")
-            seen.add(skipped.campaign_id)
-            stores.append(skipped_store)
-            current = skipped
-            expected_index -= 1
-        if (
-            predecessor_index != expected_index
-            or current.predecessor_campaign_id != predecessor_campaign.campaign_id
-        ):
-            raise RuntimeError("continuous campaign predecessor lineage is invalid")
-        seen.add(predecessor_campaign.campaign_id)
-        stores.append(predecessor)
-        current = predecessor_campaign
-    return tuple(stores)
+    if campaign.loop_id is None:
+        return (store,)
+    campaigns = loop_campaigns(store.root.parent, campaign.loop_id, last=None)
+    positions = [
+        index
+        for index, item in enumerate(campaigns)
+        if item.campaign_id == campaign.campaign_id
+    ]
+    if len(positions) != 1:
+        raise RuntimeError("continuous campaign predecessor lineage is invalid")
+    return tuple(
+        CampaignStore(item.campaign_id, store.root.parent)
+        for item in reversed(campaigns[: positions[0] + 1])
+    )
 
 
 def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:

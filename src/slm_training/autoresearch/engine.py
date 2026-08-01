@@ -946,7 +946,7 @@ def _stage_artifact_path(command: list[str], *, cwd: Path | str) -> Path | None:
     if "scripts.train_model" in command:
         artifact_name = "train_summary.json"
     elif "scripts.evaluate_model" in command:
-        artifact_name = "eval.json"
+        artifact_name = "scoreboard.json"
     run_root = _command_value(command, "--run-root")
     run_id = _command_value(command, "--run-id")
     if artifact_name is None or run_root is None or run_id is None:
@@ -981,7 +981,11 @@ def _resolve_stage_output(
         return parsed, "stdout"
     path = _stage_artifact_path(command, cwd=cwd)
     revision_after = _artifact_revision(path)
-    if path is None or revision_after is None or revision_after == artifact_revision_before:
+    if (
+        path is None
+        or revision_after is None
+        or revision_after == artifact_revision_before
+    ):
         return None, None
     try:
         parsed = _parse_json_output(path.read_text(encoding="utf-8"))

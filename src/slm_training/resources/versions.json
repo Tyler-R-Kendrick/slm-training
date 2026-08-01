@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v40",
+      "version": "v41",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,16 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v41",
+          "date": "2026-08-01",
+          "note": "no-bump: align the recovery artifact documentation, remove a redundant lineage guard, and pin rejection of non-diagnostic replay recovery"
+        },
+        {
+          "version": "v41",
+          "date": "2026-08-01",
+          "note": "Recover terminal handoff-less diagnostic replays without rerunning arms, share initialized-gap lineage validation across status and feedback, and classify eval gate rejection from the complete scoreboard"
+        },
         {
           "version": "v40",
           "date": "2026-08-01",
@@ -8999,6 +9009,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: share continuous lineage validation with status without changing remine campaign behavior"
+        },
         {
           "version": "v3",
           "date": "2026-08-01",
