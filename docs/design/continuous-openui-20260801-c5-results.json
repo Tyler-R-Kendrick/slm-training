@@ -1,0 +1,59 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c5",
+  "cycle_index": 5,
+  "source_commit": "2a64db996754d2ce25edcc0d82ee448f7843cd85",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 44,
+    "batch_size": 2,
+    "seed": 100005,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c5-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "latency_ms_p50": 2956.52},
+      "levers": {"batch_size": 2}
+    },
+    "c20260801-c5-batch1": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "latency_ms_p50": 8272.3},
+      "levers": {"batch_size": 1}
+    }
+  },
+  "unexecuted_hypotheses": [
+    "c20260801-c5-bounds",
+    "c20260801-c5-canvas",
+    "c20260801-c5-both",
+    "c20260801-c5-steps"
+  ],
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 5315.779999999999,
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c5-control",
+      "fixture_insufficient_n:c20260801-c5-batch1",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=2956.52 candidate=8272.3 parse=1.0->1.0 mpr=0.0->0.0",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "batch_size=1 (vs control batch_size=2) is a clear regression at steps=44/seed=100005: latency_ms_p50 nearly tripled (2956.52ms -> 8272.3ms) with meaningful_program_rate flat at 0.0 on both arms -- no quality upside, large latency cost. Not positive.",
+  "next_priorities": [
+    "Drop batch_size=1 as a latency candidate at this recipe scale",
+    "Still owed: isolate grammar_completion_bounds-only and compact_active_canvas-only at steps=42-44 (recommended after cycle 4's rejected combined champion) -- not yet executed by the hypothesizer across c3/c4/c5",
+    "meaningful_program_rate is seed-sensitive at n=3 (0.0 here vs 0.333 in c3/c4 vs 1.0 in c2's control) -- a genuine confound for any single-seed screening comparison"
+  ],
+  "recorded_at": "2026-08-01T00:47:10Z"
+}
