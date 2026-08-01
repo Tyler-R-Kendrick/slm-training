@@ -1746,6 +1746,7 @@ def test_latest_cycle_uses_highest_index_but_last_completed_predecessor(
     (root / "cycle-10" / "cycle_handoff.json").write_text("{}\n")
 
     assert _mod._latest_cycle(root, "loop-1") == (11, "cycle-10")
+    assert _mod._campaign_at_cycle(root, "loop-1", 11) == "cycle-11"
 
 
 def test_frozen_replay_preserves_recipe_and_links_current_main_successor() -> None:

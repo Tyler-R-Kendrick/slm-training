@@ -2655,6 +2655,23 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     return best_idx, completed_id or best_id
 
 
+def _campaign_at_cycle(root: Path, loop_id: str, cycle_index: int) -> str | None:
+    matches: list[str] = []
+    for path in root.glob("*/campaign.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if (
+            data.get("loop_id") == loop_id
+            and int(data.get("cycle_index") or 0) == cycle_index
+        ):
+            matches.append(str(data.get("campaign_id")))
+    if len(matches) > 1:
+        raise RuntimeError(f"multiple campaigns claim loop cycle {cycle_index}")
+    return matches[0] if matches else None
+
+
 def _experiment_artifact(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
     for path in (camp_dir / "artifacts" / "experiments").glob("*.json"):
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -3686,6 +3703,7 @@ def run_cycle(
         )
 
     idx, pred = _latest_cycle(root, loop_id)
+    lineage_pred = _campaign_at_cycle(root, loop_id, idx)
     if require_action_receipts:
         _require_predecessor_actions(root, loop_id, pred)
     replay = (
@@ -3902,8 +3920,8 @@ def run_cycle(
         "--notes",
         notes,
     ]
-    if pred:
-        init.extend(["--predecessor-campaign-id", pred])
+    if lineage_pred:
+        init.extend(["--predecessor-campaign-id", lineage_pred])
     for evidence_root in _continuous_evidence_roots(root, loop_id, pred):
         init.extend(["--evidence-root", str(evidence_root)])
     _run(init, cwd=cwd, deadline=deadline)

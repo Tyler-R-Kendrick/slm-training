@@ -39,8 +39,11 @@ locked endpoints, arms, seeds, gates, and stopping rules; changes only campaign 
 experiment identity plus the clean current source commit; and records
 `replay_of_manifest_sha256`. Both arms must complete before the execution action is
 acknowledged. A crashed campaign without a handoff remains append-only provenance
-but cannot shadow the latest completed predecessor. Replay manifests carrying Lean
-formal obligations require a fresh formal preflight and otherwise fail closed.
+but cannot shadow the latest completed execution/retry authority. It remains in the
+strict campaign lineage; an already-written gap is recovered only through one unique
+chain of initialized-only campaigns, while completed or ambiguous gaps fail closed.
+Replay manifests carrying Lean formal obligations require a fresh formal preflight
+and otherwise fail closed.
 
 Continuous evidence discovery is predecessor-bounded: explicit `--evidence-root`
 arguments replace the historical recursive `outputs/` default, and the driver

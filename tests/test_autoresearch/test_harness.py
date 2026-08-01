@@ -1987,6 +1987,50 @@ def test_continuous_successor_accepts_cross_campaign_feedback(
     assert len(formed) == 1
 
 
+def test_lineage_recovers_only_an_interrupted_skipped_cycle(tmp_path: Path) -> None:
+    from scripts.autoresearch import _lineage_stores
+
+    first = CampaignSpec(
+        campaign_id="cycle-1",
+        objective="Start a bounded campaign.",
+        primary_metric="score",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    skipped = first.model_copy(
+        update={
+            "campaign_id": "cycle-2",
+            "cycle_index": 2,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    successor = first.model_copy(
+        update={
+            "campaign_id": "cycle-3",
+            "cycle_index": 3,
+            "predecessor_campaign_id": "cycle-1",
+        }
+    )
+    stores = []
+    for spec in (first, skipped, successor):
+        campaign_store = CampaignStore(spec.campaign_id, tmp_path)
+        campaign_store.initialize(spec)
+        stores.append(campaign_store)
+
+    recovered = _lineage_stores(stores[-1], successor)
+    assert tuple(item.root.name for item in recovered) == (
+        "cycle-3",
+        "cycle-2",
+        "cycle-1",
+    )
+
+    (stores[1].root / "cycle_handoff.json").write_text("{}\n")
+    with pytest.raises(RuntimeError, match="predecessor lineage is invalid"):
+        _lineage_stores(stores[-1], successor)
+
+
 def test_continuous_lean_miss_requires_five_priority_lanes() -> None:
     first = hypothesis_matrix(campaign_id="cycle-1")
     optimum = OptimumFeedbackV1(
