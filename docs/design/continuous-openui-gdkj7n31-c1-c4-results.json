@@ -1,0 +1,92 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "gdkj7n31",
+  "upstream_commit": "41d874c76b9ed68f4c6d375366ea4398b95a0429",
+  "integration_commit": "41d874c76b9ed68f4c6d375366ea4398b95a0429",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "cycles": {
+    "continuous-loop-20260801-c1": {
+      "cycle_index": 1,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "status": "harness_failure",
+      "reasons": [
+        "empty_metrics:882492675a03c6bfc3d60f2da7b682c9f2c85125f87ca96ee99868edabbc421e",
+        "empty_metrics:fffd71e144964312346f3a03c1b420533b32ed0510a1e6c4fdf5bb0d59cc66d5",
+        "latency_win_rejected_low_mpr:mpr=0.0<0.333333"
+      ],
+      "root_cause": "session environment provisioning gap: neither the repo-root nor src/apps/{openui_bridge,design_md_bridge} node_modules were installed (no npm ci run yet), so publish_agentv_evaluation raised RuntimeError('AgentV SDK is unavailable') and eval metrics were empty for both arms.",
+      "control": {"id": "c20260801-c1-control", "smoke.latency_ms_p50": 2841.02, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c1-bounds", "smoke.latency_ms_p50": 2712.19, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0}
+    },
+    "continuous-loop-20260801-c2": {
+      "cycle_index": 2,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "status": "harness_failure",
+      "reasons": [
+        "empty_metrics:cefec6619c9287f0b7dfab574b3221c3ed764fe7e0938a639ef8459a68c40fed",
+        "empty_metrics:cbb3c97e1824cfa287ac11d5ad4b74ee00226957b0708567f52cd6aaacc675de",
+        "latency_win_rejected_low_mpr:mpr=0.0<0.333333"
+      ],
+      "root_cause": "same AgentV SDK unavailable blocker as c1 (env not yet self-healed at this point in the session).",
+      "control": {"id": "c20260801-c2-control", "smoke.latency_ms_p50": 20847.59, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c2-canvas", "smoke.latency_ms_p50": 20561.14, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0}
+    },
+    "continuous-loop-20260801-c3": {
+      "cycle_index": 3,
+      "primary_metric": "smoke.latency_ms_p50",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "status": "completed_eval_gates_failed",
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c3-both",
+        "fixture_insufficient_n:c20260801-c3-control",
+        "primary_metric_null_or_worse:smoke.latency_ms_p50:control=7323.04 candidate=7491.72 parse=1.0->1.0 mpr=0.0->0.0",
+        "fixture_insufficient_n_alone"
+      ],
+      "env_note": "First cycle to run after self-heal (repo-root + src/apps/{openui_bridge,design_md_bridge} npm ci, NODE_OPTIONS cleared before invoking the driver): AgentV eval now completes with real scoreboards instead of empty_metrics. This is executable unblocking (definition 3, autotrain-iteration-delivery.md) but is a session-local environment repair only — no tracked file changed, so there is nothing to stack. The equivalent code-level fix (strip NODE_OPTIONS before spawning the AgentV node subprocess, mirroring src/slm_training/dsl/grammar/backends/graphql_js.py's _sanitized_env) already exists as an open, unmerged PR (#1254, branch claude/great-dirac-wcu1ad) from a prior session; not duplicated here.",
+      "control": {"id": "c20260801-c3-control", "smoke.latency_ms_p50": 7323.04, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0, "smoke.structural_similarity": 0.1725},
+      "candidate": {"id": "c20260801-c3-both", "smoke.latency_ms_p50": 7491.72, "smoke.parse_rate": 1.0, "smoke.meaningful_program_rate": 0.0, "smoke.structural_similarity": 0.1725}
+    },
+    "continuous-loop-20260801-c4": {
+      "cycle_index": 4,
+      "role": "promotion",
+      "primary_metric": "held_out.structural_similarity",
+      "positive": false,
+      "stack_layer": false,
+      "action": "no_stack_layer_non_positive",
+      "status": "completed_eval_gates_failed",
+      "reasons": [
+        "fixture_insufficient_n:c20260801-c4-steps",
+        "fixture_insufficient_n:c20260801-c4-control",
+        "primary_metric_null_or_worse:held_out.structural_similarity:control=0.38248 candidate=0.37006 improvement=-0.01242",
+        "fixture_insufficient_n_alone"
+      ],
+      "diagnosis": "experiment improved locally but still fails honest ship gates; continue SFT/architecture experiments; keep RL locked",
+      "control": {"id": "c20260801-c4-control", "held_out.structural_similarity": 0.38248, "held_out.parse_rate": 1.0, "held_out.meaningful_program_rate": 0.0},
+      "candidate": {"id": "c20260801-c4-steps", "held_out.structural_similarity": 0.37006, "held_out.parse_rate": 1.0, "held_out.meaningful_program_rate": 0.0}
+    }
+  },
+  "conclusion": "4 fixture-scale screening cycles, all non-positive. c1-c2 were harness_failure (session env gap: AgentV SDK node_modules missing + hostile sandbox NODE_OPTIONS='--import tsx' breaking the AgentV runner subprocess) and are not informative about any lever. Self-healed locally (npm ci at repo root and both src/apps bridges; NODE_OPTIONS cleared for the driver invocation) with no tracked-file change, since the equivalent code fix is already pending in open PR #1254. c3-c4 ran cleanly post-heal but show null/negative deltas on fixture n=3, consistent with expected fixture insufficient_n — not a regression, not promotion evidence.",
+  "next_priorities": [
+    "Merge PR #1254 (sanitize AgentV NODE_OPTIONS + E741 CI fix) so future continuous-loop sessions do not re-diagnose this env gap",
+    "Continue SFT/architecture experiments at larger step budgets; keep RL locked (per c4 diagnosis)",
+    "Re-run bounds/canvas/steps levers at matched or larger n once a session has budget beyond fixture smoke scale"
+  ],
+  "recorded_at": "2026-08-01T15:45:00+00:00"
+}
