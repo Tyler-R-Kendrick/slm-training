@@ -381,6 +381,96 @@ def repair_loop(
             }
         )
 
+    # Pass 3: incomplete measurement / blind primary falsely labeled rejected or
+    # promotion_failed (not a quality retest with real dual-arm metrics).
+    incomplete_queue = 0
+
+    def _is_quality_retest_reject(reasons: list[str]) -> bool:
+        """True when confirm/promote recorded a real quality or latency comparison."""
+        for r in reasons:
+            s = str(r)
+            if s.startswith("primary_metric_null_or_worse:") and "control=" in s:
+                # Real numeric comparison was available.
+                if "control=None" in s and "candidate=None" in s:
+                    continue
+                return True
+            if s.startswith("latency_win_rejected_low_mpr:"):
+                return True
+            if s.startswith("latency_win_rejected_timeout_band:"):
+                return True
+            if s.startswith("quality_win_rejected_latency_budget:"):
+                return True
+            if s.startswith("confirm_attempts_exceeded:"):
+                return True
+        return False
+
+    def _is_incomplete_only(reasons: list[str]) -> bool:
+        if not reasons:
+            return False
+        if _is_quality_retest_reject(reasons):
+            return False
+        incomplete_markers = (
+            "empty_metrics:",
+            "measurement_incomplete:",
+            "primary_metric_unavailable",
+            "fixture_insufficient_n",
+            "fixture_insufficient_n_alone",
+            "promote_requires_certificate:",
+            "promote_cert_incomplete",
+        )
+        joined = " ".join(reasons)
+        return any(m in joined for m in incomplete_markers)
+
+    def _incomplete_reasons(reasons: list[str], *, from_status: str) -> list[str]:
+        out = [r for r in reasons if not str(r).startswith("historical_reclassification:")]
+        tags = [
+            "harness_failure:measurement_incomplete_not_model_reject",
+            "measurement_incomplete:harness_or_metric_plumbing",
+            f"historical_reclassification:{from_status}→harness_failure:incomplete_only",
+        ]
+        for t in reversed(tags):
+            if t not in out:
+                out.insert(0, t)
+        return out
+
+    for row in queue:
+        st = row.get("status")
+        if st not in {"rejected", "promotion_failed"}:
+            continue
+        reasons = [str(r) for r in (row.get("resolve_reasons") or [])]
+        if not _is_incomplete_only(reasons):
+            continue
+        before = {
+            "status": st,
+            "resolve_reasons": list(reasons),
+            "formal_preflight_status": row.get("formal_preflight_status"),
+        }
+        row["status"] = "harness_failure"
+        row["resolve_reasons"] = _incomplete_reasons(reasons, from_status=str(st))
+        row["last_harness_failure_at"] = now
+        row["last_harness_failure"] = True
+        row["historical_reclassified_at"] = now
+        row["historical_reclassification"] = (
+            f"{st}→harness_failure:incomplete_measurement_only"
+        )
+        row.pop("resolved_at", None)
+        if "promote_attempts" in row:
+            row["promote_attempts"] = 0
+        incomplete_queue += 1
+        audit_events.append(
+            {
+                "schema": "autotrain_historical_reclassification/v1",
+                "kind": "champion_queue",
+                "loop_id": loop_id,
+                "entry_id": row.get("entry_id"),
+                "campaign_id": row.get("promotion_campaign_id")
+                or row.get("confirm_campaign_id"),
+                "before": before,
+                "after_status": "harness_failure",
+                "reclassified_at": now,
+            }
+        )
+
     summary = {
         "loop_id": loop_id,
         "root": str(root),
@@ -389,6 +479,7 @@ def repair_loop(
         "ledger_reclassified": ledger_changed,
         "harness_queue_reclassified": harness_queue,
         "harness_ledger_reclassified": harness_ledger,
+        "incomplete_queue_reclassified": incomplete_queue,
         "audit_events": len(audit_events),
         "old_wall_s": old_wall_s,
     }
@@ -397,7 +488,7 @@ def repair_loop(
         print(json.dumps({"summary": summary, "events": audit_events}, indent=2))
         return summary
 
-    if queue_changed or harness_queue:
+    if queue_changed or harness_queue or incomplete_queue:
         _write_jsonl(queue_path, queue)
     if ledger_changed or harness_ledger:
         _write_jsonl(ledger_path, ledger)

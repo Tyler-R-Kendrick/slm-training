@@ -49,6 +49,13 @@ python -m scripts.repair_formal_timeout_history \
 
 ## Honesty
 
-- Fixture ship-gate fails and true quality nulls stay **failed/rejected**.
-- Only formal-wall mis-records are reclassified.
-- Reclassified heads re-enter promote cadence; train still requires **proved** formal.
+- True quality retests (`primary_metric_null_or_worse` with numbers, latency
+  budget rejects, confirm_attempts_exceeded) stay **rejected**.
+- Formal-wall mis-records → `promotion_inconclusive`.
+- Missing promote run / cert incomplete without candidate metrics →
+  `harness_failure`.
+- Incomplete-only labels (`empty_metrics`, `measurement_incomplete`,
+  fixture-n alone without a real dual-arm quality comparison) →
+  `harness_failure` (not model reject).
+- Reclassified promote heads re-enter promote cadence; train still requires
+  **proved** formal + complete dual-arm metrics for cert.
