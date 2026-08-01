@@ -106,11 +106,11 @@ def test_repair_reclassifies_formal_unknown_failed_as_inconclusive(tmp_path: Pat
     assert q[1]["status"] == "promotion_failed"  # untouched
 
     led = [
-        json.loads(l)
-        for l in (loop_dir / "learning_certificate_ledger.jsonl")
+        json.loads(line)
+        for line in (loop_dir / "learning_certificate_ledger.jsonl")
         .read_text()
         .splitlines()
-        if l.strip()
+        if line.strip()
     ]
     assert led[0]["outcome"] == "promotion_inconclusive"
     assert led[0]["formal_preflight_status"] == "timed_out"
