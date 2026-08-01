@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-31",
+          "note": "Proof-driven continuous promote: formal preflight required+proved, locked metric_expectations.promote.v1 digest, LeverProof v2 optimum_feedback disposition; Phase A smoke alone cannot promote; assumption miss emits five-lane successor matrix"
+        },
         {
           "version": "v23",
           "date": "2026-07-31",
