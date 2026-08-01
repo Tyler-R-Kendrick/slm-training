@@ -106,11 +106,11 @@ def test_repair_reclassifies_formal_unknown_failed_as_inconclusive(tmp_path: Pat
     assert q[1]["status"] == "promotion_failed"  # untouched
 
     led = [
-        json.loads(l)
-        for l in (loop_dir / "learning_certificate_ledger.jsonl")
+        json.loads(line)
+        for line in (loop_dir / "learning_certificate_ledger.jsonl")
         .read_text()
         .splitlines()
-        if l.strip()
+        if line.strip()
     ]
     assert led[0]["outcome"] == "promotion_inconclusive"
     assert led[0]["formal_preflight_status"] == "timed_out"
@@ -135,3 +135,73 @@ def test_looks_like_old_wall_timeout_duration_band() -> None:
         formal_status=None,
         duration_s=None,
     )
+
+
+def test_repair_reclassifies_proved_missing_promote_as_harness_failure(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    loop_dir = root / "loops" / loop
+    loop_dir.mkdir(parents=True)
+    camp = root / "continuous-loop-camp-hf"
+    (camp / "runs" / "c-control").mkdir(parents=True)
+    # No promote run dir — harness gap after formal proved.
+    (camp / "formal_preflight_status.json").write_text(
+        __import__("json").dumps({"status": "proved"}),
+        encoding="utf-8",
+    )
+    queue = [
+        {
+            "entry_id": "champ-h",
+            "status": "promotion_failed",
+            "formal_preflight_status": "proved",
+            "promotion_campaign_id": "continuous-loop-camp-hf",
+            "promote_attempts": 1,
+            "resolved_at": "2026-08-01T00:00:00Z",
+            "resolve_reasons": [
+                "promote_requires_certificate:phase_a_alone_insufficient",
+                "promote_cert_incomplete_metrics:ss=None parse=None",
+                "primary_metric_unavailable",
+            ],
+        }
+    ]
+    ledger = [
+        {
+            "entry_id": "champ-h",
+            "campaign_id": "continuous-loop-camp-hf",
+            "cycle_index": 10,
+            "outcome": "promotion_failed",
+            "formal_preflight_status": "proved",
+            "reasons": [
+                "promote_requires_certificate:phase_a_alone_insufficient",
+                "promote_cert_incomplete_metrics:ss=None parse=None",
+            ],
+        }
+    ]
+    (loop_dir / "champion_queue.jsonl").write_text(
+        "\n".join(__import__("json").dumps(r) for r in queue) + "\n",
+        encoding="utf-8",
+    )
+    (loop_dir / "learning_certificate_ledger.jsonl").write_text(
+        "\n".join(__import__("json").dumps(r) for r in ledger) + "\n",
+        encoding="utf-8",
+    )
+    summary = _mod.repair_loop(root=root, loop_id=loop, dry_run=False)
+    assert summary.get("harness_queue_reclassified", 0) == 1
+    assert summary.get("harness_ledger_reclassified", 0) == 1
+    q = [
+        __import__("json").loads(line)
+        for line in (loop_dir / "champion_queue.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    assert q[0]["status"] == "harness_failure"
+    assert q[0]["status"] != "promotion_failed"
+    led = [
+        __import__("json").loads(line)
+        for line in (loop_dir / "learning_certificate_ledger.jsonl")
+        .read_text()
+        .splitlines()
+        if line.strip()
+    ]
+    assert led[0]["outcome"] == "harness_failure"

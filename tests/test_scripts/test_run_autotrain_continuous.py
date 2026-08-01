@@ -417,6 +417,104 @@ def test_matrix_promote_path_confirmed_knobs() -> None:
     cand = matrix["hypotheses"][1]["experiment"]["knobs"]
     assert cand["grammar_completion_bounds"] is True
     assert cand["steps"] == 81
+    # formal_claims must be on the matrix member (not rewritten post-lock).
+    promo_exp = matrix["hypotheses"][1]["experiment"]
+    assert promo_exp.get("formal_claims")
+    assert promo_exp["formal_claims"][0]["template_id"] == (
+        _mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+
+
+def test_detect_promote_harness_failure_missing_run(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    (camp / "runs" / "c-control").mkdir(parents=True)
+    # Control has metrics via suite loader fallback path — write smoke eval.
+    smoke = camp / "runs" / "c-control" / "eval_smoke.json"
+    smoke.write_text(
+        __import__("json").dumps(
+            {
+                "suite": "smoke",
+                "parse_rate": 1.0,
+                "structural_similarity": 0.4,
+                "meaningful_program_rate": 0.3,
+                "latency_ms_p50": 1000.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    reasons = _mod.detect_promote_harness_failure(
+        camp_dir=camp,
+        control_id="c-control",
+        candidate_id="c-promote",
+        arm_exits={"c-control": 2, "c-promote": 1},
+        cert_err="promote_cert_incomplete_metrics:ss=None parse=None",
+    )
+    assert any(r.startswith("harness_failure:") for r in reasons)
+    assert any("missing_promote_run" in r or "promote_arm_exit" in r for r in reasons)
+
+
+def test_resolve_promotion_harness_failure_not_model_reject(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "L"
+    camp = root / "camp-hf"
+    (camp / "runs" / "c-control").mkdir(parents=True)
+    (camp / "runs" / "c-control" / "eval_smoke.json").write_text(
+        __import__("json").dumps(
+            {
+                "suite": "smoke",
+                "parse_rate": 1.0,
+                "structural_similarity": 0.4,
+                "latency_ms_p50": 1000.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    entry = {
+        "entry_id": "champ-hf-1",
+        "status": "promoting",
+        "knobs_fingerprint": "fp-hf",
+        "promote_attempts": 1,
+        "knobs": {"grammar_completion_bounds": True},
+    }
+    path = _mod._champion_queue_path(root, loop)
+    _mod._write_champion_queue(path, [entry])
+    _mod.record_formal_preflight_status(
+        camp,
+        status="proved",
+        template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
+    )
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop,
+        entry=entry,
+        delivery={
+            "positive": False,
+            "control_id": "c-control",
+            "candidate_id": "c-promote",
+            "reasons": [
+                "primary_metric_unavailable",
+                "promote_cert_incomplete_metrics:ss=None parse=None",
+            ],
+        },
+        campaign_id="camp-hf",
+        cycle_index=3,
+        camp_dir=camp,
+        formal_preflight_status="proved",
+        locked_expectations_sha256="c" * 64,
+        arm_exits={"c-control": 2, "c-promote": 1},
+        cert_err="promote_cert_incomplete_metrics:ss=None parse=None",
+    )
+    assert resolved is not None
+    assert resolved["status"] == "harness_failure"
+    assert resolved["status"] != "promotion_failed"
+    assert resolved["status"] != "rejected"
+    rows = _mod._load_champion_queue(path)
+    assert rows[0]["status"] == "harness_failure"
+    assert int(rows[0].get("promote_attempts") or 0) == 0
+    head = _mod._queue_head_confirmed(rows)
+    assert head is not None and head["entry_id"] == "champ-hf-1"
+    ledger = (root / "loops" / loop / "learning_certificate_ledger.jsonl").read_text()
+    assert "harness_failure" in ledger
 
 
 def test_resolve_promotion_phase_a_alone_cannot_promote(tmp_path: Path) -> None:

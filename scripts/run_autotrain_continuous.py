@@ -179,7 +179,12 @@ _CHAMPION_STATUSES = frozenset(
         "promotion_failed",
         # Formal wall / incomplete measurement — retryable, not a rejection.
         "promotion_inconclusive",
+        # Execute/matrix/process abort before complete measurement — not a model reject.
+        "harness_failure",
     }
+)
+_RETRYABLE_PROMOTE_STATUSES = frozenset(
+    {"confirmed", "promotion_inconclusive", "harness_failure"}
 )
 # Recipe levers that define "same knobs" for confirmatory retest. Measurement
 # knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
@@ -355,13 +360,14 @@ def _queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def _queue_head_confirmed(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """First confirmed/inconclusive champion awaiting promotion (Change C).
+    """First confirmed / inconclusive / harness-blocked champion for promote.
 
-    ``promotion_inconclusive`` (e.g. formal timed out) is retryable — not a
-    rejection — so it re-enters the promote slot on the next promotion cadence.
+    ``promotion_inconclusive`` (formal wall) and ``harness_failure`` (execute /
+    matrix / missing run) are retryable — not model rejects — so they re-enter
+    the promote slot on the next promotion cadence.
     """
     for row in entries:
-        if row.get("status") in {"confirmed", "promotion_inconclusive"}:
+        if row.get("status") in _RETRYABLE_PROMOTE_STATUSES:
             return row
     return None
 
@@ -397,6 +403,7 @@ def _skip_arm_slugs(entries: list[dict[str, Any]]) -> set[str]:
             "confirmed",
             "promoting",
             "promotion_inconclusive",
+            "harness_failure",
         }:
             continue
         knobs = row.get("knobs") or {}
@@ -512,6 +519,7 @@ def _enqueue_champion(
             "confirmed",
             "promoting",
             "promotion_inconclusive",
+            "harness_failure",
         }:
             # Already open / confirmed / pending promote — do not re-queue thrash.
             return None
@@ -603,11 +611,13 @@ def _update_champion_status(
         }:
             row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             row["resolve_reasons"] = list(resolve_reasons or [])
-        elif status == "promotion_inconclusive":
+        elif status in {"promotion_inconclusive", "harness_failure"}:
             # Capture reasons but keep the head retriable (no permanent resolve).
-            row["last_inconclusive_at"] = time.strftime(
-                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
-            )
+            stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            if status == "promotion_inconclusive":
+                row["last_inconclusive_at"] = stamp
+            else:
+                row["last_harness_failure_at"] = stamp
             row["resolve_reasons"] = list(resolve_reasons or [])
             row.pop("resolved_at", None)
         updated = row
@@ -1330,6 +1340,73 @@ def ensure_promote_formal_preflight(
         return status, None
 
 
+def _run_has_usable_metrics(camp_dir: Path, run_id: str) -> bool:
+    """True when suite metrics include parse or structure for cert export."""
+    if not run_id:
+        return False
+    metrics = _run_suite_metrics(camp_dir, run_id)
+    return (
+        metrics.get("parse_rate") is not None
+        or metrics.get("structural_similarity") is not None
+        or metrics.get("meaningful_program_rate") is not None
+    )
+
+
+def detect_promote_harness_failure(
+    *,
+    camp_dir: Path,
+    control_id: str,
+    candidate_id: str,
+    arm_exits: dict[str, int] | None = None,
+    cert_err: str | None = None,
+) -> list[str]:
+    """Return harness_failure reasons when measurement is incomplete due to process.
+
+    Harness failures are not model quality rejects: missing promote run, hard
+    execute exit before artifacts, cert incomplete because candidate never ran.
+    """
+    reasons: list[str] = []
+    exits = arm_exits or {}
+    cand = str(candidate_id or "")
+    ctrl = str(control_id or "")
+    cand_exit = exits.get(cand)
+    if cand and cand_exit is not None and int(cand_exit) == 1:
+        reasons.append(f"harness_failure:promote_arm_exit:{int(cand_exit)}")
+    if cand:
+        cand_dir = camp_dir / "runs" / cand
+        if not cand_dir.is_dir():
+            reasons.append("harness_failure:missing_promote_run")
+        elif not _run_has_usable_metrics(camp_dir, cand):
+            if cert_err and "incomplete_metrics" in str(cert_err):
+                reasons.append("harness_failure:cert_export_no_candidate_metrics")
+            elif cand_exit is not None and int(cand_exit) not in {0, 2}:
+                reasons.append(
+                    f"harness_failure:promote_arm_no_metrics:exit={int(cand_exit)}"
+                )
+    if (
+        cert_err
+        and "incomplete_metrics" in str(cert_err)
+        and cand
+        and not _run_has_usable_metrics(camp_dir, cand)
+    ):
+        tag = "harness_failure:cert_export_no_candidate_metrics"
+        if tag not in reasons:
+            reasons.append(tag)
+    if (
+        cert_err
+        and "missing_run_ids" in str(cert_err)
+    ):
+        reasons.append(f"harness_failure:{cert_err}")
+    # Control-only success with no candidate is always a harness/process gap
+    # when promote was intended (caller only invokes this on promote intent).
+    if ctrl and _run_has_usable_metrics(camp_dir, ctrl) and cand and not (
+        camp_dir / "runs" / cand
+    ).is_dir():
+        if "harness_failure:missing_promote_run" not in reasons:
+            reasons.append("harness_failure:missing_promote_run")
+    return reasons
+
+
 def _resolve_promotion_result(
     *,
     root: Path,
@@ -1342,8 +1419,15 @@ def _resolve_promotion_result(
     certificate: dict[str, Any] | None = None,
     formal_preflight_status: str | None = None,
     locked_expectations_sha256: str | None = None,
+    arm_exits: dict[str, int] | None = None,
+    cert_err: str | None = None,
 ) -> dict[str, Any] | None:
-    """Mark promotion using certificate + formal preflight (not Phase A alone)."""
+    """Mark promotion using certificate + formal preflight (not Phase A alone).
+
+    Harness/process aborts (missing promote run, matrix membership exit, etc.)
+    dispose as ``harness_failure`` — never model ``promotion_failed`` /
+    ``rejected``.
+    """
     camp = camp_dir or (root / campaign_id)
     reasons_in = list(delivery.get("reasons") or [])
     phase_a_positive = bool(delivery.get("positive"))
@@ -1356,39 +1440,89 @@ def _resolve_promotion_result(
         formal_preflight_status = _formal_preflight_status(camp)
     if certificate is None:
         certificate = _load_promote_certificate(camp)
-    if locked_expectations_sha256 is None:
-        try:
-            locked_expectations_sha256 = locked_promote_expectations_sha256()
-        except OSError as exc:
-            # Fail closed: never promote without a readable locked digest.
-            disposition = {
-                "status": "promotion_failed",
-                "reasons": [f"promote_locked_expectations_unreadable:{exc}"],
-                "cert_policy": None,
-                "diagnosis_lanes": [],
-                "emit_five_lane_matrix": False,
-                "breaches": [],
-            }
-            resolve_reasons = list(disposition["reasons"]) + reasons_in
-            return _update_champion_status(
-                root=root,
-                loop_id=loop_id,
-                entry_id=str(entry["entry_id"]),
-                status="promotion_failed",
-                confirm_campaign_id=campaign_id,
-                confirm_cycle_index=cycle_index,
-                resolve_reasons=resolve_reasons,
-            )
 
-    disposition = dispose_champion_promote(
-        formal_preflight_status=formal_preflight_status,
-        certificate=certificate,
-        locked_expectations_sha256=locked_expectations_sha256,
-        phase_a_positive=phase_a_positive,
-        phase_a_quality_held=phase_a_quality,
+    control_id = str(delivery.get("control_id") or "")
+    candidate_id = str(delivery.get("candidate_id") or "")
+    if not control_id or not candidate_id:
+        runs = camp / "runs"
+        if runs.is_dir():
+            names = sorted(p.name for p in runs.iterdir() if p.is_dir())
+            for n in names:
+                if n.endswith("-control"):
+                    control_id = control_id or n
+                if "-promote" in n or n.endswith("-confirm"):
+                    candidate_id = candidate_id or n
+            if not candidate_id and len(names) >= 2:
+                candidate_id = names[-1]
+            if not control_id and names:
+                control_id = names[0]
+
+    # Prefer harness failure over model reject when measurement never completed.
+    harness_reasons = detect_promote_harness_failure(
+        camp_dir=camp,
+        control_id=control_id,
+        candidate_id=candidate_id,
+        arm_exits=arm_exits,
+        cert_err=cert_err
+        or next(
+            (r for r in reasons_in if "promote_cert" in r or "incomplete_metrics" in r),
+            None,
+        ),
     )
-    status = str(disposition["status"])
-    resolve_reasons = list(disposition.get("reasons") or []) + reasons_in
+    # Also surface explicit matrix-membership strings from delivery reasons.
+    for r in reasons_in:
+        if "exact member of the latest hypothesis matrix" in str(r):
+            tag = "harness_failure:matrix_membership"
+            if tag not in harness_reasons:
+                harness_reasons.append(tag)
+
+    if harness_reasons and not _formal_status_is_timeout(formal_preflight_status):
+        disposition = {
+            "status": "harness_failure",
+            "reasons": list(harness_reasons),
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+            "harness_failure": True,
+        }
+        status = "harness_failure"
+        resolve_reasons = list(disposition["reasons"]) + reasons_in
+        locked_expectations_sha256 = locked_expectations_sha256  # may be None
+    else:
+        if locked_expectations_sha256 is None:
+            try:
+                locked_expectations_sha256 = locked_promote_expectations_sha256()
+            except OSError as exc:
+                # Fail closed: never promote without a readable locked digest.
+                disposition = {
+                    "status": "promotion_failed",
+                    "reasons": [f"promote_locked_expectations_unreadable:{exc}"],
+                    "cert_policy": None,
+                    "diagnosis_lanes": [],
+                    "emit_five_lane_matrix": False,
+                    "breaches": [],
+                }
+                resolve_reasons = list(disposition["reasons"]) + reasons_in
+                return _update_champion_status(
+                    root=root,
+                    loop_id=loop_id,
+                    entry_id=str(entry["entry_id"]),
+                    status="promotion_failed",
+                    confirm_campaign_id=campaign_id,
+                    confirm_cycle_index=cycle_index,
+                    resolve_reasons=resolve_reasons,
+                )
+
+        disposition = dispose_champion_promote(
+            formal_preflight_status=formal_preflight_status,
+            certificate=certificate,
+            locked_expectations_sha256=locked_expectations_sha256,
+            phase_a_positive=phase_a_positive,
+            phase_a_quality_held=phase_a_quality,
+        )
+        status = str(disposition["status"])
+        resolve_reasons = list(disposition.get("reasons") or []) + reasons_in
 
     _write_five_lane_successor(
         camp,
@@ -1415,6 +1549,7 @@ def _resolve_promotion_result(
                     "formal_preflight_status": formal_preflight_status,
                     "locked_expectations_sha256": locked_expectations_sha256,
                     "reasons": resolve_reasons,
+                    "harness_failure": bool(disposition.get("harness_failure")),
                     "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 },
                 sort_keys=True,
@@ -1440,13 +1575,19 @@ def _resolve_promotion_result(
                 row["promotion_cycle_index"] = cycle_index
                 row["cert_policy"] = disposition.get("cert_policy")
                 row["formal_preflight_status"] = formal_preflight_status
-                # Timeout/inconclusive is not a decisive promote attempt: refund
-                # so the head is not dropped as promote_attempts_exceeded.
-                if status == "promotion_inconclusive" or disposition.get("timeout"):
+                # Incomplete formal / harness: not a decisive promote attempt.
+                if (
+                    status in {"promotion_inconclusive", "harness_failure"}
+                    or disposition.get("timeout")
+                    or disposition.get("harness_failure")
+                ):
                     attempts = int(row.get("promote_attempts") or 0)
                     row["promote_attempts"] = max(0, attempts - 1)
-                    row["last_formal_timeout"] = True
-                    row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
+                    if status == "promotion_inconclusive" or disposition.get("timeout"):
+                        row["last_formal_timeout"] = True
+                        row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
+                    if status == "harness_failure" or disposition.get("harness_failure"):
+                        row["last_harness_failure"] = True
                 break
         _write_champion_queue(path, entries)
         print(
@@ -2029,10 +2170,17 @@ def _matrix(
         base.update(extra)
         return base
 
-    def exp(eid: str, hyp: str, k: dict, rationale: str) -> dict:
+    def exp(
+        eid: str,
+        hyp: str,
+        k: dict,
+        rationale: str,
+        *,
+        formal_claims: list[dict[str, str]] | None = None,
+    ) -> dict:
         # Citations must include every evidence_use citation (schema invariant).
         exp_cites = list(dict.fromkeys([*cites[:3], *role_citations.values()]))
-        return {
+        payload: dict[str, Any] = {
             "experiment_id": eid,
             "campaign_id": campaign_id,
             "hypothesis": hyp,
@@ -2047,6 +2195,11 @@ def _matrix(
             "citations": exp_cites,
             "knobs": k,
         }
+        # Attach formal claims *before* hypothesize so locked matrix membership
+        # stays exact at execute (do not rewrite experiment files post-lock).
+        if formal_claims:
+            payload["formal_claims"] = list(formal_claims)
+        return payload
 
     prefix = campaign_id.replace("continuous-loop-", "c")
     # Promotion path (Change C): confirmed champion knobs under promotion suites.
@@ -2087,6 +2240,7 @@ def _matrix(
                     "Promotion retest of confirmed champion levers under promotion primary/suites.",
                     cand_knobs,
                     "Champion queue promotion arm — multi-seed / held-out when policy requires.",
+                    formal_claims=[promote_formal_claim_dict()],
                 ),
                 "evidence_uses": uses(),
                 "novelty": novelty(1, "promote confirmed knobs"),
@@ -2732,7 +2886,7 @@ def run_cycle(
     queue_path = _champion_queue_path(root, loop_id)
     queue_entries = _load_champion_queue(queue_path)
     # Recover mid-cycle crash: promoting → confirmed so next promotion slot retries.
-    # promotion_inconclusive already retriable via _queue_head_confirmed.
+    # promotion_inconclusive / harness_failure already retriable via _queue_head_confirmed.
     recovered = False
     for row in queue_entries:
         if row.get("status") == "promoting":
@@ -3094,6 +3248,7 @@ def run_cycle(
             order = []
 
     seen: set[str] = set()
+    arm_exits: dict[str, int] = {}
     for eid in order:
         if eid in seen or eid not in by_id:
             continue
@@ -3102,15 +3257,9 @@ def run_cycle(
         is_promote_arm = cycle_intent == "promote" and (
             eid.endswith("-promote") or "-promote" in eid
         )
-        # Bind formal_claims on the promote experiment so obligations match.
-        if is_promote_arm and promote_preflight_sha:
-            exp = {
-                **exp,
-                "formal_claims": [promote_formal_claim_dict()],
-            }
-            by_id[eid].write_text(
-                json.dumps(exp, indent=2) + "\n", encoding="utf-8"
-            )
+        # formal_claims must already be on the matrix member (promote path in
+        # _matrix). Do not rewrite the experiment after hypothesize — that
+        # breaks exact matrix membership and aborts the promote arm (exit=1).
         man = _manifest(
             campaign_id,
             exp,
@@ -3139,6 +3288,7 @@ def run_cycle(
         ]
         print("+", " ".join(cmd), flush=True)
         code = subprocess.call(cmd, cwd=cwd)
+        arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
 
     _run(
@@ -3193,7 +3343,20 @@ def run_cycle(
                         candidate_id = names[-1]
                     if not control_id and names:
                         control_id = names[0]
-            if control_id and candidate_id:
+            # Prefer matrix arm ids when delivery omitted promote.
+            if not candidate_id:
+                for eid in order:
+                    if "-promote" in eid:
+                        candidate_id = eid
+                        break
+            if not control_id:
+                for eid in order:
+                    if eid.endswith("-control"):
+                        control_id = eid
+                        break
+            if control_id and candidate_id and _run_has_usable_metrics(
+                camp_dir, candidate_id
+            ):
                 _cert_path, cert_err = export_promote_metric_certificate(
                     camp_dir=camp_dir,
                     campaign_id=campaign_id,
@@ -3203,18 +3366,37 @@ def run_cycle(
                 )
                 if cert_err:
                     print(f"PROMOTE_CERT_EXPORT_FAIL {cert_err}", flush=True)
-                    # Stash reason for disposition ledger.
                     delivery = {
                         **delivery,
                         "reasons": list(delivery.get("reasons") or [])
                         + [cert_err],
                     }
+            elif control_id and candidate_id:
+                cert_err = "promote_cert_incomplete_metrics:ss=None parse=None"
+                print(f"PROMOTE_CERT_EXPORT_FAIL {cert_err}", flush=True)
+                delivery = {
+                    **delivery,
+                    "control_id": control_id,
+                    "candidate_id": candidate_id,
+                    "reasons": list(delivery.get("reasons") or []) + [cert_err],
+                    "harness_failure": True,
+                    "measurement_complete": False,
+                }
             else:
                 cert_err = "promote_cert_missing_run_ids"
                 delivery = {
                     **delivery,
                     "reasons": list(delivery.get("reasons") or []) + [cert_err],
+                    "harness_failure": True,
+                    "measurement_complete": False,
                 }
+            # Attach arm exits for harness classification.
+            delivery = {
+                **delivery,
+                "control_id": control_id or delivery.get("control_id"),
+                "candidate_id": candidate_id or delivery.get("candidate_id"),
+                "arm_exits": arm_exits,
+            }
         _resolve_promotion_result(
             root=root,
             loop_id=loop_id,
@@ -3225,6 +3407,8 @@ def run_cycle(
             camp_dir=camp_dir,
             formal_preflight_status=promote_formal_status
             or _formal_preflight_status(camp_dir),
+            arm_exits=arm_exits,
+            cert_err=cert_err,
         )
     else:
         # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
