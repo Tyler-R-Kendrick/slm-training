@@ -1,0 +1,69 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c4",
+  "cycle_index": 4,
+  "source_commit": "24c20769c366aeb9e9f7a98eb72089b3a97859c7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 12,
+    "ship_gates": true,
+    "claim_class": "promotion_candidate"
+  },
+  "hypothesis": "Doubling steps without levers only raises cost and does not improve unit decode latency.",
+  "arms": {
+    "c4-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "latency_ms_p50": 20780.2,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333
+      }
+    },
+    "c4-steps": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "latency_ms_p50": 11447.07,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333
+      },
+      "levers": {
+        "steps": "doubled vs control"
+      }
+    }
+  },
+  "primary_metric": "held_out.structural_similarity",
+  "primary_metric_available": false,
+  "secondary_metric": "mpr_per_ms",
+  "secondary_delta": {
+    "from": 1.6040911e-05,
+    "to": 2.9119533e-05,
+    "improvement_pct": 81.53
+  },
+  "conclusion": "The stated hypothesis (doubling steps only raises cost, no latency benefit) is REFUTED by this cycle's observation: the steps candidate cut smoke p50 latency by ~45% (20780.2ms -> 11447.07ms) with parse_rate and meaningful_program_rate both held identical to control (1.0 / 0.333). The campaign's own preregistered primary metric (held_out.structural_similarity) was not measured, so this is classified positive only via the secondary quality-aware efficiency heuristic (mpr_per_ms), with fixture n still insufficient on both arms. Not a ship claim; not promoted.",
+  "sdlc_delivery": {
+    "positive": true,
+    "stack_layer": false,
+    "action": "positive_no_tracked_delta_skip_stack",
+    "agent_required": "metric win recorded; no code/docs delta — skip stack PR; continue loop",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c4-steps",
+      "fixture_insufficient_n:c20260801-c4-control",
+      "efficiency_win:mpr_per_ms:1.6040911e-05->2.9119533e-05",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "Re-run this steps-doubling arm with the preregistered held_out.structural_similarity suite bound so the primary metric is actually measured before treating this as more than a provisional efficiency signal.",
+    "Replicate at a larger, non-fixture n to clear the volume gate before any promotion consideration.",
+    "No code/harness change accompanies this finding (a hyperparameter/steps knob, not a code delta) — per the driver's own classification, no stacked PR for this cycle; docs-only local commit."
+  ],
+  "recorded_at": "2026-08-01T03:51:01Z"
+}

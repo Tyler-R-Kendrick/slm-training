@@ -1,0 +1,66 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c3",
+  "cycle_index": 3,
+  "source_commit": "24c20769c366aeb9e9f7a98eb72089b3a97859c7",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
+  "arms": {
+    "c3-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "latency_ms_p50": 7723.25,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c3-both": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "latency_ms_p50": 7864.44,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": 141.1899999999996,
+  "conclusion": "grammar_completion_bounds + compact_active_canvas combined did not beat matched control on smoke p50 latency (delta +141.19ms, candidate slower); parse_rate held at 1.0 on both arms, meaningful_program_rate stayed 0.0, fixture n insufficient on both arms as expected at smoke scale. Refutes the combined-levers hypothesis for this recipe. Non-positive: no stack layer.",
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c3-both",
+      "fixture_insufficient_n:c20260801-c3-control",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=7723.25 candidate=7864.44 parse=1.0->1.0 mpr=0.0->0.0",
+      "primary_metric_null_or_worse:smoke.latency_ms_p50:control=7723.25 candidate=7864.44 improvement=-141.1899999999996",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "next_priorities": [
+    "Do not promote the combined bounds+canvas lever pair; neither single-lever nor combined variants have beaten control yet in this loop (see c2, c3).",
+    "Continue the thrash rotation to the steps/batch1 arms (already covered in c4) before re-testing bounds/canvas.",
+    "If a future combined-lever retest is warranted, raise fixture n past the volume gate first."
+  ],
+  "recorded_at": "2026-08-01T03:46:08Z"
+}
