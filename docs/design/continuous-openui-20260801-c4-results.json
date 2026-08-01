@@ -1,0 +1,82 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c4",
+  "cycle_index": 4,
+  "source_commit": "2a64db996754d2ce25edcc0d82ee448f7843cd85",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 42,
+    "batch_size": 2,
+    "seed": 100004,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "role": "promotion",
+  "intent": "confirm",
+  "arms": {
+    "c20260801-c4-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "latency_ms_p50": 11518.24
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c4-confirm": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "latency_ms_p50": 12036.38
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "unexecuted_hypotheses": [
+    "c20260801-c4-bounds",
+    "c20260801-c4-canvas",
+    "c20260801-c4-both"
+  ],
+  "primary_metric": "held_out.structural_similarity",
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "has_tracked_delta": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c4-control",
+      "fixture_insufficient_n:c20260801-c4-confirm",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "champion_queue": {
+    "entry_id": "champ-continuous-openui-20260801-3-3ef2d4724c8df79e",
+    "knobs_fingerprint": "3ef2d4724c8df79e",
+    "status": "rejected",
+    "confirm_attempts": 1,
+    "confirm_campaign_id": "continuous-loop-20260801-c4"
+  },
+  "conclusion": "The bounds+canvas champion from cycle 3 (queued after a screening win at seed 100003) was retested with the same levers at a new seed (100004, same steps=42) and the result reversed: candidate latency_ms_p50 rose to 12036.38 vs control 11518.24 (a regression, not a win). The champion-queue confirmatory gate correctly rejected the entry (status: queued -> rejected) instead of promoting a seed-lucky screening result. No stack layer opened -- there is nothing to stack; the c3 'win' was seed noise at n=3, exactly the scenario the confirm step exists to catch.",
+  "next_priorities": [
+    "Treat the c3 bounds+canvas latency delta as not reproducible; do not re-propose it as a champion without isolating bounds-only vs canvas-only first",
+    "Both this cycle's control and confirm arms show much higher absolute latency (~11.5-12.0s) than cycle 3's (~3.8-3.9s) at the same steps=42 -- likely seed-driven output-length variance at n=3, not a lever effect; worth a larger-n diagnostic once suite budget allows",
+    "Continue the loop with fresh hypotheses (bounds-only, canvas-only, higher steps) rather than re-chasing the rejected combined-lever champion"
+  ],
+  "recorded_at": "2026-08-01T00:44:18Z"
+}
