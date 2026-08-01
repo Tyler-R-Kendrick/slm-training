@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 from pathlib import Path
+
+import pytest
 
 _SCRIPT = (
     Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
@@ -49,9 +53,7 @@ def test_naive_latency_win_with_zero_mpr_is_not_positive() -> None:
 
 
 def test_latency_win_with_held_quality_is_positive() -> None:
-    control, candidate = _arms(
-        c_lat=11208.72, t_lat=7676.43, c_mpr=1.0, t_mpr=1.0
-    )
+    control, candidate = _arms(c_lat=11208.72, t_lat=7676.43, c_mpr=1.0, t_mpr=1.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -62,9 +64,7 @@ def test_latency_win_with_held_quality_is_positive() -> None:
 
 def test_quality_win_with_bounded_latency_cost_is_positive() -> None:
     # Control slightly faster but candidate has better meaning — must not fail.
-    control, candidate = _arms(
-        c_lat=7911.18, t_lat=8197.07, c_mpr=0.0, t_mpr=1.0
-    )
+    control, candidate = _arms(c_lat=7911.18, t_lat=8197.07, c_mpr=0.0, t_mpr=1.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -73,9 +73,7 @@ def test_quality_win_with_bounded_latency_cost_is_positive() -> None:
 
 
 def test_quality_win_rejected_when_latency_blows_budget() -> None:
-    control, candidate = _arms(
-        c_lat=5000.0, t_lat=10000.0, c_mpr=0.0, t_mpr=1.0
-    )
+    control, candidate = _arms(c_lat=5000.0, t_lat=10000.0, c_mpr=0.0, t_mpr=1.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -84,9 +82,7 @@ def test_quality_win_rejected_when_latency_blows_budget() -> None:
 
 
 def test_timeout_band_micro_win_rejected() -> None:
-    control, candidate = _arms(
-        c_lat=12000.9, t_lat=12000.3, c_mpr=0.33, t_mpr=0.33
-    )
+    control, candidate = _arms(c_lat=12000.9, t_lat=12000.3, c_mpr=0.33, t_mpr=0.33)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -109,9 +105,7 @@ def test_efficiency_win_counts_when_faster_with_same_mpr() -> None:
 
 
 def test_mpr_regression_blocks_latency_win() -> None:
-    control, candidate = _arms(
-        c_lat=10000.0, t_lat=5000.0, c_mpr=1.0, t_mpr=0.0
-    )
+    control, candidate = _arms(c_lat=10000.0, t_lat=5000.0, c_mpr=1.0, t_mpr=0.0)
     positive, reasons = _classify(
         control=control, candidate=candidate, primary_metric=_PRIMARY
     )
@@ -145,9 +139,20 @@ def test_climb_policy_measurement_helpers() -> None:
     )
 
     policy = load_climb_policy()
-    assert stage_wall_minutes_for_role(policy, "screening") >= 8
+    assert stage_wall_minutes_for_role(policy, "screening") == 3
     assert decode_timeout_seconds_for_role(policy, "screening") >= 20
     assert eval_suites_for_role(policy, "screening") == ("smoke",)
+
+
+def test_run_metrics_loads_screening_quality_primary(tmp_path: Path) -> None:
+    run_dir = tmp_path / "runs" / "candidate"
+    run_dir.mkdir(parents=True)
+    (run_dir / "eval_smoke.json").write_text(
+        json.dumps({"metrics": {"binder_reference_f1": 0.75}})
+    )
+    metrics = _mod._run_metrics(tmp_path, "candidate")
+    assert metrics["binder_reference_f1"] == 0.75
+    assert metrics["smoke.binder_reference_f1"] == 0.75
 
 
 def test_knobs_fingerprint_excludes_steps_jitter() -> None:
@@ -235,9 +240,7 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
         "decode_timeout_seconds": 24.0,
     }
     (exp_dir / "c1-bounds.json").write_text(
-        __import__("json").dumps(
-            {"experiment_id": "c1-bounds", "knobs": knobs}
-        ),
+        __import__("json").dumps({"experiment_id": "c1-bounds", "knobs": knobs}),
         encoding="utf-8",
     )
     delivery = {
@@ -290,9 +293,12 @@ def test_champion_queue_enqueue_dedup_and_confirm_resolve(tmp_path: Path) -> Non
     )
     assert resolved is not None
     assert resolved["status"] == "confirmed"
-    assert _mod._queue_head_open(
-        _mod._load_champion_queue(_mod._champion_queue_path(root, loop_id))
-    ) is None
+    assert (
+        _mod._queue_head_open(
+            _mod._load_champion_queue(_mod._champion_queue_path(root, loop_id))
+        )
+        is None
+    )
 
 
 def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
@@ -557,10 +563,15 @@ def test_resolve_promotion_phase_a_alone_cannot_promote(tmp_path: Path) -> None:
     )
     assert fail is not None
     assert fail["status"] == "promotion_failed"
-    assert any("formal_preflight" in r or "certificate" in r for r in (fail.get("resolve_reasons") or []))
+    assert any(
+        "formal_preflight" in r or "certificate" in r
+        for r in (fail.get("resolve_reasons") or [])
+    )
 
 
-def _v2_cert(*, exp_sha: str, authority: str = "assumption_backed", relation: str = "in_band") -> dict:
+def _v2_cert(
+    *, exp_sha: str, authority: str = "assumption_backed", relation: str = "in_band"
+) -> dict:
     """Minimal v2 certificate mapping accepted by optimum_feedback."""
     return {
         "schema": "metric_certificate/v2",
@@ -666,7 +677,7 @@ def test_dispose_champion_promote_in_band_v2_promotes() -> None:
         control_metrics=control,
         candidate_metrics=candidate,
     )
-    assert d["status"] == "promoted"
+    assert d["status"] == "climb_accepted"
     assert d["cert_policy"] == "continue"
     assert d["promotion_primary_met"] is True
     assert d["primary_improvement"] is not None
@@ -747,9 +758,7 @@ def test_dispose_champion_promote_theorem_miss_no_promote() -> None:
     exp_sha = _mod.locked_promote_expectations_sha256()
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
-        certificate=_v2_cert(
-            exp_sha=exp_sha, authority="theorem", relation="below"
-        ),
+        certificate=_v2_cert(exp_sha=exp_sha, authority="theorem", relation="below"),
         locked_expectations_sha256=exp_sha,
     )
     assert d["status"] == "promotion_failed"
@@ -775,7 +784,11 @@ def test_promote_manifest_locks_expectations_and_formal() -> None:
     exp = {
         "experiment_id": "c-promote",
         "hypothesis": "Confirmed champion levers hold under promotion primary.",
-        "knobs": {"seed": 7, "eval_version": "e_test", "grammar_completion_bounds": True},
+        "knobs": {
+            "seed": 7,
+            "eval_version": "e_test",
+            "grammar_completion_bounds": True,
+        },
         "formal_claims": [_mod.promote_formal_claim_dict()],
     }
     preflight_sha = "ab" * 32  # 64 hex
@@ -886,11 +899,11 @@ def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
         arm_exits={"c-control": 0, "c-promote": 0},
     )
     assert resolved is not None
-    assert resolved["status"] == "promoted"
+    assert resolved["status"] == "climb_accepted"
     ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
     assert ledger.is_file()
     line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
-    assert "promoted" in line
+    assert "climb_accepted" in line
     assert "promote_primary_win" in line or "primary_improvement" in line
 
 
@@ -1140,7 +1153,11 @@ def test_is_champion_lever_includes_steps_and_batch1() -> None:
     )
     assert _mod._is_champion_lever({"batch_size": 1}, candidate_id="x-batch1")
     assert _mod._is_champion_lever(
-        {"grammar_completion_bounds": False, "compact_active_canvas": False, "steps": 160},
+        {
+            "grammar_completion_bounds": False,
+            "compact_active_canvas": False,
+            "steps": 160,
+        },
         candidate_id="c20260731-c1-steps",
     )
     assert not _mod._is_champion_lever(
@@ -1223,7 +1240,7 @@ def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
         control_metrics=control,
         candidate_metrics=candidate,
     )
-    assert d["status"] == "promoted"
+    assert d["status"] == "climb_accepted"
 
 
 def test_export_promote_metric_certificate_fail_closed_without_metrics(
@@ -1414,9 +1431,179 @@ def test_driver_lock_singleton(tmp_path: Path) -> None:
     fh2.close()
 
 
-def test_promote_formal_timeout_constant_is_10_minutes() -> None:
-    # Continuous promote Lean wall is 10 minutes (timeouts are inconclusive).
-    assert _mod._PROMOTE_FORMAL_TIMEOUT_S == 600.0
+def test_promote_formal_timeout_obeys_repository_cap() -> None:
+    from slm_training.levers import MAX_RUN_SECONDS
+
+    assert _mod._PROMOTE_FORMAL_TIMEOUT_S == float(MAX_RUN_SECONDS)
+
+
+def test_cycle_deadline_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
+    with pytest.raises(subprocess.TimeoutExpired, match="autotrain bounded cycle"):
+        _mod._remaining_timeout(9.0)
+
+
+def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[dict] = []
+    lock_handle = (tmp_path / "driver.lock").open("w+")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    monkeypatch.setattr(
+        _mod,
+        "acquire_driver_lock",
+        lambda *args, **kwargs: lock_handle,
+    )
+    monkeypatch.setattr(
+        _mod,
+        "run_cycle",
+        lambda **kwargs: calls.append(kwargs) or "cycle-1",
+    )
+
+    assert _mod.main(["--supervised", "--max-cycles", "1"]) == 0
+    assert len(calls) == 1
+    assert calls[0]["sync_git"] is False
+
+
+def _priority_matrix() -> dict:
+    return {
+        "next_run_priorities": [
+            {
+                "rank": 1,
+                "area": "model",
+                "hypothesis": "Test the next quality-bearing model lever.",
+                "evidence_ids": ["feedback-1"],
+                "confidence": 0.5,
+                "expected_information_gain": "Resolve one quality residual.",
+                "authority": "speculative",
+                "disposition": "monitor",
+                "proposed_experiment_id": None,
+            }
+        ]
+    }
+
+
+def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "runs" / "cand").mkdir(parents=True)
+    (camp / "runs" / "cand" / "gates.json").write_text(
+        json.dumps({"authority": "AgentEvals assertions", "pass": False})
+    )
+    (camp / "runs" / "cand" / "last.pt").write_bytes(b"checkpoint")
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": True,
+            "candidate_id": "cand",
+            "reasons": ["primary_metric_win:x"],
+            "stack_layer": False,
+        },
+        resolution={"status": "climb_accepted", "resolve_reasons": []},
+        formal_status="proved",
+    )
+    assert handoff.climb_state == "climb_accepted"
+    assert handoff.ship_state == "blocked"
+    assert handoff.evidence_class == "fixture"
+    assert handoff.checkpoint_paths == ("runs/cand/last.pt",)
+    assert handoff.checkpoint_documentation_required is True
+    assert "MODEL_CARD" in next(
+        action.reason for action in handoff.actions if action.kind == "document"
+    )
+    assert {action.kind for action in handoff.actions} == {
+        "document",
+        "next_experiment",
+    }
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["phase"] == "between_cycles"
+
+
+def test_cycle_handoff_routes_frozen_harness_repair(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    (camp / "artifacts" / "outcomes").mkdir(parents=True)
+    (camp / "artifacts" / "outcomes" / "outcome.json").write_text(
+        json.dumps(
+            {
+                "harness_signals": [
+                    {
+                        "family": "model_build",
+                        "reproduced_on_frozen_input": True,
+                    }
+                ]
+            }
+        )
+    )
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="promote",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "candidate_id": "cand",
+            "reasons": ["harness_failure:missing_promote_run"],
+            "stack_layer": False,
+        },
+        resolution={"status": "harness_failure", "resolve_reasons": []},
+        formal_status="proved",
+    )
+    repair = handoff.actions[0]
+    assert repair.kind == "repair_harness"
+    assert repair.owner == "improve-openui-harnesses"
+    assert repair.harness_family == "model_build"
+    assert repair.frozen_manifest_sha256 is not None
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
+def test_repeated_cycle_failure_blocks_on_third_identical_error(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    for expected in (1, 2, 3):
+        count = _mod._record_cycle_failure(
+            root=root,
+            loop_id="loop-1",
+            exc=RuntimeError("same blocker"),
+            cycle_index=0,
+        )
+        assert count == expected
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["state"] == "BLOCKED"
+    assert state["blocker_count"] == 3
+
+
+def test_causal_family_saturates_per_integrated_code() -> None:
+    entries = [
+        {
+            "status": "rejected",
+            "source_integration_commit": "a" * 40,
+            "knobs": {"grammar_completion_bounds": True},
+        },
+        {
+            "status": "promotion_failed",
+            "source_integration_commit": "a" * 40,
+            "knobs": {"grammar_completion_bounds": True},
+        },
+    ]
+    assert "bounds" in _mod._skip_arm_slugs(entries, integration_commit="a" * 40)
+    assert "bounds" not in _mod._skip_arm_slugs(entries, integration_commit="b" * 40)
 
 
 def test_dispose_champion_promote_formal_timeout_is_inconclusive_not_failed() -> None:

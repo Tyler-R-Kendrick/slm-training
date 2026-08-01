@@ -77,6 +77,14 @@ from slm_training.harnesses.experiments.verified_metrics import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _bounded_campaign_seconds(campaign: CampaignSpec) -> float:
+    """Honor old campaign records without exceeding the current run cap."""
+    return min(
+        float(campaign.budget.max_wall_minutes * 60),
+        float(MAX_RUN_MINUTES * 60),
+    )
+
+
 def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", *args],
@@ -128,6 +136,8 @@ def _artifact(store: CampaignStore, kind: str, path: Path | None):
 
 
 def cmd_init(args: argparse.Namespace) -> int:
+    if args.max_wall_minutes > MAX_RUN_MINUTES:
+        raise ValueError(f"--max-wall-minutes cannot exceed {MAX_RUN_MINUTES}")
     if args.loop_id is not None:
         if args.upstream_commit is None or args.integration_commit is None:
             raise ValueError(
@@ -216,7 +226,7 @@ def cmd_research(args: argparse.Namespace) -> int:
             timeout_seconds=(
                 args.researcher_timeout
                 if args.researcher_timeout is not None
-                else float(campaign.budget.max_wall_minutes * 60)
+                else _bounded_campaign_seconds(campaign)
             ),
         )
         run = researcher.run(campaign, evidence, sources)
@@ -439,7 +449,9 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
     # Prefer loop-scoped ledger when loop lineage exists; else campaign root.
     loop_id = campaign.loop_id
     if loop_id:
-        exhausted_ledger = load_loop_exhausted_ledger(store.root.parent, loop_id, policy)
+        exhausted_ledger = load_loop_exhausted_ledger(
+            store.root.parent, loop_id, policy
+        )
         exhausted_identity = loop_data_eval_identity(
             policy,
             claim_class=claim_class,
@@ -809,9 +821,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         except FileNotFoundError:
             lock = None
     if args.execute and lock is None:
-        raise ValueError(
-            "execution requires a preregistered --campaign-manifest lock"
-        )
+        raise ValueError("execution requires a preregistered --campaign-manifest lock")
     if lock is not None and manifest_path is None:
         validate_formal_preflights(store.root, experiment, lock.manifest)
     if lock is not None and lock.manifest.requires_rl:
@@ -872,7 +882,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         experiment,
         commands,
         cwd=ROOT,
-        timeout_seconds=float(campaign.budget.max_wall_minutes * 60),
+        timeout_seconds=_bounded_campaign_seconds(campaign),
         campaign_manifest_sha256=lock.manifest_sha256,
     )
     outcome_path = store.write_artifact("outcomes", outcome)
@@ -957,7 +967,7 @@ def cmd_formalize(args: argparse.Namespace) -> int:
         raise ValueError("experiment declares no formal claims")
     rows: list[dict[str, object]] = []
     required_blocked = False
-    deadline = time.monotonic() + float(campaign.budget.max_wall_minutes * 60)
+    deadline = time.monotonic() + _bounded_campaign_seconds(campaign)
     for claim in experiment.formal_claims:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
@@ -1131,9 +1141,7 @@ def _record_hypothesis_feedback(
 
     policy = load_climb_policy()
     claim_class = str(policy.defaults.get("exploratory_claim_class") or "fixture")
-    baseline = resolve_baseline_primary(
-        feedback.metrics, primary_metric=primary_metric
-    )
+    baseline = resolve_baseline_primary(feedback.metrics, primary_metric=primary_metric)
     if baseline is None:
         baseline = _baseline_primary_from_store(
             store,
@@ -1175,8 +1183,12 @@ def _record_hypothesis_feedback(
                 knobs_raw = parsed
         except json.JSONDecodeError:
             knobs_raw = {}
-        train_v = str(knobs_raw["train_version"]) if knobs_raw.get("train_version") else None
-        eval_v = str(knobs_raw["eval_version"]) if knobs_raw.get("eval_version") else None
+        train_v = (
+            str(knobs_raw["train_version"]) if knobs_raw.get("train_version") else None
+        )
+        eval_v = (
+            str(knobs_raw["eval_version"]) if knobs_raw.get("eval_version") else None
+        )
         identity = loop_data_eval_identity(
             policy,
             claim_class=claim_class,

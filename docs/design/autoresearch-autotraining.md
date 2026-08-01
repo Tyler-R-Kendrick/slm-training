@@ -12,6 +12,14 @@ feedback into bounded, falsifiable training experiments. It does not create a ne
 trainer or lineage. Training still flows through the canonical data, model,
 evaluation, AgentV, checkpoint, and promotion surfaces.
 
+Bare `/autotrain` uses an agent-supervised control plane rather than leaving a
+multi-cycle subprocess in charge. The unbudgeted host goal syncs Git, runs one
+bounded `--supervised` cycle, validates `AutotrainCycleHandoffV1`, executes its
+typed harness/Lean/data/docs/SDLC actions, prints the compact matrix, and starts
+the successor. `AutotrainLoopStateV1` supplies a durable heartbeat and resumable
+phase. Fixture `climb_accepted` and full `ship_promoted` are intentionally
+different verdicts.
+
 Research and proposal compilation are separate stages:
 
 1. a swappable `Researcher` implementation receives a bounded `ResearchRequest`

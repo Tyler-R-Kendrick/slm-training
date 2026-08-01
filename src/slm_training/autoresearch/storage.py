@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,7 @@ from slm_training.autoresearch.experiment_campaign import (
     validate_result_claim,
 )
 from slm_training.lineage.records import canonical_json
+from slm_training.levers import MAX_RUN_SECONDS
 
 _OUTCOME_BOUNDARY_EVENTS = frozenset(
     {
@@ -438,6 +440,13 @@ def loop_result_rows(
         outcome = run["outcome"]
         feedback = run["feedback"]
         optimum = feedback.optimum_feedback if feedback is not None else None
+        handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
+        handoff: dict[str, Any] = {}
+        if handoff_path.is_file():
+            try:
+                handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                handoff = {}
         rows.append(
             {
                 "cycle": campaign.cycle_index,
@@ -458,6 +467,9 @@ def loop_result_rows(
                 ),
                 "lean": _lean_text(optimum),
                 "gates": _gate_text(outcome.metrics),
+                "evidence_class": handoff.get("evidence_class", "fixture"),
+                "climb": handoff.get("climb_state", "—"),
+                "ship": handoff.get("ship_state", "blocked"),
                 "status": outcome.status,
                 "campaign_id": campaign.campaign_id,
             }
@@ -643,7 +655,18 @@ def loop_diagnostic_rows(
                     "evidence": evidence,
                 }
             )
-    return rows
+    unique: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
+    for row in rows:
+        key = tuple(
+            row.get(name)
+            for name in ("cycle", "source", "area", "signal", "authority", "evidence")
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(row)
+    return unique
 
 
 def loop_priority_rows(
@@ -655,7 +678,6 @@ def loop_priority_rows(
         for campaign in _loop_campaigns(Path(root), loop_id, last=last)
     }
     matrices: list[tuple[CampaignSpec, HypothesisMatrix]] = []
-    finished_ids = {run["outcome"].experiment_id for run in runs}
     for campaign in campaigns.values():
         store = CampaignStore(campaign.campaign_id, Path(root))
         for event in store.verify_event_chain():
@@ -672,11 +694,6 @@ def loop_priority_rows(
     }
     rows: list[dict[str, Any]] = []
     for campaign, matrix in matrices:
-        if any(
-            candidate.experiment.experiment_id in finished_ids
-            for candidate in matrix.hypotheses
-        ):
-            continue
         for priority in sorted(matrix.next_run_priorities, key=lambda item: item.rank):
             rows.append(
                 {
@@ -740,13 +757,16 @@ def loop_priority_rows(
                     "action": "repair_before_run",
                 }
             )
-    return rows
+    if not rows:
+        return []
+    latest_cycle = max(int(row.get("cycle") or 0) for row in rows)
+    return [row for row in rows if int(row.get("cycle") or 0) == latest_cycle]
 
 
 def render_loop_result_matrix(
     root: Path | str, loop_id: str, *, last: int | None = None
 ) -> str:
-    """Render three canonical between-run views from verified event chains."""
+    """Render canonical liveness, result, diagnostic, and priority views."""
     result_columns = (
         ("cycle", "Cycle"),
         ("upstream", "Upstream"),
@@ -757,6 +777,9 @@ def render_loop_result_matrix(
         ("metrics", "Metrics"),
         ("lean", "Lean bands"),
         ("gates", "Gates"),
+        ("evidence_class", "Evidence"),
+        ("climb", "Climb"),
+        ("ship", "Ship"),
         ("status", "Status"),
     )
     diagnostic_columns = (
@@ -780,8 +803,48 @@ def render_loop_result_matrix(
         ("experiment", "Experiment"),
         ("action", "Action"),
     )
+    state_path = Path(root) / "loops" / loop_id / "state.json"
+    state: dict[str, Any] = {}
+    if state_path.is_file():
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            state = {}
+    recorded_state = str(state.get("state") or "UNKNOWN")
+    heartbeat = str(state.get("heartbeat_at") or "—")
+    if heartbeat != "—" and recorded_state not in {"BLOCKED", "DEAD"}:
+        try:
+            stamp = datetime.fromisoformat(heartbeat.replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - stamp).total_seconds()
+            if age > 2 * MAX_RUN_SECONDS:
+                recorded_state = "STALE"
+        except ValueError:
+            recorded_state = "STALE"
+    liveness_columns = (
+        ("state", "State"),
+        ("phase", "Phase"),
+        ("cycle", "Cycle"),
+        ("active", "Active"),
+        ("last", "Last complete"),
+        ("next", "Next action"),
+        ("blockers", "Blockers"),
+        ("heartbeat", "Heartbeat"),
+    )
+    liveness_rows = [
+        {
+            "state": recorded_state,
+            "phase": state.get("phase", "—"),
+            "cycle": state.get("cycle_index", "—"),
+            "active": state.get("active_campaign_id") or "—",
+            "last": state.get("last_completed_campaign_id") or "—",
+            "next": state.get("next_action") or "—",
+            "blockers": state.get("blocker_count", 0),
+            "heartbeat": heartbeat,
+        }
+    ]
     return "\n\n".join(
         (
+            _render_table("Liveness", liveness_columns, liveness_rows),
             _render_table(
                 "Run Results",
                 result_columns,
@@ -861,13 +924,29 @@ def _metrics_text(
     def omitted(name: str) -> bool:
         return any(name == item or name.endswith(f".{item}") for item in omit)
 
+    allow = {
+        "n",
+        "meaningful_program_rate",
+        "structural_similarity",
+        "binder_reference_f1",
+        "parse_rate",
+        "latency_ms_p50",
+        "ast_beq_rate",
+        "canonical_beq_rate",
+    }
+
+    def allowed(name: str) -> bool:
+        return name.split(".")[-1] in allow
+
     values = [
         f"{name}={value:g}"
         for name, value in sorted(metrics.items())
-        if not omitted(name)
+        if not omitted(name) and allowed(name)
     ]
     values.extend(
-        f"data.{name}={value:g}" for name, value in sorted(data_metrics.items())
+        f"data.{name}={value:g}"
+        for name, value in sorted(data_metrics.items())
+        if allowed(name)
     )
     return ", ".join(values) or "—"
 

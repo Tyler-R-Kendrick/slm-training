@@ -3,9 +3,8 @@
 
 Bare /autotrain agents should keep calling this (or re-enter continuous.md)
 without user prompts. Each invocation can run one or many bounded cycles.
-Never an infinite shell without a stage wall on child commands — continuous
-stage wall minutes come from climb policy measurement (not the global CI
-MAX_RUN_MINUTES unless policy is absent).
+Never an infinite shell without a stage wall on child commands. Every child
+obeys the repository-wide ``MAX_RUN_MINUTES`` policy.
 
 SDLC Phase A (autotrain-iteration-delivery): after every cycle the driver
 classifies positive vs non-positive, records a delivery ledger, and only
@@ -15,7 +14,7 @@ by the agent (gh stack); this driver never opens PRs for non-positive cycles.
 Proof driver (promote path): formal preflight must be proved, dual-arm
 promotion primary must beat policy ``minimum_effect``, and a LeverProof
 metric_certificate/v2 must dispose ``continue`` before a champion is marked
-``promoted``. Cert continue is necessary but not sufficient. Phase A smoke
+``climb_accepted``. Cert continue is necessary but not sufficient. Phase A smoke
 quality-held alone never promotes.
 """
 
@@ -24,6 +23,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import hashlib
+import itertools
 import json
 import os
 import subprocess
@@ -43,10 +43,15 @@ from slm_training.autoresearch.experiment_campaign import (
     MultiplicityFamilyV1,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionV1,
+    AutotrainCycleHandoffV1,
+    AutotrainLoopStateV1,
     CampaignBudget,
     FormalObligationV1,
     HypothesisMatrix,
+    NextRunPriorityV1,
 )
+from slm_training.levers import MAX_RUN_SECONDS
 
 # Locked continuous promote metric programs (SHA bound on campaign lock).
 _PROMOTE_EXPECTATIONS_REL = Path(
@@ -64,20 +69,32 @@ _FIVE_LANES = (
 _CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
 # Promote Lean formal preflight wall (seconds). Timeouts are *inconclusive*
 # (incomplete measurement), never a proof rejection / promotion_failed.
-_PROMOTE_FORMAL_TIMEOUT_S = 600.0
+_PROMOTE_FORMAL_TIMEOUT_S = float(MAX_RUN_SECONDS)
 _FORMAL_TIMEOUT_STATUSES = frozenset({"timed_out"})
 _DRIVER_LOCK_BASENAME = "driver.lock"
 
 
-def _git(*args: str, cwd: Path | None = None) -> str:
+def _remaining_timeout(deadline: float | None = None) -> float:
+    if deadline is None:
+        return float(MAX_RUN_SECONDS)
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise subprocess.TimeoutExpired("autotrain bounded cycle", MAX_RUN_SECONDS)
+    return min(float(MAX_RUN_SECONDS), remaining)
+
+
+def _git(*args: str, cwd: Path | None = None, deadline: float | None = None) -> str:
     return subprocess.check_output(
-        ["git", *args], text=True, cwd=str(cwd) if cwd else None
+        ["git", *args],
+        text=True,
+        cwd=str(cwd) if cwd else None,
+        timeout=_remaining_timeout(deadline),
     ).strip()
 
 
-def _run(cmd: list[str], *, cwd: Path) -> None:
+def _run(cmd: list[str], *, cwd: Path, deadline: float | None = None) -> None:
     print("+", " ".join(cmd), flush=True)
-    subprocess.check_call(cmd, cwd=cwd)
+    subprocess.run(cmd, cwd=cwd, check=True, timeout=_remaining_timeout(deadline))
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -107,6 +124,7 @@ _METRIC_LEAVES = (
     "parse_rate",
     "meaningful_program_rate",
     "structural_similarity",
+    "binder_reference_f1",
 )
 
 
@@ -177,6 +195,8 @@ _CHAMPION_STATUSES = frozenset(
         "rejected",
         "skipped_duplicate",
         "promoting",
+        "climb_accepted",
+        # Read-only compatibility for pre-v30 queue ledgers.
         "promoted",
         "promotion_failed",
         # Formal wall / incomplete measurement — retryable, not a rejection.
@@ -210,6 +230,7 @@ _FINGERPRINT_EXCLUDE_KEYS = frozenset({"steps"})
 # Soft bound: confirm/promote attempts before the queue head is rejected.
 _MAX_CONFIRM_ATTEMPTS = 2
 _MAX_PROMOTE_ATTEMPTS = 2
+_CAUSAL_FAMILY_ATTEMPT_CAP = 2
 # Screening thrash bank — rotate recommended arm each cycle (Change B).
 # Each entry: (slug, hypothesis fragment, knob extras relative to control).
 # Special key "_steps_factor" multiplies base steps (depth confound).
@@ -261,6 +282,72 @@ def _champion_queue_path(root: Path, loop_id: str) -> Path:
 
 def _driver_lock_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / _DRIVER_LOCK_BASENAME
+
+
+def _loop_state_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "state.json"
+
+
+def _write_loop_state(root: Path, state: AutotrainLoopStateV1) -> Path:
+    path = _loop_state_path(root, state.loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(state.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+    return path
+
+
+def _record_cycle_failure(
+    *, root: Path, loop_id: str, exc: Exception, cycle_index: int
+) -> int:
+    """Persist a stable blocker fingerprint and return its consecutive count."""
+    message = str(exc).strip() or exc.__class__.__name__
+    fingerprint = hashlib.sha256(
+        f"{exc.__class__.__name__}:{message}".encode("utf-8")
+    ).hexdigest()
+    path = root / "loops" / loop_id / "cycle_failures.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    previous: list[dict[str, Any]] = []
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines()[-2:]:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict):
+                previous.append(row)
+    count = 1
+    for row in reversed(previous):
+        if row.get("fingerprint") != fingerprint:
+            break
+        count += 1
+    record = {
+        "schema": "autotrain_cycle_failure/v1",
+        "loop_id": loop_id,
+        "cycle_index": cycle_index,
+        "error_type": exc.__class__.__name__,
+        "message": message,
+        "fingerprint": fingerprint,
+        "consecutive_count": count,
+        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
+    blocked = count >= 3
+    _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="BLOCKED" if blocked else "IDLE",
+            phase="blocked" if blocked else "between_cycles",
+            cycle_index=max(0, cycle_index),
+            next_action="repair repeated blocker" if blocked else "retry cycle",
+            blocker_fingerprint=fingerprint,
+            blocker_count=count,
+            pid=os.getpid(),
+        ),
+    )
+    return count
 
 
 def acquire_driver_lock(
@@ -319,9 +406,7 @@ def _lever_knobs(knobs: dict[str, Any] | None) -> dict[str, Any]:
 def _knobs_fingerprint(levers: dict[str, Any]) -> str:
     """Identity hash for champion dedup (excludes steps cycle jitter)."""
     stable = {
-        k: v
-        for k, v in (levers or {}).items()
-        if k not in _FINGERPRINT_EXCLUDE_KEYS
+        k: v for k, v in (levers or {}).items() if k not in _FINGERPRINT_EXCLUDE_KEYS
     }
     payload = json.dumps(stable, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
@@ -374,7 +459,9 @@ def _queue_head_confirmed(entries: list[dict[str, Any]]) -> dict[str, Any] | Non
     return None
 
 
-def _arm_slug_from_knobs(knobs: dict[str, Any], *, candidate_id: str = "") -> str | None:
+def _arm_slug_from_knobs(
+    knobs: dict[str, Any], *, candidate_id: str = ""
+) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
     if knobs.get("grammar_completion_bounds") and knobs.get("compact_active_canvas"):
         return "both"
@@ -390,14 +477,29 @@ def _arm_slug_from_knobs(knobs: dict[str, Any], *, candidate_id: str = "") -> st
     return None
 
 
-def _skip_arm_slugs(entries: list[dict[str, Any]]) -> set[str]:
+def _skip_arm_slugs(
+    entries: list[dict[str, Any]], *, integration_commit: str | None = None
+) -> set[str]:
     """Deprioritize arms only while a champion is still open (not forever).
 
     Permanent skip of rejected/promotion_failed starved bounds/canvas and left
     only steps/batch1 thrash — which could not re-enter the champion path.
     """
     skip: set[str] = set()
+    terminal_counts: dict[str, int] = {}
     for row in entries:
+        knobs = row.get("knobs") or {}
+        slug = _arm_slug_from_knobs(
+            knobs, candidate_id=str(row.get("source_candidate_id") or "")
+        )
+        if (
+            slug
+            and integration_commit
+            and row.get("source_integration_commit") == integration_commit
+            and row.get("status")
+            in {"rejected", "promotion_failed", "climb_accepted", "promoted"}
+        ):
+            terminal_counts[slug] = terminal_counts.get(slug, 0) + 1
         # Only skip arms currently in the funnel (not terminal failures).
         if row.get("status") not in {
             "queued",
@@ -414,6 +516,11 @@ def _skip_arm_slugs(entries: list[dict[str, Any]]) -> set[str]:
         )
         if slug:
             skip.add(slug)
+    skip.update(
+        slug
+        for slug, count in terminal_counts.items()
+        if count >= _CAUSAL_FAMILY_ATTEMPT_CAP
+    )
     return skip
 
 
@@ -445,7 +552,8 @@ def _quality_held_reasons(reasons: list[str] | None) -> bool:
     if not reasons:
         return False
     return any(
-        any(r.startswith(prefix) for prefix in _QUALITY_ENQUEUE_PREFIXES) for r in reasons
+        any(r.startswith(prefix) for prefix in _QUALITY_ENQUEUE_PREFIXES)
+        for r in reasons
     )
 
 
@@ -457,7 +565,10 @@ def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
     if _quality_held_reasons(reasons):
         return True
     # Efficiency / primary latency win only when quality_held co-tagged.
-    if any(r.startswith("efficiency_win:") or r.startswith("primary_metric_win:") for r in reasons):
+    if any(
+        r.startswith("efficiency_win:") or r.startswith("primary_metric_win:")
+        for r in reasons
+    ):
         return _quality_held_reasons(reasons)
     return False
 
@@ -536,6 +647,9 @@ def _enqueue_champion(
         "source_candidate_id": candidate_id,
         "source_control_id": delivery.get("control_id"),
         "source_role": delivery.get("cycle_role") or delivery.get("role"),
+        "source_integration_commit": _read_json(camp_dir / "campaign.json").get(
+            "integration_commit"
+        ),
         "knobs": knobs,
         "knobs_fingerprint": fp,
         "source_metrics": {
@@ -608,7 +722,7 @@ def _update_champion_status(
             "confirmed",
             "rejected",
             "skipped_duplicate",
-            "promoted",
+            "climb_accepted",
             "promotion_failed",
         }:
             row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -683,9 +797,9 @@ def locked_promote_expectations_sha256() -> str:
 
 
 def _formal_status_is_timeout(status: str | None) -> bool:
-    return str(status or "") in _FORMAL_TIMEOUT_STATUSES or str(status or "").startswith(
-        "timed_out"
-    )
+    return str(status or "") in _FORMAL_TIMEOUT_STATUSES or str(
+        status or ""
+    ).startswith("timed_out")
 
 
 def dispose_champion_promote(
@@ -702,7 +816,7 @@ def dispose_champion_promote(
 ) -> dict[str, Any]:
     """Authoritative promote disposition (proof + effect driver).
 
-    Phase A smoke quality-held alone never yields ``promoted``. A proved formal
+    Phase A smoke quality-held alone never yields ``climb_accepted``. A proved formal
     preflight, dual-arm promotion-primary win (≥ policy ``minimum_effect``), and
     an in-band LeverProof metric_certificate/v2 (``optimum_feedback`` →
     ``continue``) are all required. Cert continue is necessary but not
@@ -767,9 +881,7 @@ def dispose_champion_promote(
         )
 
     if formal_preflight_status != "proved":
-        reasons.append(
-            f"formal_preflight_unproved:status={formal_preflight_status!r}"
-        )
+        reasons.append(f"formal_preflight_unproved:status={formal_preflight_status!r}")
         return _base(status="promotion_failed")
 
     if certificate is None:
@@ -831,7 +943,7 @@ def dispose_champion_promote(
         else:
             promotion_primary_met = None
             reasons.append("promote_primary_win_not_required_by_policy")
-        return _base(status="promoted", cert_policy=policy)
+        return _base(status="climb_accepted", cert_policy=policy)
     if policy == "stop":
         reasons.append("theorem_backed_band_miss")
         return _base(
@@ -1043,10 +1155,7 @@ def export_promote_metric_certificate(
     ss_pm = _rate_to_pm(ss)
     parse_pm = _rate_to_pm(parse)
     if ss_pm is None or parse_pm is None:
-        return None, (
-            "promote_cert_incomplete_metrics:"
-            f"ss={ss!r} parse={parse!r}"
-        )
+        return None, (f"promote_cert_incomplete_metrics:ss={ss!r} parse={parse!r}")
 
     # Repeat samples (fixture n≈3 style) for band assessment stability.
     observations = {
@@ -1236,6 +1345,7 @@ def ensure_promote_formal_preflight(
     campaign_id: str,
     experiment_id: str,
     run_lean: bool = False,
+    timeout_seconds: float = _PROMOTE_FORMAL_TIMEOUT_S,
 ) -> tuple[str, str | None]:
     """Record formal preflight; return ``(status, content_sha256|None)``.
 
@@ -1281,12 +1391,12 @@ def ensure_promote_formal_preflight(
             knobs=ExperimentKnobs(steps=1),
             formal_claims=(claim,),
         )
-        # Caller-owned wall (600s). Timeouts → status timed_out (inconclusive).
+        # The caller can further tighten the repository-wide wall.
         preflight, _obligation = run_formal_preflight(
             campaign_id,
             exp,
             claim,
-            timeout_seconds=_PROMOTE_FORMAL_TIMEOUT_S,
+            timeout_seconds=timeout_seconds,
         )
         status = str(preflight.status)
         duration = float(getattr(preflight, "duration_seconds", 0.0) or 0.0)
@@ -1305,7 +1415,7 @@ def ensure_promote_formal_preflight(
         timed_out = _formal_status_is_timeout(status)
         if timed_out:
             reason = (
-                f"formal_preflight_timed_out:wall_s={_PROMOTE_FORMAL_TIMEOUT_S:g}:"
+                f"formal_preflight_timed_out:wall_s={timeout_seconds:g}:"
                 f"duration_s={duration:.3f}"
             )
         elif status == "proved":
@@ -1317,7 +1427,7 @@ def ensure_promote_formal_preflight(
             status=status,
             template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
             reason=reason,
-            timeout_seconds=_PROMOTE_FORMAL_TIMEOUT_S,
+            timeout_seconds=timeout_seconds,
             duration_seconds=duration,
             timed_out=timed_out,
         )
@@ -1336,11 +1446,11 @@ def ensure_promote_formal_preflight(
             status=status,
             template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
             reason=(
-                f"formal_preflight_timed_out:wall_s={_PROMOTE_FORMAL_TIMEOUT_S:g}:{msg}"
+                f"formal_preflight_timed_out:wall_s={timeout_seconds:g}:{msg}"
                 if timed_out
                 else f"formal_preflight_error:{exc}"
             ),
-            timeout_seconds=_PROMOTE_FORMAL_TIMEOUT_S,
+            timeout_seconds=timeout_seconds,
             timed_out=timed_out,
         )
         return status, None
@@ -1398,16 +1508,16 @@ def detect_promote_harness_failure(
         tag = "harness_failure:cert_export_no_candidate_metrics"
         if tag not in reasons:
             reasons.append(tag)
-    if (
-        cert_err
-        and "missing_run_ids" in str(cert_err)
-    ):
+    if cert_err and "missing_run_ids" in str(cert_err):
         reasons.append(f"harness_failure:{cert_err}")
     # Control-only success with no candidate is always a harness/process gap
     # when promote was intended (caller only invokes this on promote intent).
-    if ctrl and _run_has_usable_metrics(camp_dir, ctrl) and cand and not (
-        camp_dir / "runs" / cand
-    ).is_dir():
+    if (
+        ctrl
+        and _run_has_usable_metrics(camp_dir, ctrl)
+        and cand
+        and not (camp_dir / "runs" / cand).is_dir()
+    ):
         if "harness_failure:missing_promote_run" not in reasons:
             reasons.append("harness_failure:missing_promote_run")
     return reasons
@@ -1524,12 +1634,16 @@ def _resolve_promotion_result(
         ctrl_metrics = delivery.get("control_metrics")
         cand_metrics = delivery.get("candidate_metrics")
         if not isinstance(ctrl_metrics, dict) or not isinstance(cand_metrics, dict):
-            ctrl_metrics = _run_metrics(
-                camp, control_id, prefer_held_out=True
-            ) if control_id else {}
-            cand_metrics = _run_metrics(
-                camp, candidate_id, prefer_held_out=True
-            ) if candidate_id else {}
+            ctrl_metrics = (
+                _run_metrics(camp, control_id, prefer_held_out=True)
+                if control_id
+                else {}
+            )
+            cand_metrics = (
+                _run_metrics(camp, candidate_id, prefer_held_out=True)
+                if candidate_id
+                else {}
+            )
         from slm_training.autoresearch.climb_policy import load_climb_policy
 
         climb = load_climb_policy()
@@ -1613,7 +1727,9 @@ def _resolve_promotion_result(
                     if status == "promotion_inconclusive" or disposition.get("timeout"):
                         row["last_formal_timeout"] = True
                         row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
-                    if status == "harness_failure" or disposition.get("harness_failure"):
+                    if status == "harness_failure" or disposition.get(
+                        "harness_failure"
+                    ):
                         row["last_harness_failure"] = True
                 break
         _write_champion_queue(path, entries)
@@ -1654,16 +1770,13 @@ def _classify_metric_tradeoff(
 
     parse_held = t_pr is None or c_pr is None or t_pr + _EPS >= c_pr
     mpr_held = t_mpr is None or c_mpr is None or t_mpr + _EPS >= c_mpr
-    mpr_improved = (
-        t_mpr is not None and c_mpr is not None and t_mpr > c_mpr + _EPS
-    )
-    lat_improved = (
-        t_lat is not None and c_lat is not None and t_lat + _EPS < c_lat
-    )
+    mpr_improved = t_mpr is not None and c_mpr is not None and t_mpr > c_mpr + _EPS
+    lat_improved = t_lat is not None and c_lat is not None and t_lat + _EPS < c_lat
     if t_lat is not None and c_lat is not None and c_lat > 0:
-        lat_within_tradeoff = t_lat <= c_lat * (
-            1.0 + _LATENCY_REGRESSION_BUDGET
-        ) or t_lat <= c_lat + _LATENCY_REGRESSION_ABS_MS
+        lat_within_tradeoff = (
+            t_lat <= c_lat * (1.0 + _LATENCY_REGRESSION_BUDGET)
+            or t_lat <= c_lat + _LATENCY_REGRESSION_ABS_MS
+        )
     else:
         # Missing latency must not veto a quality win.
         lat_within_tradeoff = True
@@ -1700,9 +1813,7 @@ def _classify_metric_tradeoff(
                 )
             else:
                 positive = True
-                reasons.append(
-                    f"primary_metric_win:{primary_metric}:{c_lat}->{t_lat}"
-                )
+                reasons.append(f"primary_metric_win:{primary_metric}:{c_lat}->{t_lat}")
                 reasons.append(f"quality_held:parse={t_pr} mpr={t_mpr}")
         else:
             reasons.append(
@@ -1796,9 +1907,18 @@ def _classify_positive(
     control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
     candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
     # Merge full primary metric keys when leaf-only maps were collected.
-    if effective_metric not in control and control.get(effective_metric.split(".")[-1]) is not None:
-        control = {**control, effective_metric: control[effective_metric.split(".")[-1]]}
-    if effective_metric not in candidate and candidate.get(effective_metric.split(".")[-1]) is not None:
+    if (
+        effective_metric not in control
+        and control.get(effective_metric.split(".")[-1]) is not None
+    ):
+        control = {
+            **control,
+            effective_metric: control[effective_metric.split(".")[-1]],
+        }
+    if (
+        effective_metric not in candidate
+        and candidate.get(effective_metric.split(".")[-1]) is not None
+    ):
         candidate = {
             **candidate,
             effective_metric: candidate[effective_metric.split(".")[-1]],
@@ -1878,12 +1998,14 @@ def _classify_positive(
             or candidate.get(effective_metric) is not None
             or candidate.get("latency_ms_p50") is not None
         )
-        if has_metric and t_mpr is not None and t_mpr + _EPS >= _MIN_MPR_FOR_LATENCY_WIN:
+        if (
+            has_metric
+            and t_mpr is not None
+            and t_mpr + _EPS >= _MIN_MPR_FOR_LATENCY_WIN
+        ):
             executable_unblock = True
         elif has_metric:
-            reasons_pre.append(
-                f"executable_unblock_rejected_low_mpr:mpr={t_mpr}"
-            )
+            reasons_pre.append(f"executable_unblock_rejected_low_mpr:mpr={t_mpr}")
 
     decision = classify_positive_metrics(
         policy,
@@ -1902,7 +2024,10 @@ def _classify_positive(
     if leaf == "latency_ms_p50":
         positive = bool(tradeoff_positive or executable_unblock)
         # Preserve EG_params blocks from climb policy.
-        if any(str(r).startswith("eg_params_block:") for r in (decision.get("reasons") or [])):
+        if any(
+            str(r).startswith("eg_params_block:")
+            for r in (decision.get("reasons") or [])
+        ):
             positive = False
         decision["positive"] = positive
         decision["stack_layer"] = positive
@@ -1911,9 +2036,7 @@ def _classify_positive(
         decision["stack_layer"] = True
 
     reasons = (
-        list(reasons_pre)
-        + list(tradeoff_reasons)
-        + list(decision.get("reasons") or [])
+        list(reasons_pre) + list(tradeoff_reasons) + list(decision.get("reasons") or [])
     )
     if not any(
         reason.startswith(prefix)
@@ -1943,6 +2066,7 @@ def _phase_a_delivery(
     cycle_index: int | None = None,
     role: str | None = None,
     cycle_intent: str | None = None,
+    deadline: float | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
     from slm_training.autoresearch.climb_policy import (
@@ -2021,7 +2145,7 @@ def _phase_a_delivery(
     decision["climb_policy_sha256"] = policy.sha256
     # Stack only when positive AND there is something reviewable to ship.
     # Pure knob-only fixture cycles with a metric blip do not open empty PRs.
-    porcelain = _git("status", "--porcelain", cwd=cwd) if cwd else ""
+    porcelain = _git("status", "--porcelain", cwd=cwd, deadline=deadline) if cwd else ""
     has_tracked_delta = bool(porcelain.strip())
     stack_layer = bool(decision["positive"] and has_tracked_delta)
     if decision["positive"] and not has_tracked_delta:
@@ -2084,6 +2208,226 @@ def _phase_a_delivery(
     return record
 
 
+def _candidate_ship_state(camp_dir: Path, candidate_id: str) -> str:
+    gates = _read_json(camp_dir / "runs" / candidate_id / "gates.json")
+    authoritative = gates.get("authority") == "AgentEvals assertions"
+    return "ship_promoted" if authoritative and gates.get("pass") is True else "blocked"
+
+
+def _primary_harness_family(camp_dir: Path) -> str:
+    for path in sorted((camp_dir / "artifacts" / "outcomes").glob("*.json")):
+        payload = _read_json(path)
+        for signal in payload.get("harness_signals") or []:
+            if signal.get("reproduced_on_frozen_input"):
+                return str(signal.get("family") or "model_build")
+    return "model_build"
+
+
+def _diagnosis_target(camp_dir: Path) -> str | None:
+    targets: list[str] = []
+    for path in sorted((camp_dir / "artifacts" / "diagnoses").glob("*.json")):
+        target = str(_read_json(path).get("target") or "")
+        if target:
+            targets.append(target)
+    for preferred in ("harness", "data", "infrastructure", "model", "researcher"):
+        if preferred in targets:
+            return preferred
+    return targets[-1] if targets else None
+
+
+def _created_checkpoint_paths(camp_dir: Path) -> tuple[str, ...]:
+    """Return every checkpoint created by the bounded cycle, relative to it."""
+    runs = camp_dir / "runs"
+    if not runs.is_dir():
+        return ()
+    return tuple(
+        path.relative_to(camp_dir).as_posix()
+        for path in sorted(runs.rglob("*.pt"))
+        if path.is_file()
+    )
+
+
+def _write_cycle_handoff(
+    *,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    cycle_index: int,
+    upstream_commit: str,
+    integration_commit: str,
+    role: str,
+    cycle_intent: str,
+    primary_metric: str,
+    matrix: dict[str, Any],
+    delivery: dict[str, Any],
+    resolution: dict[str, Any] | None,
+    formal_status: str | None,
+) -> AutotrainCycleHandoffV1:
+    """Write the typed boundary consumed by the agent between bounded cycles."""
+    camp_dir = root / campaign_id
+    evidence_id = f"campaign:{campaign_id}"
+    status = str((resolution or {}).get("status") or "")
+    if status in {"promoted", "climb_accepted"}:
+        climb_state = "climb_accepted"
+    elif status == "confirmed":
+        climb_state = "champion_confirmed"
+    elif status == "harness_failure":
+        climb_state = "harness_failure"
+    elif status == "promotion_inconclusive":
+        climb_state = "inconclusive"
+    elif status in {"rejected", "promotion_failed"}:
+        climb_state = "rejected"
+    elif delivery.get("positive"):
+        climb_state = "candidate_queued"
+    else:
+        climb_state = "rejected"
+
+    candidate_id = str(delivery.get("candidate_id") or "")
+    ship_state = (
+        _candidate_ship_state(camp_dir, candidate_id)
+        if candidate_id
+        else "not_evaluated"
+    )
+    evidence_class = "ship" if ship_state == "ship_promoted" else "fixture"
+    reasons = tuple(
+        str(item)
+        for item in [
+            *((resolution or {}).get("resolve_reasons") or []),
+            *(delivery.get("reasons") or []),
+        ]
+    )
+    priorities = tuple(
+        NextRunPriorityV1.model_validate(item)
+        for item in matrix.get("next_run_priorities") or []
+    )
+    checkpoint_paths = _created_checkpoint_paths(camp_dir)
+    document_reason = "persist this cycle's JSON and markdown under docs/design"
+    if checkpoint_paths:
+        document_reason += "; update docs/MODEL_CARD.md and the README summary"
+    actions: list[AutotrainActionV1] = [
+        AutotrainActionV1(
+            kind="document",
+            owner="documenting-experiment-results",
+            reason=document_reason,
+            evidence_ids=(evidence_id,),
+        )
+    ]
+    theorem_stop = any("theorem_backed_band_miss" in item for item in reasons)
+    assumption_miss = any("assumption_backed_band_miss" in item for item in reasons)
+    harness_failure = climb_state == "harness_failure" or any(
+        item.startswith("harness_failure:") for item in reasons
+    )
+    diagnosis_target = _diagnosis_target(camp_dir)
+    if theorem_stop:
+        actions.insert(
+            0,
+            AutotrainActionV1(
+                kind="stop_campaign",
+                owner="improve-lean-optimums",
+                reason="theorem-backed metric band contradiction",
+                evidence_ids=(evidence_id,),
+            ),
+        )
+    elif harness_failure:
+        family = _primary_harness_family(camp_dir)
+        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
+        manifest_sha = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        actions.insert(
+            0,
+            AutotrainActionV1(
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                reason="repair the canonical owner and replay the frozen arm",
+                evidence_ids=(evidence_id,),
+                harness_family=family,  # type: ignore[arg-type]
+                frozen_manifest_sha256=manifest_sha,
+            ),
+        )
+    elif assumption_miss or (formal_status is not None and formal_status != "proved"):
+        actions.insert(
+            0,
+            AutotrainActionV1(
+                kind="repair_formal",
+                owner="improve-lean-optimums",
+                reason=(
+                    "assumption-backed band miss requires the five diagnosis lanes"
+                    if assumption_miss
+                    else f"formal preflight is {formal_status}"
+                ),
+                evidence_ids=(evidence_id,),
+            ),
+        )
+    elif diagnosis_target == "data":
+        actions.insert(
+            0,
+            AutotrainActionV1(
+                kind="rebuild_data",
+                owner="synthesis-feedback",
+                reason="repair the named synthesis producer and rebuild immutably",
+                evidence_ids=(evidence_id,),
+            ),
+        )
+    else:
+        actions.append(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason="consume the ranked successor priorities",
+                evidence_ids=(evidence_id,),
+            )
+        )
+    if delivery.get("stack_layer"):
+        actions.append(
+            AutotrainActionV1(
+                kind="deliver_stack",
+                owner="sdlc",
+                reason="positive result has a reviewable tracked delta",
+                evidence_ids=(evidence_id,),
+            )
+        )
+
+    handoff = AutotrainCycleHandoffV1(
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        cycle_index=cycle_index,
+        upstream_commit=upstream_commit,
+        integration_commit=integration_commit,
+        cycle_role=role,  # type: ignore[arg-type]
+        cycle_intent=cycle_intent,
+        evidence_class=evidence_class,  # type: ignore[arg-type]
+        climb_state=climb_state,  # type: ignore[arg-type]
+        ship_state=ship_state,  # type: ignore[arg-type]
+        primary_metric=primary_metric,
+        reasons=reasons,
+        priorities=priorities,
+        actions=tuple(actions),
+        formal_status=formal_status,
+        checkpoint_paths=checkpoint_paths,
+        checkpoint_documentation_required=bool(checkpoint_paths),
+    )
+    (camp_dir / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="IDLE",
+            phase="between_cycles",
+            active_campaign_id=None,
+            last_completed_campaign_id=campaign_id,
+            cycle_index=cycle_index,
+            next_action=actions[0].kind,
+            pid=os.getpid(),
+        ),
+    )
+    return handoff
+
+
 def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     campaigns = sorted(root.glob("*/campaign.json"))
     best_idx = 0
@@ -2128,7 +2472,9 @@ def _matrix(
     )
 
     research = role_citations.get("research") or cites[0]
-    prior = role_citations.get("prior_result") or (cites[1] if len(cites) > 1 else cites[0])
+    prior = role_citations.get("prior_result") or (
+        cites[1] if len(cites) > 1 else cites[0]
+    )
     # Unique seed per cycle — (cycle*17)%50 only yields 50 seeds and thrash-rejects.
     seed = 100_000 + int(cycle)
     steps = steps + (cycle % 3)  # slight variation avoids knob-signature collision
@@ -2218,9 +2564,7 @@ def _matrix(
             "falsification_criteria": [
                 "Path error or no smoke metrics under the wall cap."
             ],
-            "stop_conditions": [
-                "Stop at declared steps or the campaign wall cap."
-            ],
+            "stop_conditions": ["Stop at declared steps or the campaign wall cap."],
             "citations": exp_cites,
             "knobs": k,
         }
@@ -2277,7 +2621,7 @@ def _matrix(
             {
                 "experiment": exp(
                     f"{prefix}-bounds",
-                    "Monitor-only bounds pad deferred while confirmed champion is promoted.",
+                    "Monitor-only bounds pad deferred while a confirmed champion is evaluated.",
                     knobs(grammar_completion_bounds=True, steps=promo_steps + 2000),
                     "Schema pad — not executed while promote is recommended.",
                 ),
@@ -2287,7 +2631,7 @@ def _matrix(
             {
                 "experiment": exp(
                     f"{prefix}-canvas",
-                    "Monitor-only canvas pad deferred while confirmed champion is promoted.",
+                    "Monitor-only canvas pad deferred while a confirmed champion is evaluated.",
                     knobs(compact_active_canvas=True, steps=promo_steps + 2001),
                     "Schema pad — not executed while promote is recommended.",
                 ),
@@ -2297,7 +2641,7 @@ def _matrix(
             {
                 "experiment": exp(
                     f"{prefix}-both",
-                    "Monitor-only combined pad deferred while confirmed champion is promoted.",
+                    "Monitor-only combined pad deferred while a confirmed champion is evaluated.",
                     knobs(
                         grammar_completion_bounds=True,
                         compact_active_canvas=True,
@@ -2544,10 +2888,10 @@ def _matrix(
         }
     else:
         # Change B: rotate recommended thrash arm; full bank always present.
-        rec_slug = recommended_slug or _select_recommended_slug(
-            cycle, skip=skip_slugs
-        )
-        bank_by_slug = {slug: (hyp, extras) for slug, hyp, extras in _SCREENING_ARM_BANK}
+        rec_slug = recommended_slug or _select_recommended_slug(cycle, skip=skip_slugs)
+        bank_by_slug = {
+            slug: (hyp, extras) for slug, hyp, extras in _SCREENING_ARM_BANK
+        }
         if rec_slug not in bank_by_slug:
             rec_slug = _SCREENING_ARM_BANK[0][0]
         candidates = [
@@ -2648,7 +2992,9 @@ def _matrix(
             "next_run_priorities": priorities,
         }
     if feedback:
-        fb_ids = [str(item.get("feedback_id")) for item in feedback if item.get("feedback_id")]
+        fb_ids = [
+            str(item.get("feedback_id")) for item in feedback if item.get("feedback_id")
+        ]
         payload["feedback_ids"] = fb_ids
         if previous_matrix_id:
             payload["predecessor_matrix_id"] = previous_matrix_id
@@ -2689,7 +3035,9 @@ def _manifest(
     metric_expectations_sha: str | None = None
     formal_obligations: tuple[FormalObligationV1, ...] = ()
     if role == "promotion":
-        claim_class = str(defaults.get("claim_class_promotion") or "promotion_candidate")
+        claim_class = str(
+            defaults.get("claim_class_promotion") or "promotion_candidate"
+        )
         min_seeds, require_ms = promotion_seed_floor(pol)
         base_seed = int(experiment.get("knobs", {}).get("seed") or 7)
         if require_ms and min_seeds >= 2:
@@ -2836,7 +3184,9 @@ def _manifest(
             max_experiments=1,
             max_wall_minutes=stage_wall_minutes_for_role(pol, role),
         ),
-        stopping_rules=("Stop after the declared seeds finish or the wall cap is hit.",),
+        stopping_rules=(
+            "Stop after the declared seeds finish or the wall cap is hit.",
+        ),
         controls=controls,
         negative_controls=negative_controls,
         mechanism_off_arm_ids=mechanism_off,
@@ -2882,6 +3232,7 @@ def run_cycle(
     steps: int,
     objective: str,
     primary_metric: str,
+    sync_git: bool = True,
 ) -> str:
     from slm_training.autoresearch.climb_policy import (
         assert_cycle_cadence,
@@ -2891,20 +3242,30 @@ def run_cycle(
         stage_wall_minutes_for_role,
     )
 
+    deadline = time.monotonic() + MAX_RUN_SECONDS
     policy = load_climb_policy()
     # Defaults from external policy when caller still uses legacy pins.
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
 
-    _run(["git", "fetch", "origin", "main"], cwd=cwd)
-    _run(["git", "merge", "--no-edit", "origin/main"], cwd=cwd)
-    if _git("status", "--porcelain", cwd=cwd):
+    if sync_git:
+        _run(["git", "fetch", "origin", "main"], cwd=cwd, deadline=deadline)
+        _run(
+            ["git", "merge", "--no-edit", "origin/main"],
+            cwd=cwd,
+            deadline=deadline,
+        )
+    if _git("status", "--porcelain", cwd=cwd, deadline=deadline):
         raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
-    upstream = _git("rev-parse", "origin/main", cwd=cwd)
-    integration = _git("rev-parse", "HEAD", cwd=cwd)
+    upstream = _git("rev-parse", "origin/main", cwd=cwd, deadline=deadline)
+    integration = _git("rev-parse", "HEAD", cwd=cwd, deadline=deadline)
     if upstream != integration:
         # merge should have equalized; if not, still require ancestor
-        _run(["git", "merge-base", "--is-ancestor", upstream, integration], cwd=cwd)
+        _run(
+            ["git", "merge-base", "--is-ancestor", upstream, integration],
+            cwd=cwd,
+            deadline=deadline,
+        )
 
     idx, pred = _latest_cycle(root, loop_id)
     cycle = idx + 1
@@ -2954,9 +3315,25 @@ def run_cycle(
     # Screening uses policy screening primary; promotion uses held-out quality.
     # CLI primary_metric overrides only when it matches the role leaf (compat).
     effective_primary = str(role_primary["metric"])
-    if primary_metric and primary_metric.split(".")[-1] == effective_primary.split(".")[-1]:
+    if (
+        primary_metric
+        and primary_metric.split(".")[-1] == effective_primary.split(".")[-1]
+    ):
         effective_primary = primary_metric
     campaign_id = f"continuous-loop-{time.strftime('%Y%m%d')}-c{cycle}"
+    _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="RUNNING",
+            phase="running",
+            active_campaign_id=campaign_id,
+            last_completed_campaign_id=pred,
+            cycle_index=cycle,
+            next_action="run bounded campaign",
+            pid=os.getpid(),
+        ),
+    )
     if open_champion is not None:
         attempts = _bump_champion_attempt(
             root=root,
@@ -3084,7 +3461,7 @@ def run_cycle(
     ]
     if pred:
         init.extend(["--predecessor-campaign-id", pred])
-    _run(init, cwd=cwd)
+    _run(init, cwd=cwd, deadline=deadline)
     _run(
         [
             *ar,
@@ -3094,6 +3471,7 @@ def run_cycle(
             "--offline",
         ],
         cwd=cwd,
+        deadline=deadline,
     )
 
     camp_dir = root / campaign_id
@@ -3145,9 +3523,9 @@ def run_cycle(
             key=lambda path: path.stat().st_mtime_ns,
         )
         if mats:
-            previous_matrix_id = json.loads(
-                mats[-1].read_text(encoding="utf-8")
-            ).get("matrix_id")
+            previous_matrix_id = json.loads(mats[-1].read_text(encoding="utf-8")).get(
+                "matrix_id"
+            )
         fbs = sorted(
             (pred_dir / "artifacts" / "hypothesizer_feedback").glob("*.json"),
             key=lambda path: path.stat().st_mtime_ns,
@@ -3156,9 +3534,7 @@ def run_cycle(
         # only terminal feedback for the latest predecessor matrix
         if previous_matrix_id:
             feedback = [
-                item
-                for item in feedback
-                if item.get("matrix_id") == previous_matrix_id
+                item for item in feedback if item.get("matrix_id") == previous_matrix_id
             ]
     confirm_levers = None
     promote_levers = None
@@ -3193,7 +3569,7 @@ def run_cycle(
             promoting_champion = None
             cycle_intent = role
             promote_levers = None
-    skip_slugs = _skip_arm_slugs(queue_entries)
+    skip_slugs = _skip_arm_slugs(queue_entries, integration_commit=integration)
     rec_slug = _select_recommended_slug(cycle, skip=skip_slugs)
     matrix = _matrix(
         campaign_id=campaign_id,
@@ -3210,7 +3586,9 @@ def run_cycle(
         policy=policy,
         confirm_levers=confirm_levers,
         promote_levers=promote_levers,
-        recommended_slug=rec_slug if promote_levers is None and confirm_levers is None else None,
+        recommended_slug=rec_slug
+        if promote_levers is None and confirm_levers is None
+        else None,
         skip_slugs=skip_slugs,
     )
     if promote_levers is None and confirm_levers is None:
@@ -3233,6 +3611,7 @@ def run_cycle(
             str(matrix_path),
         ],
         cwd=cwd,
+        deadline=deadline,
     )
 
     exp_dir = camp_dir / "artifacts" / "experiments"
@@ -3254,6 +3633,7 @@ def run_cycle(
             campaign_id=campaign_id,
             experiment_id=str(matrix["recommended_experiment_id"]),
             run_lean=True,
+            timeout_seconds=_remaining_timeout(deadline),
         )
         print(
             f"PROMOTE_FORMAL_PREFLIGHT status={promote_formal_status} "
@@ -3296,9 +3676,7 @@ def run_cycle(
             role=role,
             policy=policy,
             cycle_intent=cycle_intent,
-            formal_preflight_sha256=(
-                promote_preflight_sha if is_promote_arm else None
-            ),
+            formal_preflight_sha256=(promote_preflight_sha if is_promote_arm else None),
         )
         man_path = camp_dir / "manifests" / f"{eid}.json"
         man_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3316,7 +3694,9 @@ def run_cycle(
             "--execute",
         ]
         print("+", " ".join(cmd), flush=True)
-        code = subprocess.call(cmd, cwd=cwd)
+        code = subprocess.run(
+            cmd, cwd=cwd, timeout=_remaining_timeout(deadline)
+        ).returncode
         arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
 
@@ -3331,6 +3711,7 @@ def run_cycle(
             "5",
         ],
         cwd=cwd,
+        deadline=deadline,
     )
     delivery = _phase_a_delivery(
         cwd=cwd,
@@ -3341,10 +3722,12 @@ def run_cycle(
         cycle_index=cycle,
         role=role,
         cycle_intent=cycle_intent,
+        deadline=deadline,
     )
     camp_dir = root / campaign_id
+    resolution: dict[str, Any] | None = None
     if open_champion is not None:
-        _resolve_confirm_result(
+        resolution = _resolve_confirm_result(
             root=root,
             loop_id=loop_id,
             entry=open_champion,
@@ -3355,7 +3738,10 @@ def run_cycle(
     elif promoting_champion is not None:
         # Export LeverProof certificate from promote run metrics (fail closed).
         cert_err: str | None = None
-        if promote_formal_status == "proved" or _formal_preflight_status(camp_dir) == "proved":
+        if (
+            promote_formal_status == "proved"
+            or _formal_preflight_status(camp_dir) == "proved"
+        ):
             control_id = str(delivery.get("control_id") or "")
             candidate_id = str(delivery.get("candidate_id") or "")
             if not control_id or not candidate_id:
@@ -3383,8 +3769,10 @@ def run_cycle(
                     if eid.endswith("-control"):
                         control_id = eid
                         break
-            if control_id and candidate_id and _run_has_usable_metrics(
-                camp_dir, candidate_id
+            if (
+                control_id
+                and candidate_id
+                and _run_has_usable_metrics(camp_dir, candidate_id)
             ):
                 _cert_path, cert_err = export_promote_metric_certificate(
                     camp_dir=camp_dir,
@@ -3397,8 +3785,7 @@ def run_cycle(
                     print(f"PROMOTE_CERT_EXPORT_FAIL {cert_err}", flush=True)
                     delivery = {
                         **delivery,
-                        "reasons": list(delivery.get("reasons") or [])
-                        + [cert_err],
+                        "reasons": list(delivery.get("reasons") or []) + [cert_err],
                     }
             elif control_id and candidate_id:
                 cert_err = "promote_cert_incomplete_metrics:ss=None parse=None"
@@ -3426,7 +3813,7 @@ def run_cycle(
                 "candidate_id": candidate_id or delivery.get("candidate_id"),
                 "arm_exits": arm_exits,
             }
-        _resolve_promotion_result(
+        resolution = _resolve_promotion_result(
             root=root,
             loop_id=loop_id,
             entry=promoting_champion,
@@ -3442,12 +3829,27 @@ def run_cycle(
     else:
         # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
         if cycle_intent in {"screening", "promotion"}:
-            _enqueue_champion(
+            resolution = _enqueue_champion(
                 root=root,
                 loop_id=loop_id,
                 delivery=delivery,
                 camp_dir=camp_dir,
             )
+    _write_cycle_handoff(
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        cycle_index=cycle,
+        upstream_commit=upstream,
+        integration_commit=integration,
+        role=role,
+        cycle_intent=cycle_intent,
+        primary_metric=effective_primary,
+        matrix=matrix,
+        delivery=delivery,
+        resolution=resolution,
+        formal_status=promote_formal_status,
+    )
     print(
         f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
         f"positive={delivery['positive']}",
@@ -3465,14 +3867,19 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/autoresearch"),
         help="Campaign bundle root",
     )
-    parser.add_argument("--max-cycles", type=int, default=1, help="0 = many (1024)")
+    parser.add_argument("--max-cycles", type=int, default=1, help="0 = unbounded")
+    parser.add_argument(
+        "--supervised",
+        action="store_true",
+        help="Run one cycle after the agent has synced Git; emit a typed handoff",
+    )
     parser.add_argument("--train-version", default="wf_smoke_v2")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument(
         "--objective",
         default=(
             "On a size-matched fixture TwoTower arm under the wall cap, improve "
-            "smoke decode latency without lowering parse_rate versus the matched control."
+            "the current certified OpenUI quality primary without lowering parse_rate."
         ),
     )
     parser.add_argument("--primary-metric", default="smoke.latency_ms_p50")
@@ -3489,10 +3896,21 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(str(exc), flush=True)
         return 2
-    max_cycles = 1024 if args.max_cycles == 0 else max(1, args.max_cycles)
+    if args.supervised and args.max_cycles not in {0, 1}:
+        parser.error("--supervised runs exactly one bounded cycle")
+    passes = (
+        itertools.count(1)
+        if args.max_cycles == 0 and not args.supervised
+        else range(1, 2 if args.supervised else max(1, args.max_cycles) + 1)
+    )
     try:
-        for i in range(max_cycles):
-            print(f"=== continuous cycle pass {i + 1}/{max_cycles} ===", flush=True)
+        for pass_no in passes:
+            total = (
+                "∞"
+                if args.max_cycles == 0 and not args.supervised
+                else str(1 if args.supervised else max(1, args.max_cycles))
+            )
+            print(f"=== continuous cycle pass {pass_no}/{total} ===", flush=True)
             try:
                 run_cycle(
                     cwd=cwd,
@@ -3502,11 +3920,20 @@ def main(argv: list[str] | None = None) -> int:
                     steps=args.steps,
                     objective=args.objective,
                     primary_metric=args.primary_metric,
+                    sync_git=not args.supervised,
                 )
             except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
                 print(f"CYCLE_ERROR {exc!r}", flush=True)
-                # soft continue unless dirty tree
-                if "dirty" in str(exc).lower():
+                cycle_index, _ = _latest_cycle(root, args.loop_id)
+                count = _record_cycle_failure(
+                    root=root,
+                    loop_id=args.loop_id,
+                    exc=exc,
+                    cycle_index=cycle_index,
+                )
+                # A supervised invocation returns control immediately. Legacy
+                # unbounded mode stops only at the typed repeated-blocker rule.
+                if args.supervised or "dirty" in str(exc).lower() or count >= 3:
                     return 2
                 time.sleep(1)
                 continue

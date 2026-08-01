@@ -35,11 +35,9 @@ class StrictModel(BaseModel):
 class CampaignBudget(StrictModel):
     max_experiments: int = Field(default=12, ge=1, le=1000)
     max_gpu_hours: float = Field(default=0.0, ge=0)
-    # Continuous screening may use a longer local stage wall than the global
-    # CI MAX_RUN_MINUTES (policy measurement.*_stage_wall_minutes). Cap at 60m.
-    max_wall_minutes: float = Field(
-        default=float(MAX_RUN_MINUTES), gt=0, le=60.0
-    )
+    # Historical artifacts used longer declared walls. Readers accept those
+    # records; every execution surface clamps new work to MAX_RUN_MINUTES.
+    max_wall_minutes: float = Field(default=float(MAX_RUN_MINUTES), gt=0, le=60.0)
 
 
 DEFAULT_ALLOWED_KNOBS = frozenset(
@@ -467,9 +465,7 @@ class ExperimentKnobs(StrictModel):
 
 FormalProofPolicy = Literal["required", "advisory"]
 # timed_out = wall exceeded (incomplete measurement, never a proof rejection)
-FormalProofStatus = Literal[
-    "proved", "refuted", "conditional", "unknown", "timed_out"
-]
+FormalProofStatus = Literal["proved", "refuted", "conditional", "unknown", "timed_out"]
 FormalEvidenceScope = Literal["universal", "bounded_instance", "conditional"]
 
 
@@ -522,7 +518,8 @@ class FormalPreflightV1(StrictModel):
         invalid = {
             path: digest
             for path, digest in self.source_digests.items()
-            if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest)
+            if len(digest) != 64
+            or any(char not in "0123456789abcdef" for char in digest)
         }
         if invalid:
             raise ValueError(f"invalid source digests: {sorted(invalid)}")
@@ -759,6 +756,108 @@ class NextRunPriorityV1(StrictModel):
         ):
             raise ValueError("experiment_next priority requires an experiment id")
         return self
+
+
+class AutotrainActionV1(StrictModel):
+    """One evidence-bound action for the agent supervisor between cycles."""
+
+    schema_version: Literal["AutotrainActionV1"] = "AutotrainActionV1"
+    kind: Literal[
+        "stop_campaign",
+        "repair_harness",
+        "repair_formal",
+        "rebuild_data",
+        "document",
+        "deliver_stack",
+        "next_experiment",
+        "monitor",
+    ]
+    owner: Literal[
+        "autotrain",
+        "improve-openui-harnesses",
+        "improve-lean-optimums",
+        "synthesis-feedback",
+        "documenting-experiment-results",
+        "sdlc",
+    ]
+    reason: str = Field(min_length=1)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    harness_family: HarnessFamily | None = None
+    frozen_manifest_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_harness_action(self) -> AutotrainActionV1:
+        if self.kind == "repair_harness" and self.harness_family is None:
+            raise ValueError("repair_harness action requires harness_family")
+        if self.kind != "repair_harness" and self.harness_family is not None:
+            raise ValueError("harness_family is only valid for repair_harness")
+        return self
+
+
+class AutotrainCycleHandoffV1(StrictModel):
+    """Typed boundary returned to the agent supervisor after one bounded cycle."""
+
+    schema_version: Literal["AutotrainCycleHandoffV1"] = "AutotrainCycleHandoffV1"
+    loop_id: str = Field(min_length=1)
+    campaign_id: str = Field(min_length=1)
+    cycle_index: int = Field(ge=1)
+    upstream_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    integration_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    cycle_role: Literal["screening", "promotion"]
+    cycle_intent: str = Field(min_length=1)
+    evidence_class: Literal["fixture", "scratch", "ship"]
+    climb_state: Literal[
+        "rejected",
+        "candidate_queued",
+        "champion_confirmed",
+        "climb_accepted",
+        "inconclusive",
+        "harness_failure",
+    ]
+    ship_state: Literal["not_evaluated", "blocked", "ship_promoted"]
+    primary_metric: str = Field(min_length=1)
+    reasons: tuple[str, ...] = ()
+    priorities: tuple[NextRunPriorityV1, ...] = ()
+    actions: tuple[AutotrainActionV1, ...] = Field(min_length=1)
+    formal_status: str | None = None
+    checkpoint_paths: tuple[str, ...] = ()
+    checkpoint_documentation_required: bool = False
+    created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_checkpoint_accountability(self) -> AutotrainCycleHandoffV1:
+        if self.checkpoint_documentation_required != bool(self.checkpoint_paths):
+            raise ValueError(
+                "checkpoint documentation is required exactly when checkpoints exist"
+            )
+        return self
+
+
+class AutotrainLoopStateV1(StrictModel):
+    """Small resumable state and heartbeat for one supervised loop."""
+
+    schema_version: Literal["AutotrainLoopStateV1"] = "AutotrainLoopStateV1"
+    loop_id: str = Field(min_length=1)
+    state: Literal["RUNNING", "IDLE", "STALE", "DEAD", "BLOCKED"]
+    phase: Literal[
+        "syncing",
+        "running",
+        "diagnosing",
+        "repairing_harness",
+        "repairing_formal",
+        "documenting",
+        "delivering",
+        "between_cycles",
+        "blocked",
+    ]
+    active_campaign_id: str | None = None
+    last_completed_campaign_id: str | None = None
+    cycle_index: int = Field(default=0, ge=0)
+    next_action: str | None = None
+    blocker_fingerprint: str | None = None
+    blocker_count: int = Field(default=0, ge=0)
+    pid: int | None = Field(default=None, ge=1)
+    heartbeat_at: str = Field(default_factory=utc_now)
 
 
 class HypothesisMatrix(StrictModel):

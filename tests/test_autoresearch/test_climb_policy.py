@@ -99,24 +99,24 @@ def test_cycle_cadence_screening_then_promotion() -> None:
         )
 
 
-def test_classify_positive_screening_win_and_latency_regression() -> None:
+def test_classify_positive_screening_quality_win_and_regression() -> None:
     policy = load_climb_policy()
-    # Screening primary is latency decrease: lower candidate is a win.
+    # Screening primary is the current binding/reference quality fallback.
     win = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 10.0, "parse_rate": 1.0},
+        control_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
+        candidate_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
     )
     assert win["positive"] is True
     assert any(r.startswith("primary_metric_win") for r in win["reasons"])
 
-    # Higher latency is a regression for decrease metrics — not positive.
+    # Lower quality is not positive.
     bad = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 12.5, "parse_rate": 1.0},
+        control_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
+        candidate_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
     )
     assert bad["positive"] is False
     assert any("null_or_worse" in r for r in bad["reasons"])
@@ -127,8 +127,8 @@ def test_classify_positive_capacity_growth_without_eg_params() -> None:
     result = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 10.0, "parse_rate": 1.0},
+        control_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
+        candidate_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
         baseline_trainable_params=1_000_000,
         candidate_trainable_params=2_000_000,
         eg_params_by_seed=None,
@@ -142,8 +142,8 @@ def test_classify_positive_capacity_growth_with_eg_params() -> None:
     result = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={"latency_ms_p50": 11.0, "parse_rate": 1.0},
-        candidate_metrics={"latency_ms_p50": 10.0, "parse_rate": 1.0},
+        control_metrics={"binder_reference_f1": 0.4, "parse_rate": 1.0},
+        candidate_metrics={"binder_reference_f1": 0.6, "parse_rate": 1.0},
         baseline_trainable_params=1_000_000,
         candidate_trainable_params=2_000_000,
         eg_params_by_seed=(1.2, 1.3),
@@ -278,7 +278,7 @@ def test_is_recipe_tweak_knobs() -> None:
 
 def test_rung_gate_optional() -> None:
     policy = load_climb_policy()
-    # Default policy has rung_gates.enabled false → no-op
+    # Default policy carries durable evidence for the prior rung.
     assert_rung_allows_promotion(policy, claimed_role="promotion")
 
 
@@ -442,7 +442,9 @@ def test_train_eval_identity_differs_when_versions_change() -> None:
 
 def test_synthesis_policy_uses_action_filenames(tmp_path: Path) -> None:
     """Policy action_filenames drive the SFT gate lookup, not only hard-coded names."""
-    from slm_training.autoresearch.hillclimb import assert_synthesis_feedback_cleared_for_sft
+    from slm_training.autoresearch.hillclimb import (
+        assert_synthesis_feedback_cleared_for_sft,
+    )
 
     policy = load_climb_policy()
     names = tuple(policy.synthesis_loop["action_filenames"])
@@ -518,9 +520,10 @@ def test_policy_require_multi_seed_false_allows_single_seed_promotion() -> None:
     # model_copy to one seed and prove causal shape accepts policy override.
     base = ExperimentCampaignV1.model_validate(_manifest_payload())
     one_seed = base.model_copy(update={"seeds": (7,)})
-    assert validate_causal_campaign_shape(
-        one_seed, min_seeds=1, require_multi_seed=False
-    ) == ()
+    assert (
+        validate_causal_campaign_shape(one_seed, min_seeds=1, require_multi_seed=False)
+        == ()
+    )
     # No kwargs → loads real committed policy (min_seeds=2) → fails single seed
     default_failures = validate_causal_campaign_shape(one_seed)
     assert any(f.startswith("insufficient_seeds:1<2") for f in default_failures)
@@ -591,7 +594,7 @@ def test_continuous_manifest_promotion_uses_held_out_primary() -> None:
     )
     assert screen.claim_class == "diagnostic"
     assert screen.endpoints[0].metric == primary_for_role(policy, "screening")["metric"]
-    # Continuous screening wall is policy measurement budget, not global 3m CI cap.
+    # Role policy owns the stage wall within the canonical repository cap.
     from slm_training.autoresearch.climb_policy import stage_wall_minutes_for_role
 
     assert screen.budget.max_wall_minutes == float(

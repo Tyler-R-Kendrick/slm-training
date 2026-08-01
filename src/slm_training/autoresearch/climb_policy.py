@@ -27,6 +27,7 @@ from slm_training.autoresearch.hillclimb import (
     knob_signature_sha256,
 )
 from slm_training.lineage.records import canonical_json
+from slm_training.levers import MAX_RUN_MINUTES
 
 __all__ = [
     "CLIMB_POLICY_SCHEMA",
@@ -55,9 +56,7 @@ __all__ = [
 ]
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-CLIMB_RESOURCE_DIR = (
-    _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_climb"
-)
+CLIMB_RESOURCE_DIR = _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_climb"
 _REPO_ROOT = _PACKAGE_ROOT.parents[1]
 CLIMB_POLICY_SCHEMA = "autotrain_climb_policy/v1"
 _DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
@@ -91,7 +90,9 @@ def _read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _require_mapping(payload: Mapping[str, Any], key: str, path: Path) -> Mapping[str, Any]:
+def _require_mapping(
+    payload: Mapping[str, Any], key: str, path: Path
+) -> Mapping[str, Any]:
     raw = payload.get(key)
     if not isinstance(raw, Mapping):
         raise ClimbPolicyError(f"{path}: missing object field {key!r}")
@@ -228,7 +229,10 @@ def load_climb_policy(path: str | None = None) -> ClimbPolicy:
             raise ClimbPolicyError(f"{policy_path}: missing required field {key!r}")
     screening = _require_mapping(payload, "screening_primary", policy_path)
     promotion = _require_mapping(payload, "promotion_primary", policy_path)
-    for block_name, block in (("screening_primary", screening), ("promotion_primary", promotion)):
+    for block_name, block in (
+        ("screening_primary", screening),
+        ("promotion_primary", promotion),
+    ):
         if not block.get("metric"):
             raise ClimbPolicyError(f"{policy_path}: {block_name}.metric required")
         direction = str(block.get("direction") or "")
@@ -261,7 +265,7 @@ def primary_for_role(policy: ClimbPolicy, role: str) -> Mapping[str, Any]:
 
 
 def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
-    """Continuous-local stage wall (minutes) for campaign/eval; not global CI cap."""
+    """Return a role wall that obeys the repository-wide command cap."""
 
     measurement = policy.measurement
     if role == "promotion":
@@ -272,8 +276,10 @@ def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
         default = 10
     value = measurement.get(key, default)
     minutes = int(value)
-    if minutes < 1:
-        raise ClimbPolicyError(f"measurement.{key} must be >= 1, got {minutes}")
+    if not 1 <= minutes <= MAX_RUN_MINUTES:
+        raise ClimbPolicyError(
+            f"measurement.{key} must be in [1, {MAX_RUN_MINUTES}], got {minutes}"
+        )
     return minutes
 
 
@@ -306,7 +312,9 @@ def eval_suites_for_role(policy: ClimbPolicy, role: str) -> tuple[str, ...]:
     if raw is None:
         return default
     if not isinstance(raw, list) or not raw:
-        raise ClimbPolicyError(f"measurement suites for role {role!r} must be a non-empty list")
+        raise ClimbPolicyError(
+            f"measurement suites for role {role!r} must be a non-empty list"
+        )
     return tuple(str(x) for x in raw)
 
 
@@ -395,13 +403,20 @@ def loop_data_eval_identity(
     }
     if extra:
         values.update(dict(extra))
-    ordered = {field: values.get(field, "") for field in policy.exhausted_identity_fields}
+    ordered = {
+        field: values.get(field, "") for field in policy.exhausted_identity_fields
+    }
     return hashlib.sha256(canonical_json(ordered).encode("utf-8")).hexdigest()
 
 
-def loop_ledger_path(autoresearch_root: Path, loop_id: str, policy: ClimbPolicy | None = None) -> Path:
+def loop_ledger_path(
+    autoresearch_root: Path, loop_id: str, policy: ClimbPolicy | None = None
+) -> Path:
     pol = policy or load_climb_policy()
-    template = str(pol.loop_ledger.get("relative_path_template") or "loops/{loop_id}/exhausted_knob_ledger.json")
+    template = str(
+        pol.loop_ledger.get("relative_path_template")
+        or "loops/{loop_id}/exhausted_knob_ledger.json"
+    )
     rel = template.format(loop_id=loop_id)
     return Path(autoresearch_root) / rel
 
@@ -409,7 +424,9 @@ def loop_ledger_path(autoresearch_root: Path, loop_id: str, policy: ClimbPolicy 
 def load_loop_exhausted_ledger(
     autoresearch_root: Path, loop_id: str, policy: ClimbPolicy | None = None
 ) -> ExhaustedKnobLedger:
-    return ExhaustedKnobLedger.load(loop_ledger_path(autoresearch_root, loop_id, policy))
+    return ExhaustedKnobLedger.load(
+        loop_ledger_path(autoresearch_root, loop_id, policy)
+    )
 
 
 def save_loop_exhausted_ledger(
@@ -480,7 +497,9 @@ def assert_recipe_null_regime_pressure(
         data_eval_identity=data_eval_identity,
         claim_class=claim_class,
     )
-    require = bool(policy.recipe_null_cap.get("require_regime_transition_after_cap", True))
+    require = bool(
+        policy.recipe_null_cap.get("require_regime_transition_after_cap", True)
+    )
     if nulls < cap:
         return
     if require and not matrix_has_regime_transition:
@@ -489,7 +508,9 @@ def assert_recipe_null_regime_pressure(
             "successor matrix must include a regime_transition_candidate"
         )
     if proposed_knobs is not None:
-        pure_recipe = all(is_recipe_tweak_knobs(policy, knobs) for knobs in proposed_knobs)
+        pure_recipe = all(
+            is_recipe_tweak_knobs(policy, knobs) for knobs in proposed_knobs
+        )
         if pure_recipe:
             raise HillClimbError(
                 f"recipe-null cap reached ({nulls}>={cap}); replaying only "
@@ -522,11 +543,17 @@ def assert_rung_allows_promotion(
     if idx == 0:
         return
     prior = order[idx - 1]
-    certified = set(certified_rungs or ())
+    configured = gates.get("certified_rungs") or ()
+    certified = set(certified_rungs if certified_rungs is not None else configured)
     if prior not in certified:
         raise HillClimbError(
             f"rung gate: cannot open promotion while prior rung {prior!r} is unmet "
             f"(current={current!r})"
+        )
+    evidence = gates.get("certification_evidence") or {}
+    if not isinstance(evidence, Mapping) or not evidence.get(prior):
+        raise HillClimbError(
+            f"rung gate: certified prior rung {prior!r} lacks durable evidence"
         )
 
 
@@ -579,9 +606,7 @@ def promotion_primary_effect_met(
                 f"control={c_val} candidate={t_val}"
             )
             return False, reasons, None
-        reasons.append(
-            f"promote_primary_metrics_optional_missing:metric={metric}"
-        )
+        reasons.append(f"promote_primary_metrics_optional_missing:metric={metric}")
         return True, reasons, None
 
     raw = t_val - c_val
@@ -591,9 +616,7 @@ def promotion_primary_effect_met(
         c_pr = _metric_from_map(control, "parse_rate")
         t_pr = _metric_from_map(candidate, "parse_rate")
         if c_pr is not None and t_pr is not None and t_pr + 1e-12 < c_pr:
-            reasons.append(
-                f"promote_parse_regression:control={c_pr} candidate={t_pr}"
-            )
+            reasons.append(f"promote_parse_regression:control={c_pr} candidate={t_pr}")
             return False, reasons, improvement
 
     # Match classify_positive_metrics: strict greater-than min_effect.
@@ -654,9 +677,7 @@ def classify_positive_metrics(
             nr_imp = improvement_signed(t_nr - c_nr, nr_dir)  # type: ignore[arg-type]
             if nr_imp < nr_min:
                 non_reg_ok = False
-                reasons.append(
-                    f"non_regression_fail:{nr_metric}:{c_nr}->{t_nr}"
-                )
+                reasons.append(f"non_regression_fail:{nr_metric}:{c_nr}->{t_nr}")
         if improvement > minimum_effect and non_reg_ok:
             positive = True
             reasons.append(
@@ -736,9 +757,10 @@ def synthesis_policy_allows_sft(
         assert_synthesis_feedback_cleared_for_sft,
     )
 
-    names = tuple(
-        str(x) for x in (policy.synthesis_loop.get("action_filenames") or ())
-    ) or None
+    names = (
+        tuple(str(x) for x in (policy.synthesis_loop.get("action_filenames") or ()))
+        or None
+    )
     waiver = policy.synthesis_loop.get("allow_global_waiver_code", "*")
     assert_synthesis_feedback_cleared_for_sft(
         Path(train_dir),

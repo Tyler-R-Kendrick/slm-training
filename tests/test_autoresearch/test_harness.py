@@ -2089,9 +2089,11 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
     )
 
     matrix = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "Liveness" in matrix
     assert (
-        "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 0.75 | — | — | pass | completed |"
+        "| 1 | cccccccc | dddddddd | hyp-0 | 1234 | 0.75 | — | — | pass | fixture | — | blocked | completed |"
     ) in matrix
+    assert len(matrix.encode("utf-8")) < 64 * 1024
 
 
 def test_loop_tables_surface_lean_authority_and_stop_priority(tmp_path: Path) -> None:
@@ -2304,13 +2306,18 @@ def test_execute_records_process_launch_failure() -> None:
     assert outcome.stage_telemetry[0]["launch_error"]
 
 
-def test_experiment_wall_budget_defaults_to_two_minutes_and_is_capped() -> None:
+def test_experiment_wall_budget_reads_history_but_execution_is_capped() -> None:
     assert CampaignBudget().max_wall_minutes == float(MAX_RUN_MINUTES)
     assert CampaignBudget(max_wall_minutes=0.25).max_wall_minutes == 0.25
-    with pytest.raises(
-        ValidationError, match=f"less than or equal to {MAX_RUN_MINUTES}"
-    ):
-        CampaignBudget(max_wall_minutes=MAX_RUN_MINUTES + 0.01)
+    historical = CampaignSpec(
+        campaign_id="historical-long-wall",
+        objective="Read a legacy campaign artifact.",
+        primary_metric="score",
+        budget=CampaignBudget(max_wall_minutes=12),
+    )
+    from scripts.autoresearch import _bounded_campaign_seconds
+
+    assert _bounded_campaign_seconds(historical) == float(MAX_RUN_MINUTES * 60)
 
 
 def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:

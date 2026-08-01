@@ -3,8 +3,8 @@
   "version": "v1",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers.",
   "screening_primary": {
-    "metric": "smoke.latency_ms_p50",
-    "direction": "decrease",
+    "metric": "smoke.binder_reference_f1",
+    "direction": "increase",
     "minimum_effect": 0.0,
     "require_non_regression_metrics": [
       {
@@ -30,8 +30,8 @@
     "exploratory_claim_class": "fixture"
   },
   "measurement": {
-    "screening_stage_wall_minutes": 10,
-    "promotion_stage_wall_minutes": 12,
+    "screening_stage_wall_minutes": 3,
+    "promotion_stage_wall_minutes": 3,
     "screening_decode_timeout_seconds": 24,
     "promotion_decode_timeout_seconds": 24,
     "screening_suites": ["smoke"],
@@ -86,8 +86,12 @@
     "prefer_data_rebuild_before_sft": true
   },
   "rung_gates": {
-    "enabled": false,
+    "enabled": true,
     "current_rung": "grammar_2_ast",
+    "certified_rungs": ["ast_2_ast"],
+    "certification_evidence": {
+      "ast_2_ast": "docs/MODEL_CARD.md#capability-ladder-position-decode-invariant-i10"
+    },
     "order": [
       "ast_2_ast",
       "grammar_2_ast",
