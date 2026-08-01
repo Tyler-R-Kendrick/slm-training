@@ -1,0 +1,36 @@
+{
+  "schema": "metric_expectations/v1",
+  "description": "Locked continuous promote metric programs. Bands are assumption_backed calibration boxes for held-out structural similarity (per-mille) and parse_rate (per-mille). Locked before outcomes; never widened post-hoc.",
+  "metrics": [
+    {
+      "metric_id": "held_out_structural_similarity_pm",
+      "unit": "per_mille",
+      "authority": "assumption_backed",
+      "dependencies": [
+        {
+          "name": "ss_pm",
+          "value": {
+            "lower": { "numerator": 0, "denominator": 1 },
+            "upper": { "numerator": 1000, "denominator": 1 }
+          }
+        }
+      ],
+      "program": [{ "op": "variable", "name": "ss_pm" }]
+    },
+    {
+      "metric_id": "parse_rate_pm",
+      "unit": "per_mille",
+      "authority": "assumption_backed",
+      "dependencies": [
+        {
+          "name": "parse_pm",
+          "value": {
+            "lower": { "numerator": 0, "denominator": 1 },
+            "upper": { "numerator": 1000, "denominator": 1 }
+          }
+        }
+      ],
+      "program": [{ "op": "variable", "name": "parse_pm" }]
+    }
+  ]
+}

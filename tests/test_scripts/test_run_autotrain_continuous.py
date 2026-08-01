@@ -419,7 +419,8 @@ def test_matrix_promote_path_confirmed_knobs() -> None:
     assert cand["steps"] == 81
 
 
-def test_resolve_promotion_promoted_vs_failed(tmp_path: Path) -> None:
+def test_resolve_promotion_phase_a_alone_cannot_promote(tmp_path: Path) -> None:
+    """Proof driver: Phase A quality-held without cert/formal is not promoted."""
     root = tmp_path / "autoresearch"
     loop_id = "loop-promo"
     path = _mod._champion_queue_path(root, loop_id)
@@ -431,7 +432,16 @@ def test_resolve_promotion_promoted_vs_failed(tmp_path: Path) -> None:
         "knobs_fingerprint": "abc",
     }
     _mod._write_champion_queue(path, [entry])
-    ok = _mod._resolve_promotion_result(
+    camp = root / "c-promo"
+    camp.mkdir(parents=True)
+    # Explicit missing formal status
+    _mod.record_formal_preflight_status(
+        camp,
+        status="missing",
+        template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
+        reason="test",
+    )
+    fail = _mod._resolve_promotion_result(
         root=root,
         loop_id=loop_id,
         entry=entry,
@@ -440,31 +450,235 @@ def test_resolve_promotion_promoted_vs_failed(tmp_path: Path) -> None:
             "reasons": [
                 "quality_metric_win:meaningful_program_rate:0->0.5",
                 "primary_metric_win:held_out.structural_similarity:0->0.1",
+                "quality_held:parse=1.0 mpr=0.5",
             ],
         },
         campaign_id="c-promo",
         cycle_index=4,
-    )
-    assert ok is not None
-    assert ok["status"] == "promoted"
-    # failed path
-    entry2 = {
-        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
-        "entry_id": "champ-p2",
-        "status": "promoting",
-        "knobs": {"compact_active_canvas": True},
-        "knobs_fingerprint": "def",
-    }
-    entries = _mod._load_champion_queue(path)
-    entries.append(entry2)
-    _mod._write_champion_queue(path, entries)
-    fail = _mod._resolve_promotion_result(
-        root=root,
-        loop_id=loop_id,
-        entry=entry2,
-        delivery={"positive": False, "reasons": ["primary_metric_unavailable"]},
-        campaign_id="c-promo2",
-        cycle_index=8,
+        camp_dir=camp,
     )
     assert fail is not None
     assert fail["status"] == "promotion_failed"
+    assert any("formal_preflight" in r or "certificate" in r for r in (fail.get("resolve_reasons") or []))
+
+
+def _v2_cert(*, exp_sha: str, authority: str = "assumption_backed", relation: str = "in_band") -> dict:
+    """Minimal v2 certificate mapping accepted by optimum_feedback."""
+    return {
+        "schema": "metric_certificate/v2",
+        "checker": "leverproof-lean/v2",
+        "verified": True,
+        "assurance": "calculated_bands_and_observed_raw_samples",
+        "run_id": "run-1",
+        "evidence_sha256": "a" * 64,
+        "feature_flags_sha256": "b" * 64,
+        "metric_expectations_sha256": exp_sha,
+        "selected_candidate": "candidate",
+        "candidates": [{"id": "candidate"}],
+        "assessments": [
+            {
+                "metric_id": "held_out_structural_similarity_pm",
+                "authority": authority,
+                "relation": relation,
+            }
+        ],
+        "trusted_boundary": ["measurement"],
+    }
+
+
+def test_dispose_champion_promote_smoke_only_not_promoted() -> None:
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=None,
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promotion_failed"
+    assert any("certificate" in r for r in d["reasons"])
+
+
+def test_dispose_champion_promote_missing_formal_not_promoted() -> None:
+    exp_sha = "c" * 64
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="missing",
+        certificate=_v2_cert(exp_sha=exp_sha),
+        locked_expectations_sha256=exp_sha,
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promotion_failed"
+    assert any("formal_preflight_unproved" in r for r in d["reasons"])
+
+
+def test_dispose_champion_promote_invalid_cert_not_promoted() -> None:
+    exp_sha = "c" * 64
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate={"schema": "metric_certificate/v1", "verified": True},
+        locked_expectations_sha256=exp_sha,
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promotion_failed"
+    assert any("v2" in r for r in d["reasons"])
+
+
+def test_dispose_champion_promote_in_band_v2_promotes() -> None:
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="in_band"),
+        locked_expectations_sha256=exp_sha,
+        phase_a_positive=True,
+        phase_a_quality_held=True,
+    )
+    assert d["status"] == "promoted"
+    assert d["cert_policy"] == "continue"
+    assert d["emit_five_lane_matrix"] is False
+
+
+def test_dispose_champion_promote_assumption_miss_five_lane() -> None:
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(exp_sha=exp_sha, relation="above"),
+        locked_expectations_sha256=exp_sha,
+    )
+    assert d["status"] == "promotion_failed"
+    assert d["cert_policy"] == "block_promotion_and_diagnose"
+    assert d["emit_five_lane_matrix"] is True
+    assert set(d["diagnosis_lanes"]) >= set(_mod._FIVE_LANES)
+
+
+def test_dispose_champion_promote_theorem_miss_no_promote() -> None:
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    d = _mod.dispose_champion_promote(
+        formal_preflight_status="proved",
+        certificate=_v2_cert(
+            exp_sha=exp_sha, authority="theorem", relation="below"
+        ),
+        locked_expectations_sha256=exp_sha,
+    )
+    assert d["status"] == "promotion_failed"
+    assert d["cert_policy"] == "stop"
+    assert d["emit_five_lane_matrix"] is False
+    assert any("theorem" in r for r in d["reasons"])
+
+
+def test_five_lane_successor_matrix_shape() -> None:
+    matrix = _mod.build_five_lane_successor_matrix(
+        campaign_id="c1",
+        entry={"entry_id": "e1", "knobs_fingerprint": "fp"},
+        breaches=[{"metric_id": "x", "authority": "assumption_backed"}],
+        cert_policy="block_promotion_and_diagnose",
+    )
+    assert matrix["schema"] == "autotrain_five_lane_successor/v1"
+    assert matrix["lanes"] == list(_mod._FIVE_LANES)
+    assert len(matrix["hypotheses"]) == 5
+    assert {h["lane"] for h in matrix["hypotheses"]} == set(_mod._FIVE_LANES)
+
+
+def test_promote_manifest_locks_expectations_and_formal(tmp_path: Path) -> None:
+    exp = {
+        "experiment_id": "c-promote",
+        "hypothesis": "Confirmed champion levers hold under promotion primary.",
+        "knobs": {"seed": 7, "eval_version": "e_test", "grammar_completion_bounds": True},
+    }
+    man = _mod._manifest(
+        "continuous-loop-c1",
+        exp,
+        "a" * 40,
+        role="promotion",
+        cycle_intent="promote",
+    )
+    assert man.metric_expectations_sha256 == _mod.locked_promote_expectations_sha256()
+    assert man.metric_expectations_sha256 is not None
+    kinds = {a.kind for a in man.artifact_requirements}
+    assert "formal_preflight" in kinds
+    assert man.formal_obligations
+    assert man.formal_obligations[0].policy == "required"
+    assert man.formal_obligations[0].template_id == _mod._PROMOTE_FORMAL_TEMPLATE_ID
+
+
+def test_resolve_promotion_with_in_band_cert_promotes(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-cert"
+    camp = root / "c-cert"
+    camp.mkdir(parents=True)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    cert = _v2_cert(exp_sha=exp_sha, relation="in_band")
+    (camp / "metric-certificate.json").write_text(
+        __import__("json").dumps(cert), encoding="utf-8"
+    )
+    _mod.record_formal_preflight_status(
+        camp,
+        status="proved",
+        template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID,
+    )
+    path = _mod._champion_queue_path(root, loop_id)
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-ok",
+        "status": "promoting",
+        "knobs": {"grammar_completion_bounds": True},
+        "knobs_fingerprint": "fpok",
+    }
+    _mod._write_champion_queue(path, [entry])
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={
+            "positive": True,
+            "reasons": ["quality_held:parse=1.0 mpr=1.0"],
+        },
+        campaign_id="c-cert",
+        cycle_index=9,
+        camp_dir=camp,
+    )
+    assert resolved is not None
+    assert resolved["status"] == "promoted"
+    ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
+    assert ledger.is_file()
+    line = ledger.read_text(encoding="utf-8").strip().splitlines()[-1]
+    assert "promoted" in line
+
+
+def test_resolve_promotion_assumption_miss_writes_five_lane(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-5lane"
+    camp = root / "c-5lane"
+    camp.mkdir(parents=True)
+    exp_sha = _mod.locked_promote_expectations_sha256()
+    cert = _v2_cert(exp_sha=exp_sha, relation="above")
+    (camp / "metric-certificate.json").write_text(
+        __import__("json").dumps(cert), encoding="utf-8"
+    )
+    _mod.record_formal_preflight_status(
+        camp, status="proved", template_id=_mod._PROMOTE_FORMAL_TEMPLATE_ID
+    )
+    path = _mod._champion_queue_path(root, loop_id)
+    entry = {
+        "schema": _mod._CHAMPION_QUEUE_SCHEMA,
+        "entry_id": "champ-miss",
+        "status": "promoting",
+        "knobs": {"compact_active_canvas": True},
+        "knobs_fingerprint": "fpmiss",
+    }
+    _mod._write_champion_queue(path, [entry])
+    resolved = _mod._resolve_promotion_result(
+        root=root,
+        loop_id=loop_id,
+        entry=entry,
+        delivery={"positive": False, "reasons": []},
+        campaign_id="c-5lane",
+        cycle_index=10,
+        camp_dir=camp,
+    )
+    assert resolved is not None
+    assert resolved["status"] == "promotion_failed"
+    five = camp / "five_lane_successor_matrix.json"
+    assert five.is_file()
+    data = __import__("json").loads(five.read_text(encoding="utf-8"))
+    assert data["schema"] == "autotrain_five_lane_successor/v1"
+    assert len(data["lanes"]) == 5

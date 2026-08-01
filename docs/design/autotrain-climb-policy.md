@@ -49,9 +49,28 @@ so sticky knobs get a confirmatory retest before more thrash.
 | Schema | `autotrain_champion_queue/v1` |
 | Enqueue | Phase A `positive` **and** quality signal (`quality_held:` / `quality_metric_win:`) with a real lever (`grammar_completion_bounds` or `compact_active_canvas`) |
 | Confirm | Next cycle matrix is control + `-confirm` — **same levers, new seed** (cadence role/suites unchanged); max **2** confirm attempts then `rejected` |
-| Promote | On **promotion cadence**, a `confirmed` head becomes control + `-promote` under promotion suites/seeds; resolve → `promoted` or `promotion_failed` (max **2** promote attempts) |
-| Resolve | Confirm re-holds quality → `confirmed`; else `rejected`. Promote needs positive + quality/primary win |
+| Promote | On **promotion cadence**, a `confirmed` head becomes control + `-promote` under promotion suites/seeds |
 | Dedup | Same lever fingerprint already `queued`/`confirming`/`confirmed` is not re-enqueued; fingerprint **excludes** cycle-local `steps` jitter |
+
+### Proof driver (promote authorization)
+
+**Phase A smoke quality-held alone never marks `promoted`.** Promotion is
+proof-driven:
+
+| Gate | Contract |
+| --- | --- |
+| Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes |
+| Formal preflight | Required template `metrics.structural_similarity_monotone`; train/promote execute only when status is `proved` (else `formal_preflight_unproved` + `promotion_failed`) |
+| Certificate | LeverProof `metric_certificate/v2` loaded from the campaign; disposition via `optimum_feedback` |
+| `continue` (all in band) | only path to **`promoted`** |
+| `stop` (theorem miss) | `promotion_failed`; no five-lane thrash |
+| `block_promotion_and_diagnose` (assumption miss) | `promotion_failed` + `five_lane_successor_matrix.json` (measurement_control, training_method, architecture, lean_model, assumptions) |
+| Missing / v1 / digest mismatch | `promotion_failed` (`promote_requires_certificate…`) |
+
+Learning events append to
+`loops/<loop_id>/learning_certificate_ledger.jsonl`. Screening thrash may still
+generate observations; it cannot authorize promotion. Ship gates and
+`fixture_insufficient_n_alone_not_positive` are unchanged.
 
 `cycle_intent` on `sdlc_delivery.json` is `confirm` / `promote` / `screening` /
 `promotion` (cadence `cycle_role` remains `screening`|`promotion`). Pure latency

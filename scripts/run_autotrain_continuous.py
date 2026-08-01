@@ -11,6 +11,10 @@ SDLC Phase A (autotrain-iteration-delivery): after every cycle the driver
 classifies positive vs non-positive, records a delivery ledger, and only
 signals stack-layer intent for positive results. Stacked PRs are still opened
 by the agent (gh stack); this driver never opens PRs for non-positive cycles.
+
+Proof driver (promote path): formal preflight must be proved and a LeverProof
+metric_certificate/v2 must dispose ``continue`` before a champion is marked
+``promoted``. Phase A smoke quality-held alone never promotes.
 """
 
 from __future__ import annotations
@@ -34,7 +38,26 @@ from slm_training.autoresearch.experiment_campaign import (
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
 )
-from slm_training.autoresearch.schemas import CampaignBudget, HypothesisMatrix
+from slm_training.autoresearch.schemas import (
+    CampaignBudget,
+    FormalObligationV1,
+    HypothesisMatrix,
+)
+
+# Locked continuous promote metric programs (SHA bound on campaign lock).
+_PROMOTE_EXPECTATIONS_REL = Path(
+    "src/slm_training/resources/experiments/autotrain_climb/"
+    "metric_expectations.promote.v1.json"
+)
+_PROMOTE_FORMAL_TEMPLATE_ID = "metrics.structural_similarity_monotone"
+_FIVE_LANES = (
+    "measurement_control",
+    "training_method",
+    "architecture",
+    "lean_model",
+    "assumptions",
+)
+_CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
 
 
 def _git(*args: str, cwd: Path | None = None) -> str:
@@ -493,6 +516,355 @@ def _resolve_confirm_result(
     )
 
 
+def promote_expectations_path() -> Path:
+    """Repo-relative locked promote expectations (absolute when repo root known)."""
+    # Prefer package resource next to climb policy.
+    pkg = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "slm_training"
+        / "resources"
+        / "experiments"
+        / "autotrain_climb"
+        / "metric_expectations.promote.v1.json"
+    )
+    if pkg.is_file():
+        return pkg
+    cwd_pkg = Path.cwd() / _PROMOTE_EXPECTATIONS_REL
+    return cwd_pkg
+
+
+def locked_promote_expectations_sha256() -> str:
+    """SHA-256 of the locked continuous promote expectation manifest."""
+    path = promote_expectations_path()
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def dispose_champion_promote(
+    *,
+    formal_preflight_status: str | None,
+    certificate: dict[str, Any] | None,
+    locked_expectations_sha256: str | None = None,
+    phase_a_positive: bool = False,
+    phase_a_quality_held: bool = False,
+) -> dict[str, Any]:
+    """Authoritative promote disposition (proof driver).
+
+    Phase A smoke quality-held alone never yields ``promoted``. A proved formal
+    preflight and an in-band LeverProof metric_certificate/v2 (via
+    ``optimum_feedback``) are required. Theorem misses fail closed without a
+    five-lane matrix; assumption-backed misses fail closed and request five-lane
+    successor diagnosis.
+    """
+    from slm_training.harnesses.experiments.verified_metrics import optimum_feedback
+
+    reasons: list[str] = []
+    if phase_a_positive:
+        reasons.append("phase_a_positive")
+    if phase_a_quality_held:
+        reasons.append("phase_a_quality_held")
+
+    if formal_preflight_status != "proved":
+        reasons.append(
+            f"formal_preflight_unproved:status={formal_preflight_status!r}"
+        )
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+        }
+
+    if certificate is None:
+        reasons.append("promote_requires_certificate:phase_a_alone_insufficient")
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+        }
+
+    if certificate.get("schema") != _CERTIFICATE_SCHEMA_V2:
+        reasons.append(
+            f"promote_requires_certificate_v2:got={certificate.get('schema')!r}"
+        )
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+        }
+
+    if locked_expectations_sha256:
+        cert_exp = certificate.get("metric_expectations_sha256")
+        if cert_exp != locked_expectations_sha256:
+            reasons.append(
+                "certificate_expectations_digest_mismatch:"
+                f"locked={locked_expectations_sha256[:12]} cert={str(cert_exp)[:12]}"
+            )
+            return {
+                "status": "promotion_failed",
+                "reasons": reasons,
+                "cert_policy": None,
+                "diagnosis_lanes": [],
+                "emit_five_lane_matrix": False,
+                "breaches": [],
+            }
+
+    try:
+        feedback = optimum_feedback(certificate)
+    except Exception as exc:  # noqa: BLE001 — fail closed on bad certs
+        reasons.append(f"certificate_invalid:{exc}")
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": None,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+        }
+
+    policy = str(feedback.get("policy") or "")
+    reasons.append(f"cert_policy:{policy}")
+    lanes = list(feedback.get("diagnosis_lanes") or [])
+    breaches = list(feedback.get("breaches") or [])
+
+    if policy == "continue":
+        return {
+            "status": "promoted",
+            "reasons": reasons,
+            "cert_policy": policy,
+            "diagnosis_lanes": [],
+            "emit_five_lane_matrix": False,
+            "breaches": [],
+        }
+    if policy == "stop":
+        reasons.append("theorem_backed_band_miss")
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": policy,
+            "diagnosis_lanes": lanes,
+            "emit_five_lane_matrix": False,
+            "breaches": breaches,
+        }
+    if policy == "block_promotion_and_diagnose":
+        reasons.append("assumption_backed_band_miss")
+        return {
+            "status": "promotion_failed",
+            "reasons": reasons,
+            "cert_policy": policy,
+            "diagnosis_lanes": lanes or list(_FIVE_LANES),
+            "emit_five_lane_matrix": True,
+            "breaches": breaches,
+        }
+    reasons.append(f"certificate_not_promotable:policy={policy!r}")
+    return {
+        "status": "promotion_failed",
+        "reasons": reasons,
+        "cert_policy": policy or None,
+        "diagnosis_lanes": lanes,
+        "emit_five_lane_matrix": False,
+        "breaches": breaches,
+    }
+
+
+def build_five_lane_successor_matrix(
+    *,
+    campaign_id: str,
+    entry: dict[str, Any],
+    breaches: list[dict[str, Any]],
+    cert_policy: str | None,
+) -> dict[str, Any]:
+    """Preregistered five-lane diagnosis matrix after assumption-backed miss."""
+    lanes = list(_FIVE_LANES)
+    hypotheses = []
+    for i, lane in enumerate(lanes, start=1):
+        hypotheses.append(
+            {
+                "rank": i,
+                "lane": lane,
+                "hypothesis": (
+                    f"Lane '{lane}' explains the assumption-backed band miss "
+                    f"for champion {entry.get('knobs_fingerprint')} under "
+                    f"cert_policy={cert_policy}."
+                ),
+                "falsification": (
+                    "Controlled retest of this lane alone fails to move the "
+                    "missed metric into the locked band."
+                ),
+                "breaches": breaches,
+            }
+        )
+    return {
+        "schema": "autotrain_five_lane_successor/v1",
+        "campaign_id": campaign_id,
+        "champion_entry_id": entry.get("entry_id"),
+        "knobs_fingerprint": entry.get("knobs_fingerprint"),
+        "cert_policy": cert_policy,
+        "lanes": lanes,
+        "hypotheses": hypotheses,
+        "breaches": breaches,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+def _write_five_lane_successor(
+    camp_dir: Path,
+    *,
+    campaign_id: str,
+    entry: dict[str, Any],
+    disposition: dict[str, Any],
+) -> Path | None:
+    if not disposition.get("emit_five_lane_matrix"):
+        return None
+    payload = build_five_lane_successor_matrix(
+        campaign_id=campaign_id,
+        entry=entry,
+        breaches=list(disposition.get("breaches") or []),
+        cert_policy=disposition.get("cert_policy"),
+    )
+    path = camp_dir / "five_lane_successor_matrix.json"
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"FIVE_LANE_SUCCESSOR path={path}", flush=True)
+    return path
+
+
+def _load_promote_certificate(camp_dir: Path) -> dict[str, Any] | None:
+    """Load campaign-local metric certificate if present (JSON object)."""
+    candidates = [
+        camp_dir / "metric-certificate.json",
+        camp_dir / "artifacts" / "metric-certificate.json",
+        camp_dir / "promote" / "metric-certificate.json",
+    ]
+    for path in candidates:
+        if not path.is_file():
+            continue
+        data = _read_json(path)
+        if data:
+            return data
+    return None
+
+
+def _formal_preflight_status(camp_dir: Path) -> str | None:
+    """Read recorded formal preflight status for promote gate."""
+    path = camp_dir / "formal_preflight_status.json"
+    if path.is_file():
+        data = _read_json(path)
+        status = data.get("status")
+        return str(status) if status is not None else None
+    # Content-addressed formal preflight artifacts
+    art = camp_dir / "artifacts" / "formal_preflights"
+    if art.is_dir():
+        for p in sorted(art.glob("*.json")):
+            data = _read_json(p)
+            if data.get("status"):
+                return str(data["status"])
+    return None
+
+
+def record_formal_preflight_status(
+    camp_dir: Path,
+    *,
+    status: str,
+    template_id: str,
+    reason: str | None = None,
+) -> Path:
+    camp_dir.mkdir(parents=True, exist_ok=True)
+    path = camp_dir / "formal_preflight_status.json"
+    payload = {
+        "schema": "autotrain_formal_preflight_status/v1",
+        "status": status,
+        "template_id": template_id,
+        "reason": reason,
+        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def ensure_promote_formal_preflight(
+    *,
+    camp_dir: Path,
+    campaign_id: str,
+    experiment_id: str,
+    run_lean: bool = False,
+) -> str:
+    """Ensure promote formal preflight status is recorded; return status.
+
+    When ``run_lean`` is True, attempt the real formalize path. On any failure
+    or when Lean is not run, status is not ``proved`` and promote fails closed.
+    """
+    existing = _formal_preflight_status(camp_dir)
+    if existing is not None:
+        return existing
+
+    if not run_lean:
+        record_formal_preflight_status(
+            camp_dir,
+            status="missing",
+            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
+            reason="formal_preflight_not_run",
+        )
+        return "missing"
+
+    try:
+        from slm_training.autoresearch.formal import run_formal_preflight
+        from slm_training.autoresearch.schemas import (
+            ExperimentKnobs,
+            ExperimentSpec,
+            FormalClaimV1,
+        )
+
+        claim = FormalClaimV1(
+            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
+            claim=(
+                "Structural similarity is monotone under declared component "
+                "inequalities for continuous promote."
+            ),
+            policy="required",
+        )
+        exp = ExperimentSpec(
+            experiment_id=experiment_id,
+            campaign_id=campaign_id,
+            hypothesis="Continuous promote requires proved structural-similarity mono.",
+            rationale="Proof driver: required formal preflight before promote train.",
+            expected_effect="Block promote when formal status is not proved.",
+            falsification_criteria=("Required formal preflight is not proved.",),
+            stop_conditions=("Stop before promote train when formal preflight fails.",),
+            citations=("docs/design/formal-autoresearch.md",),
+            knobs=ExperimentKnobs(steps=1),
+            formal_claims=(claim,),
+        )
+        preflight, _obligation = run_formal_preflight(campaign_id, exp, claim)
+        status = str(preflight.status)
+        record_formal_preflight_status(
+            camp_dir,
+            status=status,
+            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
+            reason=None if status == "proved" else f"preflight_status={status}",
+        )
+        art = camp_dir / "artifacts" / "formal_preflights"
+        art.mkdir(parents=True, exist_ok=True)
+        out = art / f"{preflight.obligation_id}.json"
+        out.write_text(preflight.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        return status
+    except Exception as exc:  # noqa: BLE001 — fail closed
+        record_formal_preflight_status(
+            camp_dir,
+            status="unknown",
+            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
+            reason=f"formal_preflight_error:{exc}",
+        )
+        return "unknown"
+
+
 def _resolve_promotion_result(
     *,
     root: Path,
@@ -501,19 +873,72 @@ def _resolve_promotion_result(
     delivery: dict[str, Any],
     campaign_id: str,
     cycle_index: int,
+    camp_dir: Path | None = None,
+    certificate: dict[str, Any] | None = None,
+    formal_preflight_status: str | None = None,
+    locked_expectations_sha256: str | None = None,
 ) -> dict[str, Any] | None:
-    """Mark promotion of a confirmed champion as promoted or promotion_failed."""
-    reasons = list(delivery.get("reasons") or [])
-    # Promotion needs a real positive with quality or primary held-out signal —
-    # never pure latency greening under screening suites.
-    ok = bool(delivery.get("positive")) and (
-        _quality_held_reasons(reasons)
-        or any(
-            r.startswith("primary_metric_win:") or r.startswith("quality_metric_win:")
-            for r in reasons
-        )
+    """Mark promotion using certificate + formal preflight (not Phase A alone)."""
+    camp = camp_dir or (root / campaign_id)
+    reasons_in = list(delivery.get("reasons") or [])
+    phase_a_positive = bool(delivery.get("positive"))
+    phase_a_quality = _quality_held_reasons(reasons_in) or any(
+        r.startswith("primary_metric_win:") or r.startswith("quality_metric_win:")
+        for r in reasons_in
     )
-    status = "promoted" if ok else "promotion_failed"
+
+    if formal_preflight_status is None:
+        formal_preflight_status = _formal_preflight_status(camp)
+    if certificate is None:
+        certificate = _load_promote_certificate(camp)
+    if locked_expectations_sha256 is None:
+        try:
+            locked_expectations_sha256 = locked_promote_expectations_sha256()
+        except OSError:
+            locked_expectations_sha256 = None
+
+    disposition = dispose_champion_promote(
+        formal_preflight_status=formal_preflight_status,
+        certificate=certificate,
+        locked_expectations_sha256=locked_expectations_sha256,
+        phase_a_positive=phase_a_positive,
+        phase_a_quality_held=phase_a_quality,
+    )
+    status = str(disposition["status"])
+    resolve_reasons = list(disposition.get("reasons") or []) + reasons_in
+
+    _write_five_lane_successor(
+        camp,
+        campaign_id=campaign_id,
+        entry=entry,
+        disposition=disposition,
+    )
+
+    # Append-only learning certificate ledger (loop-local).
+    cert_ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
+    cert_ledger.parent.mkdir(parents=True, exist_ok=True)
+    with cert_ledger.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "schema": "autotrain_learning_event/v1",
+                    "loop_id": loop_id,
+                    "campaign_id": campaign_id,
+                    "cycle_index": cycle_index,
+                    "entry_id": entry.get("entry_id"),
+                    "knobs_fingerprint": entry.get("knobs_fingerprint"),
+                    "outcome": status,
+                    "cert_policy": disposition.get("cert_policy"),
+                    "formal_preflight_status": formal_preflight_status,
+                    "locked_expectations_sha256": locked_expectations_sha256,
+                    "reasons": resolve_reasons,
+                    "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+
     updated = _update_champion_status(
         root=root,
         loop_id=loop_id,
@@ -521,9 +946,8 @@ def _resolve_promotion_result(
         status=status,
         confirm_campaign_id=campaign_id,
         confirm_cycle_index=cycle_index,
-        resolve_reasons=reasons,
+        resolve_reasons=resolve_reasons,
     )
-    # Stash promotion campaign id on the row for ledger readers.
     if updated is not None:
         path = _champion_queue_path(root, loop_id)
         entries = _load_champion_queue(path)
@@ -531,8 +955,16 @@ def _resolve_promotion_result(
             if row.get("entry_id") == entry.get("entry_id"):
                 row["promotion_campaign_id"] = campaign_id
                 row["promotion_cycle_index"] = cycle_index
+                row["cert_policy"] = disposition.get("cert_policy")
+                row["formal_preflight_status"] = formal_preflight_status
                 break
         _write_champion_queue(path, entries)
+        print(
+            f"CHAMPION_PROMOTE_DISPOSE status={status} "
+            f"cert_policy={disposition.get('cert_policy')} "
+            f"formal={formal_preflight_status}",
+            flush=True,
+        )
     return updated
 
 
@@ -1557,6 +1989,8 @@ def _manifest(
     *,
     role: str = "screening",
     policy: Any | None = None,
+    cycle_intent: str | None = None,
+    formal_preflight_sha256: str | None = None,
 ) -> ExperimentCampaignV1:
     from slm_training.autoresearch.climb_policy import (
         load_climb_policy,
@@ -1564,6 +1998,7 @@ def _manifest(
         promotion_seed_floor,
         stage_wall_minutes_for_role,
     )
+    from slm_training.autoresearch.formal import formal_obligation_id
 
     pol = policy or load_climb_policy()
     role_primary = primary_for_role(pol, role)
@@ -1571,6 +2006,8 @@ def _manifest(
     direction = str(role_primary["direction"])  # type: ignore[assignment]
     min_effect = float(role_primary.get("minimum_effect") or 0.0)
     defaults = pol.defaults
+    metric_expectations_sha: str | None = None
+    formal_obligations: tuple[FormalObligationV1, ...] = ()
     if role == "promotion":
         claim_class = str(defaults.get("claim_class_promotion") or "promotion_candidate")
         min_seeds, require_ms = promotion_seed_floor(pol)
@@ -1598,21 +2035,47 @@ def _manifest(
             ),
         )
         negative_controls = ("matched-control",)
-        artifact_requirements = tuple(
-            ArtifactRequirementV1(kind=k)
-            for k in (
-                "version_stamp",
-                "seed_result",
-                "paired_examples",
-                "endpoint_result",
-                "holm_family",
-                "agentevals",
-                "agentv",
-                # Authoritative credit TCB (required for promotion_candidate)
-                "observation_table",
-                "analysis_plan",
-                "credit_report",
+        artifact_kinds = [
+            "version_stamp",
+            "seed_result",
+            "paired_examples",
+            "endpoint_result",
+            "holm_family",
+            "agentevals",
+            "agentv",
+            # Authoritative credit TCB (required for promotion_candidate)
+            "observation_table",
+            "analysis_plan",
+            "credit_report",
+        ]
+        # Proof driver: lock metric expectations on every promotion-role campaign.
+        metric_expectations_sha = locked_promote_expectations_sha256()
+        # Required formal preflight only on champion-promote intent (not thrash).
+        if cycle_intent == "promote":
+            artifact_kinds.append("formal_preflight")
+            from slm_training.autoresearch.schemas import FormalClaimV1
+
+            claim = FormalClaimV1(
+                template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
+                claim=(
+                    "Structural similarity is monotone under declared component "
+                    "inequalities for continuous promote."
+                ),
+                policy="required",
             )
+            oid = formal_obligation_id(
+                campaign_id, str(experiment["experiment_id"]), claim
+            )
+            formal_obligations = (
+                FormalObligationV1(
+                    obligation_id=oid,
+                    template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
+                    policy="required",
+                    preflight_sha256=formal_preflight_sha256 or ("0" * 64),
+                ),
+            )
+        artifact_requirements = tuple(
+            ArtifactRequirementV1(kind=k) for k in artifact_kinds
         )
         locked_eval = "e" * 64  # placeholder digest; real lock verified at promotion
         # Prefer eval_version from knobs as identity string for locked field when present
@@ -1721,8 +2184,10 @@ def _manifest(
             ),
         ),
         artifact_requirements=artifact_requirements,
+        formal_obligations=formal_obligations,
         claim_class=claim_class,  # type: ignore[arg-type]
         locked_eval_manifest_sha256=locked_eval,
+        metric_expectations_sha256=metric_expectations_sha,
         source_commit=commit,
         source_dirty=False,
         author="autotrain-continuous-driver",
@@ -2100,13 +2565,43 @@ def run_cycle(
         matrix["hypotheses"][0]["experiment"]["experiment_id"],
         matrix["recommended_experiment_id"],
     ]
+    # Promote path: formal preflight must be proved before train executes.
+    promote_formal_status: str | None = None
+    if cycle_intent == "promote" and promoting_champion is not None:
+        promote_formal_status = ensure_promote_formal_preflight(
+            camp_dir=camp_dir,
+            campaign_id=campaign_id,
+            experiment_id=str(matrix["recommended_experiment_id"]),
+            run_lean=True,
+        )
+        print(
+            f"PROMOTE_FORMAL_PREFLIGHT status={promote_formal_status} "
+            f"campaign={campaign_id}",
+            flush=True,
+        )
+        if promote_formal_status != "proved":
+            # Do not train; disposition will fail closed with formal reason.
+            print(
+                "PROMOTE_FORMAL_BLOCK skip_execute "
+                f"status={promote_formal_status}",
+                flush=True,
+            )
+            order = []
+
     seen: set[str] = set()
     for eid in order:
         if eid in seen or eid not in by_id:
             continue
         seen.add(eid)
         exp = json.loads(by_id[eid].read_text(encoding="utf-8"))
-        man = _manifest(campaign_id, exp, integration, role=role, policy=policy)
+        man = _manifest(
+            campaign_id,
+            exp,
+            integration,
+            role=role,
+            policy=policy,
+            cycle_intent=cycle_intent,
+        )
         man_path = camp_dir / "manifests" / f"{eid}.json"
         man_path.parent.mkdir(parents=True, exist_ok=True)
         man_path.write_text(man.model_dump_json(indent=2) + "\n", encoding="utf-8")
@@ -2166,6 +2661,9 @@ def run_cycle(
             delivery=delivery,
             campaign_id=campaign_id,
             cycle_index=cycle,
+            camp_dir=camp_dir,
+            formal_preflight_status=promote_formal_status
+            or _formal_preflight_status(camp_dir),
         )
     else:
         # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
