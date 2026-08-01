@@ -64,6 +64,22 @@ Do **not** say “it’s running” with only a remembered PID or a Grok UI icon
 
 ## Preferred hands-off supervisor
 
+**Prerequisite (fresh checkout / fresh venv):** install the JS grammar
+bridges before the first cycle, or `evaluate_model` silently falls back to a
+slow pure-Python `lark` AST-completeness check that can push ordinary
+20-step/n=3 fixture evals over the 3-minute `MAX_RUN_MINUTES` wall cap
+(observed cause of repeated `wall_timeout` cycles: `continuous-openui-20260730`
+cycles 4/6/7, [results](../../../../docs/design/continuous-openui-20260730-c7-results.md)):
+
+```bash
+cd src/apps/openui_bridge && npm ci && cd ../../..
+cd src/apps/design_md_bridge && npm ci && cd ../../..
+```
+
+A timeout that reproduces after this install is real signal (file a
+`model_build` `HarnessSignalV1`); a timeout on a fresh venv without this step
+is expected and not evidence of a lever regression.
+
 The host agent owns an **unbudgeted persistent goal** and runs one bounded cycle
 at a time. The agent must regain control between cycles to repair canonical
 harnesses, handle Lean dispositions, commit durable docs, and perform delivery:

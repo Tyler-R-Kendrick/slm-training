@@ -2601,6 +2601,11 @@
         {
           "version": "v35",
           "date": "2026-08-01",
+          "note": "no-bump: document the openui_bridge/design_md_bridge npm ci prerequisite in continuous.md (prose-only; no behavior change to the continuous driver)"
+        },
+        {
+          "version": "v35",
+          "date": "2026-08-01",
           "note": "Resolve bounded stage results from current-attempt canonical train and eval artifacts when stdout is only a truncated log tail, reject unchanged artifacts from prior attempts, and report an absent host driver as dead instead of trusting stale running state"
         },
         {
