@@ -46,6 +46,7 @@ __all__ = [
     "decode_timeout_seconds_for_role",
     "eval_suites_for_role",
     "classify_positive_metrics",
+    "promotion_primary_effect_met",
     "assert_recipe_null_regime_pressure",
     "is_recipe_tweak_knobs",
     "count_recipe_nulls_in_ledger",
@@ -151,6 +152,21 @@ class ClimbPolicy:
     @property
     def positive_classification(self) -> Mapping[str, Any]:
         return dict(self.payload["positive_classification"])
+
+    @property
+    def promotion_dispose(self) -> Mapping[str, Any]:
+        """Promote authority knobs (effect gate + cert); defaults fail closed."""
+        raw = self.payload.get("promotion_dispose")
+        base = {
+            "require_primary_win": True,
+            "require_cert_continue": True,
+            "require_dual_arm_metrics": True,
+            "require_parse_non_regression": True,
+            "ignore_ship_insufficient_n_for_climb": True,
+        }
+        if isinstance(raw, Mapping):
+            base.update(dict(raw))
+        return base
 
     @property
     def synthesis_loop(self) -> Mapping[str, Any]:
@@ -528,6 +544,72 @@ def _metric_from_map(metrics: Mapping[str, Any], metric_id: str) -> float | None
         if str(key).endswith(f".{leaf}") and isinstance(val, (int, float)):
             return float(val)
     return None
+
+
+def promotion_primary_effect_met(
+    *,
+    control_metrics: Mapping[str, Any] | None,
+    candidate_metrics: Mapping[str, Any] | None,
+    promotion_primary: Mapping[str, Any],
+    require_dual_arm_metrics: bool = True,
+    require_parse_non_regression: bool = True,
+) -> tuple[bool, list[str], float | None]:
+    """Whether dual-arm held-out (or policy) primary meets minimum_effect.
+
+    Used by continuous promote dispose: cert ``continue`` is necessary but not
+    sufficient. Returns ``(ok, reasons, improvement)``. Missing dual-arm primary
+    values fail closed when ``require_dual_arm_metrics`` is true.
+    """
+    reasons: list[str] = []
+    metric = str(promotion_primary.get("metric") or "")
+    direction = str(promotion_primary.get("direction") or "increase")
+    minimum_effect = float(promotion_primary.get("minimum_effect") or 0.0)
+    if not metric:
+        reasons.append("promote_primary_metric_unconfigured")
+        return False, reasons, None
+
+    control = control_metrics or {}
+    candidate = candidate_metrics or {}
+    c_val = _metric_from_map(control, metric)
+    t_val = _metric_from_map(candidate, metric)
+    if c_val is None or t_val is None:
+        if require_dual_arm_metrics:
+            reasons.append(
+                f"promote_primary_metrics_missing:metric={metric}:"
+                f"control={c_val} candidate={t_val}"
+            )
+            return False, reasons, None
+        reasons.append(
+            f"promote_primary_metrics_optional_missing:metric={metric}"
+        )
+        return True, reasons, None
+
+    raw = t_val - c_val
+    improvement = float(improvement_signed(raw, direction))  # type: ignore[arg-type]
+
+    if require_parse_non_regression:
+        c_pr = _metric_from_map(control, "parse_rate")
+        t_pr = _metric_from_map(candidate, "parse_rate")
+        if c_pr is not None and t_pr is not None and t_pr + 1e-12 < c_pr:
+            reasons.append(
+                f"promote_parse_regression:control={c_pr} candidate={t_pr}"
+            )
+            return False, reasons, improvement
+
+    # Match classify_positive_metrics: strict greater-than min_effect.
+    if not (improvement > minimum_effect):
+        reasons.append(
+            "promote_primary_null_or_insufficient:"
+            f"metric={metric}:control={c_val}:candidate={t_val}:"
+            f"min_effect={minimum_effect}:delta={improvement}"
+        )
+        return False, reasons, improvement
+
+    reasons.append(
+        f"promote_primary_win:{metric}:{c_val}->{t_val}:"
+        f"improvement={improvement}:min_effect={minimum_effect}"
+    )
+    return True, reasons, improvement
 
 
 def classify_positive_metrics(
