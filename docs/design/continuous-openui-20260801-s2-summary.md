@@ -32,6 +32,7 @@ three PRs lands first), this session's cycle docs are filed under the
 | [c3](continuous-openui-20260801-s2-c3-results.md) | 3 | `grammar_completion_bounds` + `compact_active_canvas`: latency-only win, rejected (low mpr) |
 | [c4](continuous-openui-20260801-s2-c4-results.md) | 4 | steps=42 vs steps=21 held_out `structural_similarity`: **cross-session synthesis** — this session's result matches #1248's "positive" numbers exactly, but #1247 measured a regression on the same nominal cycle; traced to a wall-clock completion race on the control arm, not a real lever effect |
 | [c5](continuous-openui-20260801-s2-c5-results.md) | 5 | `batch_size=1` vs `batch_size=2`: much worse latency, no quality offset, non-positive |
+| [c6c7](continuous-openui-20260801-s2-c6c7-results.md) | 6-7 | levers from c3 isolated: `grammar_completion_bounds` alone regresses latency; `compact_active_canvas` alone reproduces c3's latency-only win (still rejected, mpr=0.0) |
 
 ## Headline finding: the open steps-lever PRs disagree, and now we know why
 
@@ -48,10 +49,10 @@ steps lever.
 
 ## SDLC Phase A across this session
 
-None of this session's 5 cycles earn a new stacked layer:
+None of this session's 7 cycles earn a new stacked layer:
 
 - c1, c2: infrastructure-only, no metrics (`no_stack_layer_non_positive`).
-- c3, c5: real screening cycles, both non-positive.
+- c3, c5, c6, c7: real screening cycles, all non-positive.
 - c4: this session's own driver would call it `positive`
   (`primary_metric_win`), matching #1248 exactly — but the cross-session
   synthesis above shows that specific "win" is not trustworthy evidence
