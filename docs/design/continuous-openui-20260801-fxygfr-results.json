@@ -75,6 +75,17 @@
     "cycle_3": "NON_POSITIVE stack_layer=false reasons=[fixture_insufficient_n:c20260801-c3-both, fixture_insufficient_n:c20260801-c3-control, primary_metric_null_or_worse:smoke.binder_reference_f1:control=0.7222222222222222 candidate=0.7222222222222222 improvement=0.0, fixture_insufficient_n_alone]"
   },
   "conclusion": "grammar_completion_bounds + compact_active_canvas combined ('both' thrash arm) produced an identical smoke.binder_reference_f1 to control (0.72222, delta 0.0) on this size-matched 20-step fixture; parse_rate held at 1.0, mpr stayed 0 in both arms. Decode latency at this host load ranged 10.5-10.7s (well under the 24s timeout), a large swing from cycle 2's degenerate all-timeout control arm -- consistent with prior sessions' documented host-load variance in this sandbox, not a lever effect. No stack layer opened (non-positive).",
+  "cycle_4_5": {
+    "cycle_4_status": "cycle_error (CYCLE_ERROR TimeoutExpired at 170s on c4-control, steps lever 20->40; host-load soft failure, no terminal feedback produced)",
+    "cycle_5_status": "cycle_error (ValueError: latest hypothesis matrix has no terminal feedback; run a matrix member before forming its successor)",
+    "harness_signal_candidate": {
+      "family": "autoresearch",
+      "location": "scripts/autoresearch.py::cmd_hypothesize (~lines 406-416)",
+      "finding": "cmd_hypothesize hard-fails when the immediately-preceding cycle's matrix produced no terminal feedback (e.g. because that cycle CYCLE_ERROR'd before any member completed), with no fallback to an earlier matrix or a fresh non-successor matrix. A single wall-cap timeout therefore poisons the following cycle's ability to propose experiments at all.",
+      "reproduced_count": 1,
+      "hard_block": false
+    }
+  },
   "next_priorities": [
     "Rotate the lever bank instead of repeating canvas/bounds screens -- steps and batch_size arms were already proposed in this cycle's hypothesis matrix (c3-steps, c3-batch1) but not selected under the 1-experiment-pair budget; run those next",
     "Do not chase the cycle-2 decode-timeout arm further -- single-cycle host-load variance, not reproduced across cycles",

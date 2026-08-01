@@ -92,6 +92,41 @@ session).
    (need >=20) so `insufficient_n` fails by construction at this fixture
    scale -- expected, not a blocker.
 
+## Cycle 4-5: steps lever attempt (soft failure, cascading harness fragility)
+
+Per this loop's own next-run priority, cycle 4 rotated to the `steps`
+lever (`c4-steps`, 20→40) with `c4-control` as the matched baseline. The
+`c4-control` arm hit `CYCLE_ERROR TimeoutExpired` at 170s (host load again;
+same soft-failure class as cycle 2, different arm/recipe) before producing
+any terminal feedback.
+
+Cycle 5 then failed to even form a hypothesis matrix:
+
+```
+ValueError: latest hypothesis matrix has no terminal feedback; run a matrix
+member before forming its successor
+```
+
+**This is a real, reproducible harness fragility**, not host-load noise: when
+a cycle's `CYCLE_ERROR`s out before any of its matrix members complete (as
+cycle 4 did), the *next* cycle's `hypothesize --provider agent` step
+unconditionally requires `_hypothesis_feedback` from the immediately
+preceding matrix (`scripts/autoresearch.py::cmd_hypothesize`, lines
+~406-416) and has no fallback to skip a feedback-less predecessor and fall
+back further up the lineage or start a fresh matrix. A single wall-cap
+timeout on cycle N therefore poisons cycle N+1's ability to even propose
+experiments, costing a full extra cycle to a fresh scheduled session that
+has to notice and recover manually.
+
+Per continuous-mode absolute loop law, this is one occurrence (not yet the
+3-consecutive-repro threshold for a hard block), so the loop is not
+reported blocked. Flagging as a `HarnessSignalV1` candidate for the
+`autoresearch` family owner (`improve-openui-harnesses`) rather than
+attempting a fix in this docs-only cycle: `cmd_hypothesize` should either
+fall back to the last matrix that *does* have terminal feedback, or start a
+fresh (non-successor) matrix when the immediate predecessor errored out,
+instead of hard-failing the whole cycle.
+
 ## Open-PR-stack observation (not part of this cycle's classification)
 
 At session start, `tyler-r-kendrick/slm-training` had **~47 open pull
