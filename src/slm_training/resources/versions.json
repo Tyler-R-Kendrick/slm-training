@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-08-01",
+          "note": "E2E model-build gaps: driver singleton flock; promotion Phase A loads held_out metrics; promote formal preflight hard-capped at 180s"
+        },
         {
           "version": "v25",
           "date": "2026-08-01",

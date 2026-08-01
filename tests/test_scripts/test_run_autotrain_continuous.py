@@ -1028,3 +1028,129 @@ def test_enqueue_champion_accepts_steps_arm(tmp_path: Path) -> None:
     )
     assert entry is not None
     assert entry["status"] == "queued"
+
+
+def _write_eval(path: Path, *, suite: str, **metrics: float) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"suite": suite, "n": 5 if suite == "held_out" else 3, **metrics}
+    path.write_text(__import__("json").dumps(payload), encoding="utf-8")
+
+
+def test_run_metrics_loads_held_out_when_preferred(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    run = camp / "runs" / "arm-a"
+    _write_eval(
+        run / "eval_smoke.json",
+        suite="smoke",
+        parse_rate=1.0,
+        meaningful_program_rate=1.0,
+        structural_similarity=0.2,
+        latency_ms_p50=1000.0,
+    )
+    _write_eval(
+        run / "eval_held_out.json",
+        suite="held_out",
+        parse_rate=1.0,
+        meaningful_program_rate=0.2,
+        structural_similarity=0.42,
+        latency_ms_p50=2000.0,
+    )
+    smoke_only = _mod._run_metrics(camp, "arm-a", prefer_held_out=False)
+    assert smoke_only["structural_similarity"] == 0.2
+    assert smoke_only["held_out.structural_similarity"] == 0.42
+    held = _mod._run_metrics(camp, "arm-a", prefer_held_out=True)
+    assert held["structural_similarity"] == 0.42
+    assert held["held_out.structural_similarity"] == 0.42
+    assert held["smoke.structural_similarity"] == 0.2
+
+
+def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> None:
+    """Regression: promote primary must not be unavailable when held_out eval exists."""
+    camp = tmp_path / "camp"
+    for arm, ss in (("c-control", 0.30), ("c-promote", 0.40)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            structural_similarity=0.5,
+            latency_ms_p50=10000.0,
+        )
+        _write_eval(
+            run / "eval_held_out.json",
+            suite="held_out",
+            parse_rate=1.0,
+            meaningful_program_rate=0.5,
+            structural_similarity=ss,
+            latency_ms_p50=12000.0,
+        )
+        # No gates.json → avoid fixture_insufficient_n noise for this unit test.
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="held_out.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-promote",
+        role="promotion",
+    )
+    assert "primary_metric_unavailable" not in (result.get("reasons") or [])
+    assert any(
+        r.startswith("primary_metric_win:held_out.structural_similarity")
+        for r in (result.get("reasons") or [])
+    )
+    assert result["positive"] is True
+
+
+def test_classify_positive_promotion_null_held_out_not_positive(tmp_path: Path) -> None:
+    camp = tmp_path / "camp"
+    for arm in ("c-control", "c-promote"):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=1.0,
+            latency_ms_p50=10000.0,
+        )
+        _write_eval(
+            run / "eval_held_out.json",
+            suite="held_out",
+            parse_rate=1.0,
+            meaningful_program_rate=0.2,
+            structural_similarity=0.33582,
+            latency_ms_p50=17000.0,
+        )
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="held_out.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-promote",
+        role="promotion",
+    )
+    assert "primary_metric_unavailable" not in (result.get("reasons") or [])
+    assert result["positive"] is False
+
+
+def test_driver_lock_singleton(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-x"
+    fh1 = _mod.acquire_driver_lock(root, loop, code_sha="abc")
+    assert (_mod._driver_lock_path(root, loop)).is_file()
+    raised = False
+    try:
+        _mod.acquire_driver_lock(root, loop, code_sha="def")
+    except RuntimeError as exc:
+        raised = True
+        assert "DRIVER_ALREADY_RUNNING" in str(exc)
+    assert raised is True
+    import fcntl as _fcntl
+
+    _fcntl.flock(fh1.fileno(), _fcntl.LOCK_UN)
+    fh1.close()
+    fh2 = _mod.acquire_driver_lock(root, loop, code_sha="ghi")
+    fh2.close()
+
+
+def test_promote_formal_timeout_constant_is_bounded() -> None:
+    # Continuous must not inherit multi-hour MAX_RUN_SECONDS for Mathlib cold builds.
+    assert 30.0 <= _mod._PROMOTE_FORMAL_TIMEOUT_S <= 600.0
