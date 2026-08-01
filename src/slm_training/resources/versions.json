@@ -2890,12 +2890,17 @@
       ]
     },
     "harness.core": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-08-01",
+          "note": "Add a bounded process-group runner with explicit interrupt and kill budgets, typed outcomes, tree cleanup, and bounded output capture"
+        },
         {
           "version": "v12",
           "date": "2026-07-30T10:18:42-05:00",
