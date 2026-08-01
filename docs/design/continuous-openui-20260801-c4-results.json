@@ -1,0 +1,52 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c4",
+  "cycle_index": 4,
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "role": "promotion",
+  "primary_metric": "held_out.structural_similarity",
+  "primary_direction": "increase",
+  "arms": {
+    "c20260801-c4-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.4166666666666667, "latency_ms_p50": 18080.36},
+      "held_out": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.38248, "latency_ms_p50": 19175.31}
+    },
+    "c20260801-c4-steps": {
+      "status": "completed_eval_gates_failed",
+      "levers": {"steps_multiplier_candidate": true},
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.51, "latency_ms_p50": 9919.48},
+      "held_out": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.37006, "latency_ms_p50": 9816.32}
+    }
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c4-steps",
+      "fixture_insufficient_n:c20260801-c4-control",
+      "primary_metric_null_or_worse:held_out.structural_similarity:control=0.38248 candidate=0.37006 improvement=-0.012419999999999987",
+      "fixture_insufficient_n_alone"
+    ]
+  },
+  "conclusion": "First promotion-role cycle this session (queued champion confirmation attempt from the thrash/champion-queue policy). Notably, smoke.meaningful_program_rate rose to 0.333 for both arms here (first non-zero mpr seen across all four cycles today) though held_out mpr stays 0.0. The steps candidate is rejected: held_out.structural_similarity is worse than control (0.370 vs 0.382), correctly blocking promotion despite the smoke-level structural_similarity looking better (0.51 vs 0.417) and latency being roughly halved (9816ms vs 19175ms held_out p50).",
+  "next_priorities": [
+    "model: the steps candidate trades held_out structural_similarity for latency -- do not promote; investigate why smoke and held_out structural_similarity diverge in direction",
+    "infrastructure: none",
+    "confirms ship-gate/promotion-path discipline from #1242-#1245 is working: a latency+smoke-quality-looking win was still correctly rejected on held_out"
+  ],
+  "recorded_at": "2026-08-01T04:44:32+00:00"
+}
