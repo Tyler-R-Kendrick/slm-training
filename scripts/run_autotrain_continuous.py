@@ -3246,6 +3246,24 @@ def run_cycle(
                 flush=True,
             )
             order = []
+            # The promote arm never runs, so it never gets terminal
+            # hypothesizer feedback via `run --execute`. Record it directly
+            # so this campaign's matrix is not left non-terminal — otherwise
+            # a successor campaign naming this one as predecessor fails its
+            # own `hypothesize` step (SLM continuous lineage contract).
+            _run(
+                [
+                    *ar,
+                    "block",
+                    "--campaign-id",
+                    campaign_id,
+                    "--experiment-id",
+                    str(matrix["recommended_experiment_id"]),
+                    "--reason",
+                    f"promote formal preflight blocked: status={promote_formal_status}",
+                ],
+                cwd=cwd,
+            )
 
     seen: set[str] = set()
     arm_exits: dict[str, int] = {}

@@ -1,0 +1,86 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c2..c5",
+  "cycle_index": 4,
+  "source_commit": "d290da7f508950c9e56bede526f8538383c368e1",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 62,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "champion_pipeline": {
+    "enqueue": {
+      "campaign_id": "continuous-loop-20260801-c2",
+      "control_id": "c20260801-c2-control",
+      "candidate_id": "c20260801-c2-canvas",
+      "lever": "compact_active_canvas=true",
+      "control": {
+        "latency_ms_p50": 23700.19,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.6666666666666666,
+        "structural_similarity": 0.4625
+      },
+      "candidate": {
+        "latency_ms_p50": 22687.42,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.6666666666666666,
+        "structural_similarity": 0.4625
+      },
+      "disposition": "positive_no_tracked_delta_skip_stack (champion enqueue; runtime lever, not a code delta)",
+      "reasons": [
+        "primary_metric_win:smoke.latency_ms_p50:23700.19->22687.42:improvement=1012.77",
+        "quality_held:parse=1.0 mpr=0.6666666666666666",
+        "efficiency_win:mpr_per_ms:2.812917e-05->2.938486e-05"
+      ]
+    },
+    "confirm": {
+      "campaign_id": "continuous-loop-20260801-c3",
+      "control_id": "c20260801-c3-control",
+      "candidate_id": "c20260801-c3-confirm",
+      "control": {
+        "latency_ms_p50": 11082.45,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333
+      },
+      "candidate": {
+        "latency_ms_p50": 11054.7,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333
+      },
+      "status": "confirmed",
+      "reasons": [
+        "primary_metric_win:smoke.latency_ms_p50:11082.45->11054.7:improvement=27.75",
+        "quality_held:parse=1.0 mpr=0.3333333333333333"
+      ]
+    },
+    "promote_attempt_1": {
+      "campaign_id": "continuous-loop-20260801-c4",
+      "status": "harness_failure",
+      "reason": "PROMOTE_FORMAL_PREFLIGHT status=unknown; PROMOTE_FORMAL_BLOCK skip_execute -- this fresh container had no Lean/lake toolchain installed yet, so the formal preflight could not be proved. Fail-closed by design (does not spend a real promote_attempt): promote_attempts left at 0.",
+      "environment_fix": "Installed elan + built src/leverproof_lean via `lake build` (leanprover/lean4:v4.30.0, no mathlib dependency) in this container; not a harness bug."
+    }
+  },
+  "harness_bug_found_and_fixed": {
+    "family": "autoresearch",
+    "symptom": "CYCLE_ERROR ValueError('latest hypothesis matrix has no terminal feedback; run a matrix member before forming its successor') on the cycle immediately following a promote attempt that hit PROMOTE_FORMAL_BLOCK skip_execute.",
+    "root_cause": "When a promote arm's formal preflight is not proved, run_autotrain_continuous.py sets order=[] and never runs `autoresearch run --execute` for the promote experiment, so the campaign's locked hypothesis matrix never gets an outcome_diagnosed / hypothesizer_feedback_recorded event. The next lineage cycle's `cmd_hypothesize` walks predecessor lineage, finds that matrix formed with zero feedback, and raises.",
+    "fix": "Added `autoresearch block --campaign-id <id> --experiment-id <id> --reason <reason>` (scripts/autoresearch.py cmd_block_experiment): records experiment_started/experiment_finished/outcome_diagnosed/hypothesizer_feedback_recorded for a matrix member that never executed, idempotently. run_autotrain_continuous.py now calls it immediately after setting order=[] in the promote-block path.",
+    "verification": "tests/test_autoresearch/test_harness.py::test_block_experiment_records_terminal_feedback_for_unstarted_arm and ::test_hypothesize_after_block_experiment_does_not_raise reproduce the exact predecessor/successor lineage shape and assert cmd_hypothesize no longer raises.",
+    "version_stamp_bump": "harness.autoresearch.experiment_campaign v28 -> v29"
+  },
+  "conclusion": "The continuous champion queue correctly identified and confirmed a real quality-held latency win (compact_active_canvas=true, -1012.77ms then -27.75ms on confirm, mpr held) and routed it to promotion instead of a code-diff stacked PR, since no code changed. The first promote attempt was fail-closed by design on a missing Lean toolchain (environment gap, now fixed in this container). Chasing that path surfaced a real, reproducible autoresearch harness bug (non-terminal predecessor matrix breaks the next cycle's hypothesize step) that would have silently stalled the continuous loop on every future PROMOTE_FORMAL_BLOCK; fixed and covered by two regression tests.",
+  "next_priorities": [
+    "Re-run the continuous driver so the champion candidate (compact_active_canvas=true, fingerprint 7dc23b6cf0129a66) gets a real promote attempt against the now-built Lean formal preflight.",
+    "Watch for further promote-path gaps now that PROMOTE_FORMAL_BLOCK no longer poisons lineage; if a genuine LeverProof/metric_certificate disposition problem appears, route it as its own typed HarnessSignalV1.",
+    "Do not promote RL; ship gates fail by design on fixture n."
+  ],
+  "recorded_at": "2026-08-01T11:55:00Z"
+}

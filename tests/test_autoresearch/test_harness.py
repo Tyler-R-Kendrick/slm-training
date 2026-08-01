@@ -1022,6 +1022,148 @@ def test_hypothesizer_forms_feedback_linked_successor_matrix(tmp_path: Path) -> 
     assert formed[-1]["detail"]["recommended_experiment_id"] == "hyp-10"
 
 
+def test_block_experiment_records_terminal_feedback_for_unstarted_arm(
+    tmp_path: Path,
+) -> None:
+    """A matrix member that never executed (e.g. a promote arm fail-closed on
+    an unproved formal preflight) must still gain terminal hypothesizer
+    feedback via `autoresearch block`, or the matrix stays non-terminal.
+    """
+    from scripts.autoresearch import (
+        _hypothesis_feedback,
+        _latest_formed_matrix,
+        cmd_block_experiment,
+    )
+
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    matrix = hypothesis_matrix()
+    matrix_path = store.write_artifact("hypothesis_matrices", matrix)
+    store.append_event("hypothesis_matrix_formed", artifact_sha256=matrix_path.stem)
+
+    args = SimpleNamespace(
+        campaign_id="test-campaign",
+        root=tmp_path,
+        experiment_id=matrix.recommended_experiment_id,
+        reason="promote formal preflight blocked: status=unknown",
+    )
+    assert cmd_block_experiment(args) == 0
+
+    events = [
+        json.loads(line)
+        for line in (store.root / "events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert any(
+        row["event_type"] == "experiment_finished"
+        and row["experiment_id"] == matrix.recommended_experiment_id
+        for row in events
+    )
+    assert any(
+        row["event_type"] == "hypothesizer_feedback_recorded"
+        and row["experiment_id"] == matrix.recommended_experiment_id
+        for row in events
+    )
+
+    formed = _latest_formed_matrix(store)
+    feedback = _hypothesis_feedback(store, formed)
+    assert len(feedback) == 1
+    assert feedback[0].diagnosis_target == "infrastructure"
+
+    # Idempotent replay must not duplicate events or feedback.
+    assert cmd_block_experiment(args) == 0
+    assert len(_hypothesis_feedback(store, formed)) == 1
+
+
+def test_hypothesize_after_block_experiment_does_not_raise(tmp_path: Path) -> None:
+    """Regression for the continuous champion-promote skip_execute path: a
+    predecessor cycle whose only matrix member was closed via
+    `cmd_block_experiment` (never trained) must not break the successor
+    cycle's `hypothesize` step with "no terminal feedback".
+    """
+    from scripts.autoresearch import cmd_block_experiment, cmd_hypothesize
+
+    predecessor = CampaignStore("loop-c1", tmp_path)
+    predecessor.initialize(
+        campaign().model_copy(
+            update={
+                "campaign_id": "loop-c1",
+                "loop_id": "loop",
+                "cycle_index": 1,
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+            }
+        )
+    )
+    predecessor.write_artifact("evidence", matrix_evidence())
+    predecessor.write_artifact("research_sources", {"sources": []})
+    first = hypothesis_matrix(campaign_id="loop-c1")
+    first_path = predecessor.write_artifact("hypothesis_matrices", first)
+    predecessor.append_event(
+        "hypothesis_matrix_formed", artifact_sha256=first_path.stem
+    )
+    assert (
+        cmd_block_experiment(
+            SimpleNamespace(
+                campaign_id="loop-c1",
+                root=tmp_path,
+                experiment_id=first.recommended_experiment_id,
+                reason="promote formal preflight blocked: status=unknown",
+            )
+        )
+        == 0
+    )
+    feedback_path = next(
+        (predecessor.root / "artifacts" / "hypothesizer_feedback").glob("*.json")
+    )
+    feedback_id = json.loads(feedback_path.read_text())["feedback_id"]
+
+    successor = CampaignStore("loop-c2", tmp_path)
+    successor.initialize(
+        campaign().model_copy(
+            update={
+                "campaign_id": "loop-c2",
+                "loop_id": "loop",
+                "cycle_index": 2,
+                "predecessor_campaign_id": "loop-c1",
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+            }
+        )
+    )
+    successor.write_artifact("evidence", matrix_evidence())
+    successor_sources = successor.write_artifact("research_sources", {"sources": []})
+    second = hypothesis_matrix(
+        matrix_id="matrix-2",
+        campaign_id="loop-c2",
+        offset=10,
+        predecessor_matrix_id="matrix-1",
+        feedback_ids=(feedback_id,),
+        next_run_priorities=(
+            next_priority(experiment_id="hyp-10", evidence_ids=(feedback_id,)),
+        ),
+    )
+    matrix_path = tmp_path / "matrix-2.json"
+    matrix_path.write_text(second.model_dump_json(), encoding="utf-8")
+
+    assert (
+        cmd_hypothesize(
+            SimpleNamespace(
+                campaign_id="loop-c2",
+                root=tmp_path,
+                evidence=None,
+                sources=successor_sources,
+                provider="agent",
+                matrix=matrix_path,
+                model="unused",
+                memo=None,
+            )
+        )
+        == 0
+    )
+
+
 def test_evidence_normalizes_feedback_telemetry_and_lineage(tmp_path: Path) -> None:
     (tmp_path / "docs/design").mkdir(parents=True)
     (tmp_path / "docs/design/research-lineage.md").write_text("# lineage\nPrior result")
@@ -2305,12 +2447,14 @@ def test_execute_records_process_launch_failure() -> None:
 
 
 def test_experiment_wall_budget_defaults_to_two_minutes_and_is_capped() -> None:
+    # Default stays MAX_RUN_MINUTES; the cap itself is a fixed 60m so
+    # continuous screening/promotion stage walls (climb policy) can exceed
+    # global CI MAX_RUN_MINUTES without changing the default (see #1236).
     assert CampaignBudget().max_wall_minutes == float(MAX_RUN_MINUTES)
     assert CampaignBudget(max_wall_minutes=0.25).max_wall_minutes == 0.25
-    with pytest.raises(
-        ValidationError, match=f"less than or equal to {MAX_RUN_MINUTES}"
-    ):
-        CampaignBudget(max_wall_minutes=MAX_RUN_MINUTES + 0.01)
+    assert CampaignBudget(max_wall_minutes=60.0).max_wall_minutes == 60.0
+    with pytest.raises(ValidationError, match="less than or equal to 60"):
+        CampaignBudget(max_wall_minutes=60.01)
 
 
 def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
