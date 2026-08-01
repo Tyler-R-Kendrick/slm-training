@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-01",
+          "note": "Use the Mathlib-free StructuralMetrics theorem for promotion preflight, build and protocol-test the certificate checker in the same run, and forbid native_decide proof escapes"
+        },
         {
           "version": "v7",
           "date": "2026-07-31",
@@ -2556,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v30",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2593,6 +2598,26 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-08-01",
+          "note": "Keep supervised predecessor receipts fail closed while allowing the legacy unsupervised executor to advance, and type malformed training step declarations as incomplete evidence"
+        },
+        {
+          "version": "v33",
+          "date": "2026-08-01",
+          "note": "Reject partial evaluation scoreboards as infrastructure evidence, require theorem-stop receipts, validate durable action evidence, and publish live child process heartbeats"
+        },
+        {
+          "version": "v32",
+          "date": "2026-08-01",
+          "note": "Fail closed before the first decision arm unless both symmetric arm budgets plus finalization fit, and bind action acknowledgements to exact loop and campaign lineage"
+        },
+        {
+          "version": "v31",
+          "date": "2026-08-01",
+          "note": "Fail-closed measurement integrity: process-tree bounded stages, symmetric arm budgets, partial-train rejection, typed gate-fail evidence, infrastructure rediagnosis, bounded evidence roots, loop-scoped campaigns, content-bound action receipts, stale-code re-exec, and completeness/liveness matrix signals"
+        },
         {
           "version": "v30",
           "date": "2026-08-01",
@@ -2786,7 +2811,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v4",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2797,6 +2822,26 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-08-01",
+          "note": "Register all six AdvisoryResidual SFF templates with theorem-specific source digests in the canonical formal validator"
+        },
+        {
+          "version": "v6",
+          "date": "2026-08-01",
+          "note": "Run formal checks in bounded process groups so timed-out Lake and Lean descendants are interrupted and reaped"
+        },
+        {
+          "version": "v5",
+          "date": "2026-08-01",
+          "note": "no-bump: document the cold and warm promotion-proof runtime reproduction without changing formal behavior"
+        },
+        {
+          "version": "v5",
+          "date": "2026-08-01",
+          "note": "Route structural-similarity promotion preflight to the Mathlib-free LeverProof kernel and expose fail-closed current-binding validation for cached artifacts"
+        },
         {
           "version": "v4",
           "date": "2026-08-01",
@@ -2880,12 +2925,27 @@
       ]
     },
     "harness.core": {
-      "version": "v12",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-08-01",
+          "note": "Reap an already-exited process before process-group liveness checks so zero-grace cleanup does not report a false kill"
+        },
+        {
+          "version": "v14",
+          "date": "2026-08-01",
+          "note": "Expose bounded subprocess start and heartbeat callbacks for truthful supervisor liveness state"
+        },
+        {
+          "version": "v13",
+          "date": "2026-08-01",
+          "note": "Add a bounded process-group runner with explicit interrupt and kill budgets, typed outcomes, tree cleanup, and bounded output capture"
+        },
         {
           "version": "v12",
           "date": "2026-07-30T10:18:42-05:00",
@@ -8902,6 +8962,21 @@
         {
           "version": "v3",
           "date": "2026-08-01",
+          "note": "no-bump: validate durable autotrain action receipt evidence without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: validate autotrain action acknowledgement lineage and indices without changing remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: explicit autoresearch evidence roots now replace the legacy outputs default while omitted roots preserve remine campaign behavior"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
           "note": "no-bump: scripts/autoresearch.py clamps all campaign execution to the canonical run cap while preserving historical remine artifact readability"
         },
         {
@@ -12349,7 +12424,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -12389,6 +12464,11 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-01",
+          "note": "Replace native_decide with kernel-checked decide proofs and regenerate the source-bound SFF formal preflight artifacts"
+        },
         {
           "version": "v9",
           "date": "2026-07-31",

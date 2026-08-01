@@ -26,9 +26,11 @@ import hashlib
 import itertools
 import json
 import os
+import re
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -50,8 +52,21 @@ from slm_training.autoresearch.schemas import (
     FormalObligationV1,
     HypothesisMatrix,
     NextRunPriorityV1,
+    utc_now,
 )
-from slm_training.levers import MAX_RUN_SECONDS
+from slm_training.autoresearch.storage import pending_autotrain_actions
+from slm_training.harness_core.bounded_process import (
+    BoundedProcessResult,
+    ProcessOutcome,
+    run_bounded_process,
+)
+from slm_training.levers import (
+    HARNESS_FINALIZATION_RESERVE_SECONDS,
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
+    MAX_HARNESS_WALL_SECONDS,
+    MAX_RUN_SECONDS,
+)
 
 # Locked continuous promote metric programs (SHA bound on campaign lock).
 _PROMOTE_EXPECTATIONS_REL = Path(
@@ -74,6 +89,10 @@ _FORMAL_TIMEOUT_STATUSES = frozenset({"timed_out"})
 _DRIVER_LOCK_BASENAME = "driver.lock"
 
 
+class _CodeUpdated(RuntimeError):
+    """The long-lived driver integrated code newer than its Python process."""
+
+
 def _remaining_timeout(deadline: float | None = None) -> float:
     if deadline is None:
         return float(MAX_RUN_SECONDS)
@@ -84,17 +103,82 @@ def _remaining_timeout(deadline: float | None = None) -> float:
 
 
 def _git(*args: str, cwd: Path | None = None, deadline: float | None = None) -> str:
-    return subprocess.check_output(
-        ["git", *args],
-        text=True,
-        cwd=str(cwd) if cwd else None,
-        timeout=_remaining_timeout(deadline),
-    ).strip()
+    result = _bounded_command(["git", *args], cwd=cwd or Path.cwd(), deadline=deadline)
+    _raise_for_bounded_result(result)
+    return result.stdout.strip()
 
 
 def _run(cmd: list[str], *, cwd: Path, deadline: float | None = None) -> None:
     print("+", " ".join(cmd), flush=True)
-    subprocess.run(cmd, cwd=cwd, check=True, timeout=_remaining_timeout(deadline))
+    result = _bounded_command(cmd, cwd=cwd, deadline=deadline)
+    if result.stdout:
+        print(
+            result.stdout, end="" if result.stdout.endswith("\n") else "\n", flush=True
+        )
+    if result.stderr:
+        print(
+            result.stderr,
+            end="" if result.stderr.endswith("\n") else "\n",
+            file=sys.stderr,
+            flush=True,
+        )
+    _raise_for_bounded_result(result)
+
+
+def _bounded_command(
+    cmd: list[str],
+    *,
+    cwd: Path,
+    deadline: float | None = None,
+    on_start: Callable[[int], None] | None = None,
+    on_heartbeat: Callable[[int], None] | None = None,
+) -> BoundedProcessResult:
+    total = _remaining_timeout(deadline)
+    grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
+    interrupt_after = min(float(INTERRUPT_AFTER_SECONDS), max(0.001, total - grace))
+    return run_bounded_process(
+        cmd,
+        cwd=cwd,
+        interrupt_after_seconds=interrupt_after,
+        kill_grace_seconds=grace,
+        on_start=on_start,
+        on_heartbeat=on_heartbeat,
+    )
+
+
+def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
+    if result.timed_out:
+        raise subprocess.TimeoutExpired(
+            result.command,
+            result.duration_seconds,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    if result.outcome is ProcessOutcome.LAUNCH_FAILED:
+        raise OSError(result.launch_error or "subprocess launch failed")
+    if result.returncode:
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.command,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+
+
+def _arm_wall_minutes(policy_minutes: float) -> float:
+    """Give both decision arms equal room and reserve one share for orchestration."""
+
+    symmetric_minutes = float(MAX_HARNESS_WALL_SECONDS) / 3 / 60
+    return min(float(policy_minutes), symmetric_minutes)
+
+
+def _require_symmetric_arm_budget(
+    *, deadline: float, arm_count: int, arm_wall_minutes: float
+) -> None:
+    required = arm_count * arm_wall_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
+    remaining = _remaining_timeout(deadline)
+    if remaining < required:
+        raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -297,6 +381,54 @@ def _write_loop_state(root: Path, state: AutotrainLoopStateV1) -> Path:
     return path
 
 
+def _set_active_stage(root: Path, loop_id: str, stage: str) -> None:
+    path = _loop_state_path(root, loop_id)
+    if not path.is_file():
+        return
+    try:
+        state = AutotrainLoopStateV1.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return
+    _write_loop_state(
+        root,
+        state.model_copy(
+            update={
+                "active_stage": stage,
+                "child_pid": None,
+                "stage_started_at": None,
+                "heartbeat_at": utc_now(),
+            }
+        ),
+    )
+
+
+def _set_stage_process(root: Path, loop_id: str, stage: str, child_pid: int) -> None:
+    path = _loop_state_path(root, loop_id)
+    if not path.is_file():
+        return
+    try:
+        state = AutotrainLoopStateV1.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return
+    now = utc_now()
+    started_at = state.stage_started_at if state.active_stage == stage else None
+    _write_loop_state(
+        root,
+        state.model_copy(
+            update={
+                "active_stage": stage,
+                "child_pid": child_pid,
+                "stage_started_at": started_at or now,
+                "heartbeat_at": now,
+            }
+        ),
+    )
+
+
 def _record_cycle_failure(
     *, root: Path, loop_id: str, exc: Exception, cycle_index: int
 ) -> int:
@@ -316,11 +448,15 @@ def _record_cycle_failure(
                 continue
             if isinstance(row, dict):
                 previous.append(row)
-    count = 1
-    for row in reversed(previous):
-        if row.get("fingerprint") != fingerprint:
-            break
-        count += 1
+    soft = isinstance(exc, (subprocess.TimeoutExpired, TimeoutError, ConnectionError))
+    if isinstance(exc, subprocess.CalledProcessError):
+        soft = bool(exc.cmd and list(exc.cmd)[:2] == ["git", "fetch"])
+    count = 0 if soft else 1
+    if not soft:
+        for row in reversed(previous):
+            if not row.get("blocking", True) or row.get("fingerprint") != fingerprint:
+                break
+            count += 1
     record = {
         "schema": "autotrain_cycle_failure/v1",
         "loop_id": loop_id,
@@ -329,11 +465,12 @@ def _record_cycle_failure(
         "message": message,
         "fingerprint": fingerprint,
         "consecutive_count": count,
+        "blocking": not soft,
         "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, sort_keys=True) + "\n")
-    blocked = count >= 3
+    blocked = not soft and count >= 3
     _write_loop_state(
         root,
         AutotrainLoopStateV1(
@@ -341,7 +478,13 @@ def _record_cycle_failure(
             state="BLOCKED" if blocked else "IDLE",
             phase="blocked" if blocked else "between_cycles",
             cycle_index=max(0, cycle_index),
-            next_action="repair repeated blocker" if blocked else "retry cycle",
+            next_action=(
+                "repair repeated blocker"
+                if blocked
+                else "retry incomplete cycle"
+                if soft
+                else "retry cycle"
+            ),
             blocker_fingerprint=fingerprint,
             blocker_count=count,
             pid=os.getpid(),
@@ -2267,6 +2410,14 @@ def _write_cycle_handoff(
     camp_dir = root / campaign_id
     evidence_id = f"campaign:{campaign_id}"
     status = str((resolution or {}).get("status") or "")
+    diagnosis_target = _diagnosis_target(camp_dir)
+    measurement_incomplete = (
+        any(
+            item.startswith("measurement_incomplete:")
+            for item in delivery.get("reasons") or []
+        )
+        or diagnosis_target == "infrastructure"
+    )
     if status in {"promoted", "climb_accepted"}:
         climb_state = "climb_accepted"
     elif status == "confirmed":
@@ -2277,6 +2428,8 @@ def _write_cycle_handoff(
         climb_state = "inconclusive"
     elif status in {"rejected", "promotion_failed"}:
         climb_state = "rejected"
+    elif measurement_incomplete:
+        climb_state = "inconclusive"
     elif delivery.get("positive"):
         climb_state = "candidate_queued"
     else:
@@ -2317,7 +2470,6 @@ def _write_cycle_handoff(
     harness_failure = climb_state == "harness_failure" or any(
         item.startswith("harness_failure:") for item in reasons
     )
-    diagnosis_target = _diagnosis_target(camp_dir)
     if theorem_stop:
         actions.insert(
             0,
@@ -2344,6 +2496,23 @@ def _write_cycle_handoff(
                 reason="repair the canonical owner and replay the frozen arm",
                 evidence_ids=(evidence_id,),
                 harness_family=family,  # type: ignore[arg-type]
+                frozen_manifest_sha256=manifest_sha,
+            ),
+        )
+    elif measurement_incomplete:
+        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
+        manifest_sha = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        actions.insert(
+            0,
+            AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="measurement incomplete; replay the identical frozen arm",
+                evidence_ids=(evidence_id,),
                 frozen_manifest_sha256=manifest_sha,
             ),
         )
@@ -2380,12 +2549,12 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             )
         )
-    if delivery.get("stack_layer"):
+    if delivery.get("positive"):
         actions.append(
             AutotrainActionV1(
                 kind="deliver_stack",
                 owner="sdlc",
-                reason="positive result has a reviewable tracked delta",
+                reason="document the positive result, then deliver its reviewable delta",
                 evidence_ids=(evidence_id,),
             )
         )
@@ -2444,6 +2613,45 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
             best_idx = idx
             best_id = str(data.get("campaign_id"))
     return best_idx, best_id
+
+
+def _campaign_id(loop_id: str, cycle: int, *, date: str | None = None) -> str:
+    """Loop-scoped identity; historical campaign ids remain readable."""
+
+    slug = re.sub(r"[^A-Za-z0-9]+", "-", loop_id).strip("-").lower()[:24]
+    digest = hashlib.sha256(loop_id.encode("utf-8")).hexdigest()[:8]
+    day = date or time.strftime("%Y%m%d")
+    return f"continuous-loop-{day}-{slug or 'loop'}-{digest}-c{cycle}"
+
+
+def _continuous_evidence_roots(
+    root: Path, loop_id: str, predecessor_campaign_id: str | None
+) -> tuple[Path, ...]:
+    roots = [root / "loops" / loop_id, root / "sdlc_delivery_ledger.jsonl"]
+    if predecessor_campaign_id:
+        roots.insert(0, root / predecessor_campaign_id)
+    return tuple(roots)
+
+
+def _require_predecessor_actions(
+    root: Path, loop_id: str, predecessor_campaign_id: str | None
+) -> None:
+    if not predecessor_campaign_id:
+        return
+    handoff_path = root / predecessor_campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return  # Historical campaigns predate supervised handoffs.
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.campaign_id != predecessor_campaign_id:
+        raise RuntimeError("predecessor handoff identity does not match loop lineage")
+    pending = pending_autotrain_actions(root, handoff)
+    if pending:
+        detail = ", ".join(f"{index}:{action.kind}" for index, action in pending)
+        raise RuntimeError(
+            f"predecessor {predecessor_campaign_id} has unacknowledged actions: {detail}"
+        )
 
 
 def _matrix(
@@ -3233,6 +3441,8 @@ def run_cycle(
     objective: str,
     primary_metric: str,
     sync_git: bool = True,
+    startup_commit: str | None = None,
+    require_action_receipts: bool = True,
 ) -> str:
     from slm_training.autoresearch.climb_policy import (
         assert_cycle_cadence,
@@ -3255,6 +3465,11 @@ def run_cycle(
             cwd=cwd,
             deadline=deadline,
         )
+        integrated = _git("rev-parse", "HEAD", cwd=cwd, deadline=deadline)
+        if startup_commit is not None and integrated != startup_commit:
+            raise _CodeUpdated(
+                f"integrated {integrated}; restart stale process from {startup_commit}"
+            )
     if _git("status", "--porcelain", cwd=cwd, deadline=deadline):
         raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
     upstream = _git("rev-parse", "origin/main", cwd=cwd, deadline=deadline)
@@ -3268,8 +3483,11 @@ def run_cycle(
         )
 
     idx, pred = _latest_cycle(root, loop_id)
+    if require_action_receipts:
+        _require_predecessor_actions(root, loop_id, pred)
     cycle = idx + 1
     role = cycle_role_for_index(policy, cycle)
+    arm_wall_minutes = _arm_wall_minutes(stage_wall_minutes_for_role(policy, role))
     # Champion queue: confirm open heads; promote confirmed heads on promotion
     # cadence; otherwise thrash with rotated levers (Change B/C). Cadence role
     # stays screening|promotion for suites/claim_class legality.
@@ -3320,7 +3538,7 @@ def run_cycle(
         and primary_metric.split(".")[-1] == effective_primary.split(".")[-1]
     ):
         effective_primary = primary_metric
-    campaign_id = f"continuous-loop-{time.strftime('%Y%m%d')}-c{cycle}"
+    campaign_id = _campaign_id(loop_id, cycle)
     _write_loop_state(
         root,
         AutotrainLoopStateV1(
@@ -3332,6 +3550,8 @@ def run_cycle(
             cycle_index=cycle,
             next_action="run bounded campaign",
             pid=os.getpid(),
+            active_stage="orchestration",
+            integration_commit=integration,
         ),
     )
     if open_champion is not None:
@@ -3455,12 +3675,14 @@ def run_cycle(
         "--max-experiments",
         "3",
         "--max-wall-minutes",
-        str(stage_wall_minutes_for_role(policy, role)),
+        str(arm_wall_minutes),
         "--notes",
         notes,
     ]
     if pred:
         init.extend(["--predecessor-campaign-id", pred])
+    for evidence_root in _continuous_evidence_roots(root, loop_id, pred):
+        init.extend(["--evidence-root", str(evidence_root)])
     _run(init, cwd=cwd, deadline=deadline)
     _run(
         [
@@ -3656,6 +3878,13 @@ def run_cycle(
             )
             order = []
 
+    arm_count = len({eid for eid in order if eid in by_id})
+    if arm_count:
+        _require_symmetric_arm_budget(
+            deadline=deadline,
+            arm_count=arm_count,
+            arm_wall_minutes=arm_wall_minutes,
+        )
     seen: set[str] = set()
     arm_exits: dict[str, int] = {}
     for eid in order:
@@ -3694,12 +3923,42 @@ def run_cycle(
             "--execute",
         ]
         print("+", " ".join(cmd), flush=True)
-        code = subprocess.run(
-            cmd, cwd=cwd, timeout=_remaining_timeout(deadline)
-        ).returncode
+        stage = f"experiment:{eid}"
+        _set_active_stage(root, loop_id, stage)
+        result = _bounded_command(
+            cmd,
+            cwd=cwd,
+            deadline=deadline,
+            on_start=lambda pid, stage=stage: _set_stage_process(
+                root, loop_id, stage, pid
+            ),
+            on_heartbeat=lambda pid, stage=stage: _set_stage_process(
+                root, loop_id, stage, pid
+            ),
+        )
+        if result.stdout:
+            print(
+                result.stdout,
+                end="" if result.stdout.endswith("\n") else "\n",
+                flush=True,
+            )
+        if result.stderr:
+            print(
+                result.stderr,
+                end="" if result.stderr.endswith("\n") else "\n",
+                file=sys.stderr,
+                flush=True,
+            )
+        if result.timed_out:
+            code = 124
+        elif result.outcome is ProcessOutcome.LAUNCH_FAILED:
+            code = 127
+        else:
+            code = int(result.returncode or 0)
         arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
 
+    _set_active_stage(root, loop_id, "diagnosis-and-handoff")
     _run(
         [
             *ar,
@@ -3921,7 +4180,13 @@ def main(argv: list[str] | None = None) -> int:
                     objective=args.objective,
                     primary_metric=args.primary_metric,
                     sync_git=not args.supervised,
+                    startup_commit=code_sha,
+                    require_action_receipts=args.supervised,
                 )
+            except _CodeUpdated as exc:
+                print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
+                os.execv(sys.executable, [sys.executable, *sys.argv])
+                raise RuntimeError("driver re-exec unexpectedly returned")
             except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
                 print(f"CYCLE_ERROR {exc!r}", flush=True)
                 cycle_index, _ = _latest_cycle(root, args.loop_id)

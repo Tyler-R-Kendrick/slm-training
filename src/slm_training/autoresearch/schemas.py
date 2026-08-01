@@ -28,6 +28,31 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def evaluation_measurement_incomplete(metrics: dict[str, float]) -> bool:
+    """Return whether typed eval metrics prove that measurement was partial."""
+
+    incomplete_leaves = {
+        "decode_timeout_count",
+        "incomplete_document_n",
+        "execution_error_count",
+        "execution_errors",
+    }
+    if any(
+        value > 0 and key.rsplit(".", 1)[-1] in incomplete_leaves
+        for key, value in metrics.items()
+    ):
+        return True
+    for key, completed in metrics.items():
+        if key.rsplit(".", 1)[-1] != "completed_document_n":
+            continue
+        prefix = key.rsplit(".", 1)[0] if "." in key else ""
+        sample_key = f"{prefix}.n" if prefix else "n"
+        sample_count = metrics.get(sample_key)
+        if sample_count is not None and completed < sample_count:
+            return True
+    return False
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -769,6 +794,7 @@ class AutotrainActionV1(StrictModel):
         "rebuild_data",
         "document",
         "deliver_stack",
+        "retry_measurement",
         "next_experiment",
         "monitor",
     ]
@@ -791,6 +817,12 @@ class AutotrainActionV1(StrictModel):
             raise ValueError("repair_harness action requires harness_family")
         if self.kind != "repair_harness" and self.harness_family is not None:
             raise ValueError("harness_family is only valid for repair_harness")
+        if self.kind not in {"repair_harness", "retry_measurement"} and (
+            self.frozen_manifest_sha256 is not None
+        ):
+            raise ValueError(
+                "frozen_manifest_sha256 is only valid for repair/retry actions"
+            )
         return self
 
 
@@ -833,6 +865,20 @@ class AutotrainCycleHandoffV1(StrictModel):
         return self
 
 
+class AutotrainActionReceiptV1(StrictModel):
+    """Append-only evidence that a supervisor executed one handoff action."""
+
+    schema_version: Literal["AutotrainActionReceiptV1"] = "AutotrainActionReceiptV1"
+    loop_id: str = Field(min_length=1)
+    campaign_id: str = Field(min_length=1)
+    action_index: int = Field(ge=0)
+    action_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    action_kind: str = Field(min_length=1)
+    status: Literal["completed", "blocked"]
+    evidence_uris: tuple[str, ...] = Field(min_length=1)
+    recorded_at: str = Field(default_factory=utc_now)
+
+
 class AutotrainLoopStateV1(StrictModel):
     """Small resumable state and heartbeat for one supervised loop."""
 
@@ -857,6 +903,10 @@ class AutotrainLoopStateV1(StrictModel):
     blocker_fingerprint: str | None = None
     blocker_count: int = Field(default=0, ge=0)
     pid: int | None = Field(default=None, ge=1)
+    active_stage: str | None = None
+    child_pid: int | None = Field(default=None, ge=1)
+    stage_started_at: str | None = None
+    integration_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
     heartbeat_at: str = Field(default_factory=utc_now)
 
 

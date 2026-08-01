@@ -39,21 +39,48 @@ that tries to reconstruct history from only the current live set. This can elimi
 that approach before a training run. It still does not predict whether a particular
 history-preserving implementation improves a model metric.
 
-## Proof package
+## Proof packages
 
-The pinned project is
-`src/slm_training/formal/lean/` (`leanprover/lean4:v4.30.0`, Mathlib `v4.30.0`).
+Autoresearch uses two pinned Lean 4.30.0 projects. The promotion-critical
+`metrics.structural_similarity_monotone` template runs the existing
+Mathlib-free `src/leverproof_lean/` package via `make test`; that same bounded
+run builds the certificate checker used later in promotion. The remaining
+templates stay in `src/slm_training/formal/lean/` with Mathlib `v4.30.0`.
+Every formal command runs in its own bounded process group; a timeout interrupts
+and, after the canonical grace, kills and reaps Lake/Lean descendants before the
+typed timeout result is returned.
+The same canonical template registry includes the six Semantic Factor Frontier
+`AdvisoryResidual` obligations. Their proof digests bind the individual theorem and
+declared source set, so a cached SFF artifact is validated by the normal formal
+preflight path rather than an unknown-template side path.
 
 | Module | Established claim | Scope |
 | --- | --- | --- |
-| `Metrics` | recall, structural-similarity components, and pointwise means are monotone under their declared inequalities; extra unmatched structure can lower the proxy | universal over the modeled rationals/lists |
+| `LeverProofLean.StructuralMetrics` | recall, structural-similarity components, and pointwise means are monotone under their declared inequalities; extra unmatched structure can lower the proxy | universal over modeled nonnegative, common-scale integers |
 | `Forest` | certified closure is monotone/idempotent, never adds live candidates, extends history, and rollback preserves the declared partition | universal over finite modeled states |
 | `Trace` | the Boolean JSON trace contract implies every accepted step applies its declared certified-removal set and prefix-preserves history | universal over accepted traces, assuming certificate replay happened first |
 | `Recurrence` | delta/LayerScale update norms and winner-margin perturbations obey explicit algebraic bounds | conditional on the scale, contraction, and margin assumptions |
 
-`scripts.verify_formal_contracts` builds the whole package, rejects `sorry`,
-`admit`, and custom `axiom` declarations, and audits the exported theorems for
-Lean's `sorryAx`. The repository hard run cap is the timeout.
+`make -C src/leverproof_lean test` rejects `sorry`, `admit`, custom `axiom`,
+`unsafe`, and `native_decide`; `scripts.verify_formal_contracts` rejects the
+proof placeholders and custom axioms in the Mathlib package. Both audit their
+exported theorems for Lean's `sorryAx`. The repository hard run cap is the
+timeout.
+
+### Measured promotion-proof runtime (2026-08-01)
+
+Durable results: [`autotrain-runtime-preflight-results.json`](autotrain-runtime-preflight-results.json).
+This is local CPU proof-harness evidence, not a model-quality or ship result.
+
+| Path | Cache | Command scope | Wall | Peak RSS | Result |
+| --- | --- | --- | ---: | ---: | --- |
+| LeverProof promotion path | cold (`.lake` excluded) | build + proof audit + protocol tests | 10.29 s | 875,944 KiB | pass |
+| LeverProof promotion path | warm | build replay + proof audit + protocol tests | 1.02 s | 800,632 KiB | pass |
+| Historical Mathlib package | warm | build only; diagnostic, not directly comparable | 4.58 s | 852,408 KiB | pass |
+
+The cold LeverProof path completes well inside the 180-second repository cap
+without fetching Mathlib. The comparator is intentionally not used as an exact
+speedup claim because it omits the source/proof audits included by `make test`.
 
 ## Typed campaign integration
 

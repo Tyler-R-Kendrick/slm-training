@@ -49,6 +49,8 @@ from slm_training.autoresearch.rl_gate import (
     write_rl_readiness,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionReceiptV1,
+    AutotrainCycleHandoffV1,
     CampaignBudget,
     CampaignSpec,
     Diagnosis,
@@ -63,6 +65,8 @@ from slm_training.autoresearch.schemas import (
 )
 from slm_training.autoresearch.storage import (
     CampaignStore,
+    append_autotrain_action_receipt,
+    autotrain_action_sha256,
     loop_result_rows,
     render_loop_result_matrix,
 )
@@ -144,6 +148,7 @@ def cmd_init(args: argparse.Namespace) -> int:
                 "continuous init requires --upstream-commit and --integration-commit"
             )
         _validate_continuous_commits(args.upstream_commit, args.integration_commit)
+    evidence_roots = args.evidence_root or [Path("outputs")]
     campaign = CampaignSpec(
         campaign_id=args.campaign_id,
         objective=args.objective,
@@ -151,7 +156,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         track=args.track,
         researcher_mode=args.researcher_mode,
         min_hypotheses=args.min_hypotheses,
-        evidence_roots=tuple(str(path) for path in args.evidence_root),
+        evidence_roots=tuple(str(path) for path in evidence_roots),
         budget=CampaignBudget(
             max_experiments=args.max_experiments,
             max_gpu_hours=args.max_gpu_hours,
@@ -1308,6 +1313,85 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def _validate_action_evidence(
+    *, action_kind: str, evidence_uris: tuple[str, ...], campaign_root: Path
+) -> None:
+    """Require receipts to reference existing durable files or Git commits."""
+
+    repo_root = ROOT.resolve()
+    artifact_root = campaign_root.resolve()
+    for evidence in evidence_uris:
+        if len(evidence) == 40 and all(char in "0123456789abcdef" for char in evidence):
+            if _git("cat-file", "-e", f"{evidence}^{{commit}}", check=False).returncode:
+                raise ValueError(f"receipt evidence is not a Git commit: {evidence}")
+            if (
+                action_kind == "deliver_stack"
+                and _git(
+                    "merge-base", "--is-ancestor", evidence, "origin/main", check=False
+                ).returncode
+            ):
+                raise ValueError(
+                    "deliver_stack evidence must be a commit merged into origin/main"
+                )
+            continue
+
+        candidates = (repo_root / evidence, artifact_root / evidence)
+        path = next((item.resolve() for item in candidates if item.is_file()), None)
+        if path is None or not any(
+            path.is_relative_to(root) for root in (repo_root, artifact_root)
+        ):
+            raise ValueError(
+                f"receipt evidence must be an existing durable path or commit: {evidence}"
+            )
+        if action_kind == "deliver_stack":
+            raise ValueError("deliver_stack evidence must be a merged Git commit")
+        if action_kind == "document":
+            try:
+                relative = path.relative_to(repo_root)
+            except ValueError as exc:
+                raise ValueError(
+                    "document evidence must be tracked in the repository"
+                ) from exc
+            if _git(
+                "ls-files", "--error-unmatch", str(relative), check=False
+            ).returncode:
+                raise ValueError("document evidence must be tracked in the repository")
+
+
+def cmd_ack_action(args: argparse.Namespace) -> int:
+    handoff_path = args.root / args.campaign_id / "cycle_handoff.json"
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != args.loop_id:
+        raise ValueError("handoff loop_id does not match --loop-id")
+    if handoff.campaign_id != args.campaign_id:
+        raise ValueError("handoff campaign_id does not match --campaign-id")
+    if args.action_index < 0 or args.action_index >= len(handoff.actions):
+        raise ValueError("--action-index is outside the handoff action list")
+    action = handoff.actions[args.action_index]
+    evidence_uris = tuple(args.evidence)
+    _validate_action_evidence(
+        action_kind=action.kind,
+        evidence_uris=evidence_uris,
+        campaign_root=args.root,
+    )
+    receipt = AutotrainActionReceiptV1(
+        loop_id=args.loop_id,
+        campaign_id=args.campaign_id,
+        action_index=args.action_index,
+        action_sha256=autotrain_action_sha256(action),
+        action_kind=action.kind,
+        status=args.status,
+        evidence_uris=evidence_uris,
+    )
+    path = append_autotrain_action_receipt(args.root, receipt)
+    print(
+        json.dumps({"receipt": str(path), **receipt.model_dump(mode="json")}, indent=2)
+    )
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     result = sync_campaign(args.root, args.campaign_id, push=args.push)
     store = _store(args)
@@ -1423,9 +1507,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     init.add_argument("--researcher-mode", default="agent")
     init.add_argument("--min-hypotheses", type=int, default=5)
-    init.add_argument(
-        "--evidence-root", type=Path, action="append", default=[Path("outputs")]
-    )
+    init.add_argument("--evidence-root", type=Path, action="append")
     init.add_argument("--max-experiments", type=int, default=12)
     init.add_argument("--max-gpu-hours", type=float, default=0)
     init.add_argument(
@@ -1590,6 +1672,16 @@ def build_parser() -> argparse.ArgumentParser:
     status_history.add_argument("--last", type=int, default=5)
     status_history.add_argument("--all", action="store_true")
     status.set_defaults(func=cmd_status)
+
+    acknowledge = sub.add_parser("ack-action")
+    acknowledge.add_argument("--loop-id", required=True)
+    acknowledge.add_argument("--campaign-id", required=True)
+    acknowledge.add_argument("--action-index", type=int, required=True)
+    acknowledge.add_argument(
+        "--status", choices=("completed", "blocked"), default="completed"
+    )
+    acknowledge.add_argument("--evidence", action="append", required=True)
+    acknowledge.set_defaults(func=cmd_ack_action)
 
     sync = sub.add_parser("sync")
     sync.add_argument("--campaign-id", required=True)

@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 import sys
 import time
 from pathlib import Path
-from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
+
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
     CampaignSpec,
@@ -20,7 +19,18 @@ from slm_training.autoresearch.schemas import (
     HypothesisMatrix,
     OptimumFeedbackV1,
     ResearchSource,
+    evaluation_measurement_incomplete,
     utc_now,
+)
+from slm_training.harness_core.bounded_process import (
+    ProcessOutcome,
+    run_bounded_process,
+)
+from slm_training.levers import (
+    DEFAULT_TRAIN_DATA_DIR,
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
+    MAX_RUN_SECONDS,
 )
 
 
@@ -59,7 +69,10 @@ def default_eval_version() -> str:
     eval_root = store.resolve_path("eval", "e938_role_safe_all_targets_v2").parent
     if eval_root.is_dir():
         for child in sorted(eval_root.iterdir()):
-            if child.is_dir() and (child / "suites" / "smoke" / "records.jsonl").is_file():
+            if (
+                child.is_dir()
+                and (child / "suites" / "smoke" / "records.jsonl").is_file()
+            ):
                 return child.name
     raise FileNotFoundError(
         "no published eval snapshot with a smoke suite is available; "
@@ -440,6 +453,10 @@ def compile_commands(
         train.append(
             "--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints"
         )
+    if (knobs.context_backend or "hf") == "scratch" and knobs.sync_checkpoints is False:
+        # One-shot local campaign arms have no resume consumer. Keep last.pt,
+        # but do not spend the wall budget serializing optimizer/RNG state.
+        train.append("--no-full-state-checkpoint")
     if campaign.track == "grammar_diffusion":
         train.extend(["--model", "grammar_diffusion"])
         boolean_knobs = {
@@ -675,9 +692,7 @@ def compile_commands(
     if knobs.eval_suites:
         evaluate.extend(["--suites", str(knobs.eval_suites)])
     if knobs.decode_timeout_seconds is not None:
-        evaluate.extend(
-            ["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)]
-        )
+        evaluate.extend(["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)])
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
@@ -747,22 +762,32 @@ def execute_commands(
                 finished_at=utc_now(),
                 campaign_manifest_sha256=campaign_manifest_sha256,
             )
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=cwd,
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=remaining_seconds,
-            )
-        except subprocess.TimeoutExpired as exc:
+        stage_total = min(
+            float(MAX_RUN_SECONDS),
+            remaining_seconds
+            if remaining_seconds is not None
+            else float(MAX_RUN_SECONDS),
+        )
+        grace = min(float(KILL_GRACE_SECONDS), stage_total * 0.1)
+        interrupt_after = min(
+            float(INTERRUPT_AFTER_SECONDS), max(0.001, stage_total - grace)
+        )
+        completed = run_bounded_process(
+            command,
+            cwd=cwd,
+            interrupt_after_seconds=interrupt_after,
+            kill_grace_seconds=grace,
+        )
+        if getattr(completed, "timed_out", False):
             stages.append(
                 {
                     "command": command,
                     "timed_out": True,
-                    "stdout": str(exc.stdout or "")[-8000:],
-                    "stderr": str(exc.stderr or "")[-8000:],
+                    "interrupted": getattr(completed, "interrupted", False),
+                    "killed": getattr(completed, "killed", False),
+                    "process_outcome": completed.outcome.value,
+                    "stdout": completed.stdout,
+                    "stderr": completed.stderr,
                 }
             )
             return ExperimentOutcome(
@@ -779,11 +804,14 @@ def execute_commands(
                 finished_at=utc_now(),
                 campaign_manifest_sha256=campaign_manifest_sha256,
             )
-        except OSError as exc:
+        if (
+            getattr(completed, "outcome", ProcessOutcome.COMPLETED)
+            is ProcessOutcome.LAUNCH_FAILED
+        ):
             stages.append(
                 {
                     "command": command,
-                    "launch_error": str(exc),
+                    "launch_error": completed.launch_error,
                     "stdout": "",
                     "stderr": "",
                 }
@@ -795,7 +823,10 @@ def execute_commands(
                 metrics=metrics,
                 data_metrics=data_metrics,
                 command=tuple(" ".join(item) for item in commands),
-                error=f"stage could not start: {' '.join(command)}: {exc}",
+                error=(
+                    f"stage could not start: {' '.join(command)}: "
+                    f"{completed.launch_error}"
+                ),
                 wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
                 started_at=started,
@@ -807,8 +838,39 @@ def execute_commands(
         flattened = _numeric_metrics(parsed) if parsed is not None else {}
         if "scripts.build_train_data" in command:
             data_metrics.update(flattened)
+        elif "scripts.train_model" in command and completed.returncode == 0:
+            incomplete_reason = _incomplete_train_reason(command, parsed, cwd=cwd)
+            if incomplete_reason is not None:
+                stages.append(
+                    {
+                        "command": command,
+                        "exit_code": completed.returncode,
+                        "stdout": completed.stdout[-8000:],
+                        "stderr": completed.stderr[-8000:],
+                        "parsed_output": parsed,
+                        "measurement_complete": False,
+                    }
+                )
+                return ExperimentOutcome(
+                    experiment_id=experiment.experiment_id,
+                    campaign_id=experiment.campaign_id,
+                    status="stopped",
+                    command=tuple(" ".join(item) for item in commands),
+                    exit_code=completed.returncode,
+                    error=incomplete_reason,
+                    metrics=metrics,
+                    data_metrics=data_metrics,
+                    wall_time_budget_seconds=timeout_seconds,
+                    stage_telemetry=tuple(stages),
+                    started_at=started,
+                    finished_at=utc_now(),
+                    campaign_manifest_sha256=campaign_manifest_sha256,
+                )
         elif "scripts.evaluate_model" in command:
             metrics.update(flattened)
+        expected_gate_rejection = _expected_gate_rejection(
+            command, completed.returncode, parsed
+        )
         stages.append(
             {
                 "command": command,
@@ -816,9 +878,10 @@ def execute_commands(
                 "stdout": completed.stdout[-8000:],
                 "stderr": completed.stderr[-8000:],
                 "parsed_output": parsed,
+                "expected_gate_rejection": expected_gate_rejection,
             }
         )
-        if completed.returncode:
+        if completed.returncode and not expected_gate_rejection:
             return ExperimentOutcome(
                 experiment_id=experiment.experiment_id,
                 campaign_id=experiment.campaign_id,
@@ -847,6 +910,72 @@ def execute_commands(
         started_at=started,
         finished_at=utc_now(),
         campaign_manifest_sha256=campaign_manifest_sha256,
+    )
+
+
+def _command_value(command: list[str], flag: str) -> str | None:
+    try:
+        return command[command.index(flag) + 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def _incomplete_train_reason(
+    command: list[str], parsed: object | None, *, cwd: Path | str
+) -> str | None:
+    """Return why a nominally successful train is not decision-bearing."""
+
+    if not isinstance(parsed, dict):
+        return "training produced no typed summary"
+    stopped_on = str(parsed.get("stopped_on") or "")
+    requested_raw = _command_value(command, "--steps")
+    try:
+        requested = int(requested_raw) if requested_raw is not None else None
+    except ValueError:
+        return f"training declared invalid --steps value {requested_raw!r}"
+    completed = parsed.get("steps")
+    if stopped_on != "steps":
+        return f"training stopped_on={stopped_on or 'missing'} before declared steps"
+    if requested is not None and completed != requested:
+        return f"training completed {completed!r}/{requested} declared steps"
+    checkpoint = parsed.get("checkpoint")
+    if not isinstance(checkpoint, str) or not checkpoint:
+        return "training summary omitted checkpoint"
+    checkpoint_path = Path(checkpoint)
+    if not checkpoint_path.is_absolute():
+        checkpoint_path = Path(cwd) / checkpoint_path
+    if not checkpoint_path.is_file():
+        return f"training checkpoint is missing: {checkpoint}"
+    return None
+
+
+def _expected_gate_rejection(
+    command: list[str], returncode: int, parsed: object | None
+) -> bool:
+    """Exit 8 is evidence when the typed AgentV/gate scoreboard is complete."""
+
+    if (
+        returncode != 8
+        or "scripts.evaluate_model" not in command
+        or "--ship-gates" not in command
+        or not isinstance(parsed, dict)
+    ):
+        return False
+    gates = parsed.get("gates")
+    evals = parsed.get("evals")
+    suites = parsed.get("suites")
+    runner = evals.get("runner") if isinstance(evals, dict) else None
+    if evaluation_measurement_incomplete(_numeric_metrics(parsed)):
+        return False
+    return bool(
+        isinstance(gates, dict)
+        and gates.get("pass") is False
+        and isinstance(evals, dict)
+        and isinstance(runner, dict)
+        and runner.get("name") == "AgentV"
+        and runner.get("execution_errors") == 0
+        and isinstance(suites, dict)
+        and suites
     )
 
 
@@ -899,6 +1028,13 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
                 "repair the canonical owner and replay the identical frozen model/data arm",
             )
         )
+        confidence = 0.95
+    elif evaluation_measurement_incomplete(metrics):
+        target = "infrastructure"
+        evidence.append(
+            "evaluation measurement is incomplete; model attribution is unavailable"
+        )
+        actions.append("repair runtime capacity and replay the identical frozen arm")
         confidence = 0.95
     elif outcome.status in {"failed", "stopped"} and not metrics and not data:
         target = "infrastructure"

@@ -84,6 +84,27 @@ the successor. `--max-cycles 0` remains a legacy unbounded executor; bare
 `/autotrain` does not use it because a blocking process cannot close repairs or
 delivery between cycles.
 
+Every prerequisite action needs an append-only receipt before the successor can
+start. After executing action index `<i>` from the handoff, bind its evidence:
+
+```bash
+python -m scripts.autoresearch --root outputs/autoresearch ack-action \
+  --loop-id <loop-id> --campaign-id <campaign-id> --action-index <i> \
+  --status completed --evidence <durable-path-or-commit>
+```
+
+Use `--status blocked` only with evidence of the real external blocker. Evidence
+must resolve to an existing durable artifact or Git commit; documentation must be
+tracked, and delivery must cite a commit already merged into `origin/main`.
+Receipts are action-content-bound; editing/reordering a handoff cannot satisfy an
+old action. The driver enforces receipts for theorem-backed stops, harness, Lean,
+data, docs, and delivery actions.
+`next_experiment`, `retry_measurement`, and `monitor` are execution/steering actions,
+so they are not predecessor prerequisites.
+The legacy unsupervised executor cannot perform agent-owned handoff actions and
+therefore does not enforce their receipts; it is not the bare `/autotrain` path and
+cannot make supervised repair or delivery claims.
+
 When `checkpoint_documentation_required` is true, update
 `docs/MODEL_CARD.md` and the README model-card summary for every path listed in
 `checkpoint_paths` before the next cycle.
@@ -97,7 +118,8 @@ After each cycle the driver runs **SDLC Phase A classification** and writes:
 - `outputs/autoresearch/loops/<loop-id>/state.json` — heartbeat and resumable phase
 - log lines `SDLC_PHASE_A POSITIVE|NON_POSITIVE …`
 
-**Stacked PRs only when `stack_layer=true` (positive).** The driver does not
+**Stacked PRs only for positive evidence after documentation creates a reviewable
+delta.** The driver does not
 open PRs itself; the agent must `gh stack` positive layers. Non-positive
 cycles stay local (no new stack layer). Positive is **not** “cand latency
 lower”; it is a quality-aware win (see classification above).
@@ -153,6 +175,8 @@ For each cycle, run the full body without pausing:
    comparative.
 5. **Diagnose** outcomes; write hypothesizer feedback.
 6. **Document** JSON + markdown under `docs/design/` (`documenting-experiment-results`).
+   Acknowledge the matching `document` action with the durable doc path; if a
+   checkpoint exists, the evidence must also cover MODEL_CARD + README.
 7. **Print** the compact four-table view:
 
    ```bash
@@ -167,7 +191,8 @@ For each cycle, run the full body without pausing:
    harness and model changes in one attribution arm.
    A `repair_harness` handoff action is executable: invoke its owner skill,
    change the canonical owner, add a regression test, and replay the frozen arm
-   before any new model hypothesis.
+   before any new model hypothesis. Acknowledge the repair action with the commit
+   or regression artifact; a recommendation without a receipt is still pending.
 9. **SDLC Phase A — iteration delivery.**
    While fixing for this cycle and before the next train:
    - Incremental commits of green units (never leave harness WIP uncommitted).
@@ -177,9 +202,10 @@ For each cycle, run the full body without pausing:
      held parse/mpr and mpr ≥ ~1/3; quality/efficiency wins may spend a
      bounded latency budget. Fixture `insufficient_n` / null deltas alone are
      **not** positive.
-   - **If positive:** stack layer for that iteration's tracked code +
+   - **If positive:** after documentation, stack layer for that iteration's tracked code +
      `docs/design/` results (`gh stack add` / `gh stack submit --open`, or
      push to the open positive layer if the same concern continues).
+   Acknowledge `deliver_stack` with the merged commit SHA.
    - **If not positive:** no new stack layer; keep local commits and continue.
    - Never PR raw `outputs/` or weight blobs.
    Full checklist:

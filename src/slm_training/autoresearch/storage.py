@@ -15,11 +15,15 @@ from typing import Any
 from pydantic import BaseModel
 
 from slm_training.autoresearch.schemas import (
+    AutotrainActionReceiptV1,
+    AutotrainActionV1,
+    AutotrainCycleHandoffV1,
     CampaignSpec,
     Diagnosis,
     ExperimentOutcome,
     HypothesisFeedback,
     HypothesisMatrix,
+    evaluation_measurement_incomplete,
     utc_now,
 )
 from slm_training.autoresearch.experiment_campaign import (
@@ -41,6 +45,62 @@ _OUTCOME_BOUNDARY_EVENTS = frozenset(
         "hypothesizer_feedback_recorded",
     }
 )
+_PREREQUISITE_ACTION_KINDS = frozenset(
+    {
+        "stop_campaign",
+        "repair_harness",
+        "repair_formal",
+        "rebuild_data",
+        "document",
+        "deliver_stack",
+    }
+)
+
+
+def autotrain_action_sha256(action: AutotrainActionV1) -> str:
+    return _sha(action.model_dump(mode="json"))
+
+
+def append_autotrain_action_receipt(
+    root: Path | str, receipt: AutotrainActionReceiptV1
+) -> Path:
+    path = Path(root) / "loops" / receipt.loop_id / "action_receipts.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_fd = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(receipt.model_dump_json() + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
+    return path
+
+
+def pending_autotrain_actions(
+    root: Path | str, handoff: AutotrainCycleHandoffV1
+) -> tuple[tuple[int, AutotrainActionV1], ...]:
+    path = Path(root) / "loops" / handoff.loop_id / "action_receipts.jsonl"
+    completed: set[tuple[int, str]] = set()
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                receipt = AutotrainActionReceiptV1.model_validate_json(line)
+            except ValueError:
+                continue
+            if (
+                receipt.campaign_id == handoff.campaign_id
+                and receipt.status == "completed"
+            ):
+                completed.add((receipt.action_index, receipt.action_sha256))
+    return tuple(
+        (index, action)
+        for index, action in enumerate(handoff.actions)
+        if action.kind in _PREREQUISITE_ACTION_KINDS
+        and (index, autotrain_action_sha256(action)) not in completed
+    )
 
 
 def _payload(value: BaseModel | dict[str, Any]) -> dict[str, Any]:
@@ -438,6 +498,7 @@ def loop_result_rows(
     for run in _loop_runs(root, loop_id, last=last):
         campaign = run["campaign"]
         outcome = run["outcome"]
+        diagnosis = run["diagnosis"]
         feedback = run["feedback"]
         optimum = feedback.optimum_feedback if feedback is not None else None
         handoff_path = Path(root) / campaign.campaign_id / "cycle_handoff.json"
@@ -467,6 +528,8 @@ def loop_result_rows(
                 ),
                 "lean": _lean_text(optimum),
                 "gates": _gate_text(outcome.metrics),
+                "measurement": _measurement_text(outcome),
+                "diagnosis": diagnosis.target if diagnosis is not None else "—",
                 "evidence_class": handoff.get("evidence_class", "fixture"),
                 "climb": handoff.get("climb_state", "—"),
                 "ship": handoff.get("ship_state", "blocked"),
@@ -777,6 +840,8 @@ def render_loop_result_matrix(
         ("metrics", "Metrics"),
         ("lean", "Lean bands"),
         ("gates", "Gates"),
+        ("measurement", "Measurement"),
+        ("diagnosis", "Diagnosis"),
         ("evidence_class", "Evidence"),
         ("climb", "Climb"),
         ("ship", "Ship"),
@@ -811,6 +876,9 @@ def render_loop_result_matrix(
         except json.JSONDecodeError:
             state = {}
     recorded_state = str(state.get("state") or "UNKNOWN")
+    driver_pid = state.get("pid")
+    if recorded_state == "RUNNING" and not _pid_exists(driver_pid):
+        recorded_state = "DEAD"
     heartbeat = str(state.get("heartbeat_at") or "—")
     if heartbeat != "—" and recorded_state not in {"BLOCKED", "DEAD"}:
         try:
@@ -828,6 +896,9 @@ def render_loop_result_matrix(
         ("last", "Last complete"),
         ("next", "Next action"),
         ("blockers", "Blockers"),
+        ("pid", "Driver PID"),
+        ("stage", "Active stage"),
+        ("child", "Child PID"),
         ("heartbeat", "Heartbeat"),
     )
     liveness_rows = [
@@ -839,6 +910,9 @@ def render_loop_result_matrix(
             "last": state.get("last_completed_campaign_id") or "—",
             "next": state.get("next_action") or "—",
             "blockers": state.get("blocker_count", 0),
+            "pid": driver_pid or "—",
+            "stage": state.get("active_stage") or "—",
+            "child": state.get("child_pid") or "—",
             "heartbeat": heartbeat,
         }
     ]
@@ -883,6 +957,30 @@ def _render_table(
         for row in rows
     )
     return "\n".join(lines)
+
+
+def _pid_exists(pid: object) -> bool:
+    if not isinstance(pid, int) or pid < 1:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _measurement_text(outcome: ExperimentOutcome) -> str:
+    if outcome.status != "completed":
+        return "incomplete"
+    if any(
+        stage.get("measurement_complete") is False for stage in outcome.stage_telemetry
+    ):
+        return "incomplete"
+    if evaluation_measurement_incomplete(outcome.metrics):
+        return "incomplete"
+    return "complete"
 
 
 def _event_artifact(
