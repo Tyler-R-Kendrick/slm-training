@@ -13,6 +13,7 @@
 | Train | `wf_smoke_v2` |
 | Eval | `e938_role_safe_all_targets_v2` |
 | Wall cap | 3 minutes per arm; `decode_timeout_seconds=24.0` |
+| Version stamp | `code_commit=311db12a`, `harness.autoresearch.experiment_campaign=v26`, `harness.model_build.eval=v71` |
 
 ## Run matrix
 
@@ -29,7 +30,7 @@ and every quality/latency metric is `null`.
 1. `batch_size=1` is a reproducible-looking regression: all 3 smoke-suite
    decodes exhausted the 24s `decode_timeout_seconds` budget, so
    `parse_rate`, `meaningful_program_rate`, `structural_similarity`, and
-   `latency_ms_p50` are all `None` in `gates.json`. The control arm
+   `latency_ms_p50` are all `null` in `gates.json`. The control arm
    (`batch_size=2`) decoded normally in the same cycle under the same wall
    cap.
 2. `sdlc_delivery.json` recorded `primary_metric_unavailable` for both the

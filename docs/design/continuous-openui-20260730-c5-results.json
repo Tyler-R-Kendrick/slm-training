@@ -7,6 +7,16 @@
   "source_commit": "5bc90d81ff3fc0da24e4d64c1e7b2c8e37f61f1e",
   "honesty": "fixture_or_scratch",
   "not_ship_claim": true,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "311db12ab4299c313a7766e232d1b35990a971fe",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v26",
+      "harness.model_build.eval": "v71"
+    },
+    "stamped_at": "2026-08-01T07:56:47.217848+00:00"
+  },
   "recipe": {
     "device": "cpu",
     "steps": 40,

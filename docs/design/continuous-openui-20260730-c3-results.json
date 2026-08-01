@@ -7,6 +7,16 @@
   "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
   "honesty": "fixture_or_scratch",
   "not_ship_claim": true,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "311db12ab4299c313a7766e232d1b35990a971fe",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v26",
+      "harness.model_build.eval": "v71"
+    },
+    "stamped_at": "2026-08-01T07:56:47.217848+00:00"
+  },
   "recipe": {
     "device": "cpu",
     "steps": 40,
@@ -52,7 +62,7 @@
   "primary_delta_ms": 23.890000000000327,
   "conclusion": "grammar_completion_bounds + compact_active_canvas together did not reduce smoke p50 latency at 2x the prior step budget (40 vs 20 steps; delta +23.9ms); parse_rate held at 1.0 and meaningful_program_rate held at 0.333 for both arms (up from 0.0 at 20 steps, but flat between control and candidate). Ship gates fail by design on fixture n=3 (insufficient_n), not a quality regression.",
   "next_priorities": [
-    "Do not promote bounds/canvas on latency alone; neither lever moved mpr relative to its own control at any tested step budget (20 or 40 steps)",
+    "Do not promote grammar_completion_bounds + compact_active_canvas together on latency alone; the combined arm did not move mpr relative to control at 20 (cycle 2) or 40 (cycle 3) steps. This cycle only tested the two levers combined, not compact_active_canvas in isolation -- do not attribute the null result to canvas independently until it has its own control-vs-candidate arm (grammar_completion_bounds alone was tested against control in cycle 2 with the same null mpr outcome)",
     "Fresh checkouts must run `npm ci` at the repo root (not only src/apps/*/) before any eval that publishes AgentV bundles, or evaluate_model raises RuntimeError: AgentV SDK is unavailable (README already documents this at line 311; this cycle re-confirmed the failure mode and fix, no repo code change needed)",
     "Re-test bounds/canvas on a train_version with more synthesis volume so smoke suites clear the fixture n gate and mpr deltas become a meaningful comparative signal"
   ],
