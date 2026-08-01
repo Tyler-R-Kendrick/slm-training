@@ -106,6 +106,11 @@ _METRIC_LEAVES = (
     "meaningful_program_rate",
     "structural_similarity",
 )
+# Suite-completion counters — namespaced only (never merged into the bare
+# leaf) so Phase A can gate a primary-metric comparison on both arms having
+# finished the same suite, instead of averaging over whatever wall-clock
+# race happened to complete first.
+_COMPLETION_LEAVES = ("n", "completed_document_n")
 
 
 def _run_metrics(
@@ -135,6 +140,10 @@ def _run_metrics(
             if val is not None:
                 out[leaf] = val
                 out[f"smoke.{leaf}"] = val
+        for leaf in _COMPLETION_LEAVES:
+            val = _metric_from_eval(smoke, leaf)
+            if val is not None:
+                out[f"smoke.{leaf}"] = val
 
     if held.is_file():
         for leaf in _METRIC_LEAVES:
@@ -143,6 +152,10 @@ def _run_metrics(
                 out[f"held_out.{leaf}"] = val
                 if prefer_held_out:
                     out[leaf] = val
+        for leaf in _COMPLETION_LEAVES:
+            val = _metric_from_eval(held, leaf)
+            if val is not None:
+                out[f"held_out.{leaf}"] = val
     return out
 
 
@@ -1736,7 +1749,10 @@ def _classify_positive(
             positive = False
         decision["positive"] = positive
         decision["stack_layer"] = positive
-    elif tradeoff_positive:
+    elif tradeoff_positive and not any(
+        str(r).startswith("primary_metric_incomparable_partial_suite")
+        for r in (decision.get("reasons") or [])
+    ):
         decision["positive"] = True
         decision["stack_layer"] = True
 

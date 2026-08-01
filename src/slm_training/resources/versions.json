@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-08-01",
+          "note": "Gate Phase A primary-metric win/regression on matched suite completion (completed_document_n == n on both arms); a control arm that only finishes part of held_out/smoke no longer mints a spurious primary_metric_win or regression against a fully-completed candidate (cross-session steps-lever disagreement, PRs #1246-1250)"
+        },
         {
           "version": "v27",
           "date": "2026-08-01",

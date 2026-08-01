@@ -1030,9 +1030,17 @@ def test_enqueue_champion_accepts_steps_arm(tmp_path: Path) -> None:
     assert entry["status"] == "queued"
 
 
-def _write_eval(path: Path, *, suite: str, **metrics: float) -> None:
+def _write_eval(
+    path: Path, *, suite: str, completed_document_n: float | None = None, **metrics: float
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"suite": suite, "n": 5 if suite == "held_out" else 3, **metrics}
+    n = 5 if suite == "held_out" else 3
+    payload = {
+        "suite": suite,
+        "n": n,
+        "completed_document_n": n if completed_document_n is None else completed_document_n,
+        **metrics,
+    }
     path.write_text(__import__("json").dumps(payload), encoding="utf-8")
 
 
@@ -1058,6 +1066,10 @@ def test_run_metrics_loads_held_out_when_preferred(tmp_path: Path) -> None:
     smoke_only = _mod._run_metrics(camp, "arm-a", prefer_held_out=False)
     assert smoke_only["structural_similarity"] == 0.2
     assert smoke_only["held_out.structural_similarity"] == 0.42
+    assert smoke_only["smoke.n"] == 3
+    assert smoke_only["smoke.completed_document_n"] == 3
+    assert smoke_only["held_out.n"] == 5
+    assert smoke_only["held_out.completed_document_n"] == 5
     held = _mod._run_metrics(camp, "arm-a", prefer_held_out=True)
     assert held["structural_similarity"] == 0.42
     assert held["held_out.structural_similarity"] == 0.42
@@ -1129,6 +1141,50 @@ def test_classify_positive_promotion_null_held_out_not_positive(tmp_path: Path) 
     )
     assert "primary_metric_unavailable" not in (result.get("reasons") or [])
     assert result["positive"] is False
+
+
+def test_classify_positive_promotion_rejects_partial_held_out_completion(
+    tmp_path: Path,
+) -> None:
+    """Regression for the cross-session steps-lever disagreement (PRs #1246-1249,
+    #1250): a control arm that only finishes 1/5 held_out documents produces an
+    unrepresentative structural_similarity average. Comparing it against a
+    candidate that finished 5/5 must not mint a primary_metric_win/regression
+    either way -- both #1248 (positive) and #1247 (regression) measured this
+    same nominal recipe and disagreed because of this exact completion race.
+    """
+    camp = tmp_path / "camp"
+    _write_eval(
+        camp / "runs" / "c4-control" / "eval_held_out.json",
+        suite="held_out",
+        completed_document_n=1,
+        parse_rate=1.0,
+        meaningful_program_rate=0.0,
+        structural_similarity=0.3417,
+        latency_ms_p50=19458.37,
+    )
+    _write_eval(
+        camp / "runs" / "c4-steps" / "eval_held_out.json",
+        suite="held_out",
+        completed_document_n=5,
+        parse_rate=1.0,
+        meaningful_program_rate=0.0,
+        structural_similarity=0.37006,
+        latency_ms_p50=13944.15,
+    )
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="held_out.structural_similarity",
+        control_id="c4-control",
+        candidate_id="c4-steps",
+        role="promotion",
+    )
+    assert result["positive"] is False
+    assert any(
+        r.startswith("primary_metric_incomparable_partial_suite:held_out.structural_similarity")
+        for r in (result.get("reasons") or [])
+    )
+    assert not any(r.startswith("primary_metric_win") for r in (result.get("reasons") or []))
 
 
 def test_driver_lock_singleton(tmp_path: Path) -> None:
