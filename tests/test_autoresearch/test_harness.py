@@ -2637,6 +2637,146 @@ def test_execute_rejects_invalid_declared_training_steps(
     assert outcome.error == "training declared invalid --steps value 'many'"
 
 
+def test_execute_resolves_truncated_train_stdout_from_canonical_summary(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    run_root = tmp_path / "runs"
+    run_id = "truncated-summary"
+    run_dir = run_root / run_id
+    checkpoint = run_dir / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    train_summary = {
+        "steps": 20,
+        "stopped_on": "steps",
+        "checkpoint": str(checkpoint),
+        "large_payload": "x" * 100_000,
+    }
+    evaluation = {
+        "suites": {"smoke": {"n": 3, "parse_rate": 1.0}},
+        "evals": {"runner": {"name": "AgentV", "execution_errors": 0}},
+        "gates": {"pass": False},
+        "large_payload": "y" * 100_000,
+    }
+    replies = iter(
+        (
+            subprocess.CompletedProcess([], 0, stdout='"tail":"truncated"}', stderr=""),
+            subprocess.CompletedProcess(
+                [],
+                8,
+                stdout='"tail":"truncated"}',
+                stderr="",
+            ),
+        )
+    )
+    def run_stage(*args, **kwargs):
+        reply = next(replies)
+        artifact = (
+            run_dir / "train_summary.json"
+            if not (run_dir / "train_summary.json").exists()
+            else run_dir / "eval.json"
+        )
+        artifact.write_text(
+            json.dumps(
+                train_summary
+                if artifact.name == "train_summary.json"
+                else evaluation
+            )
+        )
+        return reply
+
+    monkeypatch.setattr(engine, "run_bounded_process", run_stage)
+
+    outcome = execute_commands(
+        experiment(),
+        [
+            [
+                "python",
+                "-m",
+                "scripts.train_model",
+                "--steps",
+                "20",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ],
+            [
+                "python",
+                "-m",
+                "scripts.evaluate_model",
+                "--ship-gates",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ],
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "completed"
+    assert outcome.stage_telemetry[0]["parsed_output_source"] == str(
+        run_dir / "train_summary.json"
+    )
+    assert outcome.stage_telemetry[1]["parsed_output_source"] == str(
+        run_dir / "eval.json"
+    )
+
+
+def test_execute_rejects_unchanged_canonical_summary_from_prior_attempt(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    run_root = tmp_path / "runs"
+    run_id = "stale-summary"
+    run_dir = run_root / run_id
+    checkpoint = run_dir / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (run_dir / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "steps": 20,
+                "stopped_on": "steps",
+                "checkpoint": str(checkpoint),
+            }
+        )
+    )
+    monkeypatch.setattr(
+        engine,
+        "run_bounded_process",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            [], 0, stdout='"tail":"truncated"}', stderr=""
+        ),
+    )
+
+    outcome = execute_commands(
+        experiment(),
+        [
+            [
+                "python",
+                "-m",
+                "scripts.train_model",
+                "--steps",
+                "20",
+                "--run-root",
+                str(run_root),
+                "--run-id",
+                run_id,
+            ]
+        ],
+        cwd=tmp_path,
+    )
+
+    assert outcome.status == "stopped"
+    assert outcome.error == "training produced no typed summary"
+    assert outcome.stage_telemetry[0]["parsed_output_source"] is None
+
+
 def test_execute_keeps_typed_ship_gate_rejection_as_completed_evidence(
     tmp_path: Path, monkeypatch
 ) -> None:

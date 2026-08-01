@@ -35,7 +35,12 @@ fi
 if [ -n "${driver_pid:-}" ] && [ -d "/proc/$driver_pid" ]; then
   state=RUNNING
 elif [ -f "$LOOP_STATE" ] && command -v jq >/dev/null 2>&1; then
-  state=$(jq -r '.state // "DEAD"' "$LOOP_STATE")
+  recorded_state=$(jq -r '.state // "DEAD"' "$LOOP_STATE")
+  if [ "$recorded_state" = "BLOCKED" ]; then
+    state=BLOCKED
+  else
+    state=DEAD
+  fi
 else
   state=DEAD
 fi

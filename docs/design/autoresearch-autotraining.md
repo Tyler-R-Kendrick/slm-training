@@ -20,6 +20,10 @@ the successor. `AutotrainLoopStateV1` supplies a durable heartbeat and resumable
 phase. Fixture `climb_accepted` and full `ship_promoted` are intentionally
 different verdicts.
 
+The terminal dashboard calls a loop `RUNNING` only when the host can see the
+driver process. An absent driver is `DEAD` (or preserves an explicit `BLOCKED`
+state); stale persisted `RUNNING` text cannot override process truth.
+
 Handoff coordination is enforced, not advisory. The supervisor records
 content-bound `AutotrainActionReceiptV1` entries with `autoresearch ack-action`;
 receipt evidence must resolve to a durable artifact or Git commit, documentation
@@ -182,8 +186,12 @@ pins are preserved.
 Embedded stages execute in a fresh process group. The canonical interrupt budget
 sends `SIGINT` to the full tree, waits the canonical kill grace, then kills and
 reaps the group if needed; stdout/stderr are disk-backed and only bounded tails are
-retained. A nominally successful train is still incomplete unless its typed summary
-reports `stopped_on=steps`, the requested step count, and a present checkpoint.
+retained. Typed stage results therefore come from complete stdout when available or
+from the canonical `train_summary.json` / `eval.json` artifact created or refreshed
+by that exact stage. An unchanged artifact from an earlier attempt is rejected; a
+bounded log tail is never treated as the authoritative result. A nominally
+successful train is still incomplete unless its typed summary reports
+`stopped_on=steps`, the requested step count, and a present checkpoint.
 Conversely, `evaluate_model --ship-gates` exit 8 is a completed negative result only
 when a nonempty, complete suite scoreboard and error-free AgentV runner record
 accompany the typed failed gate.

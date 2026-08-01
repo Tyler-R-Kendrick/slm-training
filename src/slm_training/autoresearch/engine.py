@@ -772,6 +772,8 @@ def execute_commands(
         interrupt_after = min(
             float(INTERRUPT_AFTER_SECONDS), max(0.001, stage_total - grace)
         )
+        stage_artifact = _stage_artifact_path(command, cwd=cwd)
+        artifact_revision_before = _artifact_revision(stage_artifact)
         completed = run_bounded_process(
             command,
             cwd=cwd,
@@ -834,7 +836,12 @@ def execute_commands(
                 campaign_manifest_sha256=campaign_manifest_sha256,
             )
         combined.extend([completed.stdout, completed.stderr])
-        parsed = _parse_json_output(completed.stdout)
+        parsed, parsed_source = _resolve_stage_output(
+            command,
+            completed.stdout,
+            cwd=cwd,
+            artifact_revision_before=artifact_revision_before,
+        )
         flattened = _numeric_metrics(parsed) if parsed is not None else {}
         if "scripts.build_train_data" in command:
             data_metrics.update(flattened)
@@ -848,6 +855,7 @@ def execute_commands(
                         "stdout": completed.stdout[-8000:],
                         "stderr": completed.stderr[-8000:],
                         "parsed_output": parsed,
+                        "parsed_output_source": parsed_source,
                         "measurement_complete": False,
                     }
                 )
@@ -878,6 +886,7 @@ def execute_commands(
                 "stdout": completed.stdout[-8000:],
                 "stderr": completed.stderr[-8000:],
                 "parsed_output": parsed,
+                "parsed_output_source": parsed_source,
                 "expected_gate_rejection": expected_gate_rejection,
             }
         )
@@ -918,6 +927,55 @@ def _command_value(command: list[str], flag: str) -> str | None:
         return command[command.index(flag) + 1]
     except (ValueError, IndexError):
         return None
+
+
+def _stage_artifact_path(command: list[str], *, cwd: Path | str) -> Path | None:
+    artifact_name = None
+    if "scripts.train_model" in command:
+        artifact_name = "train_summary.json"
+    elif "scripts.evaluate_model" in command:
+        artifact_name = "eval.json"
+    run_root = _command_value(command, "--run-root")
+    run_id = _command_value(command, "--run-id")
+    if artifact_name is None or run_root is None or run_id is None:
+        return None
+    root = Path(run_root)
+    if not root.is_absolute():
+        root = Path(cwd) / root
+    return root / run_id / artifact_name
+
+
+def _artifact_revision(path: Path | None) -> tuple[int, int] | None:
+    if path is None:
+        return None
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return stat.st_mtime_ns, stat.st_size
+
+
+def _resolve_stage_output(
+    command: list[str],
+    stdout: str,
+    *,
+    cwd: Path | str,
+    artifact_revision_before: tuple[int, int] | None,
+) -> tuple[object | None, str | None]:
+    """Resolve typed JSON from stdout or a current-stage canonical artifact."""
+
+    parsed = _parse_json_output(stdout)
+    if parsed is not None:
+        return parsed, "stdout"
+    path = _stage_artifact_path(command, cwd=cwd)
+    revision_after = _artifact_revision(path)
+    if path is None or revision_after is None or revision_after == artifact_revision_before:
+        return None, None
+    try:
+        parsed = _parse_json_output(path.read_text(encoding="utf-8"))
+    except OSError:
+        return None, None
+    return parsed, str(path) if parsed is not None else None
 
 
 def _incomplete_train_reason(
