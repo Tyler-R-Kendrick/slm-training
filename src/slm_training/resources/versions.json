@@ -2595,6 +2595,11 @@
         {
           "version": "v25",
           "date": "2026-08-01",
+          "note": "no-bump: CI-safe skip for LeverProof cert integration test when checker binary is not built"
+        },
+        {
+          "version": "v25",
+          "date": "2026-08-01",
           "note": "Close promote funnel gap: enqueue all thrash levers (steps/batch1); skip only open champions; export LeverProof v2 cert from suite metrics on promote path"
         },
         {

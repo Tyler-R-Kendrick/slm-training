@@ -893,10 +893,7 @@ def test_is_champion_lever_includes_steps_and_batch1() -> None:
     )
 
 
-def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
-    """Real LeverProof path: evidence + certificate from suite metrics."""
-    camp = tmp_path / "camp"
-    # Control + candidate eval artifacts
+def _seed_promote_runs(camp: Path) -> None:
     for rid, lat, pr, mpr in (
         ("c-control", 12000.0, 1.0, 0.33),
         ("c-promote", 9000.0, 1.0, 0.5),
@@ -929,6 +926,18 @@ def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
             ),
             encoding="utf-8",
         )
+
+
+def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
+    """Real LeverProof path when checker is built; skip on CI without Lean bin."""
+    import pytest
+    from slm_training.harnesses.experiments.verified_metrics import IN_REPO_CHECKER
+
+    if not IN_REPO_CHECKER.is_file():
+        pytest.skip("leverproof-lean binary not built in this environment")
+
+    camp = tmp_path / "camp"
+    _seed_promote_runs(camp)
     path, err = _mod.export_promote_metric_certificate(
         camp_dir=camp,
         campaign_id="camp1",
@@ -944,7 +953,6 @@ def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
 
     fb = optimum_feedback(cert)
     assert fb["policy"] == "continue"
-    # dispose can promote with this cert
     d = _mod.dispose_champion_promote(
         formal_preflight_status="proved",
         certificate=cert,
@@ -953,6 +961,31 @@ def test_export_promote_metric_certificate_writes_v2(tmp_path: Path) -> None:
         phase_a_quality_held=True,
     )
     assert d["status"] == "promoted"
+
+
+def test_export_promote_metric_certificate_fail_closed_without_metrics(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "camp"
+    (camp / "runs" / "c-control").mkdir(parents=True)
+    (camp / "runs" / "c-promote").mkdir(parents=True)
+    path, err = _mod.export_promote_metric_certificate(
+        camp_dir=camp,
+        campaign_id="camp1",
+        control_id="c-control",
+        candidate_id="c-promote",
+        delivery={},
+    )
+    assert path is None
+    assert err is not None
+    assert "incomplete_metrics" in err or "checker_missing" in err
+
+
+def test_rate_to_pm_and_latency_helpers() -> None:
+    assert _mod._rate_to_pm(0.5) == 500
+    assert _mod._rate_to_pm(1.0) == 1000
+    assert _mod._rate_to_pm(None) is None
+    assert _mod._latency_ms_to_ns(1.0) == 1_000_000
 
 
 def test_enqueue_champion_accepts_steps_arm(tmp_path: Path) -> None:
