@@ -19,6 +19,7 @@ from slm_training.autoresearch.climb_policy import (
     load_loop_exhausted_ledger,
     loop_data_eval_identity,
     primary_for_role,
+    promotion_primary_effect_met,
     save_loop_exhausted_ledger,
 )
 from slm_training.autoresearch.hillclimb import (
@@ -35,6 +36,7 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     assert len(policy.sha256) == 64
     assert policy.screening_primary["metric"]
     assert policy.promotion_primary["metric"]
+    assert policy.promotion_dispose["require_primary_win"] is True
     assert policy.cadence["screening_cycles_per_promotion"]
     assert policy.exhausted_identity_fields
     assert policy.recipe_tweak_knobs
@@ -45,6 +47,36 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     mutated["screening_primary"] = screening
     digest2 = climb_policy_content_digest(mutated)
     assert digest1 != digest2
+
+
+def test_promotion_primary_effect_met_null_and_win() -> None:
+    policy = load_climb_policy()
+    primary = dict(policy.promotion_primary)
+    ok, reasons, delta = promotion_primary_effect_met(
+        control_metrics={"held_out.structural_similarity": 0.2, "parse_rate": 1.0},
+        candidate_metrics={"held_out.structural_similarity": 0.2, "parse_rate": 1.0},
+        promotion_primary=primary,
+    )
+    assert ok is False
+    assert delta == 0.0
+    assert any("promote_primary_null_or_insufficient" in r for r in reasons)
+
+    ok2, reasons2, delta2 = promotion_primary_effect_met(
+        control_metrics={"structural_similarity": 0.1, "parse_rate": 1.0},
+        candidate_metrics={"structural_similarity": 0.25, "parse_rate": 1.0},
+        promotion_primary=primary,
+    )
+    assert ok2 is True
+    assert delta2 is not None and delta2 > 0.01
+    assert any(r.startswith("promote_primary_win:") for r in reasons2)
+
+    ok3, reasons3, _ = promotion_primary_effect_met(
+        control_metrics={},
+        candidate_metrics={},
+        promotion_primary=primary,
+    )
+    assert ok3 is False
+    assert any("promote_primary_metrics_missing" in r for r in reasons3)
 
 
 def test_cycle_cadence_screening_then_promotion() -> None:

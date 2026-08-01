@@ -55,13 +55,14 @@ so sticky knobs get a confirmatory retest before more thrash.
 ### Proof driver (promote authorization)
 
 **Phase A smoke quality-held alone never marks `promoted`.** Promotion is
-proof-driven:
+proof-driven **and effect-gated** (cert continue is necessary but not sufficient):
 
 | Gate | Contract |
 | --- | --- |
 | Locked expectations | `metric_expectations.promote.v1.json` SHA-256 bound on the promote campaign as `metric_expectations_sha256` **before** outcomes; dispose **fails closed** if digest missing/unreadable or mismatches the certificate |
 | Formal preflight | Required template `metrics.structural_similarity_monotone`; content-addressed artifact `artifacts/formal_preflights/<sha>.json` bound into obligations. Promote experiment carries `formal_claims` **inside the hypothesis matrix** (before lock) so execute membership stays exact — do **not** rewrite experiments post-hypothesize. Train only when formal status is `proved`. Continuous Lean wall is **600s**. **Timeout → `timed_out` / `promotion_inconclusive`**. Pre-warm OpenUIProofs when possible. |
-| Certificate | Continuous **exports** LeverProof `metric-certificate.json` from control **and** candidate suite metrics; disposition via `optimum_feedback` |
+| **Primary effect** | Dual-arm policy `promotion_primary` (default `held_out.structural_similarity`) must improve by more than `minimum_effect` (default **0.01**). Parse non-regression when both arms measure parse_rate. Null / insufficient delta → `promotion_failed` (model/effect reject), not harness. Policy knobs: `promotion_dispose.*`. |
+| Certificate | Continuous **exports** LeverProof `metric-certificate.json` from control **and** candidate suite metrics; disposition via `optimum_feedback`. **`continue` alone never authorizes `promoted`.** |
 | Phase A metrics | Promotion role loads **`eval_held_out.json`** for the policy primary |
 | Thrash skip | Only arms **currently open** in the funnel are deprioritized |
 
@@ -69,8 +70,8 @@ proof-driven:
 
 | Status | Meaning | Retry? |
 | --- | --- | --- |
-| `promoted` | Formal proved + cert v2 + `optimum_feedback=continue` | No (done) |
-| `promotion_failed` | Complete measurement; cert/policy or formal unproved (non-timeout) model/proof reject | Limited |
+| `promoted` | Formal proved + **held-out primary effect** + cert v2 + `optimum_feedback=continue` | No (done) |
+| `promotion_failed` | Complete measurement; null primary, cert/policy miss, or formal unproved (non-timeout) model/proof/effect reject | Limited |
 | `promotion_inconclusive` | Formal **timeout** — incomplete measurement | Yes |
 | **`harness_failure`** | Matrix membership, execute abort, missing promote run, cert incomplete **because candidate never ran** — **not a model result** | Yes |
 | `rejected` | Confirm retest quality fail | No (confirm path) |

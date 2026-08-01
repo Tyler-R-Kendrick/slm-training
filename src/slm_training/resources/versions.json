@@ -2556,7 +2556,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v28",
+      "version": "v29",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2592,6 +2592,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v29",
+          "date": "2026-08-01",
+          "note": "Promote dispose requires dual-arm primary effect (> min_effect) + cert continue; vacuous cert alone cannot mark promoted; repair_vacuous_promotes reclassifies historical cert-only promotes"
+        },
         {
           "version": "v28",
           "date": "2026-08-01",
