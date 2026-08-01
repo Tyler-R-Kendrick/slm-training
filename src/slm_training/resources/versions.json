@@ -2601,6 +2601,11 @@
         {
           "version": "v41",
           "date": "2026-08-01",
+          "note": "no-bump: align the recovery artifact documentation, remove a redundant lineage guard, and pin rejection of non-diagnostic replay recovery"
+        },
+        {
+          "version": "v41",
+          "date": "2026-08-01",
           "note": "Recover terminal handoff-less diagnostic replays without rerunning arms, share initialized-gap lineage validation across status and feedback, and classify eval gate rejection from the complete scoreboard"
         },
         {

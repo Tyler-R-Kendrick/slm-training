@@ -211,7 +211,7 @@ Embedded stages execute in a fresh process group. The canonical interrupt budget
 sends `SIGINT` to the full tree, waits the canonical kill grace, then kills and
 reaps the group if needed; stdout/stderr are disk-backed and only bounded tails are
 retained. Typed stage results therefore come from complete stdout when available or
-from the canonical `train_summary.json` / `eval.json` artifact created or refreshed
+from the canonical `train_summary.json` / `scoreboard.json` artifact created or refreshed
 by that exact stage. An unchanged artifact from an earlier attempt is rejected; a
 bounded log tail is never treated as the authoritative result. A nominally
 successful train is still incomplete unless its typed summary reports

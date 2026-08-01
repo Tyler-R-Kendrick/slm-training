@@ -661,7 +661,7 @@ def loop_campaigns(root: Path, loop_id: str, *, last: int | None) -> list[Campai
             raise RuntimeError("loop campaign predecessor chain is broken")
         bridge = campaigns[declared + 1 : current]
         prior = campaigns[declared].campaign_id
-        if not bridge or (root / campaign.campaign_id / "cycle_handoff.json").is_file():
+        if (root / campaign.campaign_id / "cycle_handoff.json").is_file():
             raise RuntimeError("loop campaign predecessor chain is broken")
         for interrupted in bridge:
             if (

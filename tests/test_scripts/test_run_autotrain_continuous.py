@@ -1818,6 +1818,33 @@ def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
     assert subprocesses == []
 
     store.append_event("experiment_finished", experiment_id="candidate")
+    candidate_manifest = camp / "manifests" / "candidate.json"
+    candidate_manifest.write_text(
+        json.dumps(
+            {
+                "replay_of_manifest_sha256": "c" * 64,
+                "claim_class": "promotion_candidate",
+            }
+        )
+    )
+    assert (
+        _mod._finalize_terminal_interrupted_replay(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            deadline=float("inf"),
+        )
+        is None
+    )
+    assert subprocesses == []
+    candidate_manifest.write_text(
+        json.dumps(
+            {
+                "replay_of_manifest_sha256": "c" * 64,
+                "claim_class": "diagnostic",
+            }
+        )
+    )
     assert (
         _mod._finalize_terminal_interrupted_replay(
             cwd=tmp_path,
