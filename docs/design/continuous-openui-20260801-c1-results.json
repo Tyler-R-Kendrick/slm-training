@@ -1,0 +1,71 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260801",
+  "campaign_id": "continuous-loop-20260801-c1",
+  "cycle_index": 1,
+  "source_commit": "2a64db996754d2ce25edcc0d82ee448f7843cd85",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c1-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "latency_ms_p50": 3252.9,
+        "latency_ms_p95": 3812.09
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c1-bounds": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "latency_ms_p50": 2990.25
+      },
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": false
+      }
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -262.6500000000001,
+  "sdlc_delivery": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c1-bounds",
+      "fixture_insufficient_n:c20260801-c1-control",
+      "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+      "primary_metric_win:smoke.latency_ms_p50:3252.9->2990.25:improvement=262.6500000000001"
+    ]
+  },
+  "conclusion": "grammar_completion_bounds shows a nominal smoke p50 latency improvement (-262.65ms) at n=3, but meaningful_program_rate stayed at 0.0 (mpr 0.0 < 0.333333 required), so the SDLC Phase A classifier correctly rejects this as a quality-blind latency blip, not a positive result. Fixture insufficient_n (3 < 20) also blocks a ship-quality claim independent of the latency delta.",
+  "next_priorities": [
+    "Re-test grammar_completion_bounds at a step budget that lifts meaningful_program_rate off 0.0 before crediting any latency delta",
+    "Do not stack a layer for this arm; carry the bounds-vs-control comparison into cycle 2 with more steps within the wall cap",
+    "Keep RL locked; ship gates fail by design on fixture n=3"
+  ],
+  "recorded_at": "2026-08-01T00:32:59Z"
+}
