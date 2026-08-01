@@ -1,0 +1,54 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-bqw0tb",
+  "campaign_id": "continuous-loop-20260801-continuous-openui-bqw0tb-f852ac38-c4",
+  "cycle_index": 4,
+  "source_commit": "81677cdaf2610e8491307c35f9894f71e1d70eb3",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c4-control": {
+      "status": "completed_eval_gates_failed",
+      "levers": {"grammar_completion_bounds": false, "compact_active_canvas": false},
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.7222222222222222,
+        "latency_ms_p50": 9624.39
+      }
+    },
+    "c4-both": {
+      "status": "completed_eval_gates_failed",
+      "levers": {"grammar_completion_bounds": true, "compact_active_canvas": true},
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.7222222222222222,
+        "latency_ms_p50": 10286.11
+      }
+    }
+  },
+  "primary_metric": "smoke.binder_reference_f1",
+  "primary_delta_ms": null,
+  "conclusion": "This is the retry_measurement replay of the c3 arms, now with node_modules/@agentv/core installed and NODE_OPTIONS sanitized: both arms trained and evaluated end-to-end, including AgentV publication. Primary metric binder_reference_f1 is bit-identical between control (0.7222) and the combined bounds+canvas arm (0.7222): zero delta on this size-matched 21-step fixture. The combined lever arm also costs +661.72ms p50 latency versus control. meaningful_program_rate is 0.0 on both; ship gates fail on fixture n=3 as expected (insufficient_n plus quality-threshold failures), never a loop-stopping condition.",
+  "next_priorities": [
+    "This confirms the c2/c3/c4 lever-thrash pattern: neither grammar_completion_bounds alone (c2) nor bounds+canvas combined (c4) move binder_reference_f1 off 0.6333->0.7222 baseline drift explained by train-data/seed differences, not the levers; consider a lever bank beyond bounds/canvas (e.g. steps, batch_size) per the driver's own rotation priority",
+    "Keep the matched control as the size-matched baseline every cycle",
+    "Soft ship-gate fails on fixture n never stop the continuous loop"
+  ],
+  "recorded_at": "2026-08-01T22:43:01.277816Z"
+}

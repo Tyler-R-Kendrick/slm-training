@@ -6880,6 +6880,11 @@
         {
           "version": "v3",
           "date": "2026-08-01",
+          "note": "no-bump: add honest model-card provenance for the bqw0tb continuous-loop c4 screening checkpoint pair (frozen c3 replay); SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-01",
           "note": "no-bump: add honest model-card provenance for the bqw0tb continuous-loop c3 infra-fail checkpoint pair (AgentV SDK gap); SLM-228 spectral-disposition behavior is unchanged"
         },
         {
