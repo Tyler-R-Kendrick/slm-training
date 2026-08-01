@@ -1,0 +1,45 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c1",
+  "cycle_index": 1,
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c20260801-c1-control": {
+      "status": "failed",
+      "exit_code": 1,
+      "reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "partial_latency_ms_p50": 2425.26
+    },
+    "c20260801-c1-bounds": {
+      "status": "failed",
+      "exit_code": 1,
+      "reason": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": false
+      },
+      "partial_latency_ms_p50": 2388.75
+    }
+  },
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": null,
+  "conclusion": "Both arms crashed inside evaluate_model's AgentV publish step (node_modules not installed in this fresh checkout) before ship gates could run; the c2 eval_version footgun from the 2026-07-30 cycle did not recur (eval_version resolved to a real published suite). Partial pre-crash latency numbers (2425.26ms control vs 2388.75ms bounds) are diagnostic only, not gate-passing evidence. Self-heal: ran `npm ci` (with NODE_OPTIONS unset, since --import tsx is rejected by this node build) and re-ran as campaign continuous-loop-20260801-c2.",
+  "next_priorities": [
+    "infrastructure: pin/document that continuous-loop driver runs require `npm ci` in a fresh checkout before AgentV-backed eval; consider a fail-closed pre-flight check in run_autotrain_continuous",
+    "model: re-run bounds/canvas arms to completion (done in continuous-loop-20260801-c2)"
+  ],
+  "recorded_at": "2026-08-01T04:37:24+00:00"
+}

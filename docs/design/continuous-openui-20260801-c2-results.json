@@ -1,0 +1,96 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-20260730",
+  "campaign_id": "continuous-loop-20260801-c2",
+  "cycle_index": 2,
+  "source_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1bdfb14ebcf2393976a7c969e7bdd449fc5ada39",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v71",
+      "harness.experiment_feature_flags": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v269"
+    }
+  },
+  "arms": {
+    "c20260801-c2-control": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "latency_ms_p50": 21586.91
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      }
+    },
+    "c20260801-c2-canvas": {
+      "status": "completed_eval_gates_failed",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.32666666666666666,
+        "latency_ms_p50": 21350.87
+      },
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": true
+      }
+    }
+  },
+  "gate_failures": [
+    "smoke:insufficient_n actual=3 need>=20",
+    "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+    "smoke:structural_similarity actual=0.32666666666666666 need>=0.35",
+    "smoke:component_type_recall actual=0.16666666666666666 need>=0.35",
+    "smoke:ast_beq_rate actual=0.0 need>=0.2",
+    "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+    "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+    "smoke:reward_score actual=0.0 need>=0.3",
+    "held_out:missing_suite",
+    "adversarial:missing_suite",
+    "ood:missing_suite",
+    "rico_held:missing_suite"
+  ],
+  "primary_metric": "smoke.latency_ms_p50",
+  "primary_delta_ms": -236.04000000000087,
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260801-c2-control",
+      "fixture_insufficient_n:c20260801-c2-canvas",
+      "latency_win_rejected_low_mpr:mpr=0.0<0.333333",
+      "primary_metric_win:smoke.latency_ms_p50:21586.91->21350.87:improvement=236.04000000000087"
+    ]
+  },
+  "conclusion": "compact_active_canvas improved smoke p50 latency by 236ms on this size-matched 20-step fixture, but the win is rejected as non-positive: meaningful_program_rate is 0.0 (quality-aware policy requires mpr >= ~1/3 before a latency win counts) and both arms fail the fixture n>=20 volume gate at n=3. No stack layer opened; local docs commit only.",
+  "next_priorities": [
+    "model: re-run compact_active_canvas at a step budget large enough to raise mpr above 0 and n above the fixture floor before trusting this latency delta",
+    "infrastructure: none (eval_version path confirmed healthy this cycle; see c1 doc for the separate AgentV SDK setup gap)",
+    "do not promote RL or any champion off this fixture n=3 evidence"
+  ],
+  "recorded_at": "2026-08-01T04:37:24+00:00"
+}
