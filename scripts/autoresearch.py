@@ -17,6 +17,7 @@ from slm_training.autoresearch.engine import (
     create_hypothesis_feedback,
     diagnose_outcome,
     execute_commands,
+    normalized_knobs_sha256,
     validate_experiment,
     validate_hypothesis_matrix,
 )
@@ -423,6 +424,9 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             _load_memo(store, args.memo, required=False),
             feedback,
         )
+    authorized_replay_configs = _authorized_replay_configs(
+        args, store, campaign, lineage_stores, result.matrix
+    )
     from slm_training.autoresearch.climb_policy import (
         assert_recipe_null_regime_pressure,
         infer_metric_direction,
@@ -500,6 +504,7 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         exhausted_knob_ledger=exhausted_ledger,
         exhausted_data_eval_identity=exhausted_identity,
         exhausted_claim_class=claim_class,
+        authorized_replay_configs=authorized_replay_configs,
     )
 
     proposed = {
@@ -640,6 +645,65 @@ def _feedback_context(
                 "member before forming its successor"
             )
     return store, None, ()
+
+
+def _authorized_replay_configs(
+    args: argparse.Namespace,
+    store: CampaignStore,
+    campaign: CampaignSpec,
+    lineage_stores: tuple[CampaignStore, ...],
+    matrix: HypothesisMatrix,
+) -> dict[str, str]:
+    paths = tuple(getattr(args, "frozen_replay_manifest", ()) or ())
+    if not paths:
+        return {}
+    manifest_root = (store.root / "manifests").resolve()
+    source_manifests = {
+        hashlib.sha256(path.read_bytes()).hexdigest(): (lineage_store, path)
+        for lineage_store in lineage_stores[1:]
+        for path in (lineage_store.root / "manifests").glob("*.json")
+    }
+    authorized: dict[str, str] = {}
+    for path in paths:
+        resolved = path.resolve()
+        if resolved.parent != manifest_root:
+            raise ValueError(
+                "frozen replay manifest must be inside the current campaign"
+            )
+        manifest = ExperimentCampaignV1.model_validate_json(
+            resolved.read_text(encoding="utf-8")
+        )
+        if (
+            manifest.campaign_id != campaign.campaign_id
+            or manifest.source_commit != campaign.integration_commit
+            or manifest.replay_of_manifest_sha256 not in source_manifests
+        ):
+            raise ValueError("frozen replay manifest authority is invalid")
+        source_store, source_path = source_manifests[manifest.replay_of_manifest_sha256]
+        source_manifest = ExperimentCampaignV1.model_validate_json(
+            source_path.read_text(encoding="utf-8")
+        )
+        source_experiments = [
+            ExperimentSpec.model_validate_json(path.read_text(encoding="utf-8"))
+            for path in (source_store.root / "artifacts" / "experiments").glob("*.json")
+            if json.loads(path.read_text(encoding="utf-8")).get("experiment_id")
+            == source_manifest.experiment_id
+        ]
+        current = [
+            item.experiment
+            for item in matrix.hypotheses
+            if item.experiment.experiment_id == manifest.experiment_id
+        ]
+        if (
+            len(source_experiments) != 1
+            or len(current) != 1
+            or current[0].knobs != source_experiments[0].knobs
+            or manifest.arms != source_manifest.arms
+            or manifest.experiment_id in authorized
+        ):
+            raise ValueError("frozen replay manifest must authorize one unique arm")
+        authorized[manifest.experiment_id] = normalized_knobs_sha256(current[0])
+    return authorized
 
 
 def _latest_formed_matrix(
@@ -1607,6 +1671,9 @@ def build_parser() -> argparse.ArgumentParser:
     hypothesize.add_argument("--evidence", type=Path)
     hypothesize.add_argument("--sources", type=Path)
     hypothesize.add_argument("--model", default="gpt-5.6-sol")
+    hypothesize.add_argument(
+        "--frozen-replay-manifest", type=Path, action="append", default=[]
+    )
     hypothesize.set_defaults(func=cmd_hypothesize)
 
     validate = sub.add_parser("validate")

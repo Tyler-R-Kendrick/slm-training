@@ -4072,20 +4072,32 @@ def run_cycle(
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
     matrix_path.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
-    _run(
-        [
-            *ar,
-            "hypothesize",
-            "--campaign-id",
-            campaign_id,
-            "--provider",
-            "agent",
-            "--matrix",
-            str(matrix_path),
-        ],
-        cwd=cwd,
-        deadline=deadline,
-    )
+    replay_manifest_paths: dict[str, Path] = {}
+    for eid, frozen_replay in replay_manifests.items():
+        successor = _replay_successor_manifest(
+            frozen_replay["manifest"],
+            frozen_manifest_sha256=frozen_replay["manifest_sha256"],
+            campaign_id=campaign_id,
+            experiment_id=eid,
+            integration_commit=integration,
+        )
+        path = camp_dir / "manifests" / f"{eid}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(successor.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        replay_manifest_paths[eid] = path
+    hypothesize_cmd = [
+        *ar,
+        "hypothesize",
+        "--campaign-id",
+        campaign_id,
+        "--provider",
+        "agent",
+        "--matrix",
+        str(matrix_path),
+    ]
+    for path in replay_manifest_paths.values():
+        hypothesize_cmd.extend(["--frozen-replay-manifest", str(path)])
+    _run(hypothesize_cmd, cwd=cwd, deadline=deadline)
 
     exp_dir = camp_dir / "artifacts" / "experiments"
     by_id = {
@@ -4149,15 +4161,8 @@ def run_cycle(
         # formal_claims must already be on the matrix member (promote path in
         # _matrix). Do not rewrite the experiment after hypothesize — that
         # breaks exact matrix membership and aborts the promote arm (exit=1).
-        if eid in replay_manifests:
-            frozen_replay = replay_manifests[eid]
-            man = _replay_successor_manifest(
-                frozen_replay["manifest"],
-                frozen_manifest_sha256=frozen_replay["manifest_sha256"],
-                campaign_id=campaign_id,
-                experiment_id=eid,
-                integration_commit=integration,
-            )
+        if eid in replay_manifest_paths:
+            man_path = replay_manifest_paths[eid]
         else:
             man = _manifest(
                 campaign_id,
@@ -4170,9 +4175,9 @@ def run_cycle(
                     promote_preflight_sha if is_promote_arm else None
                 ),
             )
-        man_path = camp_dir / "manifests" / f"{eid}.json"
-        man_path.parent.mkdir(parents=True, exist_ok=True)
-        man_path.write_text(man.model_dump_json(indent=2) + "\n", encoding="utf-8")
+            man_path = camp_dir / "manifests" / f"{eid}.json"
+            man_path.parent.mkdir(parents=True, exist_ok=True)
+            man_path.write_text(man.model_dump_json(indent=2) + "\n", encoding="utf-8")
         # soft-fail: ship gates may fail on fixture n
         cmd = [
             *ar,

@@ -2561,7 +2561,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v39",
+      "version": "v40",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2598,6 +2598,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v40",
+          "date": "2026-08-01",
+          "note": "Authorize repeated and exhausted knob signatures only for arm IDs bound to current-campaign replay manifests whose config and frozen source digests verify against lineage"
+        },
         {
           "version": "v39",
           "date": "2026-08-01",
@@ -8989,6 +8994,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-01",
+          "note": "no-bump: authorize content-bound continuous replay configs without changing remine campaign behavior"
+        },
         {
           "version": "v3",
           "date": "2026-08-01",
