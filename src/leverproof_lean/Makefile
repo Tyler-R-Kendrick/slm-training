@@ -8,7 +8,7 @@ build:
 	$(LAKE) build
 
 proofs: build
-	@if rg -n '\b(sorry|admit|axiom|unsafe)\b' --glob '*.lean' \
+	@if rg -n '\b(sorry|admit|axiom|unsafe|native_decide)\b' --glob '*.lean' \
 	  --glob '!Test/Proofs.lean' .; then \
 	  echo "forbidden proof escape found" >&2; exit 1; \
 	fi

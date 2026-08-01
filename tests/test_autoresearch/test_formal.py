@@ -17,10 +17,13 @@ from slm_training.autoresearch.experiment_campaign import (
     MultiplicityFamilyV1,
 )
 from slm_training.autoresearch.formal import (
+    FORMAL_TEMPLATES,
+    LEVERPROOF_ROOT,
     bind_preflight,
     check_formal_trace,
     formal_trace_from_closure,
     run_formal_preflight,
+    validate_formal_preflight_artifact,
     validate_formal_preflights,
 )
 from slm_training.autoresearch.schemas import (
@@ -92,12 +95,8 @@ def _manifest(
             ),
         ),
         arms=(
-            CampaignArmV1(
-                arm_id="control", role="control", config_sha256="a" * 64
-            ),
-            CampaignArmV1(
-                arm_id="candidate", role="candidate", config_sha256="b" * 64
-            ),
+            CampaignArmV1(arm_id="control", role="control", config_sha256="a" * 64),
+            CampaignArmV1(arm_id="candidate", role="candidate", config_sha256="b" * 64),
         ),
         seeds=(7,),
         budget=CampaignBudget(
@@ -149,8 +148,9 @@ def _manifest(
 
 
 def _successful_lean(
-    command: list[str], *, timeout_seconds: float
+    command: list[str], *, cwd: Path, timeout_seconds: float
 ) -> subprocess.CompletedProcess[str]:
+    del cwd
     del timeout_seconds
     stdout = "Lean (version 4.30.0)" if "--version" in command else "build passed"
     return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
@@ -233,14 +233,81 @@ def test_required_proof_is_bound_and_validated(
         policy="required",
     )
     experiment = _experiment(claim)
-    preflight, obligation = run_formal_preflight(
-        "formal-campaign", experiment, claim
-    )
+    preflight, obligation = run_formal_preflight("formal-campaign", experiment, claim)
     store = CampaignStore("formal-campaign", tmp_path)
     path = store.write_artifact("formal_preflights", preflight)
     manifest = _manifest(bind_preflight(obligation, path.stem))
 
     assert validate_formal_preflights(store.root, experiment, manifest) == (preflight,)
+
+
+def test_metric_preflight_uses_mathlib_free_leverproof(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[list[str], Path]] = []
+
+    def successful(
+        command: list[str], *, cwd: Path, timeout_seconds: float
+    ) -> subprocess.CompletedProcess[str]:
+        del timeout_seconds
+        calls.append((command, cwd))
+        stdout = "Lean (version 4.30.0)" if "--version" in command else "passed"
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr("slm_training.autoresearch.formal._run", successful)
+    claim = FormalClaimV1(
+        template_id="metrics.structural_similarity_monotone",
+        claim="Nondecreasing jaccard and depth components cannot reduce the proxy.",
+        policy="required",
+    )
+
+    preflight, _ = run_formal_preflight("formal-campaign", _experiment(claim), claim)
+
+    assert calls[0] == (["make", "test"], LEVERPROOF_ROOT)
+    assert all(cwd == LEVERPROOF_ROOT for _, cwd in calls)
+    assert preflight.template_version == "v2"
+    assert preflight.theorem == (
+        "LeverProofLean.StructuralMetrics.structural_similarity_mono"
+    )
+    assert preflight.mathlib_version == "none"
+    assert preflight.status == "proved"
+
+
+def test_cached_preflight_validator_rejects_template_binding_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("slm_training.autoresearch.formal._run", _successful_lean)
+    claim = FormalClaimV1(
+        template_id="metrics.structural_similarity_monotone",
+        claim="Nondecreasing jaccard and depth components cannot reduce the proxy.",
+        policy="required",
+    )
+    experiment = _experiment(claim)
+    preflight, _ = run_formal_preflight("formal-campaign", experiment, claim)
+    stale = preflight.model_copy(update={"theorem": "Old.Metric.theorem"})
+    path = CampaignStore("formal-campaign", tmp_path).write_artifact(
+        "formal_preflights", stale
+    )
+
+    with pytest.raises(ValueError, match="formal preflight binding mismatch"):
+        validate_formal_preflight_artifact(
+            path,
+            campaign_id="formal-campaign",
+            experiment_id="formal-exp",
+            claim=claim,
+            expected_sha256=path.stem,
+        )
+
+
+def test_metric_template_is_the_only_leverproof_autoresearch_template() -> None:
+    assert FORMAL_TEMPLATES["metrics.structural_similarity_monotone"].lean_project == (
+        "leverproof"
+    )
+    assert all(
+        template.lean_project == "openui_proofs"
+        for template_id, template in FORMAL_TEMPLATES.items()
+        if template_id != "metrics.structural_similarity_monotone"
+    )
 
 
 def test_required_conditional_claim_blocks_execution_gate(
@@ -256,9 +323,7 @@ def test_required_conditional_claim_blocks_execution_gate(
         policy="required",
     )
     experiment = _experiment(claim)
-    preflight, obligation = run_formal_preflight(
-        "formal-campaign", experiment, claim
-    )
+    preflight, obligation = run_formal_preflight("formal-campaign", experiment, claim)
     store = CampaignStore("formal-campaign", tmp_path)
     path = store.write_artifact("formal_preflights", preflight)
     manifest = _manifest(bind_preflight(obligation, path.stem))
@@ -295,9 +360,7 @@ def test_source_drift_invalidates_bound_preflight(
         policy="required",
     )
     experiment = _experiment(claim)
-    preflight, obligation = run_formal_preflight(
-        "formal-campaign", experiment, claim
-    )
+    preflight, obligation = run_formal_preflight("formal-campaign", experiment, claim)
     first_source = next(iter(preflight.source_digests))
     stale = preflight.model_copy(
         update={

@@ -94,7 +94,7 @@ theorem stale_digest_rejects_example :
       { coverage := .complete, legal := [0, 1], digestMatch := false, legalMatch := true }
       { keys := [0], decodeApply := true, alphaPos := true } =
       .staleDigest := by
-  native_decide
+  decide
 
 /-- Legal-set mismatch rejects before scoring (non-singleton complete domains). -/
 theorem legal_mismatch_rejects_example :
@@ -102,7 +102,7 @@ theorem legal_mismatch_rejects_example :
       { coverage := .complete, legal := [0, 1], digestMatch := true, legalMatch := false }
       { keys := [0], decodeApply := true, alphaPos := true } =
       .legalMismatch := by
-  native_decide
+  decide
 
 /-- Executable decode-off check used by golden vectors. -/
 def decodeOffZeroApps (legal keys : List CandId) : Bool :=
@@ -115,11 +115,11 @@ def decodeOffZeroApps (legal keys : List CandId) : Bool :=
 
 theorem decode_off_zero_apps_non_singleton :
     decodeOffZeroApps [0, 1, 2] [0, 9] = true := by
-  native_decide
+  decide
 
 theorem decode_off_zero_apps_singleton :
     decodeOffZeroApps [0] [0, 1] = true := by
-  native_decide
+  decide
 
 /-- Every key surviving filterLegal is a legal candidate. -/
 theorem filterLegal_subset (legal keys : List CandId) :
@@ -138,7 +138,7 @@ theorem filterLegal_drops_illegal
 
 theorem filterLegal_example :
     filterLegal [0, 1, 2] [0, 9, 1, 7] = [0, 1] := by
-  native_decide
+  decide
 
 /-- Scored non-singleton path uses filterLegal keys (executable witness). -/
 theorem scored_keys_are_filter_example :
@@ -146,14 +146,14 @@ theorem scored_keys_are_filter_example :
       { coverage := .complete, legal := [0, 1, 2], digestMatch := true, legalMatch := true }
       { keys := [0, 9, 1], decodeApply := true, alphaPos := true } =
       .scored [0, 1] 1 := by
-  native_decide
+  decide
 
 theorem scored_decode_off_zero_apps_example :
     score
       { coverage := .complete, legal := [0, 1, 2], digestMatch := true, legalMatch := true }
       { keys := [0, 9], decodeApply := false, alphaPos := true } =
       .scored [0] 0 := by
-  native_decide
+  decide
 
 /-! ### Factor-node membership round-trip -/
 
@@ -177,12 +177,12 @@ theorem reconstruct_encode_example :
       { factorId := 1, nodes := [2, 3] }
     ]
     reconstruct [0, 1] (encodeIncidence factors) = factors := by
-  native_decide
+  decide
 
 theorem reconstruct_encode_singleton :
     reconstruct [7] (encodeIncidence [{ factorId := 7, nodes := [3, 3, 5] }]) =
       [{ factorId := 7, nodes := [3, 3, 5] }] := by
-  native_decide
+  decide
 
 /-! ### Role shuffle preserves membership (models Python `shuffle_port_roles`)
 
@@ -249,7 +249,7 @@ theorem role_shuffle_example :
     (shuffleRoles ports 1).map (·.role) = [2, 3, 1] ∧
     membership (shuffleRoles ports 1) = membership ports ∧
     (shuffleRoles ports 1).map (·.role) ≠ ports.map (·.role) := by
-  native_decide
+  decide
 
 /-- Role multiset is preserved by rotation (sorted roles equal). -/
 def sortedRoles (ports : List Port) : List Nat :=
@@ -262,7 +262,7 @@ theorem role_shuffle_preserves_role_multiset_example :
       { role := 3, node := 30 }
     ]
     sortedRoles (shuffleRoles ports 1) = sortedRoles ports := by
-  native_decide
+  simp [sortedRoles, shuffleRoles, rotateLeft, zipRolesOnto, List.mergeSort]
 /-! ### Golden incidence degrees (matches NumPy probe B) -/
 
 /-- B columns: factor0 → vertices [1,1,0], factor1 → [1,0,1]. -/
@@ -282,7 +282,7 @@ def rowDegrees (B : List (List Nat)) : List Nat :=
 
 theorem golden_degrees :
     colDegrees goldenB = [2, 2] ∧ rowDegrees goldenB = [2, 1, 1] := by
-  native_decide
+  decide
 
 /-- Product of a list of Nats (empty → 1). -/
 def listProd (xs : List Nat) : Nat :=
@@ -323,7 +323,7 @@ theorem golden_S_column_masses_from_B :
     let target := sColumnSumTarget goldenB
     goldenSColumnSumNums.all (· = target) = true ∧
     target = 2 * 2 * 2 * 1 * 1 := by
-  native_decide
+  decide
 
 /-- Soft-token non-injectivity (SHIFT correction, finite model). -/
 def softToken (weights embed : List Nat) : Nat :=
@@ -332,7 +332,7 @@ def softToken (weights embed : List Nat) : Nat :=
 theorem soft_token_collision :
     softToken [1, 0, 0] [7, 7, 3] = softToken [0, 1, 0] [7, 7, 3] ∧
     [1, 0, 0] ≠ [0, 1, 0] := by
-  native_decide
+  decide
 
 /-- Restart contraction factor (1-λ) when λ = num/den ∈ (0,1]. -/
 def contractionFactor (lamNum lamDen : Nat) : Nat :=

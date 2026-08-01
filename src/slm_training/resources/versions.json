@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-01",
+          "note": "Use the Mathlib-free StructuralMetrics theorem for promotion preflight, build and protocol-test the certificate checker in the same run, and forbid native_decide proof escapes"
+        },
         {
           "version": "v7",
           "date": "2026-07-31",
@@ -2786,7 +2791,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2797,6 +2802,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-08-01",
+          "note": "Route structural-similarity promotion preflight to the Mathlib-free LeverProof kernel and expose fail-closed current-binding validation for cached artifacts"
+        },
         {
           "version": "v4",
           "date": "2026-08-01",
@@ -12349,7 +12359,7 @@
       ]
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/data/progspec/semantic_evidence.py",
@@ -12389,6 +12399,11 @@
         "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-08-01",
+          "note": "Replace native_decide with kernel-checked decide proofs and regenerate the source-bound SFF formal preflight artifacts"
+        },
         {
           "version": "v9",
           "date": "2026-07-31",

@@ -33,7 +33,8 @@ if TYPE_CHECKING:
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 LEAN_ROOT = Path(__file__).resolve().parents[1] / "formal" / "lean"
-_FORBIDDEN_PROOF_TOKENS = re.compile(r"\b(?:sorry|admit|axiom)\b")
+LEVERPROOF_ROOT = REPO_ROOT / "src" / "leverproof_lean"
+_FORBIDDEN_PROOF_TOKENS = re.compile(r"\b(?:sorry|admit|axiom|unsafe|native_decide)\b")
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class FormalTemplate:
     assumptions: tuple[str, ...]
     open_assumptions: tuple[str, ...]
     source_paths: tuple[str, ...]
+    lean_project: str = "openui_proofs"
     checker_contract: str | None = None
     counterexample: dict[str, Any] | None = None
 
@@ -54,9 +56,9 @@ class FormalTemplate:
 FORMAL_TEMPLATES: dict[str, FormalTemplate] = {
     "metrics.structural_similarity_monotone": FormalTemplate(
         template_id="metrics.structural_similarity_monotone",
-        version="v1",
-        theorem="OpenUIProofs.Metrics.structural_similarity_mono",
-        proof_target="OpenUIProofs.Metrics",
+        version="v2",
+        theorem="LeverProofLean.StructuralMetrics.structural_similarity_mono",
+        proof_target="LeverProofLean.StructuralMetrics",
         evidence_scope="universal",
         status="proved",
         assumptions=(
@@ -65,9 +67,11 @@ FORMAL_TEMPLATES: dict[str, FormalTemplate] = {
         ),
         open_assumptions=(),
         source_paths=(
-            "src/slm_training/formal/lean/OpenUIProofs/Metrics.lean",
+            "src/leverproof_lean/LeverProofLean/StructuralMetrics.lean",
             "src/slm_training/harnesses/model_build/eval_runner.py",
         ),
+        lean_project="leverproof",
+        checker_contract="make -C src/leverproof_lean test",
     ),
     "forest.history_preservation": FormalTemplate(
         template_id="forest.history_preservation",
@@ -214,20 +218,47 @@ def _source_digests(template: FormalTemplate) -> dict[str, str]:
     return {path: _digest_path(path) for path in template.source_paths}
 
 
-def _proof_digest() -> str:
-    paths = (
+def _lean_root(template: FormalTemplate) -> Path:
+    return LEVERPROOF_ROOT if template.lean_project == "leverproof" else LEAN_ROOT
+
+
+def _proof_paths(template: FormalTemplate) -> tuple[tuple[str, Path], ...]:
+    root = _lean_root(template)
+    if template.lean_project == "leverproof":
+        relative_paths = (
+            "lakefile.toml",
+            "lake-manifest.json",
+            "lean-toolchain",
+            "Makefile",
+            "Main.lean",
+            "LeverProofLean.lean",
+            "Test/Proofs.lean",
+            "Test/run.sh",
+            *(
+                str(path.relative_to(root))
+                for path in sorted((root / "LeverProofLean").glob("*.lean"))
+            ),
+        )
+        return (
+            ("autoresearch/formal.py", Path(__file__).resolve()),
+            *((relative, root / relative) for relative in relative_paths),
+        )
+    return (
         ("autoresearch/formal.py", Path(__file__).resolve()),
-        ("lakefile.toml", LEAN_ROOT / "lakefile.toml"),
-        ("lake-manifest.json", LEAN_ROOT / "lake-manifest.json"),
-        ("lean-toolchain", LEAN_ROOT / "lean-toolchain"),
-        ("OpenUIProofs.lean", LEAN_ROOT / "OpenUIProofs.lean"),
+        ("lakefile.toml", root / "lakefile.toml"),
+        ("lake-manifest.json", root / "lake-manifest.json"),
+        ("lean-toolchain", root / "lean-toolchain"),
+        ("OpenUIProofs.lean", root / "OpenUIProofs.lean"),
         *(
-            (str(path.relative_to(LEAN_ROOT)), path)
-            for path in sorted((LEAN_ROOT / "OpenUIProofs").glob("*.lean"))
+            (str(path.relative_to(root)), path)
+            for path in sorted((root / "OpenUIProofs").glob("*.lean"))
         ),
     )
+
+
+def _proof_digest(template: FormalTemplate) -> str:
     digest = hashlib.sha256()
-    for label, path in paths:
+    for label, path in _proof_paths(template):
         digest.update(label.encode("utf-8"))
         digest.update(b"\0")
         digest.update(path.read_bytes())
@@ -235,7 +266,9 @@ def _proof_digest() -> str:
     return digest.hexdigest()
 
 
-def _mathlib_version() -> str:
+def _mathlib_version(template: FormalTemplate) -> str:
+    if template.lean_project == "leverproof":
+        return "none"
     manifest = json.loads(
         (LEAN_ROOT / "lake-manifest.json").read_text(encoding="utf-8")
     )
@@ -245,20 +278,25 @@ def _mathlib_version() -> str:
     return "unknown"
 
 
-def _proof_sources_are_total() -> bool:
-    paths = (LEAN_ROOT / "OpenUIProofs.lean",) + tuple(
-        sorted((LEAN_ROOT / "OpenUIProofs").glob("*.lean"))
+def _proof_sources_are_total(template: FormalTemplate) -> bool:
+    root = _lean_root(template)
+    paths = (
+        (root / "LeverProofLean.lean",)
+        + tuple(sorted((root / "LeverProofLean").glob("*.lean")))
+        if template.lean_project == "leverproof"
+        else (root / "OpenUIProofs.lean",)
+        + tuple(sorted((root / "OpenUIProofs").glob("*.lean")))
     )
     return not any(_FORBIDDEN_PROOF_TOKENS.search(path.read_text()) for path in paths)
 
 
 def _run(
-    command: list[str], *, timeout_seconds: float
+    command: list[str], *, cwd: Path, timeout_seconds: float
 ) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             command,
-            cwd=LEAN_ROOT,
+            cwd=cwd,
             check=False,
             capture_output=True,
             text=True,
@@ -308,14 +346,20 @@ def run_formal_preflight(
     def remaining() -> float:
         return max(0.001, command_deadline - time.monotonic())
 
-    build = _run(
-        ["lake", "build", "OpenUIProofs"],
-        timeout_seconds=remaining(),
+    lean_root = _lean_root(template)
+    build_command = (
+        ["make", "test"]
+        if template.lean_project == "leverproof"
+        else ["lake", "build", "OpenUIProofs"]
     )
+    build = _run(build_command, cwd=lean_root, timeout_seconds=remaining())
     build_timed_out = _is_timeout_result(build)
     audit = (
-        _run(
+        subprocess.CompletedProcess([], 0, "", "")
+        if template.lean_project == "leverproof" and build.returncode == 0
+        else _run(
             ["lake", "env", "lean", "OpenUIProofs/Axioms.lean"],
+            cwd=lean_root,
             timeout_seconds=remaining(),
         )
         if build.returncode == 0
@@ -330,13 +374,14 @@ def run_formal_preflight(
     version = (
         _run(
             ["lake", "env", "lean", "--version"],
+            cwd=lean_root,
             timeout_seconds=min(remaining(), 30.0),
         )
         if build.returncode == 0 and audit.returncode == 0
         else subprocess.CompletedProcess([], 1, "", "proof audit failed")
     )
     output = f"{build.stdout}\n{build.stderr}\n{audit.stdout}\n{audit.stderr}"
-    proof_total = _proof_sources_are_total()
+    proof_total = _proof_sources_are_total(template)
     if audit_timed_out or build_timed_out:
         status: FormalProofStatus = "timed_out"
     elif (
@@ -365,9 +410,9 @@ def run_formal_preflight(
         assumptions=template.assumptions,
         open_assumptions=template.open_assumptions,
         source_digests=_source_digests(template),
-        proof_sha256=_proof_digest(),
+        proof_sha256=_proof_digest(template),
         lean_version=(version.stdout.strip() or version.stderr.strip() or "unknown"),
-        mathlib_version=_mathlib_version(),
+        mathlib_version=_mathlib_version(template),
         build_output_sha256=hashlib.sha256(output.encode("utf-8")).hexdigest(),
         counterexample=template.counterexample,
         duration_seconds=time.monotonic() - started,
@@ -385,6 +430,55 @@ def bind_preflight(
     obligation: FormalObligationV1, preflight_sha256: str
 ) -> FormalObligationV1:
     return obligation.model_copy(update={"preflight_sha256": preflight_sha256})
+
+
+def validate_formal_preflight_artifact(
+    path: Path,
+    *,
+    campaign_id: str,
+    experiment_id: str,
+    claim: FormalClaimV1,
+    expected_sha256: str,
+) -> FormalPreflightV1:
+    """Validate one cached preflight against its current claim and proof bundle."""
+
+    obligation_id = formal_obligation_id(campaign_id, experiment_id, claim)
+    preflight = FormalPreflightV1.model_validate_json(path.read_text(encoding="utf-8"))
+    content_sha = hashlib.sha256(
+        canonical_json(preflight.model_dump(mode="json")).encode("utf-8")
+    ).hexdigest()
+    if content_sha != expected_sha256:
+        raise ValueError(f"formal preflight digest mismatch: {obligation_id}")
+    template = FORMAL_TEMPLATES.get(claim.template_id)
+    if template is None:
+        raise ValueError(f"unknown formal template: {claim.template_id}")
+    if (
+        preflight.obligation_id != obligation_id
+        or preflight.campaign_id != campaign_id
+        or preflight.experiment_id != experiment_id
+        or preflight.template_id != claim.template_id
+        or preflight.template_version != template.version
+        or preflight.claim != claim.claim
+        or preflight.policy != claim.policy
+        or preflight.theorem != template.theorem
+        or preflight.proof_target != template.proof_target
+        or preflight.checker_contract != template.checker_contract
+        or preflight.evidence_scope != template.evidence_scope
+        or preflight.assumptions != template.assumptions
+        or preflight.open_assumptions != template.open_assumptions
+        or preflight.counterexample != template.counterexample
+    ):
+        raise ValueError(f"formal preflight binding mismatch: {obligation_id}")
+    if preflight.source_digests != _source_digests(template):
+        raise ValueError(f"formal preflight sources are stale: {obligation_id}")
+    if preflight.proof_sha256 != _proof_digest(template):
+        raise ValueError(f"formal proof bundle is stale: {obligation_id}")
+    if claim.policy == "required" and preflight.status != "proved":
+        raise ValueError(
+            f"required formal claim is not proved: {claim.template_id} "
+            f"({preflight.status})"
+        )
+    return preflight
 
 
 def validate_formal_preflights(
@@ -417,35 +511,12 @@ def validate_formal_preflights(
             / "formal_preflights"
             / f"{obligation.preflight_sha256}.json"
         )
-        preflight = FormalPreflightV1.model_validate_json(
-            path.read_text(encoding="utf-8")
+        preflight = validate_formal_preflight_artifact(
+            path,
+            campaign_id=manifest.campaign_id,
+            experiment_id=experiment.experiment_id,
+            claim=claim,
+            expected_sha256=obligation.preflight_sha256,
         )
-        content_sha = hashlib.sha256(
-            canonical_json(preflight.model_dump(mode="json")).encode("utf-8")
-        ).hexdigest()
-        if content_sha != obligation.preflight_sha256:
-            raise ValueError(f"formal preflight digest mismatch: {obligation_id}")
-        expected_template = FORMAL_TEMPLATES.get(claim.template_id)
-        if expected_template is None:
-            raise ValueError(f"unknown formal template: {claim.template_id}")
-        if (
-            preflight.obligation_id != obligation_id
-            or preflight.campaign_id != manifest.campaign_id
-            or preflight.experiment_id != experiment.experiment_id
-            or preflight.template_id != claim.template_id
-            or preflight.template_version != expected_template.version
-            or preflight.claim != claim.claim
-            or preflight.policy != claim.policy
-        ):
-            raise ValueError(f"formal preflight binding mismatch: {obligation_id}")
-        if preflight.source_digests != _source_digests(expected_template):
-            raise ValueError(f"formal preflight sources are stale: {obligation_id}")
-        if preflight.proof_sha256 != _proof_digest():
-            raise ValueError(f"formal proof bundle is stale: {obligation_id}")
-        if claim.policy == "required" and preflight.status != "proved":
-            raise ValueError(
-                f"required formal claim is not proved: {claim.template_id} "
-                f"({preflight.status})"
-            )
         validated.append(preflight)
     return tuple(validated)

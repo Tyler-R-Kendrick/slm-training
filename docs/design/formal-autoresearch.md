@@ -39,21 +39,26 @@ that tries to reconstruct history from only the current live set. This can elimi
 that approach before a training run. It still does not predict whether a particular
 history-preserving implementation improves a model metric.
 
-## Proof package
+## Proof packages
 
-The pinned project is
-`src/slm_training/formal/lean/` (`leanprover/lean4:v4.30.0`, Mathlib `v4.30.0`).
+Autoresearch uses two pinned Lean 4.30.0 projects. The promotion-critical
+`metrics.structural_similarity_monotone` template runs the existing
+Mathlib-free `src/leverproof_lean/` package via `make test`; that same bounded
+run builds the certificate checker used later in promotion. The remaining
+templates stay in `src/slm_training/formal/lean/` with Mathlib `v4.30.0`.
 
 | Module | Established claim | Scope |
 | --- | --- | --- |
-| `Metrics` | recall, structural-similarity components, and pointwise means are monotone under their declared inequalities; extra unmatched structure can lower the proxy | universal over the modeled rationals/lists |
+| `LeverProofLean.StructuralMetrics` | recall, structural-similarity components, and pointwise means are monotone under their declared inequalities; extra unmatched structure can lower the proxy | universal over modeled nonnegative, common-scale integers |
 | `Forest` | certified closure is monotone/idempotent, never adds live candidates, extends history, and rollback preserves the declared partition | universal over finite modeled states |
 | `Trace` | the Boolean JSON trace contract implies every accepted step applies its declared certified-removal set and prefix-preserves history | universal over accepted traces, assuming certificate replay happened first |
 | `Recurrence` | delta/LayerScale update norms and winner-margin perturbations obey explicit algebraic bounds | conditional on the scale, contraction, and margin assumptions |
 
-`scripts.verify_formal_contracts` builds the whole package, rejects `sorry`,
-`admit`, and custom `axiom` declarations, and audits the exported theorems for
-Lean's `sorryAx`. The repository hard run cap is the timeout.
+`make -C src/leverproof_lean test` rejects `sorry`, `admit`, custom `axiom`,
+`unsafe`, and `native_decide`; `scripts.verify_formal_contracts` rejects the
+proof placeholders and custom axioms in the Mathlib package. Both audit their
+exported theorems for Lean's `sorryAx`. The repository hard run cap is the
+timeout.
 
 ## Typed campaign integration
 
