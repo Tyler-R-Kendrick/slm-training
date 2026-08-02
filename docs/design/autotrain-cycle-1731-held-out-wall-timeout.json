@@ -1,0 +1,65 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c4",
+  "cycle_index": 1731,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "03cff63cc92f2725025ead4c78f70fcba5b2c6ec",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric_at_execution": "held_out.structural_similarity",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c3",
+  "cycle_role": "promotion",
+  "status": "non_positive_wall_timeout",
+  "harness_signal": {
+    "family": "model_build",
+    "symptom": "stage exceeded wall-time limit for both arms: `scripts.evaluate_model --suites smoke,held_out --decode-timeout-seconds 24.0` (control and steps arms), under the repo-wide 3-minute MAX_RUN_MINUTES cap.",
+    "diagnosis": "promotion-role cycles evaluate `smoke,held_out` together; held_out records (e.g. held_out_form_01, held_out_dual_card_01) are longer/more complex than smoke records, and CPU-only constrained decode for both suites in one process does not fit the 3-minute cap this run.",
+    "occurrence_count": 1,
+    "disposition": "soft_timeout_not_hard_block; queued retry_measurement will replay the identical frozen arm next cycle per the driver's automatic frozen-replay consumption rule",
+    "note": "the `steps` arm's eval_smoke.json shows a partial smoke-suite structural_similarity of 0.51 written before the process was killed by the wall-clock timeout; this is an incomplete/unverified partial write, not a confirmed measurement, and is not used as evidence here."
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c4-control",
+      "status": "wall_timeout",
+      "training": {
+        "executed": true
+      },
+      "suite": "smoke,held_out",
+      "completed_document_n": 0,
+      "metrics": null,
+      "ship_gates_pass": false,
+      "claim_boundary": "no usable measurement; eval process killed by MAX_RUN_MINUTES before writing a scoreboard"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c4-steps",
+      "status": "wall_timeout",
+      "training": {
+        "executed": true
+      },
+      "suite": "smoke,held_out",
+      "completed_document_n": 0,
+      "metrics": null,
+      "ship_gates_pass": false,
+      "claim_boundary": "no usable measurement; eval process killed by MAX_RUN_MINUTES before writing a scoreboard; a partial eval_smoke.json exists but is not verified complete"
+    }
+  ],
+  "comparison": {
+    "measurement_complete": false
+  },
+  "checkpoint_documentation_required": false,
+  "checkpoint_note": "control/steps checkpoints from this cycle are unpromoted local scratch artifacts of a timed-out promotion attempt; no model-card or README update applies.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "03cff63cc92f2725025ead4c78f70fcba5b2c6ec",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v27",
+      "harness.experiment_feature_flags": "v3"
+    },
+    "stamped_at": "2026-08-02T03:34:14.519195+00:00"
+  }
+}
