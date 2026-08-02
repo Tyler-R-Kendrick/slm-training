@@ -2132,14 +2132,14 @@ def _classify_positive(
     )
 
     policy = load_climb_policy(policy_path)
-    # Prefer policy primary for the cycle role; allow CLI override of metric id
-    # only when it matches the configured leaf/id for that role.
+    # Resolve through the single role-aware helper so promotion cannot inherit
+    # a same-leaf smoke override for its policy-owned held-out endpoint.
     role_primary = primary_for_role(policy, role)
-    effective_metric = str(role_primary.get("metric") or primary_metric)
-    if primary_metric and primary_metric != effective_metric:
-        # Keep caller metric if it is an explicit override of the same leaf.
-        if primary_metric.split(".")[-1] == effective_metric.split(".")[-1]:
-            effective_metric = primary_metric
+    effective_metric = _effective_primary_metric(
+        role=role,
+        policy_metric=str(role_primary.get("metric") or primary_metric),
+        requested_metric=primary_metric,
+    )
 
     # Promotion primary is held_out.*; load held_out leaves so Phase A is not
     # permanently primary_metric_unavailable when eval_held_out.json exists.

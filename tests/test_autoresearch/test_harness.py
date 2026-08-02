@@ -83,6 +83,10 @@ def test_result_matrix_explains_lean_applicability() -> None:
     assert _lean_text(None, {"cycle_role": "promotion"}) == (
         "not_applicable:no_champion"
     )
+    assert _lean_text(
+        None,
+        {"cycle_intent": "confirm", "cycle_role": "promotion"},
+    ) == ("not_applicable:confirmation")
     assert _lean_text(None, {"formal_status": "proved"}) == "proved"
 
 

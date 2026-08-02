@@ -2571,7 +2571,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v53",
+      "version": "v54",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2611,6 +2611,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v54",
+          "date": "2026-08-02",
+          "note": "Centralize role-aware metric resolution inside outcome classification so promotion cannot inherit smoke overrides, and distinguish confirmation-cycle Lean applicability in terminal matrices."
+        },
         {
           "version": "v53",
           "date": "2026-08-02",
@@ -6955,6 +6960,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: complete the unrelated c1732 scratch checkpoint provenance in the model card; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

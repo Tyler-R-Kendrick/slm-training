@@ -1165,6 +1165,8 @@ def _lean_text(optimum: Any | None, handoff: dict[str, Any] | None = None) -> st
         formal_status = handoff.get("formal_status")
         if formal_status:
             return str(formal_status)
+        if handoff.get("cycle_intent") == "confirm":
+            return "not_applicable:confirmation"
         if handoff.get("cycle_role") == "promotion":
             return "not_applicable:no_champion"
         if handoff.get("cycle_role") == "screening":

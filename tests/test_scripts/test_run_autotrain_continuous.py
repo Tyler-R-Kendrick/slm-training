@@ -1668,7 +1668,7 @@ def test_classify_positive_rejects_c1731_efficiency_jitter(tmp_path: Path) -> No
 
 
 def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> None:
-    """Regression: promote primary must not be unavailable when held_out eval exists."""
+    """Promotion must ignore a same-leaf smoke override and score held-out."""
     camp = tmp_path / "camp"
     for arm, ss in (("c-control", 0.30), ("c-promote", 0.40)):
         run = camp / "runs" / arm
@@ -1691,7 +1691,7 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
         # No gates.json → avoid fixture_insufficient_n noise for this unit test.
     result = _mod._classify_positive(
         camp_dir=camp,
-        primary_metric="held_out.structural_similarity",
+        primary_metric="smoke.structural_similarity",
         control_id="c-control",
         candidate_id="c-promote",
         role="promotion",
