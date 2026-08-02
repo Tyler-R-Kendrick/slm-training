@@ -172,6 +172,25 @@ def test_convergent_suffix_states_expand_once(packed_graph: dict) -> None:
     assert session.builds == builds_after_first_query
 
 
+def test_child_prefixes_are_persistent_until_authority_scan(
+    tok: DSLNativeTokenizer,
+) -> None:
+    """Transition-only states do not copy the full token prefix eagerly."""
+    prefix = tuple(tok.encode("root = Card()", add_special=False))
+    session = CompletionSession(tok)
+    seed = session.seed(prefix[:1])
+    current = seed
+    for token_id in prefix[1:]:
+        child = session.advance(current, int(token_id))
+        assert child is not None
+        current = child
+
+    assert session._states[seed].prefix_ids == prefix[:1]
+    assert session._states[current].prefix_ids is None
+    assert session.prefix_ids_of(current) == prefix
+    assert session._states[current].prefix_ids == prefix
+
+
 def test_witness_matches_bruteforce_everywhere(packed_graph: dict) -> None:
     complete_graph = dict(packed_graph)
     complete_graph["D"] = ("complete", packed_graph["D"][1][:2])
