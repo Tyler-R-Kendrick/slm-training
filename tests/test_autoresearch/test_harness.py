@@ -2818,6 +2818,59 @@ def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
     assert len(matrix.encode("utf-8")) < 64 * 1024
 
 
+def test_loop_result_matrix_recovers_content_bound_reused_params(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-reuse",
+        objective="Render the frozen checkpoint size in the result matrix.",
+        primary_metric="smoke.parse_rate",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    summary_path = tmp_path / "source" / "train_summary.json"
+    summary_path.parent.mkdir()
+    summary_path.write_text(
+        json.dumps({"track": {"trainable_params": 1_608_962}}),
+        encoding="utf-8",
+    )
+    outcome = ExperimentOutcome(
+        experiment_id="replay",
+        campaign_id=campaign.campaign_id,
+        status="completed",
+        metrics={"smoke.parse_rate": 1.0},
+        stage_telemetry=(
+            {
+                "stage_kind": "reused_training",
+                "source_train_summary": str(summary_path),
+                "source_train_summary_sha256": hashlib.sha256(
+                    summary_path.read_bytes()
+                ).hexdigest(),
+            },
+        ),
+    )
+    artifact = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_finished",
+        experiment_id="replay",
+        status="completed",
+        artifact_sha256=artifact.stem,
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "| replay | 1608962 | 1 |" in rendered
+
+    summary_path.write_text(
+        json.dumps({"track": {"trainable_params": 9_999_999}}),
+        encoding="utf-8",
+    )
+    assert "| replay | — | 1 |" in render_loop_result_matrix(tmp_path, "loop-1")
+
+
 def test_loop_result_matrix_marks_timeout_measurement_incomplete(
     tmp_path: Path,
 ) -> None:
