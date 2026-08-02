@@ -241,6 +241,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "eval_version",
         "derive_from",
         "lr",
+        "ltr_tail_loss_weight",
         "local_files_only",
         "max_records_per_parent",
         "min_quality_score",
@@ -489,6 +490,7 @@ class ExperimentKnobs(StrictModel):
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)
+    ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
     seed: int | None = Field(default=None, ge=0)
     context_backend: Literal["scratch", "hf"] | None = None
     output_tokenizer: Literal["compositional", "lexer"] | None = None

@@ -433,6 +433,7 @@ _RETRYABLE_PROMOTE_STATUSES = frozenset(
 # Recipe levers that define "same knobs" for confirmatory retest. Measurement
 # knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
 _LEVER_KNOB_KEYS = (
+    "ltr_tail_loss_weight",
     "grammar_completion_bounds",
     "compact_active_canvas",
     "component_plan_loss_weight",
@@ -543,6 +544,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "structural_aux_head_profile": "component-structure",
             "compiler_decode_mode": "tree",
         },
+    ),
+    (
+        "literal-close",
+        "Tail-weighted LTR supervision reduces legal literal-termination starvation without lowering parse_rate or binder_reference_f1.",
+        {"ltr_tail_loss_weight": 2.0},
     ),
 )
 _RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
@@ -852,6 +858,8 @@ def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
     """Map knobs / candidate id to thrash arm slug."""
+    if knobs.get("ltr_tail_loss_weight"):
+        return "literal-close"
     if knobs.get("component_plan_loss_weight") and knobs.get(
         "component_edge_loss_weight"
     ):
@@ -982,7 +990,9 @@ def _recent_completed_nonpositive_slugs(
 
 def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
     """Rotate thrash recommendation; prefer arms not recently rejected/queued."""
-    bank = _SCREENING_ARM_BANK
+    # Evidence-triggered arms are available to typed predecessor steering but do
+    # not perturb the stable cycle-number rotation of the general screening bank.
+    bank = tuple(row for row in _SCREENING_ARM_BANK if row[0] != "literal-close")
     n = len(bank)
     start = (max(1, int(cycle)) - 1) % n
     ordered = [bank[(start + i) % n][0] for i in range(n)]
@@ -2809,9 +2819,7 @@ def _classify_positive(
             experiment_id in {control_id, candidate_id}
             and out.get("status") == "failed"
         ):
-            reasons_pre.append(
-                f"harness_failure:{experiment_id}:experiment_failed"
-            )
+            reasons_pre.append(f"harness_failure:{experiment_id}:experiment_failed")
         err = str(out.get("error") or "")
         if "wall-time" in err or "wall time" in err.lower():
             reasons_pre.append(f"wall_timeout:{path.stem}")
@@ -3174,6 +3182,48 @@ def _has_finalized_decode_timeout(camp_dir: Path, candidate_id: str) -> bool:
         ):
             return True
     return False
+
+
+_OPEN_NUMERIC_LITERAL_RE = re.compile(r"(?:^|[,(])\s*-?\d{6,}$")
+
+
+def _has_numeric_literal_close_starvation(camp_dir: Path, candidate_id: str) -> bool:
+    """Detect repeated legal numeric bytes where the model never selects close.
+
+    This is a diagnostic steering signal only. It cannot alter the legal domain
+    or certify output; the next arm remains grammar constrained and size matched.
+    """
+
+    run_dir = camp_dir / "runs" / candidate_id
+    stalled_records: set[str] = set()
+    timeout_records = 0
+    for eval_path in sorted(run_dir.glob("eval_*.json")):
+        payload = _read_json(eval_path)
+        timeout_records += int(payload.get("decode_timeout_document_count") or 0)
+        traces = (payload.get("decode_stats") or {}).get("constrained_selection_traces")
+        if not isinstance(traces, list):
+            continue
+        streaks: dict[str, int] = {}
+        for trace in traces:
+            if not isinstance(trace, dict):
+                continue
+            record_id = str(trace.get("record_id") or "")
+            prefix = str(trace.get("prefix_text") or "")
+            chosen = str(trace.get("chosen_token") or "")
+            legal_candidates = trace.get("legal_candidates")
+            repeated_numeric = (
+                record_id
+                and chosen.startswith("B:")
+                and isinstance(legal_candidates, int)
+                and legal_candidates >= 12
+                and _OPEN_NUMERIC_LITERAL_RE.search(prefix) is not None
+            )
+            streaks[record_id] = (
+                streaks.get(record_id, 0) + 1 if repeated_numeric else 0
+            )
+            if streaks[record_id] >= 4:
+                stalled_records.add(record_id)
+    return timeout_records > 0 and bool(stalled_records)
 
 
 def _primary_harness_family(camp_dir: Path) -> str:
@@ -3639,6 +3689,9 @@ def _write_cycle_handoff(
         climb_state = "rejected"
 
     candidate_id = str(delivery.get("candidate_id") or "")
+    numeric_close_starvation = bool(
+        candidate_id and _has_numeric_literal_close_starvation(camp_dir, candidate_id)
+    )
     ship_state = (
         _candidate_ship_state(camp_dir, candidate_id)
         if candidate_id
@@ -3657,7 +3710,29 @@ def _write_cycle_handoff(
             ),
         ]
     )
-    if measurement_incomplete:
+    if measurement_incomplete and numeric_close_starvation:
+        priorities = (
+            NextRunPriorityV1(
+                rank=1,
+                area="model_build",
+                hypothesis=(
+                    "The candidate repeatedly ranks legal numeric bytes above the "
+                    "literal terminator; test size-matched tail-weighted LTR "
+                    "supervision while preserving constrained decode."
+                ),
+                evidence_ids=(evidence_id,),
+                confidence=0.95,
+                expected_information_gain=(
+                    "Distinguishes insufficient suffix/termination supervision "
+                    "from runtime orchestration after AgentV finalized every "
+                    "record as a typed decode timeout."
+                ),
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=f"{candidate_id}-literal-close",
+            ),
+        )
+    elif measurement_incomplete:
         priorities = (
             NextRunPriorityV1(
                 rank=1,
@@ -3756,7 +3831,13 @@ def _write_cycle_handoff(
             AutotrainActionV1(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
-                reason="repair the canonical owner and replay the frozen arm",
+                reason=(
+                    "add the typed tail-weighted LTR training signal and run a new "
+                    "size-matched literal-close arm; do not replay the same stalled "
+                    "checkpoint"
+                    if numeric_close_starvation
+                    else "repair the canonical owner and replay the frozen arm"
+                ),
                 evidence_ids=(evidence_id,),
                 harness_family=family,  # type: ignore[arg-type]
                 frozen_manifest_sha256=manifest_sha,
@@ -4482,6 +4563,7 @@ def _matrix(
             "binder_topology_decode_weight": 0.0,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
+            "ltr_tail_loss_weight": 0.0,
             # Measurement completeness: smoke-only screening + longer decode wall.
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
@@ -4545,6 +4627,7 @@ def _matrix(
                 "sync_checkpoints",
                 "local_files_only",
                 "output_tokenizer",
+                "ltr_tail_loss_weight",
             }
         }
         promo_steps = int(promo_extra.pop("steps", steps) or steps)
@@ -4720,6 +4803,7 @@ def _matrix(
                 "sync_checkpoints",
                 "local_files_only",
                 "output_tokenizer",
+                "ltr_tail_loss_weight",
             }
         }
         confirm_steps = int(confirm_extra.pop("steps", steps) or steps)
@@ -4898,9 +4982,7 @@ def _matrix(
                             )
                         ),
                         compiler_decode_mode=str(
-                            bank_by_slug[rec_slug][1].get(
-                                "compiler_decode_mode", "off"
-                            )
+                            bank_by_slug[rec_slug][1].get("compiler_decode_mode", "off")
                         ),
                     ),
                     "Baseline for size-matched continuous attribution.",

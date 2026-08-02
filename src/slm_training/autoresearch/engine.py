@@ -539,6 +539,8 @@ def compile_commands(
                     str(knobs.compiler_alignment_loss_weight),
                 ]
             )
+        if knobs.ltr_tail_loss_weight is not None:
+            train.extend(["--ltr-tail-loss-weight", str(knobs.ltr_tail_loss_weight)])
         if knobs.compiler_alignment_margin is not None:
             train.extend(
                 ["--compiler-alignment-margin", str(knobs.compiler_alignment_margin)]
