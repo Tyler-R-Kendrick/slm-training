@@ -1,0 +1,65 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-1pse54",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c1",
+  "cycle_index": 1,
+  "evidence_class": "fixture",
+  "decision": "infrastructure_failure",
+  "scoreable": false,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "decode_policy"
+    ],
+    "treatment": "n/a (both arms failed identically before training could start)",
+    "prediction_identical": null,
+    "parameter_delta": null
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c1-control",
+      "status": "failed",
+      "error": "ModuleNotFoundError: No module named 'torch'",
+      "measurement": "incomplete",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c1-bounds",
+      "status": "failed",
+      "error": "ModuleNotFoundError: No module named 'torch'",
+      "measurement": "incomplete",
+      "smoke": null,
+      "held_out": null,
+      "agentv": null
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "root_cause": "The fresh session container's Python 3.12 venv was created via `pip install -e .` (base dependency set only); the repo declares `torch` as an optional extra (`pyproject.toml` `[project.optional-dependencies].torch` and `.dev`), so `scripts/train_model.py` failed at `detect_device` before any training step ran. Not a harness code defect and not a model result.",
+  "fix": "Reinstalled the environment with `pip install -e \".[dev,torch]\"` (torch 2.5.1+cu124 CPU-capable wheel resolved). No repository code changed; this is an ephemeral-container environment-bootstrap gap, matching the pattern documented in prior sessions' AgentV NODE_OPTIONS / torch-missing infra cycles (e.g. PR #1264, PR #1292).",
+  "next_priority": {
+    "area": "infrastructure",
+    "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate before testing a new hypothesis.",
+    "required_controls": [
+      "identical_frozen_manifest",
+      "no_knob_change"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5bbf289a3fffdaebb2d2a21cd7c64870bf4d4459",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T16:34:23.871705+00:00"
+  }
+}
