@@ -2606,7 +2606,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2646,6 +2646,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-08-02",
+          "note": "Validate historical campaign-lock digests against an explicit projection that omits only replicate-ledger defaults added after those locks were written."
+        },
         {
           "version": "v60",
           "date": "2026-08-02",
