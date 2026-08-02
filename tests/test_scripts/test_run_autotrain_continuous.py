@@ -3945,6 +3945,38 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
         root, "cycle-1", skip={"literal-close"}
     ) == "literal-close"
 
+    predecessor = "cycle-1"
+    for index, slug in ((2, "bounds"), (3, "confirm")):
+        successor = root / f"cycle-{index}"
+        successor.mkdir()
+        (successor / "campaign.json").write_text(
+            json.dumps({"predecessor_campaign_id": predecessor})
+        )
+        (successor / "sdlc_delivery.json").write_text(
+            json.dumps({"candidate_id": f"cand-{slug}"})
+        )
+        (successor / "cycle_handoff.json").write_text(
+            json.dumps(
+                {
+                    "priorities": [
+                        {
+                            "rank": 1,
+                            "area": "experiments",
+                            "authority": "speculative",
+                            "confidence": 0.6,
+                            "disposition": "experiment_next",
+                            "proposed_experiment_id": f"cand-{slug}",
+                        }
+                    ]
+                }
+            )
+        )
+        predecessor = f"cycle-{index}"
+
+    assert _mod._predecessor_priority_slug(
+        root, predecessor, skip={"literal-close"}
+    ) == "literal-close"
+
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
     tmp_path: Path,

@@ -3703,6 +3703,60 @@ def _predecessor_priority_slug(
                     },
                 )
             ]
+    def priority_slug(
+        rows: list[dict[str, Any]], *, evidence_directed_only: bool
+    ) -> str | None:
+        for priority in sorted(rows, key=lambda item: int(item.get("rank") or 999)):
+            if priority.get("disposition") != "experiment_next":
+                continue
+            experiment_id = str(priority.get("proposed_experiment_id") or "")
+            evidence_directed = bool(
+                priority.get("area") == "model_build"
+                and priority.get("authority") == "observed_result"
+                and float(priority.get("confidence") or 0.0) >= 0.9
+            )
+            if evidence_directed_only and not evidence_directed:
+                continue
+            for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
+                if experiment_id.endswith(f"-{slug}") and (
+                    slug not in skip or evidence_directed
+                ):
+                    return slug
+        return None
+
+    # A fresh champion confirmation/promotion may legitimately interrupt a
+    # high-confidence model-build successor. Preserve that observed successor
+    # across the bounded interruption until the same arm actually executes.
+    executed_slugs: set[str] = set()
+    cursor: str | None = predecessor_campaign_id
+    seen: set[str] = set()
+    for _ in range(_RECENT_EXHAUSTION_CYCLE_WINDOW):
+        if not cursor or cursor in seen:
+            break
+        seen.add(cursor)
+        ancestor_dir = root / cursor
+        ancestor_handoff = _read_json(ancestor_dir / "cycle_handoff.json")
+        ancestor_delivery = _read_json(ancestor_dir / "sdlc_delivery.json")
+        candidate_id = str(ancestor_delivery.get("candidate_id") or "")
+        candidate_slug = _arm_slug_from_knobs(
+            _load_experiment_knobs(ancestor_dir, candidate_id),
+            candidate_id=candidate_id,
+        )
+        if candidate_slug:
+            executed_slugs.add(candidate_slug)
+        observed = priority_slug(
+            list(ancestor_handoff.get("priorities") or []),
+            evidence_directed_only=True,
+        )
+        if observed and observed not in executed_slugs:
+            return observed
+        cursor = str(
+            _read_json(ancestor_dir / "campaign.json").get(
+                "predecessor_campaign_id"
+            )
+            or ""
+        )
+
     for priority in sorted(priorities, key=lambda item: int(item.get("rank") or 999)):
         if priority.get("disposition") != "experiment_next":
             continue
