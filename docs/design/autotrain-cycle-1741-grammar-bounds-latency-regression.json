@@ -1,0 +1,104 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1741,
+  "campaign_role": "screening",
+  "cycle_intent": "screening",
+  "run_class": "ship_eval",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 23,
+  "seed": 100001,
+  "checkpoint_reuse": "fresh matched-arm train, not a frozen replay",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "primary_metric": "smoke.structural_similarity",
+  "infra_note": "The AgentV SDK was unavailable in this session's checkout (node_modules missing @agentv/core), so the first --ship-gates evaluate_model pass for both arms exited 1 before publishing a scoreboard. Fixed with `npm ci` (and unsetting a malformed inherited NODE_OPTIONS that also blocked node from starting); both arms were then re-evaluated against the identical frozen checkpoints to produce a complete measurement.",
+  "arms": [
+    {
+      "label": "matched control",
+      "grammar_completion_bounds": false,
+      "trainable_parameters": 1608962,
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "incomplete_document_n": 0,
+      "decode_timeout_count": 0,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.0,
+      "structural_similarity_completed": 0.0575,
+      "binder_reference_f1_completed": 0.6333333333333333,
+      "latency_ms_p50_completed": 1278.91,
+      "reward_score": 0.0,
+      "checkpoint_sha256": "08ea9557d14c1ce29a2456ccf6aca8f9f1f90e9bd9439f751e69f0d7064628b7",
+      "gate_pass": false,
+      "scoreable_comparison": true
+    },
+    {
+      "label": "grammar_completion_bounds",
+      "grammar_completion_bounds": true,
+      "trainable_parameters": 1608962,
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "incomplete_document_n": 0,
+      "decode_timeout_count": 0,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.0,
+      "structural_similarity_completed": 0.0575,
+      "binder_reference_f1_completed": 0.6333333333333333,
+      "latency_ms_p50_completed": 1436.09,
+      "reward_score": 0.0,
+      "checkpoint_sha256": "26b846b1faf2a7e81cd070b3e150fef94a113dc4d4d521deeeeef0d6af5062e3",
+      "gate_pass": false,
+      "scoreable_comparison": true
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": true,
+    "quality_delta": "none (tied on parse_rate, meaningful_program_rate, structural_similarity, binder_reference_f1)",
+    "latency_delta_fraction": 0.1229,
+    "latency_direction": "candidate slower",
+    "disposition": "rejected_quality_null_and_latency_regression"
+  },
+  "harness_feedback": {
+    "signal": "grammar_completion_bounds neither improves quality nor latency on this fixture: quality ties exactly with the matched control and completed-document p50 is 12.29% slower.",
+    "repair": "No canonical harness repair indicated by this arm; the AgentV-SDK gap was an environment/toolchain issue in this session's checkout, resolved with `npm ci`, not a defect in `evaluate_model` or the AgentV integration itself.",
+    "component_version": "harness.model_build.eval/v74"
+  },
+  "gates": {
+    "control": {
+      "pass": false,
+      "evidence_volume_failures": ["smoke:insufficient_n actual=3 need>=20", "held_out:missing_suite", "adversarial:missing_suite", "ood:missing_suite", "rico_held:missing_suite"],
+      "quality_threshold_failures": ["smoke:meaningful_program_rate actual=0.0 need>=0.66", "smoke:structural_similarity actual=0.0575 need>=0.35", "smoke:component_type_recall actual=0.0 need>=0.35", "smoke:ast_beq_rate actual=0.0 need>=0.2", "smoke:canonical_beq_rate actual=0.0 need>=0.1", "smoke:reward_score actual=0.0 need>=0.3"]
+    },
+    "bounds": {
+      "pass": false,
+      "evidence_volume_failures": ["smoke:insufficient_n actual=3 need>=20", "held_out:missing_suite", "adversarial:missing_suite", "ood:missing_suite", "rico_held:missing_suite"],
+      "quality_threshold_failures": ["smoke:meaningful_program_rate actual=0.0 need>=0.66", "smoke:structural_similarity actual=0.0575 need>=0.35", "smoke:component_type_recall actual=0.0 need>=0.35", "smoke:ast_beq_rate actual=0.0 need>=0.2", "smoke:canonical_beq_rate actual=0.0 need>=0.1", "smoke:reward_score actual=0.0 need>=0.3"]
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    }
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575 candidate=0.0575 improvement=0.0",
+      "latency_regression:smoke.latency_ms_p50:control=1278.91 candidate=1436.09 delta_fraction=0.1229"
+    ]
+  }
+}
