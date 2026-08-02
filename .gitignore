@@ -39,4 +39,3 @@ src/apps/openui_preview/node_modules/
 .vercel
 .env*
 session/
-.venv312/

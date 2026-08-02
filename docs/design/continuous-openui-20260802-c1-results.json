@@ -1,0 +1,63 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "63b36fbfa0748ed18b8db85b656c8828cc8178c3",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "arms": {
+    "c1-control": {
+      "status": "measurement_incomplete",
+      "levers": {
+        "grammar_completion_bounds": false,
+        "compact_active_canvas": false
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1594.76
+      },
+      "reason": "core eval scoreboard (eval.json) wrote successfully, but the AgentV bundle publish step crashed with 'AgentV SDK is unavailable; run npm ci' (node_modules/@agentv/core was not installed in this sandbox), so the driver classifies the measurement incomplete/missing_scoreboard"
+    },
+    "c1-bounds": {
+      "status": "measurement_incomplete",
+      "levers": {
+        "grammar_completion_bounds": true,
+        "compact_active_canvas": false
+      },
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1553.54
+      },
+      "reason": "same AgentV publish crash as control; both trainable_params=1608962 (size-matched)"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": 0.0,
+  "conclusion": "grammar_completion_bounds produced an exact structural_similarity tie (0.0575) versus the matched control on this 21-step fixture; both arms' AgentV publish step crashed on a missing `@agentv/core` install (npm ci had never been run in this sandbox), so the SDLC classifier correctly treated the cycle as measurement_incomplete rather than a quality result. `npm ci` was run after this cycle to install the pinned AgentV SDK for subsequent cycles.",
+  "next_priorities": [
+    "Replay the identical frozen control/bounds arms now that node_modules/@agentv is installed, per this cycle's retry_measurement action, before testing a new hypothesis",
+    "Do not promote or ship either checkpoint; both are screening-scale (21 steps, 1,608,962 params) fixture artifacts",
+    "Keep RL locked; ship gates stay honest on fixture n"
+  ],
+  "recorded_at": "2026-08-02T15:32:33Z"
+}
