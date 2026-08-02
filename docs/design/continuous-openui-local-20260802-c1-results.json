@@ -1,0 +1,81 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1,
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+  "primary_metric": "smoke.structural_similarity",
+  "primary_direction": "increase",
+  "minimum_effect": 0.01,
+  "arms": {
+    "c1-control": {
+      "status": "eval_incomplete_missing_scoreboard",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1432.96
+      },
+      "levers": {
+        "grammar_completion_bounds": false
+      }
+    },
+    "c1-bounds": {
+      "status": "eval_incomplete_missing_scoreboard",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 1357.41
+      },
+      "levers": {
+        "grammar_completion_bounds": true
+      }
+    }
+  },
+  "primary_delta": 0.0,
+  "latency_delta_ms": -75.55000000000018,
+  "measurement_complete": false,
+  "blocker": {
+    "kind": "local_environment",
+    "component": "AgentV SDK ship-gate publish (node_modules/@agentv/core)",
+    "error": "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+    "root_cause": "This sandbox's ambient NODE_OPTIONS=\"--import tsx\" env var makes every plain `node` invocation exit 9 with 'node: --import tsx is not allowed in NODE_OPTIONS' (Node's security policy rejects --import inside NODE_OPTIONS). `npm ci` and scripts.evaluate_model's subprocess call to scripts/run_agentv_eval.mjs both inherit that shell env, so the ship-gate scoreboard.json for both arms was never written (missing_scoreboard) even though the earlier single-suite smoke diagnostic (eval.json/eval_smoke.json) completed and recorded real metrics.",
+    "fix_applied": "Ran `env -u NODE_OPTIONS npm ci` in the repo root, which installed node_modules/@agentv/core@4.42.4 successfully. Not a repo code change (node_modules is untracked); no HarnessSignalV1 was raised for a canonical harness family, so no repair_harness action applied.",
+    "residual_risk": "Any future subprocess invocation of `node` from this driver must also run with NODE_OPTIONS unset (or without the ambient sandbox env) or the ship-gate AgentV publish step will fail again with the same missing_scoreboard symptom."
+  },
+  "conclusion": "Primary metric smoke.structural_similarity held flat (0.0575 -> 0.0575, delta 0.0) between control and grammar_completion_bounds candidate; meaningful_program_rate stayed at 0.0 on both arms. The observed -75.6ms p50 latency delta on the candidate is a pure latency blip with no accompanying quality win (mpr=0.0, well under the ~1/3 threshold required for a latency-only win) and is not positive per sdlc autotrain-iteration-delivery quality-aware classification. Both arms also failed to produce a full ship-gate scoreboard.json because of the local AgentV/node_modules gap above, so the cycle is measurement_incomplete as well as non-positive.",
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c1-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c1-bounds:missing_scoreboard",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.057499999999999996 candidate=0.057499999999999996 improvement=0.0"
+    ]
+  },
+  "next_priorities": [
+    "Replay the identical frozen control/candidate arm now that npm ci has installed the AgentV SDK, with NODE_OPTIONS unset for the driver subprocess, to complete the missing scoreboard.json measurement before testing a new hypothesis.",
+    "Re-test grammar_completion_bounds only after (1) yields a complete scoreboard; a -75.6ms delta with mpr=0.0 on both arms is not model evidence either way yet.",
+    "Do not promote; ship gates remain fail-closed on fixture n and mpr=0.0."
+  ],
+  "recorded_at": "2026-08-02T09:34:18.510325Z"
+}
