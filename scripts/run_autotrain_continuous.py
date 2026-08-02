@@ -926,6 +926,40 @@ def _revalidate_open_champion_entries(
     return changed
 
 
+def _revalidate_confirmed_champion_entries(
+    root: Path, entries: list[dict[str, Any]]
+) -> bool:
+    """Close historical false confirmations under the current strict gate."""
+
+    changed = False
+    for row in entries:
+        if row.get("status") != "confirmed":
+            continue
+        campaign_id = str(row.get("confirm_campaign_id") or "")
+        delivery_path = root / campaign_id / "sdlc_delivery.json"
+        if not campaign_id or not delivery_path.is_file():
+            continue
+        delivery = _read_json(delivery_path)
+        if delivery.get("measurement_complete") is not True:
+            continue
+        if _confirmation_quality_reheld(delivery):
+            continue
+        row["status"] = "rejected"
+        row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        row["resolve_reasons"] = [
+            "confirmation_reclassified_nonpositive_under_current_policy",
+            *[str(reason) for reason in delivery.get("reasons") or []],
+            "confirmation_rejected:primary_quality_not_reheld",
+        ]
+        changed = True
+        print(
+            "CHAMPION_CONFIRM_REVALIDATE_REJECT "
+            f"entry_id={row.get('entry_id')} campaign={campaign_id}",
+            flush=True,
+        )
+    return changed
+
+
 def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -1102,12 +1136,12 @@ def _recent_completed_nonpositive_slugs(
             or handoff.get("primary_metric")
             or "smoke.structural_similarity"
         )
-        if (
-            candidate_id
-            and control_id
-            and delivery.get("measurement_complete") is True
-        ):
-            role = "promotion" if intent in {"promotion", "confirm"} else "screening"
+        if candidate_id and control_id and delivery.get("measurement_complete") is True:
+            role = str(
+                delivery.get("cycle_role")
+                or handoff.get("cycle_role")
+                or ("promotion" if intent == "promotion" else "screening")
+            )
             current_decision = _classify_positive(
                 camp_dir=camp_dir,
                 primary_metric=primary_metric,
@@ -1116,7 +1150,12 @@ def _recent_completed_nonpositive_slugs(
                 role=role,
             )
             if _measurement_is_complete(current_decision):
-                stored_positive = current_decision.get("positive")
+                current_decision["measurement_complete"] = True
+                stored_positive = (
+                    _confirmation_quality_reheld(current_decision)
+                    if intent == "confirm"
+                    else current_decision.get("positive")
+                )
         if (
             candidate_id
             and stored_positive is False
@@ -1218,6 +1257,37 @@ def _quality_held_reasons(reasons: list[str] | None) -> bool:
     return any(
         any(r.startswith(prefix) for prefix in _QUALITY_ENQUEUE_PREFIXES)
         for r in reasons
+    )
+
+
+def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
+    """Require the policy-owned primary quality win on a confirmation run.
+
+    Screening may surface an efficiency tradeoff as a hypothesis, but a fresh
+    confirmation is the gate into promotion.  Faster decode cannot confirm a
+    champion when the declared primary or a required non-regression metric got
+    worse.
+    """
+
+    if not delivery.get("positive") or delivery.get("measurement_complete") is False:
+        return False
+    reasons = [str(reason) for reason in delivery.get("reasons") or []]
+    blocked_prefixes = (
+        "primary_metric_null_or_worse:",
+        "non_regression_fail:",
+        "eg_params_block:",
+        "measurement_incomplete:",
+        "wall_timeout:",
+        "empty_metrics:",
+        "harness_failure:",
+    )
+    if any(reason.startswith(blocked_prefixes) for reason in reasons):
+        return False
+    primary_metric = str(delivery.get("primary_metric") or "")
+    if not primary_metric:
+        return False
+    return any(
+        reason.startswith(f"primary_metric_win:{primary_metric}:") for reason in reasons
     )
 
 
@@ -1417,7 +1487,9 @@ def _resolve_confirm_result(
 ) -> dict[str, Any] | None:
     """Mark confirmatory retest confirmed (quality re-holds) or rejected."""
     reasons = list(delivery.get("reasons") or [])
-    ok = bool(delivery.get("positive")) and _quality_held_reasons(reasons)
+    ok = _confirmation_quality_reheld(delivery)
+    if not ok:
+        reasons.append("confirmation_rejected:primary_quality_not_reheld")
     status = "confirmed" if ok else "rejected"
     return _update_champion_status(
         root=root,
@@ -3279,6 +3351,14 @@ def _phase_a_delivery(
     decision["cycle_index"] = cycle_index
     decision["cycle_intent"] = cycle_intent or role
     decision["climb_policy_sha256"] = policy.sha256
+    if cycle_intent == "confirm" and not _confirmation_quality_reheld(decision):
+        decision["positive"] = False
+        decision["stack_layer"] = False
+        reasons = list(decision.get("reasons") or [])
+        marker = "confirmation_rejected:primary_quality_not_reheld"
+        if marker not in reasons:
+            reasons.append(marker)
+        decision["reasons"] = reasons
     # Stack only when positive AND there is something reviewable to ship.
     # Pure knob-only fixture cycles with a metric blip do not open empty PRs.
     porcelain = (
@@ -3754,7 +3834,7 @@ def _completed_confirmation_priorities(
             row["proposed_experiment_id"] = None
 
     status = str((resolution or {}).get("status") or "")
-    confirmed = status == "confirmed" or bool(delivery.get("positive"))
+    confirmed = status == "confirmed"
     if confirmed:
         rows[0].update(
             {
@@ -3939,21 +4019,20 @@ def _predecessor_priority_slug(
                 )
             ]
         elif handoff.get("cycle_intent") == "confirm" and not measurement_incomplete:
+            current["measurement_complete"] = True
+            confirmation_status = (
+                "confirmed" if _confirmation_quality_reheld(current) else "rejected"
+            )
             priorities = [
                 item.model_dump()
                 for item in _completed_confirmation_priorities(
                     _read_json(matrix_path),
                     str(delivery.get("candidate_id") or ""),
-                    delivery,
-                    {
-                        "status": (
-                            "confirmed"
-                            if handoff.get("climb_state") == "champion_confirmed"
-                            else "rejected"
-                        )
-                    },
+                    current,
+                    {"status": confirmation_status},
                 )
             ]
+
     def priority_slug(
         rows: list[dict[str, Any]], *, evidence_directed_only: bool
     ) -> str | None:
@@ -6064,7 +6143,10 @@ def run_cycle(
     # heads also return to confirmed so the next promotion slot can retry.
     recovered = _recover_interrupted_champion_entries(root, queue_entries)
     revalidated = _revalidate_open_champion_entries(root, queue_entries)
-    if recovered or revalidated:
+    confirmations_revalidated = _revalidate_confirmed_champion_entries(
+        root, queue_entries
+    )
+    if recovered or revalidated or confirmations_revalidated:
         _write_champion_queue(queue_path, queue_entries)
     open_champion = _queue_head_open(queue_entries)
     confirmed_champion: dict[str, Any] | None = None

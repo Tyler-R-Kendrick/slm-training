@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v90",
+      "version": "v91",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v91",
+          "date": "2026-08-02",
+          "note": "Fail confirmation closed unless the policy-owned primary quality metric wins without required non-regression breaches; make queue resolution authoritative and revalidate historical false confirmations before promotion selection."
+        },
         {
           "version": "v90",
           "date": "2026-08-02",
@@ -7295,6 +7300,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1793 rejected placeholder-fidelity confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
