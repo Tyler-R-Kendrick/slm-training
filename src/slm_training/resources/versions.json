@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v77",
+      "version": "v82",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,31 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v82",
+          "date": "2026-08-02",
+          "note": "Replace stale preregistered priorities after a fixture candidate is queued with an explicit fresh-seed confirmation action and a visible Lean promotion-preflight lock."
+        },
+        {
+          "version": "v81",
+          "date": "2026-08-02",
+          "note": "Project both sides of a reproduced control-only timeout as model-runtime evidence, label the completing candidate as an absolute-quality rejection, and exhaust terminal runtime-rejected arms before choosing the next hypothesis."
+        },
+        {
+          "version": "v80",
+          "date": "2026-08-02",
+          "note": "Generalize the control-arm diagnosis from numeric literal starvation to any authoritative control-only decode timeout while preserving the one-replay model-runtime policy."
+        },
+        {
+          "version": "v79",
+          "date": "2026-08-02",
+          "note": "Classify control-only numeric literal starvation as a typed model-runtime comparison, require one exact frozen replay, and avoid a false canonical harness-repair action."
+        },
+        {
+          "version": "v78",
+          "date": "2026-08-02",
+          "note": "Carry a high-confidence observed model-build successor across bounded champion confirmation or promotion interruptions until that arm actually executes."
+        },
         {
           "version": "v77",
           "date": "2026-08-02",
@@ -7220,6 +7245,31 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1776 fixture-only component-inventory candidate checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1775 rejected component-edge scratch checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: correct c1773 README provenance from numeric literal extension to the observed open nested component trajectory; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1773 control-incomplete literal-close checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1772 rejected bounds confirmation checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

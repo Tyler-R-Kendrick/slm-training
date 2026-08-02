@@ -884,6 +884,22 @@ def test_completed_confirmation_that_reholds_steers_to_promotion() -> None:
     assert "re-held" in priorities[0].hypothesis
 
 
+def test_queued_candidate_priorities_require_fresh_confirmation_before_lean() -> None:
+    priorities = _mod._queued_candidate_priorities(
+        "cycle-candidate", "campaign:cycle"
+    )
+
+    assert priorities[0].area == "evaluation"
+    assert priorities[0].authority == "observed_result"
+    assert priorities[0].proposed_experiment_id == (
+        "cycle-candidate-fresh-confirmation"
+    )
+    assert "fresh seed" in priorities[0].hypothesis
+    assert priorities[1].area == "lean_model"
+    assert priorities[1].authority == "lean_assumption"
+    assert "until fresh confirmation" in priorities[1].hypothesis
+
+
 def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "continuous-loop-20260731-c1729"
@@ -1077,6 +1093,28 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
     newest.write_text(json.dumps(newest_delivery))
     assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
         "component-plan"
+    }
+
+    newest_delivery = json.loads(newest.read_text())
+    candidate_id = newest_delivery["candidate_id"]
+    newest_delivery["cycle_intent"] = "retry_measurement"
+    newest.write_text(json.dumps(newest_delivery))
+    (root / str(predecessor) / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "cycle_intent": "screening",
+                "climb_state": "rejected",
+                "reasons": [
+                    f"candidate_runtime_unblock_reproduced:{candidate_id}",
+                    "control_runtime_rejected_after_frozen_replay:control",
+                ],
+            }
+        )
+    )
+    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+        "component-plan",
+        "component-edge",
     }
 
 
@@ -3944,6 +3982,128 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
     assert _mod._predecessor_priority_slug(
         root, "cycle-1", skip={"literal-close"}
     ) == "literal-close"
+
+    predecessor = "cycle-1"
+    for index, slug in ((2, "bounds"), (3, "confirm")):
+        successor = root / f"cycle-{index}"
+        successor.mkdir()
+        (successor / "campaign.json").write_text(
+            json.dumps({"predecessor_campaign_id": predecessor})
+        )
+        (successor / "sdlc_delivery.json").write_text(
+            json.dumps({"candidate_id": f"cand-{slug}"})
+        )
+        (successor / "cycle_handoff.json").write_text(
+            json.dumps(
+                {
+                    "priorities": [
+                        {
+                            "rank": 1,
+                            "area": "experiments",
+                            "authority": "speculative",
+                            "confidence": 0.6,
+                            "disposition": "experiment_next",
+                            "proposed_experiment_id": f"cand-{slug}",
+                        }
+                    ]
+                }
+            )
+        )
+        predecessor = f"cycle-{index}"
+
+    assert _mod._predecessor_priority_slug(
+        root, predecessor, skip={"literal-close"}
+    ) == "literal-close"
+
+
+def test_control_only_model_timeout_replays_without_fake_harness_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-1"
+    control = camp / "runs" / "control"
+    candidate = camp / "runs" / "literal-close"
+    control.mkdir(parents=True)
+    candidate.mkdir(parents=True)
+    (camp / "manifests").mkdir()
+    (camp / "manifests" / "literal-close.json").write_text("{}\n")
+    traces = [
+        {
+            "record_id": "smoke-1",
+            "prefix_text": f'root = Slider("$6", "discrete", {"1" * n}',
+            "chosen_token": "B:31",
+            "legal_candidates": 12,
+        }
+        for n in range(6, 10)
+    ]
+    (control / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "n": 1,
+                "completed_document_n": 0,
+                "incomplete_document_n": 1,
+                "decode_timeout_document_count": 1,
+                "decode_stats": {"constrained_selection_traces": traces},
+            }
+        )
+    )
+    (control / "scoreboard.json").write_text(
+        json.dumps(
+            {
+                "evals": {
+                    "runner": {
+                        "name": "AgentV",
+                        "execution_errors": 0,
+                    }
+                },
+                "gates": {"authority": "AgentEvals assertions", "pass": False},
+                "suites": {
+                    "smoke": {
+                        "n": 1,
+                        "completed_document_n": 0,
+                        "incomplete_document_n": 1,
+                        "decode_timeout_document_count": 1,
+                    }
+                },
+            }
+        )
+    )
+    (candidate / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "n": 1,
+                "completed_document_n": 1,
+                "incomplete_document_n": 0,
+                "decode_timeout_document_count": 0,
+            }
+        )
+    )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "literal-close",
+            "measurement_complete": False,
+            "reasons": ["harness_failure:control:experiment_failed"],
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
+    assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert "tail-supervised candidate completed" in handoff.priorities[0].hypothesis
 
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(

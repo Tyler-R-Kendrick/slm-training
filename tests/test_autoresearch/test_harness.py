@@ -85,6 +85,10 @@ from slm_training.autoresearch.storage import (
 
 def test_result_matrix_explains_lean_applicability() -> None:
     assert _lean_text(None, {"cycle_role": "screening"}) == ("not_applicable:screening")
+    assert _lean_text(
+        None,
+        {"cycle_role": "screening", "cycle_intent": "retry_measurement"},
+    ) == ("not_applicable:retry_measurement")
     assert _lean_text(None, {"cycle_role": "promotion"}) == (
         "not_applicable:no_champion"
     )
@@ -2980,6 +2984,107 @@ def test_loop_result_matrix_relabels_reproduced_candidate_runtime_rejection(
     assert "model_runtime" in rendered
     assert "candidate-only decode timeout reproduced" in rendered
     assert "retry frozen arm" not in rendered
+
+
+def test_loop_result_matrix_relabels_reproduced_control_runtime_rejection(
+    tmp_path: Path,
+) -> None:
+    campaign = CampaignSpec(
+        campaign_id="cycle-control-runtime-reject",
+        objective="Retire a control-only frozen runtime failure.",
+        primary_metric="smoke.structural_similarity",
+        loop_id="loop-1",
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+    )
+    store = CampaignStore(campaign.campaign_id, tmp_path)
+    store.initialize(campaign)
+    for experiment_id, status, metrics in (
+        (
+            "candidate",
+            "completed",
+            {
+                "smoke.n": 3,
+                "smoke.completed_document_n": 3,
+                "smoke.meaningful_program_rate": 0.0,
+            },
+        ),
+        (
+            "control",
+            "failed",
+            {
+                "smoke.n": 3,
+                "smoke.completed_document_n": 0,
+                "smoke.incomplete_document_n": 3,
+                "smoke.decode_timeout_count": 3,
+            },
+        ),
+    ):
+        outcome = ExperimentOutcome(
+            experiment_id=experiment_id,
+            campaign_id=campaign.campaign_id,
+            status=status,
+            exit_code=0 if status == "completed" else 2,
+            metrics=metrics,
+        )
+        artifact = store.write_artifact("outcomes", outcome)
+        store.append_event(
+            "experiment_finished",
+            experiment_id=experiment_id,
+            status=status,
+            artifact_sha256=artifact.stem,
+        )
+        diagnosis = Diagnosis(
+            experiment_id=experiment_id,
+            target="infrastructure",
+            confidence=0.95,
+            evidence=("measurement incomplete",),
+            recommended_actions=("repair harness",),
+        )
+        artifact = store.write_artifact("diagnoses", diagnosis)
+        store.append_event(
+            "outcome_diagnosed",
+            experiment_id=experiment_id,
+            status="infrastructure",
+            artifact_sha256=artifact.stem,
+        )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign.campaign_id,
+        cycle_index=1,
+        upstream_commit="c" * 40,
+        integration_commit="d" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        reasons=(
+            "control_runtime_rejected_after_frozen_replay:control",
+            "candidate_runtime_unblock_reproduced:candidate",
+        ),
+        actions=(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason="Retire this comparison.",
+                evidence_ids=("campaign:cycle-control-runtime-reject",),
+            ),
+        ),
+    )
+    (store.root / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n"
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+
+    assert "complete (runtime unblock; quality reject)" in rendered
+    assert "complete (runtime reject)" in rendered
+    assert "candidate completed while the matched control decode timeout" in rendered
+    assert "control-only decode timeout reproduced" in rendered
+    assert "repair harness" not in rendered
 
 
 def test_loop_tables_surface_lean_authority_and_stop_priority(tmp_path: Path) -> None:

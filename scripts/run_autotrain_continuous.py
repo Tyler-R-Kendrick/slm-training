@@ -978,6 +978,17 @@ def _recent_completed_nonpositive_slugs(
         elif campaign_loop and campaign_loop != loop_id:
             break
         candidate_id = str(delivery.get("candidate_id") or "")
+        handoff_reasons = {str(item) for item in handoff.get("reasons") or []}
+        runtime_terminal = bool(
+            handoff.get("climb_state") == "rejected"
+            and candidate_id
+            and (
+                f"candidate_runtime_rejected_after_frozen_replay:{candidate_id}"
+                in handoff_reasons
+                or f"candidate_runtime_unblock_reproduced:{candidate_id}"
+                in handoff_reasons
+            )
+        )
         intent = str(
             delivery.get("cycle_intent")
             or handoff.get("cycle_intent")
@@ -986,9 +997,12 @@ def _recent_completed_nonpositive_slugs(
         )
         if (
             candidate_id
-            and intent in {"screening", "promotion"}
             and delivery.get("positive") is False
-            and delivery.get("measurement_complete") is True
+            and (delivery.get("measurement_complete") is True or runtime_terminal)
+            and (
+                intent in {"screening", "promotion"}
+                or runtime_terminal
+            )
         ):
             matrix = _read_json(camp_dir / "matrix-proposal.json")
             knobs = next(
@@ -3486,6 +3500,48 @@ def _completed_candidate_priorities(
     return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
 
 
+def _queued_candidate_priorities(
+    candidate_id: str, evidence_id: str
+) -> tuple[NextRunPriorityV1, ...]:
+    """Project the real successor after a screening candidate enters the queue."""
+
+    return (
+        NextRunPriorityV1(
+            rank=1,
+            area="evaluation",
+            hypothesis=(
+                "Confirm the fixture candidate on a fresh seed with the exact "
+                "size-matched treatment and control recipes before promotion."
+            ),
+            evidence_ids=(evidence_id,),
+            confidence=0.95,
+            expected_information_gain=(
+                "Tests whether the held-out quality gain reproduces while exposing "
+                "the observed binder and latency tradeoffs."
+            ),
+            authority="observed_result",
+            disposition="experiment_next",
+            proposed_experiment_id=f"{candidate_id}-fresh-confirmation",
+        ),
+        NextRunPriorityV1(
+            rank=2,
+            area="lean_model",
+            hypothesis=(
+                "Keep promotion formal preflight locked until fresh confirmation "
+                "establishes a champion."
+            ),
+            evidence_ids=(evidence_id,),
+            confidence=1.0,
+            expected_information_gain=(
+                "Prevents screening evidence from bypassing theorem-backed "
+                "promotion obligations."
+            ),
+            authority="lean_assumption",
+            disposition="monitor",
+        ),
+    )
+
+
 def _completed_retry_priorities(
     matrix: dict[str, Any], candidate_id: str
 ) -> tuple[NextRunPriorityV1, ...]:
@@ -3703,6 +3759,60 @@ def _predecessor_priority_slug(
                     },
                 )
             ]
+    def priority_slug(
+        rows: list[dict[str, Any]], *, evidence_directed_only: bool
+    ) -> str | None:
+        for priority in sorted(rows, key=lambda item: int(item.get("rank") or 999)):
+            if priority.get("disposition") != "experiment_next":
+                continue
+            experiment_id = str(priority.get("proposed_experiment_id") or "")
+            evidence_directed = bool(
+                priority.get("area") == "model_build"
+                and priority.get("authority") == "observed_result"
+                and float(priority.get("confidence") or 0.0) >= 0.9
+            )
+            if evidence_directed_only and not evidence_directed:
+                continue
+            for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
+                if experiment_id.endswith(f"-{slug}") and (
+                    slug not in skip or evidence_directed
+                ):
+                    return slug
+        return None
+
+    # A fresh champion confirmation/promotion may legitimately interrupt a
+    # high-confidence model-build successor. Preserve that observed successor
+    # across the bounded interruption until the same arm actually executes.
+    executed_slugs: set[str] = set()
+    cursor: str | None = predecessor_campaign_id
+    seen: set[str] = set()
+    for _ in range(_RECENT_EXHAUSTION_CYCLE_WINDOW):
+        if not cursor or cursor in seen:
+            break
+        seen.add(cursor)
+        ancestor_dir = root / cursor
+        ancestor_handoff = _read_json(ancestor_dir / "cycle_handoff.json")
+        ancestor_delivery = _read_json(ancestor_dir / "sdlc_delivery.json")
+        candidate_id = str(ancestor_delivery.get("candidate_id") or "")
+        candidate_slug = _arm_slug_from_knobs(
+            _load_experiment_knobs(ancestor_dir, candidate_id),
+            candidate_id=candidate_id,
+        )
+        if candidate_slug:
+            executed_slugs.add(candidate_slug)
+        observed = priority_slug(
+            list(ancestor_handoff.get("priorities") or []),
+            evidence_directed_only=True,
+        )
+        if observed and observed not in executed_slugs:
+            return observed
+        cursor = str(
+            _read_json(ancestor_dir / "campaign.json").get(
+                "predecessor_campaign_id"
+            )
+            or ""
+        )
+
     for priority in sorted(priorities, key=lambda item: int(item.get("rank") or 999)):
         if priority.get("disposition") != "experiment_next":
             continue
@@ -3751,7 +3861,16 @@ def _write_cycle_handoff(
         or diagnosis_target == "infrastructure"
     )
     candidate_id = str(delivery.get("candidate_id") or "")
+    control_id = str(delivery.get("control_id") or "")
     finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
+    control_decode_timeout = _has_finalized_decode_timeout(camp_dir, control_id)
+    control_only_model_timeout = bool(
+        control_decode_timeout
+        and not finalized_decode_timeout
+    )
+    control_runtime_reproduced = bool(
+        control_only_model_timeout and cycle_intent == "retry_measurement"
+    )
     frozen_replay_count = 0
     frozen_replay_limit = 0
     if finalized_decode_timeout:
@@ -3779,7 +3898,7 @@ def _write_cycle_handoff(
         climb_state = "inconclusive"
     elif status in {"rejected", "promotion_failed"}:
         climb_state = "rejected"
-    elif runtime_arm_rejected:
+    elif runtime_arm_rejected or control_runtime_reproduced:
         # A candidate-only timeout reproduced by the exact frozen checkpoint
         # while its matched control completes is a decisive runtime rejection
         # of this model arm.  Quality remains unavailable, but the loop must not
@@ -3820,6 +3939,38 @@ def _write_cycle_handoff(
             candidate_id,
             resolved_infrastructure=True,
             skip_slugs=skip_slugs,
+        )
+    elif control_runtime_reproduced:
+        reasons += (
+            f"control_runtime_rejected_after_frozen_replay:{control_id}",
+            f"candidate_runtime_unblock_reproduced:{candidate_id}",
+        )
+        priorities = _completed_candidate_priorities(
+            matrix,
+            candidate_id,
+            resolved_infrastructure=True,
+            skip_slugs=skip_slugs,
+        )
+    elif measurement_incomplete and control_only_model_timeout:
+        priorities = (
+            NextRunPriorityV1(
+                rank=1,
+                area="model_build",
+                hypothesis=(
+                    "The tail-supervised candidate completed while the matched "
+                    "control entered a typed decode timeout; replay the exact "
+                    "frozen pair once to test whether the runtime unblock reproduces."
+                ),
+                evidence_ids=(evidence_id,),
+                confidence=0.95,
+                expected_information_gain=(
+                    "Distinguishes a causal termination-supervision runtime effect "
+                    "from a one-run timing artifact without inventing control quality."
+                ),
+                authority="observed_result",
+                disposition="experiment_next",
+                proposed_experiment_id=candidate_id,
+            ),
         )
     elif measurement_incomplete and numeric_close_starvation:
         priorities = (
@@ -3888,6 +4039,12 @@ def _write_cycle_handoff(
             resolved_infrastructure=False,
             skip_slugs=skip_slugs,
         )
+    elif (
+        cycle_intent in {"screening", "promotion"}
+        and not measurement_incomplete
+        and delivery.get("positive")
+    ):
+        priorities = _queued_candidate_priorities(candidate_id, evidence_id)
     else:
         priorities = tuple(
             NextRunPriorityV1.model_validate(item)
@@ -3913,7 +4070,7 @@ def _write_cycle_handoff(
     harness_failure = (
         climb_state == "harness_failure"
         or any(item.startswith("harness_failure:") for item in reasons)
-    ) and not finalized_decode_timeout
+    ) and not (finalized_decode_timeout or control_only_model_timeout)
     if theorem_stop:
         actions[0:0] = [
             AutotrainActionV1(
@@ -3932,6 +4089,39 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         ]
+    elif control_only_model_timeout:
+        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
+        manifest_sha = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        if control_runtime_reproduced:
+            actions.append(
+                AutotrainActionV1(
+                    kind="next_experiment",
+                    owner="autotrain",
+                    reason=(
+                        "retire the reproduced control-only model timeout "
+                        "comparison and consume the next distinct hypothesis"
+                    ),
+                    evidence_ids=(evidence_id,),
+                )
+            )
+        else:
+            actions.insert(
+                0,
+                AutotrainActionV1(
+                    kind="retry_measurement",
+                    owner="autotrain",
+                    reason=(
+                        "replay the exact frozen pair once to reproduce the "
+                        "control-only typed model timeout"
+                    ),
+                    evidence_ids=(evidence_id,),
+                    frozen_manifest_sha256=manifest_sha,
+                ),
+            )
     elif numeric_close_starvation:
         # The canonical model-build harness already owns the typed
         # ltr_tail_loss_weight lever and the size-matched literal-close arm.
