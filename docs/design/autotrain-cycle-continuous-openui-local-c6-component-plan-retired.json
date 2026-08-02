@@ -1,0 +1,77 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c6",
+  "cycle_index": 6,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "reproduced_runtime_reject_arm_retired",
+  "scoreable": true,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend"
+    ],
+    "treatment": "component_plan (compiler_decode_mode=tree, component_plan_decode_weight=1.0) vs control (compiler_decode_mode=off)",
+    "prediction_identical": false,
+    "parameter_delta": null
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c6-control",
+      "status": "completed",
+      "trainable_params": 1755760,
+      "measurement": "complete",
+      "gate_result": "reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.04306666666666666,
+        "meaningful_program_rate": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.8222222222222222,
+        "latency_ms_p50": 3775.76
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c6-component-plan",
+      "status": "completed",
+      "trainable_params": 1755760,
+      "measurement": "complete",
+      "gate_result": "reject_runtime",
+      "decode_timeout_count": 3,
+      "note": "The driver's own frozen-replay logic reproduced cycle 5's decode timeout on the identical arm and classified it as a completed runtime-reject (not an infrastructure crash) -- confirming c5's diagnosis that this is a genuine, reproducible wall-budget-vs-decode-cost mismatch, not a transient fluke or a repairable defect."
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:screening",
+  "sdlc_phase_a": {
+    "positive": false,
+    "reasons": [
+      "fixture_insufficient_n_alone",
+      "measurement_incomplete:component-plan:decode_timeout_count=3"
+    ],
+    "stack_layer": false
+  },
+  "conclusion": "Frozen replay of cycle 5 confirms the component_plan (compiler_decode_mode=tree) candidate reliably times out on this CPU sandbox's wall budget while the size-matched control reliably completes. The driver retired the component_plan arm and selected the next distinct hypothesis (component-edge) rather than looping on a knob combination that cannot complete at this wall cap -- exactly the self-heal behavior recommended in cycle 5's documentation.",
+  "next_priority": {
+    "area": "model",
+    "hypothesis": "Test the distinct size-matched component-edge quality hypothesis next.",
+    "proposed_experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c6-component-edge"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a97144372484a54f793d85a188faf2fb0fe395fa",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T23:49:11.034530+00:00"
+  }
+}
