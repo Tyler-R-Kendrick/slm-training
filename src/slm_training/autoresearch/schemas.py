@@ -240,6 +240,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "data_source",
         "design_md_context",
         "eval_version",
+        "fidelity_loss_weight",
         "derive_from",
         "lr",
         "ltr_tail_loss_weight",
@@ -528,6 +529,7 @@ class ExperimentKnobs(StrictModel):
     binder_topology_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    fidelity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
     compiler_search_mode: Literal["greedy", "lattice", "ptrm", "gram"] | None = None
     compiler_search_trigger: Literal["bottom", "stagnation", "always"] | None = None

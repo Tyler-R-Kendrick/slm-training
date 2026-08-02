@@ -545,6 +545,11 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     }
     assert _mod._select_recommended_slug(1786, skip=skip) == "binder-arity"
 
+    skip.update(
+        {"binder-arity", "binder-component-plan", "literal-margin", "literal-close"}
+    )
+    assert _mod._select_recommended_slug(1791, skip=skip) == "fidelity"
+
 
 def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
@@ -771,6 +776,33 @@ def test_structural_screening_arms_couple_training_to_decode() -> None:
     assert joint["component_edge_loss_weight"] > 0.0
     assert joint["component_edge_decode_weight"] > 0.0
     assert joint["compiler_decode_mode"] == "tree"
+
+
+def test_fidelity_screening_arm_is_size_matched_training_objective() -> None:
+    campaign_id = "continuous-loop-20260802-c1791"
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1791,
+        role="screening",
+        recommended_slug="fidelity",
+    )
+    knobs = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = campaign_id.replace("continuous-loop-", "c")
+
+    assert knobs[f"{prefix}-control"]["fidelity_loss_weight"] == 0.5
+    assert knobs[f"{prefix}-fidelity"]["fidelity_loss_weight"] == 1.5
+    assert _mod._arm_slug_from_knobs(
+        knobs[f"{prefix}-fidelity"], candidate_id=f"{prefix}-fidelity"
+    ) == "fidelity"
 
 
 def test_completed_frozen_retry_steers_to_distinct_quality_arm() -> None:
@@ -1134,11 +1166,23 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
         "component-plan",
         "component-edge",
     }
+
     assert _mod._recent_completed_nonpositive_slugs(
         root, predecessor, max_cycles=1
     ) == {"component-edge"}
 
     newest = root / str(predecessor) / "sdlc_delivery.json"
+    newest_delivery = json.loads(newest.read_text())
+    newest_delivery["cycle_intent"] = "retry_measurement"
+    newest.write_text(json.dumps(newest_delivery))
+    (root / str(predecessor) / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": "loop-1", "cycle_intent": "retry_measurement"})
+    )
+    assert _mod._recent_completed_nonpositive_slugs(root, predecessor) == {
+        "component-plan",
+        "component-edge",
+    }
+
     newest_delivery = json.loads(newest.read_text())
     newest_delivery["measurement_complete"] = False
     newest.write_text(json.dumps(newest_delivery))
@@ -1167,6 +1211,59 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
         "component-plan",
         "component-edge",
     }
+
+
+def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "continuous-loop-20260802-c1786"
+    camp = root / campaign_id
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=22,
+        cycle=1786,
+        role="screening",
+        recommended_slug="steps",
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps({"campaign_id": campaign_id, "loop_id": "loop-1"})
+    )
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": candidate_id,
+                "control_id": f"{campaign_id}-control",
+                "primary_metric": "smoke.structural_similarity",
+                "cycle_intent": "screening",
+                "positive": True,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_classify_positive",
+        lambda **_kwargs: {
+            "positive": False,
+            "control_metrics": {"structural_similarity": 0.1},
+            "candidate_metrics": {"structural_similarity": 0.2},
+            "reasons": ["primary_quality_win_rejected_latency_budget"],
+        },
+    )
+
+    assert _mod._recent_completed_nonpositive_slugs(root, campaign_id) == {"steps"}
 
 
 def test_completed_null_does_not_age_out_of_lineage_exhaustion(

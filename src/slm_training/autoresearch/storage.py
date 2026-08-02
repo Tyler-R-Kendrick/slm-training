@@ -63,6 +63,7 @@ _REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
 _DATA_EVIDENCE_NAMES = frozenset(
     {"data_manifest.json", "quality_report.json", "synthesis_feedback.json"}
 )
+_MATRIX_CELL_MAX_CHARS = 240
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -1421,4 +1422,7 @@ def _gate_text(metrics: dict[str, float]) -> str:
 
 
 def _markdown_cell(value: Any) -> str:
-    return str(value).replace("|", r"\|").replace("\n", " ")
+    text = " ".join(str(value).split())
+    if len(text) > _MATRIX_CELL_MAX_CHARS:
+        text = text[: _MATRIX_CELL_MAX_CHARS - 3].rstrip() + "..."
+    return text.replace("|", r"\|")

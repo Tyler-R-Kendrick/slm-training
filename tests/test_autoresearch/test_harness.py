@@ -75,12 +75,21 @@ from slm_training.autoresearch.schemas import (
 from slm_training.autoresearch.storage import (
     CampaignStore,
     _lean_text,
+    _markdown_cell,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
     render_loop_result_matrix,
 )
+
+
+def test_result_matrix_cells_collapse_and_bound_verbose_diagnostics() -> None:
+    rendered = _markdown_cell("first line\n" + "argparse detail " * 40)
+
+    assert "\n" not in rendered
+    assert len(rendered) <= 240
+    assert rendered.endswith("...")
 
 
 def test_result_matrix_explains_lean_applicability() -> None:
@@ -3257,6 +3266,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_topology_decode_weight=0.4,
             binder_arity_loss_weight=1.2,
             binder_arity_decode_weight=0.3,
+            fidelity_loss_weight=1.5,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -3319,6 +3329,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
+    assert commands[0][commands[0].index("--fidelity-loss-weight") + 1] == "1.5"
     assert commands[0][commands[0].index("--compiler-decode-mode") + 1] == "tree"
     assert "--grammar-ltr-primary" in commands[0]
     assert "--schema-in-context" in commands[0]

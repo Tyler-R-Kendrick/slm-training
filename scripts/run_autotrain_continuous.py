@@ -448,6 +448,11 @@ _LEVER_KNOB_KEYS = (
     "component_inventory_decode_weight",
     "binder_topology_loss_weight",
     "binder_topology_decode_weight",
+    "binder_component_plan_loss_weight",
+    "binder_component_plan_decode_weight",
+    "binder_arity_loss_weight",
+    "binder_arity_decode_weight",
+    "fidelity_loss_weight",
     "structural_aux_head_profile",
     "compiler_decode_mode",
     "steps",
@@ -556,6 +561,11 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "structural_aux_head_profile": "binder-component-plan",
             "compiler_decode_mode": "tree",
         },
+    ),
+    (
+        "fidelity",
+        "Stronger placeholder-fidelity supervision improves binder_reference_f1 and structural_similarity without lowering parse_rate.",
+        {"fidelity_loss_weight": 1.5},
     ),
     (
         "component-structure",
@@ -973,6 +983,8 @@ def _arm_slug_from_knobs(
         return "binder-arity"
     if knobs.get("binder_topology_loss_weight"):
         return "binder-topology"
+    if float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5:
+        return "fidelity"
     if knobs.get("grammar_completion_bounds") and knobs.get("compact_active_canvas"):
         return "both"
     if knobs.get("grammar_completion_bounds"):
@@ -1083,12 +1095,34 @@ def _recent_completed_nonpositive_slugs(
             or handoff.get("cycle_role")
             or ""
         )
+        stored_positive = delivery.get("positive")
+        control_id = str(delivery.get("control_id") or "")
+        primary_metric = str(
+            delivery.get("primary_metric")
+            or handoff.get("primary_metric")
+            or "smoke.structural_similarity"
+        )
         if (
             candidate_id
-            and delivery.get("positive") is False
+            and control_id
+            and delivery.get("measurement_complete") is True
+        ):
+            role = "promotion" if intent in {"promotion", "confirm"} else "screening"
+            current_decision = _classify_positive(
+                camp_dir=camp_dir,
+                primary_metric=primary_metric,
+                control_id=control_id,
+                candidate_id=candidate_id,
+                role=role,
+            )
+            if _measurement_is_complete(current_decision):
+                stored_positive = current_decision.get("positive")
+        if (
+            candidate_id
+            and stored_positive is False
             and (delivery.get("measurement_complete") is True or runtime_terminal)
             and (
-                intent in {"screening", "promotion", "confirm"}
+                intent in {"screening", "promotion", "confirm", "retry_measurement"}
                 or runtime_terminal
             )
         ):
@@ -1119,6 +1153,7 @@ def _select_recommended_slug(cycle: int, skip: set[str] | None = None) -> str:
         "binder-component-plan",
         "literal-margin",
         "literal-close",
+        "fidelity",
     )
     legacy_quality_slugs = {
         "component-plan",
@@ -3508,6 +3543,11 @@ def _completed_candidate_priorities(
         "binder_component_plan_loss_weight",
         "binder_arity_loss_weight",
     }
+    def has_quality_objective(knobs: dict[str, Any]) -> bool:
+        return any(float(knobs.get(key) or 0) > 0 for key in quality_keys) or (
+            float(knobs.get("fidelity_loss_weight") or 0.5) != 0.5
+        )
+
     targeted_alternative = next(
         (
             item
@@ -3541,10 +3581,7 @@ def _completed_candidate_priorities(
         (
             item
             for item in alternatives
-            if any(
-                float((item.get("knobs") or {}).get(key) or 0) > 0
-                for key in quality_keys
-            )
+            if has_quality_objective(dict(item.get("knobs") or {}))
             and (
                 _arm_slug_from_knobs(
                     dict(item.get("knobs") or {}),
@@ -3593,9 +3630,7 @@ def _completed_candidate_priorities(
             _arm_slug_from_knobs(alternative_knobs, candidate_id=next_id)
             or next_id.rsplit("-", 1)[-1]
         )
-        is_quality_hypothesis = any(
-            float(alternative_knobs.get(key) or 0) > 0 for key in quality_keys
-        )
+        is_quality_hypothesis = has_quality_objective(alternative_knobs)
         selected_hypothesis = str(alternative.get("hypothesis") or "").strip()
         if is_quality_hypothesis:
             area = "model"
@@ -5087,6 +5122,7 @@ def _matrix(
             "binder_component_plan_decode_weight": 0.0,
             "binder_arity_loss_weight": 0.0,
             "binder_arity_decode_weight": 0.0,
+            "fidelity_loss_weight": 0.5,
             "structural_aux_head_profile": "none",
             "compiler_decode_mode": "off",
             "ltr_tail_loss_weight": 0.0,
@@ -5152,6 +5188,7 @@ def _matrix(
                 "binder_component_plan_decode_weight",
                 "binder_arity_loss_weight",
                 "binder_arity_decode_weight",
+                "fidelity_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5336,6 +5373,7 @@ def _matrix(
                 "binder_component_plan_decode_weight",
                 "binder_arity_loss_weight",
                 "binder_arity_decode_weight",
+                "fidelity_loss_weight",
                 "structural_aux_head_profile",
                 "compiler_decode_mode",
                 "steps",
@@ -5770,6 +5808,7 @@ def _manifest(
                 "binder_topology_loss_weight": 0.0,
                 "binder_component_plan_loss_weight": 0.0,
                 "binder_arity_loss_weight": 0.0,
+                "fidelity_loss_weight": 0.5,
             },
             sort_keys=True,
         ).encode()

@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v88",
+      "version": "v89",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v89",
+          "date": "2026-08-02",
+          "note": "Close complete non-positive frozen-replay arms across lineage, reclassify complete historical receipts under current promotion policy so stale positives cannot reopen rejected approaches, bound terminal result-matrix cells, and add a size-matched placeholder-fidelity successor objective after bank exhaustion."
+        },
         {
           "version": "v88",
           "date": "2026-08-02",
@@ -7285,6 +7290,16 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1789 incomplete binder-component-plan checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1788 rejected binder-arity checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

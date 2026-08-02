@@ -1,0 +1,86 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1790",
+  "cycle_index": 1790,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "rejected_reproduced_control_only_timeout_absolute_candidate_quality_and_latency",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "replay_of_manifest_sha256": "b0c287c80dcc7a97b41f46de2bcd5b0c29c9e4b7c947ba472e59ce5ef2699855",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1790-binder-component-plan",
+      "checkpoint_sha256": "d60d6493ed54a07c1cf051e21ebffabceebdd8478728bf4e56972b0b7647893f",
+      "checkpoint_reused_from": "continuous-loop-20260802-continuous-openui-202607-98199209-c1789",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 3,
+        "incomplete_document_n": 0,
+        "decode_timeout_count": 0,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.29666666666666663,
+        "binder_reference_f1": 0.8222222222222223,
+        "component_type_recall": 0.16666666666666666,
+        "placeholder_fidelity": 0.7222222222222222,
+        "reward_score": 0.8776666666666667,
+        "latency_ms_p50": 4267.55
+      }
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1790-control",
+      "checkpoint_sha256": "36ef2b0447e9bfa729a39940dfa541bde7eb64e873e498778d99c79e6ec4ac45",
+      "checkpoint_reused_from": "continuous-loop-20260802-continuous-openui-202607-98199209-c1789",
+      "smoke": {
+        "n": 3,
+        "completed_document_n": 2,
+        "incomplete_document_n": 1,
+        "decode_timeout_count": 1,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.12,
+        "binder_reference_f1": 1.0,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 1.0,
+        "reward_score": 0.973,
+        "latency_ms_p50": 3320.72
+      }
+    }
+  ],
+  "comparison": {
+    "attributable": false,
+    "reason": "control_timeout_reproduced_on_exact_frozen_replay",
+    "diagnostic_binder_reference_f1_delta": -0.1777777777777777,
+    "diagnostic_candidate_latency_fraction_change": 0.2851279240646608
+  },
+  "agentv": {
+    "bundles_complete": true,
+    "execution_errors": 0,
+    "ship_gates_pass": false
+  },
+  "harness_signal": {
+    "kind": "completed_retry_and_stale_policy_receipt_not_lineage_closed_with_unbounded_terminal_matrix_cell",
+    "repair_components": {
+      "harness.autoresearch.experiment_campaign": "v89"
+    }
+  },
+  "checkpoint_policy": "reused_c1789_local_explicit_no_sync_not_reusable_not_promoted_not_ship",
+  "lean": "not_applicable:retry_measurement",
+  "next_priority": "size_matched_placeholder_fidelity_supervision",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a34c4db1727fc3c8a27fe1ab5a2170e7ffbb1dcb",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v76",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v293"
+    },
+    "stamped_at": "2026-08-02T19:54:47.945083+00:00"
+  }
+}
