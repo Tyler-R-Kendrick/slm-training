@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v100",
+      "version": "v101",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v101",
+          "date": "2026-08-02",
+          "note": "Project the next current registered arm when a completed predecessor's frozen matrix predates that arm, without mutating the locked matrix."
+        },
         {
           "version": "v100",
           "date": "2026-08-02",

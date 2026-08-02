@@ -78,7 +78,7 @@
     "control_value": 0.0,
     "parameter_delta_expected": 0,
     "components": {
-      "harness.autoresearch.experiment_campaign": "v100",
+      "harness.autoresearch.experiment_campaign": "v101",
       "harness.model_build.train": "v32",
       "model.twotower": "v295"
     }
