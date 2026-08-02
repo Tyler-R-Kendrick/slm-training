@@ -1,0 +1,105 @@
+{
+  "schema": "autotrain_measured_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1746",
+  "loop_id": "continuous-openui-20260730",
+  "cycle_index": 1746,
+  "campaign_role": "screening",
+  "cycle_intent": "retry_measurement",
+  "run_class": "fixture_scratch_incomplete",
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "steps": 22,
+  "seed": 101737,
+  "checkpoint_reuse": "exact frozen c1737 checkpoints",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "16a22920c55601c63810a117cfa1f4e3db05dc15",
+  "primary_metric": "smoke.structural_similarity",
+  "arms": [
+    {
+      "label": "matched control",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": false,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 7766.83,
+      "latency_ms_p50_including_incomplete": 16948.37,
+      "decode_initialization_ms": 138.36,
+      "forwards_count_sum": 141,
+      "tokens_emitted_sum": 224,
+      "compiler_ms_sum": 35946.091,
+      "completion_unique_states_sum": 314046,
+      "completion_witness_states_expanded_sum": 23926,
+      "completion_parser_forks_sum": 353964,
+      "total_eval_ms": 48716.86,
+      "scoreable_comparison": false
+    },
+    {
+      "label": "compact active canvas",
+      "trainable_parameters": 1608962,
+      "compact_active_canvas": true,
+      "suite_n": 3,
+      "completed_document_n": 2,
+      "incomplete_document_n": 1,
+      "decode_timeout_count": 1,
+      "parse_rate_completed": 1.0,
+      "meaningful_program_rate_completed": 0.5,
+      "structural_similarity_completed": 0.11665,
+      "binder_reference_f1_completed": 1.0,
+      "latency_ms_p50_completed": 7920.08,
+      "latency_ms_p50_including_incomplete": 16707.92,
+      "decode_initialization_ms": 141.991,
+      "forwards_count_sum": 144,
+      "tokens_emitted_sum": 232,
+      "compiler_ms_sum": 35770.698,
+      "completion_unique_states_sum": 314135,
+      "completion_witness_states_expanded_sum": 24034,
+      "completion_parser_forks_sum": 354121,
+      "total_eval_ms": 48630.03,
+      "scoreable_comparison": false
+    }
+  ],
+  "comparison": {
+    "parameter_matched": true,
+    "measurement_complete": false,
+    "quality_delta": "unavailable",
+    "completed_document_efficiency_gain_fraction": -0.0193495,
+    "minimum_efficiency_effect_fraction": 0.05,
+    "efficiency_disposition": "rejected_regression_and_incomplete",
+    "disposition": "inconclusive_runtime_repair_then_exact_frozen_retry"
+  },
+  "harness_feedback": {
+    "signal": "The clean one-record hero probe completed at 23821.64 ms, but both three-record arms reach the unchanged wall on that record; completion is not yet robust.",
+    "repair": "Profile parser accept-set refresh and parser-state-key construction; retain only exact, identity-safe reuse that leaves grammar candidates and proof order unchanged.",
+    "component_version": "dsl.completion_kernel/v15"
+  },
+  "formal_evidence": {
+    "status": "not_applicable:incomplete_screening",
+    "latest_validation": "146 exact completion/artifact tests and 226 compiler-decode tests passed; Build completed successfully (2947 jobs); formal contracts build and axiom audit passed",
+    "validation_required_after_repair": "python -m scripts.verify_formal_contracts"
+  },
+  "next_action": {
+    "kind": "profile_harness_then_repair_and_retry_measurement",
+    "priority": "parser_accept_refresh_and_state_key_cost",
+    "frozen_manifest_sha256": "6594fb81484b630af01c68cb1de95b3f92340150dd8b6d8b331cfb303788edbc"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "16a22920c55601c63810a117cfa1f4e3db05dc15",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v59",
+      "harness.model_build.eval": "v74",
+      "model.twotower": "v288",
+      "dsl.completion_kernel": "v15",
+      "dsl.symbolic_surface": "v5"
+    }
+  },
+  "checkpoint_documentation_required": false,
+  "ship_eligible": false
+}
