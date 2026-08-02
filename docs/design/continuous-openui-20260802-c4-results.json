@@ -1,0 +1,44 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "source_commit": "ca8785a5bbc74d07e56efa96a283ffe41450b01a",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "cycle_role": "promotion",
+  "cycle_intent": "promotion",
+  "recipe": {
+    "device": "cpu",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100001,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "per_experiment_wall_minutes": 0.7777777777777778,
+    "eval_suites": ["smoke", "held_out"]
+  },
+  "arms": {
+    "c4-control": {
+      "status": "measurement_incomplete",
+      "trainable_params": 1755764,
+      "train_elapsed_seconds": 3.24,
+      "reason": "smoke n=3/3 and held_out n=5/5 all hit decode_timeout_count; evaluation_wall_seconds=31.22 with effective per-record decode timeout collapsed to ~2.7-3.4s (fair-share of the fixed per-experiment budget split across 8 records across 2 suites, versus 3 records for a screening/smoke-only cycle)"
+    },
+    "c4-component-plan": {
+      "status": "measurement_incomplete",
+      "trainable_params": 1755764,
+      "train_elapsed_seconds": 8.42,
+      "reason": "same decode-timeout starvation as control; evaluation_wall_seconds=26.09"
+    }
+  },
+  "primary_metric": "held_out.structural_similarity",
+  "conclusion": "First promotion-role cycle in this lineage. Root-caused (not just observed): stage_wall_minutes_for_role() clamps both screening and promotion roles to the same MAX_RUN_MINUTES=3 ceiling, and the per-experiment wall budget (~46.7s, campaign budget.max_wall_minutes=0.7778) is split between train+eval without accounting for eval_suites_for_role() needing 2 suites/8 records for promotion versus 1 suite/3 records for screening. Training itself was fast (3.24s / 8.42s), so the eval stage's fair-share decode timeout (_effective_record_decode_timeout in eval_runner.py) collapsed to ~2.7-3.4s per record -- too tight for this CPU sandbox's decode latency, especially with the component-plan arm's extra head. This mirrors several historical incidents in this loop family (autotrain-cycle-1715/1716/1717/1737 in docs/MODEL_CARD.md) where CPU-sandbox decode timing conflicts with the fixed wall cap. A real fix would need to re-balance execute_commands' train/eval wall-time split by role in src/slm_training/autoresearch/engine.py, which has exact-value timing tests (test_execute_shares_one_wall_budget_across_stages, test_execute_passes_inner_wall_to_evaluation) and has seen ~10 recent dedicated PRs on this exact class of problem -- not something to patch speculatively in one pass without deeper context. Deferred rather than risked.",
+  "next_priorities": [
+    "Re-balance execute_commands' per-stage wall-time split by cycle_role/eval_suites_for_role() count so promotion cycles get a suite-count-aware eval floor, not just leftover-after-training (owner: improve-openui-harnesses, harness_family: model_build)",
+    "Until that lands, expect promotion-role cycles to keep hitting decode_timeout on this CPU sandbox; frozen replay of c4-control/c4-component-plan is the only reuse path",
+    "Do not promote or ship either checkpoint"
+  ],
+  "recorded_at": "2026-08-02T15:49:27Z"
+}
