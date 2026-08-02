@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v76",
+      "version": "v77",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v77",
+          "date": "2026-08-02",
+          "note": "Let a high-confidence observed next-experiment handoff override generic recent-arm cooldown so causal successor steering is not silently replaced by thrash rotation."
+        },
         {
           "version": "v76",
           "date": "2026-08-02",
@@ -7215,6 +7220,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1771 fixture-only bounds efficiency checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

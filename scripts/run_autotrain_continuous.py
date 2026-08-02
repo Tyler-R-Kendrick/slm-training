@@ -3650,6 +3650,11 @@ def _predecessor_priority_slug(
         return None
     handoff = _read_json(handoff_path)
     priorities = list(handoff.get("priorities") or [])
+    has_explicit_successor = any(
+        action.get("kind") == "next_experiment"
+        for action in handoff.get("actions") or []
+        if isinstance(action, dict)
+    )
     delivery_path = camp_dir / "sdlc_delivery.json"
     matrix_path = camp_dir / "matrix-proposal.json"
     if delivery_path.is_file() and matrix_path.is_file():
@@ -3702,8 +3707,15 @@ def _predecessor_priority_slug(
         if priority.get("disposition") != "experiment_next":
             continue
         experiment_id = str(priority.get("proposed_experiment_id") or "")
+        evidence_directed = bool(
+            has_explicit_successor
+            and priority.get("authority") == "observed_result"
+            and float(priority.get("confidence") or 0.0) >= 0.9
+        )
         for slug, _hypothesis, _extras in _SCREENING_ARM_BANK:
-            if experiment_id.endswith(f"-{slug}") and slug not in skip:
+            if experiment_id.endswith(f"-{slug}") and (
+                slug not in skip or evidence_directed
+            ):
                 return slug
     return None
 

@@ -3941,6 +3941,9 @@ def test_numeric_literal_close_starvation_steers_new_training_arm(
     assert _mod._predecessor_priority_slug(root, "cycle-1", skip=set()) == (
         "literal-close"
     )
+    assert _mod._predecessor_priority_slug(
+        root, "cycle-1", skip={"literal-close"}
+    ) == "literal-close"
 
 
 def test_cycle_handoff_exhausts_identical_replays_into_harness_repair(
