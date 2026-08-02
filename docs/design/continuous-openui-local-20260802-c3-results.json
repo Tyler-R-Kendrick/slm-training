@@ -1,0 +1,87 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c3",
+  "cycle_index": 3,
+  "cycle_intent": "screening",
+  "source_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "2af415dca10d4280a8e5cd6db6d8c0b559594bca",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "seed": 100003,
+    "context_backend": "scratch",
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true
+  },
+  "hypothesis": "Component-plan supervision improves smoke structural_similarity without lowering parse_rate or binder_reference_f1.",
+  "primary_metric": "smoke.structural_similarity",
+  "primary_direction": "increase",
+  "minimum_effect": 0.01,
+  "arms": {
+    "c3-control": {
+      "status": "eval_incomplete_missing_scoreboard",
+      "trainable_params": 1755764,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "structural_similarity": 0.23083333333333333,
+        "binder_reference_f1": 0.7333333333333334,
+        "latency_ms_p50": 3790.32
+      },
+      "levers": {
+        "component_plan_loss_weight": 0.0,
+        "component_plan_decode_weight": 0.0
+      }
+    },
+    "c3-component-plan": {
+      "status": "eval_incomplete_missing_scoreboard",
+      "trainable_params": 1755764,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.1725,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 3701.36
+      },
+      "levers": {
+        "component_plan_loss_weight": "on",
+        "component_plan_decode_weight": "on"
+      }
+    }
+  },
+  "primary_delta": -0.05833333333333335,
+  "latency_delta_ms": -88.96000000000004,
+  "measurement_complete": false,
+  "blocker": {
+    "kind": "local_environment",
+    "component": "AgentV SDK ship-gate publish (node subprocess)",
+    "error": "AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS",
+    "root_cause": "Same root cause as cycles 1-2: this sandbox's ambient NODE_OPTIONS=\"--import tsx\" --max-old-space-size=8192 env var makes every plain `node` invocation exit non-zero when Node rejects --import inside NODE_OPTIONS. node_modules/@agentv/core is already installed from the cycle-1 fix, so `npm ci` was not the failure this time -- the recurrence is because this cycle's `python -m scripts.run_autotrain_continuous --supervised ...` shell invocation itself still inherited the ambient NODE_OPTIONS, so the AgentV publish subprocess spawned by scripts.evaluate_model inherited it too. The partial single-suite smoke diagnostic (which does not shell out to node) still ran and recorded real metrics for both arms.",
+    "fix": "Re-ran the identical driver invocation with NODE_OPTIONS unset for the whole process tree (`env -u NODE_OPTIONS python -m scripts.run_autotrain_continuous ...`), which is a one-time local shell-invocation fix, not a repository code change and not a canonical harness defect -- no HarnessSignalV1 raised.",
+    "residual_risk": "Any future supervised invocation of this driver from a shell that still exports the ambient NODE_OPTIONS will reproduce this exact missing_scoreboard symptom; the fix must be applied at the invoking shell each time until the sandbox default changes."
+  },
+  "sdlc_classification": {
+    "positive": false,
+    "stack_layer": false,
+    "action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c3-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-local-8c0b60dd-c3-component-plan:missing_scoreboard",
+      "non_regression_fail:binder_reference_f1:0.7333333333333334->0.6333333333333333",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.23083333333333333 candidate=0.1725 improvement=-0.05833333333333335"
+    ]
+  },
+  "next_priorities": [
+    "infrastructure: replay the identical frozen control/component-plan arm with NODE_OPTIONS unset for the whole driver process tree to complete the missing scoreboard.json measurement before drawing any model conclusion.",
+    "model: component-plan's partial-diagnostic structural_similarity (-0.058) and binder_reference_f1 regression are not yet evidence either way until the full ship-gate scoreboard completes; do not reject or accept the hypothesis on this incomplete measurement.",
+    "evaluation: keep ship gates honest and fail-closed on fixture n / missing suites."
+  ],
+  "recorded_at": "2026-08-02T09:47:18.476953Z"
+}
