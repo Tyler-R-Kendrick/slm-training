@@ -1,0 +1,156 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c3",
+  "cycle_index": 1730,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "17b2c65b3ef8683ffe30476124729a67940fad96",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric_at_execution": "smoke.structural_similarity",
+  "frozen_source_manifest_sha256": "33d1145e624cfa00fcb8b4f3c6803b08aaed68111b8781344f2acc8cf8d95459",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1",
+  "harness_repair_confirmation": {
+    "family": "model_build",
+    "confirmed": true,
+    "evidence": "both arms' scoreboard.json now carries a complete 'evals' AgentV block (runner.execution_errors=0) and a complete 'gates' block; no RuntimeError, matching c1729's repair note. A transient campaign continuous-loop-20260802-continuous-openui-202607-98199209-c2 hit a TimeoutExpired('symmetric decision-arm budget', 155.0) on CPU before writing a cycle_handoff and was superseded by this campaign (c3) per the driver's frozen-replay recovery rule; no action required for c2 (soft timeout, not a harness signal)."
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c3-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": false,
+        "reused_checkpoint_from": "c20260802-continuous-openui-202607-98199209-c1-control",
+        "parameter_count": 1608962,
+        "batch_size": 2,
+        "steps": 21,
+        "seed": 100001,
+        "checkpoint_sha256": "60d16f90d0a954aa159e3b0825da9bd329d4a58a1810253f05fb44883cc65582"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "agentv_execution_errors": 0,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 2429.53
+      },
+      "decode_stats": {
+        "total_ms_sum": 7984.946,
+        "backbone_ms_sum": 146.028,
+        "compiler_ms_sum": 7528.678,
+        "forwards_count_sum": 11.0,
+        "completion_unique_states_sum": 31865.0,
+        "completion_witness_states_expanded_sum": 1638.0,
+        "completion_parser_forks_sum": 33620.0
+      },
+      "ship_gates_pass": false,
+      "ship_gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "claim_boundary": "three-document fixture; complete ship-gate measurement now that AgentV runs end to end; fails on volume (n) and quality thresholds as expected at fixture scale, not a ship claim"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c3-bounds",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": false,
+        "reused_checkpoint_from": "c20260802-continuous-openui-202607-98199209-c1-bounds",
+        "parameter_count": 1608962,
+        "batch_size": 2,
+        "steps": 21,
+        "seed": 100001,
+        "checkpoint_sha256": "1dde4811551ab18cca2fdb7710048de187f5d98cc611fc642530762ec5c88cbf"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "agentv_execution_errors": 0,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 2455.0
+      },
+      "decode_stats": {
+        "total_ms_sum": 8043.264,
+        "backbone_ms_sum": 156.755,
+        "compiler_ms_sum": 7614.849,
+        "forwards_count_sum": 11.0,
+        "completion_unique_states_sum": 31865.0,
+        "completion_witness_states_expanded_sum": 1638.0,
+        "completion_parser_forks_sum": 33620.0
+      },
+      "ship_gates_pass": false,
+      "ship_gate_failures": [
+        "smoke:insufficient_n actual=3 need>=20",
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.057499999999999996 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:ast_beq_rate actual=0.0 need>=0.2",
+        "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "claim_boundary": "three-document fixture; complete ship-gate measurement now that AgentV runs end to end; fails on volume (n) and quality thresholds as expected at fixture scale, not a ship claim"
+    }
+  ],
+  "comparison": {
+    "measurement_complete": true,
+    "size_matched": true,
+    "parse_rate_delta": 0.0,
+    "binder_reference_f1_delta": 0.0,
+    "meaningful_program_rate_delta": 0.0,
+    "structural_similarity_delta": 0.0,
+    "latency_p50_ratio": 1.0105057274280858,
+    "grammar_completion_bounds_disposition": "rejected_no_effect"
+  },
+  "harness_feedback": {
+    "saturated_primary_detected": null,
+    "stale_retry_priority_detected": false,
+    "next_quality_arm": "component-plan",
+    "note": "grammar_completion_bounds produces no measurable structural_similarity, meaningful_program_rate, or AST delta on this 3-record smoke fixture at this size; it is a no-op lever here, not evidence either way at ship scale. Rotate to a loss-only component-plan supervision arm next per the driver's ranked priority 1."
+  },
+  "checkpoint_documentation_required": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "17b2c65b3ef8683ffe30476124729a67940fad96",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v277"
+    },
+    "stamped_at": "2026-08-02T03:41:39.763921+00:00"
+  }
+}
