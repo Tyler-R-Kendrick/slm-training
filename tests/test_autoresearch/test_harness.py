@@ -3323,9 +3323,11 @@ def test_execute_passes_inner_wall_to_evaluation(monkeypatch) -> None:
     import slm_training.autoresearch.engine as engine
 
     calls: list[list[str]] = []
+    interrupt_walls: list[float] = []
 
-    def complete(command, **_kwargs):
+    def complete(command, **kwargs):
         calls.append(command)
+        interrupt_walls.append(kwargs["interrupt_after_seconds"])
         return subprocess.CompletedProcess(
             command,
             0,
@@ -3343,6 +3345,7 @@ def test_execute_passes_inner_wall_to_evaluation(monkeypatch) -> None:
     assert "--evaluation-wall-seconds" in calls[0]
     inner_wall = float(calls[0][calls[0].index("--evaluation-wall-seconds") + 1])
     assert 0 < inner_wall < 30.0
+    assert interrupt_walls[0] - inner_wall == pytest.approx(5.0)
 
 
 def test_execute_rejects_partial_train_before_evaluation(
