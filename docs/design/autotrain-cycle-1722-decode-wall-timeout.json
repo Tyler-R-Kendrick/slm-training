@@ -1,0 +1,62 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c2",
+  "cycle_index": 1722,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "c387f3e57662198a68a89c978c6d4dceeb6533b3",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "b1ec053df914d11a5648aa57ba0ea8ca5098a3cc8c399bc58fe872c5dc1ccd4f",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-control",
+      "status": "stopped",
+      "training": {
+        "executed": true,
+        "steps": 21,
+        "batch_size": 2,
+        "seed": 100001,
+        "parameter_count": 1608962
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "ship_gates_pass": null,
+      "stop_reason": "evaluation wall timeout in completion_kernel._eval recursion (semantic_state.advance)"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c2-canvas",
+      "status": "stopped",
+      "training": {
+        "executed": true,
+        "steps": 21,
+        "batch_size": 2,
+        "seed": 100001,
+        "parameter_count": 1608962
+      },
+      "suite_n": 0,
+      "metrics": {},
+      "ship_gates_pass": null,
+      "stop_reason": "evaluation wall timeout in completion_kernel._eval recursion (semantic_state.advance)"
+    }
+  ],
+  "diagnostic_signal": {
+    "target": "infrastructure",
+    "observed_stack": "_compiler_ltr_decode_batch -> build_completion_forest -> session.terminal_witness -> completion_kernel._eval (recursed) -> advance_path -> advance -> semantic_state.advance -> dataclasses.replace",
+    "authority": "observed_interrupt_trace",
+    "prior_related_fix": "c1720 model.twotower=v274 (uncached tokenizer fingerprint) did not prevent this timeout; different interrupted frame",
+    "disposition": "single-sample soft failure; replay frozen manifest before any repair; escalate to counted probe only after repeated identical-signature timeouts",
+    "claim_boundary": "one observed interrupt trace; does not establish a new harness defect or quantify frame share of wall time"
+  },
+  "disposition": {
+    "measurement_complete": false,
+    "climb_state": "inconclusive",
+    "ship_state": "blocked",
+    "promotion": "rejected_pending_complete_frozen_replay",
+    "next_run": "replay the identical frozen c1722 manifest"
+  },
+  "checkpoint_documentation_required": false
+}
