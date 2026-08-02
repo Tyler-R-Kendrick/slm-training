@@ -551,6 +551,29 @@ def test_select_recommended_slug_prioritizes_successor_quality_after_legacy_null
     assert _mod._select_recommended_slug(1791, skip=skip) == "fidelity"
 
 
+def test_confirmation_bypasses_exhausted_screening_selector() -> None:
+    all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+
+    assert (
+        _mod._select_cycle_slug(
+            1792,
+            predecessor_priority=None,
+            skip=all_slugs,
+            has_confirm_levers=True,
+            has_promote_levers=False,
+        )
+        is None
+    )
+    with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
+        _mod._select_cycle_slug(
+            1792,
+            predecessor_priority=None,
+            skip=all_slugs,
+            has_confirm_levers=False,
+            has_promote_levers=False,
+        )
+
+
 def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
 
