@@ -26,8 +26,12 @@ state); stale persisted `RUNNING` text cannot override process truth.
 
 Handoff coordination is enforced, not advisory. The supervisor records
 content-bound `AutotrainActionReceiptV1` entries with `autoresearch ack-action`;
-receipt evidence must resolve to a durable artifact or Git commit, documentation
-must be tracked, and delivery commits must already be ancestors of `origin/main`.
+each receipt carries the SHA-256 and kind of every evidence item. Evidence is
+rehashed when the receipt is written and whenever prerequisites are read; legacy
+URI-only receipts remain readable history but cannot satisfy a prerequisite.
+Action-specific checks require tracked documentation, campaign-bound data
+artifacts, repair commits after the failed campaign, and delivery commits already
+merged into `origin/main`.
 The successor refuses to initialize while predecessor theorem-stop, harness, Lean,
 data, docs, or delivery prerequisites remain unacknowledged. Execution/steering actions
 (`retry_measurement`, `next_experiment`, `monitor`) remain part of the next-cycle
@@ -78,7 +82,8 @@ Research and proposal compilation are separate stages:
 When a campaign preregisters `metric_expectations_sha256`, `autoresearch run`
 can also replay a Lean `metric_certificate/v2` and attach typed
 `OptimumFeedbackV1`. This is a cycle-level experiment signal, never a gradient
-term. A theorem-backed miss stops the campaign. An assumption-backed miss
+term. A theorem-backed miss stops the campaign and emits a separate
+`repair_formal` prerequisite for the Lean owner. An assumption-backed miss
 preserves the terminal outcome but blocks promotion and requires the successor
 matrix to cover `measurement_control`, `training_method`, `architecture`,
 `lean_model`, and `assumptions` with explicitly labeled candidates.
@@ -195,7 +200,8 @@ unknown fields forbidden:
   feedback without inventing causal support;
 - `ExperimentOutcome` and `Diagnosis` route failures to data, researcher, model, or
   infrastructure remediation. Any partial scoreboard—timeouts, execution errors,
-  explicit incomplete documents, or `completed_document_n < n`—is
+  explicit incomplete documents, or document counters that do not reconcile with
+  explicit `document_n` (distinct from total rows `n`)—is
   measurement-incomplete infrastructure evidence, never a model quality result;
 - `RLReadinessReport` is the only accepted RL capability token.
 
@@ -217,8 +223,10 @@ bounded log tail is never treated as the authoritative result. A nominally
 successful train is still incomplete unless its typed summary reports
 `stopped_on=steps`, the requested step count, and a present checkpoint.
 Conversely, `evaluate_model --ship-gates` exit 8 is a completed negative result only
-when a nonempty, complete suite scoreboard and error-free AgentV runner record
-accompany the typed failed gate.
+when every suite declares `n`, `document_n`, completed/incomplete documents, and
+decode timeouts; document counts reconcile with no incomplete or timed-out rows;
+and the failed gate binds error-free AgentV summary/criteria plus existing
+AgentEvals spec and result-index artifacts.
 
 ### Program experiments route through this loop (G1, SLM-46)
 

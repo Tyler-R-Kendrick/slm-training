@@ -48,7 +48,9 @@ run builds the certificate checker used later in promotion. The remaining
 templates stay in `src/slm_training/formal/lean/` with Mathlib `v4.30.0`.
 Every formal command runs in its own bounded process group; a timeout interrupts
 and, after the canonical grace, kills and reaps Lake/Lean descendants before the
-typed timeout result is returned.
+typed timeout result is returned. Process start and heartbeat callbacks expose the
+group leader to the continuous-loop state, so liveness and recovery include Lean
+rather than treating proof execution as an opaque pause.
 The same canonical template registry includes the six Semantic Factor Frontier
 `AdvisoryResidual` obligations. Their proof digests bind the individual theorem and
 declared source set, so a cached SFF artifact is validated by the normal formal
@@ -64,8 +66,11 @@ preflight path rather than an unknown-template side path.
 `make -C src/leverproof_lean test` rejects `sorry`, `admit`, custom `axiom`,
 `unsafe`, and `native_decide`; `scripts.verify_formal_contracts` rejects the
 proof placeholders and custom axioms in the Mathlib package. Both audit their
-exported theorems for Lean's `sorryAx`. The repository hard run cap is the
-timeout.
+exported theorems for Lean's `sorryAx`. The LeverProof Make audit first requires
+`rg`, distinguishes no-match from search failure, rejects source-level `sorryAx`,
+and rejects `sorryAx` in theorem-audit output. Lean's ordinary foundational axioms
+such as `propext` remain disclosed by `#print axioms`; missing tools or unexpected
+output fail closed. The repository hard run cap is the timeout.
 
 ### Measured promotion-proof runtime (2026-08-01)
 
@@ -105,7 +110,9 @@ The command builds and audits Lean, then writes
 `{"kind": "formal_preflight"}` to `artifact_requirements`. `run` verifies the
 artifact digest, experiment/claim binding, template version, proof-bundle digest,
 and all linked Python/Lean source digests before planning or execution. A stale or
-missing artifact fails closed.
+missing artifact fails closed. Continuous promotion applies the same validator when
+reading an existing proved sidecar and records `binding_validated_sha256`; a sidecar
+without that current binding cannot satisfy the promote gate.
 
 The available templates are:
 

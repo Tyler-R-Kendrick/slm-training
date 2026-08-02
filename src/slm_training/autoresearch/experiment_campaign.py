@@ -170,6 +170,8 @@ class ExperimentCampaignV1(StrictModel):
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
     replay_reason: str | None = Field(default=None, min_length=8)
+    replicate_ledger_schema: Literal["autotrain_promotion_replicate/v1"] | None = None
+    replicate_seed_floor: int | None = Field(default=None, ge=2)
     # Climb / causal shape (required for promotion_candidate and ship_gate).
     mechanism_off_arm_ids: tuple[str, ...] = ()
     executable_kill_criteria: tuple[str, ...] = ()
@@ -188,6 +190,14 @@ class ExperimentCampaignV1(StrictModel):
         if bool(self.replay_of_manifest_sha256) != bool(self.replay_reason):
             raise ValueError(
                 "replay_of_manifest_sha256 and replay_reason must be declared together"
+            )
+        if bool(self.replicate_ledger_schema) != bool(self.replicate_seed_floor):
+            raise ValueError(
+                "replicate_ledger_schema and replicate_seed_floor must be declared together"
+            )
+        if self.replicate_ledger_schema and self.claim_class != "promotion_candidate":
+            raise ValueError(
+                "cross-campaign replicate ledgers are only valid for promotion candidates"
             )
         endpoint_ids = tuple(item.endpoint_id for item in self.endpoints)
         arm_ids = tuple(item.arm_id for item in self.arms)
@@ -291,7 +301,12 @@ class ExperimentCampaignV1(StrictModel):
             except Exception:  # noqa: BLE001 — policy load must not block fixtures
                 seed_floor = MIN_CLIMB_SEEDS
                 require_ms = True
-            if len(self.seeds) < seed_floor:
+            external_replicates = bool(
+                self.replicate_ledger_schema
+                and self.replicate_seed_floor
+                and self.replicate_seed_floor >= seed_floor
+            )
+            if len(self.seeds) < seed_floor and not external_replicates:
                 raise ValueError(
                     f"promotion campaigns require at least {seed_floor} seeds "
                     "for primary LCB (multi-seed)"
@@ -299,7 +314,9 @@ class ExperimentCampaignV1(StrictModel):
             # Pass the same policy seed floor into causal shape so the two
             # checks cannot disagree (hardcoded MIN_CLIMB_SEEDS vs policy).
             causal_failures = validate_causal_campaign_shape(
-                self, min_seeds=seed_floor, require_multi_seed=require_ms
+                self,
+                min_seeds=1 if external_replicates else seed_floor,
+                require_multi_seed=False if external_replicates else require_ms,
             )
             if causal_failures:
                 raise ValueError(

@@ -13,6 +13,11 @@
 
 **Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached.
 
+**Execution integrity:** `--workers` is currently required to equal `1`. The prior
+threaded path shared stdout redirection and mutable result/version state, so it
+could corrupt attribution. Parallel matrix execution stays fail-closed until each
+row runs in a process-isolated worker with independently owned artifacts.
+
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
 **Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);
 correction / remask candidates: [research-correction-critics.md](research-correction-critics.md).

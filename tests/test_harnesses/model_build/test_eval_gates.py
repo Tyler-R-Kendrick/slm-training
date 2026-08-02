@@ -156,6 +156,11 @@ def test_new_model_build_config_rejects_unsafe_generation_flags(
         ModelBuildConfig(train_dir=Path("train"), **unsafe)
 
 
+def test_model_build_rejects_unimplemented_eval_sharding() -> None:
+    with pytest.raises(ValueError, match="deterministic shard execution"):
+        ModelBuildConfig(train_dir=Path("train"), eval_shards=2)
+
+
 def test_evaluation_policy_snapshots_every_loaded_model_config_field() -> None:
     config = ModelBuildConfig(train_dir=Path("train"))
     loaded = SimpleNamespace(alpha=1, path=Path("checkpoint"), modes=("tree",))
@@ -517,7 +522,10 @@ def test_ship_gates_fail_on_syntax_alone() -> None:
     )
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any(":ast_beq_rate" in f or ":component_type_recall" in f for f in result["failures"])
+    assert any(
+        ":ast_beq_rate" in f or ":component_type_recall" in f
+        for f in result["failures"]
+    )
 
 
 def test_ship_gates_fail_when_ast_beq_collapses() -> None:
@@ -742,9 +750,7 @@ def test_write_ship_gates_binds_reachability_to_agentevals(
     reachability = {"smoke": 0.75}
     results = [
         {**criterion, "pass": criterion["id"] != "smoke:reachability_unproven"}
-        for case in model_ship_gate_cases(
-            suites, suite_reachability=reachability
-        )
+        for case in model_ship_gate_cases(suites, suite_reachability=reachability)
         for criterion in case["assertions"]
     ]
     evals_result = {

@@ -12,7 +12,7 @@
   ],
   "components": {
     "formal.leverproof": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/leverproof_lean/",
@@ -25,6 +25,11 @@
         "src/leverproof_lean/Test/Proofs.lean"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Fail closed when ripgrep is unavailable or errors, reject source-level sorryAx escapes, and reject sorryAx in theorem-audit output."
+        },
         {
           "version": "v8",
           "date": "2026-08-01",
@@ -2596,7 +2601,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2636,6 +2641,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-08-02",
+          "note": "Require complete AgentV-bound evaluation counters, SHA-bound action receipts, theorem-repair handoffs, bounded supervised child stages, symmetric formal and arm budgets, counterbalanced serialized arms, and content-revalidated promotion replicates."
+        },
         {
           "version": "v59",
           "date": "2026-08-02",
@@ -2984,7 +2994,7 @@
       ]
     },
     "harness.autoresearch.formal": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/formal.py",
@@ -2995,6 +3005,11 @@
         ".github/workflows/ci.yml"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-08-02",
+          "note": "Expose Lean process start and heartbeat callbacks through the bounded process-group runner so supervisor state identifies and can reap formal children."
+        },
         {
           "version": "v7",
           "date": "2026-08-01",
@@ -6425,6 +6440,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-08-02",
+          "note": "no-bump: document the quality-matrix process-isolation requirement without changing the SLM-197 scorer or experiment."
+        },
+        {
+          "version": "v1",
           "date": "2026-07-27",
           "note": "no-bump: append the SLM-420 (DSH5-12) advanced-operator disposition terminal entry to the shared quality matrix without changing the SLM-197 scorer or matrix behavior"
         },
@@ -8565,6 +8585,11 @@
         {
           "version": "v74",
           "date": "2026-08-02",
+          "note": "no-bump: add regression coverage for rejecting unsupported eval_shards values in model-build configuration; evaluation behavior is unchanged."
+        },
+        {
+          "version": "v74",
+          "date": "2026-08-02",
           "note": "Initialize constrained generation outside document deadlines, disclose initialization latency, and disarm repeating SIGALRM delivery before timeout bookkeeping so timeouts remain typed evidence."
         },
         {
@@ -9227,6 +9252,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: bind continuous autotrain action acknowledgements to typed evidence identities without changing preference remine behavior."
+        },
         {
           "version": "v3",
           "date": "2026-08-01",
@@ -10001,12 +10031,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v8",
+      "version": "v9",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-08-02",
+          "note": "Reject workers greater than one until quality-matrix execution state is process-isolated, preventing shared stdout and mutable registry corruption."
+        },
         {
           "version": "v8",
           "date": "2026-07-25",
@@ -10777,7 +10812,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v286",
+      "version": "v287",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10820,6 +10855,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v287",
+          "date": "2026-08-02",
+          "note": "Reject eval_shards values other than one until evaluation supports real process-isolated shard execution, preventing false parallelism claims."
+        },
         {
           "version": "v286",
           "date": "2026-08-02",
