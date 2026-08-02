@@ -501,11 +501,19 @@ def _intersect_requirement(
 
 
 def _commit_string_arg(frame: CallFrame) -> CallFrame:
+    str_args = frame.str_args
     if frame.cur_is_str and frame.cur_str is not None:
         entry = (frame.separators, frame.cur_str)
-        if entry not in frame.str_args:
-            frame = replace(frame, str_args=(*frame.str_args, entry))
-    return replace(frame, cur_str=None, cur_is_str=False)
+        if entry not in str_args:
+            str_args = (*str_args, entry)
+    return CallFrame(
+        component=frame.component,
+        separators=frame.separators,
+        started=frame.started,
+        str_args=str_args,
+        cur_str=None,
+        cur_is_str=False,
+    )
 
 
 def _mark_started(stack: tuple[Frame, ...]) -> tuple[Frame, ...]:
@@ -515,9 +523,22 @@ def _mark_started(stack: tuple[Frame, ...]) -> tuple[Frame, ...]:
     top = stack[-1]
     if isinstance(top, CallFrame):
         # A second content token in the same argument voids bare-string status.
-        top = replace(top, started=True, cur_is_str=top.cur_is_str and not top.started)
+        top = CallFrame(
+            component=top.component,
+            separators=top.separators,
+            started=True,
+            str_args=top.str_args,
+            cur_str=top.cur_str,
+            cur_is_str=top.cur_is_str and not top.started,
+        )
+    elif isinstance(top, ArrayFrame):
+        top = ArrayFrame(
+            separators=top.separators,
+            started=True,
+            direct_refs=top.direct_refs,
+        )
     else:
-        top = replace(top, started=True)
+        top = BraceFrame(started=True)
     return (*stack[:-1], top)
 
 
@@ -727,11 +748,22 @@ def advance(
             top = stack[-1]
             if isinstance(top, CallFrame):
                 top = _commit_string_arg(top)
-                top = replace(top, separators=top.separators + 1, started=False)
+                top = CallFrame(
+                    component=top.component,
+                    separators=top.separators + 1,
+                    started=False,
+                    str_args=top.str_args,
+                    cur_str=top.cur_str,
+                    cur_is_str=top.cur_is_str,
+                )
             elif isinstance(top, ArrayFrame):
-                top = replace(top, separators=top.separators + 1, started=False)
+                top = ArrayFrame(
+                    separators=top.separators + 1,
+                    started=False,
+                    direct_refs=top.direct_refs,
+                )
             else:
-                top = replace(top, started=False)
+                top = BraceFrame(started=False)
             stack = (*stack[:-1], top)
     elif raw in {"LIT_STR", "LIT_NUM"} and not literal_kind:
         literal_kind = raw
@@ -739,7 +771,14 @@ def advance(
         if raw == "LIT_STR" and stack and isinstance(stack[-1], CallFrame):
             top = stack[-1]
             if not top.started:
-                top = replace(top, cur_is_str=True, cur_str="")
+                top = CallFrame(
+                    component=top.component,
+                    separators=top.separators,
+                    started=top.started,
+                    str_args=top.str_args,
+                    cur_str="",
+                    cur_is_str=True,
+                )
                 stack = (*stack[:-1], top)
         # LIT_STR renders as a quote (parser-visible progress); LIT_NUM
         # renders as nothing until its first byte arrives.
@@ -753,7 +792,14 @@ def advance(
         if literal_kind == "LIT_STR" and stack and isinstance(stack[-1], CallFrame):
             top = stack[-1]
             if top.cur_is_str:
-                top = replace(top, cur_str=literal_body)
+                top = CallFrame(
+                    component=top.component,
+                    separators=top.separators,
+                    started=top.started,
+                    str_args=top.str_args,
+                    cur_str=literal_body,
+                    cur_is_str=top.cur_is_str,
+                )
                 stack = (*stack[:-1], top)
         literal_kind = ""
         literal_body = ""
@@ -770,7 +816,11 @@ def advance(
             slot = int(slot)
             if stack and isinstance(stack[-1], ArrayFrame):
                 top = stack[-1]
-                top = replace(top, direct_refs=top.direct_refs | (1 << slot))
+                top = ArrayFrame(
+                    separators=top.separators,
+                    started=top.started,
+                    direct_refs=top.direct_refs | (1 << slot),
+                )
                 SCOPE_COUNTERS["scope_bitset_updates"] += 1
                 stack = (*stack[:-1], top)
             if schema is not None:
@@ -795,12 +845,28 @@ def advance(
                 if len(piece) >= 2 and piece.startswith('"') and piece.endswith('"')
                 else piece
             )
-            top = replace(stack[-1], cur_str=value, cur_is_str=True)
+            prior = stack[-1]
+            top = CallFrame(
+                component=prior.component,
+                separators=prior.separators,
+                started=prior.started,
+                str_args=prior.str_args,
+                cur_str=value,
+                cur_is_str=True,
+            )
             stack = (*stack[:-1], top)
         stack = _mark_started(stack)
     elif kind == "lit" and raw.startswith("STR:"):
         if stack and isinstance(stack[-1], CallFrame) and not stack[-1].started:
-            top = replace(stack[-1], cur_str=raw[4:], cur_is_str=True)
+            prior = stack[-1]
+            top = CallFrame(
+                component=prior.component,
+                separators=prior.separators,
+                started=prior.started,
+                str_args=prior.str_args,
+                cur_str=raw[4:],
+                cur_is_str=True,
+            )
             stack = (*stack[:-1], top)
         stack = _mark_started(stack)
     elif raw.startswith("B:"):
@@ -808,8 +874,8 @@ def advance(
     else:
         stack = _mark_started(stack)
 
-    new = replace(
-        state,
+    new = SemanticState(
+        tokenizer_key=state.tokenizer_key,
         declared_mask=declared,
         referenced_mask=referenced,
         active_slot=active,

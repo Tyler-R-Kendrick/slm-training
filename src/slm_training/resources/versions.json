@@ -1146,7 +1146,7 @@
       ]
     },
     "dsl.completion_kernel": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/engine.py",
@@ -1173,6 +1173,11 @@
         "docs/design/adr-constrained-diffusion-topology-split.md"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-08-02",
+          "note": "Construct hot immutable semantic states and delimiter frames directly instead of reflecting through dataclasses.replace, preserving identical fields and interning authority."
+        },
         {
           "version": "v13",
           "date": "2026-08-02",
@@ -10792,7 +10797,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v286",
+      "version": "v287",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -10835,6 +10840,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v287",
+          "date": "2026-08-02",
+          "note": "Regenerate the committed speculative n-gram ranker from the latest canonical train-only corpus after opaque structural-id and fixture refreshes."
+        },
         {
           "version": "v286",
           "date": "2026-08-02",
