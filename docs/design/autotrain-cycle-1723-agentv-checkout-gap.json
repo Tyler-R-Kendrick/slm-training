@@ -1,0 +1,48 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c1",
+  "cycle_index": 1723,
+  "loop_id": "continuous-openui-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "7c2929811c710542e824ca7eb96f6f862695e13c",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "frozen_manifest_sha256": "e0a794d1b80bcfee1caaaa77b3e03b113007c75f9aa18422efb48a09f489efd3",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-control",
+      "status": "eval_crashed_after_metrics",
+      "training": {"executed": true, "steps": 21, "record_count": 101, "last_loss": 22.62193489074707, "parameter_count": 1608962},
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "binder_reference_f1": 0.6333333333333333, "structural_similarity": 0.0575, "latency_ms_p50": 3258.86, "decode_timeout_count": 0, "constrained_fallback_rate": 0.0},
+      "ship_gates_pass": null,
+      "claim_boundary": "raw suite metrics computed and written to eval_smoke.json, but the orchestrating evaluate_model.py process crashed while publishing AgentV ship-gate evidence, so no scoreboard.json was produced and the driver recorded this arm's aggregate metrics/gates as empty"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c1-bounds",
+      "status": "eval_crashed_after_metrics",
+      "training": {"executed": true, "steps": 21, "record_count": 101, "last_loss": 22.62193489074707, "parameter_count": 1608962},
+      "suite": "smoke",
+      "suite_n": 3,
+      "metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.0, "binder_reference_f1": 0.6333333333333333, "structural_similarity": 0.0575, "latency_ms_p50": 2673.03, "decode_timeout_count": 0, "constrained_fallback_rate": 0.0},
+      "ship_gates_pass": null,
+      "claim_boundary": "same crash as control; additionally the hypothesizer emitted an identical config_sha256 (81fd4757dc398eeca1cfafdc8f8b41feb0a38f26d343d19c118af2b2bba268b8) for both control and bounds arms this cycle, so even a clean run would have measured zero lever delta"
+    }
+  ],
+  "harness_gap": {
+    "component": "src/slm_training/evals/agentv.py:_agentv_runtime",
+    "symptom": "RuntimeError: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER",
+    "root_cause": "fresh checkout of this session's worktree had never run `npm ci`, so node_modules/@agentv/core was absent; evaluate_model.py --ship-gates unconditionally calls publish_model_evaluation -> publish_agentv_evaluation, which raises instead of degrading",
+    "repair": "ran `npm ci` (repo package.json already pins @agentv/core@4.42.4); no source change required",
+    "repair_kind": "environment_setup_not_code_change",
+    "harness_family": null,
+    "regression_risk": "none: node_modules is gitignored and untouched by this cycle's git history"
+  },
+  "disposition": {"measurement_complete": false, "climb_state": "inconclusive", "ship_state": "blocked", "promotion": "rejected_pending_complete_frozen_replay", "next_run": "replay the identical frozen arm now that the AgentV SDK is installed; the pending retry_measurement action is consumed automatically by the next supervised cycle"},
+  "checkpoint_documentation_required": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "7c2929811c710542e824ca7eb96f6f862695e13c", "code_dirty": false, "components": {"harness.model_build.eval": "v73", "harness.model_build.train": "v27", "harness.experiment_feature_flags": "v3", "model.twotower": "v275"}, "stamped_at": "2026-08-02T01:34:22.632891Z"}
+}
