@@ -1,0 +1,52 @@
+{
+  "schema": "continuous_autotrain_cycle_results/v1",
+  "loop_id": "continuous-openui-pq269u",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-pq269u-2619fa49-c1",
+  "cycle_index": 1,
+  "source_commit": "27a8134fbcf5def3ce8463a3059ace8445464d80",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "max_wall_minutes": 3,
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "compiler_decode_mode": "off"
+  },
+  "arms": {
+    "c1-control": {
+      "status": "harness_failure",
+      "reason": "evaluate_model exit=1: AgentV SDK evaluation failed: node: --import tsx is not allowed in NODE_OPTIONS (node exit 9)"
+    },
+    "c1-bounds": {
+      "status": "harness_failure",
+      "reason": "evaluate_model exit=1: AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER (node_modules/@agentv/core missing in this fresh session checkout)"
+    }
+  },
+  "primary_metric": "smoke.structural_similarity",
+  "primary_delta": null,
+  "conclusion": "Both preregistered arms trained but evaluation never produced a scoreboard. Two independent, stacked environment/harness defects blocked scripts/evaluate_model.py's AgentV publish step (src/slm_training/evals/agentv.py): (1) the fresh session checkout had not run `npm ci`, so `node_modules/@agentv/core` was missing and `_agentv_runtime` raised RuntimeError before spawning the node runner; (2) once node_modules is restored, this session's environment injects a NODE_OPTIONS value (`--import tsx`) that the pinned Node build rejects with exit 9, and publish_agentv_evaluation's subprocess.run call inherited the unsanitized environment, so the node runner itself crashed. The first defect (npm ci) was already fixed on origin/main by a concurrent session (commit 3cb0638, PR #1327) together with a stale ship-gate fixture fix; this cycle discovered and fixed the second, still-open defect.",
+  "repair": {
+    "harness_family": "model_build",
+    "frozen_manifest_sha256": "0bb366d4e94dad5023ea7cd9177ccbe50c2a8cf873039efb4dda449f1c740683",
+    "actions_taken": [
+      "ran `npm ci` in the checkout to restore node_modules/@agentv/core",
+      "added _sanitized_node_env() to src/slm_training/evals/agentv.py and passed it to the node runner subprocess.run call, mirroring the existing NODE_OPTIONS sanitization in src/slm_training/dsl/grammar/backends/graphql_js.py -- commit a3ceb3ae9ada5ec40c35d889684d7e600a01633d",
+      "merged origin/main (commit 3cb0638) to pick up the concurrent npm-ci/fixture repair rather than duplicating it -- merge commit b22185c3f9e9aaedc30b37e22d8c9622dd567a58"
+    ],
+    "regression_coverage": "tests/test_evals/test_agentv.py::test_agentv_sanitizes_node_options_for_the_runner_subprocess (new); tests/test_evals/test_agentv.py (8/8 passing after fix)"
+  },
+  "known_debt_discovered": {
+    "summary": "Confirmed the pre-existing tests/test_evals debt already flagged by the concurrent c2 cycle docs (continuous-openui-20260802-c2-results.md) still applies; not re-triaged here to avoid duplicate scope.",
+    "sample_failures": []
+  },
+  "next_priorities": [
+    "Replay the identical c1-control/c1-bounds arms now that the NODE_OPTIONS harness defect is repaired (queued: c20260802-continuous-openui-pq269u-2619fa49-c1-bounds)",
+    "Watch for other subprocess.run(['node', ...]) call sites in src/slm_training that do not yet sanitize NODE_OPTIONS the way graphql_js.py and (now) agentv.py do"
+  ],
+  "recorded_at": "2026-08-02T18:39:00+00:00"
+}
