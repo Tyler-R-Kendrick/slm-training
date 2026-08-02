@@ -1,0 +1,91 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-1pse54",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c3",
+  "cycle_index": 3,
+  "cycle_intent": "retry_measurement",
+  "frozen_replay_of": "continuous-loop-20260802-continuous-openui-1pse54-c1f3ee08-c2",
+  "evidence_class": "fixture",
+  "decision": "rejected_quality_null",
+  "scoreable": true,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "parameter_count",
+      "eval_suites",
+      "decode_policy"
+    ],
+    "treatment": "grammar_completion_bounds: disabled (control) vs enabled (bounds)",
+    "prediction_identical": true,
+    "parameter_delta": 0
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c3-control",
+      "params": 1608962,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.633333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.527778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1340.24
+      },
+      "ship_gates_pass": false
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-1pse54-c1f3ee08-c3-bounds",
+      "params": 1608962,
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.0575,
+        "component_type_recall": 0.0,
+        "binder_reference_f1": 0.633333,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "placeholder_fidelity": 0.527778,
+        "reward_score": 0.0,
+        "latency_ms_p50": 1494.47
+      },
+      "ship_gates_pass": false
+    }
+  ],
+  "ship_gates_pass": false,
+  "lean": "not_applicable:no_champion",
+  "harness_confirmation": "This cycle is the frozen replay of the c2 arms whose evaluation was blocked by the NODE_OPTIONS bug fixed in commit 46fecfc. Both arms now complete evaluation end to end (AgentEvals 0 execution errors), confirming the fix as an executable unblocking of the model_build eval harness family.",
+  "next_priority": {
+    "area": "model",
+    "hypothesis": "The completed frozen replay rejects the grammar_completion_bounds arm; test the distinct size-matched component-plan quality hypothesis next.",
+    "required_controls": [
+      "size_matched",
+      "held_out_transition_suite",
+      "constrained_decode",
+      "no_timeout_change"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3bc2032e5637701a2cebf49f38a5c5871ababbb6",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "config.levers": "v30",
+      "harness.model_build.eval": "v75",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v22"
+    },
+    "stamped_at": "2026-08-02T16:45:51.997968+00:00"
+  }
+}
