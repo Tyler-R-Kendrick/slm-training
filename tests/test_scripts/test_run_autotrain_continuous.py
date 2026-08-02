@@ -1118,6 +1118,62 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
     }
 
 
+def test_rejected_confirmation_exhausts_its_source_quality_family(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "continuous-loop-20260802-c1777"
+    camp = root / campaign_id
+    matrix = _mod._matrix(
+        campaign_id=campaign_id,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=20,
+        cycle=1777,
+        role="screening",
+        confirm_levers={
+            "component_inventory_loss_weight": 1.0,
+            "component_inventory_decode_weight": 1.0,
+        },
+        confirm_control_levers={
+            "component_inventory_loss_weight": 0.0,
+            "component_inventory_decode_weight": 0.0,
+        },
+    )
+    candidate_id = matrix["recommended_experiment_id"]
+    camp.mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps({"campaign_id": campaign_id, "loop_id": "loop-1"})
+    )
+    (camp / "matrix-proposal.json").write_text(json.dumps(matrix))
+    (camp / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "candidate_id": candidate_id,
+                "cycle_intent": "confirm",
+                "positive": False,
+                "measurement_complete": True,
+            }
+        )
+    )
+    (camp / "cycle_handoff.json").write_text(
+        json.dumps(
+            {
+                "loop_id": "loop-1",
+                "cycle_intent": "confirm",
+                "climb_state": "rejected",
+            }
+        )
+    )
+
+    assert _mod._recent_completed_nonpositive_slugs(root, campaign_id) == {
+        "component-inventory"
+    }
+
+
 def test_predecessor_reclassifies_stale_positive_under_current_policy(
     tmp_path: Path,
 ) -> None:

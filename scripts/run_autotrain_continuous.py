@@ -1000,7 +1000,7 @@ def _recent_completed_nonpositive_slugs(
             and delivery.get("positive") is False
             and (delivery.get("measurement_complete") is True or runtime_terminal)
             and (
-                intent in {"screening", "promotion"}
+                intent in {"screening", "promotion", "confirm"}
                 or runtime_terminal
             )
         ):

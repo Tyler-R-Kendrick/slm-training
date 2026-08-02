@@ -2641,7 +2641,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v82",
+      "version": "v83",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2681,6 +2681,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v83",
+          "date": "2026-08-02",
+          "note": "Treat a complete rejected fresh-seed confirmation as terminal exhaustion of its underlying quality family so the next matrix cannot recycle the disproven arm."
+        },
         {
           "version": "v82",
           "date": "2026-08-02",
@@ -7245,6 +7250,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: add honest c1778 rejected batch-size-one runtime checkpoint provenance in MODEL_CARD and README; SLM-228 spectral-disposition behavior is unchanged"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",
