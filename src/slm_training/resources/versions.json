@@ -2646,7 +2646,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v94",
+      "version": "v95",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -2686,6 +2686,11 @@
         "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json"
       ],
       "history": [
+        {
+          "version": "v95",
+          "date": "2026-08-02",
+          "note": "Require candidate-only evidence before terminal runtime rejection and carry content-bound trainable-parameter provenance into frozen-reuse outcomes and result matrices."
+        },
         {
           "version": "v94",
           "date": "2026-08-02",
@@ -9041,7 +9046,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v76",
+      "version": "v77",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -9062,6 +9067,11 @@
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
       "history": [
+        {
+          "version": "v77",
+          "date": "2026-08-02",
+          "note": "Prefer the production batch request API when a decoder also exposes single-record stats, retaining row-tagged DecodeStats while restoring I4 compacted evaluation and disclosing configured and observed chunk sizes."
+        },
         {
           "version": "v76",
           "date": "2026-08-02",
@@ -9752,6 +9762,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-02",
+          "note": "no-bump: persist content-bound trainable-parameter provenance for autotrain stage reuse without changing preference remine campaign behavior"
+        },
         {
           "version": "v3",
           "date": "2026-08-02",

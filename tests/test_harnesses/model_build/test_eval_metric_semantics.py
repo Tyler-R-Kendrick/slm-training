@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -166,6 +167,36 @@ def _smoke_config(tmp_path: Path) -> ModelBuildConfig:
 class _EchoGoldModel:
     def generate_batch_requests(self, requests: list[object]) -> list[str]:
         return [_GOLD for _ in requests]
+
+
+def test_dual_interface_model_keeps_batched_decode_and_stats(tmp_path: Path) -> None:
+    config = _smoke_config(tmp_path)
+    records = [
+        _record(id=f"smoke-{index}", split="smoke", meta={"suite": "smoke"})
+        for index in range(3)
+    ]
+    write_jsonl(config.test_dir / "suites" / "smoke" / "records.jsonl", records)
+
+    class DualInterfaceModel:
+        config = SimpleNamespace(generate_batch_size=8)
+
+        def __init__(self) -> None:
+            self.batch_calls: list[int] = []
+
+        def generate_batch_requests(self, requests: list[object]) -> list[str]:
+            self.batch_calls.append(len(requests))
+            return [_GOLD for _ in requests]
+
+        def generate_with_stats(self, _prompt: str) -> tuple[str, object]:
+            raise AssertionError("single-record fallback must not disable batching")
+
+    model = DualInterfaceModel()
+    metrics = evaluate(config, model=model, publish_agentv=False)
+
+    assert model.batch_calls == [3]
+    assert metrics["decode_batch_size_configured"] == 8
+    assert metrics["decode_batch_size_max"] == 3
+    assert metrics["decode_chunk_n"] == 1
 
 
 def test_empty_suite_aggregates_to_none_not_zero(tmp_path: Path) -> None:

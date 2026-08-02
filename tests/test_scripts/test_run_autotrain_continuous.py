@@ -4617,6 +4617,71 @@ def test_replayed_finalized_decode_timeout_rejects_runtime_arm(
     assert any(action.kind == "next_experiment" for action in handoff.actions)
 
 
+def test_replayed_dual_arm_timeouts_remain_inconclusive_and_require_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-2"
+    (camp / "manifests").mkdir(parents=True)
+    (camp / "campaign.json").write_text(
+        json.dumps({"predecessor_campaign_id": "cycle-1"})
+    )
+    (camp / "manifests" / "cand.json").write_text("{}\n")
+    for experiment_id in ("control", "cand"):
+        run = camp / "runs" / experiment_id
+        run.mkdir(parents=True)
+        (run / "scoreboard.json").write_text(
+            json.dumps(
+                {
+                    "evals": {
+                        "runner": {"name": "AgentV", "execution_errors": 0}
+                    },
+                    "gates": {"authority": "AgentEvals assertions", "pass": False},
+                    "suites": {
+                        "smoke": {
+                            "n": 3,
+                            "completed_document_n": 2,
+                            "incomplete_document_n": 1,
+                            "decode_timeout_document_count": 1,
+                        }
+                    },
+                }
+            )
+        )
+
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-2",
+        cycle_index=2,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="promotion",
+        cycle_intent="retry_measurement",
+        primary_metric="held_out.structural_similarity",
+        matrix=_priority_matrix(),
+        delivery={
+            "positive": False,
+            "control_id": "control",
+            "candidate_id": "cand",
+            "measurement_complete": False,
+            "reasons": [
+                "measurement_incomplete:control:decode_timeout",
+                "measurement_incomplete:cand:decode_timeout",
+            ],
+            "stack_layer": False,
+        },
+        resolution=None,
+        formal_status=None,
+    )
+
+    assert handoff.climb_state == "inconclusive"
+    assert all("candidate_runtime_rejected" not in reason for reason in handoff.reasons)
+    assert any(action.kind == "repair_harness" for action in handoff.actions)
+    assert any(action.kind == "retry_measurement" for action in handoff.actions)
+    assert all(action.kind != "next_experiment" for action in handoff.actions)
+
+
 def test_numeric_literal_close_starvation_steers_new_training_arm(
     tmp_path: Path,
 ) -> None:

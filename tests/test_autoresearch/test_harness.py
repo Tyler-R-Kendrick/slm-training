@@ -1009,6 +1009,7 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
         "stopped_on": "steps",
         "steps": int(_command_flag(train, "--steps")),
         "checkpoint": str(checkpoint),
+        "track": {"trainable_params": 1234},
         "version_stamp": {
             "code_commit": source_manifest.source_commit,
             "code_dirty": False,
@@ -1039,6 +1040,7 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
     assert receipt["stage_kind"] == "reused_training"
     assert receipt["measurement_complete"] is True
     assert receipt["checkpoint_sha256"] == hashlib.sha256(b"checkpoint").hexdigest()
+    assert receipt["trainable_params"] == 1234
 
     bad_target = target_manifest.model_copy(
         update={"replay_of_manifest_sha256": "0" * 64}
