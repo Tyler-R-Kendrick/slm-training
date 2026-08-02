@@ -1,0 +1,122 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "run_class": "continuous_autotrain_cycle",
+  "loop_id": "continuous-openui-p33lme",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c4",
+  "predecessor_campaign_id": "continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c3",
+  "cycle_index": 4,
+  "cycle_role": "promotion",
+  "cycle_intent": "promotion",
+  "upstream_commit": "b8188a49672f187146bf1a76a353cbe188f9b99d",
+  "integration_commit": "5441b2037451127d52967db8a98d6af09a99176a",
+  "primary_metric": "held_out.structural_similarity",
+  "direction": "increase",
+  "control_id": "c20260802-continuous-openui-p33lme-489d3aa7-c4-control",
+  "candidate_id": "c20260802-continuous-openui-p33lme-489d3aa7-c4-component-edge",
+  "hypothesis": "The size-matched component-edge structural aux head (component_edge_loss_weight=1.0, structural_aux_head_profile=component-edge) improves smoke/held_out structural_similarity over the matched control with grammar/aux heads off, at equal trainable-parameter count.",
+  "knobs": {
+    "train_version": "wf_smoke_v2",
+    "eval_version": "e938_role_safe_all_targets_v2",
+    "steps": 21,
+    "batch_size": 2,
+    "seed": 100004,
+    "context_backend": "scratch",
+    "sync_checkpoints": false,
+    "local_files_only": true,
+    "eval_suites": "smoke,held_out",
+    "decode_timeout_seconds": 24.0,
+    "control_component_edge_loss_weight": 0.0,
+    "candidate_component_edge_loss_weight": "active (structural_aux_head_profile=component-edge)"
+  },
+  "measurement": {
+    "status": "incomplete",
+    "note": "Both arms trained to completion (checkpoints written); the evaluate_model --ship-gates stage for suites smoke,held_out exceeded its cycle stage wall-time budget (~1.17 min) before writing a complete scoreboard.json for either arm. The partial telemetry captured (below) is decode_progress/diagnostic-only and is NOT treated as model evidence per the honest-ship-eval and evaluation-stage-recovery rules -- a missing scoreboard.json means the run is not a completed measurement.",
+    "control_partial_metrics": {
+      "smoke.latency_ms_p50": 8869.91,
+      "smoke.parse_rate": 1.0,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.structural_similarity": 0.4166666666666667,
+      "smoke.binder_reference_f1": 0.9523809523809524,
+      "held_out.structural_similarity": 0.4166666666666667
+    },
+    "candidate_partial_metrics": {
+      "smoke.latency_ms_p50": 8931.45,
+      "smoke.parse_rate": 1.0,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.structural_similarity": 0.4166666666666667,
+      "smoke.binder_reference_f1": 0.9523809523809524,
+      "held_out.structural_similarity": 0.4166666666666667
+    },
+    "n": null,
+    "baseline_trainable_params": 1766987,
+    "candidate_trainable_params": 1766987,
+    "size_matched": true,
+    "gates": {
+      "authority": "AgentEvals assertions",
+      "pass": false,
+      "failures": [
+        "control:missing_scoreboard",
+        "component-edge:missing_scoreboard"
+      ],
+      "expected_gate_rejection": false,
+      "runner": "evaluate_model --ship-gates",
+      "wall_timeout_ids": [
+        "ff485b9691a65c0890176b1ef9649701a63c431c12f8d46328e8618b72796d2c",
+        "2ed3ab1f1ea458133491702d2777fb4f408fcfef145697c393af714c2b7601d6"
+      ]
+    }
+  },
+  "sdlc_phase_a": {
+    "positive": false,
+    "stack_layer": false,
+    "stack_action": "no_stack_layer_non_positive",
+    "reasons": [
+      "measurement_incomplete:c20260802-continuous-openui-p33lme-489d3aa7-c4-control:missing_scoreboard",
+      "measurement_incomplete:c20260802-continuous-openui-p33lme-489d3aa7-c4-component-edge:missing_scoreboard",
+      "wall_timeout:ff485b9691a65c0890176b1ef9649701a63c431c12f8d46328e8618b72796d2c",
+      "wall_timeout:2ed3ab1f1ea458133491702d2777fb4f408fcfef145697c393af714c2b7601d6",
+      "primary_metric_null_or_worse:held_out.structural_similarity:control=0.4166666666666667 candidate=0.4166666666666667 improvement=0.0"
+    ],
+    "policy_sha256": "c1580671ef01bc2a04f857d59edcec423b05e0e2c012a18c5f60616ad0803994",
+    "policy_version": "v4"
+  },
+  "checkpoints": {
+    "checkpoint_documentation_required": true,
+    "checkpoint_paths": [
+      "runs/c20260802-continuous-openui-p33lme-489d3aa7-c4-component-edge/checkpoints/last.pt",
+      "runs/c20260802-continuous-openui-p33lme-489d3aa7-c4-control/checkpoints/last.pt"
+    ],
+    "location": "outputs/autoresearch/continuous-loop-20260802-continuous-openui-p33lme-489d3aa7-c4/runs/ (local, explicit no-sync)",
+    "disposition": "unproven -- training completed but evaluation did not; never reuse, promote, sync, or ship until a complete frozen-replay measurement exists",
+    "model_card_updated": true,
+    "readme_updated": true
+  },
+  "priorities": [
+    {
+      "schema_version": "NextRunPriorityV1",
+      "rank": 1,
+      "area": "infrastructure",
+      "hypothesis": "The measurement is incomplete; replay the exact frozen control and candidate (resume at evaluation, reusing the existing checkpoints) before testing a new hypothesis.",
+      "authority": "observed_result",
+      "confidence": 0.95,
+      "disposition": "experiment_next",
+      "proposed_experiment_id": "c20260802-continuous-openui-p33lme-489d3aa7-c4-component-edge"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5441b2037451127d52967db8a98d6af09a99176a",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.eval": "v74",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v286"
+    },
+    "stamped_at": "2026-08-02T11:52:16.649379Z"
+  },
+  "no_bump": "No metric/gate/harness/matrix file changed this cycle (model-hypothesis-only promotion run, measurement incomplete); no version_stamp component bump required."
+}
