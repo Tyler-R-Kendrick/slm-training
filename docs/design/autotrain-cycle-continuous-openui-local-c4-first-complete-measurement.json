@@ -1,0 +1,110 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "loop_id": "continuous-openui-local",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-local-8c0b60dd-c4",
+  "cycle_index": 4,
+  "cycle_intent": "retry_measurement",
+  "evidence_class": "fixture",
+  "decision": "fixture_ship_gate_rejected",
+  "scoreable": true,
+  "comparison": {
+    "matched_dimensions": [
+      "train_version",
+      "steps",
+      "batch_size",
+      "seed",
+      "context_backend",
+      "decode_policy"
+    ],
+    "treatment": "grammar_completion_bounds knob (control vs bounds arm)",
+    "prediction_identical": true,
+    "parameter_delta": 0.0
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-control",
+      "status": "completed",
+      "trainable_params": 1608962,
+      "measurement": "complete",
+      "gate_result": "reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.057499999999999996,
+        "meaningful_program_rate": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 903.72
+      },
+      "held_out": "missing_suite",
+      "adversarial": "missing_suite",
+      "ood": "missing_suite",
+      "rico_held": "missing_suite"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-bounds",
+      "status": "completed",
+      "trainable_params": 1608962,
+      "measurement": "complete",
+      "gate_result": "reject",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.057499999999999996,
+        "meaningful_program_rate": 0.0,
+        "ast_beq_rate": 0.0,
+        "canonical_beq_rate": 0.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "latency_ms_p50": 972.14
+      },
+      "held_out": "missing_suite",
+      "adversarial": "missing_suite",
+      "ood": "missing_suite",
+      "rico_held": "missing_suite"
+    }
+  ],
+  "ship_gates_pass": false,
+  "ship_gate_failures": [
+    "smoke:insufficient_n actual=3 need>=20",
+    "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+    "smoke:structural_similarity actual=0.0575 need>=0.35",
+    "smoke:component_type_recall actual=0.0 need>=0.35",
+    "smoke:ast_beq_rate actual=0.0 need>=0.2",
+    "smoke:canonical_beq_rate actual=0.0 need>=0.1",
+    "smoke:reward_score actual=0.0 need>=0.3",
+    "held_out:missing_suite",
+    "adversarial:missing_suite",
+    "ood:missing_suite",
+    "rico_held:missing_suite"
+  ],
+  "lean": "not_applicable:screening",
+  "sdlc_phase_a": {
+    "positive": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c4-bounds",
+      "fixture_insufficient_n:c20260802-continuous-openui-local-8c0b60dd-c4-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.0575 candidate=0.0575 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ],
+    "stack_layer": false,
+    "note": "Fixture insufficient_n alone is never positive (autotrain-iteration-delivery); no new stack layer for this cycle's model result. Distinct from the c3 harness repair, which is independently positive under the executable-unblocking criterion and is delivered on its own commit."
+  },
+  "conclusion": "First complete measurement of this loop instance: both frozen arms (grammar_completion_bounds control vs bounds knob, identical wf_smoke_v2/steps=20/cpu recipe) trained and evaluated end to end through AgentV, honestly rejected by ship gates on fixture-scale n=3 (all suites below insufficient_n=20 threshold; held_out/adversarial/ood/rico_held suites missing at this train_version). The candidate knob produced byte-identical smoke metrics to control (structural_similarity=0.0575 both arms), i.e. no measurable effect at this screening scale -- expected/uninformative on n=3, not a quality regression claim.",
+  "next_priority": {
+    "area": "model",
+    "hypothesis": "Test the distinct size-matched component-plan quality hypothesis next; grammar_completion_bounds is exhausted for this loop instance.",
+    "proposed_experiment_id": "c20260802-continuous-openui-local-8c0b60dd-c4-component-plan"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1073f5b60a048467bc6272cc40f591b92d5ded4f",
+    "code_dirty": false,
+    "components": {
+      "evals.agentv": "v7",
+      "harness.model_build.eval": "v77",
+      "harness.experiment_feature_flags": "v4"
+    },
+    "stamped_at": "2026-08-02T23:43:11.486028+00:00"
+  }
+}
