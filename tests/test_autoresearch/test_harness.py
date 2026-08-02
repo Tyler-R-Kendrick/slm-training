@@ -1368,6 +1368,167 @@ def test_ack_action_receipt_closes_predecessor_prerequisite(tmp_path: Path) -> N
     ] == ["stop_campaign"]
 
 
+def test_ack_action_deliver_stack_accepts_bound_skip_evidence(tmp_path: Path) -> None:
+    """A positive result with no tracked delta must be closeable without a push.
+
+    `_write_cycle_handoff` always appends `deliver_stack` when a cycle is
+    positive, even when `sdlc_delivery.json` itself already recorded
+    `stack_action="positive_no_tracked_delta_skip_stack"` (nothing to
+    stack). Before this fix the only accepted deliver_stack evidence was a
+    commit already merged into `origin/main`, which a local-only session
+    that never pushes can never produce -- deadlocking the predecessor
+    prerequisite forever (`pending_autotrain_actions` in storage.py only
+    clears a prerequisite on a "completed" receipt, so even a validly
+    accepted "blocked" evidence would never actually unblock the successor
+    cycle). The campaign's own `sdlc_delivery.json` is accepted as
+    self-evidence for the skip, bound to the exact campaign id and only
+    under `--status completed` (mirroring "document" evidence, which also
+    never requires a merged commit).
+    """
+
+    from scripts.autoresearch import build_parser
+
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-skip"
+    camp_dir = root / campaign_id
+    camp_dir.mkdir(parents=True)
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=3,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="candidate_queued",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        actions=(
+            AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="Persist the screening result.",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+            AutotrainActionV1(
+                kind="deliver_stack",
+                owner="sdlc",
+                reason="document the positive result, then deliver its reviewable delta",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    (camp_dir / "cycle_handoff.json").write_text(handoff.model_dump_json(indent=2) + "\n")
+    (camp_dir / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": campaign_id,
+                "positive": True,
+                "stack_layer": False,
+                "has_tracked_delta": False,
+                "stack_action": "positive_no_tracked_delta_skip_stack",
+            }
+        )
+    )
+
+    # A commit-shaped evidence still enforces the real merged-commit rule.
+    fake_commit_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--status",
+            "completed",
+            "--evidence",
+            "a" * 40,
+        ]
+    )
+    with pytest.raises(ValueError):
+        fake_commit_args.func(fake_commit_args)
+
+    # `blocked` must never accept the skip evidence -- only `completed`
+    # (a "blocked" receipt never clears a prerequisite in the first place).
+    blocked_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--status",
+            "blocked",
+            "--evidence",
+            f"{campaign_id}/sdlc_delivery.json",
+        ]
+    )
+    with pytest.raises(ValueError, match="merged Git commit"):
+        blocked_args.func(blocked_args)
+
+    # The campaign's own skip decision, acknowledged as `completed`, closes it.
+    args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            campaign_id,
+            "--action-index",
+            "1",
+            "--status",
+            "completed",
+            "--evidence",
+            f"{campaign_id}/sdlc_delivery.json",
+        ]
+    )
+    assert args.func(args) == 0
+    assert "deliver_stack" not in {
+        action.kind for _, action in pending_autotrain_actions(root, handoff)
+    }
+
+    # A different campaign's skip decision can never stand in for this one.
+    other_campaign_id = "cycle-other"
+    other_dir = root / other_campaign_id
+    other_dir.mkdir(parents=True)
+    other_handoff = handoff.model_copy(
+        update={"campaign_id": other_campaign_id}
+    )
+    (other_dir / "cycle_handoff.json").write_text(
+        other_handoff.model_dump_json(indent=2) + "\n"
+    )
+    mismatched_args = build_parser().parse_args(
+        [
+            "--root",
+            str(root),
+            "ack-action",
+            "--loop-id",
+            "loop-1",
+            "--campaign-id",
+            other_campaign_id,
+            "--action-index",
+            "1",
+            "--status",
+            "completed",
+            "--evidence",
+            f"{campaign_id}/sdlc_delivery.json",
+        ]
+    )
+    with pytest.raises(ValueError, match="merged Git commit"):
+        mismatched_args.func(mismatched_args)
+
+
 def test_dynamic_symbol_source_manifest_is_complete() -> None:
     from scripts.autoresearch import _load_sources
 

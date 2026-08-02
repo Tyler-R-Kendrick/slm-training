@@ -1524,7 +1524,12 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def _validate_action_evidence(
-    *, action_kind: str, evidence_uris: tuple[str, ...], campaign_root: Path
+    *,
+    action_kind: str,
+    evidence_uris: tuple[str, ...],
+    campaign_root: Path,
+    campaign_id: str | None = None,
+    status: str | None = None,
 ) -> None:
     """Require receipts to reference existing durable files or Git commits."""
 
@@ -1554,6 +1559,43 @@ def _validate_action_evidence(
                 f"receipt evidence must be an existing durable path or commit: {evidence}"
             )
         if action_kind == "deliver_stack":
+            # A positive result with no tracked code/docs delta (pure knob
+            # thrash / re-screen) has nothing to stack: `sdlc_delivery.json`
+            # itself already records that decision as
+            # `stack_action="positive_no_tracked_delta_skip_stack"`
+            # (`stack_layer=False`, `has_tracked_delta=False`). Accept that
+            # exact campaign's own delivery record as self-evidence for the
+            # skip -- it is the objective, durable proof there was nothing
+            # to merge -- without weakening the merged-commit requirement
+            # for any campaign that actually has a reviewable delta to
+            # stack. Bind the check to `campaign_id` so evidence from one
+            # campaign's skip decision can never stand in for another's.
+            # `status` must be "completed": `pending_autotrain_actions`
+            # (storage.py) only clears a prerequisite on a "completed"
+            # receipt, so "blocked" here would validate but never actually
+            # unblock the successor cycle. "Completed" is honest for the
+            # skip case -- the required action was "record and close the
+            # delivery decision", which this evidence proves happened; it
+            # does not claim a PR was merged.
+            if (
+                path.name == "sdlc_delivery.json"
+                and campaign_id is not None
+                and status == "completed"
+            ):
+                try:
+                    delivery = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError) as exc:
+                    raise ValueError(
+                        "deliver_stack skip evidence must be readable JSON"
+                    ) from exc
+                if (
+                    delivery.get("campaign_id") == campaign_id
+                    and delivery.get("stack_action")
+                    == "positive_no_tracked_delta_skip_stack"
+                    and delivery.get("stack_layer") is False
+                    and delivery.get("has_tracked_delta") is False
+                ):
+                    continue
             raise ValueError("deliver_stack evidence must be a merged Git commit")
         if action_kind == "document":
             try:
@@ -1585,6 +1627,8 @@ def cmd_ack_action(args: argparse.Namespace) -> int:
         action_kind=action.kind,
         evidence_uris=evidence_uris,
         campaign_root=args.root,
+        campaign_id=args.campaign_id,
+        status=args.status,
     )
     receipt = AutotrainActionReceiptV1(
         loop_id=args.loop_id,
