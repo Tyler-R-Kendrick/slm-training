@@ -23,6 +23,8 @@ progress, not model-quality or ship evidence.
 | persistent bridge reader (dirty) | 76 | 52 | 18,888.919 | 144,711 | 10,835 | 163,186 | typed timeout |
 | cached semantic projections (dirty) | 79 | 55 | 18,704.087 | 144,781 | 10,923 | 163,309 | typed timeout |
 | clean semantic-projection reproduction | 79 | 55 | 18,816.261 | 144,780 | 10,921 | 163,306 | typed timeout |
+| direct semantic constructors (dirty) | 81 | 57 | 18,271.607 | 144,814 | 10,971 | 163,367 | typed timeout |
+| clean constructors + refreshed ranker | 83 | 59 | 18,460.255 | 144,925 | 11,077 | 163,561 | typed timeout |
 
 All rows use the same c1737 control checkpoint, `smoke` offset 0, one record,
 strict compiler-tree policy, CPU, and a 24-second diagnostic deadline. The
@@ -30,7 +32,7 @@ later rows traverse more of the same deterministic output, so raw state totals
 are not direct speed ratios. The implementation rows, including the direct-map
 row, are exploratory profiles from dirty working states and are not immutable
 replay authority. The clean rows are immutable commit-bound reproductions; the
-latest `13409def` row emitted the expected failed AgentV bundle for one
+latest `163e7402` row emitted the expected failed AgentV bundle for one
 incomplete fixture record and is the authoritative profile snapshot.
 The persistent-reader row is an exploratory dirty profile and was reverted:
 its progress is bit-for-bit identical to the clean lexer-thread reproduction,
@@ -59,6 +61,12 @@ harness-telemetry repair signal.
   another tokenizer's cache, and timeout exceptions still propagate. The
   clean v13 profile advances three additional certified tokens and forwards
   under the unchanged wall.
+- Hot immutable semantic states and delimiter frames now use explicit
+  constructors instead of reflective `dataclasses.replace`; every field and
+  interning key remains identical. The required latest-contract cleanup also
+  refreshed stale opaque-ID assertions and rebuilt the committed train-only
+  speculative ranker. The clean row therefore measures the integrated v14 +
+  v287 runtime, while the dirty 81-token row isolates the constructor repair.
 - Repeating `SIGALRM` delivery is disarmed before timeout bookkeeping. The
   prior failure exited 142 with an uncaught second alarm; the repaired runs
   exit 0 with `decode_outcome=runtime_timeout` and complete AgentV artifacts.
@@ -105,8 +113,8 @@ MPR/ms gain because it is below the preregistered 5% minimum effect.
    only calls whose answer is already exactly implied by a certified grammar
    state; per-call reader reuse is neutral, while Node response wait remains
    material.
-2. Reduce semantic-state construction and immutable frame replacement without
-   changing traversal, candidates, budgets, or cache-observable state.
+2. Profile semantic-state interning and `_decision_kind` projection after the
+   constructor repair; do not add another cache without measured reuse.
 3. Reduce compiler state construction cost before changing any
    timeout. The compiler consumes about 20 seconds of the 24-second wall,
    whereas neural work is roughly 3.7 seconds.
