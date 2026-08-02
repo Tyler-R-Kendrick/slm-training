@@ -617,6 +617,8 @@ def main(argv: list[str] | None = None) -> int:
             "component-edge",
             "component-inventory",
             "binder-topology",
+            "binder-arity",
+            "binder-component-plan",
             "component-structure",
         ),
         default="none",

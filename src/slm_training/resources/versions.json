@@ -11247,7 +11247,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v292",
+      "version": "v293",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -11290,6 +11290,11 @@
         "docs/design/role-factorized-abstract-plans.md"
       ],
       "history": [
+        {
+          "version": "v293",
+          "date": "2026-08-02",
+          "note": "Extend the canonical train_model structural auxiliary profile enum with binder-arity and binder-component-plan so governed size-matched matrix arms reach the existing model-build implementation."
+        },
         {
           "version": "v292",
           "date": "2026-08-02",

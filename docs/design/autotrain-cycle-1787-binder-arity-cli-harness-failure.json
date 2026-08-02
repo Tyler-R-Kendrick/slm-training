@@ -1,0 +1,75 @@
+{
+  "schema": "autotrain_cycle_result/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1787",
+  "cycle_index": 1787,
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "decision": "inconclusive_canonical_training_cli_profile_enum_failure",
+  "scoreable": false,
+  "new_checkpoint_created": false,
+  "frozen_manifest_sha256": "56e8c805a46903bf4b3f514e6ba73f1d099beed5fb52acdbc744442718ba4c98",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1787-control",
+      "manifest_sha256": "9ee8d289e728a5ceac72fe76ca662d0258ad24e3cd0add7fac0ffd28bb292446",
+      "device": "cpu",
+      "context_backend": "scratch",
+      "seed": 101787,
+      "requested_steps": 22,
+      "exit_code": 2,
+      "scoreboard": null,
+      "checkpoint": null
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1787-binder-arity",
+      "manifest_sha256": "d1a1f3081b2570262f8d83e15889eba02ef63298e083fdc7cb0beaab04b6da84",
+      "device": "cpu",
+      "context_backend": "scratch",
+      "seed": 101787,
+      "requested_steps": 22,
+      "exit_code": 2,
+      "scoreboard": null,
+      "checkpoint": null
+    }
+  ],
+  "failure": {
+    "kind": "canonical_cli_enum_incomplete",
+    "entrypoint": "scripts.train_model",
+    "argument": "--structural-aux-head-profile",
+    "rejected_value": "binder-arity",
+    "also_missing": "binder-component-plan",
+    "phase": "argument_parsing_before_training"
+  },
+  "repair": {
+    "component": "model.twotower",
+    "version": "v293",
+    "scope": "accept existing binder-arity and binder-component-plan model-build profiles at the canonical training CLI and cover their typed propagation"
+  },
+  "agentv": {
+    "bundle": null,
+    "reason": "training did not start and no evaluation ran"
+  },
+  "ship_gates": {
+    "result": null,
+    "reason": "no scoreable model result"
+  },
+  "checkpoint_policy": "none_created",
+  "lean": "not_applicable:infrastructure_failure_no_checkpoint",
+  "next_priority": "exact_frozen_binder_arity_replay_after_cli_repair",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "58ebf35d0a9c2e563e7f46372b00f5b9fe58fe55",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.autoresearch.experiment_campaign": "v88",
+      "harness.model_build.eval": "v76",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v292"
+    },
+    "stamped_at": "2026-08-02T19:34:55.755664+00:00"
+  }
+}
