@@ -1,0 +1,130 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202607-98199209-c1",
+  "cycle_index": 1729,
+  "loop_id": "continuous-openui-20260730",
+  "run_class": "fixture_scratch",
+  "source_commit": "f60aea3601c91d4c1f98c0fc990447dc53a2342c",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric_at_execution": "smoke.structural_similarity",
+  "frozen_source_manifest_sha256": "fc5dce75aa71ece47f9189fcd2ab8b0b7115f4f784353413fca979f729e20a92",
+  "harness_signal": {
+    "family": "model_build",
+    "symptom": "scripts.evaluate_model exited 1 for both arms: RuntimeError('AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER') from src/slm_training/evals/agentv.py:_agentv_runtime; suite-level eval.json/eval_smoke.json were still written before the crash, but the driver's SDLC classifier read the campaign as empty_metrics on both arms and could not compute a scoreboard-backed ship-gate verdict.",
+    "root_cause": "fresh checkout never ran `npm ci` at the repo root or in src/apps/openui_bridge and src/apps/design_md_bridge, so node_modules/@agentv/core was absent.",
+    "repair": "ran `npm ci` at repo root plus src/apps/openui_bridge and src/apps/design_md_bridge (README Quick start); _agentv_runtime now resolves scripts/run_agentv_eval.mjs against the repo-root node_modules/@agentv/core.",
+    "regression_coverage": "existing coverage: evaluate_model integration tests exercise publish_agentv_evaluation when node_modules/@agentv is present in CI; no new test added because the defect was a missing local dependency install, not a code defect.",
+    "replay_status": "not yet replayed post-repair; retry_measurement is queued on this campaign and will be consumed by the next supervised cycle before a new model hypothesis is started."
+  },
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1-control",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": true,
+        "parameter_count": 1608962,
+        "batch_size": 2,
+        "steps": 21,
+        "seed": 100001,
+        "checkpoint_sha256": "60d16f90d0a954aa159e3b0825da9bd329d4a58a1810253f05fb44883cc65582"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "agentv_execution_errors": 1,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 2485.16
+      },
+      "decode_stats": {
+        "total_ms_sum": 7551.693,
+        "backbone_ms_sum": 154.223,
+        "compiler_ms_sum": 7216.744,
+        "forwards_count_sum": 11.0,
+        "completion_unique_states_sum": 31865.0,
+        "completion_witness_states_expanded_sum": 1638.0,
+        "completion_parser_forks_sum": 33620.0
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; suite-level metrics computed but the AgentV-backed scoreboard step crashed, so this is an incomplete ship-gate measurement, not fixture-clear evidence"
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202607-98199209-c1-bounds",
+      "status": "completed_gate_rejection",
+      "training": {
+        "executed": true,
+        "parameter_count": 1608962,
+        "batch_size": 2,
+        "steps": 21,
+        "seed": 100001,
+        "checkpoint_sha256": "1dde4811551ab18cca2fdb7710048de187f5d98cc611fc642530762ec5c88cbf"
+      },
+      "suite": "smoke",
+      "suite_n": 3,
+      "completed_document_n": 3,
+      "decode_timeout_count": 0,
+      "agentv_execution_errors": 1,
+      "metrics": {
+        "parse_rate": 1.0,
+        "binder_reference_f1": 0.6333333333333333,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.057499999999999996,
+        "ast_node_f1": 0.0,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 2217.76
+      },
+      "decode_stats": {
+        "total_ms_sum": 7085.074,
+        "backbone_ms_sum": 165.43,
+        "compiler_ms_sum": 6750.849,
+        "forwards_count_sum": 11.0,
+        "completion_unique_states_sum": 31865.0,
+        "completion_witness_states_expanded_sum": 1638.0,
+        "completion_parser_forks_sum": 33620.0
+      },
+      "ship_gates_pass": false,
+      "claim_boundary": "three-document fixture; suite-level metrics computed but the AgentV-backed scoreboard step crashed, so this is an incomplete ship-gate measurement, not fixture-clear evidence"
+    }
+  ],
+  "comparison": {
+    "measurement_complete": false,
+    "size_matched": true,
+    "parse_rate_delta": 0.0,
+    "binder_reference_f1_delta": 0.0,
+    "meaningful_program_rate_delta": 0.0,
+    "structural_similarity_delta": 0.0,
+    "latency_p50_ratio": 0.8924069425053248,
+    "grammar_completion_bounds_disposition": "inconclusive_incomplete_measurement"
+  },
+  "harness_feedback": {
+    "saturated_primary_detected": null,
+    "stale_retry_priority_detected": false,
+    "next_action": "let the next supervised cycle consume the queued retry_measurement for this campaign_id; both arms replay under the identical frozen manifest now that the AgentV SDK is installed"
+  },
+  "checkpoint_documentation_required": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f60aea3601c91d4c1f98c0fc990447dc53a2342c",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v30",
+      "harness.model_build.train": "v27",
+      "harness.model_build.eval": "v73",
+      "harness.experiment_feature_flags": "v3",
+      "evals.meaningful_program": "2.13.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v22",
+      "model.twotower": "v277"
+    },
+    "stamped_at": "2026-08-02T03:34:35.529925+00:00"
+  }
+}
