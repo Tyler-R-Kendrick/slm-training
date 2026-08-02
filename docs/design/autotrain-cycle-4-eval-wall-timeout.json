@@ -1,0 +1,54 @@
+{
+  "schema": "autotrain_measured_results/v1",
+  "campaign_id": "continuous-loop-20260802-continuous-openui-202608-75a7803e-c4",
+  "cycle_index": 4,
+  "loop_id": "continuous-openui-20260802-local",
+  "run_class": "fixture_scratch",
+  "source_commit": "df78abae7c803d84b6fad39bcf9179f447203ab0",
+  "source_dirty": false,
+  "device": "cpu",
+  "train_version": "wf_smoke_v2",
+  "eval_version": "e938_role_safe_all_targets_v2",
+  "primary_metric": "smoke.binder_reference_f1",
+  "arms": [
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c4-control",
+      "status": "stopped",
+      "metrics": {},
+      "failure": "stage exceeded wall-time limit during `evaluate_model --suites smoke,held_out --ship-gates` (MAX_RUN_MINUTES=3 repo-wide cap; real AgentV decode over two suites did not finish in budget). Training completed and wrote a checkpoint before the timeout."
+    },
+    {
+      "experiment_id": "c20260802-continuous-openui-202608-75a7803e-c4-steps",
+      "status": "stopped",
+      "metrics": {},
+      "failure": "Identical to control: evaluation wall-timeout over smoke+held_out, no scoreboard produced."
+    }
+  ],
+  "sdlc_phase_a": {
+    "driver_reasons": [
+      "wall_timeout:control",
+      "empty_metrics:control",
+      "wall_timeout:steps",
+      "empty_metrics:steps",
+      "efficiency_win:mpr_per_ms:1.9034991e-05->3.5036198e-05",
+      "primary_metric_win:held_out.structural_similarity:0.4166666666666667->0.51:improvement=0.09333333333333332"
+    ],
+    "driver_computed": "positive (action=positive_no_tracked_delta_skip_stack)",
+    "agent_classification": "non_positive",
+    "positive": false,
+    "stack_layer": false,
+    "rationale": "Both of this cycle's own arms timed out during evaluation with empty metrics -- exactly the 'wall timeouts with no metric win' non-positive case in autotrain-iteration-delivery.md. The driver's own 'primary_metric_win' / 'efficiency_win' reasons do not trace to a scoreboard produced by either c4 arm (both outcomes files show status=stopped, metrics={}); the driver's own action label already downgrades this to 'skip_stack' ('positive_no_tracked_delta_skip_stack'), i.e. it recognizes there is no tracked delta to attribute despite the headline classification. Treating as non-positive per the 'when uncertain, treat as not positive' rule rather than opening a stack layer on an untraceable win."
+  },
+  "honesty": "infrastructure timeout; no scoreboard, no checkpoint promotion, no ship or quality claim from this cycle",
+  "next_action": "retry_measurement against frozen_manifest_sha256 c55de2b4b135f16791fa5a9b6127456ba3e18a522187117571fcf7fdde66c9ae with a narrower eval suite scope (smoke only) or a longer decode-timeout-seconds so evaluation fits the MAX_RUN_MINUTES cap.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "df78abae7c803d84b6fad39bcf9179f447203ab0",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v73",
+      "harness.autoresearch.experiment_campaign": "v48"
+    },
+    "stamped_at": "2026-08-02T02:50:04Z"
+  }
+}
